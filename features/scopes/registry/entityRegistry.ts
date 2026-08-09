@@ -377,10 +377,21 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
   assessment: {
     Icon: ListChecks,
-    labelPlural: "Quizzes",
-    // education.assessment — verified: /education/quizzes/[id] renders
-    // AssessmentDetail over `.from("assessment")`.
-    hrefFor: (id) => `/education/quizzes/${id}`,
+    labelPlural: "Assessments",
+    // 🚨 NO hrefFor — this token's route is KIND-DISCRIMINATED and `hrefFor`
+    // structurally cannot express that. `education.assessment.kind` is
+    // "quiz" | "practice_test", and each has its own canonical route
+    // (/education/quizzes/[id], /education/practice-tests/[id]). Both render
+    // the SAME AssessmentDetail, which derives its base path from the loaded
+    // record — so sending a practice test to the quizzes URL renders the right
+    // content under the wrong address, with the wrong metadata and with every
+    // link on the page (Edit, results, back) pointing at the other section.
+    // It looks like it worked, which is what makes it the bad kind of wrong.
+    // `hrefFor` receives an id and nothing else; picking needs the row.
+    // Registering the token WITHOUT a route is still worth it — it carries the
+    // icon, the label and the registry peek, which is the record's real door
+    // here. Unblocking wants either a kind-agnostic resolver route or a wider
+    // `hrefFor` signature; both are owner calls, see the handoff.
   },
   quiz_session: {
     Icon: ListChecks,

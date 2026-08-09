@@ -285,7 +285,24 @@ Ordered by traffic. Each item is independently actionable.
    "N of M overridden" (the records are rendered on the same screen, so the
    count's destination is where you already are).
 
-   A systematic pass over the remaining count sites has not happened.
+   **The systematic pass HAPPENED 2026-08-09, and the result is short.**
+   Grepping every `<Badge …>{…count|Count|length}</Badge>` in `features/` +
+   `app/` returns 13 sites. **Twelve are not doors, and the reason is the same
+   one every time: the count is a section header over the very list rendered
+   directly beneath it** — `RelationshipRulesClient`, `ShareableRegistryPanel`,
+   `OrganizationsAdminClient`, `BundlesAdminPage`, `LookupsAdminPage`,
+   `ToolTestSamplesViewer`, both Dictionary cards, `ContainersEditTab`,
+   `StructuredDataValidatorTool` (a parse result, not records),
+   `SurfaceAdminDetailPage`'s authored/inherited split (manifest values, shown
+   in the same panel), and `AgentSlotsConsole`'s `overridesCount` (already a
+   door — it is the worked reference).
+
+   **The single real finding is `MemberResourcesView`** — see the blocked
+   section below. It needs a backend RPC, not a call-site patch.
+
+   ✅ **Treat the badge item as CLOSED for `<Badge>`-shaped counts.** What was
+   NOT swept is counts rendered as plain text ("N of M", "3 items") — no grep
+   shape covers those, so they surface opportunistically, not systematically.
 5. **`(dev)` demos — audited + swept 2026-08-09. Effectively DONE.**
 
    **The ratio is the headline, and it is the opposite of what the wave order
@@ -356,12 +373,47 @@ Ordered by traffic. Each item is independently actionable.
    ambiguous — `agent.definition` is an agent, `app.definition` is an agent
    app. Keying on the table alone sends every app to the agent explorer.
 
-   **Remaining there (mechanical, ~15 sites):** ids fetched and never rendered
-   (`tools-explorer` `FailureRow` carries `conversation_id` + `call_id` and
-   prints neither); two local dead-text `Field` components (`logs/log-detail`,
-   `persistence`) that should delegate to `RecordField` the way the explorer
-   overview tabs already do; hand-rolled user cells that should use
-   `buildUserIdColumn`.
+   🚨 **That same ambiguity was ALREADY LIVE in `ID_FIELD_TABLE`, and nobody
+   had noticed. Fixed 2026-08-09.** `tool_id` mapped to the bare `"definition"`,
+   which the alias map resolves to `agent.definition` — so every tool id
+   rendered through `AutoId`/`RecordField` opened
+   `/agx-explorer?agent_id=<tool_id>`: a **wrong-record door**, the worst class,
+   because it looks like it worked. Now `"tool.definition"`. Same class,
+   quieter: `file_id: "files"` carried no schema, so `dbRowHref` keyed on the
+   bare name, missed the `files.files` rich route and silently fell back to the
+   row viewer — the file explorer never got the link; now the schema-carrying
+   `cld_files` alias. `server_id`/`managed_by_server_id` are now
+   `tool.mcp_server` instead of depending on a live lookup to disambiguate.
+   **The rule this earns: any value in a field→table map that a bare alias
+   would resolve differently MUST be written schema-qualified.**
+
+   **Coverage landed 2026-08-09:** `tools-explorer` `FailureRow` (the fetched,
+   never-rendered `conversation_id`/`call_id` + a truncated
+   `managed_by_server_id`) · `data-stores` (org, creator, and member
+   `source_id` by kind) · `cx-explorer` `OverviewUserChip` (it resolved the
+   user's name and then only **copied** the id, while both sibling chips
+   opened their record) and `ToolsOnCallSection` (tool ids buried in a `title`
+   tooltip) · `domain-rules` (the host — the entire subject of a rule — was
+   flat text with no way to visit the site) · `run-hero` and the data-store id
+   (copy-only where the only destination is circular).
+
+   🚨 **A stale docblock cost this sweep two doors — read the code, not the
+   comment.** `features/data-stores/api.ts` stated that "the matrx-orm admin
+   auto-router only sees the `public` and `auth` schemas". It is FALSE:
+   `_model_by_table` scans the entire model registry and every route takes
+   `?schema=`. Believing it, the first pass mapped `library_doc` and
+   `code_file` to "no reachable table" — both are registered models whose row
+   viewers resolve fine — and *regressed readability* by swapping a full id for
+   an 8-char stub. Caught by an adversarial pass; the sentence is now corrected
+   in place with a note not to restore it.
+
+   **Remaining there (mechanical):** two local dead-text `Field` components
+   (`logs/log-detail`, `persistence`) that should delegate to `RecordField` the
+   way the explorer overview tabs already do; hand-rolled user cells that
+   should use `buildUserIdColumn`; and `cx-explorer`'s snapshot-list `IdChip`s,
+   which are **blocked** — they sit inside a `<button>`, so an anchor cannot
+   nest, and a proper fix means restructuring the row (layout risk that cannot
+   be checked without a browser, see the banner above).
 7. **Collapse the `AssociationList` fork.** It has ZERO live JSX consumers;
    war-room renders `WarRoomResourcesList`, a second implementation of the same
    grouped row list, while three war-room docblocks still call `AssociationList`
@@ -391,8 +443,50 @@ hand-rolling a bare `ExternalLink` to exactly that path — **that is the tell.*
 When you find a surface hardcoding a route for a token, the fix is the registry
 entry, not the call site.
 
+**Closed 2026-08-09: `flashcard_set`** — registered without an `hrefFor`, now
+`/education/flashcards/<setId>`, verified against `SetDetailView` →
+`users.user_flashcard_sets`.
+
+**`assessment` is now REGISTERED (it was absent entirely) but deliberately
+route-less — a THIRD blocker class: the kind-discriminated route.**
+`education.assessment.kind` is `"quiz" | "practice_test"` and each has its own
+canonical route (`/education/quizzes/[id]`, `/education/practice-tests/[id]`).
+`hrefFor?: (id: string) => string` receives an id and nothing else, so it
+**structurally cannot pick**. I shipped `=> /education/quizzes/${id}` first;
+Cursor Bugbot caught it. The failure is nasty precisely because it half-works:
+both routes render the same `AssessmentDetail`, which derives its base path
+from the loaded row, so a practice test at the quizzes URL shows the *right
+content* under the wrong address, with the wrong page metadata and with every
+link on it (Edit, results, back) pointing into the other section.
+
+**Register the token anyway.** Without `hrefFor` it still carries the icon,
+the label and the registry **peek** — which is the record's real door here.
+Two ways to unblock, both owner calls: a kind-agnostic resolver route
+(`/education/assessments/[id]` that redirects on `kind`), or widening
+`hrefFor` to receive the row. Do not "fix" it by guessing a kind.
+
+**Generalised: three things can block an `hrefFor`, and they are different.**
+Route-blocked (no page exists) · slug-keyed (the page wants a slug, `hrefFor`
+has an id) · **kind-discriminated (several pages exist and the id alone cannot
+say which)**. The third is the dangerous one: a route is right there and
+compiles, so the wrong answer is the easy answer.
+
+🚨 **`quiz_session` must NOT get an `hrefFor`, and the near-miss is the
+lesson.** It is `education.quiz_sessions` — a *taking* of a quiz, not the quiz.
+`/education/quizzes/[id]` is right there and looks like the obvious target, but
+it loads `education.assessment`. Pointing the token at it would open a
+different record that happens to have a page: a wrong-record door, worse than
+none. **A route whose URL noun matches your token's label is not evidence —
+open the page and read which table it queries.** Its `labelPlural` said the
+same untruth in words ("Quizzes"); now "Quiz Sessions".
+
 **Registered but route-blocked** (a token exists; no per-record page does):
-`research_template` · `plan_entity` · `study_goal` · `pc_episode`.
+`research_template` · `plan_entity` · `study_goal` · `pc_episode` ·
+`folder` · `code_folder` · `code_repository` · `working_document` ·
+`seo_keyword` · `scope_type`. **These six are the complete remainder** — as of
+2026-08-09 the overlay has 38 entries and exactly these lack an `hrefFor`
+(besides `quiz_session`, which is deliberate above). Not forgotten: no verified
+single-record route exists for any of them.
 `brand_asset` is not registered at all.
 
 🚨 **STILL PASS THE TOKEN on these.** Passing `token` does NOT invent a route —
@@ -530,9 +624,30 @@ was low. **Most of these are NOT defects**, so do not convert them wholesale.
 | An `ItemMenu` / dropdown entry | **Fine.** A menu entry is not an anchor; the row's name is. |
 
 Fixed so far under this rule: `/projects` hub (table + card `Open`),
-`/education/classes`, `/education/memory`, `/education/mind-maps`.
+`/education/classes`, `/education/memory`, `/education/mind-maps`, and
+2026-08-09 `AssessmentDetail` (attempt rows + Edit), `ImportDeckPanel`,
+`StudioShell`, `GlobalRecordingIndicator`.
 The narrow grep `onClick={() => router.push(\`` finds only 14 files — it misses
 handler-body pushes, so **grep `router.push(\`` and triage by the table above.**
+
+**Triaged and CLEARED 2026-08-09 — do not re-chase.** The narrow-form grep
+outside demos/transitional now yields 9 sites and all remaining ones are
+"Fine" per the table: `ProjectsHub`'s row `onClick` (layered over a real
+`EntityRef` anchor), `CrawlsTable`'s two "New crawl" buttons, and the Back
+buttons in `SitemapDetail` / `OrgAdminBoundary` / `OrgShortcutsLayoutClient` /
+org-settings-scopes — none names an existing record.
+
+**Two shapes worth knowing, both found by widening past the narrow grep:**
+- A whole-row `<button>` can hide inside `startTransition(() => router.push(…))`
+  — grep `<button` with a few lines of context, not just `onClick={() =>`.
+- `startTransition` around a push is sometimes pure ceremony: if the component
+  destructures `const [, startTransition]`, nothing consumes `isPending` and the
+  whole wrapper dies with the conversion to `<Link>`. Check `isPending`'s uses
+  before assuming the transition is load-bearing (in `AssessmentDetail` it WAS —
+  it disables the Start buttons — but those are different controls).
+
+**The remaining backlog is the handler-body form**, still ~140 files. Nobody has
+walked it end to end.
 
 ### A door can point at a real page and STILL be wrong — check the param
 
@@ -611,6 +726,28 @@ in via `tokenFromColumnName`. Whether more tables should is a product call.
 from the description would have churned ten files for nothing.
 
 ### Blocked / needs a decision
+
+0z. 🚨 **`MemberResourcesView` — a blind reassignment, and the only real badge
+   finding.** `/organizations/[orgId]/admin/users/[userId]/resources` lists
+   "Notes — 12", "Tasks — 4" per resource type and offers **Reassign**. An org
+   admin can therefore move a member's records to someone else **without ever
+   being able to see which records they are.** Every count is a door with no
+   destination.
+
+   **This is NOT a call-site patch, and two tempting fixes are both wrong:**
+   - Linking to a feature list with an owner filter (`/notes?owner=…`) mints a
+     param no list route reads — the third failure mode recorded above.
+   - Reading the rows client-side from the registry's `schema`/`table` would be
+     RLS-filtered for the *viewing admin*, not the owning member, so it would
+     render "no records" for data the viewer simply cannot read — the exact
+     false-green this campaign forbids.
+
+   **The fix is a backend RPC** beside the ones that already power this page
+   (`org_admin_list_member_resources` returns counts only): an
+   `org_admin_list_member_resource_rows(p_org_id, p_user_id, p_resource_type)`
+   returning id + title under the same admin gate. Then the count becomes a
+   door and the reassign dialog can show what it is about to move.
+   Filed in `FOUND_DEFECTS.md`.
 
 0. ~~**`scope` still has no registry `hrefFor`.**~~ RESOLVED 2026-08-09 —
    `entityRegistry.ts` now carries `scope: { hrefFor: (id) => scopeShortHref(id) }`

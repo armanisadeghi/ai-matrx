@@ -13,6 +13,31 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D144 — Org admins reassign a member's records without being able to see them (2026-08-09)
+
+`/organizations/[orgId]/admin/users/[userId]/resources`
+(`features/organizations/admin/components/MemberResourcesView.tsx:116`) lists
+org-scoped resources per type — "Notes 12", "Tasks 4" — beside a **Reassign**
+button. There is no way to reach the 12 notes. An admin moves records to
+another member sight-unseen, and `ReassignResourcesDialog` shows the same
+counts.
+
+`org_admin_list_member_resources` returns `{resource_type, display_label,
+schema_name, table_name, count}` — counts only, no ids.
+
+**Fix (backend, Supabase):** add `org_admin_list_member_resource_rows(p_org_id,
+p_user_id, p_resource_type, p_limit)` returning id + title under the same admin
+gate as the existing RPCs. Then the count links to those records and the
+reassign dialog can show what it will move.
+
+**Two client-side shortcuts are wrong, don't take them:** linking to a feature
+list with an owner filter mints a query param no list route reads; reading the
+rows directly via supabase-js is RLS-filtered for the *viewing admin*, not the
+owning member, so it would render "no records" for data the viewer merely
+cannot read — a false green.
+
+Context: `docs/handoffs/no-dead-ends-sweep.md` § Blocked, item 0z.
+
 ### D143 — `InlineMediaRef` uses `ref` as a DATA prop name (2026-08-09)
 
 `features/files/components/inline/InlineMediaRef.tsx:75` declares
