@@ -12,6 +12,10 @@ import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
 import { formatCost, formatTokens, formatDuration } from "@/features/cx-dashboard/utils/format";
 import { exportToCSV, exportToJSON } from "@/features/cx-dashboard/utils/export";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const COLORS = [
   "hsl(215, 70%, 55%)", "hsl(160, 60%, 45%)", "hsl(280, 60%, 55%)",
@@ -163,7 +167,7 @@ export function UsageContent({ analytics }: { analytics: Analytics }) {
               <h3 className="text-xs font-medium text-muted-foreground">Usage by Model</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
                     <th className="text-left py-1.5 px-3 font-medium">Model</th>

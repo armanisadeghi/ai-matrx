@@ -5,6 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table as TableIcon } from "lucide-react";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { getColumns, toRows } from "./utils/joinResults";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface ResultPreviewProps {
   data: unknown;
@@ -83,7 +87,7 @@ export function ResultPreview({
             </div>
           ) : (
             <div className="overflow-auto">
-              <table className="w-full text-xs border-collapse">
+              <table className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
                 <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10">
                   <tr>
                     <th className="text-left px-2 py-1 font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700 w-8">

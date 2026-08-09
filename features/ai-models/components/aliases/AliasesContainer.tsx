@@ -30,6 +30,10 @@ import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { aiModelService } from "../../service";
 import type { AiModel, AiModelAliasRow } from "../../types";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const ALIAS_KINDS = ["alias", "deprecated", "latest"] as const;
 type AliasKind = (typeof ALIAS_KINDS)[number];
@@ -315,7 +319,7 @@ export default function AliasesContainer() {
       )}
 
       <div className="min-h-0 flex-1 overflow-auto rounded-md border">
-        <table className="w-full text-left text-xs">
+        <table className={cn("text-left text-xs", MOBILE_TABLE_FROZEN)}>
           <thead className="sticky top-0 bg-muted/60 backdrop-blur">
             <tr className="border-b">
               <th className="px-3 py-2 font-medium">Alias</th>
@@ -361,7 +365,7 @@ export default function AliasesContainer() {
                     </Badge>
                   </td>
                   <td className="px-3 py-1.5">{modelLabel(row.model_id)}</td>
-                  <td className="max-w-64 truncate px-3 py-1.5 text-muted-foreground">
+                  <td className="sm:max-w-64 sm:truncate px-3 py-1.5 text-muted-foreground">
                     {row.notes ?? ""}
                   </td>
                   <td className="px-3 py-1.5 text-right">

@@ -28,6 +28,9 @@ import {
   type AnchorProfileRow,
   type AnchorProfileWarning,
 } from "@/features/marketing/components/backlinks/lib/anchors";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const DRILL_LIMIT = 25;
 
@@ -128,7 +131,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
               ))}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="py-1 pr-3 font-medium">Class</th>
@@ -199,7 +202,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
       {profile.concentrated.length > 0 ? (
         <SectionCard title="Anchors carrying an outsized share">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="py-1 pr-3 font-medium">Anchor</th>
@@ -215,7 +218,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
                     key={item.anchor}
                     className="border-b border-border/60 last:border-b-0"
                   >
-                    <td className="max-w-md truncate py-1.5 pr-3 text-foreground">
+                    <td className="sm:max-w-md sm:truncate py-1.5 pr-3 text-foreground">
                       {item.anchor}
                     </td>
                     <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">
@@ -243,14 +246,14 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
                 <tbody>
                   {drillRows.map((row) => (
                     <tr
                       key={row.anchor ?? "(empty)"}
                       className="border-b border-border/60 last:border-b-0"
                     >
-                      <td className="max-w-md truncate py-1 pr-3 text-foreground">
+                      <td className="sm:max-w-md sm:truncate py-1 pr-3 text-foreground">
                         {row.anchor || "(no anchor text)"}
                       </td>
                       <td className="py-1 text-right tabular-nums text-muted-foreground">
