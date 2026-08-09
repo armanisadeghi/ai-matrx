@@ -48,9 +48,18 @@ interface ClippedFinding {
 }
 
 /**
- * The nearest ancestor that constrains vertical overflow decides the verdict:
- * a scroller means the content is reachable (silent); a clipper that the
- * element outgrows means the content is lost (a finding).
+ * Walks the WHOLE ancestor chain, because the ancestor that cuts the content is
+ * not always the first one that constrains overflow:
+ *
+ * - A clipper the element fits inside says nothing about a clipper further up,
+ *   so a fit keeps the walk going instead of clearing the element.
+ * - `overflow: auto` only proves reachability when it actually scrolls. A
+ *   broken chain grows its wrappers, and an `auto` wrapper that grew to fit its
+ *   child has NO scrollport — treating it as a scroller is how this guard would
+ *   go silent on the very shape it exists to catch.
+ *
+ * A working scrollport is the one thing that ends the walk clean: everything
+ * inside it is reachable by scrolling.
  */
 export function findClippedOverflow(element: HTMLElement): ClippedFinding | null {
   const rect = element.getBoundingClientRect();
@@ -59,13 +68,27 @@ export function findClippedOverflow(element: HTMLElement): ClippedFinding | null
   let ancestor = element.parentElement;
   while (ancestor && ancestor !== document.body) {
     const overflowY = getComputedStyle(ancestor).overflowY;
-    if (overflowY === "auto" || overflowY === "scroll") return null;
-    if (overflowY === "hidden" || overflowY === "clip") {
+    const constrains =
+      overflowY === "auto" ||
+      overflowY === "scroll" ||
+      overflowY === "hidden" ||
+      overflowY === "clip";
+
+    if (constrains) {
+      const scrolls =
+        (overflowY === "auto" || overflowY === "scroll") &&
+        ancestor.scrollHeight > ancestor.clientHeight + OVERFLOW_TOLERANCE_PX;
+      if (scrolls) return null;
+
       const clipRect = ancestor.getBoundingClientRect();
-      const overflowPx = rect.bottom - clipRect.bottom;
-      return overflowPx > OVERFLOW_TOLERANCE_PX
-        ? { overflowPx, clipper: ancestor }
-        : null;
+      // A collapsed ancestor (an accordion shut, a hidden tab) clips by
+      // design — that is not a broken chain.
+      if (clipRect.height > 0) {
+        const overflowPx = rect.bottom - clipRect.bottom;
+        if (overflowPx > OVERFLOW_TOLERANCE_PX) {
+          return { overflowPx, clipper: ancestor };
+        }
+      }
     }
     ancestor = ancestor.parentElement;
   }
