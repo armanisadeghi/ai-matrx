@@ -28,6 +28,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   useDocumentLineage,
   type ProcessingNode,
@@ -92,7 +93,19 @@ export function LineageTreeView({ doc }: LineageTreeViewProps) {
                 <FileText className="w-3.5 h-3.5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">{doc.name}</p>
+                {/* This IS the document the studio has open, so its name is
+                    not a door to anywhere new — but it stays an `EntityRef`
+                    so the row reads identically to its ancestors and
+                    descendants, and so the peek arrives here too if
+                    `processed_document` ever gets one. */}
+                <EntityRef
+                  token="processed_document"
+                  id={doc.id}
+                  name={doc.name}
+                  showIcon={false}
+                  disableNewTab
+                  className="text-xs font-medium"
+                />
                 <p className="text-[10px] text-muted-foreground truncate">
                   <code className="font-mono">{doc.id.slice(0, 8)}…</code> ·{" "}
                   current · {doc.derivationKind}
@@ -219,7 +232,21 @@ function ProcessingRow({
       />
       <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-medium truncate">{node.name}</p>
+        {/* A lineage tree exists to answer "what did this come from?" and then
+            gave you no way to GO there — the whole point of the panel stopped
+            one click short. `openInNewTab` because the studio has an extraction
+            session open behind this panel; navigating the current tab to a
+            different document is precisely the state loss the new-tab door
+            exists to prevent. */}
+        <EntityRef
+          token="processed_document"
+          id={node.id}
+          name={node.name}
+          showIcon={false}
+          openInNewTab
+          fill
+          className="text-[11px] font-medium"
+        />
         <p className="text-[9px] text-muted-foreground truncate">
           <code className="font-mono">{node.id.slice(0, 8)}…</code> ·{" "}
           {node.derivationKind}
@@ -261,7 +288,19 @@ function BinaryRow({
         )}
       />
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-medium truncate">{node.fileName}</p>
+        {/* The binary axis walks `files.files`, which is the registry's `file`:
+            a real route AND a peek. The peek is the one that earns its keep on
+            this panel — "is that the cropped one?" is answerable without
+            leaving the extraction you are in the middle of. */}
+        <EntityRef
+          token="file"
+          id={node.id}
+          name={node.fileName}
+          showIcon={false}
+          openInNewTab
+          fill
+          className="text-[11px] font-medium"
+        />
         <p className="text-[9px] text-muted-foreground truncate">
           <code className="font-mono">{node.id.slice(0, 8)}…</code>
           {node.derivationKind && <> · {node.derivationKind}</>}

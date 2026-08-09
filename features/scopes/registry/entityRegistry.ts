@@ -312,6 +312,17 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: FilePen,
     labelPlural: "Working Documents",
   },
+  // `docproc.processed_documents` — a document as the PDF pipeline produced it,
+  // NOT `udt_document` (workbench.udt_documents) despite the similar name.
+  // The studio's own detail route keys on exactly this id, so every surface
+  // that names a processed document gets its door from this one line: the
+  // three lineage-tree rows that were printing `8f3a2b1c…` inert, and whatever
+  // names one next.
+  processed_document: {
+    Icon: FileText,
+    labelPlural: "Processed Documents",
+    hrefFor: (id) => `/tools/pdf-extractor/${id}`,
+  },
   conversation: {
     Icon: MessagesSquare,
     labelPlural: "Conversations",

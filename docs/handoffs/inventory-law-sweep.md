@@ -506,11 +506,23 @@ primitive-duplication defect, not merely an adoption gap):
 (token and id were side by side; the full id is now the LABEL of an `EntityRef`,
 so an admin can still copy it AND open it) and `ExposureAuditClient` (the named
 resource now opens). Both use `openInNewTab` so the audit survives the click.
-Remaining:
-`app/(admin)/administration/reporting/events/page.tsx:265-271` (three raw
-UUIDs) ·
-`features/pdf-extractor/components/LineageTreeView.tsx:97,224,266` ·
-`features/administration/kg-cost/components/KgCostDashboard.tsx:279,827`.
+**The list is now CLEAR** — the events audit, both KG-cost sites, and the PDF
+lineage tree all ship. Two of those were worth more than the row they fixed:
+
+- **KG cost, batch detail.** `source_kind` + `source_id` is a token/id pair, so
+  "which document cost me this?" was answerable all along and was rendering as
+  the string `document:8f3a…`. Also exposed the alias trap now in checklist 3
+  (`cld_file` is the registry's `file`). The `User` row is deliberately still
+  plain: no `user` token exists, so there is no door — but it stopped
+  truncating an id that was neither openable NOR copyable.
+- **PDF lineage tree.** A panel whose entire purpose is "what did this come
+  from?" stopped one click short on every node. The fix was ONE REGISTRY LINE,
+  not three surface edits: `processed_document` (docproc — *not* `udt_document`)
+  already had a detail route at `/tools/pdf-extractor/{id}` and no `hrefFor`.
+  Adding it lit all three rows at once, and lights whatever names a processed
+  document next. **Look for this shape before converting anything:** when
+  several inert names share a token, the missing piece is usually the registry,
+  and the surface work is a consequence.
 
 ---
 
