@@ -276,22 +276,30 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
 
   /**
    * Compare on open, and again after every sync. The nonce is part of the key,
-   * so a sync invalidates the old verdict instead of leaving it on screen. A
-   * failed comparison becomes `unknown` — "I couldn't look" must never read as
-   * "they match".
+   * so a sync invalidates the old verdict instead of leaving it on screen.
+   *
+   * A REQUEST FAILURE IS NOT A VERDICT. A 500, a timeout, or an offline browser
+   * is stored as an error and reported as one — folding it into `unknown` would
+   * tell the user their permissions are wrong when the network simply blipped,
+   * and would leave them no way back except closing the panel.
    */
-  const [comparisonState, setComparisonState] = useState<{
-    key: string;
-    value: AgentSyncComparison;
-  } | null>(null);
+  const [comparisonState, setComparisonState] = useState<
+    | { key: string; ok: true; value: AgentSyncComparison }
+    | { key: string; ok: false; message: string }
+    | null
+  >(null);
 
   const pairKey =
     userSideId && systemSideId
       ? `${userSideId}|${systemSideId}|${syncNonce}`
       : null;
+  const currentComparison =
+    pairKey && comparisonState?.key === pairKey ? comparisonState : null;
   const comparison =
-    pairKey && comparisonState?.key === pairKey ? comparisonState.value : null;
-  const comparing = !!pairKey && comparison === null;
+    currentComparison?.ok === true ? currentComparison.value : null;
+  const comparisonError =
+    currentComparison?.ok === false ? currentComparison.message : null;
+  const comparing = !!pairKey && currentComparison === null;
 
   useEffect(() => {
     if (!userSideId || !systemSideId || !pairKey) return;
@@ -304,21 +312,18 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
     )
       .unwrap()
       .then((value) => {
-        if (!cancelled) setComparisonState({ key: pairKey, value });
+        if (!cancelled) setComparisonState({ key: pairKey, ok: true, value });
       })
       .catch((err: unknown) => {
         console.error("[AgentSyncBody] agent comparison failed", err);
         if (cancelled) return;
         setComparisonState({
           key: pairKey,
-          value: {
-            verdict: "unknown",
-            unreadable: ["user", "system"],
-            changed: [],
-            identityChanged: [],
-            behaviorChanged: [],
-            comparedFieldCount: 0,
-          },
+          ok: false,
+          message:
+            err instanceof Error
+              ? err.message
+              : "The comparison request failed.",
         });
       });
     return () => {
@@ -534,12 +539,34 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
   return (
     <div className="space-y-4">
       {/* Verdict — the answer, before any action is offered */}
-      {comparing || !comparison ? (
+      {comparing ? (
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
           <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
           Comparing the two agents…
         </div>
-      ) : comparison.verdict === "identical" ? (
+      ) : comparisonError ? (
+        <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
+          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+          <div className="flex-1 text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">
+              The comparison request failed.
+            </span>{" "}
+            {comparisonError} This is a problem reaching the data, not a verdict
+            — the two agents may or may not differ.
+            <div className="mt-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshAfterSync}
+                className="h-6 gap-1.5 text-[11px]"
+              >
+                <RefreshCw className="w-3 h-3" />
+                Try again
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : !comparison ? null : comparison.verdict === "identical" ? (
         <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
           <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
           <div className="text-xs leading-relaxed text-muted-foreground">
@@ -552,7 +579,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
         </div>
       ) : comparison.verdict === "unknown" ? (
         <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
-          <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
           <div className="text-xs leading-relaxed text-muted-foreground">
             <span className="font-medium text-foreground">
               Could not compare these agents.
@@ -570,7 +597,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
       ) : (
         <div className="space-y-2 rounded-md border border-border bg-muted/30 px-3 py-2.5">
           <div className="flex items-start gap-3">
-            <GitCompare className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <GitCompare className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
             <div className="text-xs leading-relaxed text-muted-foreground">
               <span className="font-medium text-foreground">
                 These agents are not identical.
@@ -588,6 +615,13 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
               <FieldChangeChip key={change.field} change={change} />
             ))}
           </div>
+          {/*
+            The chips above are the authority on what SYNC would change. The
+            full diff answers the broader question "how do these two agents
+            differ at all" — it covers fields sync never copies (ui_gates,
+            matrx_actions, flags) and softens some differences for readability,
+            so it is offered as a wider view, never as the same list.
+          */}
           <div className="pl-7">
             <Button
               asChild
@@ -596,9 +630,12 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
               className="h-auto p-0 text-[11px]"
             >
               <Link href={diffHref} target="_blank" rel="noopener noreferrer">
-                See exactly what changed, field by field
+                Open the full side-by-side diff
               </Link>
             </Button>
+            <span className="ml-1.5 text-[11px] text-muted-foreground">
+              — every field, including ones sync does not copy
+            </span>
           </div>
         </div>
       )}
@@ -656,7 +693,8 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
             htmlFor="pull-identity"
             className="text-xs font-normal text-muted-foreground cursor-pointer"
           >
-            On pull, also overwrite my copy&apos;s name, description &amp; tags
+            On pull, also overwrite my copy&apos;s name, description, category
+            &amp; tags
             {comparison?.verdict === "differs" &&
               comparison.identityChanged.length > 0 && (
                 <span className="text-foreground">

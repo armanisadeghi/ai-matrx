@@ -15,7 +15,6 @@
 
 import { computeDiff } from "@/components/diff/engine/compute-diff";
 import type { ChangeType, DiffNode } from "@/components/diff/engine/types";
-import { AGENT_IDENTITY_KEYS } from "@/features/agents/components/diff/agent-diff-constants";
 import {
   AGENT_SYNC_FIELDS,
   AGENT_SYNC_FIELD_BY_KEY,
@@ -65,21 +64,33 @@ export interface AgentSyncComparison {
 }
 
 /**
- * The diff options for the VERDICT.
+ * The diff options for the VERDICT — deliberately EMPTY of every ergonomic
+ * option `AGENT_DIFF_OPTIONS` carries.
  *
- * Deliberately NOT `AGENT_DIFF_OPTIONS`:
- *  - no `excludePaths` — that set is keyed by bare key name at every depth, so
+ * The rule is one sentence: **the RPC copies these columns verbatim, so any
+ * option that makes two different stored values look equal is a lie here.**
+ * The viewer may soften a diff for readability; a verdict that gates a
+ * destructive button may not.
+ *
+ *  - no `excludePaths` — that set is keyed by bare key name at EVERY depth, so
  *    it would also drop a nested `version`/`id` key inside `settings` or a
- *    message, hiding a real difference.
+ *    message.
  *  - `skipUnderscorePrefix: false` — the RPC copies `_`-prefixed keys (e.g. a
- *    `__kind` envelope inside a message) verbatim, so ignoring them could let
- *    us claim "identical" about rows the sync would rewrite.
+ *    `__kind` envelope inside a message) verbatim.
+ *  - **no `identityKeys`.** Matching array items by `name`/`key` instead of by
+ *    position is exactly the "make different values look equal" move: it
+ *    reported a reordered `variable_definitions` as IDENTICAL (a different
+ *    jsonb value the sync would write), it silently DROPPED items whose
+ *    identity key collided (two `context_slots` with the same `key` compared
+ *    equal to one), and because the engine keys it off the last path segment
+ *    it leaked to any nested array that merely happened to be spelled
+ *    `variableDefinitions`. Positional comparison is the only one faithful to
+ *    an `UPDATE ... SET col = v_from.col`.
  *
- * `identityKeys` IS shared with the viewer so array items are matched by
- * name/key rather than position — a moved variable is not a change.
+ * `AGENT_IDENTITY_KEYS` still belongs to `AgentDiffViewer`, which answers a
+ * different question ("show me what a human would call a change").
  */
 const SYNC_VERDICT_DIFF_OPTIONS = {
-  identityKeys: AGENT_IDENTITY_KEYS,
   skipUnderscorePrefix: false,
 } as const;
 
@@ -92,9 +103,23 @@ function countChangedLeaves(node: DiffNode): number {
   return changedChildren.reduce((sum, c) => sum + countChangedLeaves(c), 0);
 }
 
-/** True when every changed leaf beneath this node is a pure reorder. */
+/**
+ * True when every changed leaf beneath this node is a pure reorder.
+ *
+ * The engine's array scan is set-based, so it also reports `reordered` when the
+ * two arrays hold the same distinct values at different MULTIPLICITIES
+ * (`["a","b"]` vs `["a","b","b"]`). An added duplicate is not a reorder, so the
+ * length check keeps the gentler "order only" label honest.
+ */
 function isOrderOnly(node: DiffNode): boolean {
-  if (node.changeType === "reordered") return true;
+  if (node.changeType === "reordered") {
+    const before = node.oldValue;
+    const after = node.newValue;
+    if (Array.isArray(before) && Array.isArray(after)) {
+      return before.length === after.length;
+    }
+    return true;
+  }
   const changedChildren = (node.children ?? []).filter(
     (c) => c.changeType !== "unchanged",
   );

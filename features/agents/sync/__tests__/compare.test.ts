@@ -257,14 +257,70 @@ describe("compareAgentSyncSnapshots — per-field detection", () => {
     expect(result.changed[0].orderOnly).toBe(true);
   });
 
-  it("does not flag reordered variable definitions — matched by name", () => {
+  it("does not call an added duplicate an order-only change", () => {
+    // Same distinct values, different multiplicity — the set-based array scan
+    // reports "reordered", but an extra copy is not a reorder.
+    const result = compareAgentSyncSnapshots(
+      snapshot({ tags: ["a", "b"] }),
+      snapshot({ tags: ["a", "b", "b"] }),
+    );
+    expect(result.verdict).toBe("differs");
+    expect(result.changed[0].field).toBe("tags");
+    expect(result.changed[0].orderOnly).toBe(false);
+  });
+
+  // ── The false-identical class ────────────────────────────────────────────
+  // These four all returned "identical" while the sync would have written a
+  // different jsonb value — and the UI turns "identical" into two DISABLED
+  // buttons, so the user could not sync a real difference. The cause was
+  // `identityKeys` in the verdict's diff options (name/key matching instead of
+  // positional). Never reintroduce it here; it belongs to AgentDiffViewer.
+
+  it("flags reordered variable definitions — a different jsonb value IS a write", () => {
     const a = snapshot({
       variable_definitions: [{ name: "topic" }, { name: "depth" }],
     });
     const b = snapshot({
       variable_definitions: [{ name: "depth" }, { name: "topic" }],
     });
-    expect(compareAgentSyncSnapshots(a, b).verdict).toBe("identical");
+    const result = compareAgentSyncSnapshots(a, b);
+    expect(result.verdict).toBe("differs");
+    expect(result.changed.map((c) => c.field)).toEqual(["variableDefinitions"]);
+  });
+
+  it("flags reordered custom tools", () => {
+    const result = compareAgentSyncSnapshots(
+      snapshot({ custom_tools: [{ name: "alpha" }, { name: "beta" }] }),
+      snapshot({ custom_tools: [{ name: "beta" }, { name: "alpha" }] }),
+    );
+    expect(result.verdict).toBe("differs");
+    expect(result.changed.map((c) => c.field)).toEqual(["customTools"]);
+  });
+
+  it("never drops an array item because two entries share an identity key", () => {
+    // Two context slots keyed "a" vs one: nothing in the schema forbids the
+    // duplicate, and key-based matching used to collapse them to equal.
+    const result = compareAgentSyncSnapshots(
+      snapshot({ context_slots: [{ key: "a", v: 1 }, { key: "a", v: 2 }] }),
+      snapshot({ context_slots: [{ key: "a", v: 2 }] }),
+    );
+    expect(result.verdict).toBe("differs");
+    expect(result.changed.map((c) => c.field)).toEqual(["contextSlots"]);
+  });
+
+  it("does not let a nested key merely SPELLED like a root field go unchecked", () => {
+    // The engine keys array options off the last path segment, so an object
+    // nested under settings could inherit root-field treatment.
+    const result = compareAgentSyncSnapshots(
+      snapshot({
+        settings: { variableDefinitions: [{ name: "a" }, { name: "b" }] },
+      }),
+      snapshot({
+        settings: { variableDefinitions: [{ name: "b" }, { name: "a" }] },
+      }),
+    );
+    expect(result.verdict).toBe("differs");
+    expect(result.changed.map((c) => c.field)).toEqual(["settings"]);
   });
 
   it("detects an edited variable definition matched by name", () => {

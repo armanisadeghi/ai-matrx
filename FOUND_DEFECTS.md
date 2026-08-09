@@ -37,6 +37,23 @@ in the behavior group, add the two rows to `AGENT_SYNC_FIELDS`, run `pnpm check:
 whether it should travel with a published system agent at all. If the answer is no, it needs an
 explicit "not synced" note in the panel rather than silence.
 
+### D138 — `agent.definition.output_schema` is `json`, not `jsonb`, so byte differences survive every comparison (2026-08-09)
+
+Every other structured column on `agent.definition` (`messages`, `settings`, `context_slots`,
+`tool_config`, `skill_config`, …) is `jsonb`, which Postgres canonicalizes — key order,
+whitespace and duplicate keys are normalized on write. `output_schema` is plain `json`, which
+Postgres stores **verbatim**.
+
+Consequence: two agents whose `output_schema` differs byte-for-byte but parses to the same
+object are reported `identical` by the linked-agent sync comparison
+(`features/agents/sync/compare.ts`), because PostgREST → `JSON.parse` collapses exactly the
+differences `json` preserves. The sync then writes different bytes than the comparison promised.
+Narrow, but it is the one place that module cannot honor its byte-fidelity contract.
+
+Fix: `ALTER TABLE agent.definition ALTER COLUMN output_schema TYPE jsonb USING output_schema::jsonb`.
+Needs a check for anything that depends on literal formatting first (nothing known). Until then
+the comparison is accurate for every column except this one.
+
 ### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
 
 `scripts/type-escape-baseline.json` is far behind the tree — five categories are ABOVE baseline

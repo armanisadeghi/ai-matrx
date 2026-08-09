@@ -1331,11 +1331,16 @@ export const fetchAgentSyncComparison = createAsyncThunk<
 >(
   "agentDefinition/fetchSyncComparison",
   async ({ userAgentId, systemAgentId }) => {
+    // `deleted_at` is NOT filtered by RLS on this table, so a soft-deleted
+    // side would otherwise be compared and offered as a live sync target.
+    // Excluding it here makes that side unreadable, which surfaces as
+    // `unknown` — the honest answer.
     const { data, error } = await supabase
       .schema("agent")
       .from("definition")
       .select(AGENT_SYNC_SNAPSHOT_SELECT)
       .in("id", [userAgentId, systemAgentId])
+      .is("deleted_at", null)
       .returns<Record<string, unknown>[]>();
     if (error) throw pgErrorToError(error);
 
