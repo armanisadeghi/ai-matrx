@@ -59,6 +59,9 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 import { agentShortcutRecordSummary } from "../format";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
+import { resolveShortcutDirectUrl } from "../utils/shortcut-directory-rows";
+import type { ShortcutDirectoryMode } from "../utils/shortcut-directory-rows";
 
 type SortField =
   | "label"
@@ -82,6 +85,22 @@ export interface ShortcutListProps extends ScopeProps {
   toolbarSlot?: React.ReactNode;
   /** (core) route consumers render title + primary actions in the shell PageHeader instead — set true to suppress this component's own title/action row. */
   hideTitleBar?: boolean;
+  /**
+   * Which surface a shortcut's door should open into.
+   *
+   * 🚨 THE DESTINATION IS MODE-DISCRIMINATED, SO THE ID ALONE CANNOT PICK IT.
+   * The same `agent.shortcut` row resolves to `/agents/shortcuts/<id>` or
+   * `/administration/agents/system-agents/shortcuts/<id>` depending on who is
+   * looking — which is why this cannot come from the entity registry's
+   * `hrefFor`, whose only argument is an id. Registering it there would send
+   * an admin managing system shortcuts into the user surface.
+   *
+   * Only the CALL SITE knows the answer, so it must say. Omit it and the row
+   * renders no door at all: a missing door is a gap, a wrong one is a bug.
+   * Deliberately not inferred from `scope` — `global` happens to line up with
+   * admin on today's three consumers, and that is a coincidence, not a rule.
+   */
+  doorMode?: ShortcutDirectoryMode;
 }
 
 export function ShortcutList({
@@ -96,6 +115,7 @@ export function ShortcutList({
   placementFilter: placementFilterProp,
   toolbarSlot,
   hideTitleBar = false,
+  doorMode,
 }: ShortcutListProps) {
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -454,14 +474,36 @@ export function ShortcutList({
                           )}
                         </div>
                       </div>
-                      <Switch
-                        checked={shortcut.isActive}
-                        onCheckedChange={() =>
-                          !readonly && handleToggleActive(shortcut)
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                        disabled={readonly}
-                      />
+                      <div className="flex shrink-0 items-center gap-1">
+                        {/* THE DOOR LAW: the card's click means EDIT (it opens
+                            ShortcutForm in place), so the name cannot be the
+                            anchor. The doors ride alongside — /agents/shortcuts/<id>
+                            resolves through ShortcutDirectResolver, which reads
+                            the same agent.shortcut row this card was built from.
+                            Pinned visible: these cards carry no hover group, and
+                            a door revealed by a hover that never comes does not
+                            exist on touch. The controls stop propagation
+                            internally, so they never trigger the card's edit. */}
+                        <EntityDoorControls
+                          token="agent_shortcut"
+                          id={shortcut.id}
+                          name={shortcut.label}
+                          href={
+                            doorMode
+                              ? resolveShortcutDirectUrl(shortcut.id, doorMode)
+                              : null
+                          }
+                          alwaysShowActions
+                        />
+                        <Switch
+                          checked={shortcut.isActive}
+                          onCheckedChange={() =>
+                            !readonly && handleToggleActive(shortcut)
+                          }
+                          onClick={(e) => e.stopPropagation()}
+                          disabled={readonly}
+                        />
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {cat && (

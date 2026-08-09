@@ -58,6 +58,7 @@ export default function OrgShortcutsListPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
       <ShortcutList
+        doorMode="user"
         scope={SCOPE}
         scopeId={organizationId}
         onCreate={handleCreate}

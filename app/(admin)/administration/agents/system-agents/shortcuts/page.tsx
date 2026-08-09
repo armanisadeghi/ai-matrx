@@ -86,6 +86,7 @@ export default function AdminShortcutsPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden bg-textured">
       <ShortcutList
+        doorMode="admin"
         scope={SCOPE}
         onCreate={handleCreate}
         onEdit={handleEdit}
