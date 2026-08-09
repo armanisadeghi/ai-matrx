@@ -11,9 +11,10 @@
  * Authentication: a REAL signed-in user. aidream mounts the whole `/scraper`
  * router under `Depends(require_authenticated)` (aidream/api/app.py), so a
  * guest fingerprint — either header spelling — gets `401 token_required`.
- * Guests are NOT supported here despite what this comment used to claim;
- * the public `/seo/*` analyzers hit that 401 today (FOUND_DEFECTS D137).
- * Guest-friendly SEO work belongs on aidream's `/seo/public` router.
+ * Guests are NOT supported here despite what this comment used to claim.
+ * Guest-friendly SEO work belongs on aidream's `/seo/public` router — the
+ * public `/seo/*` analyzers read page metadata through
+ * `features/marketing/seo/public-tools/usePublicPageMetadata.ts`, never here.
  */
 
 // ============================================================================

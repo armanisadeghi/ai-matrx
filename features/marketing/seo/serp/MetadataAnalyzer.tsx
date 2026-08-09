@@ -10,7 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
+import {
+  normalizeToolUrl,
+  toSeoMetaFields,
+  usePublicPageMetadata,
+} from "@/features/marketing/seo/public-tools/usePublicPageMetadata";
 import { SerpResult } from "./SerpResult";
 import { SerpSearchChrome } from "./SerpSearchChrome";
 import { SerpFieldBars } from "./SerpValidation";
@@ -21,10 +25,6 @@ import {
   TITLE_LIMITS,
   DESCRIPTION_LIMITS,
 } from "./metrics";
-import {
-  extractSeoFromScrapeResponse,
-  normalizeScrapeUrl,
-} from "./extract-seo-from-scrape";
 
 /**
  * MetadataAnalyzer — the canonical "metadata + search appearance" composite.
@@ -79,9 +79,10 @@ export function MetadataAnalyzer({
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [isFetching, setIsFetching] = useState(false);
-  // Direct-to-backend scrape (guest fingerprint or Bearer token, no Next hop).
-  // `scrapeUrlSilent` throws the real backend error so the toast can show it.
-  const { scrapeUrlSilent } = useScraperApi();
+  // Guest-friendly meta-tag read (`/seo/public/page-audit`) — this component
+  // renders on an anonymous marketing page, so it may never call an endpoint
+  // that requires a signed-in user (D137).
+  const { fetchPageMetadata } = usePublicPageMetadata();
 
   useEffect(() => {
     onValuesChange?.({ url, title, description });
@@ -100,23 +101,19 @@ export function MetadataAnalyzer({
   const hasData = titleEval.charCount > 0 || descEval.charCount > 0;
 
   async function handleFetchMetadata() {
-    const normalized = normalizeScrapeUrl(url);
+    const normalized = normalizeToolUrl(url);
     if (!normalized) {
       toast.error("Enter a valid website URL");
       return;
     }
     setIsFetching(true);
     try {
-      const result = await scrapeUrlSilent(normalized, { use_cache: true });
-      if (!result) throw new Error("No data returned from scraper");
-      const extracted = extractSeoFromScrapeResponse(result);
+      const extracted = toSeoMetaFields(await fetchPageMetadata(normalized));
       if (extracted.url) setUrl(extracted.url);
       if (extracted.title) setTitle(extracted.title);
       if (extracted.description) setDescription(extracted.description);
       if (!extracted.title && !extracted.description) {
-        toast.warning(
-          "Page scraped, but no meta title or description was found",
-        );
+        toast.warning("Page loaded, but no meta title or description was found");
       } else {
         toast.success("Metadata loaded from page");
       }
