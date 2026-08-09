@@ -41,6 +41,10 @@ import {
   type KindCatalogSource,
 } from "@/features/content-ir/registry/kind-catalog";
 import type { FieldSchema } from "@/features/content-ir/core/kind-schema.types";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const SOURCE_STYLES: Record<KindCatalogSource, string> = {
   system: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
@@ -401,7 +405,7 @@ export default function KindRegistryAdminClient() {
                     Fields
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
                       <thead>
                         <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                           <th className="px-3 py-1.5 font-medium">Field</th>
@@ -415,7 +419,7 @@ export default function KindRegistryAdminClient() {
                         {flattenFields(selected.fields).map((row) => (
                           <tr
                             key={row.name}
-                            className="border-b border-border/60 last:border-0 hover:bg-accent/30"
+                            className="border-b border-border/60 last:border-0 sm:hover:bg-accent/30"
                           >
                             <td
                               className="px-3 py-1.5 font-mono text-xs text-foreground"

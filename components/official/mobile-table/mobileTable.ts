@@ -39,11 +39,16 @@
  * rendering is untouched.
  *
  * Two things it cannot do for you:
- * - A translucent ZEBRA or SELECTED tint on the row (`even:bg-muted/20`,
- *   `data-[state=selected]:bg-muted`) out-specifies the opaque background and
- *   will bleed through the frozen cell. Gate those with `sm:`.
+ * - A row tint written as a VARIANT — `hover:bg-accent/50`, `even:bg-muted/20`,
+ *   `data-[state=selected]:bg-muted` — out-specifies the opaque background
+ *   (a variant adds a pseudo-class; the descendant selector here is only one
+ *   element deeper) and bleeds through the frozen cell. Gate those with `sm:`.
+ *   A PLAIN tint (`bg-primary/5` on the row) loses to this rule and is simply
+ *   dropped below `sm` — no bleed, but no tint either; write the mobile
+ *   affordance some other way if it is load-bearing.
  * - A table whose first column is a checkbox or drag handle gets a useless
- *   anchor. Those need the granular constants on the identity column instead.
+ *   anchor. Those need the granular constants on the identity column instead
+ *   (freeze the identity column; the narrow ones slide under it).
  */
 export const MOBILE_TABLE_FROZEN = [
   "w-max min-w-full max-w-none sm:w-full sm:min-w-0 sm:max-w-full",

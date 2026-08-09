@@ -242,7 +242,7 @@ export function SnapshotCompare({
                 key={field.label}
                 className={cn(
                   "border-b border-border/60 last:border-b-0",
-                  field.changed && "bg-amber-500/10",
+                  field.changed && "sm:bg-amber-500/10",
                 )}
               >
                 <td

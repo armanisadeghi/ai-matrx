@@ -102,6 +102,9 @@ import {
   getAncestorChain,
   surfaceAdminHref,
 } from "@/features/surfaces/utils/surface-hierarchy";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const NONE = "__none__";
 
@@ -1180,7 +1183,7 @@ function HierarchySection({
               </EmptyHint>
             ) : (
               <div className="rounded-md border border-border bg-card overflow-hidden">
-                <table className="w-full text-xs">
+                <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
                   <thead>
                     <tr className="border-b border-border bg-muted/40">
                       <th className="px-2 py-1.5 text-left text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -1199,7 +1202,7 @@ function HierarchySection({
                   </thead>
                   <tbody className="divide-y divide-border">
                     {children.map((child) => (
-                      <tr key={child.name} className="hover:bg-muted/30">
+                      <tr key={child.name} className="sm:hover:bg-muted/30">
                         <td className="px-2 py-1.5 font-mono align-middle">
                           <Link
                             href={surfaceAdminHref(child.name)}

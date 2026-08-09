@@ -106,6 +106,9 @@ import { cellToString } from "./export";
 import { EXTRACTION_ENTITY_TYPE, EXTRACTIONS_ROUTE } from "./constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createKnowledgeScope } from "@/features/surfaces/manifests/knowledge.manifest";
+import {
+  MOBILE_TABLE,
+} from "@/components/official/mobile-table/mobileTable";
 
 const PAGE_SIZES = [50, 100, 250, 1000] as const;
 
@@ -730,7 +733,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
               collisionDetection={closestCenter}
               onDragEnd={onColumnDragEnd}
             >
-              <table className="w-full border-collapse text-sm">
+              <table className={cn("border-collapse text-sm", MOBILE_TABLE)}>
                 <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur">
                   <tr className="text-left text-xs text-muted-foreground">
                     <th className="w-8 px-2 py-2">

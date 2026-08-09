@@ -184,7 +184,7 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
                   <tr
                     key={key}
                     className={cn(
-                      "border-t border-neutral-100 dark:border-neutral-800/70 sm:hover:bg-neutral-50 sm:dark:hover:bg-neutral-900/60",
+                      "border-t border-neutral-100 dark:border-neutral-800/70 sm:hover:bg-neutral-50 dark:sm:hover:bg-neutral-900/60",
                       MOBILE_TABLE_ROW,
                     )}
                   >

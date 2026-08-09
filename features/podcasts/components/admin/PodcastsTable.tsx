@@ -18,6 +18,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { PcShow, PcEpisodeWithShow } from '../../types';
 import { podcastService } from '../../service';
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface PodcastsTableProps {
     activeTab: 'shows' | 'episodes';
@@ -157,7 +161,7 @@ export function PodcastsTable({
 
             {/* Table */}
             <div className="flex-1 overflow-auto">
-                <table className="w-full text-sm">
+                <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
                     <thead className="sticky top-0 bg-muted/50 border-b z-10">
                         {activeTab === 'shows' ? (
                             <tr>

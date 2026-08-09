@@ -34,6 +34,10 @@ import { adminUpsertKindContentBlock } from "@/features/content-ir/studio/kind-c
 import KindContentBlockGenerator from "@/features/content-ir/studio/components/KindContentBlockGenerator";
 import KindAgentButton from "@/features/content-ir/studio/components/KindAgentButton";
 import type { GeneratedContentBlock } from "@/features/content-ir/registry/kind-content-block-generator";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 // Where each part type is edited today. Content blocks and skills have real
 // admin surfaces; components/surfaces are authored by the agent (DB rows) and
@@ -321,7 +325,7 @@ export default function KindAssetsTab({
             aria-label="Kind component rows"
             tabIndex={0}
           >
-            <table className="w-full min-w-[42rem] p-2 text-xs">
+            <table className={cn("p-2 text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-1 font-medium">Platform</th>
@@ -385,7 +389,7 @@ export default function KindAssetsTab({
             aria-label="Kind detection surface rows"
             tabIndex={0}
           >
-            <table className="w-full min-w-[38rem] p-2 text-xs">
+            <table className={cn("p-2 text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-1 font-medium">Surface type</th>
