@@ -57,6 +57,12 @@ if $STRICT; then
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts --strict"
         "Protocol mirror sync (aidream)|pnpm exec tsx scripts/check-protocol-sync.ts --strict"
+        # NO DEAD ENDS stays ADVISORY even in strict mode. The tree carries a
+        # known Door Law backlog (scoreboard: /administration/reporting/dead-ends,
+        # worklist: docs/handoffs/no-dead-ends-sweep.md); hard-failing on it would
+        # block every release until the campaign lands. Promote to --strict when
+        # the scoreboard reaches zero.
+        "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -88,6 +94,10 @@ else
         # the strict list once docs/handoffs/doc-consolidation-campaign.md
         # Wave 5 cleanup lands.
         "Docs guards (titles/root-md/pointers)|pnpm exec tsx scripts/check-docs-guards.ts"
+        # THE DOOR LAW — surfaces that name a record without letting the user
+        # open it. Advisory by design (Arman: no check blocks a build); the
+        # ranked scoreboard lives at /administration/reporting/dead-ends.
+        "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15"
     )
 fi
 
@@ -168,7 +178,7 @@ run_gate() {
 
     # Heuristic: non-strict checkers still print SCHEMA TRUTH-CHECK / FAIL boxes
     # while exiting 0. Treat that as a loud advisory failure for the summary.
-    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
+    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
         echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
         print_gate_details "$tmp"
         rm -f "$tmp"

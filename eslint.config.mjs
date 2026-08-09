@@ -458,6 +458,423 @@ const matrxLintPlugin = {
                 };
             },
         },
+        // THE DOOR LAW, narrowest slice (common-docs/policies/no-dead-ends.md,
+        // CLAUDE.md § NO DEAD ENDS). The full detector is `pnpm check:dead-ends`
+        // — it carries the fuzzy cases (unlinked names, unreachable counts,
+        // surfaces with no door primitive at all) because those need whole-file
+        // context this rule cannot see. What lives HERE is only the subset with
+        // near-zero false positives: a raw identifier rendered as JSX TEXT with
+        // no link/handler anywhere above it. A UUID in a cell is a dead end with
+        // extra steps; the user cannot read it and cannot open it.
+        'no-bare-id-text': {
+            meta: {
+                type: 'problem',
+                docs: {
+                    description:
+                        'Disallow rendering a raw record identifier as JSX text with no way to open it. THE DOOR LAW: never show an id you cannot open — resolve it to a name plus a door (<EntityRef token=… id=… name=… />), or do not show it. Scoped tightly: only `{x.id}` / `{x.foo_id}` / `{fooId}` in TEXT position, with no Link/anchor/href/onClick ancestor; attributes, keys, pickers and headings are untouched.',
+                },
+                schema: [],
+                messages: {
+                    banned:
+                        "Bare id rendered as text — a dead end with extra steps. Render <EntityRef token=\"<entity>\" id={…} name={…} /> from @/components/official/entity-ref/EntityRef (Open + new tab + peek, resolved from the registries), or use the table's cellKind: \"uuid\". Missing route? Add an hrefFor to the token in features/scopes/registry/entityRegistry.ts. See common-docs/policies/no-dead-ends.md and `pnpm check:dead-ends`.",
+                },
+            },
+            create(context) {
+                // Hosts: the door primitive itself renders the id fallback, and
+                // the uuid cell IS the sanctioned way to show one.
+                const ALLOWED = [
+                    '/components/official/entity-ref/',
+                    '/components/official/matrx-data-table/',
+                    '/__tests__/',
+                ];
+                const filename = context.filename || context.getFilename?.() || '';
+                if (ALLOWED.some((p) => filename.includes(p))) return {};
+
+                /**
+                 * NAMED ids only — `agentId`, `task_id`, `sandbox_id`.
+                 *
+                 * Plain `id` / `uuid` is deliberately NOT here, and that is the
+                 * single biggest thing keeping this rule a genuine SUBSET of
+                 * scripts/dead-ends/scan.ts. The scanner drops a bare `.id` on
+                 * an object it cannot name ("not evidence of a record") because
+                 * it can consult the entity registry to decide; ESLint cannot
+                 * read that registry, so it cannot tell `{agent.id}` (a real
+                 * dead end) from `{openItem.id}` (a detail panel's own row).
+                 * Reporting both made the rule NOISIER than the checker it was
+                 * supposed to be the confident slice of — measured 2026-08-09:
+                 * 139 warnings against the scanner's 80 bare-id findings, with
+                 * only 38 in common. Under-reporting is the contract here.
+                 */
+                const ID_NAME_RE = /^(.+_id|.+Id|.+Uuid|.+UUID)$/;
+                /** Ids that identify a UI thing, not a record — mirrors NON_RECORD_ID_RE. */
+                const NON_RECORD_ID_RE =
+                    /^(request|instance|client|tab|element|trace|correlation|render|form|input|row|cell|toast|dialog|menu|container)(_id|Id|_uuid|Uuid)$/;
+                /** Roots holding a transient runtime thing — mirrors NON_RECORD_ROOT_RE. */
+                const NON_RECORD_ROOT_RE =
+                    /^(request|instance|promise|rejection|toast|snap|snapshot|state|draft|event|err|error|ref|timer|subscription|channel)([A-Z0-9_].*)?$/;
+                const DOOR_TAGS = new Set([
+                    'a',
+                    'Link',
+                    'NextLink',
+                    'EntityRef',
+                    'NavLink',
+                ]);
+                const DOOR_ATTRS = new Set([
+                    'href',
+                    'onClick',
+                    'onDoubleClick',
+                    'onSelect',
+                    'onRowClick',
+                    'to',
+                ]);
+                // A handler that DESTROYS or DISMISSES is never a door, however
+                // clickable the element is. `\b`-free segment matching on
+                // purpose — there is no word boundary inside `onDeleteRow`.
+                //
+                // DELIBERATE ASYMMETRY with scripts/dead-ends/scan.ts, which
+                // additionally requires the handler to NAVIGATE (handlerNavigates)
+                // before it counts as a door. That check needs whole-file context
+                // to stay accurate — the handler is usually defined far from the
+                // JSX, often in another module — so ESLint, which sees one file
+                // and must be near-zero-false-positive at `warn`, accepts any
+                // remaining handler. It therefore UNDER-reports (a toggle or an
+                // expander reads as a door here). That is the intended split:
+                // the checker carries the fuzzy cases and reports them on the
+                // scoreboard. Rejecting the closers below is the part that is
+                // unambiguous from one file, so it is done here too.
+                const CLOSING_VERBS = new Set([
+                    'delete', 'remove', 'archive', 'dismiss', 'close', 'cancel',
+                    'copy', 'duplicate', 'download', 'revoke', 'unlink', 'detach',
+                ]);
+                // Navigation WINS over closing, same precedence as the scanner's
+                // `CLOSING_AFFORDANCE_RE.test(t) && !OPEN_AFFORDANCE_RE.test(t)`.
+                // `onClick={() => { closeMenu(); router.push(href); }}` closes a
+                // menu on its way to opening the record — that is a door, and
+                // rejecting it would warn on JSX that genuinely opens the thing.
+                const OPENING_VERBS = new Set([
+                    'open', 'push', 'replace', 'router', 'navigate', 'href', 'goto',
+                    'go', 'view', 'peek', 'select', 'activate', 'launch', 'reveal',
+                    'detail', 'details', 'inspect', 'edit', 'manage', 'restore',
+                ]);
+                const verbSegments = (text) =>
+                    text
+                        .split(/[^A-Za-z0-9]+/)
+                        .flatMap((part) => part.split(/(?=[A-Z])/))
+                        .map((part) => part.toLowerCase());
+                const isClosingHandler = (attr) => {
+                    const value = attr.value;
+                    if (!value || value.type !== 'JSXExpressionContainer') return false;
+                    const parts = verbSegments(context.sourceCode.getText(value.expression));
+                    if (parts.some((part) => OPENING_VERBS.has(part))) return false;
+                    return parts.some((part) => CLOSING_VERBS.has(part));
+                };
+                // Choosing, labelling and debugging are not referencing.
+                const SKIP_TAGS = new Set([
+                    'SelectItem',
+                    'CommandItem',
+                    'DropdownMenuItem',
+                    'ContextMenuItem',
+                    'MenuItem',
+                    'option',
+                    'Option',
+                    'label',
+                    'Label',
+                    'TooltipContent',
+                    'pre',
+                    'code',
+                    // "You are here" headings — the record's own surface. These
+                    // were missing, so `<DialogTitle>SSH Access — {t.sandbox_id}</DialogTitle>`
+                    // warned on a dialog ABOUT that record. h1/h2 only, same as
+                    // the scanner: h3/h4 are card titles inside lists as often
+                    // as they are record headings.
+                    'h1',
+                    'h2',
+                    'DialogTitle',
+                    'SheetTitle',
+                    'DrawerTitle',
+                    'AlertDialogTitle',
+                    'PageHeader',
+                    'PageTitle',
+                    'BreadcrumbPage',
+                    // Remaining selection surfaces — choosing, not referencing.
+                    'SelectValue',
+                    'DropdownMenuRadioItem',
+                    'DropdownMenuCheckboxItem',
+                    'MenubarItem',
+                    'ComboboxOption',
+                    'ToggleGroupItem',
+                    'RadioGroupItem',
+                    'TabsTrigger',
+                    'AccordionTrigger',
+                    // Chrome and prose.
+                    'title',
+                    'Toast',
+                    'ToastTitle',
+                    'HoverCardContent',
+                    'DialogDescription',
+                    'SheetDescription',
+                    'DrawerDescription',
+                    'AlertDialogDescription',
+                    'AlertDescription',
+                    'CardDescription',
+                    'FormDescription',
+                ]);
+
+                /**
+                 * `row.agentId ? <EntityRef …/> : <span>{row.agent_id}</span>`
+                 * — the FALSE arm renders the raw id precisely because there was
+                 * no id to open with. Door Law honoured, not broken.
+                 *
+                 * Two conditions, both required, exactly as scan.ts's
+                 * `isIdGuardedFallback`: the expression sits in the **false**
+                 * arm, AND the condition tests **the very field being
+                 * rendered**. A first cut skipped either arm of any
+                 * conditional, which silenced
+                 * `{show ? <span>{agentId}</span> : null}` — a perfectly
+                 * reachable bare id whose conditional has nothing to do with
+                 * identity. The second cut then tested only for "the condition
+                 * mentions an id", which let display flags (`showAgentId`,
+                 * `hasTaskId`) suppress a real finding in their false arm.
+                 *
+                 * Whole-identifier and case-SENSITIVE, which is exactly what
+                 * separates them: `taskId` does not occur inside `hasTaskId`
+                 * (capital `T`), and `task_id` does not occur inside
+                 * `has_task_id` (`_` is a word character, so the boundary
+                 * fails) — while `row.taskId` and `!taskId` both match.
+                 */
+                const isIdGuardedFallback = (node, name) => {
+                    const sameField = new RegExp(
+                        `\\b${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`,
+                    );
+                    let child = node;
+                    for (let cur = node.parent; cur; child = cur, cur = cur.parent) {
+                        if (
+                            cur.type === 'ConditionalExpression' &&
+                            cur.alternate === child &&
+                            sameField.test(context.sourceCode.getText(cur.test))
+                        ) {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+
+                /**
+                 * "Sandbox Deleted … {t.sandbox_id}" — copy saying the record
+                 * is GONE. There is nothing to open, so naming its id is the
+                 * only thing the surface can do. Looks at the literal text of
+                 * the two nearest enclosing elements.
+                 */
+                const NOT_FOUND_RE =
+                    /\b(not found|no longer exists?|does ?n.t exist|missing|deleted|removed|unavailable|failed to load|expired)\b/i;
+                const isInNotFoundCopy = (node) => {
+                    let seen = 0;
+                    for (let cur = node.parent; cur && seen < 2; cur = cur.parent) {
+                        if (cur.type !== 'JSXElement') continue;
+                        seen += 1;
+                        const text = (cur.children || [])
+                            .map((c) => (c.type === 'JSXText' ? c.value : ''))
+                            .join(' ');
+                        if (NOT_FOUND_RE.test(text)) return true;
+                        // The heading is usually a SIBLING, not an ancestor.
+                        const kids = cur.children || [];
+                        for (const kid of kids) {
+                            if (kid.type !== 'JSXElement') continue;
+                            const inner = (kid.children || [])
+                                .map((c) => (c.type === 'JSXText' ? c.value : ''))
+                                .join(' ');
+                            if (NOT_FOUND_RE.test(inner)) return true;
+                        }
+                    }
+                    return false;
+                };
+
+                const tagOf = (el) => {
+                    const n = el.name;
+                    if (!n) return null;
+                    if (n.type === 'JSXIdentifier') return n.name;
+                    if (n.type === 'JSXMemberExpression') return n.property?.name ?? null;
+                    return null;
+                };
+
+                /**
+                 * The record's OWN surface printing its own id is not a dead
+                 * end — you are already on it. Detected the way the file can
+                 * see it: the enclosing function binds the id (or `<x>Id`) as a
+                 * parameter, and is not a `.map()` row callback. Keeps the
+                 * checker and this rule from disagreeing on a detail page.
+                 */
+                const isSelfSubject = (node, name) => {
+                    const wanted = new Set([name, `${name}Id`, `${name}_id`]);
+                    const binds = (pattern) => {
+                        if (!pattern) return false;
+                        if (pattern.type === 'Identifier') return wanted.has(pattern.name);
+                        if (pattern.type === 'ObjectPattern') {
+                            return pattern.properties.some((p) =>
+                                binds(p.value ?? p.argument),
+                            );
+                        }
+                        if (pattern.type === 'AssignmentPattern') return binds(pattern.left);
+                        return false;
+                    };
+                    for (let cur = node; cur; cur = cur.parent) {
+                        const isFn =
+                            cur.type === 'ArrowFunctionExpression' ||
+                            cur.type === 'FunctionExpression' ||
+                            cur.type === 'FunctionDeclaration';
+                        if (!isFn) continue;
+                        const call = cur.parent;
+                        const iterating =
+                            call?.type === 'CallExpression' &&
+                            call.callee?.type === 'MemberExpression' &&
+                            /^(map|flatMap|forEach|filter)$/.test(
+                                call.callee.property?.name ?? '',
+                            );
+                        if (iterating) return false;
+                        // `<NoteRow key={n.id} note={n} />` — the extracted-row
+                        // idiom puts the key at the CALLSITE, so a row that
+                        // takes its record via props would otherwise read as
+                        // that record's own surface.
+                        const fnName =
+                            cur.id?.name ??
+                            (cur.parent?.type === 'VariableDeclarator'
+                                ? cur.parent.id?.name
+                                : null);
+                        if (
+                            fnName &&
+                            /^[A-Z]/.test(fnName) &&
+                            new RegExp(`<${fnName}\\b[^>]*\\bkey=`).test(
+                                context.sourceCode.getText(),
+                            )
+                        ) {
+                            return false;
+                        }
+                        if ((cur.params ?? []).some(binds)) return true;
+                        // Keep walking outward. A nested helper / IIFE / local
+                        // render callback that does not bind the record still
+                        // sits inside the component that does; returning on the
+                        // first enclosing function never reached it.
+                    }
+                    return false;
+                };
+
+                /** `row.agent.id` → `row`; `{agentId}` → null (no object). */
+                const rootName = (expr) => {
+                    let cur = expr;
+                    for (let guard = 0; guard < 12 && cur; guard++) {
+                        if (cur.type === 'MemberExpression') {
+                            cur = cur.object;
+                            continue;
+                        }
+                        if (cur.type === 'ChainExpression') {
+                            cur = cur.expression;
+                            continue;
+                        }
+                        break;
+                    }
+                    return cur && cur.type === 'Identifier' && cur !== expr ? cur.name : null;
+                };
+
+                /** `row.agent.id` → `id`; `{agentId}` → `agentId`. Anything
+                 *  else (calls, templates, ternaries) is out of scope — this
+                 *  rule only claims the unambiguous shapes. */
+                const terminalName = (expr) => {
+                    if (!expr) return null;
+                    if (expr.type === 'Identifier') return expr.name;
+                    if (expr.type === 'MemberExpression' && !expr.computed) {
+                        return expr.property?.type === 'Identifier'
+                            ? expr.property.name
+                            : null;
+                    }
+                    if (expr.type === 'ChainExpression') return terminalName(expr.expression);
+                    return null;
+                };
+
+                return {
+                    JSXExpressionContainer(node) {
+                        // Text position only. An attribute value's parent is a
+                        // JSXAttribute, so `key={x.id}` never reaches here.
+                        const parent = node.parent;
+                        if (
+                            !parent ||
+                            (parent.type !== 'JSXElement' && parent.type !== 'JSXFragment')
+                        ) {
+                            return;
+                        }
+                        const name = terminalName(node.expression);
+                        if (!name || !ID_NAME_RE.test(name)) return;
+                        // A UI thing's id — a request, a tab, a DOM node. There
+                        // is nothing behind it to open.
+                        if (NON_RECORD_ID_RE.test(name)) return;
+                        // `cond ? <EntityRef …/> : <span>{row.agent_id}</span>`
+                        // — the fallback arm renders the raw id precisely
+                        // BECAUSE the door is unavailable there. Door Law
+                        // honoured, not broken. The scanner skips these too.
+                        if (isIdGuardedFallback(node, name)) return;
+                        if (isInNotFoundCopy(node)) return;
+                        // The subject's OWN id only. A foreign key on the
+                        // subject (`instance.agentId`) points at a DIFFERENT
+                        // record and must still be reported — same rule the
+                        // checker applies, minus the token registry.
+                        //
+                        // Compared as WHOLE camel/underscore segments, never as
+                        // substrings: `storage`.includes('org') is true, which
+                        // would have read `storage.orgId` as the storage's own
+                        // id and silenced a real foreign-key finding.
+                        const segments = (text) =>
+                            text
+                                .split(/[^A-Za-z0-9]+/)
+                                .flatMap((part) => part.split(/(?=[A-Z])/))
+                                .filter(Boolean)
+                                .map((part) => part.toLowerCase());
+                        const root = rootName(node.expression);
+                        const subject = root ?? name.replace(/(_id|Id)$/, '');
+                        const points = segments(name.replace(/(_id|Id)$/, ''));
+                        const ownIdentity =
+                            name === 'id' ||
+                            name === 'uuid' ||
+                            root === null ||
+                            points.length === 0 ||
+                            points.every((word) => segments(root).includes(word));
+                        // The two root gates apply ONLY to the root's OWN id.
+                        // They ran unconditionally in a first cut, which meant
+                        // `{instance.agentId}` — a FOREIGN key naming a real
+                        // agent — was never linted, contradicting the comment
+                        // directly above. Same shape as the `storage.orgId`
+                        // substring bug: a suppression meant for the container
+                        // swallowing a pointer to something else.
+                        if (ownIdentity && root) {
+                            // A transient runtime object's id (a promise, a
+                            // toast, a snapshot); a SCREAMING_SNAKE caption map.
+                            if (NON_RECORD_ROOT_RE.test(root)) return;
+                            if (/^[A-Z][A-Z0-9_]*$/.test(root)) return;
+                        }
+                        if (ownIdentity && isSelfSubject(node, subject)) return;
+
+                        for (let cur = node.parent; cur; cur = cur.parent) {
+                            if (cur.type !== 'JSXElement') continue;
+                            const opening = cur.openingElement;
+                            if (!opening) continue;
+                            const tag = tagOf(opening);
+                            if (tag && SKIP_TAGS.has(tag)) return;
+                            if (tag && DOOR_TAGS.has(tag)) return;
+                            for (const attr of opening.attributes || []) {
+                                if (attr.type === 'JSXSpreadAttribute') return;
+                                if (
+                                    attr.type === 'JSXAttribute' &&
+                                    attr.name?.type === 'JSXIdentifier' &&
+                                    DOOR_ATTRS.has(attr.name.name)
+                                ) {
+                                    if (isClosingHandler(attr)) continue;
+                                    return;
+                                }
+                            }
+                        }
+                        context.report({ node, messageId: 'banned' });
+                    },
+                };
+            },
+        },
     },
 };
 
@@ -891,6 +1308,11 @@ export default [
             // selection come from the agent-definition slice or agx_list_scoped
             // — never a raw agent.definition list query. Error, not warn.
             'matrx/no-raw-agent-list-query': 'error',
+            // THE DOOR LAW (Arman, 2026-08-08): never render an id you can't
+            // open. 'warn' because the tree still carries a long tail — the
+            // scoreboard at /administration/reporting/dead-ends tracks it down
+            // to zero, and this ratchets to 'error' when it gets there.
+            'matrx/no-bare-id-text': 'warn',
             'react-hooks/exhaustive-deps': 'off',
             '@next/next/no-img-element': 'off',
             'react/no-unescaped-entities': 'off',

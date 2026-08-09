@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { usePublicScraperContent } from "@/features/public-chat/hooks/usePublicScraperContent";
+import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { SerpResult } from "./SerpResult";
 import { SerpSearchChrome } from "./SerpSearchChrome";
 import { SerpFieldBars } from "./SerpValidation";
@@ -78,7 +78,10 @@ export function MetadataAnalyzer({
   const [url, setUrl] = useState(initialUrl);
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
-  const { scrapeUrl, isLoading: isFetching } = usePublicScraperContent();
+  const [isFetching, setIsFetching] = useState(false);
+  // Direct-to-backend scrape (guest fingerprint or Bearer token, no Next hop).
+  // `scrapeUrlSilent` throws the real backend error so the toast can show it.
+  const { scrapeUrlSilent } = useScraperApi();
 
   useEffect(() => {
     onValuesChange?.({ url, title, description });
@@ -97,13 +100,16 @@ export function MetadataAnalyzer({
   const hasData = titleEval.charCount > 0 || descEval.charCount > 0;
 
   async function handleFetchMetadata() {
-    if (!normalizeScrapeUrl(url)) {
+    const normalized = normalizeScrapeUrl(url);
+    if (!normalized) {
       toast.error("Enter a valid website URL");
       return;
     }
+    setIsFetching(true);
     try {
-      const result = await scrapeUrl(url.trim());
-      const extracted = extractSeoFromScrapeResponse(result.rawResponse);
+      const result = await scrapeUrlSilent(normalized, { use_cache: true });
+      if (!result) throw new Error("No data returned from scraper");
+      const extracted = extractSeoFromScrapeResponse(result);
       if (extracted.url) setUrl(extracted.url);
       if (extracted.title) setTitle(extracted.title);
       if (extracted.description) setDescription(extracted.description);
@@ -118,6 +124,8 @@ export function MetadataAnalyzer({
       toast.error(
         err instanceof Error ? err.message : "Failed to fetch metadata",
       );
+    } finally {
+      setIsFetching(false);
     }
   }
 
@@ -318,8 +326,7 @@ export function MetadataAnalyzer({
                 Desktop
               </span>
               <span className="ml-auto text-[10px] text-muted-foreground">
-                Max {TITLE_LIMITS.maxPx}px title ·{" "}
-                {DESCRIPTION_LIMITS.maxPx}
+                Max {TITLE_LIMITS.maxPx}px title · {DESCRIPTION_LIMITS.maxPx}
                 px description
               </span>
             </div>
@@ -343,8 +350,8 @@ export function MetadataAnalyzer({
                 Mobile
               </span>
               <span className="ml-auto text-[10px] text-muted-foreground">
-                Max {TITLE_LIMITS.maxPx}px title ·{" "}
-                {DESCRIPTION_LIMITS.maxPx}px description
+                Max {TITLE_LIMITS.maxPx}px title · {DESCRIPTION_LIMITS.maxPx}px
+                description
               </span>
             </div>
             <CardContent className="border-0 p-0">

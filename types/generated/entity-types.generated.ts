@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 322 active entity tokens. A token here is FK-valid for
+// 323 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -329,6 +329,7 @@ export type EntityTypeToken =
   | "web_brand_asset"
   | "web_business_fact"
   | "web_crawl_event"
+  | "web_crawl_preset"
   | "web_crawl_schedule"
   | "web_crawl_session"
   | "web_crawl_url"
@@ -563,6 +564,7 @@ export type ComponentEntityToken =
   | "web_brand_asset"
   | "web_business_fact"
   | "web_crawl_event"
+  | "web_crawl_preset"
   | "web_crawl_schedule"
   | "web_crawl_session"
   | "web_crawl_url"
@@ -859,6 +861,7 @@ export type ScopeableEntityToken =
   | "web_brand_asset"
   | "web_business_fact"
   | "web_crawl_event"
+  | "web_crawl_preset"
   | "web_crawl_schedule"
   | "web_crawl_session"
   | "web_crawl_url"
@@ -1219,6 +1222,7 @@ export const ENTITY_TYPE_METADATA = {
   "web_brand_asset": { token: "web_brand_asset", schema: "web", table: "brand_asset", label: "Brand Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "web_business_fact": { token: "web_business_fact", schema: "web", table: "business_fact", label: "Business Fact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "web_crawl_event": { token: "web_crawl_event", schema: "web", table: "crawl_event", label: "Web Crawl Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_crawl_preset": { token: "web_crawl_preset", schema: "web", table: "crawl_preset", label: "Web Crawl Preset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "web_crawl_schedule": { token: "web_crawl_schedule", schema: "web", table: "crawl_schedule", label: "Web Crawl Schedule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "web_crawl_session": { token: "web_crawl_session", schema: "web", table: "crawl_session", label: "Crawl Session", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_crawl_url": { token: "web_crawl_url", schema: "web", table: "crawl_url", label: "Web Crawl URL", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1545,6 +1549,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_brand_asset",
   "web_business_fact",
   "web_crawl_event",
+  "web_crawl_preset",
   "web_crawl_schedule",
   "web_crawl_session",
   "web_crawl_url",

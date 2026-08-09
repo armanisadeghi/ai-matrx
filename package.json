@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.350",
+  "version": "0.4.352",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--dns-result-order=ipv4first' next dev",
@@ -76,6 +76,9 @@
     "check:archetype-expansion": "tsx scripts/check-archetype-expansion.ts",
     "check:archetype-expansion:strict": "tsx scripts/check-archetype-expansion.ts --strict",
     "check:shareable-registry": "tsx scripts/regen-shareable-registry-snapshot.ts --check",
+    "check:dead-ends": "tsx scripts/dead-ends/check-dead-ends.ts",
+    "check:dead-ends:write": "tsx scripts/dead-ends/check-dead-ends.ts --write",
+    "check:dead-ends:strict": "tsx scripts/dead-ends/check-dead-ends.ts --strict",
     "check:dead-relations": "tsx scripts/check-dead-relations.ts",
     "check:dead-relations:strict": "tsx scripts/check-dead-relations.ts --strict",
     "check:api-contracts": "tsx scripts/check-api-contracts.ts",

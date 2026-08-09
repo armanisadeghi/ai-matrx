@@ -1140,6 +1140,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/agents/reports/agent-drift",
         isNew: true,
       },
+      {
+        title: "No Dead Ends",
+        description:
+          "Door Law scoreboard — every surface that names a record without letting the user open it, ranked by feature and file, each row with a one-click repair brief.",
+        iconName: "DoorOpen",
+        link: "/administration/reporting/dead-ends",
+        isNew: true,
+      },
     ],
   },
   {
