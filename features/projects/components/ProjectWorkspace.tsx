@@ -61,6 +61,7 @@ import {
   createProjectsExtraSections,
   PROJECTS_CONTEXT_MENU_PROPS,
 } from "@/features/projects/agent-context/buildProjectsContextData";
+import { buildProjectWriteHandlers } from "@/features/projects/agent-context/projectWriteHandlers";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ProjectContextPicker } from "@/features/projects/components/ProjectContextSection";
@@ -270,6 +271,17 @@ export function ProjectWorkspace() {
       contextData,
     });
 
+  // Write half of the surface (the targets the manifest declares). Built at
+  // apply time, not at mount, so the handlers always see the CURRENT project
+  // and permission — and they go through `updateProject` + the same
+  // `applyPatch` the hero's inline editors use, never a parallel write path.
+  const getWriteHandlers = () =>
+    buildProjectWriteHandlers({
+      project,
+      canEdit: canManageSettings,
+      onPatch: applyPatch,
+    });
+
   const projectsExtraSections = createProjectsExtraSections({
     onManageSettings: () => router.push(`/projects/${project.id}/settings`),
     onOpenKnowledgeGraph: () => router.push(kgHref),
@@ -280,6 +292,7 @@ export function ProjectWorkspace() {
       surfaceName={PROJECTS_CONTEXT_MENU_PROPS.surfaceName}
       getScope={getApplicationScope}
       isEditable={false}
+      getWriteHandlers={getWriteHandlers}
     >
       <EntityModeHeader
         backHref="/projects"

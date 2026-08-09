@@ -17,6 +17,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -309,6 +310,93 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the project the
+ * user has open. Every target is `mode: "entity"`: the workspace has no
+ * draft/save bar, its hero fields autosave in place, so an applied write goes
+ * straight through the SAME canonical path the user's own edit takes
+ * (`updateProject` in `features/projects/service.ts`, which validates the name
+ * and is the only writer of the project row) and the hero re-renders with the
+ * new value. There is no staging state to honour, and pretending otherwise
+ * would be a lie to the agent.
+ *
+ * All targets are `applyPolicy: "ask"` — a project is a shared record with
+ * members watching it, so every agent-originated change is confirmed in place
+ * and a decline is a normal outcome.
+ *
+ * Deliberately NOT targets: identity/ownership (`slug`, `created_by`),
+ * membership and roles, the organization move, and everything in the settings
+ * page's danger zone. Those are human decisions, not drafting help.
+ * `start_date` is left out too — it records when work actually began rather
+ * than something an agent derives from context.
+ *
+ * Handlers are registered by `ProjectWorkspace.tsx` on the
+ * SurfaceRuntimeProvider it already mounts, via
+ * `buildProjectWriteHandlers` (`features/projects/agent-context/`).
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "project_name",
+    label: "Project name",
+    description:
+      "Renames the open project immediately. Plain string, 2-50 characters, replacing the full name (read active_project_name first if you mean to adjust rather than replace). The URL slug does NOT change with it.",
+    valueType: "string",
+    updatesValue: "active_project_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "project_identity",
+    sortOrder: 100,
+  },
+  {
+    name: "project_description",
+    label: "Project description",
+    description:
+      "Replaces the open project's whole description — the body shown on the workspace hero (plain text, newlines fine, up to 2000 characters). Saved immediately. This REPLACES rather than appends: to extend the existing text, read active_project_description first and include it.",
+    valueType: "string",
+    updatesValue: "active_project_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "project_identity",
+    sortOrder: 110,
+  },
+  {
+    name: "project_status",
+    label: "Project status",
+    description:
+      "Sets the open project's lifecycle status, saved immediately. Exactly one of: planning | active | paused | completed | archived.",
+    valueType: "string",
+    updatesValue: "active_project_status",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "project_identity",
+    sortOrder: 120,
+  },
+  {
+    name: "project_priority",
+    label: "Project priority",
+    description:
+      "Sets the open project's priority, saved immediately. Exactly one of: low | medium | high, or null to clear it back to no priority.",
+    valueType: "string",
+    updatesValue: "active_project_priority",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "project_identity",
+    sortOrder: 130,
+  },
+  {
+    name: "project_target_date",
+    label: "Project target date",
+    description:
+      "Sets the date the open project is targeted to finish, saved immediately. A date-only string in YYYY-MM-DD form (no time, no timezone), or null to clear it.",
+    valueType: "string",
+    updatesValue: "active_project_target_date",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "project_identity",
+    sortOrder: 140,
+  },
+];
+
 export const projectsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/projects",
   readiness: "verified",
@@ -324,6 +412,7 @@ is_personal_project distinguishes personal-space projects from organization proj
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One member as the surface emits it in `members`. */
