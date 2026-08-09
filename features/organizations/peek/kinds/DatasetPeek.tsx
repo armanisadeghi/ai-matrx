@@ -51,7 +51,8 @@ export default function DatasetPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={title}
       icon={<Table className="h-4 w-4 text-teal-600 dark:text-teal-400" />}
-      href={`/data/${id}`}
+      token="dataset"
+      id={id}
       loading={loading}
     >
       {row ? (

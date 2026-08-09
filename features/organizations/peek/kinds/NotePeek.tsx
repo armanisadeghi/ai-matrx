@@ -56,7 +56,8 @@ export default function NotePeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.label || "Note"}
       icon={<NotebookText className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-      href={`/notes/${id}`}
+      token="note"
+      id={id}
       loading={loading}
     >
       {row ? (

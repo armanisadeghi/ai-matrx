@@ -208,22 +208,31 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   agent_shortcut: {
     Icon: Zap,
     labelPlural: "Agent Shortcuts",
+    hrefFor: (id) => `/agents/shortcuts/${id}`,
   },
   app: {
     Icon: AppWindow,
     labelPlural: "Agent Apps",
+    hrefFor: (id) => `/agent-apps/${id}`,
   },
   skill: {
     Icon: Sparkles,
     labelPlural: "Skills",
+    // No hrefFor: the only id-addressed skill route is
+    // `/administration/agents/skills?open=<id>`, behind the super-admin layout
+    // gate. A door that 403s for most users is still a dead end — the fix is a
+    // user-facing skill detail route, tracked in docs/handoffs/no-dead-ends-sweep.md.
   },
   workflow: {
     Icon: Workflow,
     labelPlural: "Workflows",
+    // No hrefFor: `/workflows/[id]` does not exist. Surfaces that hard-coded it
+    // were minting 404s; see the sweep handoff.
   },
   message_template: {
     Icon: LayoutTemplate,
     labelPlural: "Message Templates",
+    hrefFor: (id) => `/settings/message-templates/${id}`,
   },
   // Pick Lists / user lists (`/lists`) — canonical token is structured_list
   // (legacy names picklist / udt_picklists / user_lists are dead).
@@ -246,6 +255,8 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   transcript: {
     Icon: AudioLines,
     labelPlural: "Transcripts",
+    // `/transcripts` has no `[id]` leaf — the processor selects within its list.
+    hrefFor: (id) => `/transcripts/processor?focus=${id}`,
   },
   dataset: {
     Icon: Table,
@@ -266,16 +277,20 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Database,
     labelPlural: "Data Stores",
     listCandidates: listDataStoreCandidates,
+    hrefFor: (id) => `/rag/data-stores?store_id=${id}`,
   },
   studio_session: {
     Icon: Mic,
     labelPlural: "Audio Sessions",
+    hrefFor: (id) => `/transcripts/studio?session=${id}`,
   },
   // ─── Code (canonical `code.*` entities — attachable to orgs, war rooms, etc.) ─
   code_file: {
     Icon: FileCode2,
     labelPlural: "Code Files",
-    hrefFor: (id) => `/code?tab=${encodeURIComponent(`code-file:${id}`)}`,
+    // `/code` opens a file from `?open=<id>` (useOpenCodeFileFromUrl). The old
+    // `?tab=code-file:<id>` form was never read by anything — a dead door.
+    hrefFor: (id) => `/code?open=${id}`,
   },
   code_folder: {
     Icon: FolderGit2,
@@ -319,6 +334,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   project: {
     Icon: FolderKanban,
     labelPlural: "Projects",
+    hrefFor: (id) => `/projects/${id}`,
   },
   task: {
     Icon: ListTodo,
@@ -362,6 +378,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   organization: {
     Icon: Building2,
     labelPlural: "Organizations",
+    hrefFor: (id) => `/organizations/${id}`,
   },
 };
 

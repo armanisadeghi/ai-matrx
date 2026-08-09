@@ -26,6 +26,7 @@ import { DataRowInspector } from "./DataRowInspector";
 import DataRowWindow from "./DataRowWindow.dynamic";
 import { DirtySavePill } from "./DirtySavePill";
 import { EditableTableCell } from "./EditableTableCell";
+import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
 import { isUuidValue, MatrxUuidCell } from "./MatrxUuidCell";
 import { ToolbarFacets, resetToolbarFacets } from "./ToolbarFacets";
 import {
@@ -1008,6 +1009,15 @@ function renderCell<T>(
           (typeof col.header === "string" ? col.header : col.id)
         }
         forbidden={forbidden}
+        token={
+          (typeof col.fk?.token === "function"
+            ? col.fk.token(row)
+            : col.fk?.token) ??
+          // THE DOOR LAW, applied without per-table wiring: a column literally
+          // named `<token>_id` gets its registry route + peek for free. Strict
+          // exact-match only — see `tokenFromColumnName`.
+          tokenFromColumnName(col.id ?? col.accessorKey ?? "")
+        }
         href={col.fk?.href?.(raw, row)}
         onOpen={
           col.fk?.onOpen

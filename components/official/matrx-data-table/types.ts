@@ -86,6 +86,13 @@ export interface MatrxColumnDef<T> {
    */
   fk?: {
     label?: string;
+    /**
+     * Canonical entity token this column's ids point at (`agent`, `note`, …).
+     * THE DOOR LAW made declarative: the cell resolves route + new tab + peek
+     * from the registries, so a column of ids stops being a dead end without
+     * any per-table wiring. `href` / `onOpen` still win when both are set.
+     */
+    token?: string | ((row: T) => string | null | undefined);
     href?: (id: string, row: T) => string | null | undefined;
     onOpen?: (
       id: string,

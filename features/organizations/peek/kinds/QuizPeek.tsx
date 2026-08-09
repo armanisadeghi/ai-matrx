@@ -48,7 +48,9 @@ export default function QuizPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.title || "Quiz"}
       icon={<ListChecks className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-      href={`/quizzes/${id}`}
+      // No door: education.quiz_sessions has no detail route (/education/quizzes/[id] serves education.assessment, a different record).
+      // Tracked in docs/handoffs/no-dead-ends-sweep.md.
+      href={undefined}
       loading={loading}
     >
       {row ? (

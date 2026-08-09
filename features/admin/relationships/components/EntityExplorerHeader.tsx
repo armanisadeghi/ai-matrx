@@ -36,7 +36,8 @@ export function EntityExplorerHeader({ token, rules }: Props) {
       <h1 className="flex items-center gap-2 text-sm font-semibold">
         <Compass className="h-4 w-4 text-primary" />
         Entity explorer
-        <EntityTypeChip token={token} showToken />
+        {/* Inert: this IS the explorer page for that token. */}
+        <EntityTypeChip token={token} showToken linkTo={null} />
       </h1>
       <span className="text-xs text-muted-foreground">
         {info?.schema}.{info?.table}

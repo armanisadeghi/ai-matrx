@@ -48,7 +48,9 @@ export default function CanvasPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.title || "Canvas"}
       icon={<Frame className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-      href={`/canvas/${id}`}
+      // No door: canvas.canvas_items has no id-addressed route (/canvas only has /discover and /shared).
+      // Tracked in docs/handoffs/no-dead-ends-sweep.md.
+      href={undefined}
       loading={loading}
     >
       {row ? (

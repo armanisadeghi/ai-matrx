@@ -8,6 +8,14 @@
  * and dropping the fields into this shell (see FilePeek / NotePeek for the
  * canonical examples). Kinds with a richer bespoke modal (e.g. agents) can skip
  * this and render their own component instead.
+ *
+ * THE DOOR LAW: a peek's footer is the door to the full record, so pass
+ * `token` + `id` and let the ENTITY REGISTRY answer where that record lives.
+ * Hard-coding `href` per peek is how six of them ended up shipping "Open"
+ * buttons that 404'd (`/workflows/<id>`, `/skills/<id>`, `/flashcards/<id>`,
+ * `/quizzes/<id>`, `/canvas/<id>`, `/transcripts/<id>`) — the routes were
+ * renamed and nothing tied the peek back to the truth. `href` still wins when
+ * a peek genuinely has no registered token (e.g. sandbox instances).
  */
 
 import React from "react";
@@ -21,14 +29,23 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 
 export interface PeekDialogProps {
   open: boolean;
   onClose: () => void;
   title: string;
   icon?: React.ReactNode;
-  /** Relative path to the full resource; enables the Open buttons when set. */
+  /**
+   * Relative path to the full resource; enables the Open buttons when set.
+   * Prefer `token` + `id` — an explicit href can drift out of sync with the
+   * real route and nothing will catch it.
+   */
   href?: string | null;
+  /** Canonical entity token; resolves the route from the entity registry. */
+  token?: string | null;
+  /** The record's id — required alongside `token`. */
+  id?: string | null;
   loading?: boolean;
   children?: React.ReactNode;
 }
@@ -39,10 +56,14 @@ export function PeekDialog({
   title,
   icon,
   href,
+  token,
+  id,
   loading,
   children,
 }: PeekDialogProps) {
   const router = useRouter();
+  const resolvedHref =
+    href ?? (token && id ? resolveEntityDoors(token, id).href : null);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -64,10 +85,10 @@ export function PeekDialog({
           )}
         </div>
 
-        {href && (
+        {resolvedHref && (
           <DialogFooter className="px-5 py-3 border-t border-border">
             <Button asChild variant="outline" size="sm">
-              <a href={href} target="_blank" rel="noopener noreferrer">
+              <a href={resolvedHref} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                 New tab
               </a>
@@ -76,7 +97,7 @@ export function PeekDialog({
               size="sm"
               onClick={() => {
                 onClose();
-                router.push(href);
+                router.push(resolvedHref);
               }}
             >
               Open

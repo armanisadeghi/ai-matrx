@@ -48,7 +48,8 @@ export default function ListPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.description || "List"}
       icon={<List className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
-      href={`/lists/${id}`}
+      token="structured_list"
+      id={id}
       loading={loading}
     >
       {row ? (

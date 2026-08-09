@@ -4,8 +4,8 @@
  * ShortcutPeek — quick read-only preview of an agent shortcut.
  *
  * Same pattern as FilePeek / NotePeek: fetch the row by id, fill <PeekDialog>.
- * Agent shortcuts have no standalone route, so href is omitted and the footer
- * is hidden by PeekDialog.
+ * The door comes from the entity registry (`/agents/shortcuts/<id>`) — never
+ * hard-code the route here.
  */
 
 import React from "react";
@@ -51,7 +51,8 @@ export default function ShortcutPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.label || "Shortcut"}
       icon={<Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-      href={undefined}
+      token="agent_shortcut"
+      id={id}
       loading={loading}
     >
       {row ? (

@@ -48,7 +48,8 @@ export default function ConversationPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.title || "Conversation"}
       icon={<MessagesSquare className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-      href={`/chat/${id}`}
+      token="conversation"
+      id={id}
       loading={loading}
     >
       {row ? (

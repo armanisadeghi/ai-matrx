@@ -4,8 +4,8 @@
  * ProjectPeek — quick read-only preview for a ctx_projects row.
  *
  * Same pattern as FilePeek / NotePeek: fetch the row, fill <PeekDialog>.
- * href is omitted because a project's full route is org-scoped and cannot
- * be constructed from the project id alone — the footer hides automatically.
+ * The door comes from the entity registry (`/projects/<id>` resolves the
+ * org-scoped workspace itself) — never hard-code the route here.
  */
 
 import React from "react";
@@ -51,7 +51,8 @@ export default function ProjectPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.name || "Project"}
       icon={<FolderKanban className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-      href={undefined}
+      token="project"
+      id={id}
       loading={loading}
     >
       {row ? (

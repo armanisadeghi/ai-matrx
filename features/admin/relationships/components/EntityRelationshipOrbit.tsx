@@ -59,7 +59,8 @@ function NeighborCard({ neighbor, onSelectToken }: NeighborCardProps) {
       className="flex w-full flex-col gap-1 rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:border-primary/40 hover:bg-accent/40 disabled:cursor-default disabled:hover:border-border disabled:hover:bg-card"
     >
       <div className="flex items-center justify-between gap-2">
-        <EntityTypeChip token={neighbor.token} showToken />
+        {/* Inert: the whole card is already a button — a nested anchor is invalid. */}
+        <EntityTypeChip token={neighbor.token} showToken linkTo={null} />
         {!rule.is_active ? (
           <Badge
             variant="outline"

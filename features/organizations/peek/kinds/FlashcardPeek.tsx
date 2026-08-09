@@ -47,7 +47,9 @@ export default function FlashcardPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.topic || "Flashcards"}
       icon={<Layers className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
-      href={`/flashcards/${id}`}
+      // No door: education.flashcard_data has no detail route (/education/flashcards/[setId] serves education.fc_set, a different record).
+      // Tracked in docs/handoffs/no-dead-ends-sweep.md.
+      href={undefined}
       loading={loading}
     >
       {row ? (

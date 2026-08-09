@@ -30,7 +30,6 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   source,
 });
 
-const getHref = (id: string) => `/notes/${id}`;
 
 export default function OrgNotesPage() {
   const params = useParams();
@@ -65,7 +64,6 @@ export default function OrgNotesPage() {
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}
-          getHref={getHref}
           emptyTitle="No shared notes yet"
           emptyDescription="Notes you create with this organization as the context will appear here, along with notes other members share with this organization."
           emptyIcon={<LuNotepadText className="h-8 w-8 text-amber-600 dark:text-amber-400" />}

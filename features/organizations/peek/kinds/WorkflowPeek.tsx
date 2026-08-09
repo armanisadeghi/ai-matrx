@@ -53,7 +53,8 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.name || "Workflow"}
       icon={workflowIcon}
-      href={`/workflows/${id}`}
+      token="workflow"
+      id={id}
       loading={loading}
     >
       {row ? (

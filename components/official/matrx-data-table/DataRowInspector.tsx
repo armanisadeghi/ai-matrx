@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
 import { isUuidValue, MatrxUuidCell } from "./MatrxUuidCell";
 
 function formatValue(value: unknown): string {
@@ -99,7 +100,11 @@ export function DataRowInspector({
                     {key}
                   </dt>
                   <dd className="min-w-0">
-                    <MatrxUuidCell value={value} label={key} />
+                    <MatrxUuidCell
+                      value={value}
+                      label={key}
+                      token={tokenFromColumnName(key)}
+                    />
                   </dd>
                 </div>
               );

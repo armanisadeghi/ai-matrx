@@ -15,8 +15,8 @@
  *   (Window)  → surfaces pass their own opener through `extraActions`
  *
  * It composes primitives, it does not duplicate them:
- *   - route + icon + label  → `getEntityInfo(token)` (features/scopes/registry)
- *   - preview               → `ResourcePeekHost` + `hasPeek` (features/organizations/peek)
+ *   - route + icon + peek availability → `resolveEntityDoors` (./doors)
+ *   - preview                          → `ResourcePeekHost`
  *
  * Safe inside clickable table rows: every control stops propagation.
  *
@@ -28,20 +28,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Lightbulb } from "lucide-react";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { cn } from "@/lib/utils";
-
-/**
- * Entity tokens whose peek is registered under a different catalogue key.
- * Keep this at zero entries wherever possible — the real fix is aligning the
- * peek registry key with the canonical token.
- */
-const PEEK_KEY_BY_TOKEN: Record<string, string> = {
-  app: "agent_app",
-  structured_list: "picklist",
-};
+import { resolveEntityDoors } from "./doors";
 
 export interface EntityRefProps {
   /** Canonical entity token (`agent`, `note`, `task`, …). */
@@ -86,12 +75,12 @@ export function EntityRef({
 }: EntityRefProps) {
   const [peekOpen, setPeekOpen] = useState(false);
 
-  const info = tryGetEntityInfo(token);
-  const resolvedHref = href ?? info?.hrefFor?.(id) ?? null;
-  const peekKind = PEEK_KEY_BY_TOKEN[token] ?? token;
-  const canPeek = !disablePeek && hasPeek(peekKind);
+  const doors = resolveEntityDoors(token, id, href);
+  const resolvedHref = doors.href;
+  const peekKind = doors.peekKind;
+  const canPeek = !disablePeek && doors.canPeek;
   const label = name?.trim() || `${id.slice(0, 8)}…`;
-  const Icon = info?.Icon ?? null;
+  const Icon = doors.Icon;
 
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 

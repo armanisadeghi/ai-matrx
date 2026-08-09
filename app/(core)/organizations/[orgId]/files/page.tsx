@@ -49,7 +49,6 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => {
   };
 };
 
-const getHref = (id: string) => `/files/f/${id}`;
 
 export default function OrgFilesPage() {
   const params = useParams();
@@ -90,7 +89,6 @@ export default function OrgFilesPage() {
           selectColumns={SELECT_COLS}
           ownedQuery={ownedQuery}
           mapRow={mapRow}
-          getHref={getHref}
           emptyTitle="No shared files yet"
           emptyDescription="Files uploaded under this organization will appear here, along with files other members share."
           emptyIcon={<FolderOpen className="h-8 w-8 text-blue-600 dark:text-blue-400" />}

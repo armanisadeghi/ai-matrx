@@ -43,7 +43,6 @@ const mapRow = (row: Record<string, unknown>, source: "owned" | "shared") => ({
   source,
 });
 
-const getHref = (id: string) => `/agents/${id}`;
 
 export default function OrgAgentsPage() {
   const params = useParams();
@@ -78,7 +77,6 @@ export default function OrgAgentsPage() {
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}
           mapRow={mapRow}
-          getHref={getHref}
           emptyTitle="No shared agents yet"
           emptyDescription="Agents created under this organization will appear here, along with agents other members share."
           emptyIcon={

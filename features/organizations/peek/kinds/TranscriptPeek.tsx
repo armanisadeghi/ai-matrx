@@ -50,7 +50,8 @@ export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.title || "Transcript"}
       icon={<AudioLines className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
-      href={`/transcripts/${id}`}
+      token="transcript"
+      id={id}
       loading={loading}
     >
       {row ? (

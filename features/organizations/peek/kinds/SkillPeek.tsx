@@ -50,7 +50,8 @@ export default function SkillPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.label || "Skill"}
       icon={<Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" />}
-      href={`/skills/${id}`}
+      token="skill"
+      id={id}
       loading={loading}
     >
       {row ? (

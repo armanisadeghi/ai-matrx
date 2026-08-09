@@ -48,7 +48,8 @@ export default function WorkbookPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.description || "Workbook"}
       icon={<Sheet className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
-      href={`/workbooks/${id}`}
+      token="workbook"
+      id={id}
       loading={loading}
     >
       {row ? (

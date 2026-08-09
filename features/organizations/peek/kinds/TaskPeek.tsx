@@ -52,7 +52,8 @@ export default function TaskPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.title || "Task"}
       icon={<ListTodo className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
-      href={`/tasks/${id}`}
+      token="task"
+      id={id}
       loading={loading}
     >
       {row ? (

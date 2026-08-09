@@ -7,6 +7,12 @@
  * short head/tail (8…4 chars), full value on hover, always-visible copy of the full
  * id. Optional FK open: in-app WindowPanel (`onOpen`) and/or route (`href`).
  * Forbidden targets stay copyable but are not navigable.
+ *
+ * THE DOOR LAW: "never render an id you can't open". Pass `token` (the canonical
+ * entity token this id points at) and the cell resolves its own doors from the
+ * registries — route, new tab, and peek — with no per-callsite wiring. Prefer
+ * `EntityRef` whenever the record's NAME is available; this is the fallback for
+ * a raw FK column where it genuinely isn't.
  */
 
 import {
@@ -16,7 +22,14 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
-import { Check, Copy, ExternalLink, PanelRight, ShieldOff } from "lucide-react";
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Lightbulb,
+  PanelRight,
+  ShieldOff,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
   Tooltip,
@@ -25,6 +38,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
+import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 
 const SHORT_LEN = 8;
 const UUID_RE =
@@ -76,6 +91,13 @@ export interface MatrxUuidCellProps {
   onOpen?: (id: string) => MatrxUuidOpenResult | Promise<MatrxUuidOpenResult>;
   /** Optional real href (new tab / cmd-click). Used when navigation is allowed. */
   href?: string | null;
+  /**
+   * Canonical entity token this id points at (`agent`, `note`, `task`, …).
+   * Supplies the route and the peek automatically — THE DOOR LAW, resolved
+   * from the registries instead of wired per callsite. An explicit `href` /
+   * `onOpen` still wins.
+   */
+  token?: string | null;
   /** Force non-navigable (still copyable). */
   forbidden?: boolean;
   className?: string;
@@ -87,12 +109,14 @@ export function MatrxUuidCell({
   label,
   onOpen,
   href,
+  token,
   forbidden = false,
   className,
   trailing,
 }: MatrxUuidCellProps) {
   const [copied, setCopied] = useState(false);
   const [opening, setOpening] = useState(false);
+  const [peekOpen, setPeekOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -106,6 +130,9 @@ export function MatrxUuidCell({
     return <span className="text-muted-foreground/40">—</span>;
   }
 
+  const doors = token ? resolveEntityDoors(token, value, href) : null;
+  const resolvedHref = doors?.href ?? href ?? null;
+  const canPeek = Boolean(doors?.canPeek) && !forbidden;
   const display = shortUuid(value);
   const tip = label ? `${label}: ${value}` : value;
 
@@ -171,10 +198,10 @@ export function MatrxUuidCell({
       );
     }
 
-    if (href) {
+    if (resolvedHref) {
       return (
         <a
-          href={href}
+          href={resolvedHref}
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Open ${label ?? "record"} ${display} in a new tab`}
@@ -226,9 +253,23 @@ export function MatrxUuidCell({
       >
         {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
       </button>
-      {onOpen && href && !forbidden ? (
+      {canPeek ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            stop(e);
+            setPeekOpen(true);
+          }}
+          aria-label={`Quick look at ${label ?? "record"}`}
+          title={`Quick look at ${label ?? "record"}`}
+          className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground focus:outline-none"
+        >
+          <Lightbulb className="h-3 w-3" />
+        </button>
+      ) : null}
+      {onOpen && resolvedHref && !forbidden ? (
         <a
-          href={href}
+          href={resolvedHref}
           target="_blank"
           rel="noopener noreferrer"
           onClick={stop}
@@ -240,6 +281,13 @@ export function MatrxUuidCell({
         </a>
       ) : null}
       {trailing}
+      {canPeek && peekOpen ? (
+        <ResourcePeekHost
+          kind={doors!.peekKind}
+          id={value}
+          onClose={() => setPeekOpen(false)}
+        />
+      ) : null}
     </span>
   );
 }

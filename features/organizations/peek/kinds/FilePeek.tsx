@@ -69,7 +69,8 @@ export default function FilePeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.file_name ?? "File"}
       icon={<FileText className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
-      href={`/files/f/${id}`}
+      token="file"
+      id={id}
       loading={loading}
     >
       {row ? (
