@@ -77,7 +77,9 @@ interface SpeakerCastEditorProps {
   onReload: () => void;
 }
 
-const GENDER_OPTIONS: { value: PodcastSpeakerGender; label: string }[] = [
+/** The gender vocabulary the picker offers — exported so the surface write
+ *  handler validates against the SAME list the user's own select is built from. */
+export const GENDER_OPTIONS: { value: PodcastSpeakerGender; label: string }[] = [
   { value: "female", label: "Female" },
   { value: "male", label: "Male" },
   { value: "neutral", label: "Neutral" },
