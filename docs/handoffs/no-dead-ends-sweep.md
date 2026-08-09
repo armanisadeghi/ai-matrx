@@ -857,6 +857,23 @@ PY
    `FlashcardsHome`. (`/lists` came from a different pass — it is NOT a
    discriminator-3 hit; that discriminator never saw it.)
 
+⚠️ **A FOURTH DISCRIMINATOR WAS TRIED AND IS NOT USABLE AS-IS — do not burn a
+wave on it.** "File renders `{x.name|title|label}` from a row, has `.id` in
+scope, and contains no door capability of any spelling" returns **591 files**
+under `features/`. That number is not a backlog; it is dominated by pickers,
+form fields, config lists, sample/demo components and static option maps, none
+of which name a persisted record. The three discriminators above stay narrow
+precisely because they are anchored on `router.push(\`` — evidence that the code
+itself believes there is somewhere to go.
+
+To make the broad scan usable it needs **entity grounding**: intersect the
+rendered field with `titleColumn` from `types/generated/entity-types.generated.ts`
+and require the file to touch that token's table. Until someone builds that,
+`.filter(Boolean)`-style manual triage of 591 files will cost far more than it
+returns. Two spot-checks from its top hits, for calibration: `ShortcutList` was
+a REAL defect (fixed), and `DataStoresPage`'s bare `{s.id}` was NOT — it is the
+record the user is already viewing, rendered select-all for copying.
+
 **All 8 have now been walked one by one, and 7 are false positives** —
 `AgentRunsSidebar`, `AgentImportWindow`, `AgentRoleCard`,
 `CreateAgentAppFormWrapper`, `LiveBuilder`, `OrphanThreadRow`,
