@@ -17,6 +17,7 @@
 import React, { useCallback, useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   addInstanceTab,
@@ -57,6 +58,19 @@ export function GlobalSearchResults({
     // the focus shift before the click handler runs.
     e.preventDefault();
   }, []);
+
+  const openNote = useCallback(
+    (noteId: string) => {
+      // "Open" on this surface is an in-app TAB SWITCH, not a route change.
+      // `/notes?active={id}` (the registry route) would reload the notes app
+      // and throw away the find state the user is standing in — so it is the
+      // cmd-click destination only, never the plain click.
+      dispatch(addInstanceTab({ instanceId, noteId }));
+      dispatch(markTabInteraction({ instanceId }));
+      dispatch(setInstanceActiveTab({ instanceId, noteId }));
+    },
+    [dispatch, instanceId],
+  );
 
   const handleHitClick = useCallback(
     (noteId: string, hit: GlobalMatchHit) => {
@@ -132,23 +146,60 @@ export function GlobalSearchResults({
               const isCollapsed = collapsed[note.noteId];
               return (
                 <div key={note.noteId} className="mb-0.5">
-                  <button
-                    type="button"
+                  {/* This row was ONE <button> wrapping the note's name, which
+                      is why the name could not become an `EntityRef`: that
+                      renders an <a> (plus control <button>s), and nesting
+                      either inside a <button> is invalid HTML that React warns
+                      about. Splitting the row is the whole fix — the container
+                      is a <div> that still toggles on click anywhere, and the
+                      chevron stays a real <button> so the toggle keeps its
+                      keyboard affordance.
+
+                      `onMouseDown` MUST stay on the container: it
+                      preventDefaults to keep focus in the find input (see
+                      `handleMouseDown`), and mousedown bubbles, so it covers
+                      the name and the chevron without either repeating it. */}
+                  <div
                     onMouseDown={handleMouseDown}
                     onClick={() => toggleCollapsed(note.noteId)}
-                    className="w-full flex items-center gap-1 px-2 py-0.5 text-xs text-foreground hover:bg-muted/60 transition-colors"
+                    className="w-full flex cursor-pointer items-center gap-1 px-2 py-0.5 text-xs text-foreground hover:bg-muted/60 transition-colors"
                   >
-                    {isCollapsed ? (
-                      <ChevronRight className="w-3 h-3 shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-3 h-3 shrink-0" />
-                    )}
-                    <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />
-                    <span className="truncate">{note.label}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        // The container already toggles; without this the click
+                        // would toggle twice and land back where it started.
+                        e.stopPropagation();
+                        toggleCollapsed(note.noteId);
+                      }}
+                      aria-expanded={!isCollapsed}
+                      aria-label={`${isCollapsed ? "Expand" : "Collapse"} matches in ${note.label}`}
+                      className="flex shrink-0 items-center gap-1"
+                    >
+                      {isCollapsed ? (
+                        <ChevronRight className="w-3 h-3 shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-3 h-3 shrink-0" />
+                      )}
+                      <FileText className="w-3 h-3 shrink-0 text-muted-foreground" />
+                    </button>
+                    {/* THE DOOR LAW: this panel named a note and gave you no way
+                        to reach it — the only click available collapsed a list.
+                        Plain click switches to the note's tab (what "open"
+                        means here); cmd/middle-click goes natively to
+                        `/notes?active={id}`; hover gives the note peek. */}
+                    <EntityRef
+                      token="note"
+                      id={note.noteId}
+                      name={note.label}
+                      showIcon={false}
+                      onOpen={() => openNote(note.noteId)}
+                      className="min-w-0 flex-1"
+                    />
                     <span className="ml-auto text-[10px] text-muted-foreground tabular-nums shrink-0">
                       {note.hits.length}
                     </span>
-                  </button>
+                  </div>
                   {!isCollapsed && (
                     <ul className="pl-7">
                       {note.hits.map((hit) => (

@@ -336,13 +336,27 @@ are now deleted.**
       toggle/select as its own control, and let the NAME be the `EntityRef`.
       Budget it as such — an agent who plans these as drop-ins will produce
       broken markup or, worse, skip them and record them as "done".
-- [ ] **`GlobalSearchResults` is NOT a drop-in — do not convert it blind.** The
-      note name at `features/notes/components/GlobalSearchResults.tsx:147` lives
-      INSIDE a `<button>` whose click collapses/expands the hit list. Dropping
-      an `EntityRef` there nests an `<a>` in a `<button>` (invalid HTML, React
-      warns) and, worse, `onOpen` would have to mean "collapse", which is not
-      opening. The fix is to split the chevron toggle from the name first, then
-      convert — a small restructure, not a substitution.
+- [x] **`GlobalSearchResults` — DONE, and the recipe worked.** The row was one
+      `<button>`; it is now a `<div>` that still toggles on click anywhere, with
+      the chevron kept as a real `<button>` (stopPropagation, so the container's
+      toggle doesn't fire twice and cancel it) and the name as an `EntityRef`.
+      **The two constraints a blind conversion would have missed**, both
+      load-bearing:
+      - `handleMouseDown` preventDefaults on MOUSEDOWN to keep focus in the find
+        input — it protects a shipped Ctrl+F re-focus fix. It has to stay on the
+        CONTAINER, where it still covers the name and chevron by bubbling.
+      - **"Open" here is not the registry route.** `/notes?active={id}` would
+        reload the notes app and discard the find state the user is standing in.
+        Plain click dispatches the in-app tab switch (`onOpen`); the registry
+        route is the cmd/middle-click destination only. This is checklist
+        question 1 with a twist — the old door didn't *navigate* at all, so
+        "preserve what it did" meant preserving an absence.
+- [ ] **`SkillConfigPicker` (both sites) — still open, same class.** The
+      name sits inside a selection `<button>` at
+      `features/skills/components/SkillConfigPicker.tsx:486` and `:598`. Same
+      split applies. Extra wrinkle: `skill` has NO registry route, so the only
+      door `EntityRef` can add there is the peek — and that control is itself a
+      `<button>`, so the split is mandatory, not cosmetic.
 - [ ] **`PinnedSection` is a poor EntityRef target** — it is a card with a large
       colored icon and its own layout, not an inline name reference, and it is
       already a real `<Link>`. What it actually lacks is a peek control; that
