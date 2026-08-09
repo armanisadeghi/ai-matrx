@@ -145,6 +145,7 @@ function VersionConversationRow({
 
   return (
     <ItemRow
+      sourceFeature="agents-other"
       label={conv.title?.trim() || "Untitled"}
       active={isActive}
       size="sm"

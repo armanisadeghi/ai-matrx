@@ -189,6 +189,7 @@ export function DocumentsListRail({
             });
           return (
             <ItemRow
+              sourceFeature="working-document"
               key={d.id}
               size="sm"
               active={isActive}

@@ -145,6 +145,18 @@ function useAgentListRowActions(
 export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
   surfaceKey: "agents-browse",
   entityLabel: { singular: "agent", plural: "agents" },
+  sourceFeature: "agent",
+  // Lights up Attach To and Share in the row's right-click menu. `resourceType`
+  // is the same `"agent"` the kebab's ShareModal already uses — one sharing
+  // identity, two entry points, not two answers. `isOwner` gates the share
+  // affordances the same way the row actions do.
+  getRowEntity: (row) => ({
+    type: "agent",
+    id: row.id,
+    title: row.name,
+    resourceType: "agent",
+    isOwner: row.is_owner,
+  }),
   scopes: AGENT_LIST_SCOPES,
   service: {
     fetchPage: fetchAgentBrowsePage,

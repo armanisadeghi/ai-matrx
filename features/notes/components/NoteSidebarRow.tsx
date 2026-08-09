@@ -105,6 +105,7 @@ export function NoteSidebarRow({
       )}
       <div className="flex-1 min-w-0">
         <ItemRow
+          sourceFeature="notes"
           size="sm"
           label={note.label}
           secondaryLabel={

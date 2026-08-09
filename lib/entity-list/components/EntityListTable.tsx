@@ -247,6 +247,14 @@ export function EntityListTable<TRow>({
       rowWrapper={(row, children) => (
         <ItemContextMenu
           config={actions.menuFor(row)}
+          // The surface slot the wrapper used to drop on the floor:
+          // `sourceFeature` was hardcoded `"files"` for every consumer, and
+          // `entity` — which is what turns Attach To and Share on inside the
+          // v3 menu — was never passed at all. Both now come from the config,
+          // because only the feature knows what its rows are. A heterogeneous
+          // hub returns `undefined` per row rather than fabricating a token.
+          sourceFeature={config.sourceFeature}
+          entity={config.getRowEntity?.(row)}
           enabled={!isMobile}
         >
           {children}

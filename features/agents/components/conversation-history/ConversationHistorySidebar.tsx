@@ -1061,6 +1061,7 @@ const Row: React.FC<RowProps> = ({
 
   return (
     <ItemRow
+      sourceFeature="conversation"
       label={title}
       size="sm"
       active={active}
@@ -1215,6 +1216,7 @@ const ConsumerRow: React.FC<{
 
   return (
     <ItemRow
+      sourceFeature="conversation"
       className="mx-1"
       label={title}
       active={active}

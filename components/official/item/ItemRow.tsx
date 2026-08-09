@@ -86,6 +86,9 @@ export function ItemRow({
   indent,
   kebabAriaLabel,
   disableContextMenu = false,
+  sourceFeature,
+  surfaceName,
+  entity,
   className,
 }: ItemRowProps) {
   const isMobile = useIsMobile();
@@ -275,6 +278,16 @@ export function ItemRow({
   return (
     <ItemContextMenu
       config={mappedMenu}
+      // Forwarded, not invented. `entity` is what turns Attach To and Share on
+      // in the v3 menu; a row that omits it ships a menu missing two doors the
+      // platform already owns. `sourceFeature` is REQUIRED rather than
+      // defaulted: it used to be hardcoded `"files"` inside ItemContextMenu, a
+      // confident lie on every non-file row, and `SourceFeature` is a closed
+      // registry with no generic member to hide behind — so the compiler makes
+      // each row name itself instead.
+      sourceFeature={sourceFeature}
+      surfaceName={surfaceName}
+      entity={entity}
       enabled={!isMobile && !editing}
       onCloseAutoFocus={handleCloseAutoFocus}
     >

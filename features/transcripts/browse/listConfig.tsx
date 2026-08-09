@@ -29,6 +29,16 @@ import {
 export const transcriptListConfig: EntityListConfig<TranscriptListRow> = {
   surfaceKey: "transcripts-browse",
   entityLabel: { singular: "item", plural: "transcripts, sessions & cleanup" },
+  sourceFeature: "transcription",
+  // HETEROGENEOUS HUB — the same rule the name column follows. Only the
+  // `transcript` kind is a registered entity; sessions, cleanup runs and
+  // unsorted rows are not, and handing their ids over under a `transcript`
+  // token would offer to attach a record that does not exist. `undefined`
+  // means the row simply gets no Attach To, which is the honest answer.
+  getRowEntity: (row) =>
+    row.kind === "transcript"
+      ? { type: "transcript", id: row.id, title: row.title }
+      : undefined,
   scopes: TRANSCRIPT_LIST_SCOPES,
   service: {
     fetchPage: fetchTranscriptListPage,

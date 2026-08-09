@@ -714,6 +714,24 @@ these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
         wrapper mounted and repairs all 45 v3 consumers at once.
       - Note while there: `ItemContextMenu` hardcodes `sourceFeature="files"`
         for every consumer. Wrong for agents/transcripts; make it a prop.
+        **DONE — and the real find was next to it.** `sourceFeature` is now a
+        required prop typed to the closed `SourceFeature` registry (no generic
+        member to hide behind, so the compiler made all 17 call sites name
+        themselves). The bigger one: `ItemContextMenu` also never forwarded
+        **`entity`**, which is what gates **Attach To** and **Share** inside
+        `MenuContent` — so both doors were dark on EVERY `ItemRow` and every
+        canonical-list row in the app, while the slot sat there fully
+        implemented. That is this campaign's exact shape: not a missing
+        capability, a wrapper dropping the value on the floor. `ItemMenuSurface`
+        now carries `sourceFeature` / `surfaceName` / `entity` through
+        `ItemRow`, `ItemContextMenu` and `EntityListConfig.getRowEntity`;
+        `/agents/all` passes the same `resourceType: "agent"` its ShareModal
+        uses, and `/transcripts` returns an entity only for the `transcript`
+        kind (fabricating a token for sessions would offer to attach a record
+        that does not exist). **Look for this shape elsewhere:** when a wrapper
+        sits between a rich primitive and its consumers, diff the props it
+        ACCEPTS against the props it FORWARDS — the gap is a capability nobody
+        knows they have.
 - [ ] `useListViewPrefs` — migrate the 4 hand-rolled localStorage copies, each
       deleting a `useState` + `useEffect` + a local type:
       `features/projects/components/ProjectsHub.tsx:93,111,116` ·

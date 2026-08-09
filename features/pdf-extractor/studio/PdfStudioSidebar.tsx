@@ -429,7 +429,16 @@ function DocRow({
       {cloudFileId ? (
         <FileRowContextMenu fileId={cloudFileId}>{rowInner}</FileRowContextMenu>
       ) : (
-        <ItemContextMenu config={legacyMenu} enabled={!isMobile}>
+        <ItemContextMenu
+          config={legacyMenu}
+          sourceFeature="pdf-extractor"
+          entity={{
+            type: "processed_document",
+            id: doc.id,
+            title: doc.name,
+          }}
+          enabled={!isMobile}
+        >
           {rowInner}
         </ItemContextMenu>
       )}

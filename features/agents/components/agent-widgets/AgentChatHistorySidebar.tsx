@@ -112,6 +112,7 @@ function ConversationRow({
 
   return (
     <ItemRow
+      sourceFeature="conversation"
       className="mx-1"
       size="sm"
       label={conv.title || "Untitled"}
