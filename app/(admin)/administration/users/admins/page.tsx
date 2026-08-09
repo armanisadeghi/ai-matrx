@@ -32,6 +32,7 @@ import {
   accountHrefFor,
 } from "@/features/admin/users/components/AdminUserRef";
 import { DeepLinkMissNotice } from "@/components/official/deep-link/DeepLinkMissNotice";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useDeepLinkParam } from "@/components/official/deep-link/useDeepLinkParam";
 import type { Database } from "@/types/database.types";
 
@@ -200,6 +201,15 @@ function AdminsManagementPageContent() {
 
   useEffect(() => {
     Promise.all([fetchAdmins(), fetchAudit()]).finally(() => setLoading(false));
+  }, [fetchAdmins, fetchAudit]);
+
+  // The failed read owns its own recovery — without this the only way out of a
+  // stale roster is reloading the page, which is not a fix we should make a
+  // super-admin discover on their own.
+  const [retrying, setRetrying] = useState(false);
+  const retryLoad = useCallback(() => {
+    setRetrying(true);
+    Promise.all([fetchAdmins(), fetchAudit()]).finally(() => setRetrying(false));
   }, [fetchAdmins, fetchAudit]);
 
   async function handleLookup() {
@@ -519,8 +529,22 @@ function AdminsManagementPageContent() {
         {/* Admin list */}
         <section className="space-y-2">
           <h2 className="text-sm font-medium text-foreground">
-            Current admins ({admins.length})
+            {/* The count is a factual claim about the database. After a failed
+                read it would be a claim about a cache, so it is withheld
+                rather than quietly restated. */}
+            Current admins{loadFailed ? "" : ` (${admins.length})`}
           </h2>
+
+          {/* A toast fades; the stale roster does not. Without this the last
+              successful read keeps rendering as though it were current. */}
+          {loadFailed && (
+            <StaleDataNotice
+              hasData={admins.length > 0}
+              what="the admin roster"
+              onRetry={retryLoad}
+              retrying={retrying}
+            />
+          )}
           {/* `AdminUserRef` advertises this route as the "Admin level" door, so
               it is reached constantly for people who are NOT admins. Seeding the
               search then leaves an empty table and says nothing — the link looks
@@ -546,13 +570,21 @@ function AdminsManagementPageContent() {
               // the table is empty because that person is not an admin, not
               // because there are no admins at all.
               emptyState={
-                focusMissed
+                loadFailed
                   ? {
-                      title: "That person isn't an admin",
+                      // "No admins." after a failed read is a lie about the
+                      // database — and on THIS table an alarming one.
+                      title: "Roster not loaded",
                       description:
-                        "Clear the link above to see every admin on this roster.",
+                        "The read failed, so this list is empty for that reason alone. Use Try again above.",
                     }
-                  : { title: "No admins." }
+                  : focusMissed
+                    ? {
+                        title: "That person isn't an admin",
+                        description:
+                          "Clear the link above to see every admin on this roster.",
+                      }
+                    : { title: "No admins." }
               }
               toolbar={{
                 search: true,

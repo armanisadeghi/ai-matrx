@@ -122,6 +122,40 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
   still offers peek/new-tab because "not here" ≠ "unreachable", one-click
   clear). **Condition the surface's `emptyState` on the same flag** — two
   components disagreeing about why the list is empty is worse than either alone.
+- 🚨 **A PORTALLED OVERLAY IS NOT "OUTSIDE" — a peek inside a popover deletes
+  itself.** Any surface that closes on a document `mousedown` + `ref.contains()`
+  will close when the user clicks inside a peek, because Radix portals the
+  dialog to `document.body`. Closing unmounts the row, which unmounts the
+  `EntityDoorControls` that OWNS the peek's `open` state, so the preview
+  vanishes mid-click — and the peek's own "Open" link never fires at all, since
+  the node is removed before `click` is dispatched. Shipped on `/lists/v2` and
+  caught by an adversarial pass; the guard is to ignore mousedowns whose target
+  `.closest('[role="dialog"], [role="alertdialog"]')`. **Adding a door inside a
+  dismiss-on-outside-click container means auditing that container's dismiss
+  logic — this is statically decidable, not a "needs a browser" item.**
+- 🚨 **Read the entity's `title_column`; never infer the label from whatever
+  columns a previous `select()` fetched.** `ListPeek` carried a confident
+  comment saying `udt_structured_lists` "has no name/title column" and titled
+  itself from `description`. The column is `list_name` — it is what
+  `platform.entity_types.title_column` declares and what every consumer reads.
+  Any list without a description peeked as the title **"List"**. A peek whose
+  entire job is answering "which one is that?" answered nothing, and the false
+  comment made it look deliberate. Verify a "this table has no X" claim against
+  `types/database.types.ts` before trusting it.
+- 🚨 **A FAILED READ MUST NOT RENDER AS FRESH DATA — the other half of the
+  above.** `DeepLinkMissNotice` demands a `loadFailed` flag so it never states
+  a definitive negative about a list nobody read; that flag then has to be
+  SHOWN. On the admins roster and the feedback table it wasn't: the reload
+  failed, a toast fired and faded, and the previous rows kept rendering exactly
+  like current ones — with a roster count and stage totals still adding up the
+  stale list. Bugbot found both in one pass, which is what made it a primitive:
+  **`components/official/stale-data/StaleDataNotice.tsx`**. It separates the
+  two cases that matter (`hasData` → "may be out of date"; `!hasData` → "empty
+  because the read failed, not because there is nothing here") and carries a
+  required `onRetry`, because a problem you can detect ships with its one-click
+  fix. **Withhold derived claims too** — a count computed from stale rows is a
+  statement about the database, so the admins heading now omits it rather than
+  restating it.
 - Test login: `/login` → `admin@admin.com` / `Password1234#`
 
 ## 🚨 NOTHING IN THIS CAMPAIGN HAS BEEN SEEN IN A BROWSER
@@ -734,7 +768,7 @@ produced it — a number you cannot re-run is a guess wearing a uniform.**
 |---|---|---|---|---|
 | 1 | narrow inline `router.push` | 17 | 9 | 8 |
 | 2 | Open/View button beside a record | 13 | 7 | 6 |
-| 3 | record component with zero anchors | 14 | 8 | 6 |
+| 3 | record component with zero anchors | 14 | 7 | 7 |
 | 4 | `<Badge>` showing a count | 14 | 13 | 1 |
 | 5 | unguarded side-effecting anchor | — | 8 | 0 (all deliberate — see below) |
 
@@ -811,12 +845,21 @@ PY
    `FlashcardsHome`. (`/lists` came from a different pass — it is NOT a
    discriminator-3 hit; that discriminator never saw it.)
 
-**The 8 still standing under discriminator 3 are the honest remainder** —
-`AgentRunsSidebar`, `AgentImportWindow`, `AgentRoleCard`, `ResearchInitForm`,
+**All 8 have now been walked one by one, and 7 are false positives** —
+`AgentRunsSidebar`, `AgentImportWindow`, `AgentRoleCard`,
 `CreateAgentAppFormWrapper`, `LiveBuilder`, `OrphanThreadRow`,
-`AgentSurfacesPanel`. Several are the two false-positive shapes below, but
-**nobody has walked all 8 one by one** — do not read the shrinking number as
-"done".
+`AgentSurfacesPanel`. Every one pushes a `created.id` / `newId` that does not
+exist until the dispatch resolves, or re-parameterises the current page. **They
+are structurally incapable of being anchors — they will match this pattern
+forever.** Treat a steady 7 as the floor, not as unfinished work.
+
+`ResearchInitForm` was the eighth and the only real one (two doors: "View &
+Edit First", "View topic anyway" — both open an existing `research.rs_topic`).
+Fixing it removed the file from the pattern, which is why the count moved 8 → 7
+**inside a single session**: this discriminator excludes any file containing
+`next/link`, so landing one door drops the whole file out. An adversarial pass
+caught the table claiming 8 while the tree said 7 — the fix was mid-flight and
+uncommitted. **A count measured against a dirty tree is not measured.**
 
 Discriminator 3 also cleanly separates the two most common false positives —
 both worth knowing because they look identical to a defect in a grep:

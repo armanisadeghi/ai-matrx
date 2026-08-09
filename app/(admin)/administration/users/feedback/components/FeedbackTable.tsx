@@ -93,6 +93,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@/utils/search-scoring";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 const statusOptions: { value: FeedbackStatus; label: string; color: string }[] =
   [
@@ -849,6 +850,19 @@ export default function FeedbackTable() {
             <div className="absolute inset-0 bg-background/50 z-10 flex items-center justify-center rounded-lg">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
+          )}
+          {/* The failed read already stops the deep-link path from inventing a
+              verdict, but the TABLE kept rendering the last good list — and the
+              stage counts below it kept totalling that stale list as though
+              they were current. A toast fades; this does not. */}
+          {loadFailed && (
+            <StaleDataNotice
+              hasData={feedback.length > 0}
+              what="feedback"
+              onRetry={() => void loadFeedback()}
+              retrying={loading}
+              className="mb-3"
+            />
           )}
           {/* Pipeline Stage Selector */}
           <div className="mb-4">

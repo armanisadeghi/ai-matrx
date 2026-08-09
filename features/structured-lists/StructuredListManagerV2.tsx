@@ -368,7 +368,18 @@ function ListSwitcher({
   useEffect(() => {
     if (!open) return undefined;
     const onDoc = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Element | null;
+      if (ref.current?.contains(target as Node)) return;
+      // 🚨 A PORTALLED OVERLAY IS NOT "OUTSIDE". The row doors below open a
+      // peek dialog that Radix portals to document.body — outside this ref. A
+      // bare `contains` check therefore closed the popover on the first
+      // mousedown INSIDE the peek, which unmounts the row, which unmounts the
+      // control owning the peek's state: the preview vanished mid-click, and
+      // the peek's own "Open" link never fired at all, because the node was
+      // removed before the browser could dispatch `click`. A door that deletes
+      // itself when used is worse than no door.
+      if (target?.closest?.('[role="dialog"], [role="alertdialog"]')) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -432,7 +443,7 @@ function ListSwitcher({
                   <div
                     key={l.id}
                     className={cn(
-                      "group flex w-full items-center gap-1 pr-1.5 transition-colors hover:bg-accent",
+                      "group flex w-full items-center gap-1 pr-1.5 transition-colors hover:bg-accent focus-within:bg-accent",
                       active && "bg-accent/60",
                     )}
                   >
@@ -462,10 +473,18 @@ function ListSwitcher({
                         {l.item_count}
                       </span>
                     </button>
+                    {/* Pinned visible, not hover-revealed. `opacity-0` does
+                        NOT disable hit-testing, so on touch — where hover
+                        never happens — the hidden form is the worst of both:
+                        two invisible tap targets the user cannot discover but
+                        can still hit. The row also reserves their width either
+                        way (the cluster is `shrink-0`), so showing them costs
+                        no layout and buys a door that exists on a phone. */}
                     <EntityDoorControls
                       token="structured_list"
                       id={l.id}
                       name={l.list_name}
+                      alwaysShowActions
                     />
                   </div>
                 );
