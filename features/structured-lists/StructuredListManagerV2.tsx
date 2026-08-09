@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import IconResolver from "@/components/official/icons/IconResolver";
 import {
   useOpenCuratedIconPickerWindow,
@@ -279,6 +280,19 @@ function TopBar({
                 else onPatchList({ is_public: false, public_read: false });
               }}
             />
+            {/* The header names the record but its click RENAMES — so the
+                canonical route was unreachable from the surface that knows
+                exactly which list this is. Doors pinned visible: this bar has
+                no hover group of its own, and a control revealed only by a
+                hover that never comes is the dead end, not the fix. Same-tab
+                Open is deliberately off — the user is already editing this
+                record here; a new tab is the useful door. */}
+            <EntityDoorControls
+              token="structured_list"
+              id={list.id}
+              name={list.list_name}
+              alwaysShowActions
+            />
             {!forced && (
               <button
                 type="button"
@@ -408,36 +422,52 @@ function ListSwitcher({
               filtered.map((l) => {
                 const active = l.id === activeId;
                 return (
-                  <button
+                  // THE DOOR LAW on a switcher: clicking the row means SELECT,
+                  // so the name cannot be the anchor (an <a> inside a <button>
+                  // is invalid DOM). The doors ride alongside as siblings —
+                  // peek answers "which one is that?" without losing the list
+                  // being edited, and new-tab reaches /lists/<id> outright.
+                  // Both sit inside the popover's own ref, so the
+                  // outside-mousedown handler above never fires on them.
+                  <div
                     key={l.id}
-                    type="button"
-                    onClick={() => {
-                      onSelect(l.id);
-                      setOpen(false);
-                      setSearch("");
-                    }}
                     className={cn(
-                      "flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-accent",
+                      "group flex w-full items-center gap-1 pr-1.5 transition-colors hover:bg-accent",
                       active && "bg-accent/60",
                     )}
                   >
-                    <Check
-                      className={cn(
-                        "size-3.5 shrink-0",
-                        active ? "text-foreground" : "text-transparent",
-                      )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelect(l.id);
+                        setOpen(false);
+                        setSearch("");
+                      }}
+                      className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5 text-left text-sm"
+                    >
+                      <Check
+                        className={cn(
+                          "size-3.5 shrink-0",
+                          active ? "text-foreground" : "text-transparent",
+                        )}
+                      />
+                      <span className="min-w-0 flex-1 truncate">
+                        {l.list_name?.trim() || (
+                          <span className="italic text-muted-foreground">
+                            Untitled
+                          </span>
+                        )}
+                      </span>
+                      <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/70">
+                        {l.item_count}
+                      </span>
+                    </button>
+                    <EntityDoorControls
+                      token="structured_list"
+                      id={l.id}
+                      name={l.list_name}
                     />
-                    <span className="min-w-0 flex-1 truncate">
-                      {l.list_name?.trim() || (
-                        <span className="italic text-muted-foreground">
-                          Untitled
-                        </span>
-                      )}
-                    </span>
-                    <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/70">
-                      {l.item_count}
-                    </span>
-                  </button>
+                  </div>
                 );
               })
             )}

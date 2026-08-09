@@ -144,7 +144,13 @@ should look at: layout under the new anchors (a name that became a link inside a
 truncating flex row), the `/chat` sidebar agent chip at narrow widths, the two
 structured-list sidebars after their `<button>` → `<div>` + controls split, and
 every "hover reveals peek / new-tab" affordance — hover states are exactly what
-static analysis cannot see. The per-wave "routes to open" lists in **Done** below
+static analysis cannot see. **Highest-risk unverified interaction: the
+`/lists/v2` switcher popover.** Its doors sit inside a popover that closes on
+any outside `mousedown`; the controls are inside the popover's own ref so the
+handler should not fire on them, and opening a peek should leave the new tab /
+dialog intact — but nested-overlay behaviour is precisely what a type-check
+cannot prove. Open `/lists/v2`, hit the chevron, and try peek + cmd-click on a
+row. The per-wave "routes to open" lists in **Done** below
 are written for that pass.
 
 Two specific questions an adversarial review raised that ONLY a browser can
@@ -181,18 +187,26 @@ Ordered by traffic. Each item is independently actionable.
    `/war-room` DO carry `EntityRef`; `LibraryDocDetailSheet` carries 8 door
    references.
 
-   🚨 **`/lists` IS STILL A DEAD END — an earlier version of this line claimed
-   it "is now fixed" and that was FALSE.** What got fixed is
-   `features/user-lists/components/ListsTableView.tsx`, which the very commit
-   that fixed it states has **zero consumers**. The live route
-   `app/(core)/lists/page.tsx` renders `StructuredListLanding` → the
-   `features/structured-lists/*` V1/V2/V3 managers, and
-   `structured-list-manager-v3.tsx` + `StructuredListManagerV3Client.tsx`
-   contain **zero `EntityRef` and zero `<Link>`** — the list name sits inside
-   an `onClick={() => setActiveId(l.id)}` with no anchor, while `/lists/[id]`
-   exists and resolves. **A doc that marks a defective surface done is worse
-   than no doc: it makes the defect invisible to the next pass.** Verified
-   2026-08-09 by grepping the components the ROUTE actually renders.
+   ✅ **`/lists` — CLOSED 2026-08-09, after this entry was wrong TWICE in
+   opposite directions.** Round 1 marked it fixed when only
+   `features/user-lists/components/ListsTableView.tsx` (zero consumers) had
+   been touched. Round 2 corrected that to "still a dead end" — and was ALSO
+   wrong by then: V1 and V3 had already gained doors in `b1b08e93`. The
+   round-2 check grepped for `EntityRef` and `next/link` only, and the fix
+   uses **`EntityDoorControls`** — so a real fix read as a defect. **Grep for
+   the CAPABILITY, not one spelling of it: `EntityRef|EntityDoorControls|
+   next/link|<a `.** Final state, all three managers on
+   `workbench.udt_structured_lists` (same table as `/lists/[id]`, verified —
+   so the route genuinely reaches the same record):
+   - V1 + V3 (`/lists/v1`, `/lists/v3`) — `EntityDoorControls` beside the
+     sidebar row, `b1b08e93`.
+   - V2 (`/lists/v2`) — was the true remainder: the switcher popover named
+     every list with no door, and the editor header named the open record
+     while its click only renamed it. Both now carry doors.
+
+   **The lesson worth more than the fix: a doc that flips a surface's status
+   on a partial grep is not self-correcting — it just alternates between two
+   lies.** Both rounds "verified"; neither verified the capability.
 
    `features/rag/components/
    library/*` and `features/files/components/*` show no `EntityRef` import at
