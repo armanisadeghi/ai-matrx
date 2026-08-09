@@ -126,11 +126,12 @@ is easy to fill in.
   (roundtable v4, multihost v6, solo v4); e2e matrix gained
   `roundtable_10/14/20`. Live prod runs hit the exact GATE 2 count at all
   three sizes with matching declarations. The same-day typed-LLMParams
-  regression (broke all 3–20 host audio) is fixed AND deployed — 10-host
-  verified green end-to-end on prod. REMAINING: ElevenLabs caps a dialogue
-  request at 10 DISTINCT voices, so 11–20 hosts share gender-matched voices —
-  fix committed (aidream `9977828`), awaiting the next aidream release.
-  Details + verification plan: `docs/HANDOFF_PODCAST_SYSTEM.md` §5.1/§5.2.
+  regression (broke all 3–20 host audio) is fixed AND deployed, as is the
+  ElevenLabs 10-DISTINCT-voice cap found at 14/20 (speakers beyond 10 now share
+  gender-matched voices; labels stay distinct). **10/14/20-host episodes all
+  render end-to-end on prod** (runs `afd2d558`/`25031425`/`966bfb95`). Open
+  product call: all-distinct voices at 11–20 would need multi-request render +
+  stitch. Details: `docs/HANDOFF_PODCAST_SYSTEM.md` §5.1/§5.2.
 
 - 2026-08-08 — **Chapter markers + pre-script processing went live (Coming
   Soon retired on both).** Run page: the Chapter markers ComingSoonCard is now
