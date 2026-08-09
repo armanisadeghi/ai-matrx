@@ -41,6 +41,17 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
   (`hrefFor`) · `features/organizations/peek/registry.ts` + `kinds-list.ts` (peek) ·
   `features/overlays/openers/` (window)
 - Worked reference: `features/admin/agent-slots/` (FEATURE.md § THE DOOR LAW)
+- 🚨 **A door you added can still be INVISIBLE.** `EntityDoorControls` renders at
+  `opacity-0` and fades in on hover. It used to reveal ONLY on the named
+  `group/entity-ref`, so a standalone caller that forgot that one class shipped
+  a door nobody could see — markup right, type-check green, lint green. That
+  happened twice on 2026-08-09 (both debug-window sidebars) inside this very
+  campaign. **Fixed in the primitive** (2118fda9): it now also reveals on a
+  plain Tailwind `group`, which nearly every row already carries. Use
+  `alwaysShowActions` for a surface with no hover at all (a window title bar, a
+  touch-first list). The wider lesson for this sweep: **"the door renders" is
+  not "the door is reachable"** — and only a browser can settle the difference,
+  which is why the section below matters.
 - Test login: `/login` → `admin@admin.com` / `Password1234#`
 
 ## 🚨 NOTHING IN THIS CAMPAIGN HAS BEEN SEEN IN A BROWSER
