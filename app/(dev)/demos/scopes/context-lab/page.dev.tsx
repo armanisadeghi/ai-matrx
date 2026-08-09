@@ -45,7 +45,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Card } from "@/components/ui/card";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -189,8 +191,11 @@ function AssignToItemPanel({
       },
     );
     setAssigned(true);
+    // No row was written (this lab logs instead), but the SCOPE the toast names
+    // is a real record the user may well want to go look at.
     toast.success(
       `Set as ${scope.name}'s ${item.display_name} (logged — no DB write)`,
+      { action: toastDoor("scope", scope.id, { label: "Open scope" }) },
     );
   }
 
@@ -466,8 +471,11 @@ function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
       { sourceScopeId: source.id, itemId: item.id, targetScopeId: target.id },
     ]);
     setReverseOf(target.id);
+    // The reference is only logged, but both scopes are real. The TARGET is the
+    // one the user just pointed at, so that is the door.
     toast.success(
       `${source.name}.${item.key} → ${target.name} (logged — no DB write)`,
+      { action: toastDoor("scope", target.id, { label: "Open target" }) },
     );
   }
 
@@ -612,14 +620,22 @@ function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
                     key={i}
                     className="flex flex-wrap items-center gap-1.5 text-xs"
                   >
+                    {/* The TARGET below is a button; the source was the only
+                        dead end in this row — same kind of record, resolved
+                        from the same array. */}
                     <span
                       className={cn(
-                        "inline-flex items-center gap-1 rounded-md border px-2 py-1",
+                        "group inline-flex items-center gap-1 rounded-md border px-2 py-1",
                         c?.fg,
                         c?.border,
                       )}
                     >
-                      {s?.name}
+                      <EntityRef
+                        token="scope"
+                        id={r.sourceScopeId}
+                        name={s?.name}
+                        showIcon={false}
+                      />
                     </span>
                     <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400">
                       .{it?.key ?? "?"}
@@ -845,13 +861,17 @@ function RequiredSlotsPanel({ orgs }: { orgs: OrgNode[] }) {
               <div
                 key={r.scope.id}
                 className={cn(
-                  "flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm",
+                  "group flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm",
                   !r.filled && "bg-amber-50/60 dark:bg-amber-950/30",
                 )}
               >
-                <span className={cn("min-w-0 flex-1 truncate", c?.fg)}>
-                  {r.scope.name}
-                </span>
+                <EntityRef
+                  token="scope"
+                  id={r.scope.id}
+                  name={r.scope.name}
+                  showIcon={false}
+                  className={cn("min-w-0 flex-1", c?.fg)}
+                />
                 {r.filled ? (
                   <span className="flex min-w-0 max-w-[50%] items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
                     <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
@@ -938,7 +958,7 @@ function ContextHintsPanel({ orgs }: { orgs: OrgNode[] }) {
           <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             Your REAL active context right now
           </div>
-          <div className="mt-1 flex min-h-[24px] flex-wrap items-center gap-1.5 text-sm">
+          <div className="group mt-1 flex min-h-[24px] flex-wrap items-center gap-1.5 text-sm">
             {!hasContext ? (
               <span className="text-xs text-muted-foreground">
                 None set — pick something in the sidebar&apos;s context picker
@@ -946,8 +966,15 @@ function ContextHintsPanel({ orgs }: { orgs: OrgNode[] }) {
               </span>
             ) : (
               <>
-                {activeOrgName && (
-                  <span className="font-medium">{activeOrgName}</span>
+                {/* This banner shows the user's REAL active context, so every
+                    pill here is a live row and every id is already in hand. */}
+                {activeOrgId && (
+                  <EntityRef
+                    token="organization"
+                    id={activeOrgId}
+                    name={activeOrgName}
+                    nameClassName="font-medium"
+                  />
                 )}
                 {activeScopes.map((s) => {
                   const c = resolveColor(s.type);
@@ -960,13 +987,23 @@ function ContextHintsPanel({ orgs }: { orgs: OrgNode[] }) {
                         c.border,
                       )}
                     >
-                      {s.name}
+                      <EntityRef
+                        token="scope"
+                        id={s.id}
+                        name={s.name}
+                        showIcon={false}
+                      />
                     </span>
                   );
                 })}
+                {/* Was the literal string "+ project" — a relationship the code
+                    had fully resolved, rendered as a status word that did not
+                    even name the record. No project-NAME selector exists on
+                    active-context, so EntityRef falls back to the short id,
+                    which is at least openable. */}
                 {activeProjectId && (
                   <span className="text-xs text-muted-foreground">
-                    + project
+                    <EntityRef token="project" id={activeProjectId} />
                   </span>
                 )}
               </>
