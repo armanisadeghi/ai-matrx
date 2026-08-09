@@ -21,8 +21,9 @@
 // buckets) live in lib/entity-list/columns — this file is only the AGENT
 // column registry.
 
-import { Star, Archive, Building2 } from "lucide-react";
+import { Archive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
 import {
   DATE_FILTER_OPTIONS,
@@ -176,10 +177,20 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
       header: "Organization",
       filter: "text",
       width: 170,
+      // THE DOOR LAW: `agx_list_scoped` returns organization_id beside the
+      // name, so the org is a relationship we RESOLVED — printing it as text
+      // was throwing that away. EntityRef gives Open + new tab + peek from the
+      // registries (Building2 comes from the registry icon).
       cell: (row) =>
-        row.organization_name ? (
-          <span className="flex items-center gap-1.5 truncate text-muted-foreground">
-            <Building2 className="h-3 w-3 shrink-0" />
+        row.organization_name && row.organization_id ? (
+          <EntityRef
+            token="organization"
+            id={row.organization_id}
+            name={row.organization_name}
+            className="text-muted-foreground"
+          />
+        ) : row.organization_name ? (
+          <span className="truncate text-muted-foreground">
             {row.organization_name}
           </span>
         ) : (

@@ -34,6 +34,7 @@ import {
   ClipboardCopy,
   History,
   GitCompare,
+  GitFork,
   Download,
   Building2,
   Globe,
@@ -194,6 +195,22 @@ export function buildAgentMenu(ctx: AgentMenuContext): ItemMenuConfig {
             disabledReason: readOnlyReason,
           },
           { id: "add-to-set", label: "Add to set", icon: Network, onSelect: ctx.onAddToSet },
+          // THE DOOR LAW, corollary 1: `agx_list_scoped` returns
+          // source_agent_id, so this row's lineage is a relationship we already
+          // RESOLVED. Knowing an agent was duplicated from another and offering
+          // no way to reach it is the exact failure the doctrine names. Only
+          // rendered when the row actually has a source.
+          ...(agent.source_agent_id
+            ? [
+                {
+                  kind: "link" as const,
+                  id: "source-agent",
+                  label: "Open source agent",
+                  icon: GitFork,
+                  href: agentHref(agent.source_agent_id, ""),
+                },
+              ]
+            : []),
           {
             kind: "link",
             id: "shortcuts",

@@ -157,6 +157,10 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
   prefsVersion: 4,
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
+  // THE DOOR LAW: the Name cell is a real anchor to /agents/[id], resolved from
+  // the entity registry. Row click still opens the action chooser (Run / Build /
+  // View) — the anchor is the addition that makes cmd-click and new tab work.
+  door: { token: "agent" },
   useRowActions: useAgentListRowActions,
   favorite: {
     isFavorite: (row) => row.is_favorite,

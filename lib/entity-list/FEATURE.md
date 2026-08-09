@@ -25,6 +25,7 @@ with a `kind` column). CRM consumes `EntityScopeTabs` directly.
 | `types.ts` | Query/filter/facet/count vocabulary (`EntityListQuery`, `EntityFilters`, `EntityFacets`, `EntityScopeCounts`) |
 | `config.tsx` | `EntityListConfig<TRow>` — THE contract. Read its doc comments before adding a knob; a knob earns its place only when a second surface needs it |
 | `columns.tsx` | `EntityColumnSpec<TRow>` + shared cell helpers (`relativeTime`, `timeCell`, `DATE_FILTER_OPTIONS`) |
+| `doors.ts` | THE DOOR LAW — resolves the record's route from `config.door` through `resolveEntityDoors`; `entityListRowHref` is exported for the card/row render props |
 | `useEntityList.ts` | The query hook — generation-guarded fetches, debounced search, counts/facets with deliberate dependency keys |
 | `components/EntityListPage.tsx` | The shell. Slots: `notice`, `headerActions`, `emptyAction`; feature modals come back from `config.useRowActions` |
 | `components/EntityScopeTabs.tsx` | THE VIEW LAW tabs — fixed five vocabulary (lib/list-scope), narrowing options from the counts RPC, never Redux |
@@ -51,8 +52,42 @@ with a `kind` column). CRM consumes `EntityScopeTabs` directly.
 6. Surfaces without an axis switch it off (`supportsArchived: false`, omit
    `favorite`/`deepSearch`/`views`) — the shell hides the affordance rather
    than rendering a lie.
+7. **Every config declares `door`** — THE DOOR LAW is the shell's default, not
+   each config's homework (see below).
+
+## THE DOOR LAW — `config.door`
+
+The name cell of every list is a **real anchor**, so cmd-click, middle-click,
+"open in new tab" and keyboard focus reach the record. Declaring the entity
+token is normally the whole job:
+
+```ts
+door: { token: "agent" }                        // route from the registry
+door: { hrefFor: primaryRowHref }               // heterogeneous / second shell
+door: { token: (row) => row.kind, column: "label" }
+```
+
+- The route comes from `resolveEntityDoors` (`components/official/entity-ref/
+  doors.ts`) — the ONE resolver. A `hrefFor` in `entityRegistry.ts` lights up
+  every list at once; no config hard-codes a path that can rot into a 404.
+- The anchor lands on the declared `name` / `title` column unless `door.column`
+  says otherwise. A column that sets its own `href` keeps it.
+- `onRowOpen` is untouched: the whole-row click keeps doing whatever the surface
+  does with it (`/agents/all` opens the Run / Build / View chooser). The anchor
+  is an addition, and clicks on it never double-fire the row.
+- `hrefFor` is honoured exactly — returning `undefined` means THAT row has no
+  door and must not fall through to the registry.
+- Alternate views (`views.cards` / `views.rows`) import `entityListRowHref` so a
+  card can never be a poorer door than the table.
+- **No `door` is a claim that the records have no canonical route.** If that is
+  because the token has no `hrefFor`, report the registry gap — don't ship the
+  dead end.
 
 ## Change log
 
+- 2026-08-09 — `config.door` + `doors.ts`: THE DOOR LAW is now a shell default.
+  Every list built here gets a real anchor on its name column, resolved from the
+  entity registry. `/agents/all` (`token: "agent"`) and `/transcripts`
+  (`hrefFor: primaryRowHref`) wired as the first consumers.
 - 2026-08-08 — Extracted from features/agents/browse (steps 2–5 of the
   handoff); /transcripts migrated as the second consumer (step 6).

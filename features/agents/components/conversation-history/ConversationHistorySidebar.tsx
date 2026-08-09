@@ -79,6 +79,8 @@ import {
   buildConversationMenu,
   type ConversationMenuContext,
 } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { toast } from "@/lib/toast";
@@ -632,6 +634,18 @@ const DenseView: React.FC<
               icon={<Cpu size={11} />}
               defaultOpen
               headerClassName={sectionHeaderClassName}
+              // THE DOOR LAW: the header names an agent we have the id for.
+              // Open / new tab / quick look, resolved from the registries.
+              action={
+                bucket.agentId ? (
+                  <EntityDoorControls
+                    token="agent"
+                    id={bucket.agentId}
+                    name={bucket.label}
+                    showOpen
+                  />
+                ) : undefined
+              }
             >
               {bucket.items.map((conv) => (
                 <Row
@@ -930,6 +944,12 @@ interface SectionProps {
   icon?: React.ReactNode;
   defaultOpen?: boolean;
   headerClassName?: string;
+  /**
+   * Doors for the entity this section is named after (the agent, when grouping
+   * by agent). Rendered as a SIBLING of the collapse toggle — an anchor inside
+   * that `<button>` would be invalid DOM and a hydration error.
+   */
+  action?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -939,28 +959,36 @@ const Section: React.FC<SectionProps> = ({
   icon,
   defaultOpen = true,
   headerClassName,
+  action,
   children,
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="mb-1">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
+      <div
         className={cn(
-          "sticky top-0 z-[1] flex w-full items-center gap-1 bg-card px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground",
+          "group/entity-ref sticky top-0 z-[1] flex w-full items-center bg-card",
           headerClassName,
         )}
       >
-        {open ? (
-          <ChevronDown size={10} className="shrink-0" />
-        ) : (
-          <ChevronRight size={10} className="shrink-0" />
-        )}
-        {icon}
-        <span className="truncate">{label}</span>
-        <span className="ml-auto shrink-0 text-muted-foreground">{count}</span>
-      </button>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-1 px-2 py-1 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        >
+          {open ? (
+            <ChevronDown size={10} className="shrink-0" />
+          ) : (
+            <ChevronRight size={10} className="shrink-0" />
+          )}
+          {icon}
+          <span className="truncate">{label}</span>
+          <span className="ml-auto shrink-0 text-muted-foreground">
+            {count}
+          </span>
+        </button>
+        {action != null && <span className="shrink-0 pr-1.5">{action}</span>}
+      </div>
       {open && <div>{children}</div>}
     </div>
   );
@@ -1022,6 +1050,14 @@ const Row: React.FC<RowProps> = ({
   const dispatch = useAppDispatch();
   const title = conv.title?.trim() || untitled(conv);
 
+  // THE DOOR LAW: the row already knows which agent owns this conversation.
+  // The name comes from the agent cache the sidebar's own grouping selector
+  // reads, so no extra fetch — and the id becomes a real door in the menu
+  // rather than a bare UUID whispered to screen readers.
+  const agentName = useAppSelector((s) =>
+    conv.agentId ? (selectAgentById(s, conv.agentId)?.name ?? null) : null,
+  );
+
   const star = onToggleFavorite ? (
     <button
       type="button"
@@ -1049,10 +1085,18 @@ const Row: React.FC<RowProps> = ({
 
   const meta = formatRelative(conv.updatedAt);
 
+  // Name the agent instead of announcing its UUID. The chip is plain text (the
+  // row itself is an anchor — an inner link would be invalid DOM); the door to
+  // the agent lives in the row menu, where every other action lives.
   const trailing =
     showAgentHint && conv.agentId ? (
       <>
-        <span className="sr-only">agent {conv.agentId}</span>
+        <span
+          className="max-w-[7rem] truncate text-[10px] text-muted-foreground"
+          title={agentName ? `Agent: ${agentName}` : undefined}
+        >
+          {agentName ?? <span className="sr-only">agent</span>}
+        </span>
         {star}
       </>
     ) : (
@@ -1079,6 +1123,9 @@ const Row: React.FC<RowProps> = ({
           excludeFromKg: conv.excludeFromKg ?? false,
           href: resolveHref(conv),
           surfaceKey,
+          agent: conv.agentId
+            ? { id: conv.agentId, name: agentName }
+            : undefined,
           source: getSourceMenuCtx?.(conv),
           dispatch,
         })

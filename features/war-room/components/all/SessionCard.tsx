@@ -3,6 +3,7 @@
 // features/war-room/components/all/SessionCard.tsx
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Trash2,
@@ -115,8 +116,19 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
       </div>
 
       <div className="min-w-0 flex-1">
+        {/* THE DOOR LAW: the card was `router.push` only — no anchor anywhere,
+            so cmd-click, middle-click and "open in new tab" all did nothing.
+            The title is the door; the card's own click stays as a convenience.
+            Legal nesting: the card is a div with role="button", not an <a>. */}
         <h3 className="text-sm font-semibold text-foreground truncate">
-          {session.title}
+          <Link
+            href={`/war-room/${session.id}`}
+            onClick={(e) => e.stopPropagation()}
+            title={`Open ${session.title}`}
+            className="rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary/50"
+          >
+            {session.title}
+          </Link>
         </h3>
         {session.description ? (
           <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
@@ -128,10 +140,18 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
       {/* Stat row — the at-a-glance facts. Thread count always shows; pinned
           and project only when present so empty rooms stay quiet. */}
       <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-        <span className="flex items-center gap-1 tabular-nums">
+        {/* A COUNT IS A DOOR: the room is where those threads live, so the
+            count reaches them. (/war-room/all's Threads table has no room
+            URL param to hand off to — see the report's registry gaps.) */}
+        <Link
+          href={`/war-room/${session.id}`}
+          onClick={(e) => e.stopPropagation()}
+          title={`Open ${session.title} — ${stats.threadCount} ${stats.threadCount === 1 ? "thread" : "threads"}`}
+          className="flex items-center gap-1 rounded tabular-nums outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/50"
+        >
           <MessageSquare className="size-3" />
           {stats.threadCount} {stats.threadCount === 1 ? "thread" : "threads"}
-        </span>
+        </Link>
         {stats.pinnedCount > 0 ? (
           <span
             className="flex items-center gap-1 tabular-nums"

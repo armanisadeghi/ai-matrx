@@ -130,6 +130,42 @@ export interface EntityListConfig<TRow> {
   getRowId: (row: TRow) => string;
   /** Human name for a row — aria labels ("Actions for X"). */
   getRowName: (row: TRow) => string;
+
+  /**
+   * THE DOOR LAW (common-docs/policies/no-dead-ends.md), made a property of the
+   * shell rather than something every config re-invents: the record's name cell
+   * renders as a REAL anchor, so cmd-click / middle-click / new tab / keyboard
+   * all reach the record. `onRowOpen` stays exactly as it is — the whole-row
+   * click keeps whatever the surface does with it (an action chooser, a
+   * navigation); the anchor is an ADDITION on the name, and clicks on it never
+   * double-fire the row.
+   *
+   * Naming `token` is normally the whole job — the route comes from the ONE
+   * resolver (`resolveEntityDoors`), so a registry edit moves every list at
+   * once and no config hard-codes a path that can rot into a 404.
+   *
+   * Omit `door` entirely only when the surface's records genuinely have no
+   * canonical route. That is a registry gap to report, not a shrug.
+   */
+  door?: {
+    /**
+     * Canonical entity token (`agent`, `transcript`, …). A function form
+     * resolves it per row, for heterogeneous lists whose rows are several
+     * entity types.
+     */
+    token?: string | ((row: TRow) => string | null | undefined);
+    /**
+     * Column id that carries the name. Defaults to the declared `name` or
+     * `title` column — set this when the title column is called something else.
+     */
+    column?: string;
+    /**
+     * Override the registry route — for records that live in a second shell
+     * (an admin-side route for the same entity). Honoured exactly: returning
+     * `undefined` means THIS row has no door and must not fall back.
+     */
+    hrefFor?: (row: TRow) => string | undefined;
+  };
   /** Surface-specific style defaults beyond version/hiddenColumns. */
   prefsDefaults?: Partial<ListViewPrefs>;
 

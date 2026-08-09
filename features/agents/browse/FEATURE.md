@@ -204,6 +204,15 @@ hostile at 2,000.
 
 ## Change log
 
+- **2026-08-09 (doors)** — THE DOOR LAW moved into the shell: the config now
+  declares `door: { token: "agent" }` and `lib/entity-list` anchors the Name
+  cell to `/agents/[id]` (see `lib/entity-list/FEATURE.md`) — no per-column
+  wiring. Two relationships the RPC already returned stopped being text: the
+  Organization cell is an `EntityRef` (open / new tab / peek), and rows with a
+  `source_agent_id` gain an "Open source agent" door in the ONE action menu.
+  `task_id` is deliberately NOT rendered — the column is 100% NULL and carries
+  no FK, so any link would be a guess.
+
 - **2026-08-08 (extraction)** — Steps 2–5 of the canonical entity-list
   extraction: the generic halves (query hook, scope tabs, toolbar, filter
   panel, column picker, table, page shell) moved to `lib/entity-list/`; this

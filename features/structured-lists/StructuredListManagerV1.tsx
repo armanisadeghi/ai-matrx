@@ -133,6 +133,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 
@@ -788,29 +789,41 @@ export function StructuredListManagerV1({
             const isActive = l.id === activeId;
             const itemCount = activeId === l.id ? items.length : null;
             return (
-              <button
+              // THE DOOR LAW — same wiring as the v3 manager: the name selects
+              // in place inside a <button>, so the doors (quick look, open
+              // `/lists/<id>` in a new tab) ride alongside as a sibling.
+              <div
                 key={l.id}
-                onClick={() => setActiveId(l.id)}
                 className={cn(
-                  "group/list mb-px flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors",
+                  "group/list group/entity-ref mb-px flex items-center gap-0.5 rounded-md pr-1 transition-colors",
                   isActive
                     ? "bg-accent text-accent-foreground"
                     : "hover:bg-accent/50",
                 )}
               >
-                <span className="line-clamp-1 w-full text-sm leading-tight">
-                  {l.list_name || (
-                    <span className="text-muted-foreground italic">
-                      Untitled list
+                <button
+                  onClick={() => setActiveId(l.id)}
+                  className="flex min-w-0 flex-1 flex-col items-start gap-0.5 px-2 py-1.5 text-left"
+                >
+                  <span className="line-clamp-1 w-full text-sm leading-tight">
+                    {l.list_name || (
+                      <span className="text-muted-foreground italic">
+                        Untitled list
+                      </span>
+                    )}
+                  </span>
+                  {itemCount !== null && (
+                    <span className="text-[11px] text-muted-foreground">
+                      {itemCount} item{itemCount === 1 ? "" : "s"}
                     </span>
                   )}
-                </span>
-                {itemCount !== null && (
-                  <span className="text-[11px] text-muted-foreground">
-                    {itemCount} item{itemCount === 1 ? "" : "s"}
-                  </span>
-                )}
-              </button>
+                </button>
+                <EntityDoorControls
+                  token="structured_list"
+                  id={l.id}
+                  name={l.list_name || "Untitled list"}
+                />
+              </div>
             );
           })
         )}

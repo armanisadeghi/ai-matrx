@@ -27,6 +27,7 @@ import { buildRagLibraryContextData } from "@/features/rag/agent-context/buildRa
 
 /** Canonical `ui_surface.name` this page emits. */
 const RAG_LIBRARY_SURFACE = "matrx-user/rag-library";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -873,7 +874,18 @@ function DocRow({
             />
           )}
         </AnimatePresence>
-        <div className="font-medium break-words pl-2">{doc.name}</div>
+        {/* THE DOOR LAW: the document name is a real anchor to its preview —
+            the same destination the "…" menu's Preview uses. Row click still
+            opens the detail sheet; the anchor is what makes cmd-click,
+            middle-click and keyboard reach the document. */}
+        <Link
+          href={`/rag/library/${doc.id}/preview`}
+          onClick={(e) => e.stopPropagation()}
+          title={`Open ${doc.name}`}
+          className="block font-medium break-words pl-2 hover:text-primary hover:underline"
+        >
+          {doc.name}
+        </Link>
         <div className="text-xs text-muted-foreground flex items-center gap-2 pl-2">
           <span>{doc.sourceKind}</span>
           {doc.derivationKind !== "initial_extract" && (
@@ -921,8 +933,24 @@ function DocRow({
         </div>
       </TableCell>
       <TableCell className="text-right">
+        {/* A COUNT IS A DOOR: the list row knows how many stores this document
+            is bound to but not which ones — the doc detail sheet's
+            "Data-store bindings" section lists and links every one. The badge
+            reaches it instead of stating a number that goes nowhere. */}
         {doc.dataStoreCount > 0 ? (
-          <Badge variant="info">{doc.dataStoreCount}</Badge>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect();
+            }}
+            title={`Open the ${doc.dataStoreCount} data-store binding${doc.dataStoreCount === 1 ? "" : "s"} for ${doc.name}`}
+            className="rounded focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <Badge variant="info" className="cursor-pointer hover:opacity-80">
+              {doc.dataStoreCount}
+            </Badge>
+          </button>
         ) : (
           <span className="text-muted-foreground text-xs">—</span>
         )}

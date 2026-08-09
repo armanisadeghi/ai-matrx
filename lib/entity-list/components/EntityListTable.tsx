@@ -26,6 +26,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import type { EntityListConfig, EntityRowActions } from "../config";
+import { entityListDoorColumnId, entityListRowHref } from "../doors";
 import { NONE_VALUE, type EntityFacets, type EntityFilters } from "../types";
 
 interface Props<TRow> {
@@ -136,6 +137,10 @@ export function EntityListTable<TRow>({
 
   const noneLabels = config.noneLabels ?? {};
 
+  // THE DOOR LAW: the name cell is a real anchor, resolved once from the
+  // config's entity token. A column that declares its own `href` keeps it.
+  const doorColumn = entityListDoorColumnId(config);
+
   const columns: MatrxColumnDef<TRow>[] = config.columns
     .filter(
       (spec) =>
@@ -148,6 +153,11 @@ export function EntityListTable<TRow>({
         ...spec.column,
         cell:
           spec.id === "favorite" && favorite ? favoriteCell : spec.column.cell,
+        href:
+          spec.column.href ??
+          (spec.id === doorColumn
+            ? (row: TRow) => entityListRowHref(config, row)
+            : undefined),
         // Every column sorts — the RPC's ORDER BY whitelist covers all of them.
         sortable: true,
         // Finite value sets get real options WITH counts, so the user picks
