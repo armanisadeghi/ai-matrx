@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Ellipsis,
@@ -23,6 +24,7 @@ import {
   BottomSheetHeader,
   BottomSheetBody,
 } from "@/components/official/bottom-sheet/BottomSheet";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 
 import {
   createWorkbook,
@@ -508,13 +510,15 @@ export default function WorkbooksLandingPage() {
           {!loading && workbooks.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {workbooks.map((wb) => (
-                <Card key={wb.id} className="group">
+                <Card key={wb.id} className="group/entity-ref">
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-start justify-between gap-2">
-                      <button
-                        type="button"
-                        className="flex flex-1 items-start gap-2 text-left"
-                        onClick={() => router.push(`/workbooks/${wb.id}`)}
+                      {/* A real anchor, not a button that router.pushes: the
+                          card is now cmd/middle-clickable into a new tab,
+                          keyboard-reachable and announced as a link. */}
+                      <Link
+                        href={`/workbooks/${wb.id}`}
+                        className="flex min-w-0 flex-1 items-start gap-2 text-left"
                       >
                         <FileSpreadsheet className="size-5 mt-0.5 text-muted-foreground" />
                         <div className="min-w-0">
@@ -527,19 +531,41 @@ export default function WorkbooksLandingPage() {
                             </div>
                           )}
                         </div>
-                      </button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7"
-                        onClick={() => handleDelete(wb)}
-                        title="Delete workbook"
-                      >
-                        <Trash className="h-3.5 w-3.5 text-destructive" />
-                      </Button>
+                      </Link>
+                      {/* Peek + new tab ride BESIDE the anchor (never inside
+                          it), so "which one is that?" costs no navigation.
+                          `original_file_id` gets its own door below. */}
+                      <span className="flex shrink-0 items-center gap-0.5">
+                        <EntityDoorControls
+                          token="workbook"
+                          id={wb.id}
+                          name={wb.workbook_name}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="opacity-0 group-hover/entity-ref:opacity-100 transition-opacity h-7 w-7"
+                          onClick={() => handleDelete(wb)}
+                          title="Delete workbook"
+                        >
+                          <Trash className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </span>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Updated {new Date(wb.updated_at).toLocaleString()}
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <span className="truncate">
+                        Updated {new Date(wb.updated_at).toLocaleString()}
+                      </span>
+                      {/* An imported workbook knows the file it came from —
+                          a relationship we can resolve must be reachable. */}
+                      {wb.original_file_id && (
+                        <EntityDoorControls
+                          token="file"
+                          id={wb.original_file_id}
+                          name={`the file ${wb.workbook_name} was imported from`}
+                          showOpen
+                        />
+                      )}
                     </div>
                   </CardContent>
                 </Card>

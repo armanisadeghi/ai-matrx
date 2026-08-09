@@ -28,6 +28,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
   compareTimestamps,
   formatAbsoluteDate,
@@ -518,11 +520,17 @@ export function DocumentsHubTable({
                   onClick={() => router.push(href)}
                 >
                   <TableCell className="py-2 max-w-[280px]">
-                    <div className="min-w-0">
-                      <span className="block text-sm font-medium truncate">
-                        {doc.document_name}
-                      </span>
-                    </div>
+                    {/* The name is the door: a real anchor (cmd/middle-click →
+                        new tab, keyboard-reachable, announced as a link) plus
+                        peek + new-tab controls. The row click stays as a mouse
+                        convenience. */}
+                    <EntityRef
+                      token="udt_document"
+                      id={doc.id}
+                      name={doc.document_name}
+                      showIcon={false}
+                      className="text-sm font-medium"
+                    />
                   </TableCell>
                   <TableCell className="py-2 text-xs text-muted-foreground max-w-[240px]">
                     <span className="line-clamp-2 break-words">
@@ -530,12 +538,26 @@ export function DocumentsHubTable({
                     </span>
                   </TableCell>
                   <TableCell className="py-2">
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] font-medium uppercase tracking-wide"
-                    >
-                      {documentSourceLabel(doc.source)}
-                    </Badge>
+                    {/* An imported document KNOWS the file it came from
+                        (original_file_id) — a relationship we can resolve must
+                        be linked, not just hinted at by the badge. The badge
+                        isn't a name, so the doors ride beside it. */}
+                    <span className="group/entity-ref inline-flex items-center gap-1">
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] font-medium uppercase tracking-wide"
+                      >
+                        {documentSourceLabel(doc.source)}
+                      </Badge>
+                      {doc.original_file_id && (
+                        <EntityDoorControls
+                          token="file"
+                          id={doc.original_file_id}
+                          name={`the file ${doc.document_name} was imported from`}
+                          showOpen
+                        />
+                      )}
+                    </span>
                   </TableCell>
                   <TableCell className="py-2 text-xs text-muted-foreground whitespace-nowrap">
                     <span title={formatAbsoluteDate(doc.created_at)}>
