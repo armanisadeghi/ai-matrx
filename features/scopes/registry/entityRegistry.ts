@@ -31,6 +31,7 @@
 // association surfaces consume THIS resolver, not that catalogue.
 
 import type { LucideIcon } from "lucide-react";
+import { scopeShortHref } from "@/features/scope-system/utils/scopeRoutes";
 import {
   AppWindow,
   AudioLines,
@@ -406,7 +407,16 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
 
   // ─── Container display metadata ───────────────────────────────────────────
-  scope: { Icon: Tag, labelPlural: "Scopes" },
+  // A scope's canonical page is nested under its org AND its scope type
+  // (`/organizations/<org>/scopes/<type>/<scope>`), which an id alone cannot
+  // build — which is why this token carried no route for the whole campaign and
+  // every surface passed its own href. `/scopes/s/<id>` is the resolver that
+  // closes it: it looks the scope's org and type up server-side and redirects.
+  scope: {
+    Icon: Tag,
+    labelPlural: "Scopes",
+    hrefFor: (id) => scopeShortHref(id),
+  },
   scope_type: {
     Icon: Layers3,
     labelPlural: "Scope Types",
