@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -42,13 +43,16 @@ import { SlotOverridePanel } from "./SlotOverridePanel";
 interface SlotView {
   slot: SlotDefinitionRow;
   domain: string;
+  /** Null only when the slot has no (readable) default agent. */
+  defaultAgentId: string | null;
   defaultAgentName: string;
   myBinding: SlotBindingRow | null;
   /** Org bindings on orgs the user belongs to, keyed by org id. */
   orgBindings: Record<string, SlotBindingRow>;
   /** The layer that decides the agent for THIS user (user > org > system). */
   provenance: "user" | "org" | "system";
-  /** Agent name after applying that layer. */
+  /** Agent (id + name) after applying that layer. */
+  resolvedAgentId: string | null;
   resolvedAgentName: string;
   settingsOnly: boolean;
 }
@@ -148,10 +152,12 @@ export function SlotOverridesPage() {
       return {
         slot,
         domain: slotDomain(slot.slot_key),
+        defaultAgentId,
         defaultAgentName,
         myBinding,
         orgBindings,
         provenance,
+        resolvedAgentId,
         resolvedAgentName: resolvedAgentId
           ? (data.agentsById[resolvedAgentId]?.name ?? "(unknown agent)")
           : defaultAgentName,
@@ -289,10 +295,23 @@ function SlotCard({
         disabled && "opacity-60",
       )}
     >
-      <button
-        type="button"
+      {/* A div-with-button-semantics, not a <button>: the agent names inside
+          are EntityRef doors (links/buttons), and interactive elements may not
+          nest inside a <button>. EntityRef controls stop propagation. */}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onToggle}
-        className="flex w-full items-start gap-3 px-4 py-3 text-left"
+        onKeyDown={(e) => {
+          // Only when the row itself is focused — keydown from a nested door
+          // (link/peek) bubbles here and must not also toggle the card.
+          if (e.target !== e.currentTarget) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        className="flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left"
         aria-expanded={open}
       >
         <div className="min-w-0 flex-1">
@@ -325,12 +344,34 @@ function SlotCard({
           ) : null}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/80">
             <code className="font-mono">{slot.slot_key}</code>
-            <span className="inline-flex items-center gap-1">
-              <ArrowDownUp className="h-2.5 w-2.5" />
-              runs <span className="font-medium text-foreground/80">{view.resolvedAgentName}</span>
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <ArrowDownUp className="h-2.5 w-2.5 shrink-0" />
+              runs{" "}
+              {view.resolvedAgentId ? (
+                <EntityRef
+                  token="agent"
+                  id={view.resolvedAgentId}
+                  name={view.resolvedAgentName}
+                  showIcon={false}
+                  className="font-medium text-foreground/80"
+                />
+              ) : (
+                <span className="font-medium text-foreground/80">{view.resolvedAgentName}</span>
+              )}
               {view.provenance !== "system" ? (
-                <span className="text-muted-foreground/60">
-                  (default: {view.defaultAgentName})
+                <span className="inline-flex min-w-0 items-center gap-1 text-muted-foreground/60">
+                  (default:{" "}
+                  {view.defaultAgentId ? (
+                    <EntityRef
+                      token="agent"
+                      id={view.defaultAgentId}
+                      name={view.defaultAgentName}
+                      showIcon={false}
+                    />
+                  ) : (
+                    view.defaultAgentName
+                  )}
+                  )
                 </span>
               ) : null}
             </span>
@@ -347,22 +388,37 @@ function SlotCard({
             open && "rotate-180",
           )}
         />
-      </button>
+      </div>
 
       {open && userId ? (
         <div className="border-t border-border/50 px-4 py-3.5">
-          {/* Org overrides the user can SEE but not edit (member, not admin). */}
+          {/* Org overrides the user can SEE but not edit (member, not admin).
+              Every org and agent named here is a door (THE DOOR LAW). */}
           {Object.keys(view.orgBindings).length > 0 && !canEditAnyOrg ? (
             <p className="mb-3 text-[11.5px] text-muted-foreground">
-              {Object.entries(view.orgBindings)
-                .map(([orgId, b]) => {
-                  const name = orgNamesById[orgId] ?? "your organization";
-                  const agentName = b.agent_id
-                    ? (data.agentsById[b.agent_id]?.name ?? "a custom agent")
-                    : "the default agent with adjusted settings";
-                  return `${name} overrides this step (${agentName})`;
-                })
-                .join(" · ")}
+              {Object.entries(view.orgBindings).map(([orgId, b], i) => (
+                <span key={orgId} className="inline-flex flex-wrap items-center gap-1">
+                  {i > 0 ? <span aria-hidden> · </span> : null}
+                  <EntityRef
+                    token="organization"
+                    id={orgId}
+                    name={orgNamesById[orgId] ?? "your organization"}
+                    showIcon={false}
+                  />{" "}
+                  overrides this step (
+                  {b.agent_id ? (
+                    <EntityRef
+                      token="agent"
+                      id={b.agent_id}
+                      name={data.agentsById[b.agent_id]?.name ?? "a custom agent"}
+                      showIcon={false}
+                    />
+                  ) : (
+                    "the default agent with adjusted settings"
+                  )}
+                  )
+                </span>
+              ))}
               . Your override below wins over the org's.
             </p>
           ) : null}

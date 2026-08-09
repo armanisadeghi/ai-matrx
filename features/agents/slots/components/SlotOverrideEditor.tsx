@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Select,
   SelectContent,
@@ -328,9 +329,14 @@ export function SlotOverrideEditor({
               <p className="text-[10.5px] font-medium uppercase tracking-[0.08em] text-primary/80">
                 Selected agent
               </p>
-              <p className="truncate text-[13px] font-medium text-foreground">
-                {selectedAgentName}
-              </p>
+              <EntityRef
+                token="agent"
+                id={agentId}
+                name={selectedAgentName}
+                showIcon={false}
+                alwaysShowActions
+                className="text-[13px] font-medium text-foreground"
+              />
             </div>
             <Button
               type="button"

@@ -31,7 +31,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import IconResolver from "@/components/official/icons/IconResolver";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectShortcutsByAgentId } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { selectCategoryById } from "@/features/agents/redux/agent-shortcut-categories/selectors";
@@ -61,6 +63,9 @@ export function AgentShortcutsPanel({
   const shortcuts = useAppSelector((state) =>
     selectShortcutsByAgentId(state, agentId),
   );
+
+  // Names for org-scoped shortcuts, so "Shared" rows can name AND open the org.
+  const { organizations } = useUserOrganizations();
 
   const isLoading = globalQuery.isLoading || userQuery.isLoading;
   const error = globalQuery.error || userQuery.error;
@@ -92,6 +97,15 @@ export function AgentShortcutsPanel({
             <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
               Shortcuts
             </div>
+            {/* The agent these shortcuts target — a door, not a label. */}
+            <EntityRef
+              token="agent"
+              id={agentId}
+              name={agentName}
+              href={`${basePath}/${agentId}`}
+              alwaysShowActions
+              className="text-base font-semibold text-foreground"
+            />
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link href={`${basePath}/${agentId}/shortcuts/batch`}>
@@ -157,6 +171,13 @@ export function AgentShortcutsPanel({
                 <ShortcutRow
                   key={shortcut.id}
                   shortcut={shortcut}
+                  editorHref={`${basePath}/${agentId}/shortcuts/${shortcut.id}`}
+                  orgName={
+                    shortcut.organizationId
+                      ? (organizations.find((o) => o.id === shortcut.organizationId)?.name ??
+                        null)
+                      : null
+                  }
                   onOpen={() => goToEditor(shortcut.id)}
                 />
               ))}
@@ -218,9 +239,16 @@ function CountCard({
 
 function ShortcutRow({
   shortcut,
+  editorHref,
+  orgName,
   onOpen,
 }: {
   shortcut: AgentShortcutRecord;
+  /** Canonical editor route for this shortcut (basePath-aware). */
+  editorHref: string;
+  /** Resolved org name for org-scoped shortcuts; null when not org-scoped
+   *  (or the org isn't one of the viewer's). */
+  orgName: string | null;
   onOpen: () => void;
 }) {
   const category = useAppSelector((state) =>
@@ -237,11 +265,23 @@ function ShortcutRow({
       : "";
 
   return (
-    <button
-      type="button"
+    // Div-with-button-semantics, not a <button>: the EntityRef doors inside
+    // (peek / new tab) are interactive and may not nest in a <button>.
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
+      onKeyDown={(e) => {
+        // Only when the row itself is focused — keydown from a nested door
+        // (link/peek) bubbles here and must not also open the editor.
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
       className={cn(
-        "w-full flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors",
+        "w-full flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors cursor-pointer",
         "hover:bg-accent hover:border-accent-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
       )}
     >
@@ -280,6 +320,16 @@ function ShortcutRow({
             <scopeBadge.icon className="h-2.5 w-2.5 mr-0.5" />
             {scopeBadge.label}
           </Badge>
+          {/* Org-scoped shortcuts name the org WITH a door, not a bare "Shared". */}
+          {shortcut.organizationId && orgName ? (
+            <EntityRef
+              token="organization"
+              id={shortcut.organizationId}
+              name={orgName}
+              showIcon={false}
+              className="text-[11px] text-muted-foreground"
+            />
+          ) : null}
           {!shortcut.isActive && (
             <Badge variant="outline" className="text-[10px] h-4 px-1.5">
               Inactive
@@ -292,13 +342,20 @@ function ShortcutRow({
             </span>
           )}
         </div>
-        {/* Secondary = raw surface path · shortcut label · category */}
+        {/* Secondary = raw surface path · shortcut label (a door: open/new-tab/peek) · category */}
         <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
           {shortcut.surfaceName && (
             <span className="font-mono truncate">{shortcut.surfaceName}</span>
           )}
           <span aria-hidden>·</span>
-          <span className="truncate">{shortcut.label}</span>
+          <EntityRef
+            token="agent_shortcut"
+            id={shortcut.id}
+            name={shortcut.label}
+            href={editorHref}
+            showIcon={false}
+            className="truncate"
+          />
           {category && (
             <>
               <span aria-hidden>·</span>
@@ -311,7 +368,7 @@ function ShortcutRow({
       </div>
 
       <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-    </button>
+    </div>
   );
 }
 

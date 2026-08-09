@@ -362,6 +362,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   organization: {
     Icon: Building2,
     labelPlural: "Organizations",
+    hrefFor: (id) => `/organizations/${id}`,
   },
 };
 

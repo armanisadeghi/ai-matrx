@@ -189,6 +189,7 @@ See `features/agents/migration/MASTER-PLAN.md`.
 
 ## Change log
 
+- `2026-08-09` — DOOR LAW pass on `AgentShortcutsPanel` (`/agents/[id]/shortcuts`): the target agent, each shortcut row's label (basePath-aware editor route + peek), and an org-scoped shortcut's org now render as `EntityRef` doors; rows became div-with-button-semantics so doors can nest. Pinned by `features/agents/components/shortcuts/__tests__/shortcuts-panel-doors.test.tsx`.
 - `2026-07-02` — Added cross-scope shortcut directory routes (`/shortcuts/all`) and UUID direct-open routes (`/shortcuts/[shortcutId]`) for admin and user. New primitives: `ShortcutDirectory`, `ShortcutDirectResolver`, `useShortcutDirectory`.
 - `2026-04-25` — Org and System Agents shortcut routes: imports use `components/*`, `hooks/*`, and `types` instead of the `@/features/agent-shortcuts` root barrel.
 - `2026-04-22` — claude: initial FEATURE.md extracted from `agent-system-mental-model.md` §5.
