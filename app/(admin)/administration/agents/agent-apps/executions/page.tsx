@@ -78,6 +78,7 @@ import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidC
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { supabase } from "@/utils/supabase/client";
 import { appDb } from "@/utils/supabase/appDb";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 function humanExecution(r: AgentAppExecutionRow): string {
   return [
@@ -287,6 +288,7 @@ function ExecutionIdentity({ row }: { row: AgentAppExecutionRow }) {
 function ExecutionsTable({ appId }: { appId: string | null }) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AgentAppExecutionRow[]>([]);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [appFilter, setAppFilter] = useState("");
   const [successFilter, setSuccessFilter] = useState<
@@ -304,7 +306,16 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
         limit: 500,
       });
       setRows(data);
+      setLoadFailed(false);
     } catch (err) {
+      // 🚨 CLEAR THE ROWS, don't keep them. `rows` is keyed to `appId`, and
+      // this fetch runs again whenever `?app=` changes — so on failure the
+      // table would keep showing the PREVIOUS app's runs while the scope
+      // banner above names the new one. That is not stale data, it is the
+      // wrong record under a confident label. A toast that fades cannot
+      // correct it.
+      setRows([]);
+      setLoadFailed(true);
       toast({
         title: "Error",
         description:
@@ -348,6 +359,16 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
+      {loadFailed && (
+        <StaleDataNotice
+          hasData={false}
+          what={appId ? "this app's runs" : "executions"}
+          onRetry={() => void load()}
+          retrying={loading}
+          className="mx-3 mt-2"
+        />
+      )}
+
       <div className="flex-shrink-0 p-4 border-b border-border bg-card space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3 flex-wrap">
@@ -559,6 +580,7 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
 function ErrorsTable({ appId }: { appId: string | null }) {
   const { toast } = useToast();
   const [rows, setRows] = useState<AgentAppErrorRow[]>([]);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [resolvedFilter, setResolvedFilter] = useState<
     "all" | "resolved" | "unresolved"
@@ -581,7 +603,13 @@ function ErrorsTable({ appId }: { appId: string | null }) {
         limit: 500,
       });
       setRows(data);
+      setLoadFailed(false);
     } catch (err) {
+      // Same as the executions tab above: rows are scoped to `appId`, so
+      // keeping them across a failed refetch shows one app's errors under
+      // another app's banner.
+      setRows([]);
+      setLoadFailed(true);
       toast({
         title: "Error",
         description:
@@ -678,6 +706,16 @@ function ErrorsTable({ appId }: { appId: string | null }) {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
+      {loadFailed && (
+        <StaleDataNotice
+          hasData={false}
+          what={appId ? "this app's errors" : "errors"}
+          onRetry={() => void load()}
+          retrying={loading}
+          className="mx-3 mt-2"
+        />
+      )}
+
       <div className="flex-shrink-0 p-4 border-b border-border bg-card space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="grid grid-cols-3 gap-3 min-w-[300px]">

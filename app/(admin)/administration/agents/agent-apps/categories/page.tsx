@@ -59,6 +59,7 @@ import {
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 
 function humanCategory(c: AgentAppCategoryRow): string {
   return [
@@ -322,6 +323,19 @@ function AgentAppsCategoriesAdminPageInner() {
   return (
     <div className="flex h-full w-full bg-textured overflow-hidden">
       <div className="w-80 border-r border-border flex flex-col overflow-hidden">
+        {/* The catch above already clears `categories` so a failed read can
+            never masquerade as a resolved-but-missing one — but clearing it
+            silently just moves the lie: an empty sidebar reads as "this org
+            has no categories". Say which it is. */}
+        {loadFailed && (
+          <StaleDataNotice
+            hasData={false}
+            what="categories"
+            onRetry={() => void load()}
+            retrying={loading}
+            className="m-3"
+          />
+        )}
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-1.5">
