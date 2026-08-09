@@ -197,6 +197,12 @@ first and emit the gap list; only then wire, batch by batch:
   cost + backlinks reference); small bounded tabs deliberately keep the plain
   pair — the sized-to-data call is part of the job. `AiCopyMenu` remains in
   step with aidream `apps/dashboard/src/components/agent-copy/AiCopyMenu.tsx`.
+- Graded variants wired on the medium/massive marketing site tabs (keywords,
+  ranks, findings, analysis, audit, links, crawls, discovery, cost +
+  backlinks reference) via `buildGroomerPresetPayload` /
+  `groomerPresetVariants` (groomer-types) and `keyFieldsAiVariant` (marketing
+  `copy-payloads.ts`); small bounded tabs deliberately keep the plain pair —
+  the sized-to-data call is part of the job.
 - Built-in integrations: `MatrxDataTable` `copy` config → row/view/window/field
   pairs; `DataRowInspector` per-field hover copy; `JsonInspector` `agentCopy`.
 - Shared formatters: `lib/sandbox/format.ts`, `features/ai-models/format.ts`,
