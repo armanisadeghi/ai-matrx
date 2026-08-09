@@ -310,8 +310,27 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
       },
   ];
 
-  const previous = history.length > 1 ? history[history.length - 2] : null;
-  const delta = previous ? report.totals.findings - previous.findings : null;
+  // The delta's baseline is "the newest history point that is NOT this report",
+  // matched on the scan's own identity — never blindly `history.length - 2`.
+  //
+  // `report.json` and `history.json` are written together by `--write`, but they
+  // are two committed files: a partial commit (or a hand-edit) lands one without
+  // the other. Index arithmetic then silently compares the current totals against
+  // the wrong prior point and prints a confident number that is simply false —
+  // "-40 since last scan" while the trend's last bar still shows the old total.
+  // A scoreboard whose headline stat can lie is worse than one with no stat.
+  const currentInHistory = history.findIndex(
+    (p) => p.generatedAt === report.generatedAt && p.commit === report.commit,
+  );
+  const priorPoints =
+    currentInHistory >= 0 ? history.slice(0, currentInHistory) : [];
+  const previous = priorPoints.length > 0 ? priorPoints[priorPoints.length - 1] : null;
+  // No match means the two files disagree about which scan is current. Say
+  // nothing rather than compute against a point that is not the predecessor.
+  const delta =
+    currentInHistory >= 0 && previous
+      ? report.totals.findings - previous.findings
+      : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
