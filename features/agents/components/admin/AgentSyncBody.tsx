@@ -516,8 +516,16 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
     : null;
   const pushImpact = comparison ? agentSyncImpact(comparison, true) : null;
 
+  // "Nothing to sync" is a VERDICT and only ever set from a finished
+  // comparison — never while one is in flight, or the button would lie.
   const pullBlocked = !!pullImpact?.nothingToSync;
   const pushBlocked = !!pushImpact?.nothingToSync;
+
+  // Disabled is broader: a sync is never offered before its impact is known.
+  // `comparing` covers the first load AND the recheck after a sync, so a second
+  // overwrite cannot be fired into an unknown state.
+  const pullDisabled = !canPull || busy !== null || comparing || pullBlocked;
+  const pushDisabled = !canPush || busy !== null || comparing || pushBlocked;
 
   const diffHref = `/agents/compare?left=${encodeURIComponent(
     userSide.id,
@@ -670,7 +678,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
             variant="outline"
             size="sm"
             onClick={runPull}
-            disabled={!canPull || busy !== null || pullBlocked}
+            disabled={pullDisabled}
             className="gap-1.5"
             title={
               !canPull
@@ -694,7 +702,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
           <Button
             size="sm"
             onClick={runPush}
-            disabled={!canPush || busy !== null || pushBlocked}
+            disabled={pushDisabled}
             className="gap-1.5"
             title={
               !canPush

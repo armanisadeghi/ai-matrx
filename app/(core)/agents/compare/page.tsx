@@ -19,6 +19,8 @@ export default async function CompareAgentsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  const left = firstParam(params.left);
+  const right = firstParam(params.right);
 
   return (
     <>
@@ -27,9 +29,17 @@ export default async function CompareAgentsPage({
           <span className="text-sm font-medium">Compare Agents</span>
         </div>
       </PageHeader>
+      {/*
+        The `initial*` props seed component state, so they are only read on
+        mount. A soft navigation to the same route with different params
+        re-renders this segment WITHOUT remounting the child — the keyed
+        remount is what makes a second deep link actually change both sides
+        instead of leaving stale agents selected.
+      */}
       <AgentComparisonPage
-        initialLeftAgentId={firstParam(params.left)}
-        initialRightAgentId={firstParam(params.right)}
+        key={`${left ?? ""}|${right ?? ""}`}
+        initialLeftAgentId={left}
+        initialRightAgentId={right}
       />
     </>
   );

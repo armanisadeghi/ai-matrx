@@ -14,6 +14,8 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 - [ ] P3 | 6 files via grep `h-screen\|100vh` | banned viewport units still present | 2026-08-08
 - [ ] P3 | 9 files: `fixed bottom-0` without `pb-safe` | fixed bottom bars missing safe-area padding | 2026-08-08
 - [ ] P4 | 44 files: `bg-white`/`text-black` with no `dark:` anywhere in file | strongest light-only candidates (282 total need per-line triage) | 2026-08-08
+- [ ] P1 | features/data-tables/components/VersionHistoryViewer.tsx:131 | restore confirm states a TIMESTAMP ("rewritten to exactly this snapshot from <date>") where the user's question is what changes — same class as the Linked Agent Sync rant | 2026-08-09
+- [ ] P1 | features/files/components/core/FileVersions/FileVersionsList.tsx:282 | "Restore version N?" overwrites the file with no statement of what differs and no door to a diff | 2026-08-09
 
 ## Cleared
 

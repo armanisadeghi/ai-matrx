@@ -59,6 +59,12 @@ export interface AgentComparisonPageProps {
    * Preselect a side (from `?left=` / `?right=`). Lets a surface that already
    * knows which two agents are in question — the Linked Agent Sync panel, a
    * lineage view — open the full diff already pointed at them.
+   *
+   * SEED VALUES, read on mount only: after that the user owns the pickers, and
+   * a prop change must not yank the selection out from under them. A caller
+   * that can change these (a route reading search params) MUST therefore key
+   * this component on them so a second deep link remounts — see
+   * `app/(core)/agents/compare/page.tsx`.
    */
   initialLeftAgentId?: string | null;
   initialRightAgentId?: string | null;
