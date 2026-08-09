@@ -40,12 +40,15 @@ import {
   Database,
   FileCode2,
   FilePen,
+  FileSearch,
   FileText,
   Folder,
   FolderGit2,
   FolderKanban,
+  Gauge,
   GitBranch,
   Globe,
+  Landmark,
   Layers,
   Layers3,
   LayoutTemplate,
@@ -283,6 +286,39 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Mic,
     labelPlural: "Audio Sessions",
     hrefFor: (id) => `/transcripts/studio?session=${id}`,
+  },
+  // War Rooms are named all over the app (threads, tasks, notes, transcripts
+  // all belong to one), so this is one of the highest-traffic doors here.
+  // `Gauge` matches the room's own DEFAULT_ROOM_ICON — a room with no icon set
+  // shows the same glyph in its header and in every reference to it.
+  war_room: {
+    Icon: Gauge,
+    labelPlural: "War Rooms",
+    hrefFor: (id) => `/war-room/${id}`,
+  },
+  // The RAG library's parsed documents. `/rag/library/[id]/preview` is the
+  // canonical read view — the same destination the library's own row menu
+  // opens.
+  processed_document: {
+    Icon: FileSearch,
+    labelPlural: "Processed Documents",
+    hrefFor: (id) => `/rag/library/${id}/preview`,
+  },
+  // ─── Marketing (web.*) ────────────────────────────────────────────────────
+  // `Landmark` matches the brand icon `marketing-nav.ts` already declares.
+  web_brand: {
+    Icon: Landmark,
+    labelPlural: "Brands",
+    hrefFor: (id) => `/marketing/brands/${id}`,
+  },
+  // A site's canonical URL is nested under its brand, which an id alone can't
+  // build. `/marketing/sites/[siteId]` is the deliberate shim for exactly this
+  // case: it resolves `brand_id` and redirects to the nested path, so a door
+  // opened from an id lands where the brand-scoped door lands.
+  web_site: {
+    Icon: Globe,
+    labelPlural: "Websites",
+    hrefFor: (id) => `/marketing/sites/${id}`,
   },
   // ─── Code (canonical `code.*` entities — attachable to orgs, war rooms, etc.) ─
   code_file: {
