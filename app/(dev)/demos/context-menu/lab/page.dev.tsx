@@ -342,21 +342,18 @@ function IdentityBanner({
       <Field
         label="Scope being fetched"
         value={
-          scopeTokenForRef && scopeRef.scopeId ? (
+          scopeRef.scopeId ? (
             <span className="flex min-w-0 items-center gap-1">
               <span className="shrink-0">{scopeRef.scope}</span>
+              {/* ALWAYS the uuid cell — only the TOKEN varies. Token-less still
+                  gives short id + full value on hover + one-click copy, and
+                  adds no route. Dropping to a plain span to avoid a wrong door
+                  would throw away the copy affordance too. */}
               <MatrxUuidCell
                 value={scopeRef.scopeId}
-                token={scopeTokenForRef}
+                token={scopeTokenForRef ?? undefined}
                 label={scopeRef.scope}
               />
-            </span>
-          ) : scopeRef.scopeId ? (
-            <span className="flex min-w-0 items-center gap-1">
-              <span className="shrink-0">{scopeRef.scope}</span>
-              <span className="truncate font-mono text-[10px]">
-                {scopeRef.scopeId}
-              </span>
             </span>
           ) : (
             scopeRef.scope
