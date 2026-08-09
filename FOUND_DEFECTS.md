@@ -13,6 +13,26 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D143 — the files-upload eslint ban points every caller at a file that does not exist (2026-08-09)
+
+`eslint.config.mjs:46-53` bans `@/features/files/upload` + `@/features/files/upload/*`
+and tells the caller to use *"requestUpload from
+`@/features/files/upload/requestUpload`"*. **That module does not exist** —
+`requestUpload` is exported from `features/files/upload/uploadGuardOpeners.ts:81`,
+and the ban's own `upload/*` glob would reject the suggested path even if it did.
+So the rule's remediation is impossible to follow, and the only two imperative
+callers (`features/war-room/components/thread/ThreadNewFileDialog.tsx:34`,
+`ThreadResourcesTab.tsx:43`) are permanently red with no compliant path.
+
+**Why it matters beyond two files:** a guard whose escape hatch is a dead path
+trains agents to disable the rule or add a suppression — the exact
+type-suppression-debt pattern that is a registered patrol. Fix is one of: create
+the re-export the message promises (and exempt it from the glob), or point the
+message at `uploadGuardOpeners` and narrow the ban to the genuinely internal
+modules (`cloudUpload`, `tusUpload`, which are already named separately at
+`:124`). **Not fixed here** — it is a lint-policy call on a feature this sweep
+does not own; found while converting the war-room file row.
+
 ### D142 — on TOUCH, EntityRef offers only one of its four doors (2026-08-09)
 
 `EntityRef`'s control cluster (peek + new tab) is revealed by `group-hover` /

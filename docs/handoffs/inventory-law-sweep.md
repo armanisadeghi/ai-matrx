@@ -546,10 +546,17 @@ are now deleted.**
       there is no single "the" route); converting its name to a plain link would
       REPLACE that chooser. The additive form is `onOpen={openActionModal}` plus
       the peek and new-tab controls — verify against the modal, don't assume.
-- [ ] `features/war-room/components/thread/ThreadResourcesTab.tsx` —
-      `FileResourceRow` renders its own `<p>{name}</p>` via the `renderRow`
-      override (it swaps in a media thumbnail). Same dead-end class, missed by
-      the sweep because it overrides the row.
+- [x] **`ThreadResourcesTab` — SHIPPED, and the miss is the reusable part.**
+      `FileResourceRow` rendered its own `<p>{name}</p>` through
+      `WarRoomResourcesList`'s `renderRow` override (it swaps in a media
+      thumbnail), so when the rail's default row was converted, the ONE file
+      row in the war room kept its inert name — the only resource there you
+      could not open. **`renderRow` opts a row out of every future improvement
+      to the default row**, silently and with no diff to look at. Its title is
+      now byte-identical to `DefaultResourceRow`'s (`openInNewTab`, same
+      classes). **When converting a list, grep its `renderRow` / `renderCell` /
+      `children`-as-function escape hatches before calling the list done** —
+      the sweep missed this one for exactly the reason it exists.
 - [ ] Nothing here is browser-verified yet.
 
 

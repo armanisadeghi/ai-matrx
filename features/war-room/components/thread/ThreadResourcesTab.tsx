@@ -38,6 +38,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { requestUpload } from "@/features/files/upload/uploadGuardOpeners";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
@@ -450,7 +451,22 @@ function FileResourceRow({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-foreground">{name}</p>
+        {/* IDENTICAL to `DefaultResourceRow`'s title, deliberately. This
+            override exists to swap in a media thumbnail, and the sweep missed
+            it for exactly that reason: overriding `renderRow` opts a row out of
+            every improvement the default row gets, so the one file row in the
+            war room was the only resource whose name stayed inert after the
+            rail was converted. `openInNewTab` for the same reason as the
+            default — this is a rail inside the thread the user is working in,
+            and navigating the current tab would cost them that thread. */}
+        <EntityRef
+          token="file"
+          id={fileId}
+          name={name}
+          showIcon={false}
+          openInNewTab
+          className="text-sm text-foreground"
+        />
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
           {ctx.idPrefix}
           {!compact && file?.meta.mime ? (
