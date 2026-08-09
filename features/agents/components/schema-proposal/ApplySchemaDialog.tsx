@@ -17,6 +17,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Check, Loader2, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 
 import { cn } from "@/lib/utils";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
@@ -122,7 +123,9 @@ export const ApplySchemaDialog: React.FC<ApplySchemaDialogProps> = ({
           value: schema,
         }),
       ).unwrap();
-      toast.success(`Updated ${selectedAgent.name} output schema`);
+      toast.success(`Updated ${selectedAgent.name} output schema`, {
+        action: toastDoor("agent", selectedAgent.id),
+      });
       onOpenChange(false);
       setSelectedId(null);
       setQuery("");

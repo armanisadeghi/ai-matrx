@@ -266,6 +266,20 @@ explicit `href` instead (`CreateShowDialog`). Either the overlay grows a
 slug-aware form, or these routes gain id resolvers like `/scopes/s/<id>` — an
 owner's call, not a per-surface patch.
 
+**The registry route is not always the RIGHT door for the viewer.** `app`
+resolves to `/agent-apps/<id>` — the owner's overview — which is wrong for an
+operator who just created a system app from the admin console; that flow's
+editor is `/administration/agents/agent-apps/edit/<id>`. Pass an `href`
+override. Same shape as the org-admin 403 reasoning: right record, wrong door
+for who is looking. (Bugbot, 2026-08-09.)
+
+**Not every "created" toast needs a door — check what the surface already
+does.** `PromoteToSiteDialog` looked like a textbook case, but the CMS lives in
+a SEPARATE Supabase project, so its page id is NOT a `web_page`; using that
+token would have minted a wrong-record door. The dialog also already renders a
+result panel with its own Open button (`/cms/<client_id>/pages/<id>`). Left
+alone deliberately.
+
 **Toast systems that cannot carry a door** — `toastDoor` returns a ReactNode,
 which sonner renders raw. The two legacy wrappers cannot take it:
 `@/lib/toast-service` (`success(message, moduleKey, options)`) and

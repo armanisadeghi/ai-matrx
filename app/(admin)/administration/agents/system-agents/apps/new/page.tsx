@@ -70,8 +70,14 @@ export default function AdminNewSystemAppPage() {
           slug: string;
           name: string;
         };
+        // href override, not the registry default: `app`'s canonical route is
+        // `/agent-apps/<id>`, the OWNER's overview. The operator who just
+        // created a system app from the admin console wants the admin editor —
+        // right record, wrong door for this viewer.
         toast.success("System app created", {
-          action: toastDoor("app", app.id),
+          action: toastDoor("app", app.id, {
+            href: `/administration/agents/agent-apps/edit/${app.id}`,
+          }),
         });
         setCreated({ id: app.id, slug: app.slug, name: app.name });
       } catch (err) {
