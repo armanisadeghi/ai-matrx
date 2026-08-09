@@ -188,6 +188,13 @@ resolver route and no peek) · `context_item` (no peek either) · `tool`,
 super-admin layout — the "403 door" question, item 11/16) · `workflow` (lives in
 aidream's workflow-studio, D139).
 
+**Correction (2026-08-09), so it does not propagate:** commit `ce1ae00c`'s
+message claims `message` and `context_item` "have no entity token at all".
+**That is wrong** — both ARE registered, and both match their item-presentation
+`detailSource`, so both correctly resolve doors. The code was right; only the
+stated rationale was wrong. (`session`, `email`, `image`, `video`, `audio` do
+genuinely lack a token, which is why they render none.)
+
 **Item-type vocabulary drift — FIXED 2026-08-09, and worth knowing about.**
 `KnownItemType` is *mostly* the token vocabulary but not entirely: `table` →
 `dataset`, `document` → `udt_document`, `picklist` → `structured_list`. These
