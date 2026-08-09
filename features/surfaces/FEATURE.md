@@ -133,7 +133,9 @@ internal platform use — never a washed-down user variant beside a private one:
   `matrx-user/marketing-ranks` (`track_keywords`, `set_tracking_active` —
   handlers on `RanksWorkspace.tsx`'s provider),
   `matrx-user/marketing-site` (`site_name`, `site_description` — handlers in
-  `features/marketing/components/site/MarketingSiteWriteTargets.tsx`). The LSI kind
+  `features/marketing/components/site/MarketingSiteWriteTargets.tsx`), and
+  `matrx-user/cms-component` (`component_html_content`,
+  `component_css_content` — draft handlers on the component editor provider). The LSI kind
   components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
@@ -187,7 +189,9 @@ internal platform use — never a washed-down user variant beside a private one:
   builder's own provider so they stay wired on every panel/tab. Capabilities
   — model, tools, MCP servers, skills, variables, output schema — and all
   governance/visibility stay human-only: an agent changing what another agent
-  may REACH is a capability change, not a copy edit).
+  may REACH is a capability change, not a copy edit), and
+  `matrx-user/cms-component` (2 draft targets for shared HTML and CSS;
+  save/publish, delete, activation, and naming remain human-only).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -348,6 +352,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — CMS shared-component editor agent-writable.** `matrx-user/cms-component` declares `component_html_content` and `component_css_content` as ask-policy draft targets with replace/append modes, staging through the editor's existing HTML/CSS state. The components page now mounts the missing `SurfaceRuntimeProvider` with the existing scope builder and write handlers. Save, delete, activation, and rename remain human-only. Live-agent verification covered apply, decline, undeclared-target refusal, correct surface resolution, and confirmed that draft staging did not mutate the persisted row.
 
 - **2026-08-09 — Marketing Ranks agent-writable + Keyword Intelligence `open_keyword`.** `matrx-user/marketing-ranks` declares 2 ask-policy entity targets (`track_keywords` — batch add through the SAME `usePortfolio().addTarget` aidream path as the Track form, mode ids validated against `TRACKING_MODES` with per-mode location rules; `set_tracking_active` — non-destructive pause/resume via `updateTarget`, the Active switch's path; delete stays human); handlers on `RanksWorkspace.tsx`'s provider. `matrx-user/keyword-intelligence` gained `open_keyword` (ui/ask — navigates the window through the canonical related-keyword path, recording window history; handler on `KeywordIntelPanel`'s provider). Live-verified with real Badass Agent runs on `/marketing/.../ranks`: ask dialog per target, applied add landed in `seo.rank_target`, pause flipped exactly the named row, decline returned a non-error envelope, undeclared delete refused. DB mirror rows added to `ui.ui_surface_write_target`.
 - **2026-08-09 — marketing-page write coverage completed (12 targets — the richest write surface).** 8 new ask-policy targets beside the existing 4: `page_remove_keywords` (canonical `removePageKeyword`, supporting role only), `page_social_card`, `page_indexability_plan`, `page_headings_plan`, `page_link_plan`, `page_plan_notes` (six note keys, one composite), `page_image_plan` (append/replace, entries minted `planned`), `page_image_alts` — all through the clobber-safe `updatePageDesiredValues` merge or the association chokepoint. Handler-side staleness fix: `MarketingPageWriteTargets` keeps the freshest RETURNED row (`rowRef`, generalizing the D5 versionRef fix) so several applies in one agent message never read one-save-stale intent/desired state. DB mirror upserted (8 `ui.ui_surface_write_target` rows). Live-verified with two real Badass Agent runs on a page workspace: 9 ask dialogs (4 then 5 targets in one message each) all applied and confirmed in `web.page.desired_values` + `platform.associations` (attach-2/remove-1 keyword cycle), zero version-guard trips; undeclared-target probe (`page_url`) refused loudly with the declared-target list echoed back; unanswered asks from an earlier run declined as non-errors and the agent continued gracefully.

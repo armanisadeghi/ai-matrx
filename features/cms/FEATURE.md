@@ -79,7 +79,7 @@ for the general contract this section instantiates.
 | `matrx-user/cms`           | `/cms`                                          | `NonEditableContextMenu` (page + per-card)                                                                | List/entry hub — `owned_sites_summary`, no `site_structure`. **`readiness: verified`**                                                                                 |
 | `matrx-user/cms-site`      | `/cms/[siteId]` + all four tabs                 | `NonEditableContextMenu`                                                                                  | Site workspace; first surface to emit `site_structure`. **Inherits `matrx-user/cms`** (the layout genuinely loads the switcher's site list). **`readiness: verified`** |
 | `matrx-user/cms-page`      | `/cms/[siteId]/pages/[pageId]`, `.../pages/new` | `EditableContextMenu` + `ProTextarea` on HTML/CSS/JS tabs                                                 | **Primary editor** — `agentRoles`: `page_editor`, `seo_editor`, `publish_reviewer`                                                                                     |
-| `matrx-user/cms-component` | `/cms/[siteId]/components`                      | `EditableContextMenu` + `ProTextarea` (HTML/CSS) + `NonEditableContextMenu` (cards)                       | Shared header/footer editor                                                                                                                                            |
+| `matrx-user/cms-component` | `/cms/[siteId]/components`                      | `EditableContextMenu` + `ProTextarea` (HTML/CSS) + `NonEditableContextMenu` (cards)                       | Shared header/footer editor. Agent-**writable**: 2 ask-policy draft `writeTargets` (`component_html_content`, `component_css_content`), provider + handlers in `app/(core)/cms/[siteId]/components/page.tsx` |
 | `matrx-user/html-page`     | `/cms/html-pages`, `/cms/html-pages/[pageId]`   | `EditableContextMenu` (meta description `ProTextarea` + Monaco body) + `NonEditableContextMenu` (preview) | Standalone quick-publish — `html_pages_structure`, not `site_structure`; `agentRoles`: `html_page_editor`                                                              |
 
 **The framing idea:** every website surface (`cms-site`/`cms-page`/`cms-component`) emits the _same_
@@ -343,6 +343,45 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-08-09` — **`matrx-user/cms-component` is now agent-WRITABLE, and the
+  components route finally mounts its own surface runtime.** The manifest
+  declares 2 ask-policy draft targets — `component_html_content` and
+  `component_css_content`, both `{ html|css: string, mode?: 'replace' |
+  'append' }` — with handlers on a `<SurfaceRuntimeProvider>` in
+  `app/(core)/cms/[siteId]/components/page.tsx` that stage into the SAME
+  `editHtml` / `editCss` `useState` the user's typing drives and throw on a
+  bad shape (including when no row is expanded for edit — there is no buffer
+  to write then). Nothing persists: the human still clicks Save.
+  **Two, deliberately.** `is_active` is NOT a target — CMS migration 0035
+  guarantees ONE active header/footer per site, so flipping it swaps the
+  site's chrome and is a routing decision, not authored content. Delete and
+  Save stay behind a human click. `component_name` / `component_type` have no
+  in-place editor on this route at all (the only name/type inputs belong to
+  the "New Component" dialog, i.e. the `pending_component` read value), so
+  there is nowhere for an agent rename to land.
+  **The save path is stated honestly in both descriptions**, because it
+  differs from the page editor: `handleSaveEdit` calls
+  `CmsComponentService.updateComponent({htmlContent, cssContent})`, which
+  `/api/cms/components` `update` maps to `client_components.html_content` /
+  `.css_content` — the LIVE columns, never the `*_draft` twins (nothing in
+  this repo writes those; only aidream's server-side tools do). So there is
+  no draft-save here: a human Save publishes to every page of the site at
+  once. Reads are the mirror image — `startEditing` seeds the buffers from
+  `html_content_draft ?? html_content`, so an agent-authored server-side draft
+  shows up in the editor and saving it promotes that draft live.
+  Prerequisite fixed in the same change: the route consumed
+  `useCmsComponentSurfaceScope` and passed `CMS_COMPONENT_CONTEXT_MENU_PROPS`
+  to its menus but mounted NO `SurfaceRuntimeProvider`, so the live runtime on
+  `/cms/[siteId]/components` was the layout's `matrx-user/cms-site` — the
+  header Agents popover ran agents against the site scope, not this screen's.
+  It now mounts the cms-component provider (nested inside, therefore deeper
+  than, `SiteLayoutClient`'s) reusing the one existing scope builder.
+  Live-verified with a real agent run on `dev-website`'s "Main Header (token
+  nav)": popover resolved CMS Component, both targets applied from one
+  plain-language ask, a decline returned `{ok:false, declined:true}` and was
+  handled gracefully, an undeclared rename/deactivate was refused at the
+  offer level, and the `client_components` row was byte-unchanged afterwards.
 
 - `2026-08-07` (round 2) — **Starter kit for humans + theme un-bake + shell integrity
   (WF-1/2/4/7).** `/cms/[siteId]/settings` gained a "Site Shell" card — Install starter kit
