@@ -73,7 +73,17 @@ import {
   SourceKindBadge,
   sourceKindLabel,
 } from "./mcp-tools/source-kind-badge";
-import { ExternalLink } from "lucide-react";
+
+import Link from "next/link";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import {
+  mcpServerHref,
+  toolEditHref,
+  toolHref,
+  toolIncidentsHref,
+  toolUiHref,
+} from "@/features/tool-registry/doors";
 
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -307,13 +317,16 @@ export function McpToolsManager() {
         type: "text",
         width: "w-[240px]",
         getValue: (t) => t.id,
+        // THE DOOR LAW: "never render an id you can't open". The id was printed
+        // raw with the row's own detail route one click away but unreachable by
+        // any gesture but a left click.
         render: (t) => (
-          <span
-            className="font-mono text-[11px] text-muted-foreground truncate block max-w-[240px]"
-            title={t.id}
-          >
-            {t.id}
-          </span>
+          <MatrxUuidCell
+            value={t.id}
+            label="Tool"
+            token="tool"
+            href={toolHref(t.id)}
+          />
         ),
       },
       {
@@ -322,13 +335,18 @@ export function McpToolsManager() {
         type: "text",
         width: "w-[220px]",
         getValue: (t) => t.name,
+        // The name is the tool's identity — it opens the tool. `href` is the
+        // ADMIN route (the registry has no `hrefFor` for `tool`, deliberately:
+        // this console is super-admin only). Peek comes from the registry.
         render: (t) => (
-          <span
-            className="font-mono text-xs font-medium truncate block max-w-[220px]"
-            title={t.name}
-          >
-            {t.name}
-          </span>
+          <EntityRef
+            token="tool"
+            id={t.id}
+            name={t.name}
+            href={toolHref(t.id)}
+            showIcon={false}
+            className="max-w-[220px] font-mono text-xs font-medium"
+          />
         ),
       },
       {
@@ -375,24 +393,17 @@ export function McpToolsManager() {
         type: "boolean",
         width: "w-[120px]",
         getValue: (t) => t.managed_by_server_id !== null,
+        // Was a `window.open` at `/administration/agents/mcp-servers/<id>` — a
+        // route leaf that does not exist, so every click was a 404. The server
+        // console holds its selection in state; `mcpServerHref` is the deep
+        // link that makes the server itself reachable.
         render: (t) =>
           t.managed_by_server_id ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                window.open(
-                  `/administration/agents/mcp-servers/${t.managed_by_server_id}`,
-                  "_blank",
-                  "noopener,noreferrer",
-                );
-              }}
-              className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 hover:underline"
-              title="Open MCP server"
-            >
-              <ExternalLink className="h-3 w-3" />
-              MCP
-            </button>
+            <MatrxUuidCell
+              value={t.managed_by_server_id}
+              label="MCP server"
+              href={mcpServerHref(t.managed_by_server_id)}
+            />
           ) : (
             <span className="text-muted-foreground text-[10px]">—</span>
           ),
@@ -578,15 +589,20 @@ export function McpToolsManager() {
         type: "number",
         width: "w-[90px]",
         getValue: (t, c) => c.sampleCount,
+        // A COUNT IS A DOOR: these are `tool.test_sample` rows, and the tool's
+        // detail page is where they are listed.
         render: (t, c) => (
-          <span
+          <Link
+            href={toolHref(t.id)}
+            onClick={(e) => e.stopPropagation()}
+            title={`${c.sampleCount} test sample${c.sampleCount === 1 ? "" : "s"} — open ${t.name}`}
             className={cn(
-              "font-mono text-[11px] tabular-nums",
+              "font-mono text-[11px] tabular-nums underline-offset-2 hover:text-primary hover:underline",
               c.sampleCount === 0 && "text-warning",
             )}
           >
             {c.sampleCount}
-          </span>
+          </Link>
         ),
       },
       {
@@ -595,15 +611,20 @@ export function McpToolsManager() {
         type: "number",
         width: "w-[120px]",
         getValue: (t, c) => c.uiComponentCount,
+        // A COUNT IS A DOOR: `tool.ui` rows live on the tool's UI page, which
+        // the row click alone never reached.
         render: (t, c) => (
-          <span
+          <Link
+            href={toolUiHref(t.id)}
+            onClick={(e) => e.stopPropagation()}
+            title={`${c.uiComponentCount} UI component${c.uiComponentCount === 1 ? "" : "s"} — open the UI page for ${t.name}`}
             className={cn(
-              "font-mono text-[11px] tabular-nums",
+              "font-mono text-[11px] tabular-nums underline-offset-2 hover:text-primary hover:underline",
               c.uiComponentCount === 0 && "text-warning",
             )}
           >
             {c.uiComponentCount}
-          </span>
+          </Link>
         ),
       },
       {
@@ -1642,7 +1663,7 @@ export function McpToolsManager() {
                             col.width,
                           )}
                           onClick={() =>
-                            navigateTo(`/administration/agents/mcp-tools/${tool.id}`)
+                            navigateTo(toolHref(tool.id))
                           }
                         >
                           {col.render(tool, counts)}
@@ -1683,7 +1704,7 @@ export function McpToolsManager() {
                             variant="ghost"
                             size="sm"
                             onClick={() =>
-                              navigateTo(`/administration/agents/mcp-tools/${tool.id}`)
+                              navigateTo(toolHref(tool.id))
                             }
                             title="View Samples"
                             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
@@ -1695,7 +1716,7 @@ export function McpToolsManager() {
                             size="sm"
                             onClick={() =>
                               navigateTo(
-                                `/administration/agents/mcp-tools/${tool.id}/ui`,
+                                toolUiHref(tool.id),
                               )
                             }
                             title="UI Component"
@@ -1708,7 +1729,7 @@ export function McpToolsManager() {
                             size="sm"
                             onClick={() =>
                               navigateTo(
-                                `/administration/agents/mcp-tools/${tool.id}/incidents`,
+                                toolIncidentsHref(tool.id),
                               )
                             }
                             title="Incidents"
@@ -1721,7 +1742,7 @@ export function McpToolsManager() {
                             size="sm"
                             onClick={() =>
                               navigateTo(
-                                `/administration/agents/mcp-tools/${tool.id}/edit`,
+                                toolEditHref(tool.id),
                               )
                             }
                             title="Edit Tool"

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { McpServersAdminPage } from "@/features/tool-registry/mcp-admin/components/McpServersAdminPage";
 
 export const metadata = {
@@ -7,5 +8,11 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <McpServersAdminPage />;
+  // `?server=<id|slug>` deep link (features/tool-registry/doors.ts) is read with
+  // useSearchParams, which the App Router requires under a Suspense boundary.
+  return (
+    <Suspense fallback={null}>
+      <McpServersAdminPage />
+    </Suspense>
+  );
 }
