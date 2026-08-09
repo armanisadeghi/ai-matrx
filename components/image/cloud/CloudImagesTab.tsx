@@ -107,7 +107,10 @@ import { openFolderPicker } from "@/features/files/components/pickers/cloudFiles
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildImagesScope } from "@/features/image-manager/lib/images-surface-scope";
 import { IMAGES_SURFACE_NAME } from "@/features/surfaces/manifests/images.manifest";
-import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
+import {
+  useListViewPrefs,
+  type LegacyListViewImport,
+} from "@/lib/list-views/useListViewPrefs";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { toast } from "@/lib/toast";
 
@@ -121,6 +124,22 @@ const RECENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const CLOUD_IMAGES_VIEW_DEFAULTS: Partial<ListViewPrefs> = {
   view: "cards",
   density: "comfortable",
+};
+
+/**
+ * One-time adoption of the device-local key. This surface's old vocabulary was
+ * a single three-value string, so the mapping is a genuine PROJECTION onto the
+ * two persisted axes — not a pass-through. Getting it wrong would have written
+ * `view: "cozy"`, which no toggle here matches.
+ */
+const CLOUD_IMAGES_LEGACY_VIEW: LegacyListViewImport = {
+  key: "image-manager:cloud-images-view",
+  map: (raw) => {
+    if (raw === "list") return { view: "rows" };
+    if (raw === "cozy") return { view: "cards", density: "comfortable" };
+    if (raw === "compact") return { view: "cards", density: "compact" };
+    return null;
+  },
 };
 
 /**
@@ -189,6 +208,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   const { prefs, setPrefs } = useListViewPrefs(
     "image-manager-cloud",
     CLOUD_IMAGES_VIEW_DEFAULTS,
+    CLOUD_IMAGES_LEGACY_VIEW,
   );
   const isListView = prefs.view === "rows";
   const gridDensity: CloudImageViewMode =

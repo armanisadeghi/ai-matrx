@@ -73,6 +73,18 @@ Before replacing hand-rolled code with a shared primitive, answer all eleven.
    catalogue keys differ from their token; keying off the key silently loses
    both the route and the peek for exactly those six.
 
+   **The same trap from the other direction: a `kind` column written by another
+   SYSTEM is not a token.** The RAG/ingest pipeline stamps
+   `source_kind='cld_file'` (the legacy name of what is now `files.files` — the
+   registry's `file`, same row, same id, same route, same peek), alongside a
+   dozen kinds that ARE canonical. Hand the raw string to `EntityRef` and file
+   batches lose every door while `note`/`task`/`transcript` on the same screen
+   work — the most deceptive possible failure. Aliases now resolve in ONE place,
+   `resolveEntityToken` in `entityRegistry.ts`; add the next one there, and only
+   after verifying it points at the same physical row (`processed_document` is
+   `docproc`, NOT `udt_document` — an alias that merely sounds related
+   fabricates a route). *(Caught by Cursor Bugbot on the KG cost dashboard.)*
+
 4. **Does the primitive's value range exceed the surface's?** A shared type is
    usually WIDER than any one consumer. `ListViewPrefs["view"]` allows
    `table | cards | rows`, but a Cards/Table hub only renders two of those —

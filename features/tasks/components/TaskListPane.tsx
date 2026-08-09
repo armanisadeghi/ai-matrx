@@ -43,7 +43,10 @@ import { cn } from "@/utils/cn";
 import type { TaskWithProject } from "@/features/tasks/types";
 import TasksTableView from "@/features/tasks/components/TasksTableView";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
-import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
+import {
+  useListViewPrefs,
+  type LegacyListViewImport,
+} from "@/lib/list-views/useListViewPrefs";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 
 /**
@@ -51,6 +54,20 @@ import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice
  * The grouped task list is the canonical `rows` view; table is the alternate.
  */
 const TASK_LIST_VIEW_DEFAULTS: Partial<ListViewPrefs> = { view: "rows" };
+
+/**
+ * One-time adoption of the device-local key. Note the vocabulary change: this
+ * pane called its non-table mode "list", which is `rows` on the shared axes —
+ * a raw pass-through would have written a value no toggle here matches.
+ */
+const TASK_LIST_LEGACY_VIEW: LegacyListViewImport = {
+  key: "tasks-list-view",
+  map: (raw) => {
+    if (raw === "table") return { view: "table" };
+    if (raw === "list") return { view: "rows" };
+    return null;
+  },
+};
 
 export default function TaskListPane() {
   const dispatch = useAppDispatch();
@@ -81,6 +98,7 @@ export default function TaskListPane() {
   const { prefs, setView } = useListViewPrefs(
     "tasks-list-pane",
     TASK_LIST_VIEW_DEFAULTS,
+    TASK_LIST_LEGACY_VIEW,
   );
   const isTableView = prefs.view === "table";
 

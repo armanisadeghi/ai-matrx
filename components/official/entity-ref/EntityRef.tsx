@@ -30,7 +30,10 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Lightbulb } from "lucide-react";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  resolveEntityToken,
+  tryGetEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
 import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
@@ -177,9 +180,14 @@ export function EntityRef({
 }: EntityRefProps) {
   const [peekOpen, setPeekOpen] = useState(false);
 
-  const info = tryGetEntityInfo(token);
+  // Canonicalise ONCE, up front. A surface often passes a `kind` column owned
+  // by another system (`source_kind='cld_file'` from the ingest pipeline), and
+  // resolving the route from the canonical token while looking the peek up by
+  // the raw string is how a record ends up with one door and not the other.
+  const canonicalToken = resolveEntityToken(token);
+  const info = tryGetEntityInfo(canonicalToken);
   const resolvedHref = href ?? info?.hrefFor?.(id) ?? null;
-  const peekKind = PEEK_KEY_BY_TOKEN[token] ?? token;
+  const peekKind = PEEK_KEY_BY_TOKEN[canonicalToken] ?? canonicalToken;
   const canPeek = !disablePeek && hasPeek(peekKind);
   const label = name?.trim() || `${id.slice(0, 8)}…`;
   const Icon = info?.Icon ?? null;

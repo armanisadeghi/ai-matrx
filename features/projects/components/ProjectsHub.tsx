@@ -70,7 +70,10 @@ import { isScopesRpcErr } from "@/features/scopes/types";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
-import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
+import {
+  useListViewPrefs,
+  type LegacyListViewImport,
+} from "@/lib/list-views/useListViewPrefs";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import type {
   ProjectWithRole,
@@ -93,6 +96,17 @@ const UUID_RE =
  */
 const PROJECTS_HUB_VIEW_DEFAULTS: Partial<ListViewPrefs> = { view: "cards" };
 
+/**
+ * One-time adoption of the device-local key this hub used before it moved onto
+ * the synced hook. Without it, a user whose only record of "I like the table
+ * here" was `localStorage` silently reverts to cards on the deploy that was
+ * supposed to make the choice FOLLOW them to another device.
+ */
+const PROJECTS_HUB_LEGACY_VIEW: LegacyListViewImport = {
+  key: "projects-view",
+  map: (raw) => (raw === "table" || raw === "cards" ? { view: raw } : null),
+};
+
 type Stat = {
   open: number;
   done: number;
@@ -114,6 +128,7 @@ export function ProjectsHub({
   const { prefs, setView } = useListViewPrefs(
     "projects-hub",
     PROJECTS_HUB_VIEW_DEFAULTS,
+    PROJECTS_HUB_LEGACY_VIEW,
   );
   /**
    * Narrow on read — this hub offers only Cards and Table, while

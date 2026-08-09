@@ -485,9 +485,43 @@ export function getEntityInfo(token: EntityTypeToken): EntityInfo {
   };
 }
 
+/**
+ * Domain vocabularies that name a registered entity by a DIFFERENT string.
+ *
+ * A `kind` column written by another system is not automatically a canonical
+ * token. The RAG/ingest pipeline (aidream) stamps `source_kind='cld_file'` on
+ * `rag.kg_chunks` and `public.auto_ingest_batch` — the legacy name of the table
+ * now called `files.files`, which IS the registry's `file`: same row, same id,
+ * same `/files/f/{id}` route, same peek. A surface that hands the raw string to
+ * `EntityRef` therefore loses open, new tab AND peek for exactly the file
+ * batches, silently, while every other kind on the same screen works.
+ *
+ * This map lives HERE rather than beside a consumer because that is the whole
+ * lesson of `PEEK_KEY_BY_TOKEN`: six private copies of "what is this thing
+ * called" drifted independently and cost six peeks their Open door. One alias
+ * table, one place to add the next one.
+ *
+ * Only add an entry you have VERIFIED points at the same physical row — an
+ * alias that merely sounds related (`processed_document` is `docproc`, not
+ * `udt_document`) fabricates a route, which is worse than no link at all.
+ */
+const TOKEN_ALIASES: Record<string, EntityTypeToken> = {
+  cld_file: "file",
+};
+
+/**
+ * Normalise a raw `kind`/`type` string onto its canonical entity token.
+ * Returns the input unchanged when it is already canonical or unknown — the
+ * caller's existing "no registry entry → plain text" path still applies.
+ */
+export function resolveEntityToken(raw: string): string {
+  return TOKEN_ALIASES[raw] ?? raw;
+}
+
 /** Safe variant for raw strings (e.g. an edge's `otherType`). */
 export function tryGetEntityInfo(token: string): EntityInfo | null {
-  return isEntityTypeToken(token) ? getEntityInfo(token) : null;
+  const canonical = resolveEntityToken(token);
+  return isEntityTypeToken(canonical) ? getEntityInfo(canonical) : null;
 }
 
 // Reverse index: "schema.table" → canonical token (first registered token wins
