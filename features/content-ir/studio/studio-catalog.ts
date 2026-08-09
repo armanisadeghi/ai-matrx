@@ -127,7 +127,10 @@ export async function listShapesForUser(): Promise<ShapeListEntry[]> {
       .schema("content_ir")
       .from("kind_definition")
       .select("id,kind,label,created_by,is_active,visibility,metadata,version,updated_at")
-      .is("deleted_at", null),
+      .is("deleted_at", null)
+      // Machine-minted I/O contract bookkeeping rows (tool_io_*_<hash8>_*)
+      // never reach the shape gallery — real, human-named shapes only.
+      .eq("is_contract_artifact", false),
     supabase
       .schema("content_ir")
       .from("kind_component")

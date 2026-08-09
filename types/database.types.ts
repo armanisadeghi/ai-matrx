@@ -7832,6 +7832,7 @@ export type Database = {
           emitted_json_schema: Json | null
           id: string
           is_active: boolean
+          is_contract_artifact: boolean
           kind: string
           label: string
           metadata: Json
@@ -7855,6 +7856,7 @@ export type Database = {
           emitted_json_schema?: Json | null
           id?: string
           is_active?: boolean
+          is_contract_artifact?: boolean
           kind: string
           label: string
           metadata?: Json
@@ -7878,6 +7880,7 @@ export type Database = {
           emitted_json_schema?: Json | null
           id?: string
           is_active?: boolean
+          is_contract_artifact?: boolean
           kind?: string
           label?: string
           metadata?: Json
