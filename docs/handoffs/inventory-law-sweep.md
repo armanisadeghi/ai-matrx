@@ -908,9 +908,26 @@ Remaining bespoke/fake right-click menus:
   **The tell to reuse:** a prop that no call site passes AND whose job the
   surface's wrapper already does is not "unused", it is a second authority
   waiting for someone to wire it up.
-- `features/pdf/components/viewer/annotation-layer/PdfAnnotationLayer.tsx:367` —
-  suppresses the native menu; `RegionContextMenu.tsx:21` warns not to pass the
-  handler on the v3 path, so any surface that does has a **genuine dead end**.
+- [x] ~~`PdfAnnotationLayer.tsx:367` suppresses the native menu;
+  `RegionContextMenu.tsx:21` warns not to pass the handler on the v3 path~~
+  **CONFIRMED DEAD END, FIXED 2026-08-09 — and the cause was not what the
+  warning predicted.** The warning says "any surface that passes the handler
+  has a dead end"; in fact **both** surfaces (`StudioShell`, `PdfEditTab`)
+  correctly omitted it, and the dead end was one level down:
+  `AnnotatablePdfCanvas.tsx:249` forwarded the optional prop to the layer
+  wrapped in an unconditional arrow (`(id,x,y) => onRegionContextMenu?.(id,x,y)`),
+  which is ALWAYS truthy. So the layer always took its handler branch —
+  `preventDefault()` + `stopPropagation()` — then called into `undefined`.
+  Right-clicking a PDF region did **nothing at all**: native menu suppressed,
+  v3 menu never reached, and `PdfRegionContextMenu` — built deliberately as
+  "the missing half" (extract-at-bbox, promote-to-entity, redact, delete) —
+  unreachable on every region since it shipped.
+
+  **The reusable tell, and it is invisible to TypeScript:** wrapping an
+  optional callback in an always-defined arrow converts "absent" into "present
+  and inert". Any component whose contract is *"omit this prop to opt out"* is
+  broken by a pass-through wrapper that does not preserve absence. Grep for
+  `={(…) => someOptionalProp?.(…)}` when a documented opt-out does not work.
 
 Missing-entirely, ranked. **`/agents/all` and `/transcripts` rows are DONE** —
 both inherited right-click from the one `rowWrapper` seam on the canonical list

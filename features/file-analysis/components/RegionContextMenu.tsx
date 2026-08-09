@@ -22,6 +22,16 @@
  * this wrapper — the layer's own handler would `preventDefault` and the menu
  * would never open. The layer early-returns when that prop is absent, letting
  * the event bubble here.
+ *
+ * That contract was silently broken from the day this file was written, and it
+ * is worth knowing why: `AnnotatablePdfCanvas` forwarded the optional prop to
+ * the layer wrapped in an UNCONDITIONAL arrow, so the layer always saw a
+ * handler even though both callers correctly omitted it. Every region
+ * right-click hit `preventDefault` + `stopPropagation` and then called into
+ * `undefined` — no native menu, no v3 menu, and this entire file unreachable on
+ * regions. Fixed 2026-08-09 by forwarding conditionally. **Wrapping an optional
+ * callback in an always-defined arrow converts "absent" into "present and
+ * inert", and no type checker will tell you.**
  */
 
 import { useState } from "react";
