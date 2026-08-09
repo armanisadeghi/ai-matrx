@@ -31,12 +31,14 @@ export function ConversationSelector({
   const [restoredFromCookie, setRestoredFromCookie] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    if (conversationId) {
-      setRestoredFromCookie(true);
-    }
-    // Only run on mount to detect initial cookie-restored value
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const frame = requestAnimationFrame(() => {
+      setMounted(true);
+      if (conversationId) {
+        setRestoredFromCookie(true);
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+    // Only run on mount to detect initial cookie-restored value.
   }, []);
 
   const handleCreate = async () => {
@@ -93,7 +95,7 @@ export function ConversationSelector({
             <ToggleGroupItem
               value="create"
               aria-label="Create new conversation"
-              className="h-6 w-6 p-0 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              className="h-10 w-10 p-0 sm:h-6 sm:w-6 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
             >
               <Plus className="h-3 w-3" />
             </ToggleGroupItem>
@@ -105,7 +107,7 @@ export function ConversationSelector({
             <ToggleGroupItem
               value="existing"
               aria-label="Use existing conversation"
-              className="h-6 w-6 p-0 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+              className="h-10 w-10 p-0 sm:h-6 sm:w-6 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
             >
               <ClipboardPaste className="h-3 w-3" />
             </ToggleGroupItem>
@@ -144,7 +146,7 @@ export function ConversationSelector({
                   size="sm"
                   variant="ghost"
                   onClick={handleClear}
-                  className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
+                  className="h-10 w-10 p-0 text-muted-foreground hover:text-destructive sm:h-5 sm:w-5"
                 >
                   ×
                 </Button>
@@ -158,7 +160,7 @@ export function ConversationSelector({
             variant="outline"
             onClick={handleCreate}
             disabled={isCreating}
-            className="h-6 text-xs px-2 gap-1"
+            className="h-10 gap-1 px-3 text-sm sm:h-6 sm:px-2 sm:text-xs"
           >
             {isCreating ? (
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -188,7 +190,7 @@ export function ConversationSelector({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Paste conversation UUID"
-            className="h-6 text-xs font-mono w-48"
+            className="h-10 w-48 font-mono text-base sm:h-6 sm:text-xs"
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleApplyExisting();
             }}
@@ -200,7 +202,7 @@ export function ConversationSelector({
                 variant="default"
                 onClick={handleApplyExisting}
                 disabled={!inputValue.trim()}
-                className="h-6 w-6 p-0"
+                className="h-10 w-10 p-0 sm:h-6 sm:w-6"
               >
                 <Check className="h-3 w-3" />
               </Button>
@@ -214,7 +216,7 @@ export function ConversationSelector({
                   size="sm"
                   variant="ghost"
                   onClick={handleClear}
-                  className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                  className="h-10 w-10 p-0 text-destructive hover:text-destructive sm:h-6 sm:w-6"
                 >
                   ×
                 </Button>

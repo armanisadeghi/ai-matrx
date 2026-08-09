@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -80,7 +79,7 @@ function ParameterField({
           value={String(value ?? '')}
           onValueChange={(v) => onChange(v)}
         >
-          <SelectTrigger className="h-8 text-xs">
+          <SelectTrigger className="h-10 text-base sm:h-8 sm:text-xs">
             <SelectValue placeholder={`Select ${name}...`} />
           </SelectTrigger>
           <SelectContent>
@@ -107,7 +106,7 @@ function ParameterField({
               value={strVal}
               onChange={(e) => onChange(e.target.value)}
               placeholder={param.description}
-              className="min-h-[60px] text-xs font-mono"
+              className="min-h-[60px] font-mono text-base sm:text-xs"
             />
           ) : (
             <Input
@@ -115,7 +114,7 @@ function ParameterField({
               value={strVal}
               onChange={(e) => onChange(e.target.value)}
               placeholder={param.description}
-              className="h-8 text-xs"
+              className="h-10 text-base sm:h-8 sm:text-xs"
             />
           )}
         </div>
@@ -142,7 +141,7 @@ function ParameterField({
             max={param.maximum}
             step={param.type === 'integer' ? 1 : 'any'}
             placeholder={param.description}
-            className="h-8 text-xs"
+            className="h-10 text-base sm:h-8 sm:text-xs"
           />
           {(param.minimum !== undefined || param.maximum !== undefined) && (
             <p className="text-[10px] text-muted-foreground">
@@ -199,7 +198,7 @@ function ParameterField({
                         updated[idx] = e.target.value;
                         onChange(updated);
                       }}
-                      className="h-8 text-xs"
+                      className="h-10 text-base sm:h-8 sm:text-xs"
                       placeholder={`Item ${idx + 1}`}
                     />
                   )}
@@ -207,7 +206,7 @@ function ParameterField({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 p-0 flex-shrink-0"
+                  className="h-10 w-10 flex-shrink-0 p-0 sm:h-8 sm:w-8"
                   onClick={() => {
                     const updated = arrValue.filter((_, i) => i !== idx);
                     onChange(updated);
@@ -220,7 +219,7 @@ function ParameterField({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs w-full"
+              className="h-10 w-full text-sm sm:h-7 sm:text-xs"
               onClick={() => {
                 const newItem = param.items ? getDefaultValue(param.items) : '';
                 onChange([...arrValue, newItem]);
@@ -256,7 +255,7 @@ function ParameterField({
                 }
               }}
               placeholder="JSON object..."
-              className="min-h-[80px] text-xs font-mono"
+              className="min-h-[80px] font-mono text-base sm:text-xs"
             />
           </div>
         );
@@ -291,7 +290,7 @@ function ParameterField({
             value={String(value ?? '')}
             onChange={(e) => onChange(e.target.value)}
             placeholder={param.description}
-            className="h-8 text-xs"
+            className="h-10 text-base sm:h-8 sm:text-xs"
           />
         </div>
       );

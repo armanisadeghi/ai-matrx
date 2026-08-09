@@ -45,12 +45,15 @@ export function ContextScopeModal({
   });
 
   useEffect(() => {
-    setDraft({
-      ...EMPTY_SELECTION,
-      organizationId: scopeOverride.organization_id ?? null,
-      projectId: scopeOverride.project_id ?? null,
-      taskId: scopeOverride.task_id ?? null,
+    const frame = requestAnimationFrame(() => {
+      setDraft({
+        ...EMPTY_SELECTION,
+        organizationId: scopeOverride.organization_id ?? null,
+        projectId: scopeOverride.project_id ?? null,
+        taskId: scopeOverride.task_id ?? null,
+      });
     });
+    return () => cancelAnimationFrame(frame);
   }, [scopeOverride]);
 
   const activeScopeCount = [
@@ -80,7 +83,7 @@ export function ContextScopeModal({
         <Button
           variant="outline"
           size="sm"
-          className="relative h-7 text-[10px] gap-1.5 px-2"
+          className="relative h-10 gap-1.5 px-3 text-sm sm:h-7 sm:px-2 sm:text-[10px]"
         >
           <Settings2 className="h-3 w-3" />
           Scope
