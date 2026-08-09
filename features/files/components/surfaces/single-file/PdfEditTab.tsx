@@ -271,6 +271,9 @@ export function PdfEditTab({ fileId, className }: PdfEditTabProps) {
                 // user can label / categorize / promote it without hunting.
                 setActivePanel("annotations");
               }}
+              onRegionUpdate={(id, bbox) => {
+                void updateAnnotation(id, { bbox });
+              }}
               onRegionClick={(id) => handleSelectAnnotation(id)}
               onBackgroundClick={() => handleSelectAnnotation(null)}
             />
@@ -283,7 +286,7 @@ export function PdfEditTab({ fileId, className }: PdfEditTabProps) {
             <div className="pointer-events-none absolute left-1/2 top-2 z-20 -translate-x-1/2 rounded-md border border-border bg-card/90 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur-sm">
               {mode === "draw"
                 ? "Drag a rectangle over any text to label it"
-                : "Click an existing annotation to edit"}
+                : "Click an annotation to select — drag to move, handles to resize"}
             </div>
           ) : null}
         </main>

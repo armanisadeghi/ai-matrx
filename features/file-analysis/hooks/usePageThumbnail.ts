@@ -5,13 +5,19 @@
  * dpi) so the ThumbnailStrip + the image card grid + any future surface
  * share one fetch per page instead of paying N×server-render-time.
  *
- * Cache lives forever for the session — page renders are idempotent
- * server-side and a 50dpi PNG for an 8.5x11 page is ~10 KB.
+ * Successful renders cache forever for the session — page renders are
+ * idempotent server-side and a 50dpi PNG for an 8.5x11 page is ~10 KB.
+ * FAILURES do not: a transient render error (analysis still running,
+ * server hiccup) auto-retries with backoff up to MAX_ATTEMPTS, and the
+ * hook exposes `retry()` so the UI can offer a manual re-render after
+ * that. The old behavior cached the first failure permanently, which is
+ * how thumbnails got stuck as text placeholders forever (handoff
+ * 2026-07-28).
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 
 type Key = string; // `${fileId}|${pageId}|${dpi}`
@@ -20,7 +26,11 @@ interface CacheEntry {
   png: string | null;
   inflight: Promise<void> | null;
   error: string | null;
+  attempts: number;
 }
+
+const MAX_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1500;
 
 // LRU-bounded: data-url PNGs are 10-50KB each; an unbounded Map grew
 // without limit while browsing 500-page docs (audit W5). Map iteration
@@ -69,11 +79,34 @@ async function fetchThumbnail(
   }
 }
 
+function startFetch(key: Key, fileId: string, pageId: string, dpi: number): CacheEntry {
+  let entry = cacheGet(key);
+  if (!entry) {
+    entry = { png: null, inflight: null, error: null, attempts: 0 };
+    cacheSet(key, entry);
+  }
+  if (!entry.inflight && !entry.png) {
+    entry.attempts += 1;
+    entry.inflight = fetchThumbnail(fileId, pageId, dpi).then((result) => {
+      const e = cacheGet(key);
+      if (!e) return;
+      if (result) {
+        e.png = result;
+        e.error = null;
+      } else {
+        e.error = "render failed";
+      }
+      e.inflight = null;
+    });
+  }
+  return entry;
+}
+
 export function usePageThumbnail(
   fileId: string | null,
   pageId: string | null,
   options?: { dpi?: number; enabled?: boolean },
-): { png: string | null; loading: boolean; error: string | null } {
+): { png: string | null; loading: boolean; error: string | null; retry: () => void } {
   const dpi = options?.dpi ?? 50;
   const enabled = options?.enabled ?? true;
   const key = fileId && pageId ? k(fileId, pageId, dpi) : null;
@@ -83,52 +116,75 @@ export function usePageThumbnail(
     !!key && enabled && !initial?.png && !initial?.error,
   );
   const [error, setError] = useState<string | null>(initial?.error ?? null);
+  const [nonce, setNonce] = useState(0);
+
+  const retry = useCallback(() => {
+    if (!key) return;
+    const e = cacheGet(key);
+    if (e && !e.inflight) {
+      e.error = null;
+      e.attempts = 0;
+    }
+    setNonce((n) => n + 1);
+  }, [key]);
 
   useEffect(() => {
-    if (!key || !enabled) return undefined;
+    if (!key || !enabled || !fileId || !pageId) return undefined;
     let cancelled = false;
-    let entry = cacheGet(key);
-    if (!entry) {
-      entry = { png: null, inflight: null, error: null };
-      cacheSet(key, entry);
-    }
-    if (entry.png) {
-      setPng(entry.png);
-      setLoading(false);
-      setError(null);
-      return undefined;
-    }
-    if (entry.error && !entry.inflight) {
-      setError(entry.error);
-      setLoading(false);
-      return undefined;
-    }
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-    setLoading(true);
-    if (!entry.inflight) {
-      entry.inflight = fetchThumbnail(fileId!, pageId!, dpi).then((result) => {
-        const e = cacheGet(key);
-        if (!e) return;
-        if (result) {
-          e.png = result;
-          e.error = null;
-        } else {
-          e.error = "render failed";
-        }
-        e.inflight = null;
-      });
-    }
-    entry.inflight.then(() => {
+    const sync = (entry: CacheEntry | undefined) => {
       if (cancelled) return;
-      const e = cacheGet(key);
-      setPng(e?.png ?? null);
-      setError(e?.error ?? null);
-      setLoading(false);
-    });
+      setPng(entry?.png ?? null);
+      setError(entry?.error && entry.attempts >= MAX_ATTEMPTS ? entry.error : null);
+      setLoading(
+        !entry?.png && (!entry?.error || entry.attempts < MAX_ATTEMPTS),
+      );
+    };
+
+    const run = () => {
+      if (cancelled) return;
+      let entry = cacheGet(key);
+      if (entry?.png) {
+        sync(entry);
+        return;
+      }
+      if (entry?.inflight) {
+        // Another consumer already kicked off this fetch — join it.
+        sync(entry);
+        void entry.inflight.then(run);
+        return;
+      }
+      if (entry?.error) {
+        if (entry.attempts >= MAX_ATTEMPTS) {
+          sync(entry);
+          return;
+        }
+        // Transient failure — retry after a short backoff, keeping the
+        // loading state up (the strip shows a skeleton, never an error,
+        // until the attempts are exhausted).
+        sync(entry);
+        retryTimer = setTimeout(() => {
+          if (cancelled) return;
+          const e = cacheGet(key);
+          if (e) e.error = null;
+          const started = startFetch(key, fileId, pageId, dpi);
+          sync(started);
+          void started.inflight?.then(run);
+        }, RETRY_DELAY_MS * entry.attempts);
+        return;
+      }
+      entry = startFetch(key, fileId, pageId, dpi);
+      sync(entry);
+      void entry.inflight?.then(run);
+    };
+
+    run();
     return () => {
       cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [key, fileId, pageId, dpi, enabled]);
+  }, [key, fileId, pageId, dpi, enabled, nonce]);
 
-  return { png, loading, error };
+  return { png, loading, error, retry };
 }

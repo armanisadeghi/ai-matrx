@@ -40,6 +40,23 @@ export type RegionKind =
 export interface PendingDraw {
   page_number: number;
   bbox: PdfBbox;
+  /** Viewport coordinates of the pointer-up that finished the draw, so
+   *  callers can anchor follow-up UI (label picker) beside the drawn rect
+   *  instead of at a fixed screen position. */
+  clientX?: number;
+  clientY?: number;
 }
+
+/** Resize-handle identity for region editing. `move` = drag on the body. */
+export type RegionEditHandle =
+  | "move"
+  | "nw"
+  | "n"
+  | "ne"
+  | "e"
+  | "se"
+  | "s"
+  | "sw"
+  | "w";
 
 export type AnnotationLayerMode = "view" | "draw" | "select";

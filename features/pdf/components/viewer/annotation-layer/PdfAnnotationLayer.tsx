@@ -19,6 +19,9 @@
  *   - Right-click → emit `onRegionContextMenu(id, x, y)` so callers can
  *     render their own context menu (extract table / send to agent /
  *     exclude / promote to entity / delete / …).
+ *   - Move/resize: in "select" mode with `onRegionUpdate` wired, the
+ *     selected region can be dragged (body) or resized (8 handles); the
+ *     final bbox is emitted once, in PDF points, on pointer release.
  *
  * Stateless about WHAT a region is — receives `regions: PdfRegion[]` and
  * renders them. The studio / tab / window decides what to mount inside
@@ -42,6 +45,7 @@ import type {
   PdfBbox,
   PdfRegion,
   PendingDraw,
+  RegionEditHandle,
 } from "./types";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -64,6 +68,13 @@ export interface PdfAnnotationLayerProps {
   mode?: AnnotationLayerMode;
   /** When draw mode: emits the snapped bbox when the user releases the pointer. */
   onDrawComplete?: (draw: PendingDraw) => void;
+  /**
+   * When provided (and mode is "select"), the SELECTED region grows move +
+   * resize affordances: drag the body to move, drag one of the 8 handles to
+   * resize. Emits ONCE on pointer-release with the final bbox in PDF
+   * user-space points — callers persist via their annotation update path.
+   */
+  onRegionUpdate?: (regionId: string, bbox: PdfBbox) => void;
   onRegionClick?: (regionId: string, event: React.MouseEvent) => void;
   onRegionContextMenu?: (
     regionId: string,
@@ -77,6 +88,28 @@ export interface PdfAnnotationLayerProps {
   className?: string;
 }
 
+// Smallest px size a resize can shrink a region to.
+const MIN_EDIT_PX = 8;
+
+// ─── Resize handles ─────────────────────────────────────────────────────────
+// 10px squares straddling the selected region's corners/edges. Rendered only
+// in select mode with `onRegionUpdate` wired, on the selected region.
+
+const RESIZE_HANDLES: Array<{
+  id: Exclude<RegionEditHandle, "move">;
+  cursor: string;
+  style: React.CSSProperties;
+}> = [
+  { id: "nw", cursor: "nwse-resize", style: { left: -5, top: -5 } },
+  { id: "n", cursor: "ns-resize", style: { left: "calc(50% - 5px)", top: -5 } },
+  { id: "ne", cursor: "nesw-resize", style: { right: -5, top: -5 } },
+  { id: "e", cursor: "ew-resize", style: { right: -5, top: "calc(50% - 5px)" } },
+  { id: "se", cursor: "nwse-resize", style: { right: -5, bottom: -5 } },
+  { id: "s", cursor: "ns-resize", style: { left: "calc(50% - 5px)", bottom: -5 } },
+  { id: "sw", cursor: "nesw-resize", style: { left: -5, bottom: -5 } },
+  { id: "w", cursor: "ew-resize", style: { left: -5, top: "calc(50% - 5px)" } },
+];
+
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export function PdfAnnotationLayer({
@@ -89,6 +122,7 @@ export function PdfAnnotationLayer({
   categoryOf,
   mode = "view",
   onDrawComplete,
+  onRegionUpdate,
   onRegionClick,
   onRegionContextMenu,
   onBackgroundClick,
@@ -220,6 +254,83 @@ export function PdfAnnotationLayer({
     currY: number;
   } | null>(null);
 
+  // ── Move/resize state machine (select mode, selected region only) ─────
+  type PxRect = { left: number; top: number; width: number; height: number };
+  const [edit, setEdit] = useState<{
+    regionId: string;
+    handle: RegionEditHandle;
+    startX: number;
+    startY: number;
+    orig: PxRect;
+    curr: PxRect;
+    moved: boolean;
+  } | null>(null);
+
+  const editable = mode === "select" && !!onRegionUpdate;
+
+  const beginEdit = useCallback(
+    (
+      e: React.PointerEvent<HTMLElement>,
+      regionId: string,
+      handle: RegionEditHandle,
+      rect: PxRect,
+    ) => {
+      if (e.button !== 0) return;
+      e.stopPropagation();
+      const wrapRect = wrapRef.current?.getBoundingClientRect();
+      if (!wrapRect) return;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore — capture can fail on synthetic events.
+      }
+      setEdit({
+        regionId,
+        handle,
+        startX: e.clientX - wrapRect.left,
+        startY: e.clientY - wrapRect.top,
+        orig: rect,
+        curr: rect,
+        moved: false,
+      });
+    },
+    [],
+  );
+
+  const applyEditDelta = useCallback(
+    (
+      handle: RegionEditHandle,
+      orig: PxRect,
+      dx: number,
+      dy: number,
+      boundsW: number,
+      boundsH: number,
+    ): PxRect => {
+      if (handle === "move") {
+        return {
+          left: Math.max(0, Math.min(boundsW - orig.width, orig.left + dx)),
+          top: Math.max(0, Math.min(boundsH - orig.height, orig.top + dy)),
+          width: orig.width,
+          height: orig.height,
+        };
+      }
+      let left = orig.left;
+      let top = orig.top;
+      let right = orig.left + orig.width;
+      let bottom = orig.top + orig.height;
+      const movesLeft = handle === "nw" || handle === "w" || handle === "sw";
+      const movesRight = handle === "ne" || handle === "e" || handle === "se";
+      const movesTop = handle === "nw" || handle === "n" || handle === "ne";
+      const movesBottom = handle === "sw" || handle === "s" || handle === "se";
+      if (movesLeft) left = Math.max(0, Math.min(right - MIN_EDIT_PX, left + dx));
+      if (movesRight) right = Math.min(boundsW, Math.max(left + MIN_EDIT_PX, right + dx));
+      if (movesTop) top = Math.max(0, Math.min(bottom - MIN_EDIT_PX, top + dy));
+      if (movesBottom) bottom = Math.min(boundsH, Math.max(top + MIN_EDIT_PX, bottom + dy));
+      return { left, top, width: right - left, height: bottom - top };
+    },
+    [],
+  );
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (mode !== "draw") return;
@@ -240,17 +351,56 @@ export function PdfAnnotationLayer({
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (edit) {
+        const rect = (wrapRef.current ?? e.currentTarget).getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        setEdit((prev) => {
+          if (!prev) return prev;
+          const dx = x - prev.startX;
+          const dy = y - prev.startY;
+          const moved = prev.moved || Math.abs(dx) > 2 || Math.abs(dy) > 2;
+          const curr = applyEditDelta(
+            prev.handle,
+            prev.orig,
+            dx,
+            dy,
+            rect.width,
+            rect.height,
+          );
+          return { ...prev, curr, moved };
+        });
+        return;
+      }
       if (!pending) return;
       const rect = (wrapRef.current ?? e.currentTarget).getBoundingClientRect();
       const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
       const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
       setPending((p) => (p ? { ...p, currX: x, currY: y } : p));
     },
-    [pending],
+    [pending, edit, applyEditDelta],
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (edit) {
+        const { regionId, curr, moved } = edit;
+        setEdit(null);
+        if (!moved) return; // plain click — selection handled by onClick.
+        const topLeft = pxToPdf(curr.left, curr.top);
+        const bottomRight = pxToPdf(
+          curr.left + curr.width,
+          curr.top + curr.height,
+        );
+        if (!topLeft || !bottomRight) return;
+        onRegionUpdate?.(regionId, {
+          x0: Math.min(topLeft.x, bottomRight.x),
+          y0: Math.min(topLeft.y, bottomRight.y),
+          x1: Math.max(topLeft.x, bottomRight.x),
+          y1: Math.max(topLeft.y, bottomRight.y),
+        });
+        return;
+      }
       if (!pending) return;
       try {
         e.currentTarget.releasePointerCapture(e.pointerId);
@@ -279,9 +429,11 @@ export function PdfAnnotationLayer({
       onDrawComplete?.({
         page_number: pageNumber,
         bbox: { x0, y0, x1, y1 },
+        clientX: e.clientX,
+        clientY: e.clientY,
       });
     },
-    [onDrawComplete, pageNumber, pending, pxToPdf],
+    [onDrawComplete, pageNumber, pending, edit, pxToPdf, onRegionUpdate],
   );
 
   const handleBackgroundClick = useCallback(
@@ -333,13 +485,16 @@ export function PdfAnnotationLayer({
       onClick={handleBackgroundClick}
     >
       {pageRegions.map((region) => {
-        const px = pdfToPx(region.bbox);
-        if (!px) return null;
+        const basePx = pdfToPx(region.bbox);
+        if (!basePx) return null;
+        const isEditing = edit?.regionId === region.id;
+        const px = isEditing ? edit.curr : basePx;
         const category = categoryOf?.(region.id);
         const palette = colorsFor({ category, kind: region.kind });
         const stroke = region.color ?? palette.stroke;
         const fill = region.fill ?? palette.fill;
         const isSelected = selectedId === region.id;
+        const canEdit = editable && isSelected;
         return (
           <div
             key={region.id}
@@ -347,8 +502,9 @@ export function PdfAnnotationLayer({
             role="button"
             tabIndex={0}
             className={cn(
-              "absolute rounded-sm transition-shadow",
-              isSelected ? "ring-2 ring-offset-1" : "",
+              "absolute rounded-sm",
+              isEditing ? "" : "transition-shadow",
+              canEdit ? "cursor-move" : "",
               region.muted ? "opacity-50 saturate-50" : "",
             )}
             style={{
@@ -356,10 +512,15 @@ export function PdfAnnotationLayer({
               top: px.top,
               width: px.width,
               height: px.height,
-              border: `1.5px solid ${stroke}`,
+              border: `2px solid ${stroke}`,
               backgroundColor: fill,
               boxShadow: isSelected ? `0 0 0 2px ${stroke}` : undefined,
             }}
+            onPointerDown={
+              canEdit
+                ? (e) => beginEdit(e, region.id, "move", basePx)
+                : undefined
+            }
             onClick={(e) => {
               e.stopPropagation();
               onRegionClick?.(region.id, e);
@@ -380,6 +541,23 @@ export function PdfAnnotationLayer({
                 {region.label}
               </span>
             ) : null}
+            {canEdit
+              ? RESIZE_HANDLES.map((h) => (
+                  <span
+                    key={h.id}
+                    data-region-id={region.id}
+                    className="absolute z-10 h-2.5 w-2.5 rounded-[2px] border bg-background shadow-sm"
+                    style={{
+                      ...h.style,
+                      borderColor: stroke,
+                      cursor: h.cursor,
+                    }}
+                    onPointerDown={(e) =>
+                      beginEdit(e, region.id, h.id, basePx)
+                    }
+                  />
+                ))
+              : null}
           </div>
         );
       })}

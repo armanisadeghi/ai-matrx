@@ -1,6 +1,6 @@
 ---
 status: blocked
-updated: 2026-07-28
+updated: 2026-08-09
 repos: [matrx-frontend, aidream]
 vision: [features/pdf/FEATURE.md]
 ---
@@ -57,30 +57,29 @@ The agent running this works **interactively with Arman**, feature by feature, f
 
 ## Remaining work
 
-1. **Fix the four confirmed bugs first** (all re-verified still open 2026-07-28; no `features/pdf`
-   or `features/file-analysis` fix has landed since 2026-07-22):
-   - **Text extraction duplicates glyphs.** Drawing over "CHAPTER 9" stored
-     `extracted_text = "CHAPTERCHAPTER 99"`. Canva/PPT exports draw each glyph twice (outline +
-     fill) and the bbox extractor reads both. **Server-side fix** — dedup overlapping glyph runs in
-     `packages/matrx-files/matrx_files/specific_handlers/pdf/extract/bbox.py`; there is no dedup
-     logic there today. Write the aidream work order, do not patch client-side.
-   - **Region overlay is nearly invisible.** `colors.ts:18` — `structure` is a 1px slate stroke +
-     12% slate fill, unreadable over content. Needs a stronger default or a per-category
-     high-contrast palette.
-   - **Label picker popover clips at the viewport bottom.** Anchored at window-center; on short
-     viewports the Save button and list get cut off. Anchor near the drawn rect and flip on overflow.
-   - **Thumbnails show `p1/p2/p3` text placeholders** for several seconds, sometimes permanently,
-     instead of rendered page images — `features/file-analysis/studio/ThumbnailStrip.tsx`.
+1. **Text extraction duplicates glyphs — the ONE §1 bug still open (server-side, aidream).**
+   Drawing over "CHAPTER 9" stored `extracted_text = "CHAPTERCHAPTER 99"`. Canva/PPT exports draw
+   each glyph twice (outline + fill) and the bbox extractor reads both. **Server-side fix** — dedup
+   overlapping glyph runs in
+   `packages/matrx-files/matrx_files/specific_handlers/pdf/extract/bbox.py`; there is no dedup
+   logic there today. Write the aidream work order, do not patch client-side.
 2. **Still UNVERIFIED — test WITH Arman:** Redact panel + redact flow, Doc Ops, Pages ops, Findings,
    Search, promote-to-entity result, Analysis tab entities/PII/tables panels, page-jump from
    thumbnails, and a human right-click on the region menu.
-3. **Region resize/move after creation — no UI at all.** `useAnnotations.update` + bbox are ready;
-   `PdfAnnotationLayer` needs drag handles.
-4. **When the flows work:** update the `features/pdf/FEATURE.md` gaps section, create
+3. **When the flows work:** update the `features/pdf/FEATURE.md` gaps section, create
    `features/file-analysis/FEATURE.md`, archive review-queue row
    `2ea43c94-46fc-4c8a-877d-d1da3e85b44a`, delete this doc.
 
 ## Done
+
+- 2026-08-09 — the three FRONTEND §1 bugs fixed + §3 region move/resize built, all
+  browser-verified against Bio-Chapter-9 (`features/pdf/FEATURE.md` Change Log has the detail):
+  overlay palette strengthened + 2px strokes (`annotation-layer/colors.ts`); label picker anchors
+  at the drawn rect and caps to Radix available-height (Save always reachable); thumbnail strip
+  shows skeleton→image with bounded auto-retry + manual "retry preview" (failure is no longer
+  cached forever — that was the "permanent placeholder"); selected regions drag/resize via 8
+  handles → `useAnnotations.update(id,{bbox})` persists (PUT confirmed, survives refetch) in both
+  StudioShell and PdfEditTab.
 
 - Region right-click menu was one click behind — fixed with
   `flushSync(() => setActiveRegion(region))` in `RegionContextMenu.tsx:218` (state committed before
