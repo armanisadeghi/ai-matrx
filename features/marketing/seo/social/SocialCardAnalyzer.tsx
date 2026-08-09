@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import {
-  extractSocialFromScrapeResponse,
-  normalizeScrapeUrl,
-} from "@/features/marketing/seo/serp/extract-seo-from-scrape";
+  normalizeToolUrl,
+  toSocialMetaFields,
+  usePublicPageMetadata,
+} from "@/features/marketing/seo/public-tools/usePublicPageMetadata";
 import {
   evaluateSocialCard,
   cleanTagValue,
@@ -85,9 +85,10 @@ export function SocialCardAnalyzer({
   const [ogType, setOgType] = useState(initialOgType);
   const [cardType, setCardType] = useState(initialCardType);
   const [isFetching, setIsFetching] = useState(false);
-  // Direct-to-backend scrape (guest fingerprint or Bearer token, no Next hop).
-  // `scrapeUrlSilent` throws the real backend error so the toast can show it.
-  const { scrapeUrlSilent } = useScraperApi();
+  // Guest-friendly meta-tag read (`/seo/public/page-audit`) — this component
+  // renders on an anonymous marketing page, so it may never call an endpoint
+  // that requires a signed-in user (D137).
+  const { fetchPageMetadata } = usePublicPageMetadata();
 
   useEffect(() => {
     onValuesChange?.({
@@ -128,16 +129,14 @@ export function SocialCardAnalyzer({
   );
 
   async function handleFetch() {
-    const normalized = normalizeScrapeUrl(url);
+    const normalized = normalizeToolUrl(url);
     if (!normalized) {
       toast.error("Enter a valid website URL");
       return;
     }
     setIsFetching(true);
     try {
-      const result = await scrapeUrlSilent(normalized, { use_cache: true });
-      if (!result) throw new Error("No data returned from scraper");
-      const extracted = extractSocialFromScrapeResponse(result);
+      const extracted = toSocialMetaFields(await fetchPageMetadata(normalized));
       if (extracted.url) setUrl(extracted.url);
       setTitle(extracted.ogTitle);
       setDescription(extracted.ogDescription);
@@ -146,7 +145,7 @@ export function SocialCardAnalyzer({
       setOgType(extracted.ogType);
       setCardType(extracted.twitterCard);
       if (!extracted.ogTitle && !extracted.ogImage) {
-        toast.warning("Page scraped, but no social share tags were found");
+        toast.warning("Page loaded, but no social share tags were found");
       } else {
         toast.success("Social tags loaded from page");
       }
