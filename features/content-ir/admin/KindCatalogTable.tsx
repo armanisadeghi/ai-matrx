@@ -11,7 +11,8 @@
  * surface.
  */
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,10 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import type { AssetColumn } from "@/features/content-ir/registry/shape-doctor";
 import type { KindBoardRow } from "@/features/content-ir/admin/kind-detail-types";
+import {
+  kindDetailHref,
+  kindTabHref,
+} from "@/features/content-ir/admin/kind-registry-routes";
 import {
   COLUMN_HEADING,
   StatusIcon,
@@ -32,9 +37,33 @@ const STATUS_FILTER_OPTIONS = [
   { value: "n/a", label: "n/a" },
 ];
 
+function CountDoor({
+  href,
+  children,
+  title,
+}: {
+  href: string | undefined;
+  children: string;
+  title: string;
+}) {
+  if (!href) {
+    return <span className="text-[10px] text-muted-foreground">{children}</span>;
+  }
+  return (
+    <Link
+      href={href}
+      onClick={(e) => e.stopPropagation()}
+      title={title}
+      className="text-[10px] text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
+    >
+      {children}
+    </Link>
+  );
+}
+
 function statusColumn(
   col: AssetColumn,
-  extra?: (row: KindBoardRow) => string | null,
+  extra?: (row: KindBoardRow) => ReactNode,
 ): MatrxColumnDef<KindBoardRow> {
   return {
     id: col,
@@ -55,9 +84,7 @@ function statusColumn(
             .join(" — ")}
         >
           <StatusIcon status={cell.status} />
-          {detail ? (
-            <span className="text-[10px] text-muted-foreground">{detail}</span>
-          ) : null}
+          {detail}
         </span>
       );
     },
@@ -95,9 +122,11 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
   }, [rows]);
 
   const openKind = (row: KindBoardRow) => {
+    const href = kindDetailHref(row);
+    if (!href) return; // gone from the live DB — the detail route 404s.
     setNavigatingKind(row.kind);
     startTransition(() => {
-      router.push(`/administration/utilities/kind-registry/${row.kind}`);
+      router.push(href);
     });
   };
 
@@ -109,6 +138,10 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
         filter: "text",
         cellKind: "text",
         width: 320,
+        // THE DOOR LAW: the kind name is a real `next/link`, so the record is
+        // reachable by keyboard, cmd/middle-click and the context menu — not
+        // only by a JS row click. `onRowOpen` stays as the mouse convenience.
+        href: kindDetailHref,
         cell: (row) => (
           <span className="inline-flex max-w-full items-center gap-1.5">
             <span
@@ -195,18 +228,37 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
       },
       statusColumn("definition"),
       statusColumn("example", (row) =>
-        row.exampleCount > 0
-          ? `${row.exampleCount}${row.hasCanonicalExample ? "" : "!"}`
-          : null,
+        row.exampleCount > 0 ? (
+          <CountDoor
+            href={kindTabHref(row, "examples")}
+            title={`Open the ${row.exampleCount} example row${row.exampleCount === 1 ? "" : "s"} for ${row.kind}`}
+          >
+            {`${row.exampleCount}${row.hasCanonicalExample ? "" : "!"}`}
+          </CountDoor>
+        ) : null,
       ),
       statusColumn("gate_structural"),
       statusColumn("component", (row) =>
-        row.componentCount > 0 ? String(row.componentCount) : null,
+        row.componentCount > 0 ? (
+          <CountDoor
+            href={kindTabHref(row, "assets")}
+            title={`Open the ${row.componentCount} kind_component row${row.componentCount === 1 ? "" : "s"} for ${row.kind}`}
+          >
+            {String(row.componentCount)}
+          </CountDoor>
+        ) : null,
       ),
       statusColumn("skill"),
       statusColumn("content_block"),
       statusColumn("surface", (row) =>
-        row.surfaceCount > 0 ? String(row.surfaceCount) : null,
+        row.surfaceCount > 0 ? (
+          <CountDoor
+            href={kindTabHref(row, "assets")}
+            title={`Open the ${row.surfaceCount} kind_surface row${row.surfaceCount === 1 ? "" : "s"} for ${row.kind}`}
+          >
+            {String(row.surfaceCount)}
+          </CountDoor>
+        ) : null,
       ),
       {
         id: "flags",
@@ -264,25 +316,31 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
       getRowId={(row) => row.kind}
       detail={{ enabled: false }}
       onRowOpen={openKind}
-      rowActions={(row) => (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          title={`Open ${row.kind} in a new tab`}
-          onClick={(e) => {
-            e.stopPropagation();
-            window.open(
-              `/administration/utilities/kind-registry/${row.kind}`,
-              "_blank",
-              "noopener",
-            );
-          }}
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-        </Button>
-      )}
+      rowActions={(row) => {
+        const href = kindDetailHref(row);
+        // A row that is gone from the live DB gets no new-tab control: the
+        // detail route would 404. The "gone from live DB" flag says why.
+        if (!href) return null;
+        return (
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            title={`Open ${row.kind} in a new tab`}
+          >
+            <Link
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Open ${row.kind} in a new tab`}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        );
+      }}
       toolbar={{
         searchPlaceholder: "Search kinds…",
         facets: [

@@ -7,8 +7,9 @@
  * doctor once (buildKindStatusBoard in shape-doctor-server.ts) and passes the
  * serializable model here, so the Catalog table and this board share ONE
  * doctor run. Red findings render as red rows, snapshot drift amber
- * (FeatureAdminMap visual language). Every kind links to its
- * /administration/utilities/kind-registry/<kind> page.
+ * (FeatureAdminMap visual language). Every kind that still exists in the live
+ * DB links to its /administration/utilities/kind-registry/<kind> page — see
+ * `kind-registry-routes.ts` for why a snapshot-only row deliberately does not.
  */
 
 import Link from "next/link";
@@ -25,6 +26,7 @@ import {
   type AssetColumn,
   type AssetStatus,
 } from "@/features/content-ir/registry/shape-doctor";
+import { kindDetailHref } from "@/features/content-ir/admin/kind-registry-routes";
 import type {
   KindBoardRow,
   KindStatusBoardModel,
@@ -62,6 +64,32 @@ function rowTone(row: KindBoardRow): string {
     return "bg-amber-500/5 hover:bg-amber-500/10";
   }
   return "hover:bg-accent/30";
+}
+
+/**
+ * THE DOOR LAW, with THE LIVENESS RULE attached: the kind name is the door —
+ * unless the row is snapshot-only, in which case the record is gone from the
+ * live DB and the detail route 404s. Those rows stay plain text; the "gone from
+ * live DB" flag in the Flags column is the answer.
+ */
+function KindNameCell({ row }: { row: KindBoardRow }) {
+  const href = kindDetailHref(row);
+  if (!href) {
+    return (
+      <span className="font-mono text-xs text-muted-foreground" title={row.label}>
+        {row.kind}
+      </span>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      className="font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
+      title={row.label}
+    >
+      {row.kind}
+    </Link>
+  );
 }
 
 export default function KindStatusBoard({
@@ -175,13 +203,7 @@ export default function KindStatusBoard({
                 className={`border-b border-border/60 last:border-0 ${rowTone(row)}`}
               >
                 <td className="px-4 py-1">
-                  <Link
-                    href={`/administration/utilities/kind-registry/${row.kind}`}
-                    className="font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
-                    title={row.label}
-                  >
-                    {row.kind}
-                  </Link>
+                  <KindNameCell row={row} />
                 </td>
                 <td className="px-2 py-1 text-center">
                   <span

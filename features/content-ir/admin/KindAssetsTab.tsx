@@ -30,6 +30,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import type { KindDetailData } from "@/features/content-ir/admin/kind-detail-types";
+import { contentBlockHref } from "@/components/admin/content-blocks-route";
 import { adminUpsertKindContentBlock } from "@/features/content-ir/studio/kind-content-block-service";
 import KindContentBlockGenerator from "@/features/content-ir/studio/components/KindContentBlockGenerator";
 import KindAgentButton from "@/features/content-ir/studio/components/KindAgentButton";
@@ -41,6 +42,27 @@ import type { GeneratedContentBlock } from "@/features/content-ir/registry/kind-
 const CONTENT_BLOCKS_ADMIN =
   "/administration/agents/system-agents/content-blocks";
 const SKILLS_ADMIN = "/administration/agents/skills";
+
+/**
+ * THE DOOR LAW: this tab NAMES the skills and content blocks that teach a kind,
+ * and used to send every one of them to the same list page. Both editors take a
+ * deep link, so each row reaches ITS OWN record.
+ *
+ * `skillId` here is `skill.definition.skill_id` — the business key, not the
+ * uuid. The skills console's `?open=` accepts either (`fetchSkillById` switches
+ * on `isUuid`), which is also why these rows get no peek: `SkillPeek` reads
+ * `.eq("id", …)` and would find nothing for a business key.
+ *
+ * The skills console lives behind the same super-admin `(admin)` layout that
+ * gates THIS page, so nobody who can see the link can be 403'd by it.
+ */
+function skillAdminHref(skillId: string): string {
+  return `${SKILLS_ADMIN}?open=${encodeURIComponent(skillId)}`;
+}
+
+function contentBlockAdminHref(blockId: string): string {
+  return contentBlockHref(CONTENT_BLOCKS_ADMIN, blockId);
+}
 
 const COLUMN_HEADING: Record<AssetColumn, string> = {
   definition: "Definition",
@@ -224,12 +246,22 @@ export default function KindAssetsTab({
                 key={`${s.skillId}-${s.syntax}`}
                 className="flex flex-wrap items-center gap-2"
               >
-                <code className="min-w-0 break-all rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+                <Link
+                  href={skillAdminHref(s.skillId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Open the skill ${s.skillId}`}
+                  className="min-w-0 break-all rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
+                >
                   {s.skillId}
-                </code>
+                </Link>
                 <span className="rounded bg-sky-500/10 px-1.5 py-0.5 text-[11px] font-medium text-sky-700 dark:text-sky-300">
                   {s.syntax}
                 </span>
+                <ExternalLink
+                  className="h-3 w-3 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
               </li>
             ))}
           </ul>
@@ -268,13 +300,26 @@ export default function KindAssetsTab({
                   key={b.id}
                   className="flex flex-col items-start gap-1 text-xs sm:flex-row sm:items-center sm:gap-2"
                 >
-                  <span className="text-foreground">{b.label}</span>
+                  {/* The label is the door; "Edit" used to land on the list of
+                      every block, with this block's id printed right beside it
+                      and no way to reach it. Both now carry `?block=<id>`. */}
+                  <Link
+                    href={contentBlockAdminHref(b.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={`Open the content block ${b.label}`}
+                    className="text-foreground underline-offset-2 hover:text-primary hover:underline"
+                  >
+                    {b.label}
+                  </Link>
                   <code className="break-all font-mono text-[11px] text-muted-foreground">
                     {b.id}
                   </code>
                   <Link
-                    href={CONTENT_BLOCKS_ADMIN}
+                    href={contentBlockAdminHref(b.id)}
                     target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Edit the content block ${b.label}`}
                     className="inline-flex min-h-10 min-w-10 items-center justify-center gap-1 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline sm:ml-auto"
                   >
                     <ExternalLink className="h-3 w-3" /> Edit

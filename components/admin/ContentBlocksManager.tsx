@@ -71,6 +71,8 @@ import {
   CreateContentBlockInput,
 } from "@/types/content-blocks-db";
 import { createClient } from "@/utils/supabase/client";
+import { CONTENT_BLOCK_PARAM } from "@/components/admin/content-blocks-route";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -195,7 +197,40 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   const [skills, setSkills] = useState<SkillOption[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  // ─── Selection + the ?block=<uuid|block_id> deep link (THE DOOR LAW) ─────
+  // A content block is an addressable record: `?block=` opens ONE, so a surface
+  // that names a block (the Kind Registry's Assets tab) reaches that block
+  // instead of dumping the user on a list of all of them.
+  //
+  // The link is read from `window.location` — NOT `useSearchParams`: this
+  // manager is rendered directly, with no Suspense boundary, by both of its
+  // routes, and `useSearchParams` in an unwrapped client component is a build
+  // error in the App Router.
+  //
+  // The selection is DERIVED, not seeded by an effect (setState-in-effect is a
+  // lint error here and a cascading render): an explicit click wins from the
+  // moment it happens — including a click that clears the selection, hence the
+  // `{ id }` wrapper rather than a bare `string | null` — and until then the
+  // deep link decides. A `?block=` that matches nothing selects nothing; the
+  // manager opens on its normal empty state rather than faking a record.
+  const [explicitSelection, setExplicitSelection] = useState<{
+    id: string | null;
+  } | null>(null);
+  const [deepLinkRef] = useState<string | null>(() =>
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get(CONTENT_BLOCK_PARAM),
+  );
+  const deepLinkBlockId = deepLinkRef
+    ? (contentBlocks.find(
+        (b) => b.id === deepLinkRef || b.block_id === deepLinkRef,
+      )?.id ?? null)
+    : null;
+  const selectedBlockId = explicitSelection
+    ? explicitSelection.id
+    : deepLinkBlockId;
+  const setSelectedBlockId = (id: string | null) =>
+    setExplicitSelection({ id });
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -487,6 +522,21 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Keep the URL pointing at the block on screen, so it can be shared or
+  // reopened. `replaceState` — selecting a block is not a navigation, and the
+  // effect touches only an external system (history), never React state.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const current = url.searchParams.get(CONTENT_BLOCK_PARAM);
+    if ((selectedBlockId ?? null) === (current ?? null)) return;
+    if (selectedBlockId) {
+      url.searchParams.set(CONTENT_BLOCK_PARAM, selectedBlockId);
+    } else {
+      url.searchParams.delete(CONTENT_BLOCK_PARAM);
+    }
+    window.history.replaceState(window.history.state, "", url.toString());
+  }, [selectedBlockId]);
 
   // Filtered and searched content blocks
   const categoryMatches = contentBlocks.filter(
@@ -1370,7 +1420,26 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="edit-skill">Skill</Label>
+                        <div className="flex items-center gap-1">
+                          <Label htmlFor="edit-skill">Skill</Label>
+                          {/* THE DOOR LAW: the picker names a real skill record
+                              and gave no way to see it. A name inside a
+                              <Select> cannot be an anchor, so the doors go
+                              beside it — peek only, deliberately: this is a
+                              form with unsaved changes, and navigating away
+                              would discard them. */}
+                          {editData.skill_id && (
+                            <EntityDoorControls
+                              token="skill"
+                              id={editData.skill_id}
+                              name={
+                                skills.find((s) => s.id === editData.skill_id)
+                                  ?.label ?? null
+                              }
+                              alwaysShowActions
+                            />
+                          )}
+                        </div>
                         <Select
                           value={editData.skill_id ?? "__none__"}
                           onValueChange={(value) =>
