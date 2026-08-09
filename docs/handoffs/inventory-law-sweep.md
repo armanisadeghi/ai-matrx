@@ -496,10 +496,19 @@ primitive-duplication defect, not merely an adoption gap):
    exists two lines above and is never rendered as a link.
 7. `features/tasks/components/TasksTableView.tsx:696` (task) and `:563` +
    `AllTasksView.tsx:162` (project — unblocked by Wave 1).
-8. `features/agents/components/builder/AgentResourcesManager.tsx:253` —
-   resolves the entity at `:248` and throws the route away.
-9. `features/notes/components/GlobalSearchResults.tsx:147` — search results are
-   exactly where peek earns its keep.
+8. ~~`features/agents/components/builder/AgentResourcesManager.tsx`~~
+   **SHIPPED, and the tell was in the sibling call sites.** It resolved the
+   entity, drew its icon, then passed no `onClick` — while EVERY other
+   `ResourceAttachmentTile` consumer wires one. When one consumer of a shared
+   component ignores a slot the others use, that is the gap, and the door was
+   already designed. It PEEKS rather than navigates (the builder holds unsaved
+   agent config), gated on `hasPeek` so a tile never looks openable and no-ops.
+   Forced `peekKeyForToken` out of `EntityRef` and into `kinds-list.ts` — a
+   second consumer of the six-key vocabulary gap needed it, and a second
+   private copy is how those six lost their Open door originally.
+9. ~~`features/notes/components/GlobalSearchResults.tsx`~~ **SHIPPED** — see
+   the detailed entry above; it is also where checklist items 9 and 10 came
+   from.
 
 **Bare-UUID violations** (`never render an id you can't open`).
 **Both admin-relationship surfaces are SHIPPED** — `ReachabilityInspectorClient`
