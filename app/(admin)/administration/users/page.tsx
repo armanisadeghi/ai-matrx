@@ -5,8 +5,17 @@
 // cross-links to each user's preferences / usage / admin level. Thin shell over
 // the feature client.
 
+import { Suspense } from "react";
 import { AccountsTableClient } from "@/features/admin/users/components/AccountsTableClient";
 
 export default function UsersAccountsPage() {
-  return <AccountsTableClient />;
+  // useSearchParams (?user focus) needs a Suspense boundary — same as the usage
+  // and preferences siblings. The admin layout forces dynamic rendering, so
+  // omitting this does not fail the build today; that is an accident of a
+  // setting on another file, not a reason to leave the boundary out.
+  return (
+    <Suspense fallback={null}>
+      <AccountsTableClient />
+    </Suspense>
+  );
 }

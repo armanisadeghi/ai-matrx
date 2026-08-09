@@ -452,7 +452,22 @@ export function AccountsTableClient() {
           getRowId={(r) => r.id}
           isLoading={loading}
           pageSize={50}
-          emptyState={{ title: "No users", description: "No accounts match your filters." }}
+          // A focused id that is not in the roster must NOT be reported as a
+          // filter miss — that blames a control the user never touched for a
+          // record that simply is not in this list. The banner above says what
+          // actually happened; this only has to stop contradicting it.
+          emptyState={
+            focusMissed
+              ? {
+                  title: "That account isn't in this roster",
+                  description:
+                    "Clear the focus above to see every account this view loads.",
+                }
+              : {
+                  title: "No users",
+                  description: "No accounts match your filters.",
+                }
+          }
           toolbar={{
             search: true,
             searchPlaceholder: "Search name, email, id…",
@@ -491,9 +506,16 @@ export function AccountsTableClient() {
               admin_level: r.admin_level,
               onboarded: r.onboarding_completed,
             }),
-            listAttributes: (visible, all) => ({
+            // `all` is the table's DATA prop, which is now the focus-filtered
+            // array — so reading `all.length` reported "total: 1" while the
+            // roster held N accounts, telling an agent the platform has one
+            // user. The true total is the unfiltered `rows`; the focused id is
+            // named so the payload explains its own narrowness instead of
+            // silently understating the fleet.
+            listAttributes: (visible) => ({
               visible: visible.length,
-              total: all.length,
+              total: rows.length,
+              ...(focusedUserId ? { focused_user_id: focusedUserId } : {}),
             }),
           }}
           rowActions={(row) => (
