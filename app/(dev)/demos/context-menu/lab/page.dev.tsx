@@ -67,7 +67,14 @@
  * first time you engage the menu (right-click or icon).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import dynamic from "next/dynamic";
 import {
   ChevronDown,
@@ -106,6 +113,8 @@ import { getAllManifests } from "@/features/surfaces/manifests/registry";
 import type { SurfaceManifest } from "@/features/surfaces/types";
 import { supabase } from "@/utils/supabase/client";
 
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -256,32 +265,78 @@ function IdentityBanner({
   const taskName = useAppSelector(selectTaskName);
 
   return (
+    // THE DOOR LAW: every record this banner names is a live row the signed-in
+    // user owns, and every id was already in scope. Names are EntityRefs; ids
+    // are MatrxUuidCells (which resolve their own doors from the same
+    // registries). `user` has no registry route yet, so its id renders
+    // token-less — full value + copy, no invented destination.
     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-[11px]">
       <Field
         label="User"
         value={userEmail ?? "(not signed in)"}
-        mono={userId ?? "—"}
+        mono={userId ? <MatrxUuidCell value={userId} label="User" /> : "—"}
         accent={isSuperAdmin ? "super_admin" : undefined}
       />
       <Field
         label="Organization"
-        value={orgName ?? "(none)"}
-        mono={orgId ?? "—"}
+        value={
+          orgId ? (
+            <EntityRef token="organization" id={orgId} name={orgName} />
+          ) : (
+            "(none)"
+          )
+        }
+        mono={
+          orgId ? (
+            <MatrxUuidCell value={orgId} token="organization" label="Org" />
+          ) : (
+            "—"
+          )
+        }
       />
       <Field
         label="Project / Task"
         value={
-          projectName
-            ? taskName
-              ? `${projectName} › ${taskName}`
-              : projectName
-            : "(none)"
+          projectId ? (
+            <span className="flex min-w-0 items-center gap-1">
+              <EntityRef token="project" id={projectId} name={projectName} />
+              {taskId && (
+                <>
+                  <span className="text-muted-foreground">›</span>
+                  <EntityRef token="task" id={taskId} name={taskName} />
+                </>
+              )}
+            </span>
+          ) : (
+            "(none)"
+          )
         }
-        mono={taskId ?? projectId ?? "—"}
+        mono={
+          taskId ? (
+            <MatrxUuidCell value={taskId} token="task" label="Task" />
+          ) : projectId ? (
+            <MatrxUuidCell value={projectId} token="project" label="Project" />
+          ) : (
+            "—"
+          )
+        }
       />
       <Field
         label="Scope being fetched"
-        value={`${scopeRef.scope}${scopeRef.scopeId ? ` (${scopeRef.scopeId.slice(0, 8)}…)` : ""}`}
+        value={
+          scopeRef.scopeId ? (
+            <span className="flex min-w-0 items-center gap-1">
+              <span className="shrink-0">{scopeRef.scope}</span>
+              <MatrxUuidCell
+                value={scopeRef.scopeId}
+                token="scope"
+                label="Scope"
+              />
+            </span>
+          ) : (
+            scopeRef.scope
+          )
+        }
         mono={surfaceName ?? "no surface"}
         accent={surfaceName ? "surface" : undefined}
       />
@@ -296,12 +351,16 @@ function Field({
   accent,
 }: {
   label: string;
-  value: string;
-  mono?: string;
+  /** Text, or the record's doors (EntityRef / MatrxUuidCell). */
+  value: ReactNode;
+  mono?: ReactNode;
   accent?: string;
 }) {
   return (
-    <div className="rounded-md border border-border bg-muted/30 p-2">
+    // `group` reveals the hover-only door controls inside EntityRef /
+    // MatrxUuidCell — without it they stay at opacity-0 and the doors are
+    // invisible, which is the exact bug this sweep keeps finding.
+    <div className="group rounded-md border border-border bg-muted/30 p-2">
       <div className="flex items-center gap-2">
         <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
           {label}
@@ -312,9 +371,9 @@ function Field({
           </span>
         )}
       </div>
-      <div className="text-foreground truncate font-medium">{value}</div>
+      <div className="min-w-0 text-foreground font-medium">{value}</div>
       {mono && (
-        <div className="font-mono text-[10px] text-muted-foreground truncate">
+        <div className="min-w-0 font-mono text-[10px] text-muted-foreground">
           {mono}
         </div>
       )}

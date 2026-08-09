@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { cn } from "@/lib/utils";
 
 const MODES: Array<{
@@ -234,10 +235,15 @@ export function AgentAssignmentsDemo() {
                     )}
                   </div>
                   <Progress value={progress} />
+                  {/* The assignment session is real and durable, but it has no
+                      UI route of its own (only the REST read documented below),
+                      so there is nothing to open. It gets the canonical uuid
+                      cell — full value + copy — rather than an invented door. */}
                   {state.sessionId && (
-                    <p className="break-all font-mono text-[11px] text-muted-foreground">
-                      Session: {state.sessionId}
-                    </p>
+                    <div className="group flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
+                      Session:{" "}
+                      <MatrxUuidCell value={state.sessionId} label="Session" />
+                    </div>
                   )}
                   {state.sessionKey && (
                     <p className="break-all font-mono text-[11px] text-muted-foreground">
@@ -596,17 +602,21 @@ function ResultsPanel() {
         {state.result.items.map((item) => (
           <article
             key={item.id}
-            className="space-y-2 rounded-md border border-border p-3"
+            className="group space-y-2 rounded-md border border-border p-3"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{item.key}</span>
                 <Badge variant="outline">{item.status}</Badge>
               </div>
+              {/* A real conversation the run just produced — the whole point
+                  of a durable result is being able to go read it. */}
               {item.conversation_id && (
-                <span className="font-mono text-[11px] text-muted-foreground">
-                  {item.conversation_id}
-                </span>
+                <MatrxUuidCell
+                  value={item.conversation_id}
+                  token="conversation"
+                  label="Conversation"
+                />
               )}
             </div>
             <pre className="overflow-x-auto rounded bg-muted p-2 text-xs">
