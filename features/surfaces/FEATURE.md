@@ -124,8 +124,11 @@ internal platform use — never a washed-down user variant beside a private one:
   surface-bound agents as a `<surface_write_targets>` block. Live adopters:
   `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
   `page_supporting_keywords` — handlers in
-  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`) and
-  `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
+  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`),
+  `matrx-user/keyword-intelligence` (`keyword_selection`) and
+  `matrx-user/cms-page` (`page_title`, `page_html_content`, `page_meta_tags`,
+  `page_excerpt`, `page_tags` — all draft-mode, handlers on the provider in
+  `features/cms/components/PageEditor.tsx`). The LSI kind
   components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
@@ -149,7 +152,9 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/cms-page` (5 draft targets — title,
+  HTML body, meta tags, excerpt, tags; handlers in `PageEditor.tsx`;
+  publish/save deliberately NOT declared).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +315,32 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — CMS page editor agent-writable (third adopter), and the
+  surface it emits fixed at the same time.** `matrx-user/cms-page` declares 5
+  ask-policy **draft** targets — `page_title`, `page_html_content`
+  (`{html, mode?: replace|append}`), `page_meta_tags`
+  (`{meta_title?, meta_description?, meta_keywords?}` as ONE object, the
+  marketing-page shape, because the SEO tab edits them together),
+  `page_excerpt`, `page_tags` — each staging through the same `useState`
+  setter the user's own typing drives, in
+  `features/cms/components/PageEditor.tsx`. Publish / save-draft / discard /
+  rollback and the routing fields (slug, category, parent) are deliberately
+  NOT declared: publishing is the human's gate, and routing fields move a live
+  URL. **Prerequisite fixed here:** PageEditor consumed
+  `useCmsPageSurfaceScope` and passed the cms-page menu identity but never
+  mounted a `SurfaceRuntimeProvider`, so the only live runtime on
+  `/cms/[siteId]/pages/[pageId]` was the layout's `matrx-user/cms-site` —
+  the page's own (much richer) scope reached the context menus but never the
+  header Agents chrome, and no cms-page target could have resolved. PageEditor
+  now mounts the provider with the SAME scope builder (no second builder) plus
+  `getWriteHandlers`. Live-verified with a real Badass Agent run on
+  `dev-website/verify-fixture`: all 5 targets applied from plain-language
+  asks, each ask dialog carrying the target's own description; a "Keep as is"
+  returned `{ok:false, declined:true}` and the agent moved on without an
+  error; an undeclared target (URL slug) was refused at the offer level and
+  the agent said so; zero `surface-writeback` captures; the DB row was
+  byte-unchanged afterwards (draft mode stages, it does not save).
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 

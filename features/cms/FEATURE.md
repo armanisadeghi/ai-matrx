@@ -78,7 +78,7 @@ for the general contract this section instantiates.
 | -------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `matrx-user/cms`           | `/cms`                                          | `NonEditableContextMenu` (page + per-card)                                                                | List/entry hub — `owned_sites_summary`, no `site_structure`. **`readiness: verified`**                                                                                 |
 | `matrx-user/cms-site`      | `/cms/[siteId]` + all four tabs                 | `NonEditableContextMenu`                                                                                  | Site workspace; first surface to emit `site_structure`. **Inherits `matrx-user/cms`** (the layout genuinely loads the switcher's site list). **`readiness: verified`** |
-| `matrx-user/cms-page`      | `/cms/[siteId]/pages/[pageId]`, `.../pages/new` | `EditableContextMenu` + `ProTextarea` on HTML/CSS/JS tabs                                                 | **Primary editor** — `agentRoles`: `page_editor`, `seo_editor`, `publish_reviewer`                                                                                     |
+| `matrx-user/cms-page`      | `/cms/[siteId]/pages/[pageId]`, `.../pages/new` | `EditableContextMenu` + `ProTextarea` on HTML/CSS/JS tabs                                                 | **Primary editor** — `agentRoles`: `page_editor`, `seo_editor`, `publish_reviewer`. The one CMS surface that is agent-**writable**: 5 ask-policy draft `writeTargets` (title, HTML body, meta tags, excerpt, tags), provider + handlers in `PageEditor.tsx`  |
 | `matrx-user/cms-component` | `/cms/[siteId]/components`                      | `EditableContextMenu` + `ProTextarea` (HTML/CSS) + `NonEditableContextMenu` (cards)                       | Shared header/footer editor                                                                                                                                            |
 | `matrx-user/html-page`     | `/cms/html-pages`, `/cms/html-pages/[pageId]`   | `EditableContextMenu` (meta description `ProTextarea` + Monaco body) + `NonEditableContextMenu` (preview) | Standalone quick-publish — `html_pages_structure`, not `site_structure`; `agentRoles`: `html_page_editor`                                                              |
 
@@ -343,6 +343,33 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-08-09` — **`matrx-user/cms-page` is now agent-WRITABLE, and PageEditor
+  finally mounts its own surface runtime.** The manifest declares 5 ask-policy
+  draft targets — `page_title`, `page_html_content`
+  (`{html, mode?: 'replace' | 'append'}`), `page_meta_tags`
+  (`{meta_title?, meta_description?, meta_keywords?}` as one object — the SEO
+  tab edits them together), `page_excerpt`, `page_tags` — with handlers on the
+  provider in `PageEditor.tsx` that stage through the SAME `useState` setters
+  the user's typing drives and throw on a bad shape. Nothing persists: the
+  human still clicks Save Draft / Save & Publish, and **publish is
+  deliberately not a target** (the human's click stays the gate, beside the
+  server-side `agent_write_policy`); slug/category/parent are not targets
+  either, since each MOVES the live URL. Two save paths, and the target
+  descriptions say which one carries each: `html_content` + the three meta
+  fields have `*_draft` twins so Save Draft persists them, while `title`,
+  `excerpt` and `tags` have none and ride Save & Publish — a pre-existing
+  human-editor asymmetry (a person typing in those fields hits it identically,
+  and a Publish-only click on a page that already has a draft drops them).
+  Prerequisite fixed in the same change: PageEditor consumed
+  `useCmsPageSurfaceScope` and passed `CMS_PAGE_CONTEXT_MENU_PROPS` to its
+  menus but mounted NO `SurfaceRuntimeProvider`, so the live runtime on the
+  page-editor route was the layout's `matrx-user/cms-site` — the header Agents
+  popover ran agents against the site scope, not the page's. It now mounts the
+  cms-page provider (nested inside, therefore deeper than, `SiteLayoutClient`'s)
+  reusing the one existing scope builder. Live-verified with a real agent run
+  on `dev-website/verify-fixture` (all 5 targets applied, a decline handled
+  cleanly, an undeclared slug write refused, DB row unchanged).
 
 - `2026-08-07` (round 2) — **Starter kit for humans + theme un-bake + shell integrity
   (WF-1/2/4/7).** `/cms/[siteId]/settings` gained a "Site Shell" card — Install starter kit
