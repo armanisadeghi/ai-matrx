@@ -19,7 +19,6 @@
 
 import { useState, type ReactNode } from "react";
 import {
-  ExternalLink,
   Link2,
   Loader2,
   Pin,
@@ -27,6 +26,7 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/utils/cn";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
@@ -369,25 +369,32 @@ export function AssociationList(props: AssociationListProps) {
                                 busy && "opacity-50",
                               )}
                             >
-                              {Icon && (
-                                <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => openRow(row)}
-                                className="min-w-0 flex-1 truncate text-left text-foreground hover:underline"
-                                title={titleFor({
+                              {/* THE DOOR LAW via the one primitive: open +
+                                  new tab + peek, all resolved from the
+                                  registries. `openEntity` (when the container
+                                  opens records its own way) intercepts only
+                                  the plain click — modified clicks still get a
+                                  native new tab. */}
+                              <EntityRef
+                                token={row.token}
+                                id={row.resourceId}
+                                name={titleFor({
                                   token: row.token,
                                   id: row.resourceId,
                                   label: row.label,
                                 })}
-                              >
-                                {titleFor({
-                                  token: row.token,
-                                  id: row.resourceId,
-                                  label: row.label,
-                                })}
-                              </button>
+                                showIcon={Boolean(Icon)}
+                                onOpen={
+                                  props.openEntity
+                                    ? () =>
+                                        props.openEntity?.(
+                                          row.token,
+                                          row.resourceId,
+                                        )
+                                    : undefined
+                                }
+                                className="min-w-0 flex-1 text-foreground"
+                              />
                               {row.originNote && (
                                 <span className="shrink-0 text-[10px] text-muted-foreground/60">
                                   {row.originNote}
@@ -424,16 +431,9 @@ export function AssociationList(props: AssociationListProps) {
                                   />
                                 </button>
                               )}
-                              {(props.openEntity || info?.hrefFor) && (
-                                <button
-                                  type="button"
-                                  onClick={() => openRow(row)}
-                                  title="Open"
-                                  className="shrink-0 rounded p-0.5 text-muted-foreground/0 transition-colors group-hover:text-muted-foreground hover:!text-foreground"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                </button>
-                              )}
+                              {/* The old hover ExternalLink duplicated the
+                                  title click exactly; EntityRef carries the
+                                  real new-tab door now. */}
                               {row.removable && (
                                 <button
                                   type="button"

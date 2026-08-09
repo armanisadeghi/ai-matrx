@@ -335,5 +335,3 @@ sweep gets a row. Guarded by `pnpm check:reuse-index`.
 - **2026-08-09** — Campaign opened. Four exhaustive audits. Wave 1 shipped
   (`51a28922`): 8 new `hrefFor` routes + the peek token bridge. D137 filed
   (`/canvas/{id}` 404s, incl. email links).
-</content>
-</invoke>

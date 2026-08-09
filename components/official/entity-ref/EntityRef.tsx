@@ -31,6 +31,7 @@ import { ExternalLink, Lightbulb } from "lucide-react";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
+import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
 import { cn } from "@/lib/utils";
 
 /**
@@ -87,6 +88,17 @@ export interface EntityRefProps {
   alwaysShowActions?: boolean;
   /** Surface-specific extra doors (open in window, jump to versions, …). */
   extraActions?: React.ReactNode;
+  /**
+   * Intercept the plain left-click on the name — for surfaces that open the
+   * record their OWN way (in a window, in a side panel, via a container's
+   * `openEntity` handler) instead of navigating the tab.
+   *
+   * Cmd/Ctrl/Shift/Alt/middle clicks are NOT intercepted: they keep the
+   * browser's native new-tab behaviour via the real `href`, so a surface that
+   * takes over the click can never cost the user their current state. The
+   * explicit new-tab control stays visible regardless.
+   */
+  onOpen?: () => void;
   className?: string;
 }
 
@@ -104,6 +116,7 @@ export function EntityRef({
   disableNewTab = false,
   alwaysShowActions = false,
   extraActions,
+  onOpen,
   className,
 }: EntityRefProps) {
   const [peekOpen, setPeekOpen] = useState(false);
@@ -131,12 +144,31 @@ export function EntityRef({
       {resolvedHref ? (
         <Link
           href={resolvedHref}
-          onClick={stop}
+          onClick={(e) => {
+            stop(e);
+            // A modified click keeps the browser's native new-tab behaviour —
+            // an interceptor must never cost the user their current state.
+            if (!onOpen || allowNativeNewTab(e)) return;
+            e.preventDefault();
+            onOpen();
+          }}
           title={`Open ${label}`}
           className="min-w-0 truncate text-inherit underline-offset-2 hover:text-primary hover:underline"
         >
           {label}
         </Link>
+      ) : onOpen ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            stop(e);
+            onOpen();
+          }}
+          title={`Open ${label}`}
+          className="min-w-0 truncate text-left text-inherit underline-offset-2 hover:text-primary hover:underline"
+        >
+          {label}
+        </button>
       ) : (
         <span className="min-w-0 truncate" title={label}>
           {label}
