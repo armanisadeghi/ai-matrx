@@ -39,6 +39,8 @@ The page is the `matrx-admin/agent-slots` surface (`features/surfaces/manifests/
 
 ## Change Log
 
+- 2026-08-09 — Fixed both Versions doors in the Pin cell and selected-slot identity card. They now reuse the canonical shell-aware `getAgentModeHref("versions", …)` route helper and open `/latest`; `/v` is only a single-version route (`/v/<number>`) and never a versions collection.
+
 - 2026-08-08 — THE DOOR LAW pass (Arman's ruling): `EntityRef` on every agent reference, version-history door on pins, lineage/system-twin resolution + one-click **Repin to system twin**, identity card above the drawer's picker, and the new `unresolved pin` health state (`AgentSlotsHealthSummary.unresolved_pin` added to the surface scope). Health column widened; `ok` no longer masks unreadable pins.
 
 - 2026-08-08 — Bindings are now EDITABLE in the console: `SlotDetail` embeds the shared `SlotOverridePanel` (`features/agents/slots/components/`) — user + admin-org bindings incl. settings-only `config_overrides`, written via the aidream bind endpoint (`PUT/DELETE /agent-slots/{slot_key}/binding`, 422 contract verdicts shown verbatim); the read-only "All overrides" roll-up stays below it.

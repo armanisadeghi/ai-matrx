@@ -26,6 +26,7 @@ import {
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
 import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -332,6 +333,7 @@ function SlotAgentIdentityCard({
   }
   if (!row.agentId) return null;
   const isSystem = row.agentType === "builtin";
+  const basePath = isSystem ? SYSTEM_AGENT_BASE : USER_AGENT_BASE;
   const base = agentHref(row.agentId, row.agentType);
   return (
     <div className="space-y-2 rounded-md border border-border bg-card px-3 py-2.5">
@@ -393,7 +395,11 @@ function SlotAgentIdentityCard({
 
       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
         <Button asChild size="sm" variant="outline" className="h-6 gap-1 px-1.5 text-[11px]">
-          <a href={`${base}/v`} target="_blank" rel="noopener noreferrer">
+          <a
+            href={getAgentModeHref("versions", row.agentId, basePath)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <History className="h-3 w-3" />
             Versions
           </a>
@@ -869,7 +875,11 @@ export function AgentSlotsConsole() {
             <Badge variant={r.slot.use_latest ? "secondary" : "outline"}>{r.pinLabel}</Badge>
             {r.agentId && (
               <a
-                href={agentHref(r.agentId, r.agentType, "/v")}
+                href={getAgentModeHref(
+                  "versions",
+                  r.agentId,
+                  r.agentType === "builtin" ? SYSTEM_AGENT_BASE : USER_AGENT_BASE,
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
