@@ -13,6 +13,31 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D143 — `InlineMediaRef` uses `ref` as a DATA prop name (2026-08-09)
+
+`features/files/components/inline/InlineMediaRef.tsx:75` declares
+`ref?: MediaRef | string | null` — a plain data prop occupying React's `ref`
+name. It works at runtime (React 19 passes `ref` through to function
+components), but the **React Compiler lint treats the value as a React ref and
+flags every read of it during render** as `react-hooks/refs` "Cannot access refs
+during render".
+
+Effect: any component that passes a value to `<InlineMediaRef ref={x}/>` gets
+that value tainted, and EVERY subsequent `x.*` read in the same render is a lint
+error. `DuplicateUploadDialog` carries 7 such errors today and grew to 12 when
+two more fields of the same object were read (2026-08-09, door work) — all one
+false positive with one cause. Hoisting the reads into locals does NOT clear it;
+the taint follows the value.
+
+**Fix:** rename the prop to something that is not `ref` (`source`, `mediaRef`,
+`fileRef`) and update call sites. Mechanical but wide — `InlineMediaRef` is the
+canonical render path for our media (CLAUDE.md § Media durability), so this is
+a rename across many files and wants its own change, not a drive-by.
+
+Until then: `react-hooks/refs` errors in files rendering `InlineMediaRef` are
+noise, and a growing count there does not mean new real defects — check whether
+every hit traces to a value that reached `ref=`.
+
 ### D142 — `migrations/agx_list_scoped_v3_all_columns.sql` disagrees with the live function (2026-08-09)
 
 The committed file returns `project_id`; the **deployed** `agx_list_scoped` does not (verified
