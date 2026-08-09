@@ -79,12 +79,15 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
   (`aidream/graph_actions/office/`); result kinds `office_file_result` +
   `office_extraction_result` seeded live (`migrations/content_ir_seed_office_result_kinds.sql`);
   E2E proven against the real scheduler + DB (generate → extract round-trip + kind-gate negative).
+- **2026-08-08 (kinds activated — Arman's ruling):** all five office kinds are now
+  `is_active=true`. `office_document` / `office_presentation` / `office_spreadsheet` activated
+  through the gated `content_ir.set_kind_activation` (dual gate passed clean: `render_ok`,
+  `structural_ok`, web `generic_structured` component); `office_file_result` /
+  `office_extraction_result` were swept in by the named-shapes campaign. Standalone model
+  emissions now render; the tool/workflow FileRef path remains canonical. Blocker found and
+  filed while doing it: `set_kind_activation` ignores `p_actor` in its super-admin leg
+  (aidream `FOUND_DEFECTS.md`) — it breaks the platform's own `kind_activate` tool.
 
 ## Decisions needed
 
-**Should the three `office_*` content-IR kinds be activated?**
-They're registered with valid schemas, skills, content blocks, and a `generic_structured`
-component, but sit `is_active=false`. The canonical consumption path is the `office` tool
-returning a downloadable FileRef; activation only changes what happens if a model emits a
-standalone `__kind` payload instead of calling the tool. Decide: leave inactive (tool is the
-only path) or activate and accept the generic structured viewer for standalone emissions.
+*(none — the `office_*` activation question was decided and executed 2026-08-08; see Done.)*
