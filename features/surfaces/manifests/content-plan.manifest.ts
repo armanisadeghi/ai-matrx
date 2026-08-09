@@ -269,6 +269,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     valueType: "string",
     updatesValue: "selected_node_id",
     mode: "ui",
+    applyPolicy: "auto",
     group: "plan_workspace",
     sortOrder: 100,
   },

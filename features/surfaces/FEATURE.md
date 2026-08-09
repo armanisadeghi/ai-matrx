@@ -157,7 +157,9 @@ internal platform use — never a washed-down user variant beside a private one:
   pipeline persists them; refuse loudly on read-only shared notes),
   `matrx-user/crm-create-party` (one composite `party_fields` draft target
   staged through `PartyCreateForm`; the user's Create click remains the only
-  persistence gate).
+  persistence gate), and the content-plan family (`content-plan-node`: nine
+  ask-policy drafts plus save; setup: ask counts/names and auto archetype;
+  plan: auto selection; list: ask navigation).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -319,6 +321,7 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 
 ## Change Log
 
+- **2026-08-09 — Content-plan family agent-writable.** Explicit policies replaced manual-by-omission: node drafts/save are ask, setup counts/names are ask and archetype is auto, plan selection is auto, and list navigation is ask. Primary-keyword UUID stays manual until the surface exposes valid options.
 - **2026-08-09 — CRM create-party agent-writable.** One ask-policy composite `party_fields` target covers the complete create form and validates every key before staging through the form's existing setters. Submit remains deliberately human-only.
 - **2026-08-09 — Notes editor agent-writable (third adopter).** `matrx-user/notes` declares 3 ask-policy draft targets — `note_title`, `note_content` (full replacement; the description instructs the agent to read the current content first and include text it means to keep), `note_tags` (full set replacement). Handlers in `NoteContentEditor.tsx` stage through the EXACT paths the user's own editing uses (`handleChangeFlush` → `updateNoteContent`, `updateNoteLabel`, `updateNoteTags`), so the canonical autosave — optimistic-lock save, timestamp-monotonic echo suppression, conflict guards — persists them like keystrokes; never a parallel writer, never raw supabase (freeze-loop doctrine). Read-only (viewer-level shared) notes refuse loudly. Live-verified with Badass Agent on `/notes`: per-target ask dialogs carrying the manifest prose, Apply → editor updates → autosave persists (verified in `workbench.notes`), "Keep as is" declines gracefully with the agent acknowledging, zero `surface-writeback` error captures.
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.

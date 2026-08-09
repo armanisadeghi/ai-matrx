@@ -63,6 +63,8 @@ const writeTargets: SurfaceWriteTarget[] = [
       "Navigates to the given site's plan workspace (value = site UUID from site_rows). Pure navigation — nothing is written.",
     valueType: "string",
     mode: "ui",
+    // "ask", not "auto": navigation costs the user their current page.
+    applyPolicy: "ask",
     group: "plan_portfolio",
     sortOrder: 100,
   },

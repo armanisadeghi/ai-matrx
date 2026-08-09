@@ -116,8 +116,9 @@ server-side; the client tool works either way.
 
 - The confirm dialog says "An agent wants…" when the agent-definition slice
   isn't hydrated — known nit, not yours to fix per-surface.
-- `content-plan-node`'s draft targets predate agent-origin and are `manual`
-  (kind-component only) — do not copy its policy omissions for new work.
+- `content-plan-node` and its siblings are now `applyPolicy: "ask"`/`"auto"`
+  (2026-08-09); only `node_primary_keyword_id` stays `manual` (no keyword
+  options exposed). Never leave a new target `manual` by omission.
 - Don't declare a target whose handler you can't wire to a CANONICAL write
   path — a declared-but-unwired target is a loud runtime defect by design.
 - Multiple values in one field object (like `page_meta_tags`

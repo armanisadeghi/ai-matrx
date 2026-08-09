@@ -340,6 +340,7 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-09 — Claude: **Content-plan write targets are genuinely agent-writable.** The node surface uses ask-policy for nine draft fields and `save_node`; setup uses ask for family counts/names and auto for archetype; plan selection is auto; list navigation is ask. `node_primary_keyword_id` remains manual because no valid keyword UUID inventory is exposed.
 - 2026-08-09 — Claude: **Page-layer assist chips in the workspace.**
   `plan-assists-producer.ts` (deterministic missing-pages sweep: plan nodes ×
   the WF-11 CMS page map → one navigate chip to Setup's "Realize planned

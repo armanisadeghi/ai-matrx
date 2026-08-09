@@ -13,7 +13,9 @@
  * automated apply) may write back into the panel. Field targets are
  * `mode: "draft"`: they stage into the panel's draft for the user to review
  * and save — never a silent DB write. `save_node` is the one entity-mode
- * target (equivalent to the user pressing Save).
+ * target (equivalent to the user pressing Save). All targets except
+ * `node_primary_keyword_id` are `applyPolicy: "ask"` — offered to agents,
+ * applied only after an in-place confirm.
  *
  * Runtime emitter + write handlers: `NodePanel.tsx` mounts a nested
  * `SurfaceRuntimeProvider` (deepest wins while the panel is open).
@@ -164,7 +166,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "node_type",
     label: "Node type",
     description:
-      "Structural type of the planned page (draft-overlaid): home, pillar, cluster, article, service, location, utility.",
+      "Structural type of the planned page (draft-overlaid): home, pillar, cluster, article, index.",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 10,
@@ -209,7 +211,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "node_technical_depth",
     label: "Technical depth",
     description:
-      "Editorial difficulty tier (draft-overlaid): foundational | intermediate | advanced. Empty when unset.",
+      "Editorial difficulty tier (draft-overlaid): low | medium | high. Empty when unset.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 12,
@@ -304,6 +306,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     valueType: "string",
     updatesValue: "node_label",
     mode: "draft",
+    applyPolicy: "ask",
     group: "node_identity",
     sortOrder: 100,
   },
@@ -315,6 +318,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     valueType: "string",
     updatesValue: "node_slug",
     mode: "draft",
+    applyPolicy: "ask",
     group: "node_identity",
     sortOrder: 110,
   },
@@ -322,10 +326,11 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "node_type",
     label: "Node type",
     description:
-      "Stages a structural type change (home | pillar | cluster | article | service | location | utility) into the draft.",
+      "Stages a structural type change (home | pillar | cluster | article | index) into the draft.",
     valueType: "string",
     updatesValue: "node_type",
     mode: "draft",
+    applyPolicy: "ask",
     group: "node_targeting",
     sortOrder: 300,
   },
@@ -337,6 +342,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     valueType: "string",
     updatesValue: "node_status_id",
     mode: "draft",
+    applyPolicy: "ask",
     group: "node_targeting",
     sortOrder: 310,
   },
@@ -347,6 +353,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     valueType: "number",
     updatesValue: "node_priority",
     mode: "draft",
+    applyPolicy: "ask",
     group: "node_targeting",
     sortOrder: 320,
   },
@@ -354,10 +361,11 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "node_technical_depth",
     label: "Technical depth",
     description:
-      "Stages foundational | intermediate | advanced (or null to clear) into the draft.",
+      "Stages low | medium | high (or null to clear) into the draft.",
     valueType: "string",
     updatesValue: "node_technical_depth",
     mode: "draft",
+    applyPolicy: "ask",
     group: "node_targeting",
     sortOrder: 330,
   },
@@ -368,6 +376,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     valueType: "boolean",
     updatesValue: "node_needs_reviewer",
     mode: "draft",
+    applyPolicy: "ask",
     group: "node_targeting",
     sortOrder: 340,
   },
@@ -378,6 +387,9 @@ const writeTargets: SurfaceWriteTarget[] = [
       "Stages a `seo.keyword` UUID (or null to unbind) as the primary keyword into the draft.",
     valueType: "string",
     updatesValue: "node_primary_keyword_id",
+    // Deliberately manual (kind-component only): the surface exposes no
+    // keyword options — an agent has no legitimate way to produce a valid
+    // `seo.keyword` UUID here. Revisit if keyword options are declared.
     mode: "draft",
     group: "node_targeting",
     sortOrder: 350,
@@ -390,6 +402,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     valueType: "array",
     updatesValue: "node_brief",
     mode: "draft",
+    applyPolicy: "ask",
     group: "node_content",
     sortOrder: 400,
   },
@@ -401,6 +414,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     valueType: "object",
     updatesValue: "node_attributes",
     mode: "draft",
+    applyPolicy: "ask",
     group: "node_content",
     sortOrder: 410,
   },
@@ -411,6 +425,7 @@ const writeTargets: SurfaceWriteTarget[] = [
       "Persists the panel's current draft through the canonical plan write path — equivalent to the user pressing Save. Value is ignored. DB trigger errors surface verbatim.",
     valueType: "boolean",
     mode: "entity",
+    applyPolicy: "ask",
     group: "node_state",
     sortOrder: 500,
   },
@@ -421,7 +436,7 @@ export const contentPlanNodeManifest: SurfaceManifest = {
   label: "Content Plan Node",
   readiness: "partial",
   readinessNote:
-    "Emitter + write handlers wired in NodePanel; no default agent bound to brief_writer yet, and write targets are not yet mirrored to the DB (code-only v1).",
+    "Emitter + write handlers wired in NodePanel; brief_writer bound. Write targets are agent-offered (applyPolicy ask; node_primary_keyword_id deliberately manual — no keyword options exposed). DB mirror sync pending (client tool works code-only).",
   urlPattern: "/marketing/content-plan/[siteId]",
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
