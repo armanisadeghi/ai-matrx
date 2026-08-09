@@ -193,14 +193,27 @@ Ordered by traffic. Each item is independently actionable.
    (+ new `features/organizations/admin/routes.ts`) · `DuplicateUploadDialog` ·
    `ScopeMismatchDialogHostImpl` · `NotifyOwnerDialog`.
 
-   **Remaining, all MED — the `agent-shortcuts` modal family:**
-   `LinkAgentToShortcutModal` (`:233/:388/:480/:498`, and `:398` resolves
-   "already linked to an agent" then refuses to say WHICH) ·
-   `DuplicateShortcutModal` (`:138/:217/:271/:292` — `:217` is a truncated bare
-   scope id, and `scope` has an `hrefFor` now) · `PromoteToGlobalModal`
-   (`:172/:319/:341`). All three name a shortcut/agent/scope with the id in
-   scope. Note `:388` is a picker `<button>` — that one needs
-   `EntityDoorControls` as a SIBLING, not an anchor.
+   ~~**Remaining, all MED — the `agent-shortcuts` modal family.**~~ **DONE
+   2026-08-09.** `LinkAgentToShortcutModal` (picker rows carry pinned
+   `EntityDoorControls`; "Already linked" now says WHICH via peek — the agent's
+   name is not loaded in this modal, so peek is the honest door; and the header
+   naming the agent being linked is an `EntityRef`) · `DuplicateShortcutModal`
+   (source shortcut + destination container, the latter typed through
+   `entityTokenForAgentScope`, never a literal) · `PromoteToGlobalModal`
+   (sibling controls, not a linked name — this modal holds an edited
+   `labelOverride` a same-tab navigation would discard).
+
+   Both promote call sites were checked and are CLEAN: `promoteShortcutToGlobal`
+   returns the new id and both callers `router.push` to it. The `(core)` page
+   sending the user to an `(admin)` route is also correct here — the modal gates
+   on `selectIsSuperAdmin`, which is exactly what the `(admin)` layout requires.
+
+   ⚠️ **`shortcut_category` must NOT be registered.** The generated token exists
+   but points at **`graveyard.shortcut_categories_legacy`** — it does not
+   identify the live category, so an `hrefFor` would be a wrong-record door. The
+   category label in both modals is deliberately plain text. (The live category
+   surface is org-scoped and list-only anyway:
+   `/organizations/[orgId]/shortcuts/categories`.)
 
    The scattered MED set is **DONE**: `ObservationalMemoryWindow`,
    `AgentContentWindow`, `CreatorHubWindow`, `AgentExecutionTestModal`,

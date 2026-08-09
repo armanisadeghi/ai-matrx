@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -228,10 +229,18 @@ export function LinkAgentToShortcutModal({
 
   const body = (
     <div className="flex flex-col gap-4">
-      <div className="p-3 rounded-md border border-border bg-card">
+      {/* The agent this modal is about. Its picker rows already carry doors;
+          the header naming the subject did not. */}
+      <div className="group p-3 rounded-md border border-border bg-card">
         <div className="flex items-center gap-2 mb-1">
           <Hammer className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-sm">{agent.name}</span>
+          <EntityRef
+            token="agent"
+            id={agent.id}
+            name={agent.name}
+            showIcon={false}
+            nameClassName="font-semibold text-sm"
+          />
         </div>
         {agent.description && (
           <p className="text-xs text-muted-foreground">{agent.description}</p>
