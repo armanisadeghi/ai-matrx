@@ -706,15 +706,103 @@ expect a low hit rate — but nobody has confirmed that end to end.
 **THREE DISCRIMINATORS that actually found defects, in increasing reach.** Use
 these rather than reading 140 files; each returned under a dozen candidates.
 
-1. `onClick={() => router.push(\`` — the narrow inline form. 9 sites, all now
-   triaged.
+⚠️ **A COUNT WITHOUT ITS COMMAND IS NOT RE-CHECKABLE — and two of mine were
+WRONG.** An adversarial pass could not reproduce the totals here because only
+the numbers were recorded, not the patterns. Writing the commands down and
+running them exposed that the "10 candidates" and "10 files" figures this doc
+carried match **no state of the tree**: at the branch point those patterns
+returned **13** and **14**. They were never measured with the pattern they were
+attributed to. The table below is measured, both ends, by the commands that
+follow. **Every count this campaign states must ship with the command that
+produced it — a number you cannot re-run is a guess wearing a uniform.**
+
+| # | Pattern | At branch point `66fece25` | Now | Closed |
+|---|---|---|---|---|
+| 1 | narrow inline `router.push` | 17 | 9 | 8 |
+| 2 | Open/View button beside a record | 13 | 7 | 6 |
+| 3 | record component with zero anchors | 14 | 8 | 6 |
+| 4 | `<Badge>` showing a count | 14 | 13 | 1 |
+| 5 | unguarded side-effecting anchor | — | 8 | 0 (all deliberate — see below) |
+
+Row 5 has no branch-point figure on purpose: its command walks `components/`
+too, and the baseline tree I measured was `features/ app/` only. **A cell I did
+not measure stays empty rather than borrowing a neighbour's number.**
+
+Reproduce from the repo root:
+
+```bash
+# (1) narrow inline form
+grep -rn 'onClick={() => router\.push(`' features/ app/ --include=*.tsx
+
+# (2) Open/View button beside a record
+python3 - <<'PY'
+import os,re
+pat=re.compile(r'<Button[^>]*onClick=\{[^}]*router\.(?:push|replace)\([^}]*\}[^>]*>(.*?)</Button>',re.S)
+for root,dirs,files in os.walk("."):
+    dirs[:]=[d for d in dirs if d not in {"node_modules",".next",".git","dist"}]
+    if "/demos/" in root or "(transitional)" in root: continue
+    for f in files:
+        if not f.endswith(".tsx"): continue
+        p=os.path.join(root,f); src=open(p,encoding="utf-8").read()
+        for m in pat.finditer(src):
+            label=" ".join(re.sub(r'<[^>]+>','',m.group(1)).split())
+            if re.search(r'\b(Open|View|Go to|See)\b',label,re.I):
+                print(f"{p}:{src[:m.start()].count(chr(10))+1}  {label[:50]!r}")
+PY
+
+# (3) record component with NO anchor of any kind
+python3 - <<'PY'
+import os,re
+comp=re.compile(r'function\s+\w*(Card|Row|Item|Tile)\b')
+for root,dirs,files in os.walk("."):
+    dirs[:]=[d for d in dirs if d not in {"node_modules",".next",".git","dist"}]
+    if "/demos/" in root or "(transitional)" in root: continue
+    for f in files:
+        if not f.endswith(".tsx"): continue
+        p=os.path.join(root,f); src=open(p,encoding="utf-8").read()
+        if "router.push(`" not in src or not comp.search(src): continue
+        if "next/link" in src or "EntityRef" in src or "<a " in src: continue
+        print(p)
+PY
+
+# (4) <Badge> showing a count (12 of 13 are headers over their own list)
+grep -rn 'Badge[^>]*>{[a-zA-Z_.]*\(count\|Count\|length\)}' --include=*.tsx features/ app/
+
+# (5) unguarded side-effecting anchors — see the modified-click section
+python3 - <<'PY'
+import os,re
+link=re.compile(r'<Link\b[^>]*?onClick=\{([^}]{0,200})\}',re.S)
+fx=re.compile(r'\b(set[A-Z]\w*|onClose|onOpenChange|close\w*|dismiss\w*|toggle\w*|onSelect|collapse\w*)\s*\(')
+guard=re.compile(r'metaKey|ctrlKey|shiftKey|button\s*===\s*1')
+for root,dirs,files in os.walk("."):
+    dirs[:]=[d for d in dirs if d not in {"node_modules",".next",".git","dist"}]
+    for f in files:
+        if not f.endswith(".tsx"): continue
+        p=os.path.join(root,f); src=open(p,encoding="utf-8").read()
+        for m in link.finditer(src):
+            if fx.search(m.group(1)) and not guard.search(m.group(1)):
+                print(f"{p}:{src[:m.start()].count(chr(10))+1}")
+PY
+```
+
+1. `onClick={() => router.push(\`` — the narrow inline form. The 9 that remain
+   are all triaged.
 2. `<Button …onClick={…router.push…}>` whose visible label matches
-   `Open|View|Go to|See`. 10 candidates, 3 real.
+   `Open|View|Go to|See`. 3 of the 13 were real doors.
 3. **Files that DEFINE a `*Card`/`*Row`/`*Item`/`*Tile` component, push a
    template route, AND contain no anchor of any kind** — no `next/link`, no
    `EntityRef`, no bare `<a>`. If a file renders record components and has
-   ZERO anchors, the record's name cannot possibly be a door. 10 files; found
-   `/education/audio-study`.
+   ZERO anchors, the record's name cannot possibly be a door. This is what
+   surfaced `/education/audio-study`, the sitemaps workspace and
+   `FlashcardsHome`. (`/lists` came from a different pass — it is NOT a
+   discriminator-3 hit; that discriminator never saw it.)
+
+**The 8 still standing under discriminator 3 are the honest remainder** —
+`AgentRunsSidebar`, `AgentImportWindow`, `AgentRoleCard`, `ResearchInitForm`,
+`CreateAgentAppFormWrapper`, `LiveBuilder`, `OrphanThreadRow`,
+`AgentSurfacesPanel`. Several are the two false-positive shapes below, but
+**nobody has walked all 8 one by one** — do not read the shrinking number as
+"done".
 
 Discriminator 3 also cleanly separates the two most common false positives —
 both worth knowing because they look identical to a defect in a grep:
