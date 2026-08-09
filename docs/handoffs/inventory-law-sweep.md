@@ -41,7 +41,7 @@ build time as you go.
 
 ## THE CONVERSION CHECKLIST — read before replacing any hand-rolled door
 
-Nineteen review findings have landed on the Wave 2/3 PR so far. **Most were the
+Twenty-three review findings have landed on the Wave 2/3 PR so far. **Most were the
 same mistake in different clothes:** a conversion changed what the original door
 DID. Adopting `EntityRef` is not a drop-in — the hand-rolled code it replaces
 encodes decisions you must carry over deliberately.
@@ -54,9 +54,9 @@ changed). The last group is the dangerous one — 11 had already shipped in thre
 surfaces before a bot flagged the fourth, and 13 is the same shape one level
 up — the surface silently changing what the PRIMITIVE does.
 
-Before replacing hand-rolled code with a shared primitive, answer all fourteen.
-1-3, 6-7 and 9-10 are door-specific; 4, 5, 8, 11, 12, 13 and 14 apply to ANY
-primitive adoption:
+Before replacing hand-rolled code with a shared primitive, answer all fifteen.
+1-3, 6-7 and 9-10 are door-specific; 4, 5, 8, 11-15 apply to ANY primitive
+adoption:
 
 1. **Where did the old primary click go?** `router.push` (in place) or
    `window.open` (new tab)? Preserve it. A rail, sheet, side panel, or dialog
@@ -278,6 +278,34 @@ primitive adoption:
     and gain Attach To only. *(Caught by Cursor Bugbot on the conversation
     rows; the agents and notes instances were the same bug, found by auditing
     every surface the same way rather than fixing only the one reported.)*
+
+15. **A mount gate that swaps element types is a REMOUNT — and reaching for
+    one usually means you are patching a symptom.** Two lessons, one incident,
+    both from an adversarial review of a fix I had already shipped.
+
+    *The mechanism:* `if (!isMounted) return <>{children}</>` looks like a
+    cheap deferral. It changes the element TYPE at that position, so React
+    destroys and recreates the entire wrapped subtree on the commit after first
+    paint. Verified with a repro: `mount, unmount, mount`. In `ContextMenuV3`
+    that meant every Monaco editor re-instantiated and a 50-row
+    `EntityListTable` ran 50 unmount/remount cycles with every row effect —
+    fetches, observers, media loads — firing twice. **If you defer a wrapper,
+    return the SAME element type or do not defer.**
+
+    *The root cause, which is this campaign's own subject:* the reason I
+    reached for a shell-level workaround at all was a DUPLICATE PRIMITIVE.
+    `components/ui/context-menu.tsx` (Root rendered unconditionally, with a
+    comment explaining exactly why gating it is wrong) had **zero consumers**,
+    while `components/ui/context-menu/context-menu.tsx` (gated, returning
+    `null`) was used by everything. The correct implementation was sitting
+    unused beside the defective one, and its justification — "Radix generates
+    dynamic aria-controls ids" — was false, as ten minutes in `node_modules`
+    showed (the closed Trigger renders only `data-state`/`data-disabled`).
+
+    **Before working around a shared component's behaviour, grep for a second
+    copy of it.** If one exists, the unused copy is often the right one, and
+    the whole workaround evaporates. *(Both halves caught in adversarial
+    review; the workaround had already shipped.)*
 
 Everything the primitive cannot decide for itself is documented on the props;
 read them rather than inferring from a neighbouring call site.
