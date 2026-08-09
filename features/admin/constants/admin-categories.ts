@@ -666,6 +666,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/knowledge/cms-agents",
         isNew: true,
       },
+      {
+        title: "Growth Loop Map",
+        description:
+          "The end-to-end loop — research to plan to pages to live site to crawl to findings to fixes — with every connection scored on the three pipes (code / human / AI) and every open gap.",
+        iconName: "Workflow",
+        link: "/administration/knowledge/growth-loop",
+        isNew: true,
+      },
     ],
   },
   {

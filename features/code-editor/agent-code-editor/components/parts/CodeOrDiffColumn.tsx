@@ -247,7 +247,7 @@ export function CodeOrDiffColumn({
         </div>
 
         {state === "review" && parsedEdits && (
-          <div className="absolute inset-0 bg-background">
+          <div className="absolute inset-0 flex flex-col bg-background">
             <ReviewStage
               currentCode={currentFile?.content ?? ""}
               modifiedCode={modifiedCode}
@@ -280,7 +280,7 @@ export function CodeOrDiffColumn({
         )}
 
         {state === "error" && (
-          <div className="absolute inset-0 bg-background">
+          <div className="absolute inset-0 flex flex-col bg-background">
             <ErrorPanel
               errorMessage={errorMessage}
               rawAIResponse={rawAIResponse}

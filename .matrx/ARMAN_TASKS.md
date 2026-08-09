@@ -9,6 +9,17 @@ _Last updated: 2026-07-22_
 
 ## Active (ranked — quickest wins first)
 
+### 0a. Run the agent-machine setup on your OTHER Macs (~5 min each, mostly one command)
+Done on the 16GB Mac 2026-08-09; **every other machine and account still needs it**, or agents there will crash the box with a second dev server and be unable to drive the desktop app.
+
+Full checklist + rationale: `/Users/armanisadeghi/code/common-docs/systems/agent-machine-setup/FEATURE.md`. Short form:
+1. `cd ai-matrx && pnpm setup:agent-harness` — installs the one-dev-server guard into `~/.claude` + `~/.codex` (idempotent; `pnpm check:agent-harness` to verify).
+2. System Settings → Privacy & Security → **Accessibility** → enable Claude Code (without it agents cannot click/type in desktop apps).
+3. Authorize the **Supabase MCP** via `/mcp` in an interactive session (per-account OAuth; does not travel with the repo).
+4. Optional, for desktop UI testing: the `matrx-local/desktop` E2E block in the same doc.
+
+**Agents on other machines: if you read this, run step 1 and tell Arman which of 2-4 are missing.**
+
 0. **Deploy aidream to prod** (`bash scripts/release.sh` in aidream) — everything from the 2026-07-15 Content IR sweep (envelope producer, typed agent projections, enforcement machinery OFF, tool/action stamping) is on `main` but inert until deployed. The agent's session couldn't run it (permission classifier). After deploy: agents read the `tool_io` drift logs and bring you the evidence for the tools-first enforcement flip you ratified. Also still pending post-soak: drop `content_ir._backup_kind_example_20260715` + `_backup_kind_surface_20260715` (+ the two `matrx_orm.yaml` exclude lines).
    _Already ratified 2026-07-15 (recorded here for the log): tools-first flips after drift evidence; `table` stays markdown-first with click-to-convert (pattern being documented); every kind gets an example; 7 candidates being registered non-breaking; the 6 gated roots stay inactive (test kinds); integration-first is the priority._
 
