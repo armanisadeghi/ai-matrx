@@ -321,7 +321,47 @@ Ordered by traffic. Each item is independently actionable.
    Left as-is deliberately: `context-lab`'s simulated-SQL preview interpolates
    names and a truncated file id into an illustrative STRING, not a record
    display; the assignment `sessionId` has a REST read but no UI route.
-6. **aidream admin surfaces** — after matrx-frontend.
+6. **aidream admin surfaces — audited 2026-08-09; the ONE architectural fix is
+   shipped ([aidream PR #52](https://github.com/AI-Matrix-Engine/aidream/pull/52)), call-site coverage remains.**
+
+   🚨 **Do NOT go in expecting a greenfield build — I did, and I was wrong.**
+   Grepping for THIS repo's primitive names (`EntityRef`, `MatrxUuidCell`)
+   returns nothing there and reads as "no doors exist". aidream has the full
+   set under different names, in `apps/dashboard/src/components/inspector/`:
+
+   | aidream | this repo |
+   |---|---|
+   | `IdLink` | `EntityRef` |
+   | `IdField` (link + always-visible copy) | `MatrxUuidCell` |
+   | `AutoId` / `RecordField` (field-name → link, zero wiring) | — |
+   | `tableForIdField` (~30 field→table entries) | the token registry |
+   | `dbRowHref` | `hrefFor` |
+   | `useRecordSheet().openSheet` | peek |
+
+   ~104 of 264 files import `@/components/inspector`. **It is a COVERAGE
+   campaign there, not a primitives campaign** — building a new FK cell would
+   be the reuse-first violation.
+
+   **The one real defect, now fixed:** `dbRowHref` (and `IdLink`'s own href)
+   hardcoded `/database/…`, the raw Postgres row viewer, as the ONLY
+   destination — while NINE purpose-built surfaces accept a single-record deep
+   link (`cx`/`agx`/`aga`/`cld`/`ctx`/`rs`/`documents` explorers, `scraper`,
+   `ops-triage/$classId`). **Total inbound links to them from the whole app: 4.
+   Five had zero.** New `lib/entity-routes.ts::entityDestination(table, id,
+   schema?)` picks the best destination and falls back to the table browser;
+   both `dbRowHref` and `IdLink` delegate, so ~48 call sites upgraded with no
+   call-site edits.
+
+   ⚠️ **Key on `schema.table`, never the bare table.** `definition` is
+   ambiguous — `agent.definition` is an agent, `app.definition` is an agent
+   app. Keying on the table alone sends every app to the agent explorer.
+
+   **Remaining there (mechanical, ~15 sites):** ids fetched and never rendered
+   (`tools-explorer` `FailureRow` carries `conversation_id` + `call_id` and
+   prints neither); two local dead-text `Field` components (`logs/log-detail`,
+   `persistence`) that should delegate to `RecordField` the way the explorer
+   overview tabs already do; hand-rolled user cells that should use
+   `buildUserIdColumn`.
 7. **Collapse the `AssociationList` fork.** It has ZERO live JSX consumers;
    war-room renders `WarRoomResourcesList`, a second implementation of the same
    grouped row list, while three war-room docblocks still call `AssociationList`
