@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { DeadEndsConsole } from "@/features/admin/dead-ends/DeadEndsConsole";
-import report from "@/scripts/dead-ends/report.json";
-import history from "@/scripts/dead-ends/history.json";
-import type {
-  DeadEndHistoryPoint,
-  DeadEndReport,
-} from "@/scripts/dead-ends/types";
+import {
+  DEAD_END_HISTORY,
+  DEAD_END_REPORT,
+} from "@/features/admin/dead-ends/report-data";
 
 /**
  * No Dead Ends scoreboard.
@@ -15,7 +13,8 @@ import type {
  * 6,800-file AST walk is not a page load, and a static import is the only
  * thing that reliably resolves inside a Vercel function. Refresh the snapshot
  * with `pnpm check:dead-ends:write` and commit it; the console shows the scan's
- * age and screams when it goes stale.
+ * age and screams when it goes stale. The snapshot is validated, not cast —
+ * see `report-data.ts`.
  *
  * Admin gating is the (admin) layout's job — never re-gate here.
  */
@@ -29,10 +28,7 @@ export const metadata: Metadata = {
 export default function DeadEndsPage() {
   return (
     <div className="h-[calc(100dvh-2.5rem)] bg-textured">
-      <DeadEndsConsole
-        report={report as unknown as DeadEndReport}
-        history={history as unknown as DeadEndHistoryPoint[]}
-      />
+      <DeadEndsConsole report={DEAD_END_REPORT} history={DEAD_END_HISTORY} />
     </div>
   );
 }
