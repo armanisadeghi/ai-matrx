@@ -13,6 +13,10 @@
  * bare number in a box), it explains where the default came from, and when it
  * bites it names exactly which resources lose how many items — BEFORE the run,
  * not in a post-hoc report nobody reads.
+ *
+ * THE HEADLINE IS A VERDICT, NOT A COUNT (D106, Arman ruling): the user reads
+ * green "Fine" / yellow "Getting heavy" / red "Too much" first; the token
+ * estimate is fine print underneath for anyone who wants the arithmetic.
  */
 
 import { AlertTriangle, Info, Scissors } from "lucide-react";
@@ -45,6 +49,49 @@ interface BudgetMeterProps {
   droppedByBudget: number;
 }
 
+/**
+ * The headline verdict (D106 ruling): the user needs "fine / getting heavy /
+ * too much", not a raw token count. Weighed against the active ceiling, or
+ * the app default when no cap is set, so "no cap" still gets an honest read.
+ */
+function weighSelection(
+  tokens: number,
+  budgetTokens: number | null,
+  droppedByBudget: number,
+): { tone: "green" | "yellow" | "red"; label: string; detail: string } {
+  const ceiling = budgetTokens ?? DEFAULT_BUDGET_TOKENS;
+  if (droppedByBudget > 0 || tokens > ceiling) {
+    return {
+      tone: "red",
+      label: "Too much",
+      detail:
+        droppedByBudget > 0
+          ? "some items will be cut"
+          : "larger than a full send should be",
+    };
+  }
+  if (tokens >= ceiling * 0.7) {
+    return {
+      tone: "yellow",
+      label: "Getting heavy",
+      detail: "close to the ceiling",
+    };
+  }
+  return { tone: "green", label: "Fine", detail: "fits comfortably" };
+}
+
+const WEIGHT_TONE_CLASSES: Record<"green" | "yellow" | "red", string> = {
+  green: "bg-emerald-500",
+  yellow: "bg-amber-500",
+  red: "bg-red-500",
+};
+
+const WEIGHT_TEXT_CLASSES: Record<"green" | "yellow" | "red", string> = {
+  green: "text-emerald-700 dark:text-emerald-400",
+  yellow: "text-amber-700 dark:text-amber-400",
+  red: "text-red-700 dark:text-red-400",
+};
+
 export function BudgetMeter({
   chars,
   tokens,
@@ -55,6 +102,7 @@ export function BudgetMeter({
 }: BudgetMeterProps) {
   const pct = budgetTokens ? Math.min(100, (tokens / budgetTokens) * 100) : 0;
   const over = budgetTokens !== null && tokens > budgetTokens;
+  const weight = weighSelection(tokens, budgetTokens, droppedByBudget);
   const contributing = perKind
     .filter((k) => k.items > 0 || k.droppedByBudget > 0)
     .sort((a, b) => b.tokens - a.tokens);
@@ -65,11 +113,31 @@ export function BudgetMeter({
     <div className="rounded-lg border border-border/60 bg-card/40 p-2.5 space-y-2">
       <div className="flex items-baseline justify-between gap-2">
         <div>
-          <div className="text-lg font-semibold tabular-nums text-foreground leading-none">
-            ~{formatTokens(tokens)}
+          {/* The verdict leads (fine / getting heavy / too much) — the raw
+              count is demoted to fine print for anyone who wants it. */}
+          <div className="flex items-center gap-1.5 leading-none">
+            <span
+              aria-hidden
+              className={cn(
+                "h-2.5 w-2.5 shrink-0 rounded-full",
+                WEIGHT_TONE_CLASSES[weight.tone],
+              )}
+            />
+            <span
+              className={cn(
+                "text-sm font-semibold",
+                WEIGHT_TEXT_CLASSES[weight.tone],
+              )}
+            >
+              {weight.label}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              — {weight.detail}
+            </span>
           </div>
-          <div className="text-[10px] text-muted-foreground">
-            estimated tokens · {formatChars(chars)} characters
+          <div className="pt-1 text-[10px] text-muted-foreground">
+            ~{formatTokens(tokens)} estimated tokens ·{" "}
+            {formatChars(chars)} characters
           </div>
         </div>
         <div className="text-right">

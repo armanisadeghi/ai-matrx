@@ -285,19 +285,6 @@ GitHub check `Workers Builds: ai-matrx-admin` fails on release commits while Ver
 
 `users.user_feedback.image_urls` has seven expired `…/share/<uuid>/download` pointers (404 `share_link_invalid`). New MCP writes already reject this URL class. Fix: recover originals from backups if possible and replace with CDN URLs; otherwise mark irrecoverable.
 
-### D106 (remainder) — research context builder: replace the token-budget number (2026-07-26)
-
-Items 1-3 (save/load drift) fixed 2026-07-28. Remaining: replace the token-budget number with a green/yellow/red indicator + warnings — the user needs "fine / getting heavy / too much", not a count.
-
-### D106b — five more surfaces still claim "Only you" from data that can't support it (2026-07-26)
-
-Same class as the files fix (`22e8d79ea`): a surface reads one signal and renders a privacy guarantee, blind to container conveyance via `platform.reachability`. (2026-08-06: `ShapeOwnerEditor.tsx` resolved — the "Only you" text is gone and the file documents its no-personal-visibility rationale; 4 surfaces remain.) Fix per surface: call `public.entity_access_summary(type,id)` or reword to what the surface actually knows. Don't bulk-rewrite blind — check each feature's conveyance first.
-
-- `features/secrets/components/VaultItemDetail.tsx:1406` (highest stakes — credentials)
-- `features/canvas/social/CanvasShareSheet.tsx:373`
-- `features/structured-lists/StructuredListManagerV2.tsx:139`
-- `features/education/data/features.ts:236` (marketing promise — resolve with D105)
-
 ### D105b — file surfaces must separate MY files from ORG files (Arman ruling 2026-07-28)
 
 RULED: `internal` default is correct and stays — files are org collaboration data by design; never propose flipping visibility defaults. The real defect is architectural: file list pages don't cleanly separate files that are YOURS from files that belong to the ORGANIZATION (the Mine / My Orgs scope pattern from the canonical entry list). Needs an architecture discussion with Arman before building; do not restyle privacy labels as a substitute.
@@ -400,7 +387,7 @@ aidream never writes it; lists/RSS can't show runtimes (player recovers client-s
 
 ### D67 — doctrine says "banned", ESLint says `warn`, with live violations (2026-07-18)
 
-Browser dialogs (`no-alert` etc., ~20 live in app-builder + demos), barrel files (488 warnings), banned lucide brand icons (runtime-missing → 500s; `warn` is the wrong severity). Each needs: finish cleanup and promote to `error`, or soften the doc. Don't leave doc and rule disagreeing.
+Browser dialogs (`no-alert` etc.), barrel files (488 warnings), banned lucide brand icons (runtime-missing → 500s; `warn` is the wrong severity). Each needs: finish cleanup and promote to `error`, or soften the doc. Don't leave doc and rule disagreeing. 2026-08-09: `features/` + `components/` + live admin pages are now dialog-clean (16-file batch); the remaining bare dialogs sit only in `app/(dev)/demos`, `app/(transitional)/_apps/app-builder`, and admin official-components display demos (~15 files) — finish those, then promote `no-alert`/`no-restricted-globals` to `error`.
 
 ### D60 — chat draft transfer never lands for VARIABLE-INPUT agents (2026-07-17)
 
@@ -413,10 +400,6 @@ Context (`organization_id`, `project_id`, `task_id`, `scope_ids`, agent identity
 ### D58 (remainder) — Stripe Connect built + live; Arman dashboard actions remain (2026-07-15)
 
 The stub is DELETED live (verified 2026-07-28); real path shipped `584eb5941`: Checkout destination-charge (80/20 split) → signature-verified webhook → service-role `edu_class_confer_purchase` (+ refund/dispute revoke). **Blocked on Arman:** (1) enable Stripe Connect on the platform account; (2) set `STRIPE_WEBHOOK_SECRET` + register `/api/stripe/webhook` in the dashboard; then one test-mode purchase E2E.
-
-### D64 — `ContainerResourceSheet` has a live ESLint error on main (2026-08-08)
-
-`features/organizations/components/ContainerResourceSheet.tsx:47` — `setItems([])` called synchronously in an effect body (`react-hooks/set-state-in-effect`, **error**, 2 occurrences). Pre-existing on `main` (predates c18fa27a4); found while repointing that file's `hasPeek` import during the No Dead Ends pass. Unrelated to that change, so not fixed there — the fix is the derived-state pattern already used in `AgentSlotsConsole`'s `SlotEditor` (compute "loading"/"empty" from a keyed state object instead of resetting in the effect). Nothing runs ESLint at commit time here, which is why it has survived.
 
 ### D57 — COPPA gate: only the LEGAL policy calls remain (2026-07-15)
 
@@ -453,6 +436,9 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 One line per fix — title, date, pointer. History lives in git.
 
 - **D137 (public /seo analyzers 401 for guests)** — both analyzers now read meta tags through the guest-friendly `/seo/public/page-audit` route via the new `features/marketing/seo/public-tools/usePublicPageMetadata.ts` (`/scraper/quick-scrape` needs a signed-in user); dead `extract-seo-from-scrape.ts` deleted. Verified signed-out on `/seo/metadata`. aidream fix in the same change: `run_streamed_command` never emitted its terminal `final_event` on a FRESH run, so every public SEO tool rendered nothing until a URL was run twice. 2026-08-09.
+- **D64** — `ContainerResourceSheet` refactored to the keyed derived-state pattern (SlotEditor style): items + search query keyed by `table|column|value`, loading derived, no setState in the effect body; lint clean. 2026-08-09.
+- **D106 (remainder)** — BudgetMeter headline is now a green/yellow/red verdict ("Fine / Getting heavy / Too much", weighed against the active or default ceiling); token count demoted to fine print (`features/research/components/resources/BudgetMeter.tsx`). 2026-08-09.
+- **D106b** — last 4 "Only you" surfaces reworded to honest claims: vault SharePanel reports the grant list (org-admin caveat included), CanvasShareSheet Private = "Not published — no public page or link access", StructuredListManagerV2 Private = "Not shared", education marketing copy scoped to "within your account / workspace you add them to" (FAQ + feature grid). 2026-08-09.
 - **D129 (tasks lifecycle)** — all three gaps closed: `operatingTaskId` → `operatingTaskIds` set (add/remove actions, `selectIsTaskOperating`, all thunks/consumers ported); `tasksUi.nowMinute` ticked ~60s by `useNowMinuteTick` on /tasks feeds `selectFilteredTasks`/`selectSmartViewCounts`/`buildSmartViewContext` so snooze expiry + date windows resurface without an unrelated store change; monthly recurrence keeps its month-end anchor via `BYMONTHDAY` (parsed/formatted/honored in `utils/recurrence.ts`, `-1` = last day; `completeTask` stamps it on first roll via `ensureMonthDayAnchor`) — jest suite `features/tasks/utils/__tests__/recurrence.test.ts`. 2026-08-09.
 - **D129** — Apple OAuth secret rotated and verified; hard-coded expiry replaced by live `app_config` credential metadata plus an audited admin editor and actionable Manage toast. 2026-08-07.
 - **D113** — no Cartesia key in the browser: ONE token primitive (`lib/cartesia/accessToken.ts` — lazy, cached, dedupe, refresh-retry-once) + ONE ws connector (`connection.ts`); all 8 hooks/adapters ported; voices list/clone/create moved to authed server routes (`/api/cartesia/voices*`); raw-key `client.ts`/`tts-service.ts`/`AudioPlayground` deleted; `NEXT_PUBLIC_OPENAI_API_KEY`/`NEXT_PUBLIC_GOOGLE_API_KEY` bundle refs also removed. Rotation = D114. 2026-07-28.

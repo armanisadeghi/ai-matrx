@@ -8,6 +8,7 @@ import { normalizeMathProblemLatex } from "@/features/math/utils/latex-normalize
 import { downloadMathProblem, uploadMathProblem } from "@/features/math/utils/math-problem-persistence";
 import ContentBlockWrapper from "../common/ContentBlockWrapper";
 import { mathPrinter } from "./math-printer";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { PrintOptionsDialog, usePrintOptions } from "@/lib/block-print/PrintOptionsDialog";
 
 interface MathProblemBlockProps {
@@ -58,7 +59,7 @@ const MathProblemBlock: React.FC<MathProblemBlockProps> = ({ problemData: initia
             icon: Database,
             tooltip: "Save to database (coming soon)",
             onClick: () => {
-                alert("Database integration coming soon! For now, you can download the problem and manually import it.");
+                void announceComingSoon("content-blocks.math-save-to-database");
             },
             className: "bg-indigo-500 dark:bg-indigo-600 text-white hover:bg-indigo-600 dark:hover:bg-indigo-700"
         }

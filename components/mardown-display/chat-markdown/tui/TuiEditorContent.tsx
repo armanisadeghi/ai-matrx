@@ -5,6 +5,7 @@ import type { Editor as TuiEditorReactComp } from "@toast-ui/react-editor";
 import type { PluginFn, WidgetRule } from "@toast-ui/editor";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import EditorLoading from "../../text-block/editorLoading";
+import { toast } from "@/lib/toast";
 
 // Import the Toast UI Editor CSS
 import "@toast-ui/editor/dist/toastui-editor.css";
@@ -342,7 +343,7 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
  
     const handleImageUpload = async (blob: File | Blob, callback: (url: string, altText?: string) => void) => {
         console.warn("Image upload not implemented.");
-        alert("Image upload not configured. See console for details.");
+        toast.error("Image upload is not configured for this editor.");
     };
  
     // Only include plugins that are successfully loaded

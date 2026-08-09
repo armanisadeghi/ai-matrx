@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from '@/lib/toast';
 import { Plus, Minus, Briefcase, MapPin, DollarSign, Calendar, Award, MessageSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import DefaultErrorFallback from '@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback';
@@ -204,7 +205,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: CandidateProfileD
                 <button 
                   onClick={() => {
                     // Handle feedback submission logic here
-                    alert('Feedback submitted: ' + feedbackText);
+                    toast.success('Feedback submitted: ' + feedbackText);
                     setFeedbackText('');
                     setShowFeedback(false);
                   }}

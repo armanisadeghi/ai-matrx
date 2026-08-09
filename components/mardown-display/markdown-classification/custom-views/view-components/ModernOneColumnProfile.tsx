@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "@/lib/toast";
 import {
   Plus,
   Minus,
@@ -247,7 +248,7 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
                 <button
                   onClick={() => {
                     // Here you would typically save the feedback
-                    alert("Feedback saved!");
+                    toast.success("Feedback saved!");
                     setFeedbackText("");
                   }}
                   className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors duration-200"

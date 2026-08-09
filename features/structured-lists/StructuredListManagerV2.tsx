@@ -136,7 +136,10 @@ const VISIBILITY_OPTIONS: Array<{
   icon: typeof Lock;
   hint: string;
 }> = [
-  { value: "private", label: "Private", icon: Lock, hint: "Only you" },
+  // "Not shared" is what this surface can honestly claim: it reads only
+  // is_public/public_read, not every access path (containers, grants) —
+  // never "Only you" (D106b).
+  { value: "private", label: "Private", icon: Lock, hint: "Not shared" },
   {
     value: "authenticated",
     label: "Shared",

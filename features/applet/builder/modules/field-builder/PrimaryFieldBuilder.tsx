@@ -1,4 +1,5 @@
 "use client";
+import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -119,7 +120,13 @@ const PrimaryFieldBuilder: React.FC<PrimaryFieldBuilderProps> = ({ onFieldSelect
 
     // Delete a component
     const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this field component?")) return;
+        const ok = await confirmDialog({
+            title: "Delete this field component?",
+            description: "Applets using this component will lose it.",
+            confirmLabel: "Delete",
+            variant: "destructive",
+        });
+        if (!ok) return;
 
         try {
             await dispatch(deleteFieldThunk(id)).unwrap();

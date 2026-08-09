@@ -329,6 +329,15 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["/seo public tools index"],
   },
+  "content-blocks.math-save-to-database": {
+    id: "content-blocks.math-save-to-database",
+    label: "Save Math Problem",
+    owner: "content-blocks",
+    promise:
+      "Save this math problem straight into your problem library instead of downloading and importing it by hand.",
+    stage: "planned",
+    surfaces: ["Math problem block action bar (chat content)"],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {
