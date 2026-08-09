@@ -7,5 +7,14 @@
     "medium": 80,
     "low": 0,
     "filesWithFindings": 108
+  },
+  {
+    "generatedAt": "2026-08-09T06:22:07.698Z",
+    "commit": "466ffe1628d5be7520857a48d32dd63aa078411a",
+    "findings": 170,
+    "high": 90,
+    "medium": 80,
+    "low": 0,
+    "filesWithFindings": 108
   }
 ]

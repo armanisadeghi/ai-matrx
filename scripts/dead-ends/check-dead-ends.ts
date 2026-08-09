@@ -149,6 +149,31 @@ function rank(findings: DeadEndFinding[], keyOf: (f: DeadEndFinding) => string):
 
 const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 } as const;
 
+const KNOWN_RULES = Object.keys(RULE_TITLES) as DeadEndRuleId[];
+
+/**
+ * A mistyped filter must never print a green tick. `--rule=bare-id` and
+ * `--path=feature/notes` both reported "✓ No dead ends detected", which is the
+ * worst thing a checker can do: lie clean.
+ */
+function assertFilters(rule: DeadEndRuleId | null, matchedFiles: number, pathPrefix: string | null): void {
+  if (rule && !KNOWN_RULES.includes(rule)) {
+    console.error(
+      `${RED}[dead-ends] Unknown --rule=${rule}.${NC} Known rules: ${KNOWN_RULES.join(", ")}`,
+    );
+    process.exit(2);
+  }
+  if (pathPrefix && matchedFiles === 0) {
+    console.error(
+      `${RED}[dead-ends] --path=${pathPrefix} matched 0 files.${NC} ` +
+        `Nothing was scanned — this is NOT a clean result. Check the prefix ` +
+        `(repo-relative, e.g. features/notes). Route-group parentheses need ` +
+        `shell quoting: --path='app/(admin)'`,
+    );
+    process.exit(2);
+  }
+}
+
 function currentCommit(): string | null {
   try {
     return execFileSync("git", ["rev-parse", "HEAD"], {
@@ -169,6 +194,8 @@ function main(): void {
     if (!args.pathPrefix) return true;
     return relative(ROOT, abs).split(sep).join("/").startsWith(args.pathPrefix);
   });
+
+  assertFilters(args.rule, files.length, args.pathPrefix);
 
   const raw: DeadEndFinding[] = [];
   for (const file of files) {

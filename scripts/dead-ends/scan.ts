@@ -381,8 +381,12 @@ function classifyExpression(
   // ── Rule: bare id rendered as text ────────────────────────────────────────
   if (ID_PROPERTY_RE.test(property)) {
     // `key={x.id}` style is an attribute, already excluded by text position.
-    // A `cellKind: "uuid"` cell renders through the table's own resolver.
-    if (/cellKind:\s*["']uuid["']/.test(scopeText)) return null;
+    //
+    // There is deliberately NO `cellKind: "uuid"` escape here. It was tried as
+    // a file-level regex and silenced every bare id in any file that happened
+    // to configure one uuid column elsewhere. It was also unnecessary: a
+    // `cellKind: "uuid"` column has no `cell:` renderer printing `{r.id}` in
+    // JSX text, so it never produces a finding in the first place.
     // Ids that identify a UI thing, not a record: a request, a tab, a DOM node.
     if (NON_RECORD_ID_RE.test(property)) return null;
     // A naked `{id}` with no object root and no inferable entity is usually a

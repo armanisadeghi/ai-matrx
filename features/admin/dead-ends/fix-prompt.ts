@@ -14,6 +14,26 @@ import { ENTITY_REGISTRY_PATH } from "./source-links";
 
 const DOCTRINE = "common-docs/policies/no-dead-ends.md";
 
+/**
+ * Repo paths carry route-group parentheses (`app/(admin)/…`), which bash reads
+ * as subshell syntax. Every path we paste into a shell command is quoted, or
+ * the verify step in the brief silently runs the wrong thing.
+ */
+function shellPath(path: string): string {
+  return `'${path.replace(/'/g, `'\\''`)}'`;
+}
+
+/**
+ * The verify line for a scope. A whole-repo sweep has no prefix — passing a
+ * prose label as `--path` produced `--path=the whole repository`, which matches
+ * nothing and reports a clean tree.
+ */
+function verifyCommand(pathPrefix: string | null): string {
+  return pathPrefix
+    ? `pnpm check:dead-ends --path=${shellPath(pathPrefix)}`
+    : "pnpm check:dead-ends";
+}
+
 /** Brief for repairing ONE finding. */
 export function fixPromptForFinding(f: DeadEndFinding): string {
   return [
@@ -35,7 +55,7 @@ export function fixPromptForFinding(f: DeadEndFinding): string {
       "found, reused, or newly built.",
     "- If this is genuinely NOT a violation, add it to scripts/dead-ends/allowlist.ts " +
       "WITH A REASON rather than deleting the check.",
-    "- Verify with `pnpm check:dead-ends --path=" + f.file + "` before reporting done.",
+    `- Verify with \`${verifyCommand(f.file)}\` before reporting done.`,
   ]
     .filter((l): l is string => l !== null)
     .join("\n");
@@ -46,6 +66,8 @@ export function fixPromptForBucket(
   bucketLabel: string,
   findings: DeadEndFinding[],
   scope: "file" | "feature",
+  /** Path prefix to verify against. `null` for a whole-repo sweep. */
+  pathPrefix: string | null = bucketLabel,
 ): string {
   const lines = findings
     .slice(0, 60)
@@ -68,7 +90,7 @@ export function fixPromptForBucket(
     "- Missing peek? features/organizations/peek/registry.ts + kinds-list.ts, together.",
     "- A count is a door: link it to the filtered list.",
     "- Genuinely-correct code goes in scripts/dead-ends/allowlist.ts WITH A REASON.",
-    `- Verify with \`pnpm check:dead-ends --path=${scope === "file" ? bucketLabel : bucketLabel}\`,`,
+    `- Verify with \`${verifyCommand(pathPrefix)}\`,`,
     "  then refresh the scoreboard: `pnpm check:dead-ends:write` and commit the report.",
   ].join("\n");
 }

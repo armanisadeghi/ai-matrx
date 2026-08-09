@@ -323,7 +323,12 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
         onCopyAll={() =>
           void copy(
             "all",
-            fixPromptForBucket("the whole repository", report.findings, "feature"),
+            fixPromptForBucket(
+              "the whole repository",
+              report.findings,
+              "feature",
+              null,
+            ),
             "Campaign brief",
           )
         }
@@ -471,7 +476,8 @@ function Header({
   onCopyAll,
 }: {
   report: DeadEndReport;
-  scanAgeDays: number;
+  /** `null` until the client has read the clock (see the console above). */
+  scanAgeDays: number | null;
   delta: number | null;
   onCopyAll: () => void;
 }) {
