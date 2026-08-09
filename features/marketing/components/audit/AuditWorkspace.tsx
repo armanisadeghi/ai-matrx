@@ -517,6 +517,14 @@ function AuditBody({
                 csvExportItem(worstPageCsvRows, "CSV (pages with findings)"),
               ]}
             />
+            <ExportMenu
+              label={`site-audit-${siteDomain}`}
+              items={[
+                jsonExportItem(pageFullData, "Page data (.json)"),
+                csvExportItem(issueCsvRows, "CSV (all issues)"),
+                csvExportItem(worstPageCsvRows, "CSV (pages with findings)"),
+              ]}
+            />
             <AgentCopyGroomerLauncher config={groomerConfig} />
           </div>
         </section>
