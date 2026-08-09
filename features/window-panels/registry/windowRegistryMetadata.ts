@@ -24,7 +24,6 @@ import type {
   MobileSidebarAs,
   InstanceMode,
 } from "./windowRegistryTypes";
-import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { RESOURCE_TYPES } from "@/utils/permissions/registry";
 
 // Re-export types so callers can import them from one place
@@ -554,8 +553,13 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     overlayId: "agentRunWindow",
     kind: "window",
     label: "Chat",
+    // No static default agent: the Chat window's default is the
+    // `chat.default_new_chat` SLOT, resolved by the open paths that mean
+    // "default chat" (useQuickActions.openChatWindow, the tools-grid tile).
+    // Static registry data cannot resolve a slot; a bare open with no data
+    // shows the window's agent picker.
     defaultData: {
-      initialAgentId: DEFAULT_NEW_CHAT_AGENT_ID,
+      initialAgentId: null,
       initialSelectedConversationId: null,
     },
     mobilePresentation: "fullscreen",

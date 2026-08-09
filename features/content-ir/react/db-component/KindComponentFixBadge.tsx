@@ -29,7 +29,8 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
-import { shapeCreatorAgentId } from "../../studio/constants";
+import { KIND_CREATOR_SLOT_KEY } from "../../studio/constants";
+import { resolveAgentSlot } from "@/features/agents/slots/service";
 import { composeKindComponentFixIntent } from "../../studio/kind-agent-intents";
 import { readEnvelope } from "../../redux/render-block-envelope";
 import { resolveComponent } from "../../registry/component-registry";
@@ -79,21 +80,27 @@ export const KindComponentFixBadge: React.FC<KindComponentFixBadgeProps> = ({
   if (!canEdit) return null;
 
   const launch = () => {
-    const agentId = shapeCreatorAgentId();
-    if (!agentId) {
-      toast.error("The Shape creator agent is not configured", {
-        description:
-          "Set SHAPE_CREATOR_AGENT_ID in features/content-ir/studio/constants.ts.",
+    // Resolve the `content_ir.kind_creator` slot at click time — same loud
+    // posture as KindAgentButton; never a silent no-op.
+    void resolveAgentSlot(KIND_CREATOR_SLOT_KEY)
+      .then((resolved) => {
+        openRun({
+          initialAgentId: resolved.agentId,
+          initialDraftText: composeKindComponentFixIntent({
+            kind,
+            instanceContent: content,
+          }),
+        });
+      })
+      .catch((error: unknown) => {
+        console.error(
+          `[KindComponentFixBadge] slot "${KIND_CREATOR_SLOT_KEY}" failed to resolve:`,
+          error,
+        );
+        toast.error("The Shape creator agent is unavailable", {
+          description: error instanceof Error ? error.message : String(error),
+        });
       });
-      return;
-    }
-    openRun({
-      initialAgentId: agentId,
-      initialDraftText: composeKindComponentFixIntent({
-        kind,
-        instanceContent: content,
-      }),
-    });
   };
 
   return (
