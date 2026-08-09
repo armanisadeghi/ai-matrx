@@ -20,7 +20,8 @@ import {
   type TablesPayload,
 } from "./utils";
 import {
-  MOBILE_TABLE_FROZEN,
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
 } from "@/components/official/mobile-table/mobileTable";
 
 interface Props {
@@ -99,7 +100,7 @@ function TableCard({
       </div>
       <div className="max-h-[420px] overflow-auto">
         {grid.length ? (
-          <table className={cn("sm:table-fixed border-collapse text-[11px]", MOBILE_TABLE_FROZEN)}>
+          <table className={cn("sm:table-fixed border-collapse text-[11px]", MOBILE_TABLE)}>
             <tbody>
               {grid.map((row, ri) => (
                 <tr
@@ -109,7 +110,13 @@ function TableCard({
                   {row.map((cell, ci) => (
                     <td
                       key={ci}
-                      className="break-words border border-border/60 px-2 py-1 align-top"
+                      className={cn(
+                        // Extracted document cells hold prose, so they KEEP
+                        // wrapping — a min-width stops the columns collapsing
+                        // into slivers instead.
+                        "break-words border border-border/60 px-2 py-1 align-top max-sm:min-w-[9rem]",
+                        ci === 0 && MOBILE_TABLE_FROZEN_CELL,
+                      )}
                     >
                       {cell ?? ""}
                     </td>

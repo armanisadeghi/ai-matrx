@@ -45,10 +45,18 @@
  * silently dropped — so a selected row stops looking selected on a phone. Tint
  * the row however the desktop design wants; only the frozen cell opts out.
  *
- * One thing it cannot do for you: a table whose first column is a checkbox or
- * drag handle gets a useless anchor. Those need the granular constants on the
- * identity column instead — freeze that one, and the narrow columns slide
- * under it.
+ * Two things it cannot do for you:
+ * - A table whose first column is a checkbox or drag handle gets a useless
+ *   anchor. Those need the granular constants on the identity column instead —
+ *   freeze that one, and the narrow columns slide under it (or
+ *   MOBILE_TABLE_FROZEN_SECOND when exactly one narrow column leads).
+ * - A table whose cells hold PROSE — extracted document text, env values, a
+ *   key/value pane — must keep wrapping, and the blanket nowrap here turns a
+ *   paragraph into one enormous line that no amount of scrolling makes
+ *   readable. Compose `MOBILE_TABLE` + `MOBILE_TABLE_FROZEN_CELL` on the
+ *   identity column and give the cells a `max-sm:min-w-[…]` so they wrap
+ *   without collapsing into slivers. A two-column key/value pane whose values
+ *   already wrap is not a horizontal-scroll table at all — leave it alone.
  */
 export const MOBILE_TABLE_FROZEN = [
   "w-max min-w-full max-w-none sm:w-full sm:min-w-0 sm:max-w-full",

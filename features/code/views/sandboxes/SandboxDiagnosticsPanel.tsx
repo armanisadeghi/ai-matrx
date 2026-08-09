@@ -54,12 +54,6 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_CELL,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
 
 type DiagCheck = {
   ok?: boolean;
@@ -876,11 +870,11 @@ export function SandboxDiagnosticsPanel({
                 </div>
               )}
               <ScrollArea className="h-96 md:h-auto md:flex-1 md:min-h-0 border border-border rounded-md">
-                <table className={cn("text-[11px] font-mono", MOBILE_TABLE)}>
+                <table className="w-full text-[11px] font-mono">
                   <thead className="text-left text-muted-foreground sticky top-0 bg-background">
                     <tr>
-                      <th className={cn("p-2 sm:w-1/3", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[120px] max-sm:bg-background")}>key</th>
-                      <th className={cn("p-2", MOBILE_TABLE_CELL)}>value</th>
+                      <th className="p-2 w-1/3">key</th>
+                      <th className="p-2">value</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -915,9 +909,7 @@ export function SandboxDiagnosticsPanel({
                           key={kv.key}
                           className="border-t border-border align-top"
                         >
-                          <td className={cn("p-2 break-all", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[120px]")}>
-                            {kv.key}
-                          </td>
+                          <td className="p-2 break-all">{kv.key}</td>
                           <td className="p-2 break-all">{kv.value}</td>
                         </tr>
                       ));
