@@ -78,6 +78,7 @@ import {
 } from "@/components/ui/resizable";
 import {
   MobilePanelShell,
+  useMobilePanelClose,
   type MobileShellPanel,
 } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { Switch } from "@/components/ui/switch";
@@ -241,6 +242,47 @@ function SidebarSectionLabel({
     <div className="mb-1.5 mt-3.5">
       <SectionHeading icon={icon} label={label} accent={accent} />
     </div>
+  );
+}
+
+/**
+ * The sidebar's Clean Up button. On a phone the sidebar lives in the
+ * MobilePanelShell "Controls" drawer, and a run that starts must be visible —
+ * so a successful start closes the drawer (useMobilePanelClose is a no-op in
+ * the desktop sidebar rendering of the same tree).
+ */
+function CleanUpActionButton({
+  busy,
+  onProcess,
+}: {
+  busy: boolean;
+  onProcess: () => boolean;
+}) {
+  const closeMobilePanel = useMobilePanelClose();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (onProcess()) closeMobilePanel();
+      }}
+      disabled={busy}
+      className={cn(
+        "inline-flex w-full items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+        busy
+          ? "cursor-not-allowed bg-muted text-muted-foreground"
+          : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
+      )}
+    >
+      {busy ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
+        </>
+      ) : (
+        <>
+          <Stars className="h-4 w-4" /> Clean Up
+        </>
+      )}
+    </button>
   );
 }
 
@@ -1603,19 +1645,22 @@ export default function CleanupPad({
   );
 
   // ── Manual Clean Up ────────────────────────────────────────────────────────
-  const handleProcess = useCallback(() => {
+  // Returns whether a run actually started, so the mobile Controls drawer only
+  // closes when there is a result to reveal (not on a "choose an agent" nudge).
+  const handleProcess = useCallback((): boolean => {
     if (!cleanAgentIdRef.current) {
       toast.info("Choose a cleaning agent first");
-      return;
+      return false;
     }
     const transcript = baseTextRef.current.trim();
     if (!transcript) {
       toast.info("Add a transcript before analyzing");
-      return;
+      return false;
     }
     runClean(transcript);
     // Autorun (source = raw): Clean and these slots run simultaneously.
     autoRunRawSlots(transcript);
+    return true;
   }, [runClean, autoRunRawSlots]);
 
   const handleCopyJoined = useCallback(async () => {
@@ -2116,27 +2161,7 @@ export default function CleanupPad({
       </div>
 
       <div className="shrink-0 border-t border-border p-3">
-        <button
-          type="button"
-          onClick={handleProcess}
-          disabled={cleanAi.isBusy}
-          className={cn(
-            "inline-flex w-full items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
-            cleanAi.isBusy
-              ? "cursor-not-allowed bg-muted text-muted-foreground"
-              : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
-          )}
-        >
-          {cleanAi.isBusy ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
-            </>
-          ) : (
-            <>
-              <Stars className="h-4 w-4" /> Clean Up
-            </>
-          )}
-        </button>
+        <CleanUpActionButton busy={cleanAi.isBusy} onProcess={handleProcess} />
       </div>
     </div>
   );

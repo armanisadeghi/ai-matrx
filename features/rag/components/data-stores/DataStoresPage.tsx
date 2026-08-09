@@ -69,6 +69,7 @@ import { DataStorePublishPanel } from "@/features/rag/components/data-stores/Dat
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { MobilePanelShell, useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buildRagDataStoresContextData";
 
 /** Canonical `ui_surface.name` this page emits. */
@@ -143,6 +144,77 @@ export function DataStoresPage() {
     [router, search],
   );
 
+  const storesList = (
+    <>
+      {/* Working context — what scoped retrieval acts within. */}
+      <div className="border-b px-3 py-1.5">
+        <ActiveContextButton size="sm" triggerClassName="max-w-full" />
+      </div>
+      <CreateStoreInline onCreated={(id) => select(id)} />
+      <div className="flex-1 overflow-auto">
+        {list.loading && list.stores.length === 0 && (
+          <div className="px-3 py-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+          </div>
+        )}
+        {list.error && (
+          <div className="px-3 py-2 flex items-center gap-2 text-xs text-destructive">
+            <AlertCircle className="h-3.5 w-3.5" /> {list.error}
+          </div>
+        )}
+        {!list.loading && list.stores.length === 0 && (
+          <div className="px-3 py-3 text-xs text-muted-foreground">
+            No data stores yet. Create your first one above.
+          </div>
+        )}
+        {list.stores.map((s) => (
+          <StoreListRow
+            key={s.id}
+            store={s}
+            selected={s.id === storeId}
+            onSelect={() => select(s.id)}
+          />
+        ))}
+      </div>
+    </>
+  );
+
+  const detailContent = !storeId ? (
+    <div className="m-6 rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground max-w-2xl">
+      <p className="font-medium text-foreground mb-2">What is a data store?</p>
+      <p className="mb-2">
+        A named, curated bucket of documents. Agents can search inside one with{" "}
+        <code className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded">
+          knowledge_search(query, data_store_id)
+        </code>
+        . Bind any indexed PDF, note, code file, or library doc; the agent then
+        sees only that bucket when it retrieves.
+      </p>
+      <p>Pick or create a store in the Stores panel to get started.</p>
+    </div>
+  ) : (
+    <StoreDetailPanel
+      storeId={storeId}
+      detail={detail}
+      grantProvenanceLabel={grantProvenanceLabel}
+      onDeleted={() => {
+        select(null);
+        list.refresh();
+      }}
+    />
+  );
+
+  const desktopLayout = (
+    <div className="flex h-full overflow-hidden bg-background">
+      <aside className="w-80 border-r flex flex-col overflow-hidden shrink-0 pt-[var(--shell-header-h)]">
+        {storesList}
+      </aside>
+      <section className="flex-1 overflow-hidden pt-[var(--shell-header-h)]">
+        {detailContent}
+      </section>
+    </div>
+  );
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={RAG_DATA_STORES_SURFACE}
@@ -156,70 +228,26 @@ export function DataStoresPage() {
           </span>
         }
       />
-      <div className="flex h-full overflow-hidden bg-background">
-      <aside className="w-80 border-r flex flex-col overflow-hidden shrink-0 pt-[var(--shell-header-h)]">
-        {/* Working context — what scoped retrieval acts within. */}
-        <div className="border-b px-3 py-1.5">
-          <ActiveContextButton size="sm" triggerClassName="max-w-full" />
-        </div>
-        <CreateStoreInline onCreated={(id) => select(id)} />
-        <div className="flex-1 overflow-auto">
-          {list.loading && list.stores.length === 0 && (
-            <div className="px-3 py-2 flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
-            </div>
-          )}
-          {list.error && (
-            <div className="px-3 py-2 flex items-center gap-2 text-xs text-destructive">
-              <AlertCircle className="h-3.5 w-3.5" /> {list.error}
-            </div>
-          )}
-          {!list.loading && list.stores.length === 0 && (
-            <div className="px-3 py-3 text-xs text-muted-foreground">
-              No data stores yet. Create your first one above.
-            </div>
-          )}
-          {list.stores.map((s) => (
-            <StoreListRow
-              key={s.id}
-              store={s}
-              selected={s.id === storeId}
-              onSelect={() => select(s.id)}
-            />
-          ))}
-        </div>
-      </aside>
-
-      <section className="flex-1 overflow-hidden pt-[var(--shell-header-h)]">
-        {!storeId ? (
-          <div className="m-6 rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground max-w-2xl">
-            <p className="font-medium text-foreground mb-2">
-              What is a data store?
-            </p>
-            <p className="mb-2">
-              A named, curated bucket of documents. Agents can search inside one
-              with{" "}
-              <code className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded">
-                knowledge_search(query, data_store_id)
-              </code>
-              . Bind any indexed PDF, note, code file, or library doc; the agent
-              then sees only that bucket when it retrieves.
-            </p>
-            <p>Pick or create a store on the left to get started.</p>
-          </div>
-        ) : (
-          <StoreDetailPanel
-            storeId={storeId}
-            detail={detail}
-            grantProvenanceLabel={grantProvenanceLabel}
-            onDeleted={() => {
-              select(null);
-              list.refresh();
-            }}
-          />
-        )}
-      </section>
-      </div>
+      {/* Mobile: the two-column split cannot fit a phone (the w-80 list left a
+          ~55px detail sliver bleeding off a 375px viewport) — the list becomes
+          a bottom drawer and the detail owns the screen. Store selection is a
+          search-param change, so rows close the drawer via useMobilePanelClose. */}
+      <MobilePanelShell
+        desktop={desktopLayout}
+        main={
+          <section className="flex h-full min-h-0 flex-col overflow-hidden bg-background pt-[var(--shell-header-h)]">
+            {detailContent}
+          </section>
+        }
+        panels={[
+          {
+            id: "stores",
+            label: "Stores",
+            icon: Database,
+            content: <div className="flex flex-col">{storesList}</div>,
+          },
+        ]}
+      />
     </SurfaceRuntimeProvider>
   );
 }
@@ -233,9 +261,15 @@ function StoreListRow({
   selected: boolean;
   onSelect: () => void;
 }) {
+  // Selecting a store is a search-param change (no route change), so the
+  // mobile Stores drawer must dismiss itself — no-op in the desktop aside.
+  const closeMobilePanel = useMobilePanelClose();
   return (
     <button
-      onClick={onSelect}
+      onClick={() => {
+        onSelect();
+        closeMobilePanel();
+      }}
       className={cn(
         "w-full text-left px-3 py-2 border-b border-border/50 hover:bg-muted/40",
         selected && "bg-muted/60",
@@ -269,6 +303,7 @@ function StoreListRow({
 
 function CreateStoreInline({ onCreated }: { onCreated: (id: string) => void }) {
   const list = useDataStores();
+  const closeMobilePanel = useMobilePanelClose();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [kind, setKind] =
@@ -309,6 +344,7 @@ function CreateStoreInline({ onCreated }: { onCreated: (id: string) => void }) {
           setDescription("");
           setOpen(false);
           onCreated(made.id);
+          closeMobilePanel();
         } else {
           setErr(list.error ?? "Could not create data store");
         }

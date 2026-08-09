@@ -121,6 +121,7 @@ Scaffolded UI only. Before adding real behavior:
 
 ## Change log
 
+- `2026-08-09` — Resources filter chips no longer wrap mid-word at 375px: the row is an `overflow-x-auto` rail and each chip carries `shrink-0 whitespace-nowrap`. The global unlayered mobile block in `app/globals.css` sets `word-break: break-word` on every `div`/`span`, so a flex chip that is allowed to shrink gets its label broken letter-by-letter — chips must always opt out of both shrinking and breaking.
 - `2026-08-08` — `agent.context_menu_view` now emits `block_type` / `skill_id` / `visibility` on content-block items (view applied live + ledger-recorded); `fetchUnifiedMenu` hydration consumes them, so `redux/skl` `renderDefinitionsMerged` no longer silently defaults unfetched personal `render_kind` blocks to public-markdown. Wire types optional to tolerate stale cached payloads.
 - `2026-07-22` — Added a `// VIEW LAW:` comment to `redux/skl/thunks.ts` `fetchRenderDefinitions` noting the scope is applied immediately below via `applyScopeFilter`, clearing THE VIEW LAW's bare-RLS guard finding (no behavior change).
 - `2026-05-27` — claude: SkillsSection promoted from a placeholder to live. Now reads `/api/skills` via the new `features/skills/` slice, supports browse / create / edit / delete / categories / filesystem ingest (admin), and reacts to sandbox auto-discovery events (`RESOURCE_CHANGED kind="skills.ingested"`). The SkillsCount selector also moved from the legacy `skl` slice to the new `skills` slice; render-blocks / resources are still served from `skl`.

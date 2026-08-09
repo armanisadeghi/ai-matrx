@@ -573,8 +573,12 @@ export function RagHitCard({
         data-rag-source-id={view.sourceId}
         data-rag-chunk-id={view.chunkId}
       >
+        {/* Mobile-first: the header's fixed-width trailing cluster (score +
+            5-icon reference strip + actions) is wider than a 375px card, so
+            below `sm` the row wraps and the cluster takes its own right-aligned
+            line instead of clipping/scrolling inside the card. */}
         <div
-          className="flex cursor-pointer items-center gap-3 border-b border-border px-3 py-2.5 transition-colors hover:bg-muted/30"
+          className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border px-3 py-2.5 transition-colors hover:bg-muted/30 sm:flex-nowrap"
           onClick={() => setExpanded(!expanded)}
         >
           {rank != null ? (
@@ -598,57 +602,59 @@ export function RagHitCard({
           </div>
           {entityOnly ? <EntityOnlyBadge /> : null}
           <ScoreBadge view={view} tier={tier} />
-          <ReferenceIconStrip
-            availability={referenceAvailability}
-            requested={referenceRequest}
-            onSelect={selectReference}
-          />
-          {onReviewRepair ? (
+          <div className="flex shrink-0 items-center gap-3 max-sm:basis-full max-sm:justify-end max-sm:gap-1.5">
+            <ReferenceIconStrip
+              availability={referenceAvailability}
+              requested={referenceRequest}
+              onSelect={selectReference}
+            />
+            {onReviewRepair ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onReviewRepair();
+                }}
+                title="Review and repair this result from the physical PDF"
+                aria-label="Review and repair this result from the physical PDF"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-primary/75 transition-colors hover:bg-primary/10 hover:text-primary"
+              >
+                <Wrench className="h-4 w-4" />
+              </button>
+            ) : null}
+            <OpenButton view={view} onOpen={onOpen} />
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(event) => event.stopPropagation()}
+              title="Open source in a new tab"
+              aria-label="Open source in a new tab"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
             <button
               type="button"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-expanded={expanded}
+              aria-controls={contentId}
+              aria-label={`${expanded ? "Collapse" : "Expand"} result ${rank ?? ""}: ${title}`}
+              title={expanded ? "Collapse result" : "Expand result"}
               onClick={(event) => {
                 event.stopPropagation();
-                onReviewRepair();
+                setExpanded(!expanded);
               }}
-              title="Review and repair this result from the physical PDF"
-              aria-label="Review and repair this result from the physical PDF"
-              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-primary/75 transition-colors hover:bg-primary/10 hover:text-primary"
             >
-              <Wrench className="h-4 w-4" />
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 transition-transform",
+                  expanded && "rotate-180",
+                )}
+                aria-hidden="true"
+              />
             </button>
-          ) : null}
-          <OpenButton view={view} onOpen={onOpen} />
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(event) => event.stopPropagation()}
-            title="Open source in a new tab"
-            aria-label="Open source in a new tab"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </a>
-          <button
-            type="button"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-expanded={expanded}
-            aria-controls={contentId}
-            aria-label={`${expanded ? "Collapse" : "Expand"} result ${rank ?? ""}: ${title}`}
-            title={expanded ? "Collapse result" : "Expand result"}
-            onClick={(event) => {
-              event.stopPropagation();
-              setExpanded(!expanded);
-            }}
-          >
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 transition-transform",
-                expanded && "rotate-180",
-              )}
-              aria-hidden="true"
-            />
-          </button>
+          </div>
         </div>
 
         {expanded ? (
