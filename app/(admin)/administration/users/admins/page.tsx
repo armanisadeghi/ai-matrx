@@ -139,6 +139,7 @@ function AdminsManagementPageContent() {
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   // The roster loaded and the linked person holds no admin row. Checked against
   // the FULL `admins` list, not the table's filtered view, so a search the user
@@ -146,6 +147,7 @@ function AdminsManagementPageContent() {
   const focusMissed = Boolean(
     focusedUserId &&
       !loading &&
+      !loadFailed &&
       !admins.some((row) => row.user_id === focusedUserId),
   );
 
@@ -167,10 +169,14 @@ function AdminsManagementPageContent() {
     if (!res.ok) {
       const { error } = await res.json().catch(() => ({ error: res.statusText }));
       toast.error(`Failed to load admins: ${error}`);
+      // A roster we could not read must not be reported as "this person is not
+      // an admin" — that is a definitive negative about data we never saw.
+      setLoadFailed(true);
       return;
     }
     const { admins: rows } = (await res.json()) as { admins: AdminRow[] };
     setAdmins(rows);
+    setLoadFailed(false);
   }, []);
 
   const fetchAudit = useCallback(async () => {

@@ -97,6 +97,7 @@ function AgentAppsCategoriesAdminPageInner() {
   const linkedCategoryId = searchParams.get("category");
   const [categories, setCategories] = useState<AgentAppCategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   // The URL is the single source of truth for the selection — no mirrored
   // state to drift, and every selection is therefore a shareable door.
   const selectedId = linkedCategoryId;
@@ -126,7 +127,10 @@ function AgentAppsCategoriesAdminPageInner() {
     try {
       const data = await fetchAgentAppCategories();
       setCategories(data);
+      setLoadFailed(false);
     } catch (err) {
+      // See ContentBlocksManager: a failed read must not become "not found".
+      setLoadFailed(true);
       toast({
         title: "Error",
         description:
@@ -305,7 +309,7 @@ function AgentAppsCategoriesAdminPageInner() {
   // The URL names a category this list does not contain (deleted, or a bad id).
   // Without this the address bar keeps advertising a selection while the panel
   // says "No Category Selected" — the link looks valid and does nothing.
-  const linkMissed = Boolean(selectedId && !loading && !selected);
+  const linkMissed = Boolean(selectedId && !loading && !loadFailed && !selected);
 
   if (loading && categories.length === 0) {
     return (

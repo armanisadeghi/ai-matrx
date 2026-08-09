@@ -19,6 +19,7 @@ import { Check, Loader2, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -172,12 +173,12 @@ export const ApplySchemaDialog: React.FC<ApplySchemaDialogProps> = ({
               {filtered.map((agent) => {
                 const isSelected = agent.id === selectedId;
                 return (
-                  <li key={agent.id}>
+                  <li key={agent.id} className="group relative">
                     <button
                       type="button"
                       onClick={() => setSelectedId(agent.id)}
                       className={cn(
-                        "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm",
+                        "flex w-full items-center justify-between gap-2 px-3 py-2 pr-20 text-left text-sm",
                         "hover:bg-accent",
                         isSelected && "bg-accent",
                       )}
@@ -189,6 +190,20 @@ export const ApplySchemaDialog: React.FC<ApplySchemaDialogProps> = ({
                         <Check className="h-4 w-4 shrink-0 text-primary" />
                       )}
                     </button>
+                    {/* THE DOOR LAW: the user is choosing which agent to
+                        overwrite the output schema of, with nothing but a name
+                        to go on — and getting it wrong is a destructive edit.
+                        Doors are an absolutely-positioned SIBLING because the
+                        row is a `<button>` whose click means "select"; `pr-20`
+                        reserves room so they never cover the checkmark. */}
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                      <EntityDoorControls
+                        token="agent"
+                        id={agent.id}
+                        name={agent.name}
+                        alwaysShowActions
+                      />
+                    </div>
                   </li>
                 );
               })}

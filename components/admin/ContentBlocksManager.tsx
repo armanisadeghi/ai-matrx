@@ -199,6 +199,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   const [skills, setSkills] = useState<SkillOption[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   // ─── Selection + the ?block=<uuid|block_id> deep link (THE DOOR LAW) ─────
   // A content block is an addressable record: `?block=` opens ONE, so a surface
   // that names a block (the Kind Registry's Assets tab) reaches that block
@@ -521,8 +522,13 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       setSkills(
         (skillData ?? []).map((s) => ({ id: s.id, label: s.label ?? s.id })),
       );
+      setLoadFailed(false);
     } catch (error) {
       console.error("Error loading data:", error);
+      // The roster was never read. Without this the deep-link notice would
+      // state a definitive negative ("not in this list") about data we could
+      // not load at all.
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -1692,7 +1698,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             {/* A shared `?block=` that matches neither `id` nor `block_id`
                 selected nothing and said nothing — the link looked valid and
                 opened no editor. */}
-            {deepLinkRef && !loading && !selectedBlockId && (
+            {deepLinkRef && !loading && !loadFailed && !selectedBlockId && (
               <DeepLinkMissNotice
                 token="content_block"
                 entityLabel="content block"

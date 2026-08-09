@@ -30,6 +30,20 @@
  * When the surface ALSO renders an empty state, condition it on the same flag —
  * two components contradicting each other about why the list is empty is worse
  * than either alone.
+ *
+ * 🚨 **THE CALLER MUST PROVE THE LIST WAS READ.** This component states a
+ * definitive negative: the record is not here. That claim is only true if the
+ * fetch SUCCEEDED. Every list in this repo leaves `loading=false` with an empty
+ * array when its request fails, so `!loading && !found` is NOT enough — gate on
+ * a `loadFailed` flag too, or the notice confidently reports "not in this list"
+ * about data nobody ever saw. That is the same sin as the campaign's
+ * never-report-green rule, inverted, and it shipped on all three of the first
+ * consumers before Bugbot caught it:
+ *
+ *     {deepLinkRef && !loading && !loadFailed && !found && <DeepLinkMissNotice … />}
+ *
+ * On a failed load, show the surface's ordinary error state instead — the user
+ * needs to know the read broke, not that their link is bad.
  */
 
 import React from "react";
