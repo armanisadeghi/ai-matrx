@@ -76,8 +76,11 @@ because it launders the class as "already covered". The rules therefore:
   `option`, `TabsTrigger`…) — choosing is not referencing.
 - **Skip "you are here" headings** (`h1`, `h2`, `DialogTitle`, `PageHeader`,
   `BreadcrumbPage`) — the user is already on that record.
-- **Skip prose** (`*Description`, `label`, `TooltipContent`) — a name inside a
-  sentence is copy, not a reference.
+- **Skip prose** — a name inside a sentence is copy, not a reference. Two
+  mechanisms: a fixed list of container tags (`DialogDescription`,
+  `AlertDescription`, `CardDescription`, `FormDescription`, … — a *named list*,
+  not a `*Description` suffix rule, so a custom `FooDescription` is NOT skipped)
+  and structural sentence detection around the expression.
 - **Treat any ancestor with `href` / `onClick` / a JSX spread as a door**,
   including a whole-row click (the canonical `lib/entity-list` pattern).
 - **Skip the id-guarded fallback** — `{x.id ? <EntityRef/> : <span>{x.name}</span>}`
@@ -86,14 +89,19 @@ because it launders the class as "already covered". The rules therefore:
 - **Require the id in scope** before flagging a name. This is the load-bearing
   gate and it is the doctrine's own test.
 
-**Precision was measured, not assumed — twice.** The first cut was audited
-finding-by-finding against the source and scored **~31%** (`unlinked-count` and
-`no-doors-in-file` both 0/9). Retuned, a second independent audit scored **~55%**
-and — more valuably — found four *regressions*: skips so aggressive they silenced
-real violations, including the entire extracted-row-component idiom. Neither
-version shipped. Against the union of both audits' hand-checked samples the
-shipped version keeps **14/14** confirmed true positives and drops **23/23**
-confirmed false positives.
+**Precision was measured, not assumed — three times.** Each cut was audited
+finding-by-finding against the source by an independent adversarial reviewer,
+and none of the audited versions shipped as-is:
+
+| Audit | Score | What it found |
+|---|---|---|
+| 1 | ~31% | `unlinked-count` and `no-doors-in-file` both 0/9 |
+| 2 | ~55% | four *regressions* — skips so aggressive they silenced real violations, including the whole extracted-row-component idiom |
+| 3 | ~50% | the id-prop + selector detail-surface shape (`function X({ agentId })` → `const agent = useAppSelector(…)`), which no parameter check could see |
+
+Against the union of all three audits' hand-checked samples, the shipped version
+keeps **14/14** confirmed true positives and drops **28/28** confirmed false
+positives.
 
 Additional gates, each traceable to a real false positive:
 
@@ -121,6 +129,18 @@ Additional gates, each traceable to a real false positive:
   to `.map()`, or any function whose JSX carries a `key`. Without all three,
   `function NoteRow({ note })` read as "the note's own page" and the most common
   list idiom in this repo went silent.
+- **Self-subject sees the id-prop shape** — `function AgentSettingsForm({ agentId })`
+  then `const agent = useAppSelector(…)`. The parameter is the *id*; the record
+  is looked up from it, so a parameter check alone never matched. Also covers the
+  no-props variant (`const [project, setProject] = useState(…)`, never iterated).
+- **OWN identity vs FOREIGN key.** Self-subject suppresses `note.id` on the
+  note's own page — never `slot.summary_agent_id` or `instance.agentId`. Those
+  point at a *different* record, which is the doctrine's headline complaint:
+  knowing the twin exists and not linking it is worse than saying nothing.
+- **A handler that receives the record's own id is a door** —
+  `onClick={() => handleClick(file.id)}` IS the row opening itself, whatever
+  the callback is named.
+- **"Could not be found" copy is not a dead end** — there is no record to open.
 - **`onClick` must navigate** to count as a door. An accordion toggle used to
   silence every finding in the row it wrapped.
 - **`restore` is a door** — a soft-deleted record's row has no "open" by design.
@@ -130,8 +150,8 @@ Additional gates, each traceable to a real false positive:
   suppressed `brokerId`, `call_id`, `nodeId`, `blockId` — every one a real
   record here. Suppressing a real entity is worse than ranking it low.
 
-Measured on the shipped ruleset: **170 findings (90 high, 80 medium) across 108
-files out of 6,803 scanned, in ~10s.**
+Measured on the shipped ruleset: **126 findings (68 high, 58 medium) across 80
+files out of 6,803 scanned, in ~9s.**
 
 ## Known limits — stated, not hidden
 
@@ -146,6 +166,9 @@ files out of 6,803 scanned, in ~10s.**
   violations hide there.
 - **Analysis is per-file and ancestor-based.** A door in a parent component's
   file, or a body extracted into a sibling component, is not seen.
+- **Only `features/`, `components/`, `app/` and `lib/` are scanned.** `hooks/`,
+  `utils/`, `providers/` and `packages/` are invisible to the scoreboard — a
+  surface rendered from there is not covered at all.
 - **Any `{...spread}` ancestor counts as a door** (its props may carry `href`).
   Deliberate — precision over recall — but a spread can mask a finding.
 - **`idIsInScope` matches the whole file**, so `row.id` anywhere in a long file
@@ -212,7 +235,7 @@ new one.
 
 - **2026-08-09** — Built. Checker (4 rules), scoreboard at
   `/administration/reporting/dead-ends`, `matrx/no-bare-id-text` ESLint rule,
-  advisory wiring in `run-release-gates.sh`. Tuned against a finding-by-finding
-  precision audit before shipping (~31% → 8/8 TP kept, 16/16 FP dropped on the
-  audited samples: ~31% → 14/14 TP kept, 23/23 FP dropped). Baseline: 170
-  findings / 90 high across 108 files.
+  advisory wiring in `run-release-gates.sh`. Retuned after each of three
+  finding-by-finding adversarial audits (~31% → ~55% → ~50% → shipped);
+  against the union of their samples, 14/14 true positives kept and 28/28 false
+  positives dropped. Baseline: 126 findings / 68 high across 80 files.

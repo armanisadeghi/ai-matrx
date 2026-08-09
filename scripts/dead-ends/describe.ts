@@ -22,6 +22,17 @@ export type DescribableFinding = Pick<
 
 const REGISTRY = "features/scopes/registry/entityRegistry.ts";
 
+/**
+ * Is `entity` a real registry token, or the detector saying "I could not name
+ * this"? `(file)` marks a file-level finding and a `?`-prefix marks an
+ * unresolved object root. Telling someone to add an `hrefFor` for a token
+ * literally named `(file)` is worse than saying nothing — it sends an agent to
+ * edit the registry for a thing that does not exist.
+ */
+export function isRegistryToken(entity: string): boolean {
+  return entity !== "(file)" && !entity.startsWith("?");
+}
+
 export function describeFinding(f: DescribableFinding): string {
   switch (f.rule) {
     case "bare-id-text":
@@ -29,7 +40,9 @@ export function describeFinding(f: DescribableFinding): string {
         `Renders the raw identifier \`${f.expression}\` as text with no way to open it. ` +
         (f.entityHasRoute
           ? `\`${f.entity}\` has a route in the entity registry — render <EntityRef token="${f.entity}" id={…} name={…} /> instead.`
-          : `Resolve it to a name plus a door, or don't show it. If \`${f.entity}\` should be openable, give its token an hrefFor in ${REGISTRY}.`)
+          : isRegistryToken(f.entity)
+            ? `Resolve it to a name plus a door, or don't show it. If \`${f.entity}\` should be openable, give its token an hrefFor in ${REGISTRY}.`
+            : `The detector could not name this entity — identify which record it is, then resolve it to a name plus a door via <EntityRef>, or don't show it.`)
       );
     case "unlinked-entity-name":
       return (

@@ -1,20 +1,20 @@
 {
-  "generatedAt": "2026-08-09T06:22:07.698Z",
-  "commit": "466ffe1628d5be7520857a48d32dd63aa078411a",
+  "generatedAt": "2026-08-09T06:43:36.784Z",
+  "commit": "b11550d0d1f49f126d09ff84e4aad66355beb314",
   "totals": {
-    "findings": 170,
-    "high": 90,
-    "medium": 80,
+    "findings": 126,
+    "high": 68,
+    "medium": 58,
     "low": 0,
-    "filesWithFindings": 108,
+    "filesWithFindings": 80,
     "filesScanned": 6803,
     "allowlisted": 0
   },
   "byRule": {
-    "bare-id-text": 89,
-    "unlinked-entity-name": 61,
+    "bare-id-text": 77,
+    "unlinked-entity-name": 38,
     "unlinked-count": 4,
-    "no-doors-in-file": 16
+    "no-doors-in-file": 7
   },
   "worstFiles": [
     {
@@ -28,19 +28,19 @@
       "high": 3
     },
     {
-      "key": "components/debug/AgentExecutionDebugPanel.tsx",
-      "count": 5,
-      "high": 3
-    },
-    {
       "key": "features/agent-comparison/components/MasterInputWindow.tsx",
       "count": 3,
       "high": 3
     },
     {
-      "key": "features/notes/components/NoteInfoPanel.tsx",
+      "key": "components/debug/AgentExecutionDebugPanel.tsx",
+      "count": 4,
+      "high": 2
+    },
+    {
+      "key": "features/agents/components/debug/StreamDebugPanel.tsx",
       "count": 3,
-      "high": 3
+      "high": 2
     },
     {
       "key": "app/(dev)/demos/tasks-widgets/_client.tsx",
@@ -48,17 +48,7 @@
       "high": 2
     },
     {
-      "key": "components/admin/state-analyzer/execution-inspector/ExecutionInstanceInspector.tsx",
-      "count": 2,
-      "high": 2
-    },
-    {
       "key": "features/agent-comparison/components/RunsComparisonTable.tsx",
-      "count": 2,
-      "high": 2
-    },
-    {
-      "key": "features/agents/agent-sets/components/AgentLibraryRail.tsx",
       "count": 2,
       "high": 2
     },
@@ -73,22 +63,7 @@
       "high": 2
     },
     {
-      "key": "features/files/components/surfaces/EmbeddedShell.tsx",
-      "count": 2,
-      "high": 2
-    },
-    {
       "key": "features/files/components/surfaces/MobileStack.tsx",
-      "count": 2,
-      "high": 2
-    },
-    {
-      "key": "features/files/components/surfaces/WindowPanelShell.tsx",
-      "count": 2,
-      "high": 2
-    },
-    {
-      "key": "features/notes/components/GlobalSearchResults.tsx",
       "count": 2,
       "high": 2
     },
@@ -98,22 +73,17 @@
       "high": 2
     },
     {
-      "key": "features/notes/components/NotePickerPopover.tsx",
-      "count": 2,
-      "high": 2
-    },
-    {
       "key": "features/resource-manager/resource-picker/NotesResourcePicker.tsx",
       "count": 2,
       "high": 2
     },
     {
-      "key": "features/surfaces/components/bind/SurfaceAgentBindPanel.tsx",
+      "key": "features/scheduling/components/detail/SpecCard.tsx",
       "count": 2,
       "high": 2
     },
     {
-      "key": "features/tasks/components/mobile/MobileTasksList.tsx",
+      "key": "features/surfaces/components/bind/SurfaceAgentBindPanel.tsx",
       "count": 2,
       "high": 2
     },
@@ -124,11 +94,6 @@
     },
     {
       "key": "features/window-panels/windows/admin/ChatDebugWindow.tsx",
-      "count": 2,
-      "high": 2
-    },
-    {
-      "key": "features/window-panels/windows/agents/AgentContentWindow.tsx",
       "count": 2,
       "high": 2
     },
@@ -153,11 +118,6 @@
       "high": 1
     },
     {
-      "key": "features/tasks/components/AllTasksView.tsx",
-      "count": 2,
-      "high": 1
-    },
-    {
       "key": "app/(admin)/administration/agents/agent-apps/executions/page.tsx",
       "count": 1,
       "high": 1
@@ -168,17 +128,7 @@
       "high": 1
     },
     {
-      "key": "app/(core)/tasks/[id]/page.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "app/(dev)/demos/api-tests/matrx-ai/conversation-demo/ConversationDemoClient.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx",
+      "key": "app/(dev)/demos/api-tests/agent/AgentTestClient.tsx",
       "count": 1,
       "high": 1
     },
@@ -198,7 +148,17 @@
       "high": 1
     },
     {
+      "key": "components/mardown-display/blocks/table/TableRenderPathDiagnostic.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
       "key": "components/official/ProTextareaBoundAgentsMenuItems.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/admin/agent-slots/AgentSlotsConsole.tsx",
       "count": 1,
       "high": 1
     },
@@ -213,11 +173,6 @@
       "high": 1
     },
     {
-      "key": "features/agents/agent-sets/components/CreateSetDialog.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
       "key": "features/agents/components/assignment-demo/AgentAssignmentsDemo.tsx",
       "count": 1,
       "high": 1
@@ -228,12 +183,7 @@
       "high": 1
     },
     {
-      "key": "features/agents/components/previews/ConversationHoverPreview.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "features/agents/components/settings/AgentSettingsForm.tsx",
+      "key": "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
       "count": 1,
       "high": 1
     },
@@ -244,11 +194,6 @@
     },
     {
       "key": "features/code-files/actions/QuickSaveCodeCore.tsx",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "features/code/chat/AgentPicker.tsx",
       "count": 1,
       "high": 1
     },
@@ -266,38 +211,83 @@
       "key": "features/files/components/preview/FileResourceChip.tsx",
       "count": 1,
       "high": 1
+    },
+    {
+      "key": "features/notes/actions/CategoryNotesModal.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/notes/actions/NotesTreeView.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/notes/actions/quick-save/QuickNoteSaveCore.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/notes/components/NoteInfoPanel.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/notes/components/NotesSidebar.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/public-chat/components/AgentSelector.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/resource-manager/resource-picker/TasksResourcePicker.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/surfaces/components/bind/SurfaceBoundAgentsList.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/surfaces/components/SurfaceDetailPanel.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/whatsapp-clone/modals/media/DocsTab.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "app/(dev)/demos/api-tests/tool-testing/ToolTestingClient.tsx",
+      "count": 3,
+      "high": 0
     }
   ],
   "worstFeatures": [
     {
-      "key": "features/notes",
-      "count": 13,
-      "high": 13
+      "key": "app/(dev)",
+      "count": 23,
+      "high": 7
     },
     {
       "key": "components/admin",
-      "count": 17,
-      "high": 9
+      "count": 15,
+      "high": 7
     },
     {
       "key": "features/agents",
-      "count": 11,
-      "high": 9
-    },
-    {
-      "key": "app/(dev)",
-      "count": 28,
-      "high": 8
-    },
-    {
-      "key": "features/files",
       "count": 9,
-      "high": 8
+      "high": 7
     },
     {
-      "key": "features/window-panels",
-      "count": 6,
-      "high": 6
+      "key": "features/notes",
+      "count": 7,
+      "high": 7
     },
     {
       "key": "features/agent-comparison",
@@ -305,18 +295,23 @@
       "high": 5
     },
     {
+      "key": "features/files",
+      "count": 5,
+      "high": 4
+    },
+    {
       "key": "features/surfaces",
       "count": 5,
       "high": 4
     },
     {
-      "key": "components/debug",
-      "count": 6,
-      "high": 3
+      "key": "features/window-panels",
+      "count": 4,
+      "high": 4
     },
     {
-      "key": "features/tasks",
-      "count": 5,
+      "key": "features/admin",
+      "count": 4,
       "high": 3
     },
     {
@@ -326,12 +321,12 @@
     },
     {
       "key": "app/(admin)",
-      "count": 7,
+      "count": 6,
       "high": 2
     },
     {
-      "key": "features/admin",
-      "count": 3,
+      "key": "components/debug",
+      "count": 5,
       "high": 2
     },
     {
@@ -345,22 +340,22 @@
       "high": 2
     },
     {
-      "key": "components/official",
-      "count": 4,
-      "high": 1
+      "key": "features/scheduling",
+      "count": 2,
+      "high": 2
     },
     {
-      "key": "app/(core)",
+      "key": "components/official",
       "count": 3,
       "high": 1
     },
     {
-      "key": "features/agent-connections",
-      "count": 1,
+      "key": "components/mardown-display",
+      "count": 2,
       "high": 1
     },
     {
-      "key": "features/code",
+      "key": "features/agent-connections",
       "count": 1,
       "high": 1
     },
@@ -375,22 +370,7 @@
       "high": 1
     },
     {
-      "key": "features/podcasts",
-      "count": 1,
-      "high": 1
-    },
-    {
       "key": "features/public-chat",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "features/transcripts",
-      "count": 1,
-      "high": 1
-    },
-    {
-      "key": "features/war-room",
       "count": 1,
       "high": 1
     },
@@ -406,17 +386,37 @@
     },
     {
       "key": "features/applet",
-      "count": 6,
+      "count": 3,
       "high": 0
     },
     {
-      "key": "features/administration",
-      "count": 3,
+      "key": "features/rag",
+      "count": 2,
+      "high": 0
+    },
+    {
+      "key": "features/agent-shortcuts",
+      "count": 1,
+      "high": 0
+    },
+    {
+      "key": "features/cms",
+      "count": 1,
+      "high": 0
+    },
+    {
+      "key": "features/content-ir",
+      "count": 1,
+      "high": 0
+    },
+    {
+      "key": "features/flashcards",
+      "count": 1,
       "high": 0
     },
     {
       "key": "features/marketing",
-      "count": 3,
+      "count": 1,
       "high": 0
     }
   ],
@@ -446,38 +446,14 @@
       "route": "/administration/ai/ai-tasks"
     },
     {
-      "file": "app/(core)/tasks/[id]/page.tsx",
-      "line": 95,
-      "column": 18,
-      "rule": "bare-id-text",
-      "severity": "high",
-      "entity": "task",
-      "entityHasRoute": true,
-      "expression": "taskId",
-      "feature": "app/(core)",
-      "route": "/tasks/[id]"
-    },
-    {
-      "file": "app/(dev)/demos/api-tests/matrx-ai/conversation-demo/ConversationDemoClient.tsx",
-      "line": 620,
-      "column": 48,
+      "file": "app/(dev)/demos/api-tests/agent/AgentTestClient.tsx",
+      "line": 176,
+      "column": 14,
       "rule": "bare-id-text",
       "severity": "high",
       "entity": "conversation",
       "entityHasRoute": true,
-      "expression": "conversationId || \"{id}\"",
-      "feature": "app/(dev)",
-      "route": null
-    },
-    {
-      "file": "app/(dev)/demos/cloud-files-debug/CloudFilesDebugClient.tsx",
-      "line": 689,
-      "column": 54,
-      "rule": "bare-id-text",
-      "severity": "high",
-      "entity": "file",
-      "entityHasRoute": true,
-      "expression": "lastFileId",
+      "expression": "log.conversationId",
       "feature": "app/(dev)",
       "route": null
     },
@@ -562,30 +538,6 @@
       "entity": "conversation",
       "entityHasRoute": true,
       "expression": "entry.conversationId",
-      "feature": "components/admin",
-      "route": null
-    },
-    {
-      "file": "components/admin/state-analyzer/execution-inspector/ExecutionInstanceInspector.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "components/admin/state-analyzer/execution-inspector/ExecutionInstanceInspector.tsx",
-      "feature": "components/admin",
-      "route": null
-    },
-    {
-      "file": "components/admin/state-analyzer/execution-inspector/ExecutionInstanceInspector.tsx",
-      "line": 1290,
-      "column": 45,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "agent",
-      "entityHasRoute": true,
-      "expression": "agent.name",
       "feature": "components/admin",
       "route": null
     },
@@ -686,15 +638,15 @@
       "route": null
     },
     {
-      "file": "components/debug/AgentExecutionDebugPanel.tsx",
-      "line": 585,
-      "column": 20,
+      "file": "components/mardown-display/blocks/table/TableRenderPathDiagnostic.tsx",
+      "line": 69,
+      "column": 47,
       "rule": "bare-id-text",
       "severity": "high",
       "entity": "conversation",
       "entityHasRoute": true,
-      "expression": "latestConversationId ?? instanceId ?? \"Not yet set\"",
-      "feature": "components/debug",
+      "expression": "context.conversationId",
+      "feature": "components/mardown-display",
       "route": null
     },
     {
@@ -707,6 +659,18 @@
       "entityHasRoute": true,
       "expression": "agent.name",
       "feature": "components/official",
+      "route": null
+    },
+    {
+      "file": "features/admin/agent-slots/AgentSlotsConsole.tsx",
+      "line": 326,
+      "column": 54,
+      "rule": "bare-id-text",
+      "severity": "high",
+      "entity": "agent",
+      "entityHasRoute": true,
+      "expression": "row.agentId",
+      "feature": "features/admin",
       "route": null
     },
     {
@@ -806,42 +770,6 @@
       "route": null
     },
     {
-      "file": "features/agents/agent-sets/components/AgentLibraryRail.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/agents/agent-sets/components/AgentLibraryRail.tsx",
-      "feature": "features/agents",
-      "route": null
-    },
-    {
-      "file": "features/agents/agent-sets/components/AgentLibraryRail.tsx",
-      "line": 153,
-      "column": 20,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "agent",
-      "entityHasRoute": true,
-      "expression": "a.name || \"Untitled Agent\"",
-      "feature": "features/agents",
-      "route": null
-    },
-    {
-      "file": "features/agents/agent-sets/components/CreateSetDialog.tsx",
-      "line": 260,
-      "column": 30,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "agent",
-      "entityHasRoute": true,
-      "expression": "a.name || \"Untitled Agent\"",
-      "feature": "features/agents",
-      "route": null
-    },
-    {
       "file": "features/agents/components/assignment-demo/AgentAssignmentsDemo.tsx",
       "line": 608,
       "column": 20,
@@ -866,6 +794,42 @@
       "route": null
     },
     {
+      "file": "features/agents/components/conversation-history/ConversationHistorySidebar.tsx",
+      "line": 1055,
+      "column": 42,
+      "rule": "bare-id-text",
+      "severity": "high",
+      "entity": "agent",
+      "entityHasRoute": true,
+      "expression": "conv.agentId",
+      "feature": "features/agents",
+      "route": null
+    },
+    {
+      "file": "features/agents/components/debug/StreamDebugPanel.tsx",
+      "line": 365,
+      "column": 18,
+      "rule": "bare-id-text",
+      "severity": "high",
+      "entity": "conversation",
+      "entityHasRoute": true,
+      "expression": "request.conversationId.slice(0, 8)",
+      "feature": "features/agents",
+      "route": null
+    },
+    {
+      "file": "features/agents/components/debug/StreamDebugPanel.tsx",
+      "line": 1399,
+      "column": 14,
+      "rule": "bare-id-text",
+      "severity": "high",
+      "entity": "conversation",
+      "entityHasRoute": true,
+      "expression": "request.conversationId",
+      "feature": "features/agents",
+      "route": null
+    },
+    {
       "file": "features/agents/components/inputs/smart-input/RunSkillPicker.tsx",
       "line": 1,
       "column": 1,
@@ -874,30 +838,6 @@
       "entity": "(file)",
       "entityHasRoute": false,
       "expression": "features/agents/components/inputs/smart-input/RunSkillPicker.tsx",
-      "feature": "features/agents",
-      "route": null
-    },
-    {
-      "file": "features/agents/components/previews/ConversationHoverPreview.tsx",
-      "line": 107,
-      "column": 43,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "agent",
-      "entityHasRoute": true,
-      "expression": "agentName",
-      "feature": "features/agents",
-      "route": null
-    },
-    {
-      "file": "features/agents/components/settings/AgentSettingsForm.tsx",
-      "line": 284,
-      "column": 26,
-      "rule": "bare-id-text",
-      "severity": "high",
-      "entity": "agent",
-      "entityHasRoute": true,
-      "expression": "agent.id",
       "feature": "features/agents",
       "route": null
     },
@@ -923,18 +863,6 @@
       "entityHasRoute": true,
       "expression": "savedFile.name",
       "feature": "features/code-files",
-      "route": null
-    },
-    {
-      "file": "features/code/chat/AgentPicker.tsx",
-      "line": 419,
-      "column": 55,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "agent",
-      "entityHasRoute": true,
-      "expression": "agent.name",
-      "feature": "features/code",
       "route": null
     },
     {
@@ -1022,30 +950,6 @@
       "route": null
     },
     {
-      "file": "features/files/components/surfaces/EmbeddedShell.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/files/components/surfaces/EmbeddedShell.tsx",
-      "feature": "features/files",
-      "route": null
-    },
-    {
-      "file": "features/files/components/surfaces/EmbeddedShell.tsx",
-      "line": 188,
-      "column": 52,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "file",
-      "entityHasRoute": true,
-      "expression": "file.fileName",
-      "feature": "features/files",
-      "route": null
-    },
-    {
       "file": "features/files/components/surfaces/MobileStack.tsx",
       "line": 1,
       "column": 1,
@@ -1066,30 +970,6 @@
       "entity": "file",
       "entityHasRoute": true,
       "expression": "rec.fileName",
-      "feature": "features/files",
-      "route": null
-    },
-    {
-      "file": "features/files/components/surfaces/WindowPanelShell.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/files/components/surfaces/WindowPanelShell.tsx",
-      "feature": "features/files",
-      "route": null
-    },
-    {
-      "file": "features/files/components/surfaces/WindowPanelShell.tsx",
-      "line": 457,
-      "column": 42,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "file",
-      "entityHasRoute": true,
-      "expression": "file.fileName",
       "feature": "features/files",
       "route": null
     },
@@ -1130,30 +1010,6 @@
       "route": null
     },
     {
-      "file": "features/notes/components/GlobalSearchResults.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/notes/components/GlobalSearchResults.tsx",
-      "feature": "features/notes",
-      "route": null
-    },
-    {
-      "file": "features/notes/components/GlobalSearchResults.tsx",
-      "line": 147,
-      "column": 49,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "note",
-      "entityHasRoute": true,
-      "expression": "note.label",
-      "feature": "features/notes",
-      "route": null
-    },
-    {
       "file": "features/notes/components/mobile/MobileNotesList.tsx",
       "line": 1,
       "column": 1,
@@ -1179,30 +1035,6 @@
     },
     {
       "file": "features/notes/components/NoteInfoPanel.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/notes/components/NoteInfoPanel.tsx",
-      "feature": "features/notes",
-      "route": null
-    },
-    {
-      "file": "features/notes/components/NoteInfoPanel.tsx",
-      "line": 204,
-      "column": 12,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "note",
-      "entityHasRoute": true,
-      "expression": "note.label || \"Untitled\"",
-      "feature": "features/notes",
-      "route": null
-    },
-    {
-      "file": "features/notes/components/NoteInfoPanel.tsx",
       "line": 350,
       "column": 10,
       "rule": "bare-id-text",
@@ -1210,30 +1042,6 @@
       "entity": "note",
       "entityHasRoute": true,
       "expression": "note.task_id && <CopyableRow label=\"Task ID\" value={note.task_id} />",
-      "feature": "features/notes",
-      "route": null
-    },
-    {
-      "file": "features/notes/components/NotePickerPopover.tsx",
-      "line": 283,
-      "column": 28,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "note",
-      "entityHasRoute": true,
-      "expression": "note.label || \"Untitled\"",
-      "feature": "features/notes",
-      "route": null
-    },
-    {
-      "file": "features/notes/components/NotePickerPopover.tsx",
-      "line": 348,
-      "column": 32,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "note",
-      "entityHasRoute": true,
-      "expression": "note.label || \"Untitled\"",
       "feature": "features/notes",
       "route": null
     },
@@ -1247,18 +1055,6 @@
       "entityHasRoute": true,
       "expression": "note.label",
       "feature": "features/notes",
-      "route": null
-    },
-    {
-      "file": "features/podcasts/generator/components/SourceResolverPanel.tsx",
-      "line": 311,
-      "column": 26,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "note",
-      "entityHasRoute": true,
-      "expression": "note.label || \"Untitled note\"",
-      "feature": "features/podcasts",
       "route": null
     },
     {
@@ -1310,6 +1106,30 @@
       "route": null
     },
     {
+      "file": "features/scheduling/components/detail/SpecCard.tsx",
+      "line": 26,
+      "column": 14,
+      "rule": "bare-id-text",
+      "severity": "high",
+      "entity": "task",
+      "entityHasRoute": true,
+      "expression": "task.agentId ?? \"Platform default\"",
+      "feature": "features/scheduling",
+      "route": null
+    },
+    {
+      "file": "features/scheduling/components/detail/SpecCard.tsx",
+      "line": 93,
+      "column": 16,
+      "rule": "bare-id-text",
+      "severity": "high",
+      "entity": "task",
+      "entityHasRoute": true,
+      "expression": "task.persistentConversationId",
+      "feature": "features/scheduling",
+      "route": null
+    },
+    {
       "file": "features/surfaces/components/bind/SurfaceAgentBindPanel.tsx",
       "line": 1,
       "column": 1,
@@ -1355,66 +1175,6 @@
       "entityHasRoute": true,
       "expression": "b.agent_id",
       "feature": "features/surfaces",
-      "route": null
-    },
-    {
-      "file": "features/tasks/components/AllTasksView.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/tasks/components/AllTasksView.tsx",
-      "feature": "features/tasks",
-      "route": null
-    },
-    {
-      "file": "features/tasks/components/mobile/MobileTasksList.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/tasks/components/mobile/MobileTasksList.tsx",
-      "feature": "features/tasks",
-      "route": null
-    },
-    {
-      "file": "features/tasks/components/mobile/MobileTasksList.tsx",
-      "line": 279,
-      "column": 24,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "task",
-      "entityHasRoute": true,
-      "expression": "task.title",
-      "feature": "features/tasks",
-      "route": null
-    },
-    {
-      "file": "features/transcripts/components/CreateTranscriptModal.tsx",
-      "line": 685,
-      "column": 26,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "file",
-      "entityHasRoute": true,
-      "expression": "uploadedFile?.details?.filename",
-      "feature": "features/transcripts",
-      "route": null
-    },
-    {
-      "file": "features/war-room/components/shared/WarRoomTaskPicker.tsx",
-      "line": 154,
-      "column": 22,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "task",
-      "entityHasRoute": true,
-      "expression": "t.title?.trim() || \"Untitled task\"",
-      "feature": "features/war-room",
       "route": null
     },
     {
@@ -1478,30 +1238,6 @@
       "route": null
     },
     {
-      "file": "features/window-panels/windows/agents/AgentContentWindow.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/window-panels/windows/agents/AgentContentWindow.tsx",
-      "feature": "features/window-panels",
-      "route": null
-    },
-    {
-      "file": "features/window-panels/windows/agents/AgentContentWindow.tsx",
-      "line": 365,
-      "column": 20,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "agent",
-      "entityHasRoute": true,
-      "expression": "agent.name || \"Untitled\"",
-      "feature": "features/window-panels",
-      "route": null
-    },
-    {
       "file": "app/(admin)/administration/agents/agent-apps/analytics/page.tsx",
       "line": 237,
       "column": 32,
@@ -1526,28 +1262,16 @@
       "route": "/administration/agents/agent-apps/analytics"
     },
     {
-      "file": "app/(admin)/administration/compute/sandbox/page.tsx",
-      "line": 766,
-      "column": 38,
+      "file": "app/(admin)/administration/reporting/events/page.tsx",
+      "line": 271,
+      "column": 58,
       "rule": "bare-id-text",
       "severity": "medium",
-      "entity": "?sshTarget",
+      "entity": "organization",
       "entityHasRoute": false,
-      "expression": "sshTarget?.sandbox_id",
+      "expression": "r.organization_id ?? \"—\"",
       "feature": "app/(admin)",
-      "route": "/administration/compute/sandbox"
-    },
-    {
-      "file": "app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx",
-      "line": 1177,
-      "column": 30,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?item",
-      "entityHasRoute": false,
-      "expression": "item.parent_id.slice(0, 8)",
-      "feature": "app/(admin)",
-      "route": null
+      "route": "/administration/reporting/events"
     },
     {
       "file": "app/(admin)/administration/users/feedback/components/WorkQueueTab.tsx",
@@ -1560,30 +1284,6 @@
       "expression": "item.ai_estimated_files.length file",
       "feature": "app/(admin)",
       "route": null
-    },
-    {
-      "file": "app/(core)/sandbox/page.tsx",
-      "line": 872,
-      "column": 22,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?deleteTarget",
-      "entityHasRoute": false,
-      "expression": "deleteTarget.sandbox_id",
-      "feature": "app/(core)",
-      "route": "/sandbox"
-    },
-    {
-      "file": "app/(core)/sandbox/page.tsx",
-      "line": 890,
-      "column": 22,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?deleteTarget",
-      "entityHasRoute": false,
-      "expression": "deleteTarget.sandbox_id",
-      "feature": "app/(core)",
-      "route": "/sandbox"
     },
     {
       "file": "app/(dev)/demos/agent-cards/page.dev.tsx",
@@ -1706,18 +1406,6 @@
       "route": "/demos/scopes/context-lab"
     },
     {
-      "file": "app/(dev)/demos/scopes/context-lab/sharp/JumpAssign.tsx",
-      "line": 207,
-      "column": 18,
-      "rule": "unlinked-entity-name",
-      "severity": "medium",
-      "entity": "scope",
-      "entityHasRoute": false,
-      "expression": "scope.scope.name",
-      "feature": "app/(dev)",
-      "route": null
-    },
-    {
       "file": "app/(dev)/demos/scopes/context-lab/sharp/MillerColumns.tsx",
       "line": 97,
       "column": 22,
@@ -1733,18 +1421,6 @@
       "file": "app/(dev)/demos/scopes/context-lab/sharp/MillerColumns.tsx",
       "line": 172,
       "column": 24,
-      "rule": "unlinked-entity-name",
-      "severity": "medium",
-      "entity": "scope",
-      "entityHasRoute": false,
-      "expression": "scope.name",
-      "feature": "app/(dev)",
-      "route": null
-    },
-    {
-      "file": "app/(dev)/demos/scopes/context-lab/sharp/OrgRail.tsx",
-      "line": 162,
-      "column": 30,
       "rule": "unlinked-entity-name",
       "severity": "medium",
       "entity": "scope",
@@ -1800,30 +1476,6 @@
       "expression": "option.parentId",
       "feature": "app/(dev)",
       "route": null
-    },
-    {
-      "file": "app/(dev)/demos/tests/utility-function-tests/create-table-templates/page.dev.tsx",
-      "line": 553,
-      "column": 20,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?result",
-      "entityHasRoute": false,
-      "expression": "result.tableId",
-      "feature": "app/(dev)",
-      "route": "/demos/tests/utility-function-tests/create-table-templates"
-    },
-    {
-      "file": "app/(dev)/demos/token-broker/page.dev.tsx",
-      "line": 308,
-      "column": 18,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?lastCredential",
-      "entityHasRoute": false,
-      "expression": "lastCredential.grant.user_id",
-      "feature": "app/(dev)",
-      "route": "/demos/token-broker"
     },
     {
       "file": "app/(transitional)/_apps/app-builder/applets/[id]/components/BrokerMappingsTab.tsx",
@@ -2042,18 +1694,6 @@
       "route": null
     },
     {
-      "file": "components/official/ListScopeSwitcher.tsx",
-      "line": 99,
-      "column": 14,
-      "rule": "unlinked-entity-name",
-      "severity": "medium",
-      "entity": "organization",
-      "entityHasRoute": false,
-      "expression": "org.name",
-      "feature": "components/official",
-      "route": null
-    },
-    {
       "file": "components/official/processor-extractor/path-management/BookmarkManager.tsx",
       "line": 184,
       "column": 134,
@@ -2087,42 +1727,6 @@
       "entityHasRoute": false,
       "expression": "exemplar.captured_model_id",
       "feature": "features/admin",
-      "route": null
-    },
-    {
-      "file": "features/administration/kg-cost/components/KgCostDashboard.tsx",
-      "line": 279,
-      "column": 20,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "organization",
-      "entityHasRoute": false,
-      "expression": "row.organization_id.slice(0, 8)",
-      "feature": "features/administration",
-      "route": null
-    },
-    {
-      "file": "features/administration/kg-cost/components/KgCostDashboard.tsx",
-      "line": 819,
-      "column": 20,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?detail",
-      "entityHasRoute": false,
-      "expression": "detail.batch_id ?? \"—\"",
-      "feature": "features/administration",
-      "route": null
-    },
-    {
-      "file": "features/administration/kg-cost/components/KgCostDashboard.tsx",
-      "line": 827,
-      "column": 20,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?detail",
-      "entityHasRoute": false,
-      "expression": "(detail.user_id ?? \"\").slice(0, 8)",
-      "feature": "features/administration",
       "route": null
     },
     {
@@ -2162,18 +1766,6 @@
       "route": null
     },
     {
-      "file": "features/ai-models/components/AiModelDetailPanel.tsx",
-      "line": 147,
-      "column": 18,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?o",
-      "entityHasRoute": false,
-      "expression": "o.provider_model_id ?? o.id.slice(0, 8)",
-      "feature": "features/ai-models",
-      "route": null
-    },
-    {
       "file": "features/applet/contepts/BrokerDebugger.tsx",
       "line": 103,
       "column": 14,
@@ -2194,42 +1786,6 @@
       "entity": "?entry",
       "entityHasRoute": false,
       "expression": "entry.brokerId",
-      "feature": "features/applet",
-      "route": null
-    },
-    {
-      "file": "features/applet/runner/response/BrokerMapViewer.tsx",
-      "line": 345,
-      "column": 32,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?entry",
-      "entityHasRoute": false,
-      "expression": "entry.brokerId",
-      "feature": "features/applet",
-      "route": null
-    },
-    {
-      "file": "features/applet/runner/response/BrokerMapViewer.tsx",
-      "line": 356,
-      "column": 32,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?entry",
-      "entityHasRoute": false,
-      "expression": "entry.mappedItemId",
-      "feature": "features/applet",
-      "route": null
-    },
-    {
-      "file": "features/applet/runner/response/BrokerMapViewer.tsx",
-      "line": 374,
-      "column": 32,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?entry",
-      "entityHasRoute": false,
-      "expression": "entry.sourceId",
       "feature": "features/applet",
       "route": null
     },
@@ -2306,42 +1862,6 @@
       "route": null
     },
     {
-      "file": "features/marketing/seo/dataforseo/DataForSeoLab.tsx",
-      "line": 472,
-      "column": 52,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?receipt",
-      "entityHasRoute": false,
-      "expression": "receipt.run_id",
-      "feature": "features/marketing",
-      "route": null
-    },
-    {
-      "file": "features/marketing/seo/dataforseo/DataForSeoLab.tsx",
-      "line": 493,
-      "column": 18,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?receipt",
-      "entityHasRoute": false,
-      "expression": "receipt.raw_payload_id ?? \"none\"",
-      "feature": "features/marketing",
-      "route": null
-    },
-    {
-      "file": "features/projects/components/ProjectManage.tsx",
-      "line": 191,
-      "column": 18,
-      "rule": "unlinked-entity-name",
-      "severity": "medium",
-      "entity": "project",
-      "entityHasRoute": false,
-      "expression": "project.name",
-      "feature": "features/projects",
-      "route": null
-    },
-    {
       "file": "features/rag/components/data-stores/DataStoresPage.tsx",
       "line": 845,
       "column": 20,
@@ -2378,18 +1898,6 @@
       "route": null
     },
     {
-      "file": "features/scope-system/components/ScopeItemDetail.tsx",
-      "line": 178,
-      "column": 47,
-      "rule": "unlinked-entity-name",
-      "severity": "medium",
-      "entity": "scope",
-      "entityHasRoute": false,
-      "expression": "scope.name",
-      "feature": "features/scope-system",
-      "route": null
-    },
-    {
       "file": "features/skills/components/SkillConfigPicker.tsx",
       "line": 598,
       "column": 20,
@@ -2398,18 +1906,6 @@
       "entity": "skill",
       "entityHasRoute": false,
       "expression": "skill?.label ?? `Unknown skill ${id.slice(0, 8)}`",
-      "feature": "features/skills",
-      "route": null
-    },
-    {
-      "file": "features/skills/components/SkillsBrowser.tsx",
-      "line": 207,
-      "column": 22,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "skill",
-      "entityHasRoute": false,
-      "expression": "s.skillId",
       "feature": "features/skills",
       "route": null
     },
@@ -2423,30 +1919,6 @@
       "entityHasRoute": false,
       "expression": "scopeTags.length scope",
       "feature": "features/surfaces",
-      "route": null
-    },
-    {
-      "file": "features/tasks/components/AllTasksView.tsx",
-      "line": 162,
-      "column": 20,
-      "rule": "unlinked-entity-name",
-      "severity": "medium",
-      "entity": "project",
-      "entityHasRoute": false,
-      "expression": "project.name",
-      "feature": "features/tasks",
-      "route": null
-    },
-    {
-      "file": "features/tasks/widgets/quick-create/TaskQuickCreateCore.tsx",
-      "line": 759,
-      "column": 26,
-      "rule": "unlinked-entity-name",
-      "severity": "medium",
-      "entity": "scope",
-      "entityHasRoute": false,
-      "expression": "scope.name",
-      "feature": "features/tasks",
       "route": null
     },
     {

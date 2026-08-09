@@ -42,12 +42,48 @@ import {
   type DeadEndRuleId,
 } from "./types";
 
-const ROOT = process.cwd();
+/**
+ * The repo root, not the shell's cwd. Running from a subdirectory used to die
+ * with an unhandled "the entity registry moved" stack trace when nothing had.
+ */
+const ROOT = repoRoot();
+
+function repoRoot(): string {
+  try {
+    return execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return process.cwd();
+  }
+}
 const SCAN_ROOTS = ["features", "components", "app", "lib"];
 const REPORT_PATH = join(ROOT, "scripts/dead-ends/report.json");
 const HISTORY_PATH = join(ROOT, "scripts/dead-ends/history.json");
 /** Keep the trend readable and the file small — one point per refresh. */
 const HISTORY_MAX_POINTS = 120;
+
+/** Written out, not sliced from this file's own header — that drifted on every
+ *  comment edit and leaked the first import line into the help text. */
+const USAGE = `
+pnpm check:dead-ends — the No Dead Ends Door Law detector.
+
+  pnpm check:dead-ends                 scan + ranked report
+  pnpm check:dead-ends:write           also refresh report.json + history.json
+  pnpm check:dead-ends --json          machine-readable report on stdout
+  pnpm check:dead-ends --rule=<id>     one rule (bare-id-text, unlinked-entity-name,
+                                       unlinked-count, no-doors-in-file)
+  pnpm check:dead-ends --path=<prefix> only files under a repo-relative prefix.
+                                       Quote route groups: --path='app/(admin)'
+  pnpm check:dead-ends --limit=<n>     findings to print (default 40; 0 = all)
+  pnpm check:dead-ends --strict        exit 1 when findings exist
+
+Always exits 0 unless --strict, a bad filter (exit 2), or a checker crash.
+Doctrine:  common-docs/policies/no-dead-ends.md
+Contract:  scripts/dead-ends/FEATURE.md
+Dashboard: /administration/reporting/dead-ends
+`.trim();
 
 const RED = "\u001b[0;31m";
 const YELLOW = "\u001b[1;33m";
@@ -69,13 +105,7 @@ interface Args {
 function parseArgs(): Args {
   const argv = process.argv.slice(2);
   if (argv.includes("-h") || argv.includes("--help")) {
-    console.log(
-      readFileSync(new URL(import.meta.url), "utf8")
-        .split("\n")
-        .slice(1, 28)
-        .map((l) => l.replace(/^\s*\*? ?/, ""))
-        .join("\n"),
-    );
+    console.log(USAGE);
     process.exit(0);
   }
   const valueOf = (flag: string): string | null => {

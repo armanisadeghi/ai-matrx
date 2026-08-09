@@ -8,7 +8,7 @@
  * FEATURE.md — ask "could an AI button do this?" before designing a manual one).
  */
 
-import { describeFinding } from "@/scripts/dead-ends/describe";
+import { describeFinding, isRegistryToken } from "@/scripts/dead-ends/describe";
 import type { DeadEndFinding } from "@/scripts/dead-ends/types";
 import { ENTITY_REGISTRY_PATH } from "./source-links";
 
@@ -34,6 +34,13 @@ function verifyCommand(pathPrefix: string | null): string {
     : "pnpm check:dead-ends";
 }
 
+/** How to describe the entity line — never "add an hrefFor for `(file)`". */
+function entityNote(f: DeadEndFinding): string {
+  if (f.entityHasRoute) return " (has a route in the entity registry)";
+  if (!isRegistryToken(f.entity)) return " (detector could not name it — identify the record first)";
+  return " (a registry token with NO hrefFor yet)";
+}
+
 /** Brief for repairing ONE finding. */
 export function fixPromptForFinding(f: DeadEndFinding): string {
   return [
@@ -41,7 +48,7 @@ export function fixPromptForFinding(f: DeadEndFinding): string {
     "",
     `File:       ${f.file}:${f.line}:${f.column}`,
     `Rule:       ${f.rule} (${f.severity})`,
-    `Entity:     ${f.entity}${f.entityHasRoute ? " (has a route in the entity registry)" : " (NO hrefFor in the entity registry yet)"}`,
+    `Entity:     ${f.entity}${entityNote(f)}`,
     `Expression: ${f.expression}`,
     f.route ? `Route:      ${f.route}` : null,
     "",
@@ -50,7 +57,9 @@ export function fixPromptForFinding(f: DeadEndFinding): string {
     "Rules of engagement:",
     "- The door primitive is <EntityRef token=… id=… name=… /> " +
       "(components/official/entity-ref/EntityRef.tsx). Never hand-roll a name link.",
-    `- A missing door is usually a missing hrefFor — fix ${ENTITY_REGISTRY_PATH}, not the call site.`,
+    isRegistryToken(f.entity)
+      ? `- A missing door is usually a missing hrefFor — fix ${ENTITY_REGISTRY_PATH}, not the call site.`
+      : `- The detector could not name the entity here. Work out which record it is FIRST; only then does ${ENTITY_REGISTRY_PATH} come into it.`,
     "- Run the inventory pass first and name in your summary what you searched, " +
       "found, reused, or newly built.",
     "- If this is genuinely NOT a violation, add it to scripts/dead-ends/allowlist.ts " +

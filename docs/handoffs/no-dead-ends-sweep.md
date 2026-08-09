@@ -33,10 +33,11 @@ Full doctrine, corollaries and the "done means" checklist:
 
 - **Skill:** `no-dead-ends` — invoke it before touching any surface here.
 - **The scoreboard: `/administration/reporting/dead-ends`.** Ranked, filterable,
-  every row opens its source line and its route, and every row/file/feature has
-  a **Copy repair brief** button that hands you a paste-ready work order. Start
-  there, not here — this doc is the standing brief; the scoreboard is the live
-  worklist.
+  every row opens its source line — plus the route itself when the finding sits
+  on a route file (most findings are in components, so most rows show
+  `component`). Every row, file and feature has a **Copy repair brief** button
+  that hands you a paste-ready work order. Start there, not here — this doc is
+  the standing brief; the scoreboard is the live worklist.
 - **Detector:** `pnpm check:dead-ends` · scoped: `--path=features/notes` ·
   contract + how to add a rule: `scripts/dead-ends/FEATURE.md`.
 - **Door primitive:** `<EntityRef token=… id=… name=… />`
@@ -55,30 +56,29 @@ Ordered by high-severity density. `high` = the entity already has an `hrefFor`,
 so the fix is one `<EntityRef>`. Refresh the numbers with
 `pnpm check:dead-ends:write` after each batch and commit the snapshot.
 
-**Baseline 2026-08-09: 170 findings · 90 high · 108 files · 6,803 scanned.**
-(bare id as text 89 · unlinked name 61 · unlinked count 4 · no doors at all 16)
+**Baseline 2026-08-09: 126 findings · 68 high · 80 files · 6,803 scanned.**
+(bare id as text 77 · unlinked name 38 · unlinked count 4 · no doors at all 7)
 
-1. **`features/notes` — 13 findings, 13 high.** Every one high: `note` has a
-   route, so each is one `<EntityRef>`. `NoteInfoPanel.tsx`,
-   `GlobalSearchResults.tsx` and `components/mobile/MobileNotesList.tsx` also
-   import no door primitive at all. Cheapest whole feature to clear.
-2. **`components/admin` — 17 findings, 9 high.** The state-analyzer slice
+1. **`components/admin` — 15 findings, 7 high.** The state-analyzer slice
    viewers (`AgentDefinitionSliceViewer.tsx` + `…ViewerShadcn.tsx`) print agent
    ids as text. **Collapse the two viewers into one while you are in there** —
    a `…Shadcn` twin of an existing viewer is its own doctrine violation.
-3. **`features/agents` — 11 findings, 9 high.** The feature the rant was about.
-   `agent-sets/components/AgentLibraryRail.tsx` and
-   `components/inputs/smart-input/RunSkillPicker.tsx` have no door primitive.
-4. **`app/(dev)` — 28 findings, 8 high.** Demos are explicitly in scope; the
+2. **`features/agents` — 9 findings, 7 high.** The feature the rant was about.
+   `components/inputs/smart-input/RunSkillPicker.tsx` has no door primitive.
+3. **`features/notes` — 7 findings, 7 high.** Every one high: `note` has a
+   route, so each is one `<EntityRef>`. `components/mobile/MobileNotesList.tsx`
+   also imports no door primitive. Cheapest whole feature to clear.
+4. **`app/(dev)` — 23 findings, 7 high.** Demos are explicitly in scope; the
    doctrine has no size threshold.
-5. **`features/files` — 9 findings, 8 high.** All three surface shells
-   (`EmbeddedShell`, `MobileStack`, `WindowPanelShell`) lack a door primitive
-   while naming files; `file` has an `hrefFor`.
-6. **`features/window-panels` (6/6)**, **`features/agent-comparison` (5/5)**,
-   **`features/surfaces` (5/4)**, **`components/debug` (6/3)**,
-   **`features/tasks` (5/3)**, **`features/resource-manager` (3/3)**.
+5. **`features/agent-comparison` — 5 findings, all high**, and both its files
+   lack a door primitive entirely. A comparison must also **state the verdict,
+   not a timestamp** (corollary 3) — check that in the same pass.
+6. **`features/files` (5/4)**, **`features/surfaces` (5/4)**,
+   **`features/window-panels` (4/4)**, **`features/admin` (4/3)**,
+   **`features/resource-manager` (3/3)**, **`app/(admin)` (6/2)**,
+   **`components/debug` (5/2)**.
 7. **Then the medium tail** — tokens with no route. See "Registry gaps" below;
-   ~33 mediums turn into fixes the moment their token gets an `hrefFor`.
+   ~25 mediums turn into fixes the moment their token gets an `hrefFor`.
 
 ### Registry gaps — fix once, clear many findings
 
@@ -87,12 +87,11 @@ Each one is a registry line, not a per-call-site fix:
 
 | Token | Findings | Note |
 |---|---|---|
-| `scope` | 14 | Needs a canonical scope route decision first. |
-| `organization` | 8 | `/administration/users/organizations` is admin-only; a user-facing org route may not exist yet. |
-| `skill` | 4 | |
+| `scope` | 10 | Needs a canonical scope route decision first. |
+| `organization` | 7 | `/administration/users/organizations` is admin-only; a user-facing org route may not exist yet. |
+| `skill` | 3 | |
 | `app` | 2 | Agent apps — `/apps/{id}` exists in the transitional group; confirm the target before wiring. |
 | `agent_shortcut` | 2 | |
-| `project` | 2 | |
 | `quiz_session` | 1 | |
 
 **Not in the registry at all:** `broker` and tool-call ids are real records here
@@ -126,9 +125,9 @@ real damage lives (doctrine §Corollaries):
 
 ## Decisions needed
 
-**Situation.** Seven entity types are named across the UI but have no canonical
-route in the entity registry, so ~33 findings cannot be fixed at the call site
-— the biggest are `scope` (14), `organization` (8) and `skill` (4). Some have
+**Situation.** Six entity types are named across the UI but have no canonical
+route in the entity registry, so ~25 findings cannot be fixed at the call site
+— the biggest are `scope` (10), `organization` (7) and `skill` (3). Some have
 a page today in a transitional route group; some (a user-facing organization
 page, a scope detail page) may not be intended to exist at all.
 

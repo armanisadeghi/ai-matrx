@@ -23,7 +23,7 @@
  * and commit — the page says so, loudly, with the scan's age.
  */
 
-import React, { useMemo, useState, useSyncExternalStore } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -41,7 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import { describeFinding } from "@/scripts/dead-ends/describe";
+import { describeFinding, isRegistryToken } from "@/scripts/dead-ends/describe";
 import {
   RULE_DOCTRINE,
   RULE_TITLES,
@@ -49,15 +49,24 @@ import {
   type DeadEndHistoryPoint,
   type DeadEndReport,
   type DeadEndRuleId,
+  type DeadEndSeverity,
 } from "@/scripts/dead-ends/types";
 import { fixPromptForBucket, fixPromptForFinding } from "./fix-prompt";
-import { ENTITY_REGISTRY_PATH, sourceHref, treeHref } from "./source-links";
+import {
+  ENTITY_REGISTRY_PATH,
+  commitHref,
+  pathHref,
+  sourceHref,
+} from "./source-links";
 
 const DOCTRINE_HREF =
   "https://github.com/armanisadeghi/ai-matrx/blob/main/.claude/skills/no-dead-ends/SKILL.md";
 
 /** A scan older than this is stale enough that the page must say so. */
 const STALE_AFTER_DAYS = 7;
+
+/** The one-click fix that ships with the staleness complaint. */
+const REFRESH_COMMAND = "pnpm check:dead-ends:write";
 
 /**
  * A finding in `app/(core)/tasks/[id]/page.tsx` reports the route pattern
@@ -86,7 +95,8 @@ type BucketFilter =
   | { kind: "none" }
   | { kind: "file"; value: string }
   | { kind: "feature"; value: string }
-  | { kind: "rule"; value: DeadEndRuleId };
+  | { kind: "rule"; value: DeadEndRuleId }
+  | { kind: "severity"; value: DeadEndSeverity };
 
 export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
   const [bucket, setBucket] = useState<BucketFilter>({ kind: "none" });
@@ -104,18 +114,9 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
     () => null,
   );
 
-  const findings = useMemo(() => {
-    switch (bucket.kind) {
-      case "file":
-        return report.findings.filter((f) => f.file === bucket.value);
-      case "feature":
-        return report.findings.filter((f) => f.feature === bucket.value);
-      case "rule":
-        return report.findings.filter((f) => f.rule === bucket.value);
-      default:
-        return report.findings;
-    }
-  }, [report.findings, bucket]);
+  // No useMemo anywhere in this file — the React Compiler is on
+  // (next.config.js `reactCompiler: true`) and CLAUDE.md bans manual memoization.
+  const findings = filterFindings(report.findings, bucket);
 
   const copy = async (key: string, text: string, label: string) => {
     try {
@@ -129,8 +130,7 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
     }
   };
 
-  const columns = useMemo<MatrxColumnDef<DeadEndFinding>[]>(
-    () => [
+  const columns: MatrxColumnDef<DeadEndFinding>[] = [
       {
         id: "severity",
         accessorKey: "severity",
@@ -179,9 +179,9 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
               <Badge variant="outline" className="h-4 px-1 text-[9px]">
                 route
               </Badge>
-            ) : (
+            ) : isRegistryToken(f.entity) ? (
               <Link
-                href={treeHref(ENTITY_REGISTRY_PATH, report.commit)}
+                href={sourceHref(ENTITY_REGISTRY_PATH, 1)}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
@@ -190,7 +190,7 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
               >
                 no route
               </Link>
-            )}
+            ) : null}
           </span>
         ),
       },
@@ -202,7 +202,7 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
         cell: (f) => (
           <span className="flex min-w-0 max-w-full items-center gap-1">
             <Link
-              href={sourceHref(f.file, f.line, report.commit)}
+              href={sourceHref(f.file, f.line)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
@@ -293,6 +293,7 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
               variant="ghost"
               className="h-6 px-1.5 text-[10px]"
               title="Copy a paste-ready repair brief for an agent"
+              aria-label={`Copy a repair brief for ${f.file}:${f.line}`}
               onClick={(e) => {
                 e.stopPropagation();
                 void copy(key, fixPromptForFinding(f), "Repair brief");
@@ -307,9 +308,7 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
           );
         },
       },
-    ],
-    [report.commit, copiedKey],
-  );
+  ];
 
   const previous = history.length > 1 ? history[history.length - 2] : null;
   const delta = previous ? report.totals.findings - previous.findings : null;
@@ -320,6 +319,9 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
         report={report}
         scanAgeDays={scanAgeDays}
         delta={delta}
+        onCopyRefresh={() =>
+          void copy("refresh", REFRESH_COMMAND, "Refresh command")
+        }
         onCopyAll={() =>
           void copy(
             "all",
@@ -335,7 +337,12 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
       />
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <TotalsCard report={report} delta={delta} history={history} />
+        <TotalsCard
+          report={report}
+          delta={delta}
+          history={history}
+          onPickSeverity={(severity) => setBucket({ kind: "severity", value: severity })}
+        />
         <BucketCard
           title="Worst features"
           buckets={report.worstFeatures.slice(0, 8)}
@@ -384,7 +391,11 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5 text-xs">
           <span className="text-muted-foreground">Filtered to</span>
           <code className="font-mono">
-            {bucket.kind === "rule" ? RULE_TITLES[bucket.value] : bucket.value}
+            {bucket.kind === "rule"
+              ? RULE_TITLES[bucket.value]
+              : bucket.kind === "severity"
+                ? `${bucket.value} severity`
+                : bucket.value}
           </code>
           <Badge variant="secondary">{findings.length}</Badge>
           <Button
@@ -467,6 +478,24 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
   );
 }
 
+function filterFindings(
+  findings: DeadEndFinding[],
+  bucket: BucketFilter,
+): DeadEndFinding[] {
+  switch (bucket.kind) {
+    case "file":
+      return findings.filter((f) => f.file === bucket.value);
+    case "feature":
+      return findings.filter((f) => f.feature === bucket.value);
+    case "rule":
+      return findings.filter((f) => f.rule === bucket.value);
+    case "severity":
+      return findings.filter((f) => f.severity === bucket.value);
+    default:
+      return findings;
+  }
+}
+
 // ─── Header ─────────────────────────────────────────────────────────────────
 
 function Header({
@@ -474,12 +503,14 @@ function Header({
   scanAgeDays,
   delta,
   onCopyAll,
+  onCopyRefresh,
 }: {
   report: DeadEndReport;
   /** `null` until the client has read the clock (see the console above). */
   scanAgeDays: number | null;
   delta: number | null;
   onCopyAll: () => void;
+  onCopyRefresh: () => void;
 }) {
   const stale = scanAgeDays !== null && scanAgeDays >= STALE_AFTER_DAYS;
   return (
@@ -498,7 +529,7 @@ function Header({
           <>
             {" · "}
             <Link
-              href={treeHref("", report.commit)}
+              href={commitHref(report.commit)}
               target="_blank"
               rel="noopener noreferrer"
               className="font-mono underline-offset-2 hover:text-primary hover:underline"
@@ -520,6 +551,15 @@ function Header({
           <AlertTriangle className="h-3.5 w-3.5" />
           Snapshot is {scanAgeDays} days old — run{" "}
           <code className="font-mono">pnpm check:dead-ends:write</code> and commit.
+          <button
+            type="button"
+            onClick={onCopyRefresh}
+            title="Copy the refresh command"
+            aria-label="Copy the refresh command"
+            className="rounded p-0.5 hover:bg-amber-500/20"
+          >
+            <Copy className="h-3 w-3" />
+          </button>
         </span>
       )}
 
@@ -548,12 +588,15 @@ function TotalsCard({
   report,
   delta,
   history,
+  onPickSeverity,
 }: {
   report: DeadEndReport;
   delta: number | null;
   history: DeadEndHistoryPoint[];
+  onPickSeverity: (severity: DeadEndSeverity) => void;
 }) {
   const { totals } = report;
+  const allowlistCount = report.allowlist.length;
   return (
     <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex items-baseline gap-3">
@@ -580,15 +623,33 @@ function TotalsCard({
         )}
       </div>
 
+      {/* A count is a door — these filter the table, same as the bucket cards. */}
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span>
+        <button
+          type="button"
+          onClick={() => onPickSeverity("high")}
+          title="Show only high-severity findings"
+          className="underline-offset-2 hover:text-foreground hover:underline"
+        >
           <span className="font-medium text-destructive">{totals.high}</span> high
-        </span>
-        <span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onPickSeverity("medium")}
+          title="Show only medium-severity findings"
+          className="underline-offset-2 hover:text-foreground hover:underline"
+        >
           <span className="font-medium text-foreground">{totals.medium}</span> medium
-        </span>
+        </button>
         <span>{totals.filesWithFindings} files affected</span>
-        <span>{totals.allowlisted} allowlisted</span>
+        {/* `allowlisted` counts findings SUPPRESSED this run, which is 0 when an
+            exempted file has nothing to suppress. Saying "0 allowlisted" beside
+            a panel headed "2 exemptions" reads as a contradiction, so both
+            numbers are named. */}
+        <span title="Findings suppressed by the allowlist on this run / exemptions registered">
+          {totals.allowlisted} suppressed · {allowlistCount} exemption
+          {allowlistCount === 1 ? "" : "s"}
+        </span>
       </div>
 
       <Trend history={history} />
@@ -699,7 +760,7 @@ function BucketCard({
                 </Badge>
               )}
               <Link
-                href={treeHref(b.key, commit)}
+                href={b.key.includes(".") ? sourceHref(b.key, 1) : pathHref(b.key)}
                 target="_blank"
                 rel="noopener noreferrer"
                 title={`Open ${b.key} in a new tab`}
@@ -796,7 +857,7 @@ function FindingDetail({
         </Row>
         <Row label="Source">
           <Link
-            href={sourceHref(finding.file, finding.line, commit)}
+            href={sourceHref(finding.file, finding.line)}
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono underline-offset-2 hover:text-primary hover:underline"
@@ -806,7 +867,7 @@ function FindingDetail({
         </Row>
         <Row label="Feature">
           <Link
-            href={treeHref(finding.feature, commit)}
+            href={pathHref(finding.feature)}
             target="_blank"
             rel="noopener noreferrer"
             className="font-mono underline-offset-2 hover:text-primary hover:underline"
@@ -841,15 +902,20 @@ function FindingDetail({
               <code className="font-mono">{finding.entity}</code> already has an
               hrefFor — the door is one <code className="font-mono">EntityRef</code> away.
             </span>
-          ) : (
+          ) : isRegistryToken(finding.entity) ? (
             <Link
-              href={treeHref(ENTITY_REGISTRY_PATH, commit)}
+              href={sourceHref(ENTITY_REGISTRY_PATH, 1)}
               target="_blank"
               rel="noopener noreferrer"
               className="underline-offset-2 hover:text-primary hover:underline"
             >
-              Add an hrefFor for this token
+              Add an hrefFor for <code className="font-mono">{finding.entity}</code>
             </Link>
+          ) : (
+            <span className="text-muted-foreground">
+              The detector could not name this entity, so there is no token to
+              register — identify the record yourself, then use its token.
+            </span>
           )}
         </Row>
       </dl>
@@ -891,7 +957,7 @@ function AllowlistPanel({ report }: { report: DeadEndReport }) {
           <li key={`${entry.file}:${entry.rule ?? "*"}`} className="text-xs">
             <span className="inline-flex flex-wrap items-baseline gap-1.5">
               <Link
-                href={treeHref(entry.file, report.commit)}
+                href={sourceHref(entry.file, 1)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-mono underline-offset-2 hover:text-primary hover:underline"

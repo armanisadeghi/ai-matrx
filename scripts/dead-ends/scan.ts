@@ -102,6 +102,13 @@ const PLACEHOLDER_RE = /\b(Loader2|Skeleton|animate-spin|Spinner)\b/;
 const FORMATTER_CALL_RE =
   /^(slice|substring|substr|toString|trim|toUpperCase|toLowerCase|padStart|padEnd)$/;
 
+/**
+ * Copy that says the record is GONE. There is nothing to open, so naming its
+ * id is the only thing the surface can do.
+ */
+const NOT_FOUND_PHRASE_RE =
+  /\b(not found|could ?n.t be found|no longer exists?|does ?n.t exist|missing|was deleted|unavailable|failed to load)\b/i;
+
 /** Result-count phrasing: describes the view, not reachable records. */
 const PAGINATION_PHRASE_RE =
   /\b(showing|of|out of|total|results?|selected|matching|filtered|loaded|available|remaining|found)\b/i;
@@ -375,7 +382,7 @@ function classifyExpression(
   // the two matters: an ancestor door is certain, a row door is inferred from
   // an "Open"-shaped control beside the value, and a row door only counts when
   // it leads to the same entity (an app link in a row does not open the task).
-  if (findDoorAncestor(node)) return null;
+  if (findDoorAncestor(node, rootIdentifier(expr))) return null;
   if (findRowDoor(node, sf, tokenInfo?.token ?? null, ctx)) return null;
 
   // ── Rule: bare id rendered as text ────────────────────────────────────────
@@ -406,9 +413,16 @@ function classifyExpression(
     // A bare `.id` on an object we cannot name is not evidence of a record.
     // `{r.task_id}` and `{lastFileId}` still report — they name their entity.
     if (!tokenInfo && property === "id") return null;
-    // The record's OWN surface printing its own id (a detail page, an editor,
+    // The record's OWN surface printing its OWN id (a detail page, an editor,
     // a confirm modal) is not a dead end — the user is already there.
-    if (isSelfSubject(node, expr, sf)) return null;
+    //
+    // `id` / `uuid` ONLY. A FOREIGN key on the subject — `slot.summary_agent_id`,
+    // `instance.agentId` — points at a DIFFERENT record, and that is the
+    // doctrine's own headline case: knowing the twin exists and not linking it
+    // is worse than saying nothing. Never suppress those.
+    if (isOwnIdentity(expr, property, ctx) && isSelfSubject(node, expr, sf)) return null;
+    // "The task {taskId} could not be found." — there is no record to open.
+    if (isInNotFoundMessage(node)) return null;
     return makeFinding({
       relPath,
       line,
@@ -602,6 +616,21 @@ function isSelfSubject(node: ts.Node, expr: ts.Expression, sf: ts.SourceFile): b
   // bound from state rather than a parameter. The user is already on it.
   if (/^(selected|active|current|editing|viewing|chosen)[A-Z]/.test(root)) return true;
 
+  // THE DOMINANT DETAIL-SURFACE SHAPE in this repo, and the one a parameter
+  // check alone cannot see:
+  //
+  //   function AgentSettingsForm({ agentId }) {
+  //     const agent = useAppSelector(selectAgent(agentId));   // subject: `agent`
+  //
+  // The parameter is the ID; the record is looked up from it. If the component
+  // takes `<root>Id` as a prop, `<root>` is its subject — you are already on it.
+  if (componentTakesIdFor(node, root)) return true;
+
+  // Same shape with no props at all (`function ProjectManage()` reading the id
+  // from the route): the record is fetched once at the top of the component and
+  // never iterated. A subject, not a row.
+  if (isUniqueSubjectBinding(node, root, sf)) return true;
+
   let cur: ts.Node | undefined = node;
   while (cur) {
     if (
@@ -622,6 +651,80 @@ function isSelfSubject(node: ts.Node, expr: ts.Expression, sf: ts.SourceFile): b
     cur = cur.parent;
   }
   return false;
+}
+
+/**
+ * Is this id the SUBJECT'S OWN identity, or a pointer to another record?
+ *
+ * Own:     `note.id`, `x.uuid`, a bare `{agentId}` (no object to be foreign to),
+ *          `file.fileId` (property names the same entity as its object).
+ * Foreign: `slot.summary_agent_id`, `instance.agentId` — the object is one
+ *          record and the property names a DIFFERENT one. Never suppress those:
+ *          "I know your agent's twin exists" while not linking it is the
+ *          doctrine's headline complaint.
+ */
+function isOwnIdentity(
+  expr: ts.Expression,
+  property: string,
+  ctx: ScanContext,
+): boolean {
+  if (property === "id" || property === "uuid") return true;
+  const root = rootIdentifier(expr);
+  const unwrapped = unwrap(expr);
+  // A bare identifier has no object it could be a foreign key of.
+  if (!root || !ts.isPropertyAccessExpression(unwrapped)) return true;
+  const rootToken = inferToken(expressionWords(root), ctx.tokens)?.token ?? null;
+  const propToken = inferToken(expressionWords(property), ctx.tokens)?.token ?? null;
+  return propToken === null || propToken === rootToken;
+}
+
+/** Does the enclosing component take `<root>Id` / `<root>_id` as a prop? */
+function componentTakesIdFor(node: ts.Node, root: string): boolean {
+  const wanted = [`${root}Id`, `${root}_id`, `${root}id`];
+  let cur: ts.Node | undefined = node;
+  while (cur) {
+    if (
+      ts.isArrowFunction(cur) ||
+      ts.isFunctionExpression(cur) ||
+      ts.isFunctionDeclaration(cur)
+    ) {
+      if (isIterationCallback(cur)) return false;
+      if (
+        cur.parameters.some((p) =>
+          wanted.some((name) => bindsName(p.name, name)),
+        )
+      ) {
+        return true;
+      }
+    }
+    cur = cur.parent;
+  }
+  return false;
+}
+
+/**
+ * `const project = useProject(id)` / `useAppSelector(...)` at the top level of a
+ * component, where nothing in the file iterates that variable. One record,
+ * fetched once — the surface's subject.
+ */
+function isUniqueSubjectBinding(node: ts.Node, root: string, sf: ts.SourceFile): boolean {
+  // Bound inside a row callback? Then it is a row, whatever it is called.
+  let cur: ts.Node | undefined = node;
+  while (cur) {
+    if (ts.isArrowFunction(cur) || ts.isFunctionExpression(cur)) {
+      if (isIterationCallback(cur)) return false;
+    }
+    cur = cur.parent;
+  }
+  const name = escapeRe(root);
+  // The two detail-fetch shapes: bound from a hook/selector, or held as the
+  // component's own single-record state (`const [project, setProject] = …`).
+  const fromHook = new RegExp(`\\bconst\\s+${name}\\s*=\\s*use[A-Z]\\w*\\(`);
+  const fromState = new RegExp(`\\bconst\\s*\\[\\s*${name}\\s*,\\s*set[A-Z]\\w*\\s*\\]\\s*=`);
+  if (!fromHook.test(sf.text) && !fromState.test(sf.text)) return false;
+  // …and never iterated as a collection anywhere in the file.
+  const iterated = new RegExp(`\\b${name}s?\\??\\.(map|flatMap|forEach)\\(|\\(\\s*${name}\\s*(,|\\)\\s*=>)`);
+  return !iterated.test(sf.text);
 }
 
 /** `const renderRow = (row) => …` used as `rows.map(renderRow)`. */
@@ -962,6 +1065,21 @@ function jsxChildText(child: ts.JsxChild | undefined): string | null {
   return null;
 }
 
+/** Is this expression inside copy that says the record is gone? */
+function isInNotFoundMessage(node: ts.JsxExpression): boolean {
+  let cur: ts.Node | undefined = node.parent;
+  for (let depth = 0; cur && depth < 3; depth++) {
+    if (
+      (ts.isJsxElement(cur) || ts.isJsxFragment(cur)) &&
+      NOT_FOUND_PHRASE_RE.test(elementText(cur))
+    ) {
+      return true;
+    }
+    cur = cur.parent;
+  }
+  return false;
+}
+
 /** "Showing {n} of {m} results" — a description of the view, not a reference. */
 function isPaginationPhrasing(node: ts.JsxExpression): boolean {
   const parent = node.parent;
@@ -971,7 +1089,7 @@ function isPaginationPhrasing(node: ts.JsxExpression): boolean {
   return PAGINATION_PHRASE_RE.test(elementText(parent));
 }
 
-function findDoorAncestor(node: ts.Node): string | null {
+function findDoorAncestor(node: ts.Node, root: string | null = null): string | null {
   let cur: ts.Node | undefined = node.parent;
   while (cur) {
     const opening = openingElementOf(cur);
@@ -987,7 +1105,13 @@ function findDoorAncestor(node: ts.Node): string | null {
           // as one silenced every finding inside the row it wrapped.
           if (name.startsWith("on")) {
             const body = attr.initializer?.getText() ?? "";
-            if (!NAVIGATING_HANDLER_RE.test(body)) continue;
+            // Either the handler is named for navigation, or it is handed THIS
+            // record's id — `onClick={() => handleClick(file.id)}` IS the row
+            // opening itself, whatever the callback happens to be called.
+            const receivesThisId =
+              root != null &&
+              new RegExp(`\\b${escapeRe(root)}\\??\\.(id|uuid|\\w*(_id|Id))\\b`).test(body);
+            if (!receivesThisId && !NAVIGATING_HANDLER_RE.test(body)) continue;
           }
           return tag ?? name;
         }

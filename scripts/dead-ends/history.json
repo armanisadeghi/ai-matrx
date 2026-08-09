@@ -1,20 +1,11 @@
 [
   {
-    "generatedAt": "2026-08-09T06:12:28.387Z",
-    "commit": "64de2e931fdebe5ff93138b110f4dd55c3415dee",
-    "findings": 170,
-    "high": 90,
-    "medium": 80,
+    "generatedAt": "2026-08-09T06:43:36.784Z",
+    "commit": "b11550d0d1f49f126d09ff84e4aad66355beb314",
+    "findings": 126,
+    "high": 68,
+    "medium": 58,
     "low": 0,
-    "filesWithFindings": 108
-  },
-  {
-    "generatedAt": "2026-08-09T06:22:07.698Z",
-    "commit": "466ffe1628d5be7520857a48d32dd63aa078411a",
-    "findings": 170,
-    "high": 90,
-    "medium": 80,
-    "low": 0,
-    "filesWithFindings": 108
+    "filesWithFindings": 80
   }
 ]

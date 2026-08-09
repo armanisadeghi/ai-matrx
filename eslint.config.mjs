@@ -530,6 +530,62 @@ const matrxLintPlugin = {
                     return null;
                 };
 
+                /**
+                 * The record's OWN surface printing its own id is not a dead
+                 * end — you are already on it. Detected the way the file can
+                 * see it: the enclosing function binds the id (or `<x>Id`) as a
+                 * parameter, and is not a `.map()` row callback. Keeps the
+                 * checker and this rule from disagreeing on a detail page.
+                 */
+                const isSelfSubject = (node, name) => {
+                    const wanted = new Set([name, `${name}Id`, `${name}_id`]);
+                    const binds = (pattern) => {
+                        if (!pattern) return false;
+                        if (pattern.type === 'Identifier') return wanted.has(pattern.name);
+                        if (pattern.type === 'ObjectPattern') {
+                            return pattern.properties.some((p) =>
+                                binds(p.value ?? p.argument),
+                            );
+                        }
+                        if (pattern.type === 'AssignmentPattern') return binds(pattern.left);
+                        return false;
+                    };
+                    for (let cur = node; cur; cur = cur.parent) {
+                        const isFn =
+                            cur.type === 'ArrowFunctionExpression' ||
+                            cur.type === 'FunctionExpression' ||
+                            cur.type === 'FunctionDeclaration';
+                        if (!isFn) continue;
+                        const call = cur.parent;
+                        const iterating =
+                            call?.type === 'CallExpression' &&
+                            call.callee?.type === 'MemberExpression' &&
+                            /^(map|flatMap|forEach|filter)$/.test(
+                                call.callee.property?.name ?? '',
+                            );
+                        if (iterating) return false;
+                        return (cur.params ?? []).some(binds);
+                    }
+                    return false;
+                };
+
+                /** `row.agent.id` → `row`; `{agentId}` → null (no object). */
+                const rootName = (expr) => {
+                    let cur = expr;
+                    for (let guard = 0; guard < 12 && cur; guard++) {
+                        if (cur.type === 'MemberExpression') {
+                            cur = cur.object;
+                            continue;
+                        }
+                        if (cur.type === 'ChainExpression') {
+                            cur = cur.expression;
+                            continue;
+                        }
+                        break;
+                    }
+                    return cur && cur.type === 'Identifier' && cur !== expr ? cur.name : null;
+                };
+
                 /** `row.agent.id` → `id`; `{agentId}` → `agentId`. Anything
                  *  else (calls, templates, ternaries) is out of scope — this
                  *  rule only claims the unambiguous shapes. */
@@ -558,6 +614,20 @@ const matrxLintPlugin = {
                         }
                         const name = terminalName(node.expression);
                         if (!name || !ID_NAME_RE.test(name)) return;
+                        // The subject's OWN id only. A foreign key on the
+                        // subject (`instance.agentId`) points at a DIFFERENT
+                        // record and must still be reported — same rule the
+                        // checker applies, minus the token registry.
+                        const root = rootName(node.expression);
+                        const subject = root ?? name.replace(/(_id|Id)$/, '');
+                        const points = name.replace(/(_id|Id)$/, '').toLowerCase();
+                        const ownIdentity =
+                            name === 'id' ||
+                            name === 'uuid' ||
+                            root === null ||
+                            points === '' ||
+                            (root ?? '').toLowerCase().includes(points);
+                        if (ownIdentity && isSelfSubject(node, subject)) return;
 
                         for (let cur = node.parent; cur; cur = cur.parent) {
                             if (cur.type !== 'JSXElement') continue;

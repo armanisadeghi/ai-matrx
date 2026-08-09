@@ -49,31 +49,30 @@ and imports **no** door mechanism at all — no `next/link`, no `EntityRef`, no
 router, no overlay opener. That is the inventory pass skipped wholesale, and it
 is the highest-confidence signal we have for this law.
 
-**Baseline 2026-08-09: 16 files.** Take them in feature batches — do the
-inventory pass ONCE per feature, then fix its files together.
+**Baseline 2026-08-09: 7 files.** Deliberately short — earlier cuts flagged 21
+and then 16, and audits found most of those DID own a door the checker could
+not see (a local `scopeHref` helper, an `openFilePreview` import, a row whose
+`onClick` hands the handler the record's own id). The rule was tightened each
+time rather than left noisy. Do the inventory pass ONCE per feature.
 
-1. **Files surface shells (3)** — `features/files/components/surfaces/EmbeddedShell.tsx`,
-   `MobileStack.tsx`, `WindowPanelShell.tsx`. All three name files with no door
-   mechanism at all, and `file` has an `hrefFor`. Fix the shells once.
-2. **Notes (3)** — `features/notes/components/NoteInfoPanel.tsx`,
-   `GlobalSearchResults.tsx`, `components/mobile/MobileNotesList.tsx`. A search
-   result that names a note and cannot open it is the doctrine's own example.
-3. **Agents (3)** — `features/agents/agent-sets/components/AgentLibraryRail.tsx`,
-   `components/inputs/smart-input/RunSkillPicker.tsx`,
-   `features/window-panels/windows/agents/AgentContentWindow.tsx`.
-4. **Agent comparison (2)** — `MasterInputWindow.tsx`, `RunsComparisonTable.tsx`.
-   The whole feature was built blind (5 findings, all high). A comparison must
-   also **state the verdict, not a timestamp** (corollary 3) — check that too.
-5. **Tasks (2)** — `features/tasks/components/AllTasksView.tsx`,
-   `components/mobile/MobileTasksList.tsx`. `task` has a route.
-6. **The rest (3)** — `features/surfaces/components/bind/SurfaceAgentBindPanel.tsx`,
-   `components/admin/state-analyzer/execution-inspector/ExecutionInstanceInspector.tsx`,
-   `app/(dev)/demos/scopes/context-lab/page.dev.tsx`.
+1. **Agent comparison (2)** — `features/agent-comparison/components/MasterInputWindow.tsx`,
+   `RunsComparisonTable.tsx`. The whole feature was built blind (5 findings, all
+   high). A comparison must also **state the verdict, not a timestamp**
+   (corollary 3) — check that too.
+2. **Notes (1)** — `features/notes/components/mobile/MobileNotesList.tsx`.
+   `note` has a route; this is cheap.
+3. **Agents & surfaces (2)** —
+   `features/agents/components/inputs/smart-input/RunSkillPicker.tsx`,
+   `features/surfaces/components/bind/SurfaceAgentBindPanel.tsx`.
+4. **Files (1)** — `features/files/components/surfaces/MobileStack.tsx`.
+5. **Demos (1)** — `app/(dev)/demos/scopes/context-lab/page.dev.tsx`. Demos are
+   in scope; the doctrine has no size threshold.
 
-**Beyond the sixteen**, this law is not fully machine-detectable — the checker
+**Beyond the seven**, this law is not fully machine-detectable — the checker
 sees a *missing import*, not a *poorer surface*. The scoreboard's worst-features
 ranking is the better hunting ground, and `scripts/dead-ends/FEATURE.md`
-§ Known limits says what the detector cannot see.
+§ Known limits says what the detector cannot see (notably: `hooks/`, `utils/`,
+`providers/` and `packages/` are not scanned at all).
 
 ### What "done" looks like for one file
 
