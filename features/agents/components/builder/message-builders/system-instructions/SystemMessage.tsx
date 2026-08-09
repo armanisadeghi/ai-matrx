@@ -39,6 +39,7 @@ import { selectAgentSystemMessage } from "@/features/agents/redux/agent-definiti
 import { setAgentMessages } from "@/features/agents/redux/agent-definition/slice";
 import { useAgentUndoRedo } from "@/features/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@/features/agents/hooks/useAgentBuilderSurfaceScope";
+import { withAgentSystemInstruction } from "@/features/agents/utils/agent-system-instruction";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Terminal } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -139,29 +140,21 @@ export function SystemMessage({
   // All non-text blocks — rendered as pills
   const nonTextBlocks = rawBlocks.filter((b) => b.type !== "text");
 
+  // The ONE rebuild rule (non-text blocks round-tripped, blank text drops the
+  // block) lives in `withAgentSystemInstruction` — the agent-builder surface's
+  // `system_instruction` write target dispatches through the same helper, so
+  // an agent's rewrite and the user's typing land identically.
   const handleTextChange = useCallback(
     (value: string) => {
       if (!messages) return;
-      const nonSystemMessages = messages.filter((m) => m.role !== "system");
-
-      // Rebuild non-text blocks from raw (round-trip them untouched)
-      // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
-      const preservedNonText = rawBlocks.filter(
-        (b) => b.type !== "text",
-      ) as unknown as AgentDefinitionMessage["content"];
-
-      const newContent: AgentDefinitionMessage["content"] = value.trim()
-        ? [{ type: "text", text: value }, ...preservedNonText]
-        : preservedNonText;
-
-      const updated: AgentDefinitionMessage[] =
-        newContent.length > 0
-          ? [{ role: "system", content: newContent }, ...nonSystemMessages]
-          : nonSystemMessages;
-
-      dispatch(setAgentMessages({ id: agentId, messages: updated }));
+      dispatch(
+        setAgentMessages({
+          id: agentId,
+          messages: withAgentSystemInstruction(messages, value),
+        }),
+      );
     },
-    [agentId, messages, rawBlocks, dispatch],
+    [agentId, messages, dispatch],
   );
 
   const handleRemoveNonTextBlock = useCallback(
