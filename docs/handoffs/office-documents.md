@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-08
+updated: 2026-08-09
 repos: [matrx-frontend, aidream, matrx-local]
 ---
 
@@ -60,10 +60,6 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
    fidelity matters before building.
 5. **xlsx "extract" parity note:** xlsx previews client-side via SheetJS (good); the office
    markdown endpoint also handles xlsx if a text view is ever wanted.
-6. **Polish nit (prod-observed 2026-08-08):** pptx preview shows the slide title twice — the
-   card divider says "SLIDE 1 <title>" and the portion markdown's own first heading repeats
-   "Slide 1: <title>". Either strip the leading heading client-side in `OfficePreview` when it
-   duplicates the portion title, or drop the heading from the codec's portion markdown.
 
 ## Done
 

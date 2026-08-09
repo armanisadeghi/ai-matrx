@@ -25,6 +25,7 @@ import type {
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import type {
   ValueMapping,
@@ -40,6 +41,7 @@ import {
 import { resolveShortcutMappings } from "@/features/agent-shortcuts/utils/resolveShortcutMappings";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
 import { registerSurfaceWritePolicies } from "@/features/surfaces/runtime/surface-writeback";
+import { getSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
 import {
   promptForValues,
@@ -352,13 +354,40 @@ export const launchAgentExecution = createAsyncThunk<
   // text_before, text_after, content, context), empty-floored when the surface
   // didn't emit them, so an agent variable bound to a generic value never
   // silently resolves to nothing (the v2 regression that left ~14 surfaces
-  // without text_before/text_after). A context-free launch — no scope AND no
-  // surface — is left untouched so we don't fabricate a surface where there is
-  // none. See features/surfaces/utils/baseline-scope.ts.
-  const surfaceName = runtime?.surfaceName;
+  // without text_before/text_after). A context-free launch — no scope, no
+  // surface, and no mounted surface runtime — is left untouched so we don't
+  // fabricate a surface where there is none. See
+  // features/surfaces/utils/baseline-scope.ts.
+  //
+  // Surface auto-adoption: a launch that carries NEITHER surfaceName NOR an
+  // applicationScope adopts the mounted <SurfaceRuntimeProvider> (deepest
+  // wins) — name AND live scope together. A mounted provider is a live,
+  // DECLARED surface, so this is not fabrication; the route-prefix guess
+  // (detectActiveSurface) stays out of this path because a name without a
+  // mounted runtime has no scope and would fabricate one. Explicit caller
+  // values always win, and a scope-only launch (scope without name) is left
+  // exactly as the caller built it.
+  let surfaceName = runtime?.surfaceName;
+  let adoptedScope: ApplicationScope | undefined;
+  if (!surfaceName && runtime?.applicationScope === undefined) {
+    const mounted = getSurfaceRuntime();
+    if (mounted) {
+      surfaceName = mounted.surfaceName;
+      try {
+        adoptedScope = await mounted.getScope();
+      } catch (err) {
+        // Loud, non-fatal: the launch proceeds surface-named but scope-less.
+        console.error(
+          `[surfaces] auto-adopted runtime "${mounted.surfaceName}" threw in getScope() — launching without its scope`,
+          err,
+        );
+      }
+    }
+  }
+  const callerOrAdoptedScope = runtime?.applicationScope ?? adoptedScope;
   const baselineApplicationScope =
-    runtime?.applicationScope !== undefined || surfaceName
-      ? withBaselineScope(runtime?.applicationScope)
+    callerOrAdoptedScope !== undefined || surfaceName
+      ? withBaselineScope(callerOrAdoptedScope)
       : undefined;
   const applicationScope =
     surfaceName && baselineApplicationScope

@@ -32,6 +32,18 @@ repos: [matrx-frontend, aidream]
   Login: `/login` admin@admin.com / Password1234#; run an agent from the
   header "Agents for this page" popover.
 
+## Avalanche campaign (Arman's directive, 2026-08-08)
+
+Roll agent-writable targets across every surface where agent writes make
+sense (judgment bar in the `surface-write-targets` skill — the campaign
+recipe). Each agent: one surface (multiple data sets), live-agent verify,
+then fire 3-5 self-replicating chips. Chips fired this session:
+content-plan-node policy upgrade, notes editor, schedules form, CRM
+create-party, marketing-page full coverage (the richest surface — nearly
+every input should be agent-drivable; also spawns chips for the other
+marketing surfaces). Later: specialized cheap agents per surface replace
+Badass Agent for these writes.
+
 ## Remaining work
 
 1. **aidream `block_stream.py` stays PARKED** — pipeline runs still stream
@@ -73,6 +85,7 @@ repos: [matrx-frontend, aidream]
 - Marketing-page targets live (`page_meta_tags`, `page_target_keyword`, `page_supporting_keywords`, `page_draft_content`) + LSI kind components' user-origin buttons.
 - **Agent-origin stream side wired (2026-08-08)** — `apply_surface_write` inline tool injected per turn from `listAgentWritableTargets()`, routed to `applySurfaceWrite(origin:"agent")`; decline = non-error result. **E2E-verified live** on the marketing-page workspace: agent call → ask confirm → Apply → `updatePageIntent` saved + fields updated + loop resumed.
 - `pnpm type-check` green; aidream ORM model for `ui.ui_surface_write_target` generated and in the deployed build (`/health/version` SHA verified 2026-08-08).
+- **Tasks surface agent-writable (2026-08-08)** — second adopter, 8 ask targets, handlers in `TaskEditorBody.tsx`; live-verified (4 targets one run). Campaign skill `.claude/skills/surface-write-targets/` written; 5 self-replicating chips fired.
 
 ## Decisions needed (Arman)
 

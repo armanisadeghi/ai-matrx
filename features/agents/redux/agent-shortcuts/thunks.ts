@@ -216,7 +216,11 @@ import {
   mergePartialCategory,
 } from "../agent-shortcut-categories/slice";
 import { sklActions } from "@/features/agent-connections/redux/skl/slice";
-import type { SklRenderDefinition } from "@/features/agent-connections/redux/skl/types";
+import type {
+  SklRenderDefinition,
+  RenderDefinitionBlockType,
+  RenderDefinitionVisibility,
+} from "@/features/agent-connections/redux/skl/types";
 import { categoryRowToDef } from "../agent-shortcut-categories/converters";
 import type { CategoryApiRow } from "../agent-shortcut-categories/types";
 import { mergePartialAgent } from "@/features/agents/redux/agent-definition/slice";
@@ -1164,8 +1168,10 @@ interface UnifiedMenuShortcutItem extends ShortcutApiRow {
 
 /**
  * Content-block wire row from `agent.context_menu_view` — backed by
- * `skill.render_definition` (block items carry only the menu-relevant
- * columns; `user_id` is the view's alias for `created_by`).
+ * `skill.render_definition` (`user_id` is the view's alias for
+ * `created_by`). Since the 2026-08-08 view update the wire also carries
+ * the classification columns (`block_type` / `skill_id` / `visibility`),
+ * so hydration delivers the full row.
  */
 interface UnifiedMenuContentBlockItem {
   type: "content_block";
@@ -1177,6 +1183,10 @@ interface UnifiedMenuContentBlockItem {
   icon_name: string;
   sort_order: number | null;
   template: string;
+  // Optional: a stale/cached payload from the pre-2026-08-08 view lacks these.
+  block_type?: RenderDefinitionBlockType | null;
+  skill_id?: string | null;
+  visibility?: RenderDefinitionVisibility | null;
   is_active: boolean | null;
   user_id: string | null;
   organization_id: string | null;
@@ -1361,6 +1371,20 @@ export const fetchUnifiedMenu = createAsyncThunk<
                   iconName: blockItem.icon_name,
                   sortOrder: blockItem.sort_order ?? 0,
                   template: blockItem.template,
+                  // Merge is Object.assign-based — omit (rather than null out)
+                  // classification fields if a stale/cached payload lacks them.
+                  ...(blockItem.block_type != null
+                    ? { blockType: blockItem.block_type }
+                    : {}),
+                  ...(blockItem.skill_id !== undefined
+                    ? { skillId: blockItem.skill_id }
+                    : {}),
+                  ...(blockItem.visibility != null
+                    ? {
+                        visibility: blockItem.visibility,
+                        isPublic: blockItem.visibility === "public",
+                      }
+                    : {}),
                   isActive: blockItem.is_active ?? true,
                   userId: scopeFields.userId,
                   organizationId: scopeFields.organizationId,

@@ -125,6 +125,7 @@ Same rule as migrations, one layer up: **a commit that is not pushed, and a push
 > `--no-migrate` / `--no-gates` flags, per-invocation.
 
 - **Deploy:** `./scripts/release.sh` / `./ship.sh` (applies pending FE migrations, bumps, tags, pushes). **Vercel builds ONLY for release-prefixed commits** (`vercel.json` → `scripts/vercel-ignore-build.sh`) — plain pushes to `main` are skipped so agent traffic cannot start a second overlapping ~20-minute production build. The prefix picks the deployment (see Build gate): `release:` → main app only; `release-admin:` / `release-demos:` → that subdomain only; `release-all:` → all three. Ship a satellite with `./ship.sh "msg" --target admin|demos|all`. Sibling repos: `aidream` → its own `./scripts/release.sh` (Coolify auto-deploys on push; `/health/version` returns the deployed git SHA — compare to `origin/main`). `my-matrx` → push to `main` (Vercel GitHub integration).
+- **PR/branch sessions: your code auto-merges to `main` and goes LIVE within ~30 minutes; branches are then deleted.** Nobody reviews PRs — they auto-approve. There is no not-yet-live code: never document "not deployed yet" / "pending merge" (false within the half hour, and Arman reviews only the live app), and never spend output deciding what to do with your PR.
 - **Report deployed state, never intended state.** "Built and verified" ≠ "shipped". If you didn't deploy, say so in the same breath as the completion claim.
 - **Verify against production, not localhost** — hit the real URL and confirm your change answers there.
 - **Half-deployed is the dangerous state.** For a cross-repo feature, shipping only some repos can break a surface that previously worked (page JS calling a global that exists only in the undeployed half fails harder than the old code did).
@@ -260,9 +261,16 @@ A signed S3 URL (`?X-Amz-Signature=…&Expires=…`) expires and breaks days lat
 - **A column the public web reads MUST hold a public URL.** Register it with the DB-edge guard (`migrations/mtx_public_media_url_guard.sql`): `insert into mtx_public_url_guard(table_name,column_name)…` + `mtx_public_url_guard_trigger`. Non-durable writes get logged + queued to `mtx_media_heal_queue`.
 - **Surface violations loudly** — `reportMediaDurabilityViolation()` (same file) screams when an expiring URL hits a render/store path. That's a defect, not something to silently fix.
 
+## Pattern Patrols — recurring mistakes become scheduled, certified sweeps
+
+System (canonical, cross-repo): `/Users/armanisadeghi/code/common-docs/systems/pattern-patrols/FEATURE.md` + its `PATROL_REGISTRY.md` (10 live patrols: dead ends, unused primitives, mobile breakage, light/dark, copy-everywhere, emojis, browser dialogs, bare Loading, coming-soon compliance, type-suppression debt). Recurring runs execute in Codex; certification by a second adversarial agent is mandatory for every fix batch. **Two standing duties for EVERY agent in this repo — invoke the `pattern-patrol` skill for the mechanics:**
+
+1. **Log sightings, don't fix off-mission.** Spot a violation of a registered patrol while doing something else → one line in [`.matrx/PATROL_SIGHTINGS.md`](./.matrx/PATROL_SIGHTINGS.md), keep moving.
+2. **Nominate patterns.** When a mistake you're fixing is a recurring CLASS (third occurrence, past Arman rant, a check you wish existed) — stop and tell Arman it's a patrol candidate, with real grep counts as evidence. The registry is meant to grow from 10 toward 50+.
+
 ## Found defects & task tracking
 
-Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Four-file task system: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks).
+Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Task system files: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks), `.matrx/PATROL_SIGHTINGS.md` (registered-pattern sightings — see Pattern Patrols above).
 
 ## 🚨 An env var is a VALUE, never a TOGGLE — a flag in env fails silently and invisibly
 
