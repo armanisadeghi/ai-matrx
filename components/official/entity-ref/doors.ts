@@ -52,8 +52,13 @@ export interface EntityDoors {
  *
  * `hrefOverride` wins over the registry route — for records that live in two
  * shells (a system agent under `/administration/…` vs a personal one under
- * `/agents/…`). Unknown tokens degrade to "no doors", never throw: a surface
- * passing a token we don't register yet must still render its text.
+ * `/agents/…`). It is honoured EXACTLY: an explicit `null` means "this
+ * particular record has no door" and must not fall through to the registry,
+ * which would send the user somewhere the caller deliberately ruled out. Only
+ * `undefined` (no opinion) defers.
+ *
+ * Unknown tokens degrade to "no doors", never throw: a surface passing a token
+ * we don't register yet must still render its text.
  */
 export function resolveEntityDoors(
   token: string,
@@ -63,7 +68,10 @@ export function resolveEntityDoors(
   const info = tryGetEntityInfo(token);
   const peekKind = PEEK_KEY_BY_TOKEN[token] ?? token;
   return {
-    href: hrefOverride ?? info?.hrefFor?.(id) ?? null,
+    href:
+      hrefOverride !== undefined
+        ? hrefOverride
+        : (info?.hrefFor?.(id) ?? null),
     canPeek: hasPeek(peekKind),
     peekKind,
     Icon: info?.Icon ?? null,

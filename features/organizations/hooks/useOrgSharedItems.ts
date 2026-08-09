@@ -11,7 +11,7 @@
 
 import React from "react";
 import { supabase } from "@/utils/supabase/client";
-import { getShareableResource } from "@/utils/permissions/registry";
+import { getResourceSharePath } from "@/utils/permissions/registry";
 import { listOrgShareGrants } from "@/utils/permissions/orgModeration";
 import type { OrgResourceEntry } from "../resource-catalogue";
 
@@ -51,9 +51,8 @@ export function useOrgSharedItems(
     (async () => {
       setLoading(true);
       const titleCol = entry.titleColumn ?? "id";
-      const sharePath = entry.shareKey ? getShareableResource(entry.shareKey) : undefined;
       const hrefFor = (id: string): string | null =>
-        sharePath ? sharePath.urlPathTemplate.replace("{id}", id) : null;
+        entry.shareKey ? getResourceSharePath(entry.shareKey, id) : null;
 
       try {
         const db = (

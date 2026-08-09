@@ -84,13 +84,26 @@ export function ShareModal({
   const [emailSent, setEmailSent] = useState(false);
   const { toast } = useToast();
 
-  const getShareUrl = () => {
+  const getShareUrl = (): string | null => {
+    const path = getResourceSharePath(resourceType, resourceId);
+    if (!path) return null;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-    return `${baseUrl}${getResourceSharePath(resourceType, resourceId)}`;
+    return `${baseUrl}${path}`;
   };
 
   // Email link to self
   const handleEmailLink = async () => {
+    const shareUrl = getShareUrl();
+    if (!shareUrl) {
+      // Never email a link we can't build — a broken URL in someone's inbox is
+      // the worst dead end we can ship.
+      toast({
+        title: "No shareable link for this item yet",
+        description: `"${getResourceTypeLabel(resourceType)}" has no page to open. Sharing access still works; only the emailed link is unavailable.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setEmailingLink(true);
     try {
       const response = await fetch("/api/sharing/email-link", {
@@ -99,7 +112,7 @@ export function ShareModal({
         body: JSON.stringify({
           resourceType: getResourceTypeLabel(resourceType),
           resourceName,
-          shareUrl: getShareUrl(),
+          shareUrl,
         }),
       });
 

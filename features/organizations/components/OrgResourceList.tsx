@@ -224,61 +224,50 @@ export function OrgResourceList({
                     })}`
                   : ""}
               </span>
-              {doors.canPeek && (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Quick look at ${item.title || "record"}`}
-                  title={`Quick look at ${item.title || "record"}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setPeekId(item.id);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setPeekId(item.id);
-                    }
-                  }}
-                  className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                </span>
-              )}
             </div>
           </>
         );
 
+        // The peek control is a SIBLING of the card link, never a child — an
+        // interactive control inside an anchor is invalid HTML and makes the
+        // click target ambiguous.
+        const peekControl = doors.canPeek ? (
+          <button
+            type="button"
+            aria-label={`Quick look at ${item.title || "record"}`}
+            title={`Quick look at ${item.title || "record"}`}
+            onClick={() => setPeekId(item.id)}
+            className="absolute bottom-2 right-2 inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </button>
+        ) : null;
+
         // A card with no route and no peek is NOT rendered as a button — a
         // clickable-looking tile that goes nowhere is the dead end this fixes.
-        if (href) {
-          return (
-            <Link
-              key={item.id}
-              href={href}
-              className={`${CARD_CLASS} cursor-pointer hover:bg-accent/50 hover:border-primary/30`}
-            >
-              {body}
-            </Link>
-          );
-        }
-        if (doors.canPeek) {
-          return (
-            <button
-              type="button"
-              key={item.id}
-              onClick={() => setPeekId(item.id)}
-              className={`${CARD_CLASS} cursor-pointer hover:bg-accent/50 hover:border-primary/30`}
-            >
-              {body}
-            </button>
-          );
-        }
-        return (
-          <div key={item.id} className={CARD_CLASS}>
+        const card = href ? (
+          <Link
+            href={href}
+            className={`${CARD_CLASS} h-full cursor-pointer hover:bg-accent/50 hover:border-primary/30`}
+          >
             {body}
+          </Link>
+        ) : doors.canPeek ? (
+          <button
+            type="button"
+            onClick={() => setPeekId(item.id)}
+            className={`${CARD_CLASS} h-full w-full cursor-pointer hover:bg-accent/50 hover:border-primary/30`}
+          >
+            {body}
+          </button>
+        ) : (
+          <div className={`${CARD_CLASS} h-full`}>{body}</div>
+        );
+
+        return (
+          <div key={item.id} className="relative">
+            {card}
+            {peekControl}
           </div>
         );
       })}

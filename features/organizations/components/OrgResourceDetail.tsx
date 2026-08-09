@@ -53,7 +53,7 @@ import {
   getOrganizationMembers,
 } from "@/features/organizations/service";
 import { revokeOrgShare } from "@/utils/permissions/orgModeration";
-import { getShareableResource } from "@/utils/permissions/registry";
+import { getResourceSharePath } from "@/utils/permissions/registry";
 import {
   getEntry,
   getContentRole,
@@ -616,11 +616,9 @@ function MineRow({
 // ─── helpers ──────────────────────────────────────────────────────────────
 
 function itemHref(entry: OrgResourceEntry, id: string): string | null {
-  // Mirror useOrgSharedItems' href derivation for the "yours" side.
-  const shareable = entry.shareKey
-    ? getShareableResource(entry.shareKey)
-    : undefined;
-  return shareable ? shareable.urlPathTemplate.replace("{id}", id) : null;
+  // ONE resolver (entity registry first) — reading url_path_template directly
+  // is how surfaces ended up linking at routes that no longer exist.
+  return entry.shareKey ? getResourceSharePath(entry.shareKey, id) : null;
 }
 
 function CenterState({ children }: { children: React.ReactNode }) {

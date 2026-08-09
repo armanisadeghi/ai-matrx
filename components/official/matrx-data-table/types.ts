@@ -90,9 +90,18 @@ export interface MatrxColumnDef<T> {
      * Canonical entity token this column's ids point at (`agent`, `note`, …).
      * THE DOOR LAW made declarative: the cell resolves route + new tab + peek
      * from the registries, so a column of ids stops being a dead end without
-     * any per-table wiring. `href` / `onOpen` still win when both are set.
+     * hand-wiring a link. `href` / `onOpen` still win when both are set.
+     * A function form resolves the token per row (an audit log whose target
+     * type varies by row).
+     *
+     * `"auto"` derives the token from the COLUMN NAME (`task_id` → `task`).
+     * It is opt-in on purpose: the guess is only correct when you have checked
+     * the actual FK. `scheduler.sch_run.task_id` references `scheduler.sch_task`,
+     * not the workspace `task` the name implies, and `app_id` /
+     * `conversation_id` / `file_id` / `workflow_id` each have several candidate
+     * tables. A wrong door opens a DIFFERENT record — worse than no door.
      */
-    token?: string | ((row: T) => string | null | undefined);
+    token?: string | null | "auto" | ((row: T) => string | null | undefined);
     href?: (id: string, row: T) => string | null | undefined;
     onOpen?: (
       id: string,
@@ -263,6 +272,14 @@ export interface MatrxDataTableDetailConfig<T> {
   headerActions?: (row: T) => ReactNode;
   defaultWidth?: number;
   enabled?: boolean;
+  /**
+   * Override the column-name → entity-token guess used by the default
+   * inspector (side panel AND row window). Required for a table whose column
+   * name collides with a token it does not point at — `sch_run.task_id` is a
+   * SCHEDULED task, not a workspace `task`. Return `null` to keep an id
+   * copy-only; a wrong door is worse than no door.
+   */
+  tokenForField?: (key: string) => string | null;
 }
 
 export interface MatrxDataTableWindowConfig<T> {

@@ -8,7 +8,7 @@
 
 import React from "react";
 import { Workflow } from "lucide-react";
-import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
+import { supabase } from "@/utils/supabase/client";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
@@ -30,10 +30,13 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data } = await fromDeprecatedTable(
-        "workflow",
-        "features/organizations/peek/kinds/WorkflowPeek.tsx",
-      )
+      // The token's real table is `workflow.definition`. This read used to go
+      // through `fromDeprecatedTable("workflow")`, which unconditionally
+      // resolves to an error — so the peek could never show a row, and with
+      // `/workflows/<id>` also nonexistent the whole surface was inert.
+      const { data } = await supabase
+        .schema("workflow")
+        .from("definition")
         .select("name, description, created_at")
         .eq("id", id)
         .maybeSingle();

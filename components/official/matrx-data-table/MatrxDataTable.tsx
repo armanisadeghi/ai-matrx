@@ -904,6 +904,7 @@ export function MatrxDataTable<T>({
               recordKind={copy?.rowKind}
               recordLabel={copy?.label}
               location={copy?.location}
+              tokenForField={detail?.tokenForField}
             />
           )}
         </SidePanelSurface>
@@ -943,6 +944,7 @@ export function MatrxDataTable<T>({
                 recordKind={copy.rowKind}
                 recordLabel={copy.label}
                 location={copy.location}
+                tokenForField={detail?.tokenForField}
               />
             ) : undefined)
           }
@@ -1001,6 +1003,8 @@ function renderCell<T>(
       typeof col.fk?.forbidden === "function"
         ? col.fk.forbidden(raw, row)
         : Boolean(col.fk?.forbidden);
+    const declaredToken =
+      typeof col.fk?.token === "function" ? col.fk.token(row) : col.fk?.token;
     return (
       <MatrxUuidCell
         value={raw}
@@ -1009,14 +1013,17 @@ function renderCell<T>(
           (typeof col.header === "string" ? col.header : col.id)
         }
         forbidden={forbidden}
+        // `token: "auto"` opts INTO the column-name guess. It is opt-in, not
+        // the default, because the guess is only safe when the author has
+        // checked the FK: `scheduler.sch_run.task_id` points at
+        // `scheduler.sch_task`, not the workspace `task` the name implies, and
+        // `app_id` / `conversation_id` / `file_id` / `workflow_id` each have
+        // several candidate tables. A wrong door sends the user to a different
+        // record and is worse than no door at all.
         token={
-          (typeof col.fk?.token === "function"
-            ? col.fk.token(row)
-            : col.fk?.token) ??
-          // THE DOOR LAW, applied without per-table wiring: a column literally
-          // named `<token>_id` gets its registry route + peek for free. Strict
-          // exact-match only — see `tokenFromColumnName`.
-          tokenFromColumnName(col.id ?? col.accessorKey ?? "")
+          declaredToken === "auto"
+            ? tokenFromColumnName(col.id ?? col.accessorKey ?? "")
+            : declaredToken
         }
         href={col.fk?.href?.(raw, row)}
         onOpen={

@@ -13,7 +13,7 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { Input } from "@/components/ui/input";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { supabase } from "@/utils/supabase/client";
-import { getShareableResource } from "@/utils/permissions/registry";
+import { getResourceSharePath } from "@/utils/permissions/registry";
 import type { OrgResourceEntry } from "../resource-catalogue";
 import { ResourcePeekHost } from "../peek/ResourcePeekHost";
 import { hasPeek } from "../peek/kinds-list";
@@ -95,11 +95,8 @@ export function ContainerResourceSheet({
   if (!entry) return null;
   const Icon = entry.icon;
   const peekable = hasPeek(entry.key);
-  const shareable = entry.shareKey
-    ? getShareableResource(entry.shareKey)
-    : undefined;
   const hrefFor = (id: string): string | null =>
-    shareable ? shareable.urlPathTemplate.replace("{id}", id) : null;
+    entry.shareKey ? getResourceSharePath(entry.shareKey, id) : null;
   const filtered = items.filter(
     (it) =>
       it.title.toLowerCase().includes(query.toLowerCase()) ||

@@ -13,6 +13,52 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D137 — `platform.shareable_resource_registry.url_path_template` is a stale second route authority (2026-08-09)
+
+The DB registry carries a per-resource `url_path_template` that competes with the entity
+registry's `hrefFor` and has drifted badly. Live rows still advertise routes that do not
+exist: `app` → `/apps/{id}` (real: `/agent-apps/{id}`), plus `/skills/{id}`,
+`/workflows/{id}`, `/quizzes/{id}`, `/flashcards/{id}`, `/code/files/{id}`,
+`/code/folders/{id}`, `/code/repos/{id}`, `/runs/{id}`, `/scopes/{id}`,
+`/seo/keywords/{id}`, `/marketing/sites/{id}`, `/crm/campaigns/{id}`,
+`/education/media/{id}`; `transcript` → `/transcripts/{id}` (real:
+`/transcripts/processor?focus=`), `data_store` → `/rag/data-stores/{id}` (real:
+`?store_id=`). `workflow_trigger` is structurally broken — `/workflows/{id}/triggers/{id}`
+uses one placeholder for two different ids. `feature_doc` / `learn_doc` use `{slug}`, which
+`{id}` substitution never fills.
+
+These feed the **public share-link landing page** (`app/(public)/s/[token]/`), the
+shared-with-you message card, and the org sharing surfaces — i.e. links that reach other
+people.
+
+**Mitigated, not fixed** (`utils/permissions/registry.ts::getResourceSharePath`, 2026-08-09):
+the entity registry is consulted first, the template is now only a fallback, a template with
+a leftover `{…}` placeholder returns null, and the `/${resourceType}/${id}` fabrication is
+gone. Callers handle null honestly instead of emailing a broken URL.
+
+**Open remainder:** the stale rows themselves. Either correct each `url_path_template` in
+`platform.shareable_resource_registry` (then regenerate the TS mirror with
+`pnpm tsx scripts/regen-shareable-registry-snapshot.ts`), or drop the column and let the
+entity registry be the single route authority — which is the doctrine-correct end state
+("one canonical path per operation"). Needs a decision: the registry is shared with aidream.
+
+### D138 — no canonical route for a user account, so every admin console dead-ends on `user_id` (2026-08-09)
+
+There is no `user` entity token and no `/users/<id>` (or equivalent) route, so every admin
+surface that names an actor — audit log, accounts, admins, usage, preferences drift,
+installations, catalogs, feedback — can only render a copyable UUID or a bare email. This is
+the single most common remaining dead end in `(admin)`. Fix: give `/administration/users` a
+deep-link param that selects one account (and register a token + `hrefFor`), then the
+existing `MatrxUuidCell token=` wiring lights every one of those columns up at once.
+
+### D139 — `workflow` has no detail route in this repo (2026-08-09)
+
+`/workflows/[id]` does not exist anywhere in `app/`; workflow editing lives in aidream's
+separate `apps/workflow-studio` Vite app. Several surfaces hard-coded `/workflows/<id>` and
+were shipping 404s (org workflows tile, the workflow peek, the share registry). Those are now
+door-less rather than broken, but a workflow named in this app still can't be opened. Decide:
+link out to workflow-studio with a real origin, or build a detail route here.
+
 ### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
 
 `scripts/type-escape-baseline.json` is far behind the tree — five categories are ABOVE baseline

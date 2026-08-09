@@ -9,6 +9,7 @@ import { DeleteTranscriptDialog } from "./DeleteTranscriptDialog";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { TranscriptsProcessorHeader } from "./TranscriptsProcessorHeader";
 import { useTranscripts } from "../hooks/useTranscripts";
+import { fetchTranscriptById } from "../service/transcriptsService";
 import { useToastManager } from "@/hooks/useToastManager";
 import { Loader2, Menu } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
@@ -37,13 +38,54 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
     initialize();
   }, [initialize]);
 
-  // Deep-link from hub cards: /transcripts/processor?focus=<id>
+  // Deep-link: /transcripts/processor?focus=<id> — the canonical route for a
+  // transcript (entity registry `hrefFor`), so it must work for transcripts
+  // that are NOT in the sidebar list. That list is scoped "mine" (VIEW LAW), so
+  // matching against it alone silently no-ops on every shared/org transcript —
+  // the user follows a link and lands on whatever was already open, with no
+  // error. Fall back to reading the one row by id (RLS decides), and say so
+  // out loud when it isn't reachable.
   useEffect(() => {
-    if (!focusId || transcripts.length === 0) return;
+    if (!focusId) return;
     if (activeTranscript?.id === focusId) return;
-    const target = transcripts.find((t) => t.id === focusId);
-    if (target) setActiveTranscript(target);
-  }, [focusId, transcripts, activeTranscript?.id, setActiveTranscript]);
+
+    const inList = transcripts.find((t) => t.id === focusId);
+    if (inList) {
+      setActiveTranscript(inList);
+      return;
+    }
+    if (isLoading) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const target = await fetchTranscriptById(focusId);
+        if (cancelled) return;
+        if (target) {
+          setActiveTranscript(target);
+        } else {
+          toast.error(
+            "That transcript isn't available — it may have been deleted, or it isn't shared with you.",
+          );
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Failed to open the linked transcript", err);
+          toast.error("Couldn't open that transcript.");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    focusId,
+    transcripts,
+    activeTranscript?.id,
+    setActiveTranscript,
+    isLoading,
+    toast,
+  ]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

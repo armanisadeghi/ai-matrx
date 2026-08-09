@@ -6,7 +6,8 @@
  * Pattern (copy this for new kinds):
  *   1. fetch the one row by id from the kind's table
  *   2. drop fields into <PeekDialog> + <PeekField>
- *   3. set href to the kind's detail route
+ *   3. pass `token` + `id` — PeekDialog asks the entity registry for the
+ *      route. Never hard-code an href: six peeks that did shipped 404s.
  *
  * TODO(file-peek-media): for image/pdf mimes, render an inline preview through
  * the universal file handler (features/files) instead of metadata-only.

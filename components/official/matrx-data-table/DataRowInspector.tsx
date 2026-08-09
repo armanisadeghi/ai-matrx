@@ -3,8 +3,10 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
 import { isUuidValue, MatrxUuidCell } from "./MatrxUuidCell";
+
+/** No field is a door unless the caller says which token it points at. */
+const noFieldToken = (): string | null => null;
 
 function formatValue(value: unknown): string {
   if (value == null) return "—";
@@ -43,6 +45,7 @@ export function DataRowInspector({
   recordKind = "record",
   recordLabel,
   location,
+  tokenForField = noFieldToken,
 }: {
   row: unknown;
   title?: ReactNode;
@@ -55,6 +58,16 @@ export function DataRowInspector({
   recordLabel?: string;
   /** Where the user is, in words, for field agent payloads. */
   location?: string;
+  /**
+   * Maps one of this record's field names to the entity token its id points at,
+   * turning that field into a door (route + peek).
+   *
+   * Defaults to NO doors, because this inspector renders arbitrary tables and a
+   * wrong door opens a different record. A caller that has checked its FKs can
+   * pass `tokenFromColumnName` (from `components/official/entity-ref/doors`) to
+   * open every `<token>_id` field, or its own stricter map.
+   */
+  tokenForField?: (key: string) => string | null;
 }) {
   const entries = isPlainObject(row)
     ? Object.entries(row)
@@ -103,7 +116,7 @@ export function DataRowInspector({
                     <MatrxUuidCell
                       value={value}
                       label={key}
-                      token={tokenFromColumnName(key)}
+                      token={tokenForField(key)}
                     />
                   </dd>
                 </div>

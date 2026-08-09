@@ -12,7 +12,10 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useSharing, useIsOwner } from "@/utils/permissions/hooks";
-import { getResourceTypeLabel } from "@/utils/permissions/registry";
+import {
+  getResourceSharePath,
+  getResourceTypeLabel,
+} from "@/utils/permissions/registry";
 import type { ResourceType } from "@/utils/permissions/types";
 import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
@@ -20,7 +23,6 @@ import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrg
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
 import { useToast } from "@/components/ui/use-toast";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 
 export interface ShareModalWindowProps {
   isOpen: boolean;
@@ -54,45 +56,16 @@ export default function ShareModalWindow({
 
   /**
    * A share URL is the highest-stakes door we build: the user sends it to
-   * someone else, and a 404 lands in a stranger's inbox. So the route comes
-   * from the entity registry wherever the resource type maps to a canonical
-   * token, and the remaining entries are verified routes that predate it.
-   *
-   * There is deliberately NO `/${resourceType}/${resourceId}` fallback — that
-   * guess is what shipped `/workflows/<id>`, `/quizzes/<id>`,
-   * `/flashcards/<id>` and `/collections/<id>` share links to routes that do
-   * not exist. An unmappable type now yields no link at all, which the UI can
-   * say honestly.
+   * someone else, and a 404 lands in a stranger's inbox. `getResourceSharePath`
+   * is the ONE resolver (entity registry first, share-registry template as
+   * fallback, no guessing) and returns null when the resource genuinely has no
+   * page — which we say out loud rather than emailing a broken link.
    */
-  const RESOURCE_TYPE_TO_TOKEN_LOCAL: Record<string, string> = {
-    note: "note",
-    task: "task",
-    tasks: "task",
-    cx_conversation: "conversation",
-    udt_datasets: "dataset",
-    structured_list: "structured_list",
-    transcripts: "transcript",
-    cld_files: "file",
-    workflow: "workflow",
-    project: "project",
-    agent: "agent",
-  };
-
-  /** Verified routes for types with no registered entity token. */
-  const RESOURCE_TYPE_PATHS: Record<string, string> = {
-    prompt: `/ai/prompts/edit/${resourceId}`,
-    prompt_actions: `/ai/prompts/actions/${resourceId}`,
-    sandbox_instances: `/sandbox/${resourceId}`,
-  };
-
   const getShareUrl = (): string | null => {
+    const path = getResourceSharePath(resourceType, resourceId);
+    if (!path) return null;
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-    const token = RESOURCE_TYPE_TO_TOKEN_LOCAL[resourceType];
-    const path =
-      (token ? resolveEntityDoors(token, resourceId).href : null) ??
-      RESOURCE_TYPE_PATHS[resourceType] ??
-      null;
-    return path ? `${baseUrl}${path}` : null;
+    return `${baseUrl}${path}`;
   };
 
   const handleEmailLink = async () => {
