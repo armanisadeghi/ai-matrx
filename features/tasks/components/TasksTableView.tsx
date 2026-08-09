@@ -44,6 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/utils/cn";
 import {
   compareTimestamps,
@@ -657,7 +658,7 @@ export default function TasksTableView() {
                   <TableRow
                     key={task.id}
                     className={cn(
-                      "cursor-pointer",
+                      "group/entity-ref cursor-pointer",
                       isSelected && "bg-primary/[0.08] hover:bg-primary/[0.1]",
                     )}
                     onClick={() => dispatch(setSelectedTaskId(task.id))}
@@ -685,16 +686,21 @@ export default function TasksTableView() {
                     </TableCell>
                     <TableCell className="py-1.5 max-w-[200px]">
                       <div className="min-w-0">
-                        <span
+                        {/* THE DOOR LAW: the row click selects the task into
+                            the side editor (no URL); the NAME is the anchor to
+                            the task's canonical route, plus new tab + peek. */}
+                        <EntityRef
+                          token="task"
+                          id={task.id}
+                          name={task.title}
+                          showIcon={false}
                           className={cn(
-                            "block text-[13px] truncate",
+                            "text-[13px]",
                             task.completed
                               ? "line-through text-muted-foreground"
                               : "font-medium text-foreground",
                           )}
-                        >
-                          {task.title}
-                        </span>
+                        />
                         {labels.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-0.5">
                             {labels.slice(0, 2).map((label) => (
@@ -716,14 +722,23 @@ export default function TasksTableView() {
                       </div>
                     </TableCell>
                     <TableCell className="py-1.5 text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-1 min-w-0 max-w-[160px]">
-                        <Folder className="h-3 w-3 shrink-0" />
-                        <span className="truncate">
-                          {task.projectId === UNASSIGNED_PROJECT_ID
-                            ? "Unassigned"
-                            : (task.projectName ?? "—")}
+                      {/* A relationship we can resolve is rendered AND linked:
+                          `projectId` is right here, so the project name opens
+                          its workspace instead of being inert text. */}
+                      {task.projectId &&
+                      task.projectId !== UNASSIGNED_PROJECT_ID ? (
+                        <EntityRef
+                          token="project"
+                          id={task.projectId}
+                          name={task.projectName || "Untitled project"}
+                          className="min-w-0 max-w-[160px]"
+                        />
+                      ) : (
+                        <span className="inline-flex items-center gap-1 min-w-0 max-w-[160px]">
+                          <Folder className="h-3 w-3 shrink-0" />
+                          <span className="truncate">Unassigned</span>
                         </span>
-                      </span>
+                      )}
                     </TableCell>
                     <TableCell className="py-1.5 text-xs text-muted-foreground whitespace-nowrap">
                       <span className="inline-flex items-center gap-1.5">

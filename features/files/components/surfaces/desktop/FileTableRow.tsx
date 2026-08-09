@@ -20,6 +20,16 @@
  * Folders gracefully degrade to em-dash for file-only columns
  * (Extension, MIME, Size, Version) so the row stays aligned with no
  * empty gaps.
+ *
+ * THE DOOR LAW (common-docs/policies/no-dead-ends.md): the name itself
+ * stays a `<button>` because its click means "preview here", not
+ * "navigate" — so the doors ride alongside it as `<EntityDoorControls>`
+ * (Open + new tab), the sanctioned sibling form. Peek is deliberately
+ * off: single-clicking the row already opens the full preview pane, so a
+ * peek button would be a strictly worse duplicate of this surface's own
+ * answer to "which one is that?". Only REAL rows get doors — a virtual
+ * file/folder (a feature-backed adapter row) has no `/files/f/<id>` row
+ * and no stable `folder_path`, and a link that 404s is worse than none.
  */
 
 "use client";
@@ -38,6 +48,8 @@ import {
   formatFileSize,
   formatRelativeTime,
 } from "@/features/files/utils/format";
+import { buildFilesAllFolderUrl } from "@/features/files/utils/url-state";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { FileRagBadge } from "@/features/files/components/core/FileBadges/FileRagBadge";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
@@ -158,7 +170,7 @@ function FileRow({
       <tr
         ref={mergeRef}
         className={cn(
-          "group cursor-pointer border-b text-sm transition-colors",
+          "group/entity-ref group cursor-pointer border-b text-sm transition-colors",
           isPreviewActive
             ? "bg-primary/10 border-l-2 border-l-primary"
             : isFocused
@@ -259,6 +271,15 @@ function FileCell({
                   {file.fileName}
                 </button>
                 <FileRagBadge fileId={file.id} className="shrink-0" />
+                {file.source.kind === "real" && (
+                  <EntityDoorControls
+                    token="file"
+                    id={file.id}
+                    name={file.fileName}
+                    showOpen
+                    disablePeek
+                  />
+                )}
               </span>
               {parentPath ? (
                 <span
@@ -432,7 +453,7 @@ function FolderRow({
       <tr
         ref={setMergedRef}
         className={cn(
-          "group cursor-pointer border-b text-sm transition-colors",
+          "group/entity-ref group cursor-pointer border-b text-sm transition-colors",
           isFocused
             ? "bg-primary/15 ring-1 ring-inset ring-primary/40"
             : selected
@@ -530,6 +551,20 @@ function FolderCell({
                 </span>
               ) : null}
             </div>
+            {folder.source.kind === "real" && (
+              <EntityDoorControls
+                token="folder"
+                id={folder.id}
+                name={folder.folderName}
+                // `folder` has no registry `hrefFor` — folders are addressed by
+                // PATH, not id. `buildFilesAllFolderUrl` is the canonical
+                // builder the shell itself navigates with, so this is the same
+                // destination the row click reaches (and now middle-clickable).
+                href={buildFilesAllFolderUrl(folder.folderPath, "")}
+                showOpen
+                disablePeek
+              />
+            )}
             <FolderRowActions
               visible={hovered}
               onShare={onShare}

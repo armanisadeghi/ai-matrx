@@ -288,6 +288,10 @@ export function SitesPortfolio() {
       header: "Site",
       filter: "text",
       cellKind: "text",
+      // THE DOOR LAW: the whole-row click is a mouse convenience; the name cell
+      // is the real anchor (keyboard, screen reader, cmd/middle-click). Same
+      // destination as `onRowOpen`, built by the one canonical route builder.
+      href: (row) => marketingRoutes.site(row.brand_id, row.id),
       cell: (row) => (
         <div className="flex min-w-52 items-center gap-2.5">
           <SiteIdentityMark site={row} size={30} />

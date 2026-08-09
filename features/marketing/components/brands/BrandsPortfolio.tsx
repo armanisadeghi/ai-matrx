@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Globe2,
@@ -181,6 +182,9 @@ export function BrandsPortfolio() {
       header: "Brand",
       filter: "text",
       cellKind: "text",
+      // THE DOOR LAW: the whole-row click is a mouse convenience; the name cell
+      // is the real anchor (keyboard, screen reader, cmd/middle-click).
+      href: (row) => marketingRoutes.brand(row.id),
       cell: (row) => (
         <div className="flex min-w-52 items-center gap-2.5">
           <SiteIdentityMark site={row} size={30} />
@@ -206,14 +210,19 @@ export function BrandsPortfolio() {
           {row.sites.length === 0 ? (
             <span className="text-xs text-muted-foreground/60">None</span>
           ) : (
+            // Every site named here has an id AND a canonical route — the
+            // chips were inert text listing records the user could not reach.
             row.sites.map((site) => (
-              <span
+              <Link
                 key={site.id}
-                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-foreground"
+                href={marketingRoutes.site(row.id, site.id)}
+                title={`Open ${site.domain}`}
+                onClick={(event) => event.stopPropagation()}
+                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-foreground hover:border-primary/50 hover:bg-muted"
               >
                 <Globe2 className="h-3 w-3 text-muted-foreground" />
                 {site.domain}
-              </span>
+              </Link>
             ))
           )}
         </div>

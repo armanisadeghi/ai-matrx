@@ -250,6 +250,10 @@ export default function TaskAttachmentsPanel({
               key: f.id,
               primary: f.filename,
               secondary: f.mime_type ?? undefined,
+              // THE DOOR LAW: every other Section here links its records; the
+              // Files rows named a file and reached nothing. `f.id` IS the
+              // `files.files` uuid, and `/files/f/<id>` is its canonical route.
+              href: `/files/f/${f.id}`,
               onRemove: () => handleRemove("file", f.id),
             }))}
           />

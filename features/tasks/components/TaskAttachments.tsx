@@ -9,8 +9,8 @@ import {
   Image,
   File,
   Loader2,
-  ExternalLink,
 } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import * as taskService from "@/features/tasks/services/taskService";
 import type { TaskAttachment } from "@/features/tasks/services/taskService";
@@ -81,15 +81,6 @@ export default function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     setDeletingId(null);
   };
 
-  const handleOpen = async (filePath: string) => {
-    // getAttachmentUrl is async since the cloud-files migration (signed URLs
-    // are short-lived, so we fetch one on demand). Fire-and-forget window.open
-    // works because we call it synchronously after the await resolves, while
-    // still inside the click handler's gesture window.
-    const url = await taskService.getAttachmentUrl(filePath);
-    if (url) window.open(url, "_blank");
-  };
-
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -142,15 +133,23 @@ export default function TaskAttachments({ taskId }: TaskAttachmentsProps) {
           {attachments.map((attachment) => (
             <div
               key={attachment.id}
-              className="flex items-center gap-2 group rounded-md px-2 py-1.5 bg-muted/50 hover:bg-muted transition-colors"
+              className="flex items-center gap-2 group/entity-ref group rounded-md px-2 py-1.5 bg-muted/50 hover:bg-muted transition-colors"
             >
               <span className="text-muted-foreground flex-shrink-0">
                 {getFileIcon(attachment.file_type)}
               </span>
               <div className="flex-1 min-w-0">
-                <span className="text-xs text-foreground truncate block">
-                  {attachment.file_name}
-                </span>
+                {/* THE DOOR LAW: an attachment IS a cloud file (its `id` is the
+                    `files.files` uuid), so the name opens the file record —
+                    Open + new tab + peek — instead of the old bespoke button
+                    that minted a short-lived signed URL that later expires. */}
+                <EntityRef
+                  token="file"
+                  id={attachment.id}
+                  name={attachment.file_name}
+                  showIcon={false}
+                  className="text-xs text-foreground"
+                />
                 {attachment.file_size && (
                   <span className="text-xs text-muted-foreground/60">
                     {formatBytes(attachment.file_size)}
@@ -158,14 +157,6 @@ export default function TaskAttachments({ taskId }: TaskAttachmentsProps) {
                 )}
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  type="button"
-                  onClick={() => void handleOpen(attachment.file_path)}
-                  className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-                  title="Open file"
-                >
-                  <ExternalLink size={12} />
-                </button>
                 <button
                   type="button"
                   onClick={() => handleDelete(attachment)}

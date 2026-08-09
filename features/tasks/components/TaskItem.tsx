@@ -12,6 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { UNASSIGNED_PROJECT_ID } from "@/features/tasks/redux/selectors";
 import {
   selectShowAllProjects,
   selectExpandedTasks,
@@ -23,6 +24,7 @@ import {
   updateTaskFieldThunk,
   deleteTaskThunk,
 } from "@/features/tasks/redux/thunks";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import TaskDetails from "./TaskDetails";
 import EditableTaskTitle from "./EditableTaskTitle";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
@@ -82,7 +84,7 @@ export default function TaskItem({
 
   return (
     <div
-      className="relative bg-card rounded-lg border border-border overflow-hidden hover:border-border/80 transition-colors group cursor-pointer"
+      className="relative bg-card rounded-lg border border-border overflow-hidden hover:border-border/80 transition-colors group/entity-ref group cursor-pointer"
       onClick={handleCardClick}
     >
       {/* Loading overlay for operating task */}
@@ -112,7 +114,18 @@ export default function TaskItem({
           <div className="flex-1 min-w-0">
             {showAllProjects && (
               <div className="text-xs mb-0.5 text-muted-foreground">
-                {task.projectName}
+                {/* A relationship we can resolve is rendered AND linked. */}
+                {task.projectId &&
+                task.projectId !== UNASSIGNED_PROJECT_ID ? (
+                  <EntityRef
+                    token="project"
+                    id={task.projectId}
+                    name={task.projectName || "Untitled project"}
+                    showIcon={false}
+                  />
+                ) : (
+                  task.projectName
+                )}
               </div>
             )}
 
@@ -143,10 +156,27 @@ export default function TaskItem({
                   </div>
                 )}
                 {task.attachments && task.attachments.length > 0 && (
-                  <div className="flex items-center gap-1">
+                  // A COUNT IS A DOOR: expanding the card renders
+                  // <TaskDetails> → <TaskAttachmentsPanel>, which lists these
+                  // exact attachments. Previously the count reached nothing.
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dispatch(toggleTaskExpand(task.id));
+                    }}
+                    title={
+                      isExpanded
+                        ? "Hide attachments"
+                        : `Show ${task.attachments.length} attachment${
+                            task.attachments.length === 1 ? "" : "s"
+                          }`
+                    }
+                    className="flex items-center gap-1 rounded px-1 -mx-1 hover:bg-accent hover:text-foreground transition-colors"
+                  >
                     <Paperclip size={12} />
                     <span>{task.attachments.length}</span>
-                  </div>
+                  </button>
                 )}
               </div>
             )}

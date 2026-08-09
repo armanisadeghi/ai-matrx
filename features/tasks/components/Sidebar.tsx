@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { TaskFilterType } from "@/features/tasks/types";
-import { selectProjects } from "@/features/tasks/redux/selectors";
+import {
+  selectProjects,
+  UNASSIGNED_PROJECT_ID,
+} from "@/features/tasks/redux/selectors";
 import {
   selectNewProjectName,
   selectActiveProject,
@@ -34,6 +37,7 @@ import {
   updateProjectThunk,
   deleteProjectThunk,
 } from "@/features/tasks/redux/thunks";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import EditableProjectName from "./EditableProjectName";
 import TaskScopeFilter from "./TaskScopeFilter";
 import { Button } from "@/components/ui/button";
@@ -217,7 +221,7 @@ export default function Sidebar(): JSX.Element {
                         dispatch(setShowAllProjects(false));
                       }
                     }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors group cursor-pointer ${
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors group/entity-ref group cursor-pointer ${
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-foreground hover:bg-accent"
@@ -234,6 +238,20 @@ export default function Sidebar(): JSX.Element {
                         );
                       }}
                     />
+                    {/* THE DOOR LAW: the name is an inline EDITOR (click =
+                        rename), so it can't be an anchor — the doors ride
+                        beside it. Open is off: clicking the row already
+                        filters this pane to the project, and navigating away
+                        would cost the user the list they're standing in.
+                        "Unassigned" is a synthetic bucket, not a row — it has
+                        no record to open, so it gets no doors. */}
+                    {project.id !== UNASSIGNED_PROJECT_ID && (
+                      <EntityDoorControls
+                        token="project"
+                        id={project.id}
+                        name={project.name}
+                      />
+                    )}
                     <span className="ml-auto text-xs bg-muted px-1.5 py-0.5 rounded">
                       {project.tasks.length}
                     </span>

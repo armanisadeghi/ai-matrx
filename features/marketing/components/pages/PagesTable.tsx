@@ -280,6 +280,10 @@ export function PagesTable() {
       header: "Canonical page",
       filter: "text",
       cellKind: "text",
+      // THE DOOR LAW: the whole-row click is a mouse convenience; the title/path
+      // cell is the real anchor (keyboard, screen reader, cmd/middle-click).
+      // Same destination as `onRowOpen` — the nested page workspace.
+      href: (row) => `${sitePath}/pages/${row.id}`,
       cell: (row) => (
         <div className="min-w-64 max-w-xl">
           <div className="flex items-center gap-1.5">
