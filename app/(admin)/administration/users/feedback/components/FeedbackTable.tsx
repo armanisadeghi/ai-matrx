@@ -574,11 +574,25 @@ export default function FeedbackTable() {
     }
     if (openedDeepLink.current === deepLinkId) return;
     const item = feedback.find((f) => f.id === deepLinkId);
-    if (!item) return;
+    if (!item) {
+      // Still fetching — the row may yet arrive, so say nothing.
+      if (loading) return;
+      // Loaded, and the id is not here. Saying nothing would leave the address
+      // bar naming a record the page never showed, which reads as "this link
+      // worked" — the dead end this whole sweep exists to remove. Tell the
+      // operator and drop the param so the URL stops making the claim.
+      openedDeepLink.current = deepLinkId;
+      toast.error("That feedback item isn't in this view", {
+        description:
+          "It may have been deleted, or it's filtered out by the current status/type filters.",
+      });
+      setDeepLink(null);
+      return;
+    }
     openedDeepLink.current = deepLinkId;
     setSelectedFeedback(item);
     setDetailDialogOpen(true);
-  }, [deepLinkId, feedback]);
+  }, [deepLinkId, feedback, loading, setDeepLink]);
 
   const handleDetailOpenChange = useCallback(
     (open: boolean) => {
@@ -590,10 +604,22 @@ export default function FeedbackTable() {
 
   // The detail dialog asks to jump to a related record (its parent). Swap the
   // dialog's subject in place and keep the URL truthful.
+  // A door must reach the record it names. If the related id isn't loaded, the
+  // old code still pointed the URL at it and left the dialog open on the
+  // PREVIOUS record — the address bar naming one item while the screen showed
+  // another. Refuse the jump and say why instead.
   const handleOpenFeedbackById = useCallback(
     (id: string) => {
       const item = feedback.find((f) => f.id === id);
-      if (item) setSelectedFeedback(item);
+      if (!item) {
+        toast.error("That related item isn't in this view", {
+          description:
+            "It may have been deleted, or it's filtered out by the current status/type filters.",
+        });
+        return;
+      }
+      openedDeepLink.current = id;
+      setSelectedFeedback(item);
       setDetailDialogOpen(true);
       setDeepLink(id);
     },

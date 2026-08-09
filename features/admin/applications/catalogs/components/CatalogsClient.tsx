@@ -56,6 +56,21 @@ interface CatalogsClientProps {
  * (the applications history timeline) must be able to open exactly that entry,
  * not just drop the operator on the tab.
  */
+/**
+ * The row a `?entry=` deep link names, searched across ALL applications.
+ *
+ * Deliberately not scoped to the currently-selected app: the id identifies the
+ * record globally, and the record is what tells us which application it belongs
+ * to. Searching within the selected app instead is what made a valid link show
+ * the "belongs to another application" alert.
+ */
+function deepLinkRow(
+  entryId: string | undefined,
+  rows: CatalogEntryRow[],
+): CatalogEntryRow | undefined {
+  return entryId ? rows.find((r) => r.id === entryId) : undefined;
+}
+
 function initialView(
   kind: string | undefined,
   entryId: string | undefined,
@@ -71,9 +86,7 @@ function initialView(
   // drives Back and post-delete routing — dropping the operator on a table the
   // entry was never in. Falling back to `?kind=` still covers the case the row
   // isn't in this page's `rows` yet.
-  const rowKind = entryId
-    ? rows.find((r) => r.id === entryId)?.kind
-    : undefined;
+  const rowKind = deepLinkRow(entryId, rows)?.kind;
   const resolvedKind = rowKind ?? kind;
   if (resolvedKind && entryId)
     return { mode: "edit", kind: resolvedKind, entryId };
@@ -106,7 +119,18 @@ export function CatalogsClient({
   const [rows, setRows] = useState<CatalogEntryRow[]>(() =>
     sortRows(initialRows),
   );
-  const [app, setApp] = useState<string>(initialApp ?? DEFAULT_CATALOG_APP);
+  // The deep-linked ROW's app wins over `?app=` for the same reason its kind
+  // does: the id names one record, and that record knows which application it
+  // belongs to. Without this, `/administration/applications/catalogs?entry=<id>`
+  // (no `?app=`) left the selector on the default app, `appRows` excluded the
+  // entry, and the operator got "belongs to another application" for a record
+  // that was right there.
+  const [app, setApp] = useState<string>(
+    () =>
+      deepLinkRow(initialEntryId, initialRows)?.app ??
+      initialApp ??
+      DEFAULT_CATALOG_APP,
+  );
   const [view, setView] = useState<View>(() =>
     initialView(initialKind, initialEntryId, initialRows),
   );
@@ -122,7 +146,8 @@ export function CatalogsClient({
   useEffect(() => {
     if (lastDeepLink.current === deepLinkKey) return;
     lastDeepLink.current = deepLinkKey;
-    if (initialApp) setApp(initialApp);
+    const nextApp = deepLinkRow(initialEntryId, rows)?.app ?? initialApp;
+    if (nextApp) setApp(nextApp);
     setView(initialView(initialKind, initialEntryId, rows));
   }, [deepLinkKey, initialApp, initialKind, initialEntryId, rows]);
 
