@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { hierarchyService } from "../service/hierarchyService";
 import type {
@@ -138,7 +139,11 @@ export function useCreateOrganization() {
       // Also refresh the full context so the sidebar picks up the new org
       qc.invalidateQueries({ queryKey: KEYS.tree() });
       dispatch(invalidateAndRefetchFullContext() as any);
-      toast.success("Organization created");
+      // The mutation hands back the row; the toast used to drop it, leaving a
+      // brand-new org the user had to go find. Same for project/task below.
+      toast.success("Organization created", {
+        action: toastDoor("organization", org.id),
+      });
     },
     onError: (err: Error) =>
       toast.error("Failed to create organization", {
@@ -183,7 +188,9 @@ export function useCreateProject() {
       // Refresh full context to pick up the new project in the hierarchy
       qc.invalidateQueries({ queryKey: KEYS.tree() });
       dispatch(invalidateAndRefetchFullContext() as any);
-      toast.success("Project created");
+      toast.success("Project created", {
+        action: toastDoor("project", proj.id),
+      });
     },
     onError: (err: Error) =>
       toast.error("Failed to create project", { description: err.message }),
@@ -239,7 +246,9 @@ export function useCreateTask() {
         );
       }
       qc.invalidateQueries({ queryKey: KEYS.tasks(task.project_id ?? "") });
-      toast.success("Task created");
+      toast.success("Task created", {
+        action: toastDoor("task", task.id),
+      });
     },
     onError: (err: Error) =>
       toast.error("Failed to create task", { description: err.message }),

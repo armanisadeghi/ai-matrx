@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Building2, User } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,9 +114,15 @@ export function PartyCreateForm({
       }
 
       for (const message of contactErrors) {
-        toast.error(`Record created, but a contact method failed: ${message}`);
+        // The record exists; a failed contact method is the moment you most
+        // want to open it and fix that by hand.
+        toast.error(`Record created, but a contact method failed: ${message}`, {
+          action: toastDoor("party", party.id),
+        });
       }
-      toast.success(`${displayName} created`);
+      toast.success(`${displayName} created`, {
+        action: toastDoor("party", party.id),
+      });
       onCreated(party.id);
     } catch (error) {
       toast.error(
