@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { TablesUpdate } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -202,35 +203,42 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   // that names a block (the Kind Registry's Assets tab) reaches that block
   // instead of dumping the user on a list of all of them.
   //
-  // The link is read from `window.location` — NOT `useSearchParams`: this
-  // manager is rendered directly, with no Suspense boundary, by both of its
-  // routes, and `useSearchParams` in an unwrapped client component is a build
-  // error in the App Router.
+  // THE URL IS THE ONLY SELECTION — `?block=<id|block_id>`. Both routes wrap
+  // this manager in Suspense, which is what `useSearchParams` needs; reading
+  // `window.location` in a `useState` initializer instead was a real bug on the
+  // main entry path: a server-rendered page computes that initializer with no
+  // `window`, so it stayed null through hydration and the deep link NEVER
+  // resolved — and the sync effect below then read "no selection" and stripped
+  // `?block=` back out of the URL, destroying the shared link the user arrived
+  // with. A parallel `explicitSelection` also outranked the param forever after
+  // the first click, so back/forward and a second link were ignored.
   //
-  // The selection is DERIVED, not seeded by an effect (setState-in-effect is a
-  // lint error here and a cascading render): an explicit click wins from the
-  // moment it happens — including a click that clears the selection, hence the
-  // `{ id }` wrapper rather than a bare `string | null` — and until then the
-  // deep link decides. A `?block=` that matches nothing selects nothing; the
-  // manager opens on its normal empty state rather than faking a record.
-  const [explicitSelection, setExplicitSelection] = useState<{
-    id: string | null;
-  } | null>(null);
-  const [deepLinkRef] = useState<string | null>(() =>
-    typeof window === "undefined"
-      ? null
-      : new URLSearchParams(window.location.search).get(CONTENT_BLOCK_PARAM),
-  );
-  const deepLinkBlockId = deepLinkRef
+  // Deriving from the param alone fixes all three: it survives hydration, it
+  // reacts to navigation, and a click cannot disagree with the address bar
+  // because `setSelectedBlockId` writes the param and this reads it back. A
+  // `?block=` that matches nothing selects nothing; the manager opens on its
+  // normal empty state rather than faking a record.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const deepLinkRef = searchParams.get(CONTENT_BLOCK_PARAM);
+  const selectedBlockId = deepLinkRef
     ? (contentBlocks.find(
         (b) => b.id === deepLinkRef || b.block_id === deepLinkRef,
       )?.id ?? null)
     : null;
-  const selectedBlockId = explicitSelection
-    ? explicitSelection.id
-    : deepLinkBlockId;
-  const setSelectedBlockId = (id: string | null) =>
-    setExplicitSelection({ id });
+  // `router.replace`, not `window.history.replaceState`: a raw history write
+  // does NOT notify `useSearchParams`, so the click would update the address
+  // bar and nothing else. Same call the bundles and MCP consoles use.
+  const setSelectedBlockId = (id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) params.set(CONTENT_BLOCK_PARAM, id);
+    else params.delete(CONTENT_BLOCK_PARAM);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
+  };
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -523,20 +531,10 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
     loadData();
   }, []);
 
-  // Keep the URL pointing at the block on screen, so it can be shared or
-  // reopened. `replaceState` — selecting a block is not a navigation, and the
-  // effect touches only an external system (history), never React state.
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const current = url.searchParams.get(CONTENT_BLOCK_PARAM);
-    if ((selectedBlockId ?? null) === (current ?? null)) return;
-    if (selectedBlockId) {
-      url.searchParams.set(CONTENT_BLOCK_PARAM, selectedBlockId);
-    } else {
-      url.searchParams.delete(CONTENT_BLOCK_PARAM);
-    }
-    window.history.replaceState(window.history.state, "", url.toString());
-  }, [selectedBlockId]);
+  // No URL-sync effect: `setSelectedBlockId` writes the param and the selection
+  // is read back from it, so the two can never drift. The effect this replaced
+  // stripped `?block=` whenever the selection read as empty — which, before the
+  // hydration fix above, was every server-rendered load of a shared link.
 
   // Filtered and searched content blocks
   const categoryMatches = contentBlocks.filter(
