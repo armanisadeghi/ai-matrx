@@ -18,7 +18,9 @@
  *   - route + icon + label  → `getEntityInfo(token)` (features/scopes/registry)
  *   - preview               → `ResourcePeekHost` + `hasPeek` (features/organizations/peek)
  *
- * Safe inside clickable table rows: every control stops propagation.
+ * Safe inside clickable table rows: every control stops propagation, AND so
+ * does the portaled peek dialog (React events travel the React tree, not the
+ * DOM tree — see the seam at the bottom of the render).
  *
  * Adding a door for a new entity type is a registry edit, never a change here:
  * give the token an `hrefFor` in `entityRegistry.ts`, and/or a peek in
@@ -167,6 +169,7 @@ export function EntityRef({
   const Icon = info?.Icon ?? null;
 
   const stop = (e: React.MouseEvent) => e.stopPropagation();
+  const stopAny = (e: React.SyntheticEvent) => e.stopPropagation();
   const labelFit = wrap ? "break-all" : "truncate";
 
   return (
@@ -185,6 +188,11 @@ export function EntityRef({
           href={resolvedHref}
           target={openInNewTab ? "_blank" : undefined}
           rel={openInNewTab ? "noopener noreferrer" : undefined}
+          // A `_blank` navigation is a fresh document load — it cannot read the
+          // client router cache, so prefetching it is a request that can never
+          // be used. `EntityRef` lives in lists; at 50 rows that is 50 wasted
+          // round trips.
+          prefetch={openInNewTab ? false : undefined}
           onClick={(e) => {
             stop(e);
             // A modified click keeps the browser's native new-tab behaviour —
@@ -255,6 +263,7 @@ export function EntityRef({
             href={resolvedHref}
             target="_blank"
             rel="noopener noreferrer"
+            prefetch={false}
             onClick={stop}
             title={`Open ${label} in a new tab`}
             aria-label={`Open ${label} in a new tab`}
@@ -266,12 +275,40 @@ export function EntityRef({
         {extraActions}
       </span>
 
+      {/*
+        The peek dialog is PORTALED to the document body, but React events
+        propagate through the REACT tree, not the DOM tree — so without this
+        seam every click, mousedown and keystroke inside an open peek still
+        reaches whatever clickable container the `EntityRef` was dropped into.
+        That is not theoretical: the notes global-search row toggles its match
+        list on click and `preventDefault`s mousedown to protect the find
+        input's focus, so opening a peek there made the preview un-selectable
+        and collapsed the row when you clicked the peek's own close button.
+
+        The block belongs HERE, not at each call site: `EntityRef` is designed
+        to be dropped inside clickable rows (see the header), so every consumer
+        inherits the bug. `contents` keeps the wrapper out of the layout — it
+        must not become a flex item and open a `gap` beside the name.
+      */}
       {canPeek && peekOpen && (
-        <ResourcePeekHost
-          kind={peekKind}
-          id={id}
-          onClose={() => setPeekOpen(false)}
-        />
+        <span
+          className="contents"
+          onClick={stopAny}
+          onDoubleClick={stopAny}
+          onMouseDown={stopAny}
+          onMouseUp={stopAny}
+          onPointerDown={stopAny}
+          onPointerUp={stopAny}
+          onContextMenu={stopAny}
+          onKeyDown={stopAny}
+          onKeyUp={stopAny}
+        >
+          <ResourcePeekHost
+            kind={peekKind}
+            id={id}
+            onClose={() => setPeekOpen(false)}
+          />
+        </span>
       )}
     </span>
   );

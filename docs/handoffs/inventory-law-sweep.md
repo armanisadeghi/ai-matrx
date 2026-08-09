@@ -48,8 +48,8 @@ conversion that is correct on the main deployment and broken on a satellite, and
 one that is correct for the surface's rare case and wrong for its common one. Adopting `EntityRef` is not a drop-in — the hand-rolled code
 it replaces encodes decisions you must carry over deliberately.
 
-Before replacing hand-rolled code with a shared primitive, answer all nine.
-1-3, 6-7 and 9 are door-specific; 4, 5 and 8 apply to ANY primitive adoption:
+Before replacing hand-rolled code with a shared primitive, answer all ten.
+1-3, 6-7 and 9-10 are door-specific; 4, 5 and 8 apply to ANY primitive adoption:
 
 1. **Where did the old primary click go?** `router.push` (in place) or
    `window.open` (new tab)? Preserve it. A rail, sheet, side panel, or dialog
@@ -148,6 +148,21 @@ Before replacing hand-rolled code with a shared primitive, answer all nine.
    `EntityRef` uses it on the click side, so narrowing with anything else
    guarantees the two halves drift). *(Caught in `GlobalSearchResults`, on a
    claim I had put in a commit message without being able to verify it.)*
+
+10. **A PORTAL DOES NOT ISOLATE EVENTS.** The sibling trap to 9, and the one
+    that reads as impossible: React events propagate through the **React tree,
+    not the DOM tree**, so a dialog portaled to `document.body` still delivers
+    every click, mousedown and keystroke to whatever clickable container its
+    JSX parent sits in. `EntityRef` renders `ResourcePeekHost` as its own
+    child, so opening a peek inside a clickable row meant the row's `onClick`
+    and `onMouseDown → preventDefault()` fired on the peek's body, its close
+    button, and its backdrop — the preview could not be text-selected, and
+    closing it collapsed the row behind it. **Fixed at the primitive** (a
+    propagation seam wraps the peek host), so no consumer needs to know this —
+    but the mechanism generalises: any primitive you extend that renders an
+    overlay as a CHILD owes the same seam, and "it's in a portal" is not the
+    answer. *(Caught in `GlobalSearchResults`; latent in all 13 `EntityRef`
+    consumers.)*
 
 Everything the primitive cannot decide for itself is documented on the props;
 read them rather than inferring from a neighbouring call site.

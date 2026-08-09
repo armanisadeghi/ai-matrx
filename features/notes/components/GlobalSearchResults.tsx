@@ -52,6 +52,16 @@ export function GlobalSearchResults({
   }, []);
 
   /**
+   * A COUNT IS A DOOR (no-dead-ends.md): "3" must REACH those three matches.
+   * Expand-only, never toggle — a count that hides the very thing it counts is
+   * the door closing in the user's face. Idempotent when already open, which is
+   * the correct no-op: the destination is the list immediately below it.
+   */
+  const expandNote = useCallback((noteId: string) => {
+    setCollapsed((c) => (c[noteId] ? { ...c, [noteId]: false } : c));
+  }, []);
+
+  /**
    * Same intent as `handleMouseDown`, for the note ROW — which now contains a
    * real `<a>` (the `EntityRef`).
    *
@@ -84,6 +94,15 @@ export function GlobalSearchResults({
       // `/notes?active={id}` (the registry route) would reload the notes app
       // and throw away the find state the user is standing in — so it is the
       // cmd-click destination only, never the plain click.
+      //
+      // The pending match MUST be queued even though the user picked no
+      // specific hit: `requestActiveMatch` is the only thing that resets the
+      // index, so without it the newly-opened note inherits whatever ordinal
+      // was active in the note before it — click hit #7 in note B, then click
+      // note C's name, and C opens scrolled to its 8th match for no reason the
+      // user can see. Opening a note with no hit chosen means "start at the
+      // first one", and that has to be said explicitly.
+      dispatch(requestActiveMatch({ instanceId, noteId, matchIndex: 0 }));
       dispatch(addInstanceTab({ instanceId, noteId }));
       dispatch(markTabInteraction({ instanceId }));
       dispatch(setInstanceActiveTab({ instanceId, noteId }));
@@ -163,6 +182,7 @@ export function GlobalSearchResults({
             </div>
             {group.notes.map((note) => {
               const isCollapsed = collapsed[note.noteId];
+              const hitsId = `global-find-hits-${instanceId}-${note.noteId}`;
               return (
                 <div key={note.noteId} className="mb-0.5">
                   {/* This row was ONE <button> wrapping the note's name, which
@@ -192,6 +212,7 @@ export function GlobalSearchResults({
                         toggleCollapsed(note.noteId);
                       }}
                       aria-expanded={!isCollapsed}
+                      aria-controls={isCollapsed ? undefined : hitsId}
                       aria-label={`${isCollapsed ? "Expand" : "Collapse"} matches in ${note.label}`}
                       className="flex shrink-0 items-center gap-1"
                     >
@@ -215,12 +236,24 @@ export function GlobalSearchResults({
                       onOpen={() => openNote(note.noteId)}
                       className="min-w-0 flex-1"
                     />
-                    <span className="ml-auto text-[10px] text-muted-foreground tabular-nums shrink-0">
+                    {/* No `ml-auto`: the EntityRef beside it is `flex-1` and
+                        already eats the free space, so the count is pinned
+                        right by the layout, not by a margin. */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        expandNote(note.noteId);
+                      }}
+                      title={`Show the ${note.hits.length} ${note.hits.length === 1 ? "match" : "matches"} in ${note.label}`}
+                      aria-label={`Show the ${note.hits.length} ${note.hits.length === 1 ? "match" : "matches"} in ${note.label}`}
+                      className="shrink-0 rounded-sm px-1 text-[10px] text-muted-foreground tabular-nums transition-colors hover:bg-accent hover:text-foreground"
+                    >
                       {note.hits.length}
-                    </span>
+                    </button>
                   </div>
                   {!isCollapsed && (
-                    <ul className="pl-7">
+                    <ul id={hitsId} className="pl-7">
                       {note.hits.map((hit) => (
                         <li key={hit.start}>
                           <button
