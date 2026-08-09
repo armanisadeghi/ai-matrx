@@ -39,6 +39,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { MarketingSiteSurfaceProvider } from "@/features/marketing/lib/scopes/site-surface-base";
+import { MarketingSiteWriteTargets } from "@/features/marketing/components/site/MarketingSiteWriteTargets";
 import {
   useSiteCrawlActivity,
   type SiteCrawlActivity,
@@ -310,6 +311,7 @@ export function MarketingSiteLayoutClient({
       <div className="flex h-full min-h-0 flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="min-h-0 flex-1 overflow-hidden">
           <MarketingSiteSurfaceProvider>
+            <MarketingSiteWriteTargets site={current} />
             {children}
           </MarketingSiteSurfaceProvider>
         </div>

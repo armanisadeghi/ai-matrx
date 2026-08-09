@@ -124,7 +124,9 @@ internal platform use — never a washed-down user variant beside a private one:
   surface-bound agents as a `<surface_write_targets>` block. Live adopters:
   `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
   `page_supporting_keywords` — handlers in
-  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`) and
+  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`),
+  `matrx-user/marketing-site` (`site_name`, `site_description` — handlers in
+  `features/marketing/components/site/MarketingSiteWriteTargets.tsx`) and
   `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
   components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
@@ -149,7 +151,8 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/marketing-site` (2 identity targets
+  through `updateSiteIdentity`).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +313,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — Marketing-site surface agent-writable (third adopter).** `matrx-user/marketing-site` declares 2 ask-policy entity targets (`site_name`, `site_description` — the only two identity fields that pass the judgment bar; logo/favicon/og URLs, status, visibility, and the brand move deliberately stay human-only) plus the new `site_description` read value as the evidence twin (emitted by `site-surface-base`, so every site vertical inherits it). Handlers in `features/marketing/components/site/MarketingSiteWriteTargets.tsx` (versionRef guard over `updateSiteIdentity`, mounted by `MarketingSiteLayoutClient` — live on overview/settings/access/cost). Live-verified with a Badass Agent run on the site workspace: per-target ask confirms, description applied + persisted, name declined gracefully, undeclared visibility write refused, zero writeback captures. DB mirror upserted (`ui_surface_write_target` + `ui_surface_value`).
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
