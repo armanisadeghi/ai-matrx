@@ -36,7 +36,29 @@
  * convention will be misused; make the common case work instead.
  *
  * `alwaysShowActions` still pins them visible for surfaces with no hover at all
- * (a window title bar, a touch-first list).
+ * (a window title bar, a touch-first list). **Reach for it in any popover or
+ * transient panel too**: `opacity-0` does not disable hit-testing, so on touch
+ * the hover form is the worst case — invisible controls that are still
+ * tappable. The row reserves their width either way (this cluster is
+ * `shrink-0`), so pinning them costs no layout.
+ *
+ * 🚨 **MOUNTING THIS INSIDE A DISMISS-ON-OUTSIDE-CLICK CONTAINER? FIX THE
+ * CONTAINER FIRST.** The peek renders through `ResourcePeekHost` → a Radix
+ * `Dialog`, which PORTALS to `document.body` — outside your popover's ref. A
+ * hand-rolled `document.addEventListener("mousedown", …)` +
+ * `ref.contains(e.target)` therefore treats the first click inside the peek as
+ * "outside", closes the popover, unmounts this component, and takes `peekOpen`
+ * with it: the preview disappears mid-click, and the peek's own "Open" link
+ * never fires at all, because the node is gone before `click` is dispatched.
+ * A door that deletes itself when used is worse than no door. The container
+ * must ignore events whose target is inside a dialog:
+ *
+ *     if (target?.closest?.('[role="dialog"], [role="alertdialog"]')) return;
+ *
+ * Shipped exactly this way on `/lists/v2` (2026-08-09) and caught by an
+ * adversarial pass, NOT by type-check — it is statically decidable, so do not
+ * file it as "needs a browser". 25 hand-rolled dismissers exist across 23
+ * files; each is this trap waiting for a door to be added to it.
  *
  * Adding a door for a new entity type is a registry edit, never a change here:
  *   route → `hrefFor` in `features/scopes/registry/entityRegistry.ts`
