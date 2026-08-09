@@ -473,6 +473,27 @@ resolved through `entityTokenForItemType()`. **Never hand a raw `ItemType` to
 `resolveEntityDoors`.** Each mapping was matched by `schema.table`, never by
 name — a token resolving to a different table opens the WRONG record.
 
+### The `router.push` backlog — measured, and the triage rule that makes it cheap
+
+**Real numbers (2026-08-09):** `router.push(\`…\`)` appears **217 times across 153
+files** outside `(dev)/demos` and `(transitional)`. The earlier "~130" estimate
+was low. **Most of these are NOT defects**, so do not convert them wholesale.
+
+**Triage in one question: does the clicked element RENDER A RECORD?**
+
+| Shape | Verdict |
+|---|---|
+| A whole-card / whole-row `<button>` whose content IS the record | **DEFECT.** One door and only one: no cmd-click, no middle-click, no new tab, no destination on hover. Convert to `<Link>` — same classes, same layout. |
+| An `Open` / `View` `<Button onClick={push}>` sitting beside a record | **DEFECT**, and usually obvious: a sibling button is already `asChild` + `Link`. The user cmd-clicks *Open*, not the row. |
+| A row/card `onClick` layered OVER a real `EntityRef` anchor | **Fine.** Mouse convenience; the name carries the four doors. |
+| `router.push` after a create/duplicate, or a Back button, or `New <thing>` | **Fine.** Imperative by nature, names no existing record. |
+| An `ItemMenu` / dropdown entry | **Fine.** A menu entry is not an anchor; the row's name is. |
+
+Fixed so far under this rule: `/projects` hub (table + card `Open`),
+`/education/classes`, `/education/memory`, `/education/mind-maps`.
+The narrow grep `onClick={() => router.push(\`` finds only 14 files — it misses
+handler-body pushes, so **grep `router.push(\`` and triage by the table above.**
+
 ### A door can point at a real page and STILL be wrong — check the param
 
 A third failure mode, alongside "no door" and "wrong record": **a link whose
