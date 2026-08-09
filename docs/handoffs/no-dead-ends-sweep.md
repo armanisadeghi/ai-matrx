@@ -473,6 +473,31 @@ resolved through `entityTokenForItemType()`. **Never hand a raw `ItemType` to
 `resolveEntityDoors`.** Each mapping was matched by `schema.table`, never by
 name — a token resolving to a different table opens the WRONG record.
 
+### 🚨 The PR review backlog is a work item, not noise
+
+**~30 unresolved review threads sit on PR #73**, accumulated across the whole
+campaign. They were never triaged as a batch, and a thread staying open does NOT
+mean the finding is still live — many were fixed by later commits without the
+thread being resolved. Equally, some are real and still open.
+
+The ones squarely inside this campaign's scope (a door that is missing, wrong,
+or invalid), listed so they cannot be lost:
+
+| File | Finding |
+|---|---|
+| `.../reporting/events/page.tsx` | `entity_id` passes `r.entity_type` to `MatrxUuidCell` as `token` even when it is NOT a registered token — a producer table name colliding with a token opens the **wrong record**. Same class as the patrol nomination. |
+| `features/organizations/components/OrgResourceList.tsx` | The peek control renders INSIDE the card's `Link` — an interactive control nested in an anchor. Invalid HTML. Plus `peekId` is not cleared when `orgId` changes (stale peek across orgs). |
+| `components/official/matrx-data-table/DataRowInspector.tsx` | The default inspector lost its field→token mapping, so tables on the default `detail` config lost working FK doors (e.g. `organization_id`). |
+| `utils/permissions/registry.ts` | `getResourceSharePath` falls back to stale `url_path_template` (`/workflows/{id}`, `/skills/{id}`) for tokens that deliberately have NO `hrefFor` — manufacturing 404 share links. |
+| `features/window-panels/windows/ShareModalWindow.tsx` | `getShareUrl` only resolves doors for types in a LOCAL map; types whose token equals their own name (`file`, `app`, `dataset`, …) are omitted, so the emailed link fails. |
+| `features/agents/browse/listConfig.tsx` | `config.door` anchors the TABLE view only — `/agents/all` card + dense rows and `/transcripts` cards still render plain names, reintroducing mouse-only dead ends when the user switches view. |
+| `features/scopes/hooks/useEntityTitles.ts` | Title-fetch rejection is unhandled (loading sticks, `isUnresolved` stays false); and any non-empty stale edge label is treated as authoritative, so a deleted target renders as a normal `EntityRef` with doors. |
+| `features/war-room/.../WarRoomResourcesList.tsx` | The `isUnresolved` warning added to `AssociationList` was never mirrored here — the second implementation of the same list (see the fork item above). |
+| `features/agents/agent-sets/components/AgentSetCard.tsx` | Whole-tile `onClick` navigation with `role="button"`/`tabIndex`/Enter-Space removed: mouse-only. |
+
+**Verify before fixing.** Each needs the code opened and the finding confirmed
+against the current tree; do not fix from the description.
+
 ### Blocked / needs a decision
 
 0. ~~**`scope` still has no registry `hrefFor`.**~~ RESOLVED 2026-08-09 —
