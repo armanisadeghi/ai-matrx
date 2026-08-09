@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 interface ActivityRow {
   id: number;
@@ -264,11 +265,46 @@ export default function AdminEventsPage() {
                   <span className="text-muted-foreground">Entity type</span>
                   <span>{r.entity_type ?? "—"}</span>
                   <span className="text-muted-foreground">Entity ID</span>
-                  <span className="break-all font-mono">{r.entity_id ?? "—"}</span>
+                  {/* The row already states the entity's TYPE one line above,
+                      so the id beside it was a door we were choosing not to
+                      open — on an audit log, where "what was this thing?" is
+                      the only question being asked. The id stays whole (it is
+                      what an admin copies) by being the label, and
+                      `openInNewTab` keeps the log on screen. An `entity_type`
+                      outside the canonical token set degrades to plain text
+                      inside the primitive, so every value is safe. */}
+                  <span className="break-all font-mono">
+                    {r.entity_id && r.entity_type ? (
+                      <EntityRef
+                        token={r.entity_type}
+                        id={r.entity_id}
+                        name={r.entity_id}
+                        showIcon={false}
+                        openInNewTab
+                      />
+                    ) : (
+                      (r.entity_id ?? "—")
+                    )}
+                  </span>
                   <span className="text-muted-foreground">Actor</span>
                   <span className="break-all font-mono">{r.actor_id ?? "—"}</span>
                   <span className="text-muted-foreground">Organization</span>
-                  <span className="break-all font-mono">{r.organization_id ?? "—"}</span>
+                  {/* `/organizations/[orgId]` resolves a UUID *or* a slug
+                      (layout.tsx:22 branches on UUID_RE), so passing the raw
+                      id here is correct — checked, not assumed. */}
+                  <span className="break-all font-mono">
+                    {r.organization_id ? (
+                      <EntityRef
+                        token="organization"
+                        id={r.organization_id}
+                        name={r.organization_id}
+                        showIcon={false}
+                        openInNewTab
+                      />
+                    ) : (
+                      "—"
+                    )}
+                  </span>
                 </div>
                 <div>
                   <div className="mb-1 text-xs font-medium text-muted-foreground">Metadata</div>
