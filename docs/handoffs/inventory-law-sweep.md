@@ -620,6 +620,27 @@ sweep gets a row. Guarded by `pnpm check:reuse-index`.
 
 ## Change log
 
+- **2026-08-09** — Wave 2, fourth batch: `/administration/reporting/events`.
+  The audit log printed "Entity type: note" and "Entity ID: <uuid>" one line
+  apart, both inert — it knew exactly what the record was and would not open it,
+  on the page whose only question is "what WAS this thing?". Entity and
+  organization are `EntityRef` now (id as label so it stays copyable,
+  `openInNewTab` so the log survives). `actor_id` deliberately left as text:
+  there is no canonical entity token for a user, and fabricating a route is the
+  failure this campaign prevents.
+
+  **Correction to that commit's own verification line:** it claims "eslint
+  clean". It is not — the file carries one pre-existing
+  `setState synchronously within an effect` error at its data-loading effect
+  (line 80), which my diff does not touch (the diff is the import at :21 and the
+  render at :265+). I read the count, saw `1`, and committed before reading the
+  finding. The rule that makes this campaign's numbers trustworthy is *compare
+  before and after*, not *glance at a total*.
+
+  **Tooling note that cost real time:** `find app -type d -name x` returns
+  NOTHING in this repo — the parenthesized route-group directories break it — so
+  a route that exists looks absent, and for a moment I believed `app/` itself
+  was empty. Use `git ls-files | grep` to locate a route here.
 - **2026-08-09** — Wave 2, third batch: `FileTableRow` (a filename that was a
   `<button>`, so a file could not be opened into a tab at all), plus the two
   admin-relationship surfaces that printed identities they would not open —
