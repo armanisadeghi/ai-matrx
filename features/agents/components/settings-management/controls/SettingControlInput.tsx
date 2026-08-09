@@ -3,8 +3,10 @@
 /**
  * SettingControlInput — pure, controlled renderer for a single model setting,
  * driven entirely by the model's ControlDefinition. The shared per-control
- * input primitive for every settings surface (per-run overrides today;
- * AgentSettingsCore's internal renderer is the planned next consumer).
+ * input primitive for every settings surface: the agent builder's settings
+ * editor (AgentSettingsCore), per-run overrides (RunConfigOverrides), and the
+ * model replacement review (ModelSettingsReviewDialog). A restyle here lands
+ * on every surface — never fork a variant.
  *
  * Covers every ControlType: enum (Select, with an out-of-enum warning),
  * boolean (Checkbox), number/integer (NumberInput, slider when min+max are
@@ -96,7 +98,9 @@ export function SettingControlInput({
           onValueChange={emit}
           disabled={disabled}
         >
-          <SelectTrigger className="h-7 flex-1 text-xs">
+          {/* Inline trigger — borderless/transparent, matching the
+              ModelListDropdown trigger style for in-row dense controls. */}
+          <SelectTrigger className="h-7 flex-1 border-0 bg-transparent px-1 text-xs font-medium text-foreground/80 shadow-none hover:bg-transparent hover:text-foreground focus:ring-0 [&_svg]:h-3 [&_svg]:w-3">
             <SelectValue
               placeholder={isValueMismatch ? stringValue : "Select..."}
             />
@@ -182,9 +186,8 @@ export function SettingControlInput({
           onChange(e.target.value.split("\n").filter((s) => s.trim()))
         }
         disabled={disabled}
-        className="min-h-[60px] font-mono text-xs disabled:opacity-50"
+        className="min-h-14 px-2 py-1.5 font-mono text-base leading-snug disabled:opacity-50 sm:text-xs"
         placeholder="One value per line..."
-        style={{ fontSize: "16px" }}
       />
     );
   }
@@ -213,8 +216,7 @@ export function SettingControlInput({
       value={value === undefined || value === null ? "" : String(value)}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="h-7 w-full px-2 text-xs"
-      style={{ fontSize: "16px" }}
+      className="h-7 w-full px-2 text-base sm:text-xs"
     />
   );
 }
@@ -265,12 +267,11 @@ function JsonValueInput({
           }
         }}
         disabled={disabled}
-        className="min-h-[48px] font-mono text-xs"
+        className="min-h-12 px-2 py-1.5 font-mono text-base leading-snug sm:text-xs"
         spellCheck={false}
-        style={{ fontSize: "16px" }}
       />
       {jsonError && (
-        <p className="text-[10px] text-amber-600 dark:text-amber-400">
+        <p className="text-[11px] text-amber-600 dark:text-amber-400">
           {jsonError}
         </p>
       )}
