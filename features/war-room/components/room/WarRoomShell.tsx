@@ -5,11 +5,13 @@
 // Top-level frame for one War Room session — the canonical room UI on the real
 // /war-room/[id] route. A War Room is a COCKPIT, not a wall of equal cards:
 // there is always one thread you can drive on the Stage with a live watchlist
-// rail beside it, and a Grid mode for the all-at-once bento view. The header is
-// mission control:
+// rail beside it, and a Grid mode for the all-at-once bento view.
 //
-//   ← · [icon] Title · live meter (●active ◦parked ⌖pinned) ┊ STAGE⇄GRID ┊
-//      PROJECT all→one-view ┊ density ┊ context ┊ ⋯
+// Mission control lives in the SHELL header via <RoomHeader> (PageHeader
+// injection — core-route-headers conformance; no in-body <header>, no
+// viewport-height math). The body is `h-full overflow-hidden` and starts below
+// the glass via `pt-[var(--shell-header-h)]` (tiles carry interactive controls
+// at the top, so nothing may slide behind the glass).
 //
 // Grafts consolidated here: the Stage⇄Grid model + rail/stage (reimagine), the
 // instrument projector + live metric chips (dense), the Comfortable/Compact
@@ -18,60 +20,25 @@
 // (loadWarRoomSession) with real loading / empty / not-found states; all data
 // flows through the warRoom thunks + selectors.
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Bot,
-  LayoutGrid,
-  LayoutPanelLeft,
-  Loader2,
-  MoreHorizontal,
-  Trash2,
-  Circle,
-  Pin,
-  EyeOff,
-  Maximize2,
-  Minimize2,
-  X,
-} from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildWarRoomRoomScope } from "@/features/war-room/lib/war-room-scope";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
 import { RoomRecordingController } from "@/features/war-room/components/room/RoomRecordingController";
-import { cn } from "@/lib/utils";
 import {
-  selectHiddenThreads,
   selectOrderedGalleryThreadIds,
-  selectPinnedThreadCount,
   selectSessionById,
   selectThreadsStatusForRoom,
 } from "@/features/war-room/redux/selectors";
 import {
-  deleteSession,
   leaveWarRoomSession,
   loadWarRoomSession,
-  renameSession,
 } from "@/features/war-room/redux/thunks";
-import { EditableTitle } from "../shared/EditableTitle";
-import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
-import { RoomProjectButton } from "./RoomProjectButton";
-import { RoomResourcesButton } from "./RoomResourcesButton";
-import { RoomProjectCopyForAiButton } from "./RoomProjectCopyForAiButton";
-import { RoomIdentityButton } from "./RoomIdentityButton";
+import { RoomHeader } from "./RoomHeader";
 import { StageView } from "./StageView";
 import { WarRoomGallery } from "./WarRoomGallery";
-import { ThreadSearchBox } from "./ThreadSearchBox";
-import { roomColorOf, roomIconOf } from "./roomIdentity";
 import { useActiveThreadRestore } from "./useActiveThreadRestore";
 import { useRoomUrlSync } from "./useRoomUrlSync";
 import {
@@ -79,11 +46,8 @@ import {
   resolveStagedId,
   useRoomView,
   type RoomMode,
-  type Density,
 } from "./roomViewContext";
-import { THREAD_KIND_ORDER, threadKindOf } from "./threadKind";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
-import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 
 // The TIER-2 ROOM agent panel — its floating WindowPanel wrapper plus the whole
 // agent execution graph (via AgentConversationColumn). Lazy-load it so neither
@@ -116,7 +80,6 @@ export function WarRoomShell({ sessionId }: { sessionId: string }) {
 
 function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const session = useAppSelector(selectSessionById(sessionId));
   const tilesStatus = useAppSelector(selectThreadsStatusForRoom(sessionId));
   const roomView = useRoomView();
@@ -166,36 +129,10 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   useRoomUrlSync(sessionId);
   useActiveThreadRestore(sessionId);
 
-  // Room branding (icon + color) — the chosen identity, with safe defaults.
-  const RoomIcon = roomIconOf(session?.icon);
-  const roomColor = roomColorOf(session?.color);
-
   // Room Agent panel — local state owns open/closed. Non-modal so the cockpit
   // stays visible and interactive while the user chats with the room agent.
+  // The header toggle lives in RoomHeader; the window renders here.
   const [roomAgentOpen, setRoomAgentOpen] = useState(false);
-
-  // Header delete — guarded against double-click and disabled while the
-  // transition is pending (the control reflects the busy state).
-  const [deletePending, startDeleteTransition] = useTransition();
-
-  async function handleDeleteRoom() {
-    if (deletePending || !session) return; // guard duplicate clicks
-    const ok = await confirm({
-      title: "Delete this War Room?",
-      description: `"${session.title}" and its tile layout will be removed. The tasks, notes, and transcripts inside stay safe.`,
-      variant: "destructive",
-      confirmLabel: "Delete",
-    });
-    if (!ok) return;
-    startDeleteTransition(async () => {
-      try {
-        await dispatch(deleteSession(sessionId));
-        router.push("/war-room/all");
-      } catch (err) {
-        reportWarRoomError("WarRoomShell.delete", err);
-      }
-    });
-  }
 
   useEffect(() => {
     dispatch(loadWarRoomSession(sessionId));
@@ -231,110 +168,15 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
       surfaceName="matrx-user/war-room"
       getScope={getRoomScope}
     >
-    <div className="@container h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
-      {/* ── Header — pr-14 clears the shell's fixed top-right avatar ── */}
-      <header
-        className={cn(
-          "shrink-0 border-b border-border pl-1.5 pr-14 h-11 flex items-center gap-1.5",
-          roomView.threadDetailOpen && "hidden",
-        )}
-      >
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="grid place-items-center size-8 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          aria-label="Back"
-        >
-          <ArrowLeft className="size-4.5" />
-        </button>
-        <span
-          className={cn(
-            "grid place-items-center size-7 shrink-0 rounded-lg",
-            roomColor.tint,
-            roomColor.text,
-          )}
-        >
-          <RoomIcon className="size-4" />
-        </span>
-
-        {session ? (
-          <EditableTitle
-            value={session.title}
-            onSave={(next) => dispatch(renameSession(sessionId, next))}
-            placeholder="Untitled War Room"
-            className="text-sm font-semibold max-w-[24ch]"
-            inputClassName="text-sm font-semibold"
-          />
-        ) : (
-          <h1 className="text-sm font-semibold text-foreground truncate">
-            War Room
-          </h1>
-        )}
-
-        {session && ready ? <LiveMeter sessionId={sessionId} /> : null}
-
-        {session ? (
-          <div className="ml-auto shrink-0 flex items-center gap-1.5">
-            {ready ? <ThreadSearchBox /> : null}
-            <ModeSwitch />
-            {ready ? <InstrumentProjector /> : null}
-            {ready ? <DensityDial /> : null}
-            <RoomIdentityButton sessionId={sessionId} />
-            <RoomProjectCopyForAiButton sessionId={sessionId} />
-            <RoomResourcesButton sessionId={sessionId} />
-            <RoomProjectButton sessionId={sessionId} />
-            {/* Same working-context control as /chat — writes appContextSlice
-                (Surface A). Per-thread overrides stay on ThreadContextOverride. */}
-            <ActiveContextLensChip align="end" className="shrink-0" />
-            <button
-              type="button"
-              onClick={() => setRoomAgentOpen((v) => !v)}
-              aria-pressed={roomAgentOpen}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg border px-2.5 h-7 text-xs font-medium transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                roomAgentOpen
-                  ? "text-primary border border-primary/70"
-                  : "border-border text-muted-foreground hover:text-foreground hover:bg-accent",
-              )}
-              title="Chat with an agent that sees every thread in this room"
-            >
-              <Bot className="size-3.5 shrink-0" />
-              <span className="@max-xl:hidden">Room Agent</span>
-            </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="War Room options"
-                  className="grid place-items-center size-7 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                >
-                  <MoreHorizontal className="size-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  disabled={deletePending}
-                  onSelect={(e) => {
-                    // Keep the menu's selection from closing before confirm runs;
-                    // the handler owns the async flow + double-click guard.
-                    e.preventDefault();
-                    void handleDeleteRoom();
-                  }}
-                >
-                  {deletePending ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="size-3.5" />
-                  )}
-                  Delete War Room
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ) : null}
-      </header>
+    <div className="@container h-full flex flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
+      {/* ── Header — injected into the shell's glass row via <PageHeader>.
+          Hides itself while a thread owns the route surface. ── */}
+      <RoomHeader
+        sessionId={sessionId}
+        ready={ready}
+        roomAgentOpen={roomAgentOpen}
+        onToggleRoomAgent={() => setRoomAgentOpen((v) => !v)}
+      />
 
       {/* ── Body ── */}
       <div className="flex-1 min-h-0 overflow-hidden">
@@ -376,164 +218,6 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
       <RoomRecordingController />
     </div>
     </SurfaceRuntimeProvider>
-  );
-}
-
-// ── Live meter — active / parked / pinned, straight from Redux ──────────────
-function LiveMeter({ sessionId }: { sessionId: string }) {
-  const visibleIds = useAppSelector(selectOrderedGalleryThreadIds(sessionId));
-  const hidden = useAppSelector(selectHiddenThreads(sessionId));
-  const pinnedCount = useAppSelector(selectPinnedThreadCount(sessionId));
-  return (
-    <div className="hidden @2xl:flex items-center gap-2 pl-2 ml-0.5 border-l border-border/60 text-[11px] tabular-nums text-muted-foreground shrink-0">
-      <span
-        className="inline-flex items-center gap-1"
-        title={`${visibleIds.length} active thread${visibleIds.length === 1 ? "" : "s"}`}
-      >
-        <Circle className="size-2.5 fill-success text-success" />
-        {visibleIds.length} active
-      </span>
-      {pinnedCount > 0 ? (
-        <span
-          className="inline-flex items-center gap-0.5 text-primary"
-          title="Pinned threads"
-        >
-          <Pin className="size-3" />
-          {pinnedCount}
-        </span>
-      ) : null}
-      {hidden.length > 0 ? (
-        <span
-          className="inline-flex items-center gap-0.5"
-          title={`${hidden.length} parked thread${hidden.length === 1 ? "" : "s"}`}
-        >
-          <EyeOff className="size-3" />
-          {hidden.length} stowed
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-// ── Stage ⇄ Grid switch (reimagine) ─────────────────────────────────────────
-function ModeSwitch() {
-  const { mode, setMode } = useRoomView();
-  const items: { id: RoomMode; label: string; Icon: typeof LayoutGrid }[] = [
-    { id: "stage", label: "Stage", Icon: LayoutPanelLeft },
-    { id: "grid", label: "Grid", Icon: LayoutGrid },
-  ];
-  return (
-    <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
-      {items.map(({ id, label, Icon }) => {
-        const active = mode === id;
-        return (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setMode(id)}
-            aria-pressed={active}
-            title={`${label} view`}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-md h-7 px-2 text-xs font-medium transition-all",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              active
-                ? "bg-card text-primary shadow-[var(--elevation-1)]"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Icon className="size-3.5" />
-            <span className="@max-xl:hidden">{label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Instrument projector (dense) — set the whole room to one view ────────────
-function InstrumentProjector() {
-  const { projectedTab, setProjectedTab } = useRoomView();
-  return (
-    <div
-      className="hidden @4xl:flex items-center gap-0.5 rounded-md border border-border/70 p-0.5"
-      role="group"
-      aria-label="Project all threads to one view"
-      title="Project the whole room to one view"
-    >
-      {THREAD_KIND_ORDER.map((id) => {
-        const k = threadKindOf(id);
-        const isOn = projectedTab === id;
-        return (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setProjectedTab(isOn ? null : id)}
-            aria-pressed={isOn}
-            title={
-              isOn ? `Stop projecting ${k.label}` : `Project all → ${k.label}`
-            }
-            className={cn(
-              "grid place-items-center size-6 rounded transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              isOn
-                ? cn(k.text, "border border-current/70")
-                : "text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
-            <k.Icon className="size-3.5" />
-          </button>
-        );
-      })}
-      {projectedTab ? (
-        <button
-          type="button"
-          onClick={() => setProjectedTab(null)}
-          title="Return each thread to its own view"
-          className="grid place-items-center size-6 rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-        >
-          <X className="size-3.5" />
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-// ── Density dial (refine) — Comfortable ⇄ Compact ───────────────────────────
-function DensityDial() {
-  const { density, setDensity } = useRoomView();
-  const options: { id: Density; label: string; Icon: typeof Maximize2 }[] = [
-    { id: "comfortable", label: "Comfortable", Icon: Maximize2 },
-    { id: "compact", label: "Compact", Icon: Minimize2 },
-  ];
-  return (
-    <div
-      role="group"
-      aria-label="Tile density"
-      className="hidden @3xl:inline-flex items-center gap-0.5 rounded-lg border border-border bg-card/60 p-0.5"
-    >
-      {options.map(({ id, label, Icon }) => {
-        const active = id === density;
-        return (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setDensity(id)}
-            aria-pressed={active}
-            title={label}
-            className={cn(
-              "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              active
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Icon className="size-3.5" />
-            <span className="@max-5xl:hidden">{label}</span>
-          </button>
-        );
-      })}
-    </div>
   );
 }
 

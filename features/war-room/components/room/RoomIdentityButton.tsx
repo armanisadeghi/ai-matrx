@@ -2,25 +2,22 @@
 
 // features/war-room/components/room/RoomIdentityButton.tsx
 //
-// Compact room IDENTITY editor in the room header. Edits a room's title,
-// description, icon, and color in one popover — the setters that activate the
-// dormant workspace.war_rooms.{icon,color,description} columns. Saves through
-// the optimistic updateRoomIdentity thunk (failures route to reportWarRoomError).
+// Compact room IDENTITY editor for the room header. Edits a room's title,
+// description, icon, and color in one popover panel — the setters that
+// activate the dormant workspace.war_rooms.{icon,color,description} columns.
+// Saves through the optimistic updateRoomIdentity thunk (failures route to
+// reportWarRoomError).
 //
-// Title commits live via the shared EditableTitle in the header (this editor's
-// title input is a redundant, explicit entry point and saves on blur/Enter);
-// icon + color save on click (instant, optimistic). Space-efficient: a single
-// popover, no modal — keeps the cockpit visible while editing.
+// Re-housed 2026-08-09 (core-route-headers conformance): the trigger button
+// died with the in-body header — the editor is now launched from RoomHeader's
+// "⋯" overflow menu inside a CONTROLLED popover, so only the editor is
+// exported. Title commits live via the shared EditableTitle in the header
+// (this editor's title input is a redundant, explicit entry point and saves
+// on blur/Enter); icon + color save on click (instant, optimistic).
 
 import { useEffect, useState } from "react";
-import { Check, Pencil } from "lucide-react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectSessionById } from "@/features/war-room/redux/selectors";
+import { Check } from "lucide-react";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { updateRoomIdentity } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 import {
@@ -28,46 +25,9 @@ import {
   ROOM_COLOR_TOKENS,
   ROOM_ICON_NAMES,
   ROOM_ICONS,
-  roomColorOf,
-  roomIconOf,
 } from "./roomIdentity";
 
-export function RoomIdentityButton({ sessionId }: { sessionId: string }) {
-  const session = useAppSelector(selectSessionById(sessionId));
-  const color = roomColorOf(session?.color);
-
-  if (!session) return null;
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "grid place-items-center size-7 rounded-lg border border-border text-muted-foreground transition-colors",
-            "hover:bg-accent hover:text-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-          )}
-          aria-label="Room details — icon, color, description"
-          title="Room details — icon, color, description"
-        >
-          <Pencil className="size-3.5" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
-        <RoomIdentityEditor
-          sessionId={sessionId}
-          title={session.title}
-          description={session.description}
-          iconName={session.icon}
-          colorToken={color.id}
-        />
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function RoomIdentityEditor({
+export function RoomIdentityEditor({
   sessionId,
   title,
   description,

@@ -1,11 +1,11 @@
 ---
 status: active
-updated: 2026-07-28
+updated: 2026-08-09
 repos: [matrx-frontend]
 vision: [features/war-room/FEATURE.md, .claude/skills/core-route-headers/SKILL.md]
 ---
 
-# War Room — list page (done) → room `[id]` page header conformance + deeper thread search
+# War Room — list + room pages conformant (done) → deeper thread search (decision pending)
 
 ## Vision — Arman's words
 
@@ -36,16 +36,12 @@ On the individual room page `/war-room/[id]` (session 3):
 
 ## Remaining work
 
-1. **`/war-room/[id]` room page header is NON-CONFORMANT — the main gap.**
-   Re-verified 2026-07-28 (2026-08-09: the P3 mobile sweep swapped the calc's `100vh` → `100dvh` as a stopgap unit fix — the calc itself is still banned and still needs to go): `features/war-room/components/room/WarRoomShell.tsx:240` still uses banned `h-[calc(100dvh-2.5rem)]`, and `:242` is still a full in-body `<header>` with the `pr-14` avatar-collision hack — exactly the disease `core-route-headers` kills. (Line numbers drift; grep the two patterns.) It was missed by the header-conformance campaign because that campaign's audit greps `app/(core)` ONLY, and this offender lives in `features/` (**trap: the `features/` half of every route is invisible to `pnpm check:page-headers` and the campaign's grep — audit both**).
-   The fix is the `/war-room/all` treatment already done next door: move chrome into `<PageHeader>`, body → `h-full overflow-hidden` (drop the calc), avatar hack deletes itself once controls sit in the bounded center zone. This header is unusually DENSE (back, title, live meter, Stage⇄Grid, instrument projector, density dial, identity, project, resources, context chip, Room Agent, delete) — far more than `EntityModeHeader` carries. Collapse secondary controls (projector, density, resources, identity, delete) into an overflow/`…` menu; keep Stage⇄Grid + Room Agent + the context chip primary. On mobile: back + title + ONE `…` drawer holding everything. Do NOT lose the `@container` query behavior the current header uses to progressively hide labels.
-   All the control COMPONENTS are already correct and room-scoped — this is a re-housing job, not a rewrite of the controls.
-
-2. **Thread search is title-only; Arman implied he expects more.**
+1. **Thread search is title-only; Arman implied he expects more.**
    Re-verified 2026-07-28 — still title-only. `useThreadSearch.ts` ranks by thread title (tile title → anchored task title) and skips parked threads. The room `ThreadSearchBox` and the `/war-room/all` cross-room search share this shallow depth. If deeper search is wanted, extend the searchable projection to description + note/task contents (the projection selector in `useThreadSearch.ts` is the one place to widen; `/war-room/all`'s `useWarRoomAllSearch.ts` mirrors it). **Decision below — confirm scope before building.**
 
 ## Done
 
+- **`/war-room/[id]` header conformance (2026-08-09).** In-body `<header>` + `h-[calc(100vh-2.5rem)]` + `pr-14` hack deleted from `WarRoomShell`; chrome injected via new `features/war-room/components/room/RoomHeader.tsx` (`<PageHeader>`, its own `@container` so the label-hiding survives; body `h-full overflow-hidden pt-[var(--shell-header-h)]`). Primaries inline (Stage⇄Grid, search, context chip, Room Agent); projector/density/details/resources/project/delete collapsed into ONE `⋯` menu (details/resources/project open the SAME re-housed surfaces — `RoomIdentityEditor` / `RoomResourcesSheet` / `RoomProjectPickerBody`; their trigger-button wrappers deleted). Mobile = back + title + search + context chip inline (search must show the rail filtering live; the lens chip opens its own ContextSheet, so sheet-nesting it would stack sheet-on-sheet), plus one `⋯` bottom sheet holding everything else. Browser-verified at 1280 / 800 / 375, dark + light. (Campaign trap still stands for OTHER routes: `pnpm check:page-headers` greps `app/(core)` only — the `features/` half of a route is invisible to it.)
 - `/war-room/all` header conformance — `PageHeader` + `HeaderToggle` (Rooms | Threads), body `h-full overflow-hidden pt-[var(--shell-header-h)]`; header actions (Master Agent, From project, New) collapse to a mobile bottom sheet. See `features/war-room/components/all/WarRoomAllView.tsx`.
 - Rooms | Threads toggle + **Threads view on the canonical `MatrxDataTable`** (sort, per-column filter, search, row "Open" that routes into the parent room or mints one for an orphan) — `features/war-room/components/all/WarRoomThreadsTable.tsx` + `selectThreadTableRows`.
 - Informative room cards — thread count (always) + pinned count + project marker (only when present), via `selectRoomCardStats`. See `features/war-room/components/all/SessionCard.tsx`.

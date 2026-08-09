@@ -2,73 +2,20 @@
 
 // features/war-room/components/room/RoomProjectButton.tsx
 //
-// Room-level PROJECT association in the header. Independent of each thread's
-// own project anchor — no conflict prompts; the user sets both however they want.
+// Room-level PROJECT association panel. Independent of each thread's own
+// project anchor — no conflict prompts; the user sets both however they want.
+//
+// Re-housed 2026-08-09 (core-route-headers conformance): the header trigger
+// button died with the in-body header — the picker body is now launched from
+// RoomHeader's "⋯" overflow menu (which also carries the current project name
+// in its item label) inside a CONTROLLED popover, so only the body is exported.
 
-import { FolderKanban, ChevronDown, X } from "lucide-react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectSessionProjectId,
-  selectSessionProjectMode,
-} from "@/features/war-room/redux/selectors";
+import { X } from "lucide-react";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { setRoomProjectThunk } from "@/features/war-room/redux/thunks";
-import { useUserProjects } from "@/features/projects/hooks";
-import { cn } from "@/lib/utils";
 import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
 
-export function RoomProjectButton({ sessionId }: { sessionId: string }) {
-  const { projects } = useUserProjects();
-
-  const roomProjectId = useAppSelector(selectSessionProjectId(sessionId));
-  const mode = useAppSelector(selectSessionProjectMode(sessionId));
-  const roomProjectName =
-    (roomProjectId && projects.find((p) => p.id === roomProjectId)?.name) ||
-    null;
-
-  const label =
-    mode === "room"
-      ? roomProjectName || "Project"
-      : mode === "per-thread"
-        ? "Per-thread"
-        : "Link project";
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-lg border px-2.5 h-7 text-xs font-medium transition-colors max-w-[12rem]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-            mode === "room"
-              ? "border-primary/40 bg-primary/5 text-foreground"
-              : "border-border text-muted-foreground hover:text-foreground hover:bg-accent",
-          )}
-          aria-label="Room project"
-          title="Associate this War Room with a project (optional default context)"
-        >
-          <FolderKanban className="size-3.5 shrink-0" />
-          <span className="truncate">{label}</span>
-          <ChevronDown className="size-3 opacity-60 shrink-0" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-72" align="end">
-        <RoomProjectPickerBody
-          sessionId={sessionId}
-          roomProjectId={roomProjectId}
-          mode={mode}
-        />
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function RoomProjectPickerBody({
+export function RoomProjectPickerBody({
   sessionId,
   roomProjectId,
   mode,
