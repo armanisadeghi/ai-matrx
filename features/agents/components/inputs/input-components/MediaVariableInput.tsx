@@ -15,7 +15,7 @@
  * "Stored Files" UI as Smart Agent Input (search, type filter, sort,
  * list/grid, recents, folder tree). Upload + paste-URL lanes stay local;
  * uploads go through `useFileUpload` with `visibility: "personal"` +
- * `createShareLink: true` — same contract as `UploadResourcePicker`.
+ * `createShareLink: true` — same contract as `InlineUploadArea`.
  *
  * The five wrappers (Image/Audio/Video/Document) parameterize this with
  * a `mediaKind`. YouTube is its own component — paste-only, no upload.

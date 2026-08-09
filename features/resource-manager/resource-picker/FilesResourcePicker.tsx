@@ -22,6 +22,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import {
   ChevronDown,
@@ -150,6 +151,19 @@ interface FilesResourcePickerProps {
    * leaving dead space with a clipped final row.
    */
   fillHost?: boolean;
+  /**
+   * Header title override. Default "Cloud Files". The PDF Extractor filter
+   * still wins while active — that title is real mode information.
+   */
+  title?: string;
+  /** Header icon override (tinted per host). */
+  headerIcon?: ReactNode;
+  /**
+   * Optional slot rendered between the header and the search row. The
+   * unified "Files" attach view mounts its `InlineUploadArea` here so
+   * upload and stored-file browsing share one surface.
+   */
+  topSlot?: ReactNode;
 }
 
 // ---------------------------------------------------------------------------
@@ -520,6 +534,9 @@ export function FilesResourcePicker({
   allowedBuckets,
   initialFilter = "all",
   fillHost = false,
+  title = "Cloud Files",
+  headerIcon,
+  topSlot,
 }: FilesResourcePickerProps) {
   const currentUserId = useAppSelector(
     (s: unknown) => (s as { user?: { id?: string | null } }).user?.id ?? null,
@@ -803,11 +820,13 @@ export function FilesResourcePicker({
     >
       {/* Header */}
       <ResourcePickerSubViewHeader
-        title={isPdfExtractorFilter ? "PDF Extractor" : "Cloud Files"}
+        title={isPdfExtractorFilter ? "PDF Extractor" : title}
         onBack={onBack}
         disabled={isProcessing}
         icon={
-          <Folder className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
+          headerIcon ?? (
+            <Folder className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
+          )
         }
         actions={
           <div
@@ -846,6 +865,8 @@ export function FilesResourcePicker({
           </div>
         }
       />
+
+      {topSlot}
 
       {/* Search */}
       <div className="px-2 py-1.5 border-b border-border">

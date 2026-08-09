@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronRight, Settings2, Bug } from "lucide-react";
+import { ChevronRight, FolderOpen, Settings2, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NotesResourcePicker } from "./NotesResourcePicker";
@@ -9,7 +9,7 @@ import { TasksResourcePicker } from "./TasksResourcePicker";
 import { FilesResourcePicker } from "./FilesResourcePicker";
 import { TablesResourcePicker } from "./TablesResourcePicker";
 import { WebpageResourcePicker } from "./WebpageResourcePicker";
-import { UploadResourcePicker } from "./UploadResourcePicker";
+import { InlineUploadArea } from "./InlineUploadArea";
 import { YouTubeResourcePicker } from "./YouTubeResourcePicker";
 import { ImageUrlResourcePicker } from "./ImageUrlResourcePicker";
 import { FileUrlResourcePicker } from "./FileUrlResourcePicker";
@@ -81,33 +81,35 @@ export function ResourcePickerMenu({
 
   // Show specific resource picker based on selection
   if (activeView) {
-    if (activeView === "upload") {
-      return (
-        <UploadResourcePicker
-          onBack={() => setActiveView(null)}
-          onSelect={async (files) => {
-            // Preserve selection order and wait for every durable edge before
-            // any host is allowed to dismiss the picker.
-            let completed = true;
-            for (const file of files) {
-              const selected = await onResourceSelected({
-                type: "file",
-                data: file,
-              });
-              if (selected === false) {
-                completed = false;
-                break;
-              }
-            }
-            if (completed) onClose();
-          }}
-        />
-      );
-    }
-
-    if (activeView === "storage") {
+    if (activeView === "files") {
+      // ONE unified Files surface: upload strip on top, stored-file
+      // browse/search below (Arman's 2026-08-08 one-entry ruling).
       return (
         <FilesResourcePicker
+          title="Files"
+          headerIcon={
+            <FolderOpen className="h-3.5 w-3.5 shrink-0 text-primary" />
+          }
+          topSlot={
+            <InlineUploadArea
+              onSelect={async (files) => {
+                // Preserve selection order and wait for every durable edge
+                // before any host is allowed to dismiss the picker.
+                let completed = true;
+                for (const file of files) {
+                  const selected = await onResourceSelected({
+                    type: "file",
+                    data: file,
+                  });
+                  if (selected === false) {
+                    completed = false;
+                    break;
+                  }
+                }
+                if (completed) onClose();
+              }}
+            />
+          }
           onBack={() => setActiveView(null)}
           onSelect={async (selection) => {
             await selectOne({ type: "file", data: selection });

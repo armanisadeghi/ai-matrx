@@ -3,6 +3,7 @@ import {
   CheckSquare,
   File,
   FileText,
+  FolderOpen,
   Globe,
   Image,
   Layers,
@@ -11,14 +12,12 @@ import {
   Notebook,
   StickyNote,
   Table2,
-  Upload,
   Wrench,
 } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
 
 export type ResourcePickerViewId =
-  | "upload"
-  | "storage"
+  | "files"
   | "notes"
   | "tasks"
   | "workbooks"
@@ -56,8 +55,8 @@ export type ResourcePickerMenuCategory = {
 };
 
 /**
- * Canonical attach-menu order — Files first (both file paths adjacent at the
- * top, Arman's 2026-08-08 ruling), then MATRX records, URL ingress, and
+ * Canonical attach-menu order — Files first (ONE unified upload + stored-file
+ * entry, Arman's 2026-08-08 ruling), then MATRX records, URL ingress, and
  * this-run controls.
  */
 export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
@@ -65,17 +64,10 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
     category: "Files",
     items: [
       {
-        id: "upload",
-        label: "Upload Files",
-        icon: Upload,
+        id: "files",
+        label: "Files",
+        icon: FolderOpen,
         iconClassName: "text-primary",
-        requiresCapability: null,
-      },
-      {
-        id: "storage",
-        label: "Stored Files",
-        icon: FileText,
-        iconClassName: "text-blue-600 dark:text-blue-400",
         requiresCapability: null,
       },
       {
