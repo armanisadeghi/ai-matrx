@@ -41,7 +41,7 @@ build time as you go.
 
 ## THE CONVERSION CHECKLIST — read before replacing any hand-rolled door
 
-Eighteen review findings have landed on the Wave 2/3 PR so far. **Most were the
+Nineteen review findings have landed on the Wave 2/3 PR so far. **Most were the
 same mistake in different clothes:** a conversion changed what the original door
 DID. Adopting `EntityRef` is not a drop-in — the hand-rolled code it replaces
 encodes decisions you must carry over deliberately.
@@ -54,8 +54,8 @@ changed). The last group is the dangerous one — 11 had already shipped in thre
 surfaces before a bot flagged the fourth, and 13 is the same shape one level
 up — the surface silently changing what the PRIMITIVE does.
 
-Before replacing hand-rolled code with a shared primitive, answer all thirteen.
-1-3, 6-7 and 9-10 are door-specific; 4, 5, 8, 11, 12 and 13 apply to ANY
+Before replacing hand-rolled code with a shared primitive, answer all fourteen.
+1-3, 6-7 and 9-10 are door-specific; 4, 5, 8, 11, 12, 13 and 14 apply to ANY
 primitive adoption:
 
 1. **Where did the old primary click go?** `router.push` (in place) or
@@ -256,6 +256,28 @@ primitive adoption:
     hazard the Wave 3 scouting notes had flagged in advance and the
     implementation then did not handle — a written-down hazard is not a
     handled one.)*
+
+14. **Turning a primitive's capability ON can DUPLICATE one the surface already
+    has.** The mirror image of 13, and I shipped it three times in the commit
+    that fixed 13. `ContextMenuEntityRef.resourceType` lights up v3's generic
+    **Share**; notes, conversations and agents all already carry a `share`
+    entry in their own action registry, and the row hands that SAME config to
+    the right-click menu — so declaring a `resourceType` puts two Share items,
+    two implementations, in one menu. I had written the rule out in prose for
+    `OrgResourceDetail` ("two share buttons, different meanings, on one row")
+    and then violated it three rows over, because I added `resourceType`
+    wherever `utils/permissions/registry.ts` had an entry instead of asking
+    what the row's menu already contained.
+
+    **The check, before enabling any capability flag on a shared primitive:
+    grep the surface's own action list for the verb you are about to switch
+    on.** Present → leave the flag off and let the established path win (it is
+    the one every other surface uses). Absent → turn it on, that is a real
+    gain. Here: the working-documents rail has no Share of its own, so it keeps
+    `resourceType` and gains the door; the other four pass `entity` without it
+    and gain Attach To only. *(Caught by Cursor Bugbot on the conversation
+    rows; the agents and notes instances were the same bug, found by auditing
+    every surface the same way rather than fixing only the one reported.)*
 
 Everything the primitive cannot decide for itself is documented on the props;
 read them rather than inferring from a neighbouring call site.
@@ -864,8 +886,14 @@ Also: `features/user-lists/` declares `ActionConfig<T>[]` and
 is **stale** — items 1, 2, 4, 5, 6, 7 are done. 45 live consumers.
 
 Remaining bespoke/fake right-click menus:
-- `features/organizations/components/OrgResourceDetail.tsx:392-450` — the **only**
-  remaining ad-hoc `@/components/ui/context-menu` consumer. Zero v3 capability.
+- [x] ~~`OrgResourceDetail.tsx` — the only remaining ad-hoc
+  `@/components/ui/context-menu` consumer~~ **SHIPPED 2026-08-09.** Now an
+  `ItemContextMenu` carrying the same Share-with-team / Unshare pair as an
+  `ItemMenuConfig`, so the row gains every v3 capability it had none of (Copy,
+  Copy-as, Export, Convert, AI actions, bound agents, Attach To). It passes
+  `entity` WITHOUT `resourceType` — see checklist 14: the row's own "Share with
+  team" is the org association, v3's Share is the permission modal, and putting
+  both on one row is the two-authorities defect wearing a different hat.
 - `features/notes/components/NotesSidebar.tsx` + `NoteTabs.tsx` + `NoteTabItem.tsx`
   — coordinate-anchored `AdvancedMenu` masquerading as right-click (legacy shell;
   dies with it — the modern `NoteSidebarRow` is already on v3).

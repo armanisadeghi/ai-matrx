@@ -36,12 +36,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+import { ItemContextMenu } from "@/components/official/item/ItemMenu";
+import type { ItemMenuConfig } from "@/components/official/item/types";
 import {
   UserAvatarDisplay,
   type UserLike,
@@ -52,7 +48,11 @@ import {
 } from "@/features/organizations/service";
 import { revokeOrgShare } from "@/utils/permissions/orgModeration";
 import { getShareableResource } from "@/utils/permissions/registry";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  resolveEntityToken,
+  tryGetEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
+import { isEntityTypeToken } from "@/types/generated/entity-types.generated";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   getEntry,
@@ -383,41 +383,83 @@ export function OrgResourceDetail() {
 // ─── Rows ───────────────────────────────────────────────────────────────────
 
 /**
- * Sharing-only row menu. Open / Open-in-new-tab / Peek are NOT here: `EntityRef`
- * renders all three inline on the row's name, from the same registries. Adding
- * them back would be a second, drifting copy of doors we already own.
+ * The row's right-click menu, on the ONE canonical menu (v3) via
+ * `ItemContextMenu` — this was the last ad-hoc `@/components/ui/context-menu`
+ * consumer in the repo, and being ad-hoc cost it every v3 capability: Copy,
+ * Copy-as, Export, Convert, AI actions, bound agents, Attach To.
+ *
+ * Open / Open-in-new-tab / Peek are still NOT here: `EntityRef` renders all
+ * three inline on the row's name, from the same registries. Adding them back
+ * would be a second, drifting copy of doors we already own.
+ *
+ * NO `resourceType` on the entity, deliberately. It would light up v3's
+ * generic Share (the permission ShareModal) beside this row's own "Share with
+ * team" (the org association) — two share buttons, different meanings, on one
+ * row. That is the two-authorities defect this sweep exists to kill, so org
+ * sharing stays the single sharing path here and `entity` contributes Attach
+ * To only.
  */
 function RowContextMenu({
+  token,
+  id,
+  title,
   isShared,
   onShare,
   onUnshare,
   children,
 }: {
+  token: string;
+  id: string;
+  title: string;
   isShared: boolean;
   onShare?: () => void;
   onUnshare?: () => void;
   children: React.ReactNode;
 }) {
+  const config = (): ItemMenuConfig => ({
+    sections: [
+      {
+        id: "org-sharing",
+        items: isShared
+          ? [
+              {
+                id: "unshare",
+                label: "Unshare",
+                icon: X,
+                tone: "destructive",
+                onSelect: () => onUnshare?.(),
+              },
+            ]
+          : [
+              {
+                id: "share",
+                label: "Share with team",
+                icon: Plus,
+                disabled: !onShare,
+                onSelect: () => onShare?.(),
+              },
+            ],
+      },
+    ],
+  });
+
+  // Canonicalise once (checklist 3): the catalogue's token is meant to be
+  // canonical, but resolving here means an alias can never silently cost this
+  // row its Attach To while the name beside it opens fine.
+  const canonicalToken = resolveEntityToken(token);
+
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className="w-48">
-        {isShared ? (
-          <ContextMenuItem
-            onSelect={() => onUnshare?.()}
-            className="text-red-600 dark:text-red-400 focus:text-red-600"
-          >
-            <X className="h-4 w-4" />
-            Unshare
-          </ContextMenuItem>
-        ) : (
-          <ContextMenuItem onSelect={() => onShare?.()} disabled={!onShare}>
-            <Plus className="h-4 w-4" />
-            Share with team
-          </ContextMenuItem>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
+    <ItemContextMenu
+      config={config}
+      sourceFeature="system"
+      entity={
+        isEntityTypeToken(canonicalToken)
+          ? { type: canonicalToken, id, title }
+          : undefined
+      }
+    >
+      {children}
+    </ItemContextMenu>
   );
 }
 
@@ -438,7 +480,13 @@ function SharedRow({
 }) {
   return (
     <li>
-      <RowContextMenu isShared onUnshare={onUnshare}>
+      <RowContextMenu
+        token={token}
+        id={item.id}
+        title={item.title}
+        isShared
+        onUnshare={onUnshare}
+      >
         <div className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-card hover:bg-accent/40 transition-colors">
           <EntityRef
             token={token}
@@ -495,6 +543,9 @@ function MineRow({
   return (
     <li>
       <RowContextMenu
+        token={token}
+        id={item.id}
+        title={item.title}
         isShared={isShared}
         onShare={onShare}
         onUnshare={onUnshare}

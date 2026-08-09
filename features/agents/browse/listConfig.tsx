@@ -146,16 +146,16 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
   surfaceKey: "agents-browse",
   entityLabel: { singular: "agent", plural: "agents" },
   sourceFeature: "agent",
-  // Lights up Attach To and Share in the row's right-click menu. `resourceType`
-  // is the same `"agent"` the kebab's ShareModal already uses — one sharing
-  // identity, two entry points, not two answers. `isOwner` gates the share
-  // affordances the same way the row actions do.
+  // Lights up Attach To. **NO `resourceType`**, deliberately: the agent action
+  // registry already carries Share (`agentActionRegistry.tsx`), and the shell
+  // feeds that same config to the right-click menu — so declaring a
+  // resourceType would put v3's generic Share beside the registry's, two
+  // implementations of one verb in one menu. The registry's Share wins because
+  // it is the one every other agent surface uses.
   getRowEntity: (row) => ({
     type: "agent",
     id: row.id,
     title: row.name,
-    resourceType: "agent",
-    isOwner: row.is_owner,
   }),
   scopes: AGENT_LIST_SCOPES,
   service: {

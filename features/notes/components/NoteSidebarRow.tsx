@@ -106,11 +106,15 @@ export function NoteSidebarRow({
       <div className="flex-1 min-w-0">
         <ItemRow
           sourceFeature="notes"
+          // NO `resourceType`, and this is a RULE not a preference: this row's own
+          // menu already carries Share (opening the canonical `shareModal`), so
+          // declaring a resourceType would add v3's generic Share BESIDE it —
+          // two Share entries, two implementations, one menu. `entity` without
+          // `resourceType` contributes Attach To only, which nothing else offers.
           entity={{
             type: "note",
             id: note.id,
             title: note.label,
-            resourceType: "note",
           }}
           size="sm"
           label={note.label}
