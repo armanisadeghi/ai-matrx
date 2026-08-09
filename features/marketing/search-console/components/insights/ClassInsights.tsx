@@ -41,6 +41,9 @@ import {
   GSC_TRAFFIC_CLASSES,
   formatCount,
 } from "@/features/marketing/search-console/types";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 function num(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
@@ -210,7 +213,7 @@ export function QualityView({
         </button>
       </div>
       <div className="shrink-0 overflow-hidden rounded-md border border-border">
-        <table className="w-full text-xs">
+        <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
           <thead className="bg-muted/60 text-left">
             <tr>
               <th className="px-2 py-1.5 font-medium">Class</th>

@@ -32,6 +32,9 @@ import type {
   NounActions,
 } from "@/features/action-catalog/types";
 import type { ActionShapeSelection } from "@/features/action-catalog/components/ActionShapePanel";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const ALL_FAMILIES = "__all__";
 
@@ -143,7 +146,7 @@ export function ActionCatalogGrid({
 
       {/* The matrix */}
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full border-collapse text-sm">
+        <table className={cn("border-collapse text-sm", MOBILE_TABLE_FROZEN)}>
           <thead className="sticky top-0 z-10 bg-card">
             <tr className="border-b border-border text-left">
               <th className="px-3 py-1.5 font-medium text-muted-foreground">
@@ -222,7 +225,7 @@ function FunctionsSection({
       <div className="bg-muted/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Functions (Plane 2) &amp; legacy directives
       </div>
-      <table className="w-full border-collapse text-sm">
+      <table className={cn("border-collapse text-sm", MOBILE_TABLE_FROZEN)}>
         <tbody>
           {visible.map((f) => (
             <tr
@@ -275,9 +278,7 @@ function FamilyGroup({
       {rows.map((n) => (
         <tr
           key={n.noun}
-          className={cn(
-            "border-b border-border/60 hover:bg-accent/40 transition-colors",
-          )}
+          className="border-b border-border/60 hover:bg-accent/40 transition-colors"
         >
           <td className="px-3 py-1 font-medium text-foreground">{n.noun}</td>
           <td className="px-3 py-1 font-mono text-xs text-muted-foreground">

@@ -33,6 +33,8 @@ import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRe
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { PublicPageLink } from "./PublicPageLink";
 import { podcastShowAdminHref } from "../../utils";
+import { cn } from "@/lib/utils";
+import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
 
 function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
@@ -167,7 +169,7 @@ export function ShowsClient() {
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
-        <table className="w-full text-sm">
+        <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
           <thead className="sticky top-0 bg-muted/50 border-b z-10">
             <tr>
               <th className="text-left px-4 py-2 font-medium text-muted-foreground">

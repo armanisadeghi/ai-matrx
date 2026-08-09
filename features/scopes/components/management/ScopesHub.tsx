@@ -50,6 +50,12 @@ import type {
   OrgNode,
   ScopeTypeNode,
 } from "@/features/scopes/types";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_CELL,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+} from "@/components/official/mobile-table/mobileTable";
 
 /** Reasonable cap on context-item columns so wide catalogs don't explode
  *  the table; overflow is announced in the header ("+N more"). */
@@ -357,19 +363,20 @@ function ScopeTypeTable({
         <div className="overflow-x-auto">
           <table
             className={cn(
-              "w-full text-sm border-collapse",
+              "text-sm border-collapse",
+              MOBILE_TABLE,
               isPending && "opacity-60 pointer-events-none",
             )}
           >
             <thead>
               <tr className="border-b border-border/50 text-left">
-                <th className="px-3 sm:px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap">
+                <th className={cn("px-3 sm:px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-card")}>
                   {type.label_singular}
                 </th>
                 {columns.map((item) => (
                   <th
                     key={item.id}
-                    className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap max-w-[16rem] truncate"
+                    className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-foreground/75 whitespace-nowrap sm:max-w-[16rem] sm:truncate"
                     title={item.description || item.display_name}
                   >
                     {item.display_name}
@@ -399,11 +406,16 @@ function ScopeTypeTable({
                         : undefined
                     }
                   >
-                    <td className="px-3 sm:px-4 py-2 whitespace-nowrap">
-                      {/* The name is the door: a real anchor (cmd/middle-click
-                          opens a new tab, keyboard reaches it, screen readers
-                          announce a link) plus peek + new-tab controls. The
-                          whole-row click stays as a mouse convenience. */}
+                    {/* Main added the mobile frozen-cell class; this branch
+                        made the name a door. Both survive: the name is a real
+                        anchor (cmd/middle-click, keyboard, screen readers) with
+                        peek + new-tab, inside the frozen first column. */}
+                    <td
+                      className={cn(
+                        "px-3 sm:px-4 py-2 whitespace-nowrap",
+                        MOBILE_TABLE_FROZEN_CELL,
+                      )}
+                    >
                       <EntityRef
                         token="scope"
                         id={scope.id}
@@ -422,7 +434,7 @@ function ScopeTypeTable({
                       return (
                         <td
                           key={item.id}
-                          className="px-3 py-2 max-w-[18rem]"
+                          className={cn("px-3 py-2 sm:max-w-[18rem]", MOBILE_TABLE_CELL)}
                           title={summary ?? undefined}
                         >
                           {summary ? (

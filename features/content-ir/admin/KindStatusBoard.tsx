@@ -31,6 +31,10 @@ import type {
   KindBoardRow,
   KindStatusBoardModel,
 } from "@/features/content-ir/admin/kind-detail-types";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 export const COLUMN_HEADING: Record<AssetColumn, string> = {
   definition: "Definition",
@@ -183,7 +187,7 @@ export default function KindStatusBoard({
 
       {/* Matrix */}
       <div className="overflow-x-auto border-t border-border">
-        <table className="w-full text-sm">
+        <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
           <thead>
             <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
               <th className="px-4 py-1.5 font-medium">Kind</th>

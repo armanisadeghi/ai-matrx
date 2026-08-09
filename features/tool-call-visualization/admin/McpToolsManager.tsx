@@ -96,6 +96,9 @@ import {
   ADMIN_TOOL_REGISTRY_SURFACE_NAME,
   createAdminToolRegistryScope,
 } from "@/features/surfaces/manifests/admin-tool-registry.manifest";
+import {
+  MOBILE_TABLE,
+} from "@/components/official/mobile-table/mobileTable";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Tools (/administration/agents/mcp-tools)";
@@ -1577,7 +1580,7 @@ export function McpToolsManager() {
       {/* Table */}
       <div className="flex-1 min-h-0 overflow-auto px-4 py-3 pb-safe">
         <div className="border border-border rounded-md bg-card">
-          <table className="w-full min-w-max text-sm border-collapse">
+          <table className={cn("text-sm border-collapse", MOBILE_TABLE)}>
             <thead className="sticky top-0 z-20 bg-card shadow-[0_1px_0_0_var(--border)]">
               <tr className="border-b border-border">
                 <th className="w-[36px] px-2 py-2 text-left">
