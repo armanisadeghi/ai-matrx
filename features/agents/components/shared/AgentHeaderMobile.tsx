@@ -178,8 +178,8 @@ export function AgentHeaderMobile({
                   handleModeChange(m.id);
                 }}
                 className={cn(
-                  "flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors",
-                  idx < MODES.length - 1 && "border-b border-white/[0.06]",
+                  "flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors",
+                  idx < MODES.length - 1 && "border-b border-glass-edge",
                 )}
               >
                 <Icon

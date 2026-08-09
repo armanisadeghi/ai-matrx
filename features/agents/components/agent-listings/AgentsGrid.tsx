@@ -965,9 +965,9 @@ export function AgentsGrid() {
                     setFilterDetailKey(null);
                   }}
                   className={cn(
-                    "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
+                    "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
                     idx < sortOptions.length - 1 &&
-                      "border-b border-white/[0.06]",
+                      "border-b border-glass-edge",
                   )}
                 >
                   <span
@@ -998,8 +998,8 @@ export function AgentsGrid() {
                     setFilterDetailKey(null);
                   }}
                   className={cn(
-                    "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
-                    idx < arr.length - 1 && "border-b border-white/[0.06]",
+                    "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
+                    idx < arr.length - 1 && "border-b border-glass-edge",
                   )}
                 >
                   <span
@@ -1019,13 +1019,13 @@ export function AgentsGrid() {
           ) : filterDetailKey === "cats" ? (
             <>
               <div
-                className="sticky top-0 z-10 px-4 pt-2 pb-3 border-b border-white/[0.06] space-y-2"
+                className="sticky top-0 z-10 px-4 pt-2 pb-3 border-b border-glass-edge space-y-2"
                 style={{
                   background: "var(--matrx-glass-bg)",
                   backdropFilter: "blur(20px)",
                 }}
               >
-                <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-white/[0.06] border border-white/[0.08]">
+                <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-glass border border-glass-edge">
                   <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <input
                     type="text"
@@ -1044,7 +1044,7 @@ export function AgentsGrid() {
                 {includedCats.length > 0 && (
                   <button
                     onClick={() => includedCats.forEach(toggleCategory)}
-                    className="w-full h-8 rounded-lg border border-white/[0.12] text-[13px] font-medium text-primary active:bg-white/10 transition-colors bg-white/[0.04] hover:bg-white/[0.08]"
+                    className="w-full h-8 rounded-lg border border-glass-edge text-[13px] font-medium text-primary active:bg-glass-active transition-colors bg-glass hover:bg-glass-hover"
                   >
                     Clear filter ({includedCats.length} selected)
                   </button>
@@ -1063,8 +1063,8 @@ export function AgentsGrid() {
                       key={cat}
                       onClick={() => toggleCategory(cat)}
                       className={cn(
-                        "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
-                        idx < arr.length - 1 && "border-b border-white/[0.06]",
+                        "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
+                        idx < arr.length - 1 && "border-b border-glass-edge",
                       )}
                     >
                       <div
@@ -1089,13 +1089,13 @@ export function AgentsGrid() {
           ) : filterDetailKey === "tags" ? (
             <>
               <div
-                className="sticky top-0 z-10 px-4 pt-2 pb-3 border-b border-white/[0.06] space-y-2"
+                className="sticky top-0 z-10 px-4 pt-2 pb-3 border-b border-glass-edge space-y-2"
                 style={{
                   background: "var(--matrx-glass-bg)",
                   backdropFilter: "blur(20px)",
                 }}
               >
-                <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-white/[0.06] border border-white/[0.08]">
+                <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-glass border border-glass-edge">
                   <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <input
                     type="text"
@@ -1114,7 +1114,7 @@ export function AgentsGrid() {
                 {includedTags.length > 0 && (
                   <button
                     onClick={() => includedTags.forEach(toggleTag)}
-                    className="w-full h-8 rounded-lg border border-white/[0.12] text-[13px] font-medium text-primary active:bg-white/10 transition-colors bg-white/[0.04] hover:bg-white/[0.08]"
+                    className="w-full h-8 rounded-lg border border-glass-edge text-[13px] font-medium text-primary active:bg-glass-active transition-colors bg-glass hover:bg-glass-hover"
                   >
                     Clear filter ({includedTags.length} selected)
                   </button>
@@ -1133,8 +1133,8 @@ export function AgentsGrid() {
                       key={tag}
                       onClick={() => toggleTag(tag)}
                       className={cn(
-                        "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
-                        idx < arr.length - 1 && "border-b border-white/[0.06]",
+                        "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
+                        idx < arr.length - 1 && "border-b border-glass-edge",
                       )}
                     >
                       <div
@@ -1170,8 +1170,8 @@ export function AgentsGrid() {
                     setFilterDetailKey(null);
                   }}
                   className={cn(
-                    "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
-                    idx < arr.length - 1 && "border-b border-white/[0.06]",
+                    "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
+                    idx < arr.length - 1 && "border-b border-glass-edge",
                   )}
                 >
                   <span
@@ -1202,8 +1202,8 @@ export function AgentsGrid() {
                     setFilterDetailKey(null);
                   }}
                   className={cn(
-                    "flex items-center w-full px-5 min-h-[44px] active:bg-white/5 transition-colors",
-                    idx < arr.length - 1 && "border-b border-white/[0.06]",
+                    "flex items-center w-full px-5 min-h-[44px] active:bg-glass-active transition-colors",
+                    idx < arr.length - 1 && "border-b border-glass-edge",
                   )}
                 >
                   <span
@@ -1224,7 +1224,7 @@ export function AgentsGrid() {
             <>
               <button
                 onClick={() => setFilterDetailKey("show")}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Show
@@ -1245,7 +1245,7 @@ export function AgentsGrid() {
               </button>
               <button
                 onClick={() => setFilterDetailKey("sortBy")}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Sort By
@@ -1262,7 +1262,7 @@ export function AgentsGrid() {
               </button>
               <button
                 onClick={() => setFilterDetailKey("fav")}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Favorites
@@ -1283,7 +1283,7 @@ export function AgentsGrid() {
               </button>
               <button
                 onClick={() => setFilterDetailKey("arch")}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Archived
@@ -1304,7 +1304,7 @@ export function AgentsGrid() {
               </button>
               <button
                 onClick={() => setFilterDetailKey("cats")}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Category
@@ -1323,7 +1323,7 @@ export function AgentsGrid() {
               </button>
               <button
                 onClick={() => setFilterDetailKey("tags")}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Tags
@@ -1342,7 +1342,7 @@ export function AgentsGrid() {
               </button>
               <button
                 onClick={toggleFavoritesFirst}
-                className="flex items-center w-full px-5 min-h-[52px] active:bg-white/5 transition-colors border-b border-white/[0.06]"
+                className="flex items-center w-full px-5 min-h-[52px] active:bg-glass-active transition-colors border-b border-glass-edge"
               >
                 <span className="text-[15px] font-medium flex-1 text-left">
                   Favorites First
@@ -1357,7 +1357,7 @@ export function AgentsGrid() {
                 >
                   <span
                     className={cn(
-                      "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all",
+                      "absolute top-0.5 w-4 h-4 rounded-full bg-background shadow-sm transition-all",
                       favoritesFirst ? "left-4" : "left-0.5",
                     )}
                   />

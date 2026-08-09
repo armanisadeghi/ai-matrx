@@ -407,7 +407,7 @@ function OpenModal() {
         <Credenza open={isOpen} onOpenChange={setIsOpen}>
             <CredenzaTrigger asChild>
                 <Button variant="outline"
-                        className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow">
+                        className="bg-card hover:bg-accent text-foreground font-semibold py-2 px-4 border border-border rounded shadow">
                     <PlusCircle className="mr-2 h-4 w-4"/> Open Enhanced Modal
                 </Button>
             </CredenzaTrigger>

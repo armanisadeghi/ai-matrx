@@ -145,7 +145,7 @@ export function MobilePanelShell({
                 <button
                   key={p.id}
                   onClick={() => show(p.id)}
-                  className="flex min-h-[52px] w-full items-center border-b border-white/[0.06] px-5 text-left transition-colors last:border-0 active:bg-white/5"
+                  className="flex min-h-[52px] w-full items-center border-b border-glass-edge px-5 text-left transition-colors last:border-0 active:bg-glass-active"
                 >
                   {Icon && (
                     <Icon className="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />

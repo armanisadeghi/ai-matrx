@@ -19,7 +19,7 @@ export default function OAuthProvider({
   const isSlack = config.name.toLowerCase() === 'slack';
 
   return (
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-card shadow rounded-lg p-6">
         <div className="flex items-center mb-4">
           <div className={`text-${config.color}`}>
             {config.iconSvg}

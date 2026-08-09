@@ -71,7 +71,7 @@ export default function DirectSlackApp() {
           </div>
 
           {!isConnected ? (
-              <div className="bg-white shadow rounded-lg p-6">
+              <div className="bg-card shadow rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-gray-800 mb-4">Enter Your Slack Token</h2>
 
                 {error && (

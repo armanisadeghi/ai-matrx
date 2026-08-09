@@ -223,7 +223,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
   }
 
   return (
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="bg-card shadow rounded-lg overflow-hidden">
         <div className="p-4 bg-purple-600 text-white">
           <h2 className="text-xl font-semibold">Slack Integration</h2>
           {botInfo && (
@@ -301,7 +301,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
           {/* Chat area */}
           <div className="flex-1 flex flex-col">
             {/* Channel header */}
-            <div className="p-3 border-b border-gray-200 bg-white flex justify-between items-center">
+            <div className="p-3 border-b border-border bg-card flex justify-between items-center">
               <h3 className="font-medium">{getSelectedChannelName()}</h3>
               <button
                   className="text-sm bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded flex items-center"
@@ -320,7 +320,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white max-h-80">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-card max-h-80">
               {isLoading && selectedChannel ? (
                   <div className="flex justify-center p-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
@@ -398,7 +398,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
             </div>
 
             {/* Message input */}
-            <div className="border-t border-gray-200 p-3 bg-white">
+            <div className="border-t border-border p-3 bg-card">
               <form onSubmit={handleSendMessage} className="flex flex-col space-y-2">
                 <div className="flex">
                   <input

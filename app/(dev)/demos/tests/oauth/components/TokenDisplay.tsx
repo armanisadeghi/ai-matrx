@@ -40,7 +40,7 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({ providerStates }) => {
   }
 
   return (
-      <div className="mt-8 bg-white shadow rounded-lg p-6">
+      <div className="mt-8 bg-card shadow rounded-lg p-6">
         <h2 className="text-xl font-bold mb-4">Access Tokens</h2>
         <p className="text-sm text-gray-500 mb-4">
           These tokens can be used to access the respective APIs. Click to expand and view the full token.

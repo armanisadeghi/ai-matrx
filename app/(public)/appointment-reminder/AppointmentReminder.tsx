@@ -22,7 +22,7 @@ const AppointmentReminder = ({ appointment }: { appointment: Appointment }) => {
     : appointment.date;
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-lg">
+    <div className="max-w-md mx-auto bg-card rounded-xl shadow-md overflow-hidden md:max-w-lg">
       {/* Header with title */}
       <div className="bg-blue-600 px-6 py-4">
         <h2 className="text-xl font-bold text-white">{appointment.title}</h2>
@@ -81,7 +81,7 @@ const AppointmentReminder = ({ appointment }: { appointment: Appointment }) => {
       
       {/* Action buttons */}
       <div className="px-6 py-4 bg-gray-50 border-t flex justify-between">
-        <button className="px-4 py-2 bg-white border border-gray-300 rounded text-gray-700 hover:bg-gray-100 font-medium text-sm">
+        <button className="px-4 py-2 bg-card border border-border rounded text-muted-foreground hover:bg-accent font-medium text-sm">
           Reschedule
         </button>
         <button className="px-4 py-2 bg-blue-600 rounded text-white hover:bg-blue-700 font-medium text-sm flex items-center">
