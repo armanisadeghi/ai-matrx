@@ -9,31 +9,31 @@ import {
 } from "@radix-ui/react-icons"
 
 import { cn } from "@/styles/themes/utils"
-import { useIsMounted } from "@/hooks/use-is-mounted"
 
 /**
- * Hydration-safe ContextMenu wrapper.
- * Radix UI generates dynamic IDs for aria-controls that can differ between
- * SSR and client, causing hydration mismatches. This wrapper defers rendering
- * until after hydration to prevent these errors.
+ * Right-click context menu (radix).
+ *
+ * THE ROOT RENDERS UNCONDITIONALLY — no mount gate. This wrapper used to defer
+ * rendering until after hydration ("Radix generates dynamic aria-controls ids
+ * that differ between SSR and client"), and that justification was false:
+ * `ContextMenuTrigger` renders only `data-state` / `data-disabled` while
+ * closed (verified against @radix-ui/react-context-menu 2.3.1), and a closed
+ * menu emits no id at all. There was never a mismatch to defend against.
+ *
+ * The gate was actively harmful, because the Trigger wraps ALWAYS-VISIBLE
+ * content: returning `null` deleted the wrapped subtree from the server render
+ * and the first client render. Around a self-contained panel that is invisible;
+ * around a list row it means the list paints EMPTY and fills in after
+ * hydration. Deferring the Root would also orphan the Trigger
+ * ("ContextMenuTrigger must be used within ContextMenu") for any consumer that
+ * tried to render the Trigger while the Root was gated.
+ *
+ * A second, ungated copy of this wrapper carrying exactly this reasoning had
+ * existed at `components/ui/context-menu.tsx` with zero consumers — the
+ * correct implementation sitting unused beside the defective one. Deleted;
+ * this is now the only copy.
  */
-const ContextMenu = React.forwardRef<
-  React.ComponentRef<typeof ContextMenuPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Root>
->(({ children, ...props }, ref) => {
-  const isMounted = useIsMounted()
-  
-  if (!isMounted) {
-    return null
-  }
-  
-  return (
-    <ContextMenuPrimitive.Root {...props}>
-      {children}
-    </ContextMenuPrimitive.Root>
-  )
-})
-ContextMenu.displayName = "ContextMenu"
+const ContextMenu = ContextMenuPrimitive.Root
 
 const ContextMenuTrigger = ContextMenuPrimitive.Trigger
 

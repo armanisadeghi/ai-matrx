@@ -32,7 +32,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useIsMounted } from "@/hooks/use-is-mounted";
 import {
   FloatingSelectionIcon,
   shouldRenderFloatingIcon,
@@ -173,7 +172,6 @@ export function ContextMenuV3({
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [showFloatingIcon, setShowFloatingIcon] = useState(false);
   const isMobile = useIsMobile();
-  const isMounted = useIsMounted();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const capturedSelection = useRef<CapturedSelection | null>(null);
@@ -495,6 +493,13 @@ export function ContextMenuV3({
   };
   const handleTouchStart = (e: React.TouchEvent) => {
     if (suppressed) return;
+    // The touch half of the native-menu rule. Long-press inside a text field IS
+    // the OS text callout (Select / Paste / Look Up) — pre-empting it at 480ms
+    // leaves a mobile user with no way to paste at all, which is worse than the
+    // desktop case because there is no right-click to fall back to. The guard
+    // shipped on the three pointer paths and missed this one, so the stated
+    // invariant held on desktop only.
+    if (!isEditable && yieldsToNativeTextMenu(e.target)) return;
     const t = e.touches[0];
     if (!t) return;
     touchStart.current = {
@@ -670,18 +675,6 @@ export function ContextMenuV3({
       </>
     );
   }
-
-  // THE SHELL MUST NEVER DELETE THE SURFACE IT WRAPS. `components/ui/
-  // context-menu`'s hydration-safe `ContextMenu` returns `null` until mounted
-  // (Radix aria ids differ between server and client), which is fine when the
-  // wrapped thing is a self-contained panel and catastrophic when it is a row
-  // in a list: the children vanish from the server render AND the first client
-  // render, so the surface paints EMPTY and fills in after hydration. Rendering
-  // the children bare until then keeps the hydration guarantee (no Radix ids on
-  // the server) without the disappearing act. Found when the canonical list
-  // shell started wrapping every `<tr>` — the same latent bug was in all 45 v3
-  // consumers, just less visible.
-  if (!isMounted) return <>{children}</>;
 
   return (
     <>
