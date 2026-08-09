@@ -15,7 +15,7 @@ import React, {
 } from "react";
 import dynamic from "next/dynamic";
 import { Eye, Loader2 } from "lucide-react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   updateNoteContent,
   removeInstanceTab,
@@ -65,7 +65,6 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { NoteSaveFailureBanner } from "./NoteSaveFailureBanner";
 import { NoteDraftRecoveryBanner } from "./NoteDraftRecoveryBanner";
-import { registerNotesDraftSource } from "../utils/notesDrafts";
 import { FindReplaceBar } from "./FindReplaceBar";
 import { FindMatchOverlay } from "./FindMatchOverlay";
 import { RecentChangeOverlay } from "./RecentChangeOverlay";
@@ -115,17 +114,7 @@ export function NoteContentEditor({
   embedded = false,
 }: NoteContentEditorProps) {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
   const instanceId = useNotesInstanceId();
-
-  // Unsaved-work snapshots: while an editor is mounted, the local-draft store
-  // can pull every dirty note out of Redux. Registration is idempotent — the
-  // primitive keys sources by namespace, so split view / windows just replace
-  // the collector. See lib/local-drafts/FEATURE.md.
-  useEffect(
-    () => registerNotesDraftSource(() => store.getState()),
-    [store],
-  );
 
   // ── Check if note exists in Redux ────────────────────────────────
   const noteExists = useAppSelector(selectNoteById(noteId));

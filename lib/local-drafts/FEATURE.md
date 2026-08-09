@@ -34,24 +34,35 @@ tab, every autosave was RLS-filtered to 0 rows for ~14 hours, and the
     that discards in-memory state.
   - `listDrafts(namespace, ownerId)` / `getDraft(namespace, entityId, ownerId)`
   - `discardDraft(namespace, entityId)` — restored, dismissed, or saved.
+  - `subscribeDrafts(listener)` / `getDraftsVersion()` — a capture can land
+    while a recovery UI is already on screen; a strip that only reads on mount
+    would hide the rescue until a remount.
 - `localDrafts.test.ts` — the round-trip + ownership + TTL guards.
 
 **Consumers**
 
 | Feature | Source | Capture triggers | Recovery UI |
 |---|---|---|---|
-| Notes | `features/notes/utils/notesDrafts.ts` (every `_dirty` record) | identity drift, sign-out, unload, 3 consecutive save failures | `NoteDraftRecoveryBanner` (open note) + `NotesDraftRecoveryList` (notes with no server row) |
+| Notes | `features/notes/utils/notesDrafts.ts` (every `_dirty` record + any live editor buffer ahead of Redux), registered for the STORE's lifetime in `lib/redux/store.ts` | identity drift, sign-out, unload, 3 consecutive save failures | `NoteDraftRecoveryBanner` (open note) + `NotesDraftRecoveryList` (notes with no server row) |
 | `components/layout/AuthSessionWatcher.tsx` | — | calls `captureDrafts` before the blocking overlay renders | — |
 
 ---
 
 ## Invariants
 
-- **A draft is offered back ONLY to the `ownerId` that wrote it.** The identity-
-  drift case means the account holding the cookie after a reload is often NOT
-  the account that typed the text; restoring across that boundary would leak
-  one user's writing into another's record. Sources stamp the OWNING record's
-  user id, not the currently signed-in one.
+- **A draft is offered back ONLY to the `ownerId` that wrote it** — the account
+  that TYPED it (the booted session identity Redux holds, which still names the
+  typist after a cookie rotation), never the record's owner. The identity-drift
+  case means the account holding the cookie after a reload is often not the one
+  that typed, and on a shared note the editor is not the creator: stamping
+  `created_by` would both hide a sharee's rescue from them and offer their
+  words to somebody else.
+- **A collector must outlive the UI.** Register for the app/store lifetime, not
+  from a mounted component — unsaved state survives closing the last tab, and a
+  capture at that moment must still find it.
+- **Capture what the user SEES.** A feature that debounces keystrokes into its
+  store must hand over the pre-debounce buffer; rescuing the store copy minus
+  the last sentence is its own small data loss.
 - **Never auto-apply a draft.** Silently overwriting server content with a
   browser snapshot is a second way to lose work. The UI offers Restore /
   Discard / Copy; the user decides.
@@ -72,9 +83,10 @@ tab, every autosave was RLS-filtered to 0 rows for ~14 hours, and the
 
 1. Write a collector that maps your feature's unsaved entities to
    `LocalDraftInput[]` — one file, no storage logic (see
-   `features/notes/utils/notesDrafts.ts`).
-2. Register it from a mounted client component (`registerDraftSource` is
-   idempotent per id; remounts just replace the collector).
+   `features/notes/utils/notesDrafts.ts`). Read the live buffer, not just the
+   debounced store copy.
+2. Register it once for the store's lifetime (`lib/redux/store.ts`), not from a
+   component. `registerDraftSource` is idempotent per id.
 3. Render a recovery affordance where the entity opens, and — if the entity can
    exist with no server row — a surface-level list so an unrecoverable record
    still has a door.
@@ -83,5 +95,8 @@ tab, every autosave was RLS-filtered to 0 rows for ~14 hours, and the
 
 ## Change log
 
+- `2026-08-09` — Post-review hardening: collectors capture the pre-debounce
+  editor buffer, drafts are stamped with the typing account, the notes source
+  registers for the store's lifetime, and the store notifies subscribers.
 - `2026-08-09` — Created. Generic snapshot store + notes consumer + capture
   before the `AuthSessionWatcher` blocking overlay (D132 remainder a).

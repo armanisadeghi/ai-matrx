@@ -39,6 +39,39 @@ const TRUNCATION_MARKER =
 const sources = new Map<string, DraftSource>();
 let unloadListenerAttached = false;
 
+// ── Subscription ───────────────────────────────────────────────────────────
+//
+// A capture can happen while a recovery UI is already on screen (a save-failure
+// escalation for a note that is not the open tab). Without a notification that
+// strip would sit empty until a remount — i.e. the rescue exists and the user
+// is never told. `version` bumps on every write.
+
+const listeners = new Set<() => void>();
+let version = 0;
+
+/** Subscribe to draft-store writes. Pair with `getDraftsVersion` for `useSyncExternalStore`. */
+export function subscribeDrafts(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function getDraftsVersion(): number {
+  return version;
+}
+
+function emitDraftsChanged(): void {
+  version += 1;
+  for (const listener of listeners) {
+    try {
+      listener();
+    } catch (err) {
+      console.error("[LocalDrafts] subscriber threw:", err);
+    }
+  }
+}
+
 /**
  * Register a collector for one feature's unsaved work. Re-registering the same
  * id replaces the previous collector (remounts are safe); the returned
@@ -135,7 +168,7 @@ export function discardDraft(namespace: string, entityId: string): void {
   const key = draftKey(namespace, entityId);
   const all = readAll();
   const next = all.filter((d) => d.key !== key);
-  if (next.length !== all.length) writeAll(next);
+  if (next.length !== all.length) writeAll(next); // writeAll emits
 }
 
 // ── Storage ────────────────────────────────────────────────────────────────
@@ -199,6 +232,8 @@ function writeAll(drafts: LocalDraft[]): void {
       }
     }
   }
+
+  emitDraftsChanged();
 }
 
 function isLocalDraft(value: unknown): value is LocalDraft {

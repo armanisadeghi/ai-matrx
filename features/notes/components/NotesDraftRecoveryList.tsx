@@ -14,7 +14,7 @@
  * or — when the note never reached the database — recover it as a new note.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { LifeBuoy, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -29,6 +29,7 @@ import {
   selectNotesMap,
 } from "../redux/selectors";
 import { discardNoteDraft, listNoteDrafts } from "../utils/notesDrafts";
+import { subscribeDrafts } from "@/lib/local-drafts/localDrafts";
 import type { LocalDraft } from "@/lib/local-drafts/types";
 
 interface NotesDraftRecoveryListProps {
@@ -53,6 +54,14 @@ export function NotesDraftRecoveryList({
     setReadFor(userId ?? "");
     setDrafts(listNoteDrafts(userId ?? null));
   }
+
+  // A capture can land while this strip is already on screen — a save-failure
+  // escalation for a note that is not an open tab writes a draft the user
+  // would otherwise never be told about until a remount.
+  useEffect(
+    () => subscribeDrafts(() => setDrafts(listNoteDrafts(userId ?? null))),
+    [userId],
+  );
 
   const drop = useCallback((entityId: string) => {
     discardNoteDraft(entityId);

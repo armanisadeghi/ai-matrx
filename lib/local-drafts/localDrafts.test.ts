@@ -4,6 +4,7 @@
 
 import {
   captureDrafts,
+  subscribeDrafts,
   discardDraft,
   getDraft,
   listDrafts,
@@ -105,6 +106,24 @@ describe("local drafts", () => {
     expect(getDraft("note", "n1", USER_A)?.content).toBe("still rescued");
     stopBad();
     stopGood();
+  });
+
+  it("notifies subscribers so an on-screen recovery UI is never stale", () => {
+    const seen: number[] = [];
+    const unsubscribe = subscribeDrafts(() => seen.push(1));
+    const stop = registerDraftSource("note", () => [
+      unsaved("n1", "late capture", USER_A),
+    ]);
+
+    captureDrafts("note-save-failures");
+    expect(seen.length).toBeGreaterThan(0);
+
+    const before = seen.length;
+    discardDraft("note", "n1");
+    expect(seen.length).toBeGreaterThan(before);
+
+    unsubscribe();
+    stop();
   });
 
   it("drops drafts older than the TTL", () => {

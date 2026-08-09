@@ -16,6 +16,7 @@ import notesReducer, {
 } from "./slice";
 import { NOTE_SAVE_FAILURE_BLOCK_THRESHOLD } from "./notes.types";
 import { collectNoteDrafts } from "../utils/notesDrafts";
+import { setNoteLiveContent } from "../utils/noteLiveContent";
 
 enableMapSet();
 
@@ -101,22 +102,71 @@ describe("notes save-failure escalation", () => {
 });
 
 describe("notes draft collection", () => {
-  it("collects dirty notes, attributed to the account that wrote them", () => {
+  it("collects dirty notes, attributed to the account that TYPED them", () => {
     const state = seedDirty();
     const drafts = collectNoteDrafts({
       notes: state,
-      userAuth: { id: "someone-else" },
+      // The booted session identity — Redux hydrates it once and never
+      // refetches, so it still names the typist after a cookie rotation. Using
+      // the record's `created_by` instead would hand a shared note's rescue to
+      // its owner rather than to the sharee who wrote it.
+      userAuth: { id: "editor-sharee" },
     });
 
     expect(drafts).toHaveLength(1);
     expect(drafts[0]).toMatchObject({
       namespace: "note",
       entityId: NOTE_ID,
-      // The RECORD's owner, not the account currently holding the cookie —
-      // this is exactly the identity-drift case from D132.
-      ownerId: "user-1",
+      ownerId: "editor-sharee",
       content: "saved text + unsaved edit",
     });
+  });
+
+  it("captures the PRE-DEBOUNCE editor buffer, not the stale Redux copy", () => {
+    const state = seedDirty();
+    // Keystrokes reach Redux 200–1000ms late; at the instant a tab is stopped
+    // the newest words live only in noteLiveContent.
+    setNoteLiveContent(NOTE_ID, "saved text + unsaved edit + just typed");
+    try {
+      const drafts = collectNoteDrafts({
+        notes: state,
+        userAuth: { id: "user-1" },
+      });
+      expect(drafts[0].content).toBe("saved text + unsaved edit + just typed");
+    } finally {
+      setNoteLiveContent(NOTE_ID, null);
+    }
+  });
+
+  it("captures a note whose first keystrokes have not reached Redux yet", () => {
+    // Not dirty at all — the debounce has not fired once — but the user has
+    // typed. Reading Redux alone would rescue nothing.
+    let state = notesReducer(
+      undefined,
+      upsertNoteFromServer({
+        note: {
+          id: NOTE_ID,
+          label: "New Note",
+          content: "",
+          organization_id: ORG_ID,
+          created_by: "user-1",
+          updated_at: "2026-08-08T10:00:00.000Z",
+        },
+        fetchStatus: "full",
+      }),
+    );
+    setNoteLiveContent(NOTE_ID, "the very first sentence");
+    try {
+      const drafts = collectNoteDrafts({
+        notes: state,
+        userAuth: { id: "user-1" },
+      });
+      expect(drafts).toHaveLength(1);
+      expect(drafts[0].content).toBe("the very first sentence");
+    } finally {
+      setNoteLiveContent(NOTE_ID, null);
+    }
+    expect(state.notes[NOTE_ID]._dirty).toBe(false);
   });
 
   it("collects nothing when no note is dirty", () => {

@@ -19,7 +19,7 @@
  * `reportNoteSaveFailure` (lib/local-drafts) by the time this renders.
  */
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { AlertOctagon, Copy, Download, RefreshCw, RotateCw } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -34,6 +34,10 @@ import {
 } from "../redux/selectors";
 import { NOTE_SAVE_FAILURE_BLOCK_THRESHOLD } from "../redux/notes.types";
 import { saveNote } from "../redux/thunks";
+import {
+  getNoteLiveContent,
+  subscribeNoteLiveContent,
+} from "../utils/noteLiveContent";
 
 function sinceLabel(from: number | null): string | null {
   if (!from) return null;
@@ -53,8 +57,19 @@ export function NoteSaveFailureBanner({ noteId }: NoteSaveFailureBannerProps) {
   const failureCount = useAppSelector(selectNoteSaveFailureCount(noteId));
   const errorMessage = useAppSelector(selectNoteSaveErrorMessage(noteId));
   const firstFailureAt = useAppSelector(selectNoteFirstSaveFailureAt(noteId));
-  const content = useAppSelector(selectNoteContent(noteId)) ?? "";
+  const storedContent = useAppSelector(selectNoteContent(noteId)) ?? "";
   const label = useAppSelector(selectNoteLabel(noteId)) ?? "Untitled";
+
+  // Copy/Download must hand over what the user SEES. Keystrokes reach Redux
+  // 200–1000ms late (`getReduxSyncDelay`), so on a note whose saves are
+  // failing, the Redux copy is always a little behind the buffer — rescuing
+  // it minus the last sentence is its own small data loss.
+  const liveContent = useSyncExternalStore(
+    (onChange) => subscribeNoteLiveContent(noteId, onChange),
+    () => getNoteLiveContent(noteId),
+    () => undefined,
+  );
+  const content = liveContent ?? storedContent;
   const [retrying, setRetrying] = useState(false);
 
   if (failureCount < NOTE_SAVE_FAILURE_BLOCK_THRESHOLD) return null;
