@@ -101,13 +101,13 @@ Ordered by traffic. Each item is independently actionable.
    the conversation-history ROW level, `features/data-tables/components/DocumentListCard.tsx`,
    `features/rag/components/RagHomePage.tsx`, `features/tasks/components/CompactTaskItem.tsx`.
 
-2. **Remaining admin consoles.** Routes rendering
-   from `features/podcasts` / `features/content-ir` rather than
-   `features/admin`: `/administration/knowledge/{podcasts/shows,kg-inspector}`,
-   `/administration/utilities/{kind-registry,content-blocks}`.
-   The `features/agents` / `features/skills` / tool-registry consoles
-   (`…/system-agents/agents`, `…/shortcuts/all`, `…/mcp-tools`, `…/skills`,
-   `…/bundles`) are DONE — see the tool-registry + skills entry under **Done**.
+2. ~~**Remaining admin consoles.**~~ DONE. The `features/agents` /
+   `features/skills` / tool-registry consoles (`…/system-agents/agents`,
+   `…/shortcuts/all`, `…/mcp-tools`, `…/skills`, `…/bundles`) — see the
+   tool-registry + skills entry under **Done**. The `features/podcasts` /
+   `features/content-ir` four (`/administration/knowledge/{podcasts/shows,
+   kg-inspector}`, `/administration/utilities/{kind-registry,content-blocks}`)
+   — see the podcasts / KG / kind-registry entry under **Done**.
 3. **Dialogs / drawers / warnings** that name an entity.
 4. **Toasts and badges.**
 5. **`(dev)` demos** — last.
@@ -263,6 +263,67 @@ Ordered by traffic. Each item is independently actionable.
   anchor — an inline editor, a picker toggle). `MatrxUuidCell`, `PeekDialog`,
   `OrgResourceList` and `getResourceSharePath` all consume the same resolver, so
   a registry edit can never light one surface and miss another.
+- **Podcasts / KG inspector / Kind Registry / Content Blocks consoles** — the
+  four admin routes that render from `features/podcasts`,
+  `features/administration/kg-inspector` and `features/content-ir`:
+  - **`/administration/knowledge/podcasts/shows` (+ `[showId]`)** — show and
+    episode titles are `EntityRef` anchors (`pc_show` / `pc_episode` ARE
+    registered tokens with a `titleColumn`, so `RegistryPeek` + new-tab come
+    free; the admin route is passed as an `href` override because neither has a
+    registry `hrefFor`). The record's PUBLIC page was clipboard-only on every
+    row — new `PublicPageLink` opens it, and the show header's
+    `/podcast/<slug>` text became that link. `app/(core)/podcast/[slug]`
+    resolves a show OR an episode, by slug or uuid, filtering only
+    `deleted_at is null`, and every admin read path filters the same, so no
+    door lands on a soft-deleted row. Route builders consolidated into
+    `features/podcasts/utils.ts`.
+  - **`/administration/knowledge/kg-inspector`** — the Organization column is
+    an `EntityRef` (it had the name AND the id and rendered a `<span title>`);
+    its `"Unknown organization"` fallback is gone, because
+    `fetchOrganizationNamesByIds` returns `{}` on a FAILED read too and that
+    string asserted more than the data supports (`name={null}` → truncated id).
+    An entity's canonical name is a real control (the mentions destination the
+    `<tr onClick>` already had, now keyboard-reachable), and Top edges' source /
+    target — which carried `src_id` / `dst_id` all along — select that entity
+    and jump to Mentions. **Deliberately NOT linked:** an edge endpoint's
+    `kind` and a mention's `source_kind` are NER / RAG classes, not canonical
+    entity tokens (a kg entity kinded `organization` is an extracted name, not
+    an `iam.organizations` row), so neither is handed to the door resolver; an
+    unmapped mention source gets a copyable `MatrxUuidCell`, not a guessed route.
+  - **`/administration/utilities/kind-registry`** — the Catalog's Kind cell
+    declares `href`, and the component / surface / example counts are doors to
+    `?tab=assets` / `?tab=examples` (read server-side). **A live 404 class
+    removed:** a `snapshot-only` row is GONE from the live DB
+    (`gatherKindDetail` → null → `notFound()`), yet the Board linked every such
+    row and the Catalog's row click + new-tab button did too. New
+    `features/content-ir/admin/kind-registry-routes.ts` is the one authority
+    both consume; those rows keep their "gone from live DB" flag instead.
+  - **`/administration/utilities/content-blocks`** — a content block is
+    addressable at last: `?block=<uuid|block_id>`
+    (`components/admin/content-blocks-route.ts`, deliberately pure so linking
+    to a block never drags the 2.5k-line editor into a chunk; selection is
+    DERIVED from it, not seeded in an effect, and `replaceState` keeps the url
+    in step). That closed the Kind Registry Assets tab's worst dead end — it
+    lists the skills and blocks teaching a kind, prints each id, and sent all
+    of them to the same list page. A skill row now links
+    `/administration/agents/skills?open=<skill_id>` (accepts the business key;
+    no peek, `SkillPeek` reads `.eq("id", …)`), and the block editor's Skill
+    picker got `EntityDoorControls` — peek only, because navigating away from a
+    dirty form would discard it.
+  - Content-IR render routing was NOT touched: doors only.
+  - Verified by `pnpm type-check` (green), ESLint on every changed file (the
+    remaining `set-state-in-effect` errors are pre-existing, in effects nobody
+    touched), and reading each destination on disk — the `[kind]` / `[showId]` /
+    `[episodeId]` / `podcast/[slug]` route leaves, `gatherKindDetail`'s
+    `notFound()`, the skills console's `?open=` handler and `fetchSkillById`'s
+    `isUuid` branch. **No browser** — see the banner above.
+  - **Registry gaps found, not patched at the call site** (they need the
+    `entityRegistry.ts` owner): `pc_show` / `pc_episode` / `content_ir_kind` are
+    registered tokens with NO `hrefFor` — adding one would let three surfaces
+    drop their `href` overrides; a KG entity (`rag.kg_entities`) has no token at
+    all, so its only destination is this console's own Mentions tab; and a
+    content block (`skill.render_definition`) has no token either, so the new
+    `?block=` link is a hand-passed href rather than a registry door.
 - **Registry routes added**, each verified against the route AND the table it
   reads: `agent_shortcut`, `app`, `project`, `organization`, `message_template`,
   `transcript`, `studio_session`, `data_store`; `code_file` corrected; an

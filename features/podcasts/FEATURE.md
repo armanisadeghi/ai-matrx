@@ -104,6 +104,18 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-09 — **Doors on the admin console (No Dead Ends sweep).** Show and
+  episode titles are `EntityRef` anchors (`pc_show` / `pc_episode` are
+  registered entity tokens, so the registry peek + new-tab control come free);
+  the JS row click stays a convenience, not the only way in. New
+  `PublicPageLink` puts the public page beside every "copy public link" button
+  (that url was clipboard-only), and the show header's `/podcast/<slug>` text is
+  now that link. Route builders (`podcastPublicHref` /
+  `podcastShowAdminHref` / `podcastEpisodeAdminHref`) live in `utils.ts` — one
+  authority, no more re-concatenated paths. Neither token has a registry
+  `hrefFor`, so both call sites pass the admin route explicitly; registering
+  `pc_show` / `pc_episode` would let them drop it (tracked in
+  `docs/handoffs/no-dead-ends-sweep.md`).
 - 2026-08-08 (later) — **Title options panel, audience re-pitch, 10-host cap.**
   (1) Run page gained `EpisodeTitlePanel` (`useEpisodeTitleOptions`,
   `podcast.title_optimizer` slot — post-episode only so the agent always sees
