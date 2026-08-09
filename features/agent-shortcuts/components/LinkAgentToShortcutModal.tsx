@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -369,8 +370,12 @@ export function LinkAgentToShortcutModal({
                     (c) => c.id === shortcut.categoryId,
                   );
                   return (
+                    // The row is a <button>, so the doors CANNOT live inside
+                    // it — an anchor nested in interactive content is invalid
+                    // DOM. Positioned sibling instead, the same shape the
+                    // tool-registry picker uses.
+                    <div key={shortcut.id} className="relative group">
                     <button
-                      key={shortcut.id}
                       type="button"
                       onClick={() => setSelectedShortcutId(shortcut.id)}
                       className={`w-full text-left p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -407,6 +412,24 @@ export function LinkAgentToShortcutModal({
                         )}
                       </div>
                     </button>
+                    {/* "Already linked" knew an agent was on the other end and
+                        refused to say WHICH — the corollary the doctrine calls
+                        out by name. The agent's NAME is not loaded here (this
+                        modal only holds the agent being linked), so peek is the
+                        honest door: it answers "which one is that?" without
+                        inventing a label. Pinned visible — the row's own hover
+                        is the button's, and a control the user cannot see is
+                        the dead end we are removing. */}
+                    {shortcut.agentId && (
+                      <div className="absolute right-2 top-2">
+                        <EntityDoorControls
+                          token="agent"
+                          id={shortcut.agentId}
+                          alwaysShowActions
+                        />
+                      </div>
+                    )}
+                    </div>
                   );
                 })}
               </div>

@@ -140,11 +140,12 @@ export function NotifyOwnerDialog({ open, target, onClose }: NotifyOwnerDialogPr
         {target?.drift.agentId ? (
           <div className="flex min-w-0 items-center gap-1.5 text-xs">
             <span className="shrink-0 text-muted-foreground">Agent</span>
-            <EntityRef
-              token="agent"
-              id={target.drift.agentId}
-              name={target.contextLabel || null}
-            />
+            {/* name={null} deliberately: `contextLabel` describes the
+                notification SCOPE ("all affected users", an org label), not
+                the agent — passing it here labels the right link with the
+                wrong name, which is worse than no name. EntityRef falls back
+                to the truncated id, and peek supplies the identity. */}
+            <EntityRef token="agent" id={target.drift.agentId} name={null} />
           </div>
         ) : null}
 
