@@ -39,6 +39,10 @@ import {
   fetchNotesList,
 } from "@/features/notes/redux/thunks";
 import { loadProjectsWithTasks } from "@/features/tasks/redux/thunks";
+import {
+  INVALIDATION_KEYS,
+  fireInvalidation,
+} from "@/lib/invalidation/invalidation-registry";
 
 /** The stream processor's dispatch is intentionally loose — it forwards
  *  actions AND thunks. This structural type matches what it actually is. */
@@ -120,6 +124,53 @@ const TOOL_STATE_EFFECTS: ToolStateEffect[] = [
       throttled(`tasks-context`, LIST_REFETCH_THROTTLE_MS, () => {
         void dispatch(loadProjectsWithTasks({ force: true }));
       });
+    },
+  },
+  {
+    // Agent authored/edited a DB tool renderer (`tool_ui` row via toolcomp_*)
+    // → drop the tool's compiled renderer + meta so mounted cards repaint with
+    // the new code (D115). NO import edge into the db-renderer chunk: the fire
+    // goes through the tiny invalidation registry; the chunk registered its
+    // callback at its own init (not loaded ⇒ nothing stale ⇒ no-op by design).
+    // Targeting: `tool_name` when the call/result names it; several writes
+    // return only a `component_id` — then the callback invalidates ALL cached
+    // renderers (cheap session cache, refetch is per-tool on view).
+    id: "db-tool-renderers",
+    tools: new Set([
+      "toolcomp_create_component",
+      "toolcomp_update_code",
+      "toolcomp_patch_code",
+      "toolcomp_update_settings",
+      "toolcomp_resolve_incident",
+    ]),
+    run({ args, result }) {
+      const obj = asObject(result);
+      const candidate =
+        obj?.tool_name ?? asObject(obj?.component)?.tool_name ?? args.tool_name;
+      const toolName = typeof candidate === "string" ? candidate : null;
+      fireInvalidation(
+        INVALIDATION_KEYS.dbToolRenderers,
+        toolName ? { toolName } : undefined,
+      );
+    },
+  },
+  {
+    // Agent authored/edited a DB kind component (`content_ir.kind_component`
+    // via kindcomp_*) → force-refresh the content-ir component resolver so
+    // mounted `__kind` blocks recompile + repaint (D115). Same inversion:
+    // fired by name; content-ir's registry cluster registered the callback at
+    // its own init. Kind targeting is unnecessary — the refresh replaces the
+    // db tier wholesale and downstream repaint is per-kind granular.
+    id: "kind-components",
+    tools: new Set([
+      "kindcomp_create_component",
+      "kindcomp_update_code",
+      "kindcomp_patch_code",
+      "kindcomp_update_settings",
+      "kindcomp_resolve_incident",
+    ]),
+    run() {
+      fireInvalidation(INVALIDATION_KEYS.kindComponents);
     },
   },
 ];
