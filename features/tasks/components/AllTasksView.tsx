@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { isOpenStatus } from "@/features/tasks/constants/status";
 import { ChevronDown, ChevronRight, FolderOpen, CheckSquare } from 'lucide-react';
 import { useAppSelector } from '@/lib/redux/hooks';
@@ -144,33 +145,77 @@ export default function AllTasksView({ selectedTaskId, onTaskSelect, onTaskToggl
             key={project.id} 
             className="bg-card rounded-lg border border-border overflow-hidden shadow-sm"
           >
-            {/* Project Header */}
-            <button
+            {/* Project Header.
+
+                This was ONE <button> wrapping the project's name, which is why
+                the name could not be an `EntityRef`: that renders an <a> plus
+                control <button>s, and nesting either inside a <button> is
+                invalid HTML. Splitting the header is the whole fix — the
+                container is a <div> that still toggles on click anywhere, and
+                the chevron stays a real <button> so the toggle keeps its
+                keyboard affordance. */}
+            <div
               onClick={() => toggleProjectCollapse(project.id)}
-              className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-accent transition-colors"
+              className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-accent transition-colors cursor-pointer"
             >
-              {isCollapsed ? (
-                <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              )}
-              
-              <FolderOpen className="w-4 h-4 text-primary flex-shrink-0" />
-              
-              <div className="flex-1 text-left">
-                <h3 className="text-sm font-semibold text-foreground">
-                  {project.name}
-                </h3>
+              <button
+                type="button"
+                onClick={(e) => {
+                  // The container already toggles; without this the click
+                  // would toggle twice and land back where it started.
+                  e.stopPropagation();
+                  toggleProjectCollapse(project.id);
+                }}
+                aria-expanded={!isCollapsed}
+                aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${project.name}`}
+                className="flex flex-shrink-0 items-center gap-3"
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                )}
+                <FolderOpen className="w-4 h-4 text-primary flex-shrink-0" />
+              </button>
+
+              <div className="flex-1 min-w-0 text-left">
+                {/* THE DOOR LAW: this view groups every task by project, named
+                    the project on each group, and gave you no way to reach it —
+                    the only click available collapsed a list. Plain click opens
+                    `/projects/{id}`; hover gives the project peek. */}
+                <EntityRef
+                  token="project"
+                  id={project.id}
+                  name={project.name}
+                  showIcon={false}
+                  className="text-sm font-semibold text-foreground"
+                />
                 <p className="text-xs text-muted-foreground">
                   {completedCount} of {taskCount} completed
                 </p>
               </div>
 
-              {/* Task count badge */}
-              <div className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-medium">
+              {/* A COUNT IS A DOOR: it must REACH the tasks it counts, so it
+                  expands and never collapses. A count that hides the very
+                  thing it counts is the door closing in the user's face. */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCollapsedProjects((current) => {
+                    if (!current.has(project.id)) return current;
+                    const next = new Set(current);
+                    next.delete(project.id);
+                    return next;
+                  });
+                }}
+                title={`Show the ${taskCount} ${taskCount === 1 ? "task" : "tasks"} in ${project.name}`}
+                aria-label={`Show the ${taskCount} ${taskCount === 1 ? "task" : "tasks"} in ${project.name}`}
+                className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-medium transition-colors hover:bg-primary/20"
+              >
                 {taskCount}
-              </div>
-            </button>
+              </button>
+            </div>
 
             {/* Tasks List */}
             {!isCollapsed && (
