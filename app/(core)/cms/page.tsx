@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import type { ClientSiteSummary } from "@/features/cms/types";
 import { Button } from "@/components/ui/button";
@@ -300,10 +301,14 @@ export default function SitesListPage() {
                       }) as Record<string, unknown>
                     }
                   >
-                    <button
+                    {/* A CMS site is a real record with its own page, so the
+                        card is an anchor. As a <button> it navigated on click
+                        and nothing else — no cmd-click, no middle-click, no
+                        new tab, no destination on hover. */}
+                    <Link
+                      href={`/cms/${site.id}`}
                       onMouseEnter={() => setHoveredSiteId(site.id)}
-                      onClick={() => router.push(`/cms/${site.id}`)}
-                      className="group text-left rounded-xl border border-border bg-card p-5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 cursor-pointer active:scale-[0.97] active:transition-none w-full"
+                      className="group block text-left rounded-xl border border-border bg-card p-5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 cursor-pointer active:scale-[0.97] active:transition-none w-full"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -325,7 +330,7 @@ export default function SitesListPage() {
                           {site.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </div>
-                    </button>
+                    </Link>
                   </NonEditableContextMenu>
                 ))}
 
