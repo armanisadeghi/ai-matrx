@@ -251,3 +251,62 @@ describe("Admin surface resolution (post catch-all removal)", () => {
     expect(surfaceFromPathname("/admin")).toBeNull();
   });
 });
+
+describe("Education tool-family resolution", () => {
+  const ID = "e9906c5e-e21a-4194-8ad3-ad0c1eaca5ad";
+
+  it("resolves each education tool to its own surface, incl. sub-routes", () => {
+    expect(surfaceFromPathname("/education/fastfire")).toBe(
+      "matrx-user/education-fastfire",
+    );
+    expect(surfaceFromPathname("/education/quizzes")).toBe(
+      "matrx-user/education-assessment",
+    );
+    expect(surfaceFromPathname(`/education/quizzes/${ID}/results`)).toBe(
+      "matrx-user/education-assessment",
+    );
+    expect(surfaceFromPathname("/education/practice-tests/new")).toBe(
+      "matrx-user/education-assessment",
+    );
+    expect(surfaceFromPathname("/education/grade-work")).toBe(
+      "matrx-user/education-grade-work",
+    );
+    expect(surfaceFromPathname(`/education/mind-maps/${ID}`)).toBe(
+      "matrx-user/education-mind-maps",
+    );
+    expect(surfaceFromPathname(`/education/memory/${ID}/edit`)).toBe(
+      "matrx-user/education-memory",
+    );
+    expect(surfaceFromPathname("/education/planner")).toBe(
+      "matrx-user/education-planner",
+    );
+    expect(surfaceFromPathname("/education/practice-oral")).toBe(
+      "matrx-user/education-practice-oral",
+    );
+    expect(surfaceFromPathname("/education/progress/learning-gain")).toBe(
+      "matrx-user/education-progress",
+    );
+    expect(surfaceFromPathname("/education/learn/biology/photosynthesis")).toBe(
+      "matrx-user/education-learn",
+    );
+    expect(surfaceFromPathname(`/education/audio-study/${ID}`)).toBe(
+      "matrx-user/education-audio-study",
+    );
+    expect(surfaceFromPathname(`/education/game/play/${ID}`)).toBe(
+      "matrx-user/education-game",
+    );
+  });
+
+  it("keeps the pre-existing education surfaces and the hub fallback", () => {
+    expect(surfaceFromPathname("/education/tutor/abc")).toBe(
+      "matrx-user/education-tutor",
+    );
+    expect(surfaceFromPathname("/education/flashcards")).toBe(
+      "matrx-user/education-flashcards",
+    );
+    expect(surfaceFromPathname("/education")).toBe("matrx-user/education");
+    expect(surfaceFromPathname("/education/subjects/biology")).toBe(
+      "matrx-user/education",
+    );
+  });
+});
