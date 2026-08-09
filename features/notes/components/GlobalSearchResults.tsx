@@ -18,6 +18,7 @@ import React, { useCallback, useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { shouldOpenInNewTab } from "@/utils/navigation/should-open-in-new-tab";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   addInstanceTab,
@@ -48,6 +49,24 @@ export function GlobalSearchResults({
 
   const toggleCollapsed = useCallback((noteId: string) => {
     setCollapsed((c) => ({ ...c, [noteId]: !c[noteId] }));
+  }, []);
+
+  /**
+   * Same intent as `handleMouseDown`, for the note ROW — which now contains a
+   * real `<a>` (the `EntityRef`).
+   *
+   * `preventDefault()` on mousedown is a blunt instrument: it fires for EVERY
+   * button, so on the row it also lands on the middle-click and cmd-click the
+   * anchor exists to serve. Suppressing focus-theft is only wanted for the
+   * PLAIN click; a modified click is the user deliberately opening a new tab,
+   * where the current tab's focus is not the thing to protect. Reuses the
+   * global `shouldOpenInNewTab` predicate rather than re-deriving the modifier
+   * set — the same one `EntityRef` uses on the click side, so the two halves
+   * cannot drift.
+   */
+  const handleRowMouseDown = useCallback((e: React.MouseEvent) => {
+    if (shouldOpenInNewTab(e)) return;
+    e.preventDefault();
   }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -160,7 +179,7 @@ export function GlobalSearchResults({
                       `handleMouseDown`), and mousedown bubbles, so it covers
                       the name and the chevron without either repeating it. */}
                   <div
-                    onMouseDown={handleMouseDown}
+                    onMouseDown={handleRowMouseDown}
                     onClick={() => toggleCollapsed(note.noteId)}
                     className="w-full flex cursor-pointer items-center gap-1 px-2 py-0.5 text-xs text-foreground hover:bg-muted/60 transition-colors"
                   >
