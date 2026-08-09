@@ -65,6 +65,7 @@ import {
   Cpu,
   RefreshCw,
 } from "lucide-react";
+import { DeepLinkMissNotice } from "@/components/official/deep-link/DeepLinkMissNotice";
 import {
   ContentBlockDB,
   ContentBlockBlockType,
@@ -1687,7 +1688,19 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             </ScrollArea>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-4">
+            {/* A shared `?block=` that matches neither `id` nor `block_id`
+                selected nothing and said nothing — the link looked valid and
+                opened no editor. */}
+            {deepLinkRef && !loading && !selectedBlockId && (
+              <DeepLinkMissNotice
+                token="content_block"
+                entityLabel="content block"
+                id={deepLinkRef}
+                onClear={() => setSelectedBlockId(null)}
+                className="w-full max-w-xl"
+              />
+            )}
             <div className="text-center text-gray-500 dark:text-gray-400">
               <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No Block Selected</h3>

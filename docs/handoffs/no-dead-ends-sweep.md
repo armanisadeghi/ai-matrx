@@ -85,6 +85,23 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
   `DuplicateShortcutModal` and `ShareModal` also kept it — two dropdowns and a
   tab index are cheap to rebuild. **Do not blanket-apply either primitive; check
   where the state lives.**
+- 🚨 **A uuid-shape check does NOT prove an id is the entity you think.** A
+  shortcut id and an agent id are both uuids. Any id you DERIVE — parsed out of
+  a key, read from an untyped column — needs a vocabulary that says what it is,
+  not a regex. `features/agents/utils/surface-key.ts` is the worked example:
+  only 5 of 22 live `surfaceKey` prefixes embed an agent id, and linking the
+  rest as agents shipped `/agents/<shortcutId>` from `CreatorHubWindow` on
+  2026-08-09 — the same wrong-record class fixed two commits earlier, guarded by
+  `isUuidValue` and still wrong. Unknown prefix → no door; guessing is the bug.
+- **A deep link that resolves to nothing is a dead end too.** `?user=`,
+  `?category=`, `?block=` each rendered an ordinary empty state while the
+  address bar still named a record — three separate surfaces, same defect, all
+  found by Bugbot. Use `components/official/deep-link/`:
+  `useDeepLinkParam(key)` for the param + a correct `clear`, and
+  `<DeepLinkMissNotice>` for the miss (says the record is not in THIS list,
+  still offers peek/new-tab because "not here" ≠ "unreachable", one-click
+  clear). **Condition the surface's `emptyState` on the same flag** — two
+  components disagreeing about why the list is empty is worse than either alone.
 - Test login: `/login` → `admin@admin.com` / `Password1234#`
 
 ## 🚨 NOTHING IN THIS CAMPAIGN HAS BEEN SEEN IN A BROWSER
@@ -175,11 +192,23 @@ Ordered by traffic. Each item is independently actionable.
    scope. Note `:388` is a picker `<button>` — that one needs
    `EntityDoorControls` as a SIBLING, not an anchor.
 
-   Plus the scattered MED set: `ObservationalMemoryWindow`, `AgentContentWindow`,
-   `CreatorHubWindow`, `AgentExecutionTestModal`, `CleanupReviewDialog`,
-   `MoveNoteDialog` (no id in props — it is one prop away; `NotesSidebar` already
-   has `moveNoteData.id`), `PermissionsList`, `LibraryDocDetailSheet` (the delete
-   confirm only), `ApplySchemaDialog`, `AddToSetDialog`.
+   The scattered MED set is now **done except three**: `ObservationalMemoryWindow`,
+   `AgentContentWindow`, `CreatorHubWindow`, `AgentExecutionTestModal`,
+   `CleanupReviewDialog`, `MoveNoteDialog` (`noteId` is now a REQUIRED prop, so
+   all four callers were forced rather than grepped) and `AddToSetDialog` all
+   carry doors.
+
+   **Still open:** `PermissionsList` · `LibraryDocDetailSheet` (delete confirm
+   only) · `ApplySchemaDialog`.
+
+   ⚠️ `features/sharing/components/PermissionsList.tsx` is NOT a simple one.
+   `getPermissionLabel` returns a person's name, an org name, or "Everyone" from
+   three different branches. The org branch can link (`organization` token). The
+   USER branch cannot: `user` has no registry token, and `AdminUserRef` is the
+   wrong door here for the same reason it is wrong in org-admin — this is a
+   `(core)` sharing surface reached by ordinary members, and
+   `/administration/users` is a 403 for them. It needs the `user` registry
+   decision below, not a call-site patch.
 
 4. **Toasts and badges.**
 5. **`(dev)` demos** — last.
