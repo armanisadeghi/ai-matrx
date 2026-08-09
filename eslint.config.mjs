@@ -525,14 +525,27 @@ const matrxLintPlugin = {
                     'delete', 'remove', 'archive', 'dismiss', 'close', 'cancel',
                     'copy', 'duplicate', 'download', 'revoke', 'unlink', 'detach',
                 ]);
+                // Navigation WINS over closing, same precedence as the scanner's
+                // `CLOSING_AFFORDANCE_RE.test(t) && !OPEN_AFFORDANCE_RE.test(t)`.
+                // `onClick={() => { closeMenu(); router.push(href); }}` closes a
+                // menu on its way to opening the record — that is a door, and
+                // rejecting it would warn on JSX that genuinely opens the thing.
+                const OPENING_VERBS = new Set([
+                    'open', 'push', 'replace', 'router', 'navigate', 'href', 'goto',
+                    'go', 'view', 'peek', 'select', 'activate', 'launch', 'reveal',
+                    'detail', 'details', 'inspect', 'edit', 'manage', 'restore',
+                ]);
+                const verbSegments = (text) =>
+                    text
+                        .split(/[^A-Za-z0-9]+/)
+                        .flatMap((part) => part.split(/(?=[A-Z])/))
+                        .map((part) => part.toLowerCase());
                 const isClosingHandler = (attr) => {
                     const value = attr.value;
                     if (!value || value.type !== 'JSXExpressionContainer') return false;
-                    const text = context.sourceCode.getText(value.expression);
-                    return text
-                        .split(/[^A-Za-z0-9]+/)
-                        .flatMap((part) => part.split(/(?=[A-Z])/))
-                        .some((part) => CLOSING_VERBS.has(part.toLowerCase()));
+                    const parts = verbSegments(context.sourceCode.getText(value.expression));
+                    if (parts.some((part) => OPENING_VERBS.has(part))) return false;
+                    return parts.some((part) => CLOSING_VERBS.has(part));
                 };
                 // Choosing, labelling and debugging are not referencing.
                 const SKIP_TAGS = new Set([

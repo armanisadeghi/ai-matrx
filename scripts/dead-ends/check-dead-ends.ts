@@ -323,7 +323,12 @@ function isHistoryPoint(row: unknown): row is DeadEndHistoryPoint {
   const numeric = (v: unknown): boolean => typeof v === "number" && Number.isFinite(v);
   return (
     typeof p.generatedAt === "string" &&
-    (p.commit === null || typeof p.commit === "string") &&
+    // `undefined` too: the dashboard's nullableStr accepts a MISSING commit and
+    // reads it as null. Requiring the key here made the CLI stricter than the
+    // consumer it is mirroring — it would have dropped trend points the page
+    // renders fine, while announcing the page was broken. A validator that
+    // disagrees with the thing it validates against is worse than none.
+    (p.commit === null || p.commit === undefined || typeof p.commit === "string") &&
     numeric(p.findings) &&
     numeric(p.high) &&
     numeric(p.medium) &&
