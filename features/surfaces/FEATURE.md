@@ -124,8 +124,11 @@ internal platform use — never a washed-down user variant beside a private one:
   surface-bound agents as a `<surface_write_targets>` block. Live adopters:
   `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
   `page_supporting_keywords` — handlers in
-  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`) and
-  `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
+  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`),
+  `matrx-user/keyword-intelligence` (`keyword_selection`) and
+  `matrx-user/cms-component` (`component_html_content`,
+  `component_css_content` — both draft-mode, handlers on the provider in
+  `app/(core)/cms/[siteId]/components/page.tsx`). The LSI kind
   components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
@@ -149,7 +152,10 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/cms-component` (2 draft targets — the
+  shared component's HTML body and CSS; handlers on the provider in
+  `app/(core)/cms/[siteId]/components/page.tsx`; save/publish, delete,
+  `is_active` and the component name deliberately NOT declared).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +316,44 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — CMS shared-component editor agent-writable, and the surface
+  it emits fixed at the same time.** `matrx-user/cms-component` declares 2
+  ask-policy **draft** targets — `component_html_content` and
+  `component_css_content`, both `{ html|css: string, mode?: 'replace' |
+  'append' }` — each staging into the same `editHtml` / `editCss` `useState`
+  the user's own typing drives, in
+  `app/(core)/cms/[siteId]/components/page.tsx`. Two, not more, on purpose:
+  the HTML and CSS bodies are the only fields this route edits in place.
+  `is_active` is deliberately NOT a target (CMS migration 0035 guarantees ONE
+  active header/footer per site — flipping it is a routing decision, not
+  authored content), delete/save stay behind a human click, and the route has
+  no in-place rename at all (the only name/type inputs belong to the "New
+  Component" dialog). `ask` is doing real work here: a shared component is
+  rendered on EVERY page of the site, and unlike the page editor this route
+  has ONE save path that writes the LIVE columns — no draft-save — so the
+  target descriptions say exactly that. **Prerequisite fixed here** (same hole
+  the cms-page chip found): the components page consumed
+  `useCmsComponentSurfaceScope` and passed the cms-component menu identity but
+  mounted NO `SurfaceRuntimeProvider`, so the only live runtime on
+  `/cms/[siteId]/components` was the layout's `matrx-user/cms-site` — the
+  header Agents popover ran agents against the site scope and no
+  cms-component target could ever have resolved (`listAgentWritableTargets`
+  walks the mounted stack). The page now mounts the provider with the SAME
+  scope builder (no second builder) plus `getWriteHandlers`. Live-verified
+  with a real Badass Agent run on `dev-website`'s "Main Header (token nav)":
+  the popover resolved **CMS Component / matrx-user/cms-component**; both
+  targets applied from one plain-language ask, each confirm dialog carrying
+  that target's own description (the agent chose `append` for CSS and
+  `replace` for HTML, as the descriptions advise); a "Keep as is" returned
+  `{ok:false, declined:true}` (`is_error:false`) and the agent explained the
+  consequence and asked how to proceed instead of retrying; an undeclared ask
+  (rename + deactivate) was refused at the OFFER level — the injected tool's
+  `target` enum is exactly `["component_html_content","component_css_content"]`
+  — and the agent said so plainly; zero `surface-writeback` captures in the
+  Error Inspector; and the `client_components` row was byte-unchanged
+  afterwards (version 1, `updated_at` untouched, both `*_draft` columns still
+  NULL) because draft mode stages, it does not save.
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
