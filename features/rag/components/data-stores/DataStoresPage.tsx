@@ -55,7 +55,6 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
   MOBILE_TABLE_ROW,
-  MOBILE_TABLE_WRAPPER,
 } from "@/components/official/mobile-table/mobileTable";
 import dynamic from "next/dynamic";
 import { RichMemberTable } from "@/features/rag/components/data-stores/RichMemberTable";
@@ -821,14 +820,14 @@ function MemberTable({
   onRemove: (m: EnrichedMember) => unknown;
 }) {
   return (
-    <div className={cn("overflow-hidden rounded-md border", MOBILE_TABLE_WRAPPER)}>
+    <div className="overflow-hidden rounded-md border">
       <table className={cn("text-sm", MOBILE_TABLE)}>
         <thead>
           <tr className="border-b bg-muted/40">
-            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD)}>
+            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
               Kind
             </th>
-            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
+            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD)}>
               Document
             </th>
             <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
@@ -846,10 +845,10 @@ function MemberTable({
               key={`${m.sourceKind}/${m.sourceId}`}
               className={cn("sm:hover:bg-muted/20", MOBILE_TABLE_ROW)}
             >
-              <td className={cn("px-3 py-1.5 text-xs", MOBILE_TABLE_FROZEN_CELL)}>
+              <td className={cn("px-3 py-1.5 text-xs", MOBILE_TABLE_CELL)}>
                 {m.sourceKind}
               </td>
-              <td className={cn("px-3 py-1.5", MOBILE_TABLE_CELL)}>
+              <td className={cn("px-3 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
                 <div className="text-xs">{m.label ?? "—"}</div>
                 <div className="font-mono text-[10px] text-muted-foreground select-all truncate">
                   {m.sourceId}

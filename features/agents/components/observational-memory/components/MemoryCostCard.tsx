@@ -33,7 +33,6 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
   MOBILE_TABLE_ROW,
-  MOBILE_TABLE_WRAPPER,
 } from "@/components/official/mobile-table/mobileTable";
 
 type MemoryCostByEventType = components["schemas"]["MemoryCostByEventType"];
@@ -176,7 +175,7 @@ export function MemoryCostCard({
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground/60 mb-1">
             Breakdown by event type
           </div>
-          <div className={cn("rounded border border-border/60 overflow-hidden", MOBILE_TABLE_WRAPPER)}>
+          <div className="rounded border border-border/60 overflow-hidden">
             <table className={cn("text-[11px]", MOBILE_TABLE)}>
               <thead className="bg-muted/30 text-muted-foreground">
                 <tr>

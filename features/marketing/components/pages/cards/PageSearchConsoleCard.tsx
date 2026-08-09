@@ -39,6 +39,9 @@ import {
 } from "@/features/marketing/seo/keyword/data";
 import type { PageQueryStat } from "@/features/marketing/seo/keyword/types";
 import type { MarketingPage } from "@/features/marketing/types";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const QUERY_LIMIT = 50;
 
@@ -209,7 +212,7 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
           </p>
         ) : (
           <div className="max-h-72 overflow-y-auto">
-            <table className="w-full border-collapse text-xs">
+            <table className={cn("border-collapse text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="sticky top-0 z-10 bg-card text-left text-[11px] text-muted-foreground">
                   <th className="border-b border-border px-3 py-1.5 font-medium">

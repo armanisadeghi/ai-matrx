@@ -14,7 +14,6 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
   MOBILE_TABLE_ROW,
-  MOBILE_TABLE_WRAPPER,
 } from "@/components/official/mobile-table/mobileTable";
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
@@ -55,7 +54,7 @@ export function CleanupDebugPanel({
         <Stat label="Total edits" value={stats.totalChanges} />
       </div>
 
-      <div className={cn("overflow-hidden rounded-md border border-border", MOBILE_TABLE_WRAPPER)}>
+      <div className="overflow-hidden rounded-md border border-border">
         <table className={cn("text-xs", MOBILE_TABLE)}>
           <thead>
             <tr className="border-b border-border bg-muted/40 text-left text-[0.625rem] uppercase tracking-wide text-muted-foreground">

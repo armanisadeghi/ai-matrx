@@ -50,7 +50,6 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
   MOBILE_TABLE_ROW,
-  MOBILE_TABLE_WRAPPER,
 } from "@/components/official/mobile-table/mobileTable";
 
 export interface AgentJsonDisplayProps {
@@ -500,7 +499,7 @@ function VariablesTable({
   vars: NonNullable<PartialAgentData["variable_definitions"]>;
 }) {
   return (
-    <div className={cn("border rounded-md overflow-hidden bg-background/40", MOBILE_TABLE_WRAPPER)}>
+    <div className="border rounded-md overflow-hidden bg-background/40">
       <table className={cn("text-xs", MOBILE_TABLE)}>
         <thead>
           <tr className="bg-muted/50 border-b">
@@ -546,7 +545,7 @@ function ContextSlotsTable({
   slots: NonNullable<PartialAgentData["context_slots"]>;
 }) {
   return (
-    <div className={cn("border rounded-md overflow-hidden bg-background/40", MOBILE_TABLE_WRAPPER)}>
+    <div className="border rounded-md overflow-hidden bg-background/40">
       <table className={cn("text-xs", MOBILE_TABLE)}>
         <thead>
           <tr className="bg-muted/50 border-b">

@@ -70,6 +70,9 @@ import {
   type GscClassReviewQuery,
 } from "@/features/marketing/search-console/data-classification";
 import type { GscDateRange } from "@/features/marketing/search-console/types";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const TEMPLATE_ROWS = [
   {
@@ -464,7 +467,7 @@ export function ImportExportMenu({
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-80 overflow-y-auto rounded-md border border-border">
-            <table className="w-full text-xs">
+            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
               <thead className="sticky top-0 bg-muted/80 text-left">
                 <tr>
                   <th className="px-2 py-1 font-medium">Keyword</th>

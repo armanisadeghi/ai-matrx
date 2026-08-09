@@ -24,21 +24,34 @@
  *    (`MOBILE_TABLE_ROW`) or scrolled content shows through it. Translucent
  *    zebra/hover tints must be `sm:`-only for the same reason.
  *
- * Usage:
+ * Usage — ONE class on the `<table>` does the whole treatment:
  *
- *   <table className={MOBILE_TABLE}>
- *     <thead><tr>
- *       <th className={cn(MOBILE_TABLE_FROZEN_HEAD, "px-3 py-2")}>Name</th>
- *       <th className={cn(MOBILE_TABLE_CELL, "px-3 py-2")}>Status</th>
- *     </tr></thead>
- *     <tbody>{rows.map((r) => (
- *       <tr key={r.id} className={cn(MOBILE_TABLE_ROW, "border-b")}>
- *         <td className={cn(MOBILE_TABLE_FROZEN_CELL, "px-3 py-2")}>{r.name}</td>
- *         <td className={cn(MOBILE_TABLE_CELL, "px-3 py-2")}>{r.status}</td>
- *       </tr>
- *     ))}</tbody>
- *   </table>
+ *   <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}> … </table>
+ *
+ * Reach for the granular constants below only when a table needs per-cell
+ * control (dynamic columns where the identity column is not the first one,
+ * cells that must keep wrapping, a header that is not `bg-muted`).
  */
+
+/**
+ * THE DEFAULT. One class on the `<table>`: content-sized below `sm`, cells
+ * nowrap, rows opaque, first column of head and body frozen. Desktop
+ * rendering is untouched.
+ *
+ * Two things it cannot do for you:
+ * - A translucent ZEBRA or SELECTED tint on the row (`even:bg-muted/20`,
+ *   `data-[state=selected]:bg-muted`) out-specifies the opaque background and
+ *   will bleed through the frozen cell. Gate those with `sm:`.
+ * - A table whose first column is a checkbox or drag handle gets a useless
+ *   anchor. Those need the granular constants on the identity column instead.
+ */
+export const MOBILE_TABLE_FROZEN = [
+  "w-max min-w-full max-w-none sm:w-full sm:min-w-0 sm:max-w-full",
+  "max-sm:[&_th]:whitespace-nowrap max-sm:[&_td]:whitespace-nowrap",
+  "max-sm:[&_tbody_tr]:bg-card",
+  "max-sm:[&_thead_tr>*:first-child]:sticky max-sm:[&_thead_tr>*:first-child]:left-0 max-sm:[&_thead_tr>*:first-child]:z-20 max-sm:[&_thead_tr>*:first-child]:bg-muted",
+  "max-sm:[&_tbody_tr>*:first-child]:sticky max-sm:[&_tbody_tr>*:first-child]:left-0 max-sm:[&_tbody_tr>*:first-child]:z-10 max-sm:[&_tbody_tr>*:first-child]:bg-inherit",
+].join(" ");
 
 /**
  * On the `<table>` element. Below `sm` the table sizes to its CONTENT so it can
@@ -73,9 +86,13 @@ export const MOBILE_TABLE_FROZEN_CELL =
   "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:min-w-[160px] max-sm:bg-inherit";
 
 /**
- * For tables rendered inside a scroll container that is NOT the page body
- * (a dialog, a panel, a card with `overflow-hidden`): the global mobile rule
- * only turns the `table` itself into a scroller, so an ancestor that clips
- * would hide the overflow. Put this on the immediate wrapper.
+ * No wrapper constant, deliberately. Below 768px the global rule makes the
+ * `table` ELEMENT its own scroller and `* { max-width: 100% }` keeps it inside
+ * its parent — so an ancestor `overflow-hidden` does not clip it, and adding
+ * `overflow-x-auto` to the wrapper only creates a second, competing scroller.
+ * Leave the wrapper alone.
+ *
+ * (`MatrxDataTable` takes the other valid route: it forces real table layout
+ * back on with `table overflow-visible` and scrolls its own container. Don't
+ * mix the two strategies in one table.)
  */
-export const MOBILE_TABLE_WRAPPER = "max-sm:overflow-x-auto";

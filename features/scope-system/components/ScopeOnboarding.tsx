@@ -59,7 +59,6 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
   MOBILE_TABLE_ROW,
-  MOBILE_TABLE_WRAPPER,
 } from "@/components/official/mobile-table/mobileTable";
 
 // A column shown in the ghost preview. `name` becomes a context item if the
@@ -344,7 +343,7 @@ function GhostDimensionCard({
       </div>
 
       {/* Mini table: rows = scopes, columns = context items, cells = values */}
-      <div className={cn("rounded-md border border-border/70 overflow-hidden text-[11px]", MOBILE_TABLE_WRAPPER)}>
+      <div className="rounded-md border border-border/70 overflow-hidden text-[11px]">
         <table className={cn("sm:table-fixed", MOBILE_TABLE)}>
           <thead>
             <tr className="bg-muted/50 text-muted-foreground">

@@ -27,6 +27,9 @@ import {
   setGscBrandAliases,
   type GscBrandIdentityRow,
 } from "@/features/marketing/search-console/data-classification";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const SOURCE_LABELS: Record<string, string> = {
   domain: "Domain",
@@ -102,7 +105,7 @@ export function BrandIdentityPanel({
       ) : null}
 
       <div className="overflow-hidden rounded-md border border-border">
-        <table className="w-full text-xs">
+        <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
           <thead className="bg-muted/60 text-left">
             <tr>
               <th className="px-2 py-1.5 font-medium">Alias</th>

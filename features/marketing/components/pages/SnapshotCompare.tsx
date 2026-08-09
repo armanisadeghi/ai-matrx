@@ -20,6 +20,9 @@ import {
 import { parseStoredSeoMetrics } from "@/features/marketing/seo/serp/metrics";
 import type { PageSnapshot } from "@/features/marketing/types";
 import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 interface CompareField {
   label: string;
@@ -219,7 +222,7 @@ export function SnapshotCompare({
       anchor="snapshot_compare"
     >
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+        <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
           <thead>
             <tr className="border-b border-border text-left">
               <th className="px-3 py-2 font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">

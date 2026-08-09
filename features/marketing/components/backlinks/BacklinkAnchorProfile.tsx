@@ -28,6 +28,9 @@ import {
   type AnchorProfileRow,
   type AnchorProfileWarning,
 } from "@/features/marketing/components/backlinks/lib/anchors";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const DRILL_LIMIT = 25;
 
@@ -128,7 +131,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
               ))}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="py-1 pr-3 font-medium">Class</th>
@@ -199,7 +202,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
       {profile.concentrated.length > 0 ? (
         <SectionCard title="Anchors carrying an outsized share">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="py-1 pr-3 font-medium">Anchor</th>
@@ -243,7 +246,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
                 <tbody>
                   {drillRows.map((row) => (
                     <tr

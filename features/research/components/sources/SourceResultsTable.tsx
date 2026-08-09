@@ -340,7 +340,7 @@ export function SourceResultsTable({
       <table className={cn("text-left", MOBILE_TABLE)}>
         <thead>
           <tr className="border-b border-border/40 text-[10px] uppercase tracking-wider text-muted-foreground">
-            <th className={cn("py-1.5 pl-2 pr-1 w-10 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-0 max-sm:bg-card")}>
+            <th className="py-1.5 pl-2 pr-1 w-10 font-medium">
               {interactive ? (
                 <SortHeader
                   label="Best"
@@ -353,7 +353,7 @@ export function SourceResultsTable({
                 "Best"
               )}
             </th>
-            <th className="py-1.5 px-1 font-medium">
+            <th className={cn("py-1.5 px-1 font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-card")}>
               {interactive ? (
                 <SortHeader
                   label="Source"
@@ -541,10 +541,10 @@ export function SourceResultsTable({
                   MOBILE_TABLE_ROW,
                 )}
               >
-                <td className={cn("py-2 pl-2 pr-1 align-top font-mono text-[11px] tabular-nums text-muted-foreground", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-0")}>
+                <td className="py-2 pl-2 pr-1 align-top font-mono text-[11px] tabular-nums text-muted-foreground">
                   {rank != null ? rank : "—"}
                 </td>
-                <td className="py-2 px-1 align-top">
+                <td className={cn("py-2 px-1 align-top", MOBILE_TABLE_FROZEN_CELL)}>
                   <div className="flex items-start gap-1.5 min-w-0">
                     <SourceTypeIcon type={sourceTypeFromDb(src.source_type)} />
                     <div className="min-w-0">
