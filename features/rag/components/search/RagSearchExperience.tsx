@@ -101,7 +101,8 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { DEFAULT_NEW_CHAT_SLOT_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { createRagSearchScope } from "@/features/surfaces/manifests/rag-search.manifest";
 import {
@@ -128,8 +129,9 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 /** Surface registered in `features/surfaces/manifests/rag-search.manifest.ts`. */
 const RAG_SEARCH_SURFACE = "matrx-user/rag-search";
 const RAG_SEARCH_SOURCE_FEATURE: SourceFeature = "rag-search";
-/** General-purpose chat agent; the RAG tools below are armed onto its run. */
-const RAG_AGENT_ID = DEFAULT_NEW_CHAT_AGENT_ID;
+// The chat agent is the `chat.default_new_chat` SLOT (resolved in
+// AgentChatTab — the user's own binding wins); the RAG tools below are armed
+// onto its run regardless of which agent resolves.
 
 /**
  * Knowledge tool family (registry tool UUIDs from `tool.definition`). Armed
@@ -2157,8 +2159,38 @@ function Stat({ label, value }: { label: string; value: number | string }) {
  *      whether the base agent ships those tools.
  */
 function AgentChatTab({ scope }: { scope: Scope }) {
+  const { slot, loading, error } = useAgentSlot(DEFAULT_NEW_CHAT_SLOT_KEY);
+  if (loading) {
+    return (
+      <div
+        className="flex h-full items-center justify-center"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (error || !slot) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+        <p className="text-sm font-medium text-foreground">
+          Agent chat is unavailable right now.
+        </p>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          The default chat agent could not be resolved
+          {error ? ` — ${error}` : ""}. Check your override on the Agent Slots
+          page, or try again shortly.
+        </p>
+      </div>
+    );
+  }
+  return <AgentChatTabBody scope={scope} agentId={slot.agentId} />;
+}
+
+function AgentChatTabBody({ scope, agentId }: { scope: Scope; agentId: string }) {
   const dispatch = useAppDispatch();
-  const surfaceKey = `${RAG_SEARCH_SOURCE_FEATURE}:${RAG_AGENT_ID}`;
+  const surfaceKey = `${RAG_SEARCH_SOURCE_FEATURE}:${agentId}`;
   const searchContext = useRagSearchContext();
   const activeOrganizationId = searchContext.filters?.organization_id ?? null;
   const activeScopeIds =
@@ -2214,7 +2246,7 @@ function AgentChatTab({ scope }: { scope: Scope }) {
     ],
   );
 
-  const { conversationId } = useAgentLauncher(RAG_AGENT_ID, {
+  const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: RAG_SEARCH_SOURCE_FEATURE,
     apiEndpointMode: "agent",

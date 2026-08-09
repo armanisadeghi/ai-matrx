@@ -130,8 +130,11 @@ export const SMART_VIEW_BY_KEY: Record<SmartViewKey, SmartViewDef> =
 
 export function buildSmartViewContext(
   currentUserId: string | null,
+  /** ISO timestamp to evaluate "today" against — pass the ticking nowMinute
+   *  selector input so date-window views roll over without a store change. */
+  nowIso?: string,
 ): SmartViewContext {
-  const today = new Date();
+  const today = nowIso ? new Date(nowIso) : new Date();
   today.setHours(0, 0, 0, 0);
   const week = new Date(today);
   week.setDate(week.getDate() + 7);
