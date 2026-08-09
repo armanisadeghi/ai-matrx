@@ -653,8 +653,29 @@ org-settings-scopes — none names an existing record.
   before assuming the transition is load-bearing (in `AssessmentDetail` it WAS —
   it disables the Start buttons — but those are different controls).
 
-**The remaining backlog is the handler-body form**, still ~140 files. Nobody has
-walked it end to end.
+**Row 2 of the table — the `Open`/`View` button beside a record — is now SWEPT
+(2026-08-09).** Ten candidates repo-wide (excluding demos + transitional);
+three were real and are fixed: `OrgHomeScopeSection`, `PromoteToSiteDialog`,
+`PreferencesTabClient`.
+
+**Cleared with the reason, so nobody re-chases them:**
+- `CrawlsTable`'s "Open live crawl" → `${sitePath}/crawls/new`. This LOOKS
+  like a mislabeled destination because the sibling "Start crawl" goes to the
+  same URL — but `NewCrawlWorkspace` restores `crawlActivity.activeCrawl`, so
+  `/crawls/new` IS where a running crawl is shown. **Check the destination
+  before writing something up as a wrong-record door.**
+- `PeekDialog`'s "Open" — imperative on purpose (close, then navigate), and a
+  sibling "New tab" anchor already carries cmd-click. Both doors present.
+- `EntityExplorerEntry` — destination comes from a combobox and the button is
+  disabled until one is picked. A form control, not a record's door.
+
+**The tell worth remembering:** two of the three real ones sat in files that
+already imported `Link` for other links. A `router.push` in a file that
+already links is a strong candidate.
+
+**Still unwalked: the handler-body form**, ~140 files. Rows 1 and 2 of the
+triage table are done; what's left is mostly rows 3–5 (the "Fine" shapes), so
+expect a low hit rate — but nobody has confirmed that end to end.
 
 ### A FOURTH failure mode: the route literal that has no page
 
