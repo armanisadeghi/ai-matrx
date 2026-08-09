@@ -413,10 +413,26 @@ token silently lost the peek door.
 
 ### Wave 1 remainder (open)
 - [ ] Browser-verify a peek+open door on `/agents/all` and one org resource row.
-- [ ] **Rename the peek registry keys to canonical tokens** and delete
-      `PEEK_KEY_BY_TOKEN`. Touches `features/organizations/resource-catalogue.ts`
-      and the two surfaces that key off `entry.key`
-      (`OrgResourceDetail.tsx:136`, `ContainerResourceSheet.tsx:97`).
+- [x] **Peek registry re-keyed to canonical tokens; `PEEK_KEY_BY_TOKEN` and
+      `peekKeyForToken` are DELETED** (2026-08-09). One vocabulary for peeks.
+      `hasPeek(token)` and `<ResourcePeekHost kind={token}>` now take the
+      canonical token directly, and the parity guard still reports 19 = 19.
+
+      **This item as originally written would have broken live URLs, and that
+      correction is the reusable part.** It said to rename the keys and touch
+      `resource-catalogue.ts` plus the two surfaces keyed off `entry.key`. But
+      the catalogue's `key` IS a URL segment — `OrgWorkspace.tsx:192` pushes
+      `/organizations/{slug}/resources/{entry.key}` and `OrgResourceDetail`
+      reads it back as `params.kind` — so renaming those six keys would have
+      404'd every existing bookmark and shared link to an org resource page.
+
+      The two vocabularies are separable, which is why this landed safely:
+      **the catalogue `key` is a URL slug and stays; the PEEK registry key is
+      an internal lookup and became the token.** `entry.token` is what you hand
+      a peek. Blast radius was two call sites (`EntityRef`,
+      `AgentResourcesManager`), both already funnelling through the one helper
+      — which is exactly why extracting that helper earlier was worth it.
+      **Before renaming any registry key, check whether it is also a URL.**
 - [ ] Decide + build the `skill` and `workflow` detail routes, then add `hrefFor`.
 - [ ] D137: canvas route.
 

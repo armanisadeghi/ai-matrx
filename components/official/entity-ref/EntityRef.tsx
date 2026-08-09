@@ -36,7 +36,6 @@ import {
 } from "@/features/scopes/registry/entityRegistry";
 import {
   hasPeek,
-  peekKeyForToken,
 } from "@/features/organizations/peek/kinds-list";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { allowNativeNewTab } from "@/utils/navigation/should-open-in-new-tab";
@@ -197,8 +196,10 @@ export function EntityRef({
   const canonicalToken = resolveEntityToken(token);
   const info = tryGetEntityInfo(canonicalToken);
   const resolvedHref = href ?? info?.hrefFor?.(id) ?? null;
-  const peekKind = peekKeyForToken(canonicalToken);
-  const canPeek = !disablePeek && hasPeek(peekKind);
+  // The peek registry is keyed by canonical token, so there is nothing to
+  // translate — `peekKeyForToken` existed only to bridge the legacy
+  // catalogue vocabulary and is deleted.
+  const canPeek = !disablePeek && hasPeek(canonicalToken);
   const label = name?.trim() || `${id.slice(0, 8)}…`;
   // `label` stays the ACCESSIBLE name (title/aria) even when children
   // replace what is drawn — a tooltip reading "Open" tells nobody anything.
@@ -358,7 +359,7 @@ export function EntityRef({
           onContextMenu={stopAny}
         >
           <ResourcePeekHost
-            kind={peekKind}
+            kind={canonicalToken}
             id={id}
             onClose={() => setPeekOpen(false)}
           />

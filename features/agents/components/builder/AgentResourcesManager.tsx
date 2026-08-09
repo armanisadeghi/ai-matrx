@@ -12,10 +12,7 @@ import {
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
-import {
-  hasPeek,
-  peekKeyForToken,
-} from "@/features/organizations/peek/kinds-list";
+import { hasPeek } from "@/features/organizations/peek/kinds-list";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
@@ -273,7 +270,7 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
           // commit that extracted it, and caught in review.
           const canonicalToken = resolveEntityToken(edge.sourceType);
           const entity = tryGetEntityInfo(canonicalToken);
-          const canPeek = hasPeek(peekKeyForToken(canonicalToken));
+          const canPeek = hasPeek(canonicalToken);
           return (
             <ResourceAttachmentTile
               key={edge.id}
@@ -310,7 +307,7 @@ export function AgentResourcesManager({ agentId }: AgentResourcesManagerProps) {
 
       {peekEdge && (
         <ResourcePeekHost
-          kind={peekKeyForToken(resolveEntityToken(peekEdge.sourceType))}
+          kind={resolveEntityToken(peekEdge.sourceType)}
           id={peekEdge.sourceId}
           onClose={() => setPeekEdgeId(null)}
         />
