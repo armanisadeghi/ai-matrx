@@ -147,7 +147,7 @@ the `sch_*` select policies (or serve them from a `SECURITY DEFINER` RPC like th
 consoles) and say so in the page header. If no, rename them so they don't claim to be admin
 fleet views.
 
-### D137 — `platform.shareable_resource_registry.url_path_template` is a stale second route authority (2026-08-09)
+### D146 — `platform.shareable_resource_registry.url_path_template` is a stale second route authority (2026-08-09; renumbered from D137 — main landed a different D137 the same day)
 
 The DB registry carries a per-resource `url_path_template` that competes with the entity
 registry's `hrefFor` and has drifted badly. Live rows still advertise routes that do not
@@ -192,6 +192,29 @@ separate `apps/workflow-studio` Vite app. Several surfaces hard-coded `/workflow
 were shipping 404s (org workflows tile, the workflow peek, the share registry). Those are now
 door-less rather than broken, but a workflow named in this app still can't be opened. Decide:
 link out to workflow-studio with a real origin, or build a detail route here.
+### D137 — the public `/seo` analyzers' "Fetch from URL" button 401s for every anonymous visitor (2026-08-09)
+
+`/seo/metadata` and `/seo/social-preview` are anonymous marketing pages whose primary action
+scrapes the entered URL. That action calls `POST /scraper/quick-scrape`, and aidream mounts the
+**entire** `/scraper` router under `Depends(require_authenticated)`
+(`aidream/api/app.py:1358-1363`) — a guest fingerprint yields `ctx.is_authenticated == False`, so
+production returns `401 token_required` and the user gets "Authentication required. Please sign
+in." on a page that never asks them to sign in. Verified live on aimatrx.com and by curling the
+backend with BOTH `X-Guest-Fingerprint` and `X-Fingerprint-ID` (401 either way).
+
+**Pre-dates the client refactor** (v0.4.351, which deleted the `/api/scraper/content` Next
+proxy): that proxy forwarded the same guest header to the same authenticated endpoint, so it
+401'd identically. Nothing regressed; the dead end was simply invisible while an agent tested
+signed-in.
+
+Fix is an aidream authorization decision, **Arman's or the server's to make, not a frontend
+patch** — either (a) expose a guest-friendly metadata/social-tags fetch under the EXISTING
+`/seo/public` router (`aidream/api/routers/seo_public_tools.py`, mounted with
+`require_guest_or_above`, already home to structured-data/page-audit/robots-check for exactly
+these public tools), or (b) open quick-scrape to guest identities. Until then the button is a
+dead end and should either sign the user in or not render. Related: the "guest users →
+X-Fingerprint-ID" claim in `features/scraper/types/scraper-api.ts` was false for these
+endpoints and has been corrected.
 
 ### D136 — `pnpm check:hatches` is red on main: baseline drifted, ratchet no longer ratchets (2026-08-08)
 

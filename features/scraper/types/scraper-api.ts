@@ -8,61 +8,36 @@
  * - POST /api/scraper/search-and-scrape-limited - Search and scrape (limited)
  * - POST /api/scraper/mic-check - Test endpoint
  *
- * Authentication:
- * All scraper requests require ONE of:
- * - Authorization header (Bearer token) - for authenticated users
- * - X-Fingerprint-ID header - for guest users (FingerprintJS visitor ID)
+ * Authentication: a REAL signed-in user. aidream mounts the whole `/scraper`
+ * router under `Depends(require_authenticated)` (aidream/api/app.py), so a
+ * guest fingerprint — either header spelling — gets `401 token_required`.
+ * Guests are NOT supported here despite what this comment used to claim;
+ * the public `/seo/*` analyzers hit that 401 today (FOUND_DEFECTS D137).
+ * Guest-friendly SEO work belongs on aidream's `/seo/public` router.
  */
 
 // ============================================================================
-// COMMON TYPES
+// REQUEST TYPES — aliases of the generated backend contract
 // ============================================================================
+//
+// These are NOT hand-written mirrors. `types/python-generated/api-types.ts` is
+// the source of truth (regenerate with `pnpm sync-types`); aliasing here keeps
+// ONE definition of the request shape for every caller. There is exactly one
+// client path to these endpoints — `useScraperApi` — calling the Python
+// backend directly. Never re-declare these option sets anywhere else.
 
-export interface ScrapeOptions {
-  get_organized_data?: boolean;
-  get_structured_data?: boolean;
-  get_overview?: boolean;
-  get_text_data?: boolean;
-  get_main_image?: boolean;
-  get_links?: boolean;
-  get_content_filter_removal_details?: boolean;
-  include_highlighting_markers?: boolean;
-  include_media?: boolean;
-  include_media_links?: boolean;
-  include_media_description?: boolean;
-  include_anchors?: boolean;
-  anchor_size?: number;
-}
+import type { components } from "@/types/python-generated/api-types";
 
-// ============================================================================
-// REQUEST TYPES
-// ============================================================================
+export type QuickScrapeRequest = components["schemas"]["QuickScrapeRequest"];
+export type SearchKeywordsRequest =
+  components["schemas"]["SearchKeywordsRequest"];
+export type SearchAndScrapeRequest =
+  components["schemas"]["SearchAndScrapeRequest"];
+export type SearchAndScrapeLimitedRequest =
+  components["schemas"]["SearchAndScrapeLimitedRequest"];
 
-export interface QuickScrapeRequest extends ScrapeOptions {
-  urls: string[];
-  use_cache?: boolean;
-}
-
-export interface SearchKeywordsRequest {
-  keywords: string[];
-  country_code?: string;
-  total_results_per_keyword?: number;
-  search_type?: "web" | "news" | "all";
-}
-
-export interface SearchAndScrapeRequest extends ScrapeOptions {
-  keywords: string[];
-  country_code?: string;
-  total_results_per_keyword?: number;
-  search_type?: "web" | "news" | "all";
-}
-
-export interface SearchAndScrapeLimitedRequest extends ScrapeOptions {
-  keyword: string;
-  country_code?: string;
-  max_page_read?: number;
-  search_type?: "web" | "news" | "all";
-}
+/** The scrape-shaping flags shared by quick-scrape and the search-and-scrape endpoints. */
+export type ScrapeOptions = Omit<QuickScrapeRequest, "urls" | "use_cache">;
 
 // ============================================================================
 // RESPONSE TYPES (V2 Stream Events)

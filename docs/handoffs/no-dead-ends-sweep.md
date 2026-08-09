@@ -1265,7 +1265,8 @@ from the description would have churned ten files for nothing.
    p_target_type, p_label, p_direction)` + an Edges destination on the hub.
    Same shape blocks Exposure Audit's "N link" / "N grant" and the Entitlements
    "Events" / "Users" counts.
-10. **Stale `url_path_template` rows** (FOUND_DEFECTS D137). Mitigated — a
+10. **Stale `url_path_template` rows** (FOUND_DEFECTS D146, renumbered from
+    D137 when main landed a different D137 the same day). Mitigated — a
     registered token with no `hrefFor` now returns null instead of the template
     — but the rows are still wrong. Decide: correct each (then
     `pnpm tsx scripts/regen-shareable-registry-snapshot.ts`), or drop the column
