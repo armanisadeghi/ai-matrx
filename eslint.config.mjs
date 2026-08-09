@@ -564,7 +564,11 @@ const matrxLintPlugin = {
                                 call.callee.property?.name ?? '',
                             );
                         if (iterating) return false;
-                        return (cur.params ?? []).some(binds);
+                        if ((cur.params ?? []).some(binds)) return true;
+                        // Keep walking outward. A nested helper / IIFE / local
+                        // render callback that does not bind the record still
+                        // sits inside the component that does; returning on the
+                        // first enclosing function never reached it.
                     }
                     return false;
                 };

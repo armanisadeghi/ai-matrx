@@ -328,7 +328,7 @@ export function DeadEndsConsole({ report, history }: DeadEndsConsoleProps) {
             fixPromptForBucket(
               "the whole repository",
               report.findings,
-              "feature",
+              "repository",
               null,
             ),
             "Campaign brief",

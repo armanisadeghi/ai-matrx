@@ -646,7 +646,10 @@ function isSelfSubject(node: ts.Node, expr: ts.Expression, sf: ts.SourceFile): b
       if (isIterationCallback(cur)) return false;
       if (isNamedRowRenderer(cur, sf)) return false;
       if (rendersKeyedElement(cur)) return false;
-      return cur.parameters.some((p) => bindsName(p.name, root));
+      if (cur.parameters.some((p) => bindsName(p.name, root))) return true;
+      // Do NOT stop here. A nested helper, IIFE or local render callback that
+      // does not bind the record still sits inside the component that does —
+      // returning on the first enclosing function never reached it.
     }
     cur = cur.parent;
   }

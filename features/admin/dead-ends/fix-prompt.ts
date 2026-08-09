@@ -74,7 +74,7 @@ export function fixPromptForFinding(f: DeadEndFinding): string {
 export function fixPromptForBucket(
   bucketLabel: string,
   findings: DeadEndFinding[],
-  scope: "file" | "feature",
+  scope: "file" | "feature" | "repository",
   /** Path prefix to verify against. `null` for a whole-repo sweep. */
   pathPrefix: string | null = bucketLabel,
 ): string {
@@ -87,13 +87,17 @@ export function fixPromptForBucket(
   const truncated = findings.length > 60 ? `\n  … and ${findings.length - 60} more` : "";
   return [
     `Read ${DOCTRINE} and invoke the \`no-dead-ends\` skill, then clear every Door Law`,
-    `violation in this ${scope}: ${bucketLabel}`,
+    scope === "repository"
+      ? `violation across ${bucketLabel}.`
+      : `violation in this ${scope}: ${bucketLabel}`,
     "",
     `${findings.length} finding(s):`,
     ...lines,
     truncated,
     "",
-    "Do the inventory pass ONCE for the whole bucket, then fix them together:",
+    scope === "repository"
+      ? "Work feature by feature — do the inventory pass ONCE per feature, then fix its files together:"
+      : "Do the inventory pass ONCE for the whole bucket, then fix them together:",
     "- Reach for <EntityRef> (components/official/entity-ref/EntityRef.tsx) for every name and id.",
     `- Missing route? Add hrefFor to the token in ${ENTITY_REGISTRY_PATH}.`,
     "- Missing peek? features/organizations/peek/registry.ts + kinds-list.ts, together.",
