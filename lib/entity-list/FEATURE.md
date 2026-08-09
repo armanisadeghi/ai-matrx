@@ -77,8 +77,14 @@ door: { token: (row) => row.kind, column: "label" }
   is an addition, and clicks on it never double-fire the row.
 - `hrefFor` is honoured exactly — returning `undefined` means THAT row has no
   door and must not fall through to the registry.
-- Alternate views (`views.cards` / `views.rows`) import `entityListRowHref` so a
-  card can never be a poorer door than the table.
+- Alternate views (`views.cards` / `views.rows`) receive **`hrefFor`** in their
+  render props — the same door the table puts on the name cell. Render the
+  record's name as a real anchor with it; `undefined` means that row has no door
+  and stays plain text. The shell can't do this for you (an alternate view owns
+  its markup), so the door is PUSHED to it: a view that ignores `hrefFor` is
+  visibly discarding an argument. Exporting `entityListRowHref` alone was not
+  enough — both shipped card views simply never imported it, and switching away
+  from the table silently reintroduced the mouse-only dead end.
 - **No `door` is a claim that the records have no canonical route.** If that is
   because the token has no `hrefFor`, report the registry gap — don't ship the
   dead end.

@@ -42,6 +42,8 @@ interface Props {
   menuFor: (row: AgentBrowseRow) => () => ItemMenuConfig;
   onOpenActionModal: (row: AgentBrowseRow) => void;
   onToggleFavorite: (row: AgentBrowseRow) => void;
+  /** THE DOOR LAW — the agent's canonical route, from the list shell. */
+  hrefFor: (row: AgentBrowseRow) => string | undefined;
 }
 
 function CardAction({
@@ -72,6 +74,7 @@ export function AgentBrowseCards({
   menuFor,
   onOpenActionModal,
   onToggleFavorite,
+  hrefFor,
 }: Props) {
   return (
     <div
@@ -82,7 +85,9 @@ export function AgentBrowseCards({
           : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
       )}
     >
-      {rows.map((row) => (
+      {rows.map((row) => {
+        const agentHref = hrefFor(row);
+        return (
         <div
           key={row.id}
           role="button"
@@ -110,9 +115,24 @@ export function AgentBrowseCards({
             </span>
 
             <div className="min-w-0 flex-1">
-              {/* Plain text — click bubbles to the card → AgentActionModal. */}
+              {/*
+                The name is a REAL anchor so cmd-click, middle-click, "open in
+                new tab" and keyboard focus reach the agent — the card body
+                still opens AgentActionModal, so the click that bubbles is
+                unchanged and only the name itself navigates.
+              */}
               <p className="line-clamp-2 text-sm font-medium leading-snug">
-                {row.name}
+                {agentHref ? (
+                  <Link
+                    href={agentHref}
+                    onClick={(e) => e.stopPropagation()}
+                    className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {row.name}
+                  </Link>
+                ) : (
+                  row.name
+                )}
               </p>
               {row.description && (
                 <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
@@ -191,7 +211,8 @@ export function AgentBrowseCards({
             <CardAction href={`/agents/${row.id}`} icon={Eye} label="View" />
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

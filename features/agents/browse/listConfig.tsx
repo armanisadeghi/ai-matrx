@@ -224,6 +224,7 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
         menuFor={p.actions.menuFor}
         onOpenActionModal={p.actions.onOpenRow}
         onToggleFavorite={(row) => p.actions.onToggleFavorite?.(row)}
+        hrefFor={p.hrefFor}
       />
     ),
     rows: (p) => (
@@ -234,6 +235,7 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
         menuFor={p.actions.menuFor}
         onOpenActionModal={p.actions.onOpenRow}
         onToggleFavorite={(row) => p.actions.onToggleFavorite?.(row)}
+        hrefFor={p.hrefFor}
       />
     ),
   },

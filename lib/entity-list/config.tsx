@@ -94,6 +94,19 @@ export interface EntityAltViewProps<TRow> {
   /** True outside "Mine" — owner/org/access carry information there only. */
   showShared: boolean;
   actions: EntityRowActions<TRow>;
+  /**
+   * THE DOOR LAW for this row — the record's canonical route, or `undefined`
+   * when it has none. Resolved from `config.door` by the shell and handed
+   * DOWN so a card or dense row cannot be a poorer door than the table:
+   * render the record's name as a real anchor with this href.
+   *
+   * The shell can't do it for you (an alternate view owns its own markup), so
+   * the next best thing is that the door arrives without being asked for — a
+   * view that ignores it is visibly ignoring an argument, not merely failing
+   * to know a helper existed. `undefined` means render plain text, never a
+   * link to nowhere.
+   */
+  hrefFor: (row: TRow) => string | undefined;
 }
 
 export interface EntityFacetSection {

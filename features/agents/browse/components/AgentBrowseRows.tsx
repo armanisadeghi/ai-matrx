@@ -9,6 +9,7 @@
 // tags | updated | kebab. Whole-row click opens AgentActionModal (classic
 // chooser). Name is plain text so it does not navigate away.
 
+import Link from "next/link";
 import { Star, Archive, MoreVertical } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
@@ -24,6 +25,8 @@ interface Props {
   menuFor: (row: AgentBrowseRow) => () => ItemMenuConfig;
   onOpenActionModal: (row: AgentBrowseRow) => void;
   onToggleFavorite: (row: AgentBrowseRow) => void;
+  /** THE DOOR LAW — the agent's canonical route, from the list shell. */
+  hrefFor: (row: AgentBrowseRow) => string | undefined;
 }
 
 export function AgentBrowseRows({
@@ -33,6 +36,7 @@ export function AgentBrowseRows({
   menuFor,
   onOpenActionModal,
   onToggleFavorite,
+  hrefFor,
 }: Props) {
   const compact = density === "compact";
 
@@ -77,17 +81,33 @@ export function AgentBrowseRows({
             />
           </button>
 
-          {/* Plain text — click bubbles to the row → AgentActionModal.
-              Do NOT link to Run/Build here; that steals the chooser. */}
-          <span
-            className={cn(
+          {/* The NAME is a real anchor to the agent's canonical view — that is
+              THE DOOR LAW's first door, and it is what makes cmd-click,
+              middle-click and keyboard focus work here. The row BODY still
+              bubbles to AgentActionModal, so the chooser is intact; the old
+              warning stands for Run/Build specifically — never point the name
+              at those, they preempt the chooser. */}
+          {(() => {
+            const agentHref = hrefFor(row);
+            const className = cn(
               "min-w-0 flex-1 truncate font-medium",
               compact ? "text-xs" : "text-sm",
-            )}
-            title={row.name}
-          >
-            {row.name}
-          </span>
+            );
+            return agentHref ? (
+              <Link
+                href={agentHref}
+                title={row.name}
+                onClick={(e) => e.stopPropagation()}
+                className={cn(className, "hover:underline")}
+              >
+                {row.name}
+              </Link>
+            ) : (
+              <span className={className} title={row.name}>
+                {row.name}
+              </span>
+            );
+          })()}
 
           {row.is_archived && (
             <Archive className="h-3 w-3 shrink-0 text-muted-foreground" />
