@@ -71,6 +71,42 @@ The **code is built and live-verified** (card auth-and-void via Stripe test). To
 ### 7. SMS integration — Twilio console setup (manual, ~15 min)
 The SMS code is in place; the remaining steps are dashboard/console work only you can do (Messaging Service creation, phone-number config, env vars, webhooks). Full runbook: `.matrx/arman-sms-setup.md` (moved from the repo root 2026-07-22).
 
+### 8. Patrol candidate — "the id is not what its NAME says it is" (wrong-record doors)
+
+**Nominating this as a Pattern Patrol** per the CLAUDE.md standing duty. It is a
+CLASS, not three mistakes, and it produces the one thing the doctrine ranks
+worse than a missing door: **a door that opens the wrong record, which looks
+like it worked.**
+
+Three occurrences inside the no-dead-ends campaign alone, all 2026-08-09:
+1. `agent.shortcut.scopeId` — named like a `context.scopes` row; actually an
+   org/project/task id (`applyScopeToRowFields`). Caught by Bugbot.
+2. A surface key sliced into `<prefix>:<uuid>` and guarded only by `isUuidValue`
+   — but a shortcut id is also a uuid, so the "agent" door opened a shortcut.
+   Caught by an adversarial agent.
+3. `ScopeRef.scopeId` in the context-menu lab — same trap as (1), in a file
+   whose sibling module carries a docblock **describing this exact trap**. I
+   wrote it anyway. Caught by an adversarial agent.
+
+Why a patrol and not a rule: the type system cannot see it (every id is
+`string`), lint cannot see it, and a reviewer sees a plausible pairing. The only
+reliable detection is a targeted pass that, for each of the **172** `token=`
+door usages, traces where the id came from — the selector, the API field, the
+slice — rather than trusting the variable name. Scale of the naming hazard:
+**1180** `scopeId` occurrences across `features/`, `components/`, `app/`.
+
+Two mitigations already exist and should be the patrol's fix template:
+`entityTokenForAgentScope` (`features/agent-shortcuts/constants.ts`) and
+`entityFromSurfaceKey` (`features/agents/utils/surface-key.ts`) — declared
+vocabularies mapping an ambiguous field to the token it ACTUALLY identifies.
+Each hit resolves to either "route it through a vocabulary" or "this id has no
+navigable record; render it token-less".
+
+A branch-wide sweep of `token="scope"` (8 sites) was run when (3) was found: all
+the others are genuine `context.scopes` rows.
+
+**Your call:** add to `common-docs/systems/pattern-patrols/PATROL_REGISTRY.md`?
+
 ## Pending Arman review
 
 _(none — current asks are all in Active)_
