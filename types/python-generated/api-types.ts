@@ -5246,790 +5246,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/scraper/admin/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Preview Site
-         * @description Quick site preview — used by the New Crawl form on URL blur.
-         *
-         *     Normalises the URL (so 'abc.com' becomes 'https://abc.com/'), fetches
-         *     /robots.txt + the homepage, runs the SEO audit, and grabs a desktop
-         *     screenshot. Bounded by short timeouts so the user gets feedback in <10s.
-         */
-        post: operations["preview_site_scraper_admin_preview_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/start": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Crawl Start */
-        post: operations["crawl_start_scraper_admin_crawl_start_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/sites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Sites */
-        get: operations["list_sites_scraper_admin_sites_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/sites/{site_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Site */
-        get: operations["get_site_scraper_admin_sites__site_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Site Endpoint */
-        delete: operations["delete_site_endpoint_scraper_admin_sites__site_id__delete"];
-        options?: never;
-        head?: never;
-        /** Patch Site */
-        patch: operations["patch_site_scraper_admin_sites__site_id__patch"];
-        trace?: never;
-    };
-    "/scraper/admin/sites/batch-archive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Batch Archive Sites
-         * @description Archive (or un-archive) many sites in one call. Ownership is checked per
-         *     site — sites the caller can't write are skipped (reported in ``forbidden``).
-         */
-        post: operations["batch_archive_sites_scraper_admin_sites_batch_archive_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/sites/batch-delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Batch Delete Sites
-         * @description Delete (or archive, when ``hard=False``) many sites in one call.
-         *     Ownership is checked per site via ``assert_can_admin_site``.
-         */
-        post: operations["batch_delete_sites_scraper_admin_sites_batch_delete_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{run_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete Run Endpoint
-         * @description Hard-delete a crawl run + all of its child rows (pages, links, issues,
-         *     screenshots, queue entries, progress snapshots) via the existing
-         *     ON DELETE CASCADE chain.
-         */
-        delete: operations["delete_run_endpoint_scraper_admin_crawl__run_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/batch-delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Batch Delete Runs
-         * @description Hard-delete many crawl runs in one call. Ownership is checked per run —
-         *     a run the caller can't write is skipped (reported in ``forbidden``), never
-         *     deleted. Same CASCADE semantics as the single-run delete.
-         */
-        post: operations["batch_delete_runs_scraper_admin_crawl_batch_delete_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/sites/{site_id}/detail": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Site Detail Endpoint
-         * @description Hydrated site row — homepage metadata, last-run pointer, page-state
-         *     rollups, GSC totals. The site detail page hits this on mount.
-         */
-        get: operations["get_site_detail_endpoint_scraper_admin_sites__site_id__detail_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/sites/{site_id}/pages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Site Pages Endpoint
-         * @description Cross-run page registry for a site. The Pages tab on the site detail
-         *     page hits this — supports filter by state ('active'/'missing'/'broken'),
-         *     by GSC indexed flag, full-text search across URL+title, and sortable
-         *     columns (URL / last seen / clicks / impressions / status / word count).
-         */
-        get: operations["list_site_pages_endpoint_scraper_admin_sites__site_id__pages_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/sites/{site_id}/runs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Site Runs Endpoint
-         * @description Crawl history for a site — most recent first.
-         */
-        get: operations["list_site_runs_endpoint_scraper_admin_sites__site_id__runs_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/sites/{site_id}/diffs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Site Diffs Endpoint
-         * @description Pre-computed page-set deltas between consecutive runs of this site.
-         *     Each row carries pages_added/removed/returned/changed plus status
-         *     transitions. Built by scraper.reconcile_site_after_run() so reads are O(1).
-         */
-        get: operations["list_site_diffs_endpoint_scraper_admin_sites__site_id__diffs_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/sites/{site_id}/diffs/{run_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Site Diff Endpoint
-         * @description Single site_run_diffs row — full added/removed/changed payloads.
-         */
-        get: operations["get_site_diff_endpoint_scraper_admin_sites__site_id__diffs__run_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/sites/{site_id}/refresh-screenshot": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Refresh Site Screenshot Endpoint
-         * @description Capture a fresh homepage screenshot for a site without running a full
-         *     crawl. Updates scraper.sites.homepage_screenshot_file_id +
-         *     homepage_audited_at, plus refreshes title/description/lang from the same
-         *     page load. Returns the signed URL so the UI can render immediately.
-         */
-        post: operations["refresh_site_screenshot_endpoint_scraper_admin_sites__site_id__refresh_screenshot_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/sites/{site_id}/recrawl": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Recrawl Site Endpoint
-         * @description One-click rescrape. Resolves config from site.default_config →
-         *     most-recent run config → minimal default. Streams the same JSONL event
-         *     shape as POST /crawl/start so the dashboard can reuse the live UI.
-         */
-        post: operations["recrawl_site_endpoint_scraper_admin_sites__site_id__recrawl_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/runs/{run_id}/timeseries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Run Timeseries */
-        get: operations["run_timeseries_scraper_admin_runs__run_id__timeseries_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/runs/{run_id}/previous": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Run Previous */
-        get: operations["run_previous_scraper_admin_runs__run_id__previous_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/runs/{run_id}/link-graph": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Run Link Graph */
-        get: operations["run_link_graph_scraper_admin_runs__run_id__link_graph_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/runs/{run_id}/duplicates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Run Duplicates */
-        get: operations["run_duplicates_scraper_admin_runs__run_id__duplicates_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/extractors": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Extractors
-         * @description List extractors visible to the requester: own user-scope rows + all
-         *     system-scope rows. Other users' user-scope rows are hidden.
-         */
-        get: operations["list_extractors_scraper_admin_extractors_get"];
-        put?: never;
-        /**
-         * Save Extractor
-         * @description Create an extractor. scope='user' is the default and works for any
-         *     authenticated requester; scope='system' (platform-wide) is admin-only.
-         */
-        post: operations["save_extractor_scraper_admin_extractors_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/extractors/{extractor_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete Extractor
-         * @description Delete an extractor. Owner-only for scope='user' rows; admin-only for
-         *     scope='system' rows.
-         */
-        delete: operations["delete_extractor_scraper_admin_extractors__extractor_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/runs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Runs */
-        get: operations["list_runs_scraper_admin_runs_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{run_id}/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Crawl Status */
-        get: operations["crawl_status_scraper_admin_crawl__run_id__status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{run_id}/pages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Crawl Pages */
-        get: operations["crawl_pages_scraper_admin_crawl__run_id__pages_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/pages/{page_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Page Detail By Id
-         * @description Page detail by id alone — looks up the run from the page row.
-         *     Used by the full-page /scraper/page/{page_id} route which doesn't
-         *     carry the run id in its URL.
-         */
-        get: operations["page_detail_by_id_scraper_admin_pages__page_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{run_id}/pages/{page_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Crawl Page Detail
-         * @deprecated
-         */
-        get: operations["crawl_page_detail_scraper_admin_crawl__run_id__pages__page_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{run_id}/links": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Crawl Links */
-        get: operations["crawl_links_scraper_admin_crawl__run_id__links_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{run_id}/issues": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Crawl Issues */
-        get: operations["crawl_issues_scraper_admin_crawl__run_id__issues_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{run_id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Crawl Cancel */
-        post: operations["crawl_cancel_scraper_admin_crawl__run_id__cancel_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{run_id}/force-fail": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Crawl Force Fail
-         * @description Force a stranded run to ``failed`` — no worker cooperation required.
-         */
-        post: operations["crawl_force_fail_scraper_admin_crawl__run_id__force_fail_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{run_id}/resume": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Crawl Resume
-         * @description Resume a previously canceled / failed crawl. Streams progress like
-         *     /crawl/start; the durable PostgresQueueBackend means we pick up exactly
-         *     where the worker left off.
-         */
-        post: operations["crawl_resume_scraper_admin_crawl__run_id__resume_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/presets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Presets */
-        get: operations["get_presets_scraper_admin_presets_get"];
-        put?: never;
-        /** Save Preset Endpoint */
-        post: operations["save_preset_endpoint_scraper_admin_presets_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/presets/{preset_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete Preset Endpoint */
-        delete: operations["delete_preset_endpoint_scraper_admin_presets__preset_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/auth/google-status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Google Auth Status
-         * @description Report which Google integrations are configured + which env vars
-         *     each is currently reading from. Used by the dashboard's setup panel.
-         */
-        get: operations["google_auth_status_scraper_admin_auth_google_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/pages/{page_id}/performance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Page Performance
-         * @description Combined cached PSI + GSC snapshot for a page. Use the refresh
-         *     endpoints below to update.
-         */
-        get: operations["page_performance_scraper_admin_pages__page_id__performance_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/pages/{page_id}/refresh-psi": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Refresh Psi
-         * @description Run PageSpeed Insights against the page URL (both strategies by
-         *     default). PSI takes ~30s per call. Result is cached in scraper.psi_metrics.
-         */
-        post: operations["refresh_psi_scraper_admin_pages__page_id__refresh_psi_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{run_id}/refresh-gsc-bulk": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Refresh Gsc Bulk
-         * @description One-shot Search Console pull for every successful page in a run.
-         *
-         *     Streams typed events: gsc_bulk_started → gsc_page_done / gsc_page_failed /
-         *     gsc_page_no_data → gsc_bulk_completed. A property-level authorization
-         *     failure emits one gsc_bulk_warning and stops before page fan-out. Bounded
-         *     by `concurrency` so we stay inside Search Console's per-minute quota.
-         */
-        post: operations["refresh_gsc_bulk_scraper_admin_crawl__run_id__refresh_gsc_bulk_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/pages/{page_id}/refresh-gsc": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Refresh Gsc
-         * @description Pull this page's Search Console data (clicks/impressions/CTR/position +
-         *     top queries) for the past `days` days. Requires GSC OAuth env to be set.
-         */
-        post: operations["refresh_gsc_scraper_admin_pages__page_id__refresh_gsc_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/scraper/admin/crawl/{a_run_id}/diff/{b_run_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Diff Runs Endpoint
-         * @description Compare two runs by URL+content. Returns added/removed/changed pages.
-         *
-         *     Caller must be able to read both runs.
-         *
-         *     Useful for SEO regression detection: diff today's crawl against last
-         *     week's to see which pages dropped, gained, or had content changes.
-         */
-        get: operations["diff_runs_endpoint_scraper_admin_crawl__a_run_id__diff__b_run_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/web-credentials/oauth-defaults": {
         parameters: {
             query?: never;
@@ -10439,6 +9655,23 @@ export interface paths {
         get: operations["top_edges_kg_inspector_edges_top_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-slots/{slot_key}/tests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Slot All Exemplars */
+        post: operations["test_slot_all_exemplars_agent_slots__slot_key__tests_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23613,106 +22846,6 @@ export interface components {
              */
             estimated_cost_usd?: number;
         };
-        /** CrawlPresetSaveRequest */
-        CrawlPresetSaveRequest: {
-            /** Name */
-            name: string;
-            /** Description */
-            description?: string | null;
-            config: components["schemas"]["CrawlRequest"];
-            /**
-             * Is Shared
-             * @default false
-             */
-            is_shared?: boolean;
-        };
-        /** CrawlRequest */
-        CrawlRequest: {
-            /** Base Url */
-            base_url: string;
-            /** Seed Urls */
-            seed_urls?: string[];
-            /**
-             * List Mode
-             * @default false
-             */
-            list_mode?: boolean;
-            /**
-             * Max Pages
-             * @default 200
-             */
-            max_pages?: number;
-            /** Max Depth */
-            max_depth?: number | null;
-            /**
-             * Concurrency
-             * @default 8
-             */
-            concurrency?: number;
-            /**
-             * Follow Subdomains
-             * @default false
-             */
-            follow_subdomains?: boolean;
-            /**
-             * Respect Robots
-             * @default true
-             */
-            respect_robots?: boolean;
-            /**
-             * Seed From Sitemap
-             * @default true
-             */
-            seed_from_sitemap?: boolean;
-            /**
-             * User Agent
-             * @description Override the User-Agent string sent on every request.
-             */
-            user_agent?: string | null;
-            /**
-             * Include Patterns
-             * @description Regex patterns; if any are set, only paths matching at least one are crawled.
-             */
-            include_patterns?: string[];
-            /**
-             * Exclude Patterns
-             * @description Regex patterns; paths matching any are skipped (applied AFTER include_patterns).
-             */
-            exclude_patterns?: string[];
-            /**
-             * Politeness Delay Ms
-             * @default 0
-             */
-            politeness_delay_ms?: number;
-            /**
-             * Host Rps
-             * @description Per-host steady-state request-per-second cap. Applied across all workers.
-             * @default 4
-             */
-            host_rps?: number;
-            /**
-             * Host Burst
-             * @description Per-host token-bucket burst capacity.
-             * @default 8
-             */
-            host_burst?: number;
-            /**
-             * Render Mode
-             * @default http_first
-             * @enum {string}
-             */
-            render_mode?: "http_only" | "http_first" | "browser_always" | "browser_with_screenshot";
-            /**
-             * Capture Screenshots
-             * @default false
-             */
-            capture_screenshots?: boolean;
-            /**
-             * Screenshot Kinds
-             * @description Which screenshot variants to capture when render_mode is browser_with_screenshot.
-             */
-            screenshot_kinds?: ("viewport_desktop" | "viewport_mobile" | "viewport_tablet" | "full_page" | "desktop_full" | "desktop_fold" | "mobile_full" | "mobile_fold")[];
-        };
         /**
          * CreateAgentInput
          * @description Structured agent request. Goes through the trained agent-builder
@@ -26621,36 +25754,6 @@ export interface components {
             text: string;
             /** Pages */
             pages: components["schemas"]["ExtractedTextPageOut"][];
-        };
-        /** ExtractorSaveRequest */
-        ExtractorSaveRequest: {
-            /** Name */
-            name: string;
-            /** Host Pattern */
-            host_pattern: string;
-            /** Description */
-            description?: string | null;
-            /** Extractor Type */
-            extractor_type: string;
-            /** Expression */
-            expression: string;
-            /** Attribute */
-            attribute?: string | null;
-            /**
-             * Multiple
-             * @default false
-             */
-            multiple?: boolean;
-            /**
-             * Enabled
-             * @default true
-             */
-            enabled?: boolean;
-            /**
-             * Scope
-             * @default user
-             */
-            scope?: string;
         };
         /** FailureAnalyticsResponse */
         FailureAnalyticsResponse: {
@@ -33927,11 +33030,6 @@ export interface components {
              */
             event_driven?: boolean;
         };
-        /** PreviewRequest */
-        PreviewRequest: {
-            /** Url */
-            url: string;
-        };
         /**
          * PreviewSource
          * @description The source bytes for /assets/preview.
@@ -36318,35 +35416,6 @@ export interface components {
             /** Input Rules */
             input_rules?: components["schemas"]["LeakRule"][] | null;
         };
-        /** RunBatchDeleteRequest */
-        RunBatchDeleteRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Run Ids */
-            run_ids: string[];
-        };
-        /** RunBatchDeleteResult */
-        RunBatchDeleteResult: {
-            /** Deleted */
-            deleted: string[];
-            /** Not Found */
-            not_found: string[];
-            /** Forbidden */
-            forbidden: string[];
-        };
         /**
          * RunCostSummary
          * @description Aggregated cost for one workflow run.
@@ -37768,65 +36837,6 @@ export interface components {
              */
             event_spacing_ms?: number;
         };
-        /** SiteBatchArchiveRequest */
-        SiteBatchArchiveRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Site Ids */
-            site_ids: string[];
-            /**
-             * Archived
-             * @default true
-             */
-            archived?: boolean;
-        };
-        /** SiteBatchDeleteRequest */
-        SiteBatchDeleteRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Site Ids */
-            site_ids: string[];
-            /**
-             * Hard
-             * @default false
-             */
-            hard?: boolean;
-        };
-        /** SiteBatchResult */
-        SiteBatchResult: {
-            /** Succeeded */
-            succeeded: string[];
-            /** Not Found */
-            not_found: string[];
-            /** Forbidden */
-            forbidden: string[];
-        };
         /** SiteCredentialRequest */
         SiteCredentialRequest: {
             /**
@@ -37922,25 +36932,6 @@ export interface components {
              * @default false
              */
             force_refresh?: boolean;
-        };
-        /** SitePatchRequest */
-        SitePatchRequest: {
-            /** Display Name */
-            display_name?: string | null;
-            /** Description */
-            description?: string | null;
-            /** Notes */
-            notes?: string | null;
-            /** Tags */
-            tags?: string[] | null;
-            /** Default Config */
-            default_config?: {
-                [key: string]: unknown;
-            } | null;
-            /** Favicon Url */
-            favicon_url?: string | null;
-            /** Archived */
-            archived?: boolean | null;
         };
         /** SiteScheduleStatusResponse */
         SiteScheduleStatusResponse: {
@@ -38318,10 +37309,26 @@ export interface components {
         };
         /**
          * SlotCandidate
-         * @description What to test. All fields optional — an empty candidate re-runs the
-         *     slot's CURRENT resolved default (a baseline refresh).
+         * @description One labelled comparison column.
+         *
+         *     ``config_overrides=None`` means use the selection's normal configuration
+         *     behavior. An explicitly supplied ``{}`` means apply no run-scope
+         *     overrides, including when the current principal has binding overrides.
          */
         SlotCandidate: {
+            /** Candidate Id */
+            candidate_id?: string;
+            /**
+             * Label
+             * @default Candidate
+             */
+            label?: string;
+            /**
+             * Selection
+             * @default current
+             * @enum {string}
+             */
+            selection?: "current" | "slot_pinned" | "latest" | "agent" | "version";
             /** Agent Id */
             agent_id?: string | null;
             /** Agent Version Id */
@@ -38331,8 +37338,86 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
+        /** SlotExemplarTestResults */
+        SlotExemplarTestResults: {
+            /** Exemplar Id */
+            exemplar_id: string;
+            /** Exemplar Label */
+            exemplar_label: string;
+            /** Results */
+            results: components["schemas"]["SlotTestResult"][];
+        };
+        /** SlotTestBatchRequest */
+        SlotTestBatchRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Exemplar Ids */
+            exemplar_ids?: string[] | null;
+            baseline?: components["schemas"]["SlotCandidate"];
+            /** Candidates */
+            candidates: components["schemas"]["SlotCandidate"][];
+            principal?: components["schemas"]["SlotTestPrincipal"];
+        };
+        /** SlotTestBatchResponse */
+        SlotTestBatchResponse: {
+            /** Slot Key */
+            slot_key: string;
+            /** Exemplar Count */
+            exemplar_count: number;
+            /** Columns */
+            columns: components["schemas"]["SlotTestColumn"][];
+            /** Exemplars */
+            exemplars: components["schemas"]["SlotExemplarTestResults"][];
+        };
+        /** SlotTestColumn */
+        SlotTestColumn: {
+            /** Candidate Id */
+            candidate_id: string;
+            /** Label */
+            label: string;
+            /**
+             * Selection
+             * @enum {string}
+             */
+            selection: "current" | "slot_pinned" | "latest" | "agent" | "version";
+        };
+        /** SlotTestPrincipal */
+        SlotTestPrincipal: {
+            /** User Id */
+            user_id?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
         /** SlotTestRequest */
         SlotTestRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Exemplar Id */
             exemplar_id?: string | null;
             /** Variables */
@@ -38341,19 +37426,50 @@ export interface components {
             } | null;
             /** User Input */
             user_input?: string | null;
-            /** @default {} */
             candidate?: components["schemas"]["SlotCandidate"];
+            principal?: components["schemas"]["SlotTestPrincipal"];
         };
-        /** SlotTestResult */
+        /**
+         * SlotTestResult
+         * @description A persisted result entry stored in slot_exemplar.metadata.
+         */
         SlotTestResult: {
+            /** Id */
+            id?: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at?: string;
             /** Slot Key */
             slot_key: string;
+            /** Exemplar Id */
+            exemplar_id?: string | null;
+            /** Candidate Id */
+            candidate_id: string;
+            /** Candidate Label */
+            candidate_label: string;
+            candidate: components["schemas"]["SlotCandidate"];
+            principal: components["schemas"]["SlotTestPrincipal"];
             /** Agent Id */
-            agent_id: string;
-            /** Is Version */
-            is_version: boolean;
-            /** Provenance */
-            provenance: string;
+            agent_id?: string | null;
+            /** Definition Agent Id */
+            definition_agent_id?: string | null;
+            /**
+             * Is Version
+             * @default false
+             */
+            is_version?: boolean;
+            /**
+             * Provenance
+             * @default unresolved
+             * @enum {string}
+             */
+            provenance?: "system" | "org" | "user" | "slot-pinned" | "latest" | "agent" | "version" | "unresolved";
+            /** Applied Config Overrides */
+            applied_config_overrides?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
             /**
              * Output
              * @default
@@ -38377,6 +37493,10 @@ export interface components {
             duration_ms?: number;
             /** Error */
             error?: string | null;
+            /** Verdict Note */
+            verdict_note?: string | null;
+            /** Promoted To Reference At */
+            promoted_to_reference_at?: string | null;
         };
         /** SnapBboxBody */
         SnapBboxBody: {
@@ -53043,1447 +52163,6 @@ export interface operations {
             };
         };
     };
-    preview_site_scraper_admin_preview_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PreviewRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    crawl_start_scraper_admin_crawl_start_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CrawlRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_sites_scraper_admin_sites_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                include_archived?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_site_scraper_admin_sites__site_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_site_endpoint_scraper_admin_sites__site_id__delete: {
-        parameters: {
-            query?: {
-                /** @description Hard-delete the site row. Crawl runs are kept (site_id set NULL); use DELETE /crawl/{run_id} separately to drop run history. */
-                hard?: boolean;
-            };
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    patch_site_scraper_admin_sites__site_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SitePatchRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    batch_archive_sites_scraper_admin_sites_batch_archive_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SiteBatchArchiveRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SiteBatchResult"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    batch_delete_sites_scraper_admin_sites_batch_delete_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SiteBatchDeleteRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SiteBatchResult"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_run_endpoint_scraper_admin_crawl__run_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    batch_delete_runs_scraper_admin_crawl_batch_delete_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RunBatchDeleteRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RunBatchDeleteResult"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_site_detail_endpoint_scraper_admin_sites__site_id__detail_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_site_pages_endpoint_scraper_admin_sites__site_id__pages_get: {
-        parameters: {
-            query?: {
-                state?: string | null;
-                indexed?: boolean | null;
-                search?: string | null;
-                sort?: string;
-                direction?: string;
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_site_runs_endpoint_scraper_admin_sites__site_id__runs_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_site_diffs_endpoint_scraper_admin_sites__site_id__diffs_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_site_diff_endpoint_scraper_admin_sites__site_id__diffs__run_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                site_id: string;
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    refresh_site_screenshot_endpoint_scraper_admin_sites__site_id__refresh_screenshot_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    recrawl_site_endpoint_scraper_admin_sites__site_id__recrawl_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    run_timeseries_scraper_admin_runs__run_id__timeseries_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    run_previous_scraper_admin_runs__run_id__previous_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    run_link_graph_scraper_admin_runs__run_id__link_graph_get: {
-        parameters: {
-            query?: {
-                max_nodes?: number;
-                max_edges?: number;
-            };
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    run_duplicates_scraper_admin_runs__run_id__duplicates_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_extractors_scraper_admin_extractors_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    save_extractor_scraper_admin_extractors_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExtractorSaveRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_extractor_scraper_admin_extractors__extractor_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                extractor_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_runs_scraper_admin_runs_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    crawl_status_scraper_admin_crawl__run_id__status_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    crawl_pages_scraper_admin_crawl__run_id__pages_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-                success?: boolean | null;
-                has_issues?: boolean;
-            };
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    page_detail_by_id_scraper_admin_pages__page_id__get: {
-        parameters: {
-            query?: {
-                presigned_ttl?: number;
-            };
-            header?: never;
-            path: {
-                page_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    crawl_page_detail_scraper_admin_crawl__run_id__pages__page_id__get: {
-        parameters: {
-            query?: {
-                presigned_ttl?: number;
-            };
-            header?: never;
-            path: {
-                run_id: string;
-                page_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    crawl_links_scraper_admin_crawl__run_id__links_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-                only_broken?: boolean;
-                link_type?: string | null;
-            };
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    crawl_issues_scraper_admin_crawl__run_id__issues_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-                issue_type?: string | null;
-                severity?: string | null;
-            };
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    crawl_cancel_scraper_admin_crawl__run_id__cancel_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    crawl_force_fail_scraper_admin_crawl__run_id__force_fail_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    crawl_resume_scraper_admin_crawl__run_id__resume_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_presets_scraper_admin_presets_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    save_preset_endpoint_scraper_admin_presets_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CrawlPresetSaveRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_preset_endpoint_scraper_admin_presets__preset_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                preset_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    google_auth_status_scraper_admin_auth_google_status_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-        };
-    };
-    page_performance_scraper_admin_pages__page_id__performance_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                page_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    refresh_psi_scraper_admin_pages__page_id__refresh_psi_post: {
-        parameters: {
-            query?: {
-                strategy?: string | null;
-            };
-            header?: never;
-            path: {
-                page_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    refresh_gsc_bulk_scraper_admin_crawl__run_id__refresh_gsc_bulk_post: {
-        parameters: {
-            query?: {
-                days?: number;
-                site_url?: string | null;
-                concurrency?: number;
-            };
-            header?: never;
-            path: {
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    refresh_gsc_scraper_admin_pages__page_id__refresh_gsc_post: {
-        parameters: {
-            query?: {
-                days?: number;
-                site_url?: string | null;
-            };
-            header?: never;
-            path: {
-                page_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    diff_runs_endpoint_scraper_admin_crawl__a_run_id__diff__b_run_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                a_run_id: string;
-                b_run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     credentials_oauth_defaults_web_credentials_oauth_defaults_get: {
         parameters: {
             query?: never;
@@ -62794,6 +60473,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EdgesTop"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_slot_all_exemplars_agent_slots__slot_key__tests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotTestBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotTestBatchResponse"];
                 };
             };
             /** @description Validation Error */

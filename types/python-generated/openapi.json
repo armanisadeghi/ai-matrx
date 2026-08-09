@@ -13266,2303 +13266,6 @@
         }
       }
     },
-    "/scraper/admin/preview": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Preview Site",
-        "description": "Quick site preview — used by the New Crawl form on URL blur.\n\nNormalises the URL (so 'abc.com' becomes 'https://abc.com/'), fetches\n/robots.txt + the homepage, runs the SEO audit, and grabs a desktop\nscreenshot. Bounded by short timeouts so the user gets feedback in <10s.",
-        "operationId": "preview_site_scraper_admin_preview_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PreviewRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Preview Site Scraper Admin Preview Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/start": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Crawl Start",
-        "operationId": "crawl_start_scraper_admin_crawl_start_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CrawlRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "List Sites",
-        "operationId": "list_sites_scraper_admin_sites_get",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 1000,
-              "minimum": 1,
-              "default": 200,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "include_archived",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Include Archived"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Sites Scraper Admin Sites Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites/{site_id}": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Get Site",
-        "operationId": "get_site_scraper_admin_sites__site_id__get",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Site Scraper Admin Sites  Site Id  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Patch Site",
-        "operationId": "patch_site_scraper_admin_sites__site_id__patch",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SitePatchRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Patch Site Scraper Admin Sites  Site Id  Patch"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Delete Site Endpoint",
-        "operationId": "delete_site_endpoint_scraper_admin_sites__site_id__delete",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          },
-          {
-            "name": "hard",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "description": "Hard-delete the site row. Crawl runs are kept (site_id set NULL); use DELETE /crawl/{run_id} separately to drop run history.",
-              "default": false,
-              "title": "Hard"
-            },
-            "description": "Hard-delete the site row. Crawl runs are kept (site_id set NULL); use DELETE /crawl/{run_id} separately to drop run history."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Delete Site Endpoint Scraper Admin Sites  Site Id  Delete"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites/batch-archive": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Batch Archive Sites",
-        "description": "Archive (or un-archive) many sites in one call. Ownership is checked per\nsite — sites the caller can't write are skipped (reported in ``forbidden``).",
-        "operationId": "batch_archive_sites_scraper_admin_sites_batch_archive_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SiteBatchArchiveRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SiteBatchResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites/batch-delete": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Batch Delete Sites",
-        "description": "Delete (or archive, when ``hard=False``) many sites in one call.\nOwnership is checked per site via ``assert_can_admin_site``.",
-        "operationId": "batch_delete_sites_scraper_admin_sites_batch_delete_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SiteBatchDeleteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SiteBatchResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{run_id}": {
-      "delete": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Delete Run Endpoint",
-        "description": "Hard-delete a crawl run + all of its child rows (pages, links, issues,\nscreenshots, queue entries, progress snapshots) via the existing\nON DELETE CASCADE chain.",
-        "operationId": "delete_run_endpoint_scraper_admin_crawl__run_id__delete",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Delete Run Endpoint Scraper Admin Crawl  Run Id  Delete"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/batch-delete": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Batch Delete Runs",
-        "description": "Hard-delete many crawl runs in one call. Ownership is checked per run —\na run the caller can't write is skipped (reported in ``forbidden``), never\ndeleted. Same CASCADE semantics as the single-run delete.",
-        "operationId": "batch_delete_runs_scraper_admin_crawl_batch_delete_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RunBatchDeleteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RunBatchDeleteResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites/{site_id}/detail": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Get Site Detail Endpoint",
-        "description": "Hydrated site row — homepage metadata, last-run pointer, page-state\nrollups, GSC totals. The site detail page hits this on mount.",
-        "operationId": "get_site_detail_endpoint_scraper_admin_sites__site_id__detail_get",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Site Detail Endpoint Scraper Admin Sites  Site Id  Detail Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites/{site_id}/pages": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "List Site Pages Endpoint",
-        "description": "Cross-run page registry for a site. The Pages tab on the site detail\npage hits this — supports filter by state ('active'/'missing'/'broken'),\nby GSC indexed flag, full-text search across URL+title, and sortable\ncolumns (URL / last seen / clicks / impressions / status / word count).",
-        "operationId": "list_site_pages_endpoint_scraper_admin_sites__site_id__pages_get",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          },
-          {
-            "name": "state",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "pattern": "^(active|missing|redirect|broken)$"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "State"
-            }
-          },
-          {
-            "name": "indexed",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Indexed"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Search"
-            }
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "pattern": "^(url|last_seen|first_seen|gsc_clicks|gsc_impressions|last_status|last_word_count)$",
-              "default": "url",
-              "title": "Sort"
-            }
-          },
-          {
-            "name": "direction",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "pattern": "^(asc|desc)$",
-              "default": "asc",
-              "title": "Direction"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 1000,
-              "minimum": 1,
-              "default": 100,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Site Pages Endpoint Scraper Admin Sites  Site Id  Pages Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites/{site_id}/runs": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "List Site Runs Endpoint",
-        "description": "Crawl history for a site — most recent first.",
-        "operationId": "list_site_runs_endpoint_scraper_admin_sites__site_id__runs_get",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 500,
-              "minimum": 1,
-              "default": 50,
-              "title": "Limit"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Site Runs Endpoint Scraper Admin Sites  Site Id  Runs Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites/{site_id}/diffs": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "List Site Diffs Endpoint",
-        "description": "Pre-computed page-set deltas between consecutive runs of this site.\nEach row carries pages_added/removed/returned/changed plus status\ntransitions. Built by scraper.reconcile_site_after_run() so reads are O(1).",
-        "operationId": "list_site_diffs_endpoint_scraper_admin_sites__site_id__diffs_get",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 200,
-              "minimum": 1,
-              "default": 50,
-              "title": "Limit"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Site Diffs Endpoint Scraper Admin Sites  Site Id  Diffs Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites/{site_id}/diffs/{run_id}": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Get Site Diff Endpoint",
-        "description": "Single site_run_diffs row — full added/removed/changed payloads.",
-        "operationId": "get_site_diff_endpoint_scraper_admin_sites__site_id__diffs__run_id__get",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          },
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Site Diff Endpoint Scraper Admin Sites  Site Id  Diffs  Run Id  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites/{site_id}/refresh-screenshot": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Refresh Site Screenshot Endpoint",
-        "description": "Capture a fresh homepage screenshot for a site without running a full\ncrawl. Updates scraper.sites.homepage_screenshot_file_id +\nhomepage_audited_at, plus refreshes title/description/lang from the same\npage load. Returns the signed URL so the UI can render immediately.",
-        "operationId": "refresh_site_screenshot_endpoint_scraper_admin_sites__site_id__refresh_screenshot_post",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Refresh Site Screenshot Endpoint Scraper Admin Sites  Site Id  Refresh Screenshot Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/sites/{site_id}/recrawl": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Recrawl Site Endpoint",
-        "description": "One-click rescrape. Resolves config from site.default_config →\nmost-recent run config → minimal default. Streams the same JSONL event\nshape as POST /crawl/start so the dashboard can reuse the live UI.",
-        "operationId": "recrawl_site_endpoint_scraper_admin_sites__site_id__recrawl_post",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/runs/{run_id}/timeseries": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Run Timeseries",
-        "operationId": "run_timeseries_scraper_admin_runs__run_id__timeseries_get",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Run Timeseries Scraper Admin Runs  Run Id  Timeseries Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/runs/{run_id}/previous": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Run Previous",
-        "operationId": "run_previous_scraper_admin_runs__run_id__previous_get",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Run Previous Scraper Admin Runs  Run Id  Previous Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/runs/{run_id}/link-graph": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Run Link Graph",
-        "operationId": "run_link_graph_scraper_admin_runs__run_id__link_graph_get",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          },
-          {
-            "name": "max_nodes",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 2000,
-              "minimum": 50,
-              "default": 1000,
-              "title": "Max Nodes"
-            }
-          },
-          {
-            "name": "max_edges",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 50000,
-              "minimum": 10,
-              "default": 5000,
-              "title": "Max Edges"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Run Link Graph Scraper Admin Runs  Run Id  Link Graph Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/runs/{run_id}/duplicates": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Run Duplicates",
-        "operationId": "run_duplicates_scraper_admin_runs__run_id__duplicates_get",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Run Duplicates Scraper Admin Runs  Run Id  Duplicates Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/extractors": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "List Extractors",
-        "description": "List extractors visible to the requester: own user-scope rows + all\nsystem-scope rows. Other users' user-scope rows are hidden.",
-        "operationId": "list_extractors_scraper_admin_extractors_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response List Extractors Scraper Admin Extractors Get"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Save Extractor",
-        "description": "Create an extractor. scope='user' is the default and works for any\nauthenticated requester; scope='system' (platform-wide) is admin-only.",
-        "operationId": "save_extractor_scraper_admin_extractors_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExtractorSaveRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Save Extractor Scraper Admin Extractors Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/extractors/{extractor_id}": {
-      "delete": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Delete Extractor",
-        "description": "Delete an extractor. Owner-only for scope='user' rows; admin-only for\nscope='system' rows.",
-        "operationId": "delete_extractor_scraper_admin_extractors__extractor_id__delete",
-        "parameters": [
-          {
-            "name": "extractor_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Extractor Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Delete Extractor Scraper Admin Extractors  Extractor Id  Delete"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/runs": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "List Runs",
-        "operationId": "list_runs_scraper_admin_runs_get",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 500,
-              "minimum": 1,
-              "default": 100,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response List Runs Scraper Admin Runs Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{run_id}/status": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Crawl Status",
-        "operationId": "crawl_status_scraper_admin_crawl__run_id__status_get",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Crawl Status Scraper Admin Crawl  Run Id  Status Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{run_id}/pages": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Crawl Pages",
-        "operationId": "crawl_pages_scraper_admin_crawl__run_id__pages_get",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 2000,
-              "minimum": 1,
-              "default": 200,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          },
-          {
-            "name": "success",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Success"
-            }
-          },
-          {
-            "name": "has_issues",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Has Issues"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Crawl Pages Scraper Admin Crawl  Run Id  Pages Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/pages/{page_id}": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Page Detail By Id",
-        "description": "Page detail by id alone — looks up the run from the page row.\nUsed by the full-page /scraper/page/{page_id} route which doesn't\ncarry the run id in its URL.",
-        "operationId": "page_detail_by_id_scraper_admin_pages__page_id__get",
-        "parameters": [
-          {
-            "name": "page_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Page Id"
-            }
-          },
-          {
-            "name": "presigned_ttl",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 86400,
-              "minimum": 60,
-              "default": 3600,
-              "title": "Presigned Ttl"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Page Detail By Id Scraper Admin Pages  Page Id  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{run_id}/pages/{page_id}": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Crawl Page Detail",
-        "operationId": "crawl_page_detail_scraper_admin_crawl__run_id__pages__page_id__get",
-        "deprecated": true,
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          },
-          {
-            "name": "page_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Page Id"
-            }
-          },
-          {
-            "name": "presigned_ttl",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 86400,
-              "minimum": 60,
-              "default": 3600,
-              "title": "Presigned Ttl"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Crawl Page Detail Scraper Admin Crawl  Run Id  Pages  Page Id  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{run_id}/links": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Crawl Links",
-        "operationId": "crawl_links_scraper_admin_crawl__run_id__links_get",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 5000,
-              "minimum": 1,
-              "default": 500,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          },
-          {
-            "name": "only_broken",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Only Broken"
-            }
-          },
-          {
-            "name": "link_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Link Type"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Crawl Links Scraper Admin Crawl  Run Id  Links Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{run_id}/issues": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Crawl Issues",
-        "operationId": "crawl_issues_scraper_admin_crawl__run_id__issues_get",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 5000,
-              "minimum": 1,
-              "default": 500,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          },
-          {
-            "name": "issue_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Issue Type"
-            }
-          },
-          {
-            "name": "severity",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Severity"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Crawl Issues Scraper Admin Crawl  Run Id  Issues Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{run_id}/cancel": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Crawl Cancel",
-        "operationId": "crawl_cancel_scraper_admin_crawl__run_id__cancel_post",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Crawl Cancel Scraper Admin Crawl  Run Id  Cancel Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{run_id}/force-fail": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Crawl Force Fail",
-        "description": "Force a stranded run to ``failed`` — no worker cooperation required.",
-        "operationId": "crawl_force_fail_scraper_admin_crawl__run_id__force_fail_post",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Crawl Force Fail Scraper Admin Crawl  Run Id  Force Fail Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{run_id}/resume": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Crawl Resume",
-        "description": "Resume a previously canceled / failed crawl. Streams progress like\n/crawl/start; the durable PostgresQueueBackend means we pick up exactly\nwhere the worker left off.",
-        "operationId": "crawl_resume_scraper_admin_crawl__run_id__resume_post",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/presets": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Get Presets",
-        "operationId": "get_presets_scraper_admin_presets_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Get Presets Scraper Admin Presets Get"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Save Preset Endpoint",
-        "operationId": "save_preset_endpoint_scraper_admin_presets_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CrawlPresetSaveRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Save Preset Endpoint Scraper Admin Presets Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/presets/{preset_id}": {
-      "delete": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Delete Preset Endpoint",
-        "operationId": "delete_preset_endpoint_scraper_admin_presets__preset_id__delete",
-        "parameters": [
-          {
-            "name": "preset_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Preset Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Delete Preset Endpoint Scraper Admin Presets  Preset Id  Delete"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/auth/google-status": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Google Auth Status",
-        "description": "Report which Google integrations are configured + which env vars\neach is currently reading from. Used by the dashboard's setup panel.",
-        "operationId": "google_auth_status_scraper_admin_auth_google_status_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Google Auth Status Scraper Admin Auth Google Status Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/pages/{page_id}/performance": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Page Performance",
-        "description": "Combined cached PSI + GSC snapshot for a page. Use the refresh\nendpoints below to update.",
-        "operationId": "page_performance_scraper_admin_pages__page_id__performance_get",
-        "parameters": [
-          {
-            "name": "page_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Page Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Page Performance Scraper Admin Pages  Page Id  Performance Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/pages/{page_id}/refresh-psi": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Refresh Psi",
-        "description": "Run PageSpeed Insights against the page URL (both strategies by\ndefault). PSI takes ~30s per call. Result is cached in scraper.psi_metrics.",
-        "operationId": "refresh_psi_scraper_admin_pages__page_id__refresh_psi_post",
-        "parameters": [
-          {
-            "name": "page_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Page Id"
-            }
-          },
-          {
-            "name": "strategy",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "pattern": "^(mobile|desktop)$"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Strategy"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Refresh Psi Scraper Admin Pages  Page Id  Refresh Psi Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{run_id}/refresh-gsc-bulk": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Refresh Gsc Bulk",
-        "description": "One-shot Search Console pull for every successful page in a run.\n\nStreams typed events: gsc_bulk_started → gsc_page_done / gsc_page_failed /\ngsc_page_no_data → gsc_bulk_completed. A property-level authorization\nfailure emits one gsc_bulk_warning and stops before page fan-out. Bounded\nby `concurrency` so we stay inside Search Console's per-minute quota.",
-        "operationId": "refresh_gsc_bulk_scraper_admin_crawl__run_id__refresh_gsc_bulk_post",
-        "parameters": [
-          {
-            "name": "run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Run Id"
-            }
-          },
-          {
-            "name": "days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 480,
-              "minimum": 1,
-              "default": 28,
-              "title": "Days"
-            }
-          },
-          {
-            "name": "site_url",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Site Url"
-            }
-          },
-          {
-            "name": "concurrency",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 20,
-              "minimum": 1,
-              "default": 4,
-              "title": "Concurrency"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/pages/{page_id}/refresh-gsc": {
-      "post": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Refresh Gsc",
-        "description": "Pull this page's Search Console data (clicks/impressions/CTR/position +\ntop queries) for the past `days` days. Requires GSC OAuth env to be set.",
-        "operationId": "refresh_gsc_scraper_admin_pages__page_id__refresh_gsc_post",
-        "parameters": [
-          {
-            "name": "page_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Page Id"
-            }
-          },
-          {
-            "name": "days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 480,
-              "minimum": 1,
-              "default": 28,
-              "title": "Days"
-            }
-          },
-          {
-            "name": "site_url",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Site Url"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Refresh Gsc Scraper Admin Pages  Page Id  Refresh Gsc Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/scraper/admin/crawl/{a_run_id}/diff/{b_run_id}": {
-      "get": {
-        "tags": [
-          "Scraper Admin"
-        ],
-        "summary": "Diff Runs Endpoint",
-        "description": "Compare two runs by URL+content. Returns added/removed/changed pages.\n\nCaller must be able to read both runs.\n\nUseful for SEO regression detection: diff today's crawl against last\nweek's to see which pages dropped, gained, or had content changes.",
-        "operationId": "diff_runs_endpoint_scraper_admin_crawl__a_run_id__diff__b_run_id__get",
-        "parameters": [
-          {
-            "name": "a_run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "A Run Id"
-            }
-          },
-          {
-            "name": "b_run_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "B Run Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Diff Runs Endpoint Scraper Admin Crawl  A Run Id  Diff  B Run Id  Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/web-credentials/oauth-defaults": {
       "get": {
         "tags": [
@@ -28365,6 +26068,58 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EdgesTop"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-slots/{slot_key}/tests": {
+      "post": {
+        "tags": [
+          "Agent Slots Admin"
+        ],
+        "summary": "Test Slot All Exemplars",
+        "operationId": "test_slot_all_exemplars_agent_slots__slot_key__tests_post",
+        "parameters": [
+          {
+            "name": "slot_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slot Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SlotTestBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotTestBatchResponse"
                 }
               }
             }
@@ -64311,193 +62066,6 @@
         ],
         "title": "CostBreakdownItem"
       },
-      "CrawlPresetSaveRequest": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "config": {
-            "$ref": "#/components/schemas/CrawlRequest"
-          },
-          "is_shared": {
-            "type": "boolean",
-            "title": "Is Shared",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "config"
-        ],
-        "title": "CrawlPresetSaveRequest"
-      },
-      "CrawlRequest": {
-        "properties": {
-          "base_url": {
-            "type": "string",
-            "title": "Base Url"
-          },
-          "seed_urls": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Seed Urls"
-          },
-          "list_mode": {
-            "type": "boolean",
-            "title": "List Mode",
-            "default": false
-          },
-          "max_pages": {
-            "type": "integer",
-            "maximum": 50000,
-            "minimum": 1,
-            "title": "Max Pages",
-            "default": 200
-          },
-          "max_depth": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 20,
-                "minimum": 0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Depth"
-          },
-          "concurrency": {
-            "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
-            "title": "Concurrency",
-            "default": 8
-          },
-          "follow_subdomains": {
-            "type": "boolean",
-            "title": "Follow Subdomains",
-            "default": false
-          },
-          "respect_robots": {
-            "type": "boolean",
-            "title": "Respect Robots",
-            "default": true
-          },
-          "seed_from_sitemap": {
-            "type": "boolean",
-            "title": "Seed From Sitemap",
-            "default": true
-          },
-          "user_agent": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "User Agent",
-            "description": "Override the User-Agent string sent on every request."
-          },
-          "include_patterns": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Include Patterns",
-            "description": "Regex patterns; if any are set, only paths matching at least one are crawled."
-          },
-          "exclude_patterns": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Exclude Patterns",
-            "description": "Regex patterns; paths matching any are skipped (applied AFTER include_patterns)."
-          },
-          "politeness_delay_ms": {
-            "type": "integer",
-            "maximum": 10000,
-            "minimum": 0,
-            "title": "Politeness Delay Ms",
-            "default": 0
-          },
-          "host_rps": {
-            "type": "number",
-            "maximum": 50,
-            "minimum": 0.1,
-            "title": "Host Rps",
-            "description": "Per-host steady-state request-per-second cap. Applied across all workers.",
-            "default": 4
-          },
-          "host_burst": {
-            "type": "number",
-            "maximum": 200,
-            "minimum": 1,
-            "title": "Host Burst",
-            "description": "Per-host token-bucket burst capacity.",
-            "default": 8
-          },
-          "render_mode": {
-            "type": "string",
-            "enum": [
-              "http_only",
-              "http_first",
-              "browser_always",
-              "browser_with_screenshot"
-            ],
-            "title": "Render Mode",
-            "default": "http_first"
-          },
-          "capture_screenshots": {
-            "type": "boolean",
-            "title": "Capture Screenshots",
-            "default": false
-          },
-          "screenshot_kinds": {
-            "items": {
-              "type": "string",
-              "enum": [
-                "viewport_desktop",
-                "viewport_mobile",
-                "viewport_tablet",
-                "full_page",
-                "desktop_full",
-                "desktop_fold",
-                "mobile_full",
-                "mobile_fold"
-              ]
-            },
-            "type": "array",
-            "title": "Screenshot Kinds",
-            "description": "Which screenshot variants to capture when render_mode is browser_with_screenshot."
-          }
-        },
-        "type": "object",
-        "required": [
-          "base_url"
-        ],
-        "title": "CrawlRequest"
-      },
       "CreateAgentInput": {
         "properties": {
           "name": {
@@ -72405,71 +69973,6 @@
           "pages"
         ],
         "title": "ExtractedTextResponse"
-      },
-      "ExtractorSaveRequest": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "host_pattern": {
-            "type": "string",
-            "title": "Host Pattern"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "extractor_type": {
-            "type": "string",
-            "title": "Extractor Type"
-          },
-          "expression": {
-            "type": "string",
-            "title": "Expression"
-          },
-          "attribute": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Attribute"
-          },
-          "multiple": {
-            "type": "boolean",
-            "title": "Multiple",
-            "default": false
-          },
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled",
-            "default": true
-          },
-          "scope": {
-            "type": "string",
-            "title": "Scope",
-            "default": "user"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "host_pattern",
-          "extractor_type",
-          "expression"
-        ],
-        "title": "ExtractorSaveRequest"
       },
       "FailureAnalyticsResponse": {
         "properties": {
@@ -91286,19 +88789,6 @@
         "type": "object",
         "title": "PreviewFiresResponse"
       },
-      "PreviewRequest": {
-        "properties": {
-          "url": {
-            "type": "string",
-            "title": "Url"
-          }
-        },
-        "type": "object",
-        "required": [
-          "url"
-        ],
-        "title": "PreviewRequest"
-      },
       "PreviewSource": {
         "properties": {
           "file_id": {
@@ -97557,92 +95047,6 @@
         "title": "Ruleset",
         "description": "The conformance rules in force. Versioned, additive-only."
       },
-      "RunBatchDeleteRequest": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization context for the request; omitted to use the authenticated context."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "run_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Run Ids"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "run_ids"
-        ],
-        "title": "RunBatchDeleteRequest"
-      },
-      "RunBatchDeleteResult": {
-        "properties": {
-          "deleted": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Deleted"
-          },
-          "not_found": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Not Found"
-          },
-          "forbidden": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Forbidden"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "deleted",
-          "not_found",
-          "forbidden"
-        ],
-        "title": "RunBatchDeleteResult"
-      },
       "RunCostSummary": {
         "properties": {
           "run_id": {
@@ -101118,155 +98522,6 @@
         "type": "object",
         "title": "SimulateProviderRetryRequest"
       },
-      "SiteBatchArchiveRequest": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization context for the request; omitted to use the authenticated context."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "site_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Site Ids"
-          },
-          "archived": {
-            "type": "boolean",
-            "title": "Archived",
-            "default": true
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "site_ids"
-        ],
-        "title": "SiteBatchArchiveRequest"
-      },
-      "SiteBatchDeleteRequest": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "Organization context for the request; omitted to use the authenticated context."
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id",
-            "description": "Optional associated project selected by the caller."
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id",
-            "description": "Optional associated task selected by the caller."
-          },
-          "site_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Site Ids"
-          },
-          "hard": {
-            "type": "boolean",
-            "title": "Hard",
-            "default": false
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "site_ids"
-        ],
-        "title": "SiteBatchDeleteRequest"
-      },
-      "SiteBatchResult": {
-        "properties": {
-          "succeeded": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Succeeded"
-          },
-          "not_found": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Not Found"
-          },
-          "forbidden": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Forbidden"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "succeeded",
-          "not_found",
-          "forbidden"
-        ],
-        "title": "SiteBatchResult"
-      },
       "SiteCredentialRequest": {
         "properties": {
           "organization_id": {
@@ -101527,93 +98782,6 @@
         "additionalProperties": false,
         "type": "object",
         "title": "SiteIntakeRunBody"
-      },
-      "SitePatchRequest": {
-        "properties": {
-          "display_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Display Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "notes": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Notes"
-          },
-          "tags": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tags"
-          },
-          "default_config": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Default Config"
-          },
-          "favicon_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Favicon Url"
-          },
-          "archived": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Archived"
-          }
-        },
-        "type": "object",
-        "title": "SitePatchRequest"
       },
       "SiteScheduleStatusResponse": {
         "properties": {
@@ -102634,6 +99802,27 @@
       },
       "SlotCandidate": {
         "properties": {
+          "candidate_id": {
+            "type": "string",
+            "title": "Candidate Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": "Candidate"
+          },
+          "selection": {
+            "type": "string",
+            "enum": [
+              "current",
+              "slot_pinned",
+              "latest",
+              "agent",
+              "version"
+            ],
+            "title": "Selection",
+            "default": "current"
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -102674,10 +99863,240 @@
         "additionalProperties": false,
         "type": "object",
         "title": "SlotCandidate",
-        "description": "What to test. All fields optional — an empty candidate re-runs the\nslot's CURRENT resolved default (a baseline refresh)."
+        "description": "One labelled comparison column.\n\n``config_overrides=None`` means use the selection's normal configuration\nbehavior. An explicitly supplied ``{}`` means apply no run-scope\noverrides, including when the current principal has binding overrides."
+      },
+      "SlotExemplarTestResults": {
+        "properties": {
+          "exemplar_id": {
+            "type": "string",
+            "title": "Exemplar Id"
+          },
+          "exemplar_label": {
+            "type": "string",
+            "title": "Exemplar Label"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/SlotTestResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exemplar_id",
+          "exemplar_label",
+          "results"
+        ],
+        "title": "SlotExemplarTestResults"
+      },
+      "SlotTestBatchRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "exemplar_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemplar Ids"
+          },
+          "baseline": {
+            "$ref": "#/components/schemas/SlotCandidate"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/SlotCandidate"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Candidates"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/SlotTestPrincipal"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidates"
+        ],
+        "title": "SlotTestBatchRequest"
+      },
+      "SlotTestBatchResponse": {
+        "properties": {
+          "slot_key": {
+            "type": "string",
+            "title": "Slot Key"
+          },
+          "exemplar_count": {
+            "type": "integer",
+            "title": "Exemplar Count"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/SlotTestColumn"
+            },
+            "type": "array",
+            "title": "Columns"
+          },
+          "exemplars": {
+            "items": {
+              "$ref": "#/components/schemas/SlotExemplarTestResults"
+            },
+            "type": "array",
+            "title": "Exemplars"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slot_key",
+          "exemplar_count",
+          "columns",
+          "exemplars"
+        ],
+        "title": "SlotTestBatchResponse"
+      },
+      "SlotTestColumn": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "title": "Candidate Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "selection": {
+            "type": "string",
+            "enum": [
+              "current",
+              "slot_pinned",
+              "latest",
+              "agent",
+              "version"
+            ],
+            "title": "Selection"
+          }
+        },
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "label",
+          "selection"
+        ],
+        "title": "SlotTestColumn"
+      },
+      "SlotTestPrincipal": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SlotTestPrincipal"
       },
       "SlotTestRequest": {
         "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
           "exemplar_id": {
             "anyOf": [
               {
@@ -102715,8 +100134,10 @@
             "title": "User Input"
           },
           "candidate": {
-            "$ref": "#/components/schemas/SlotCandidate",
-            "default": {}
+            "$ref": "#/components/schemas/SlotCandidate"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/SlotTestPrincipal"
           }
         },
         "additionalProperties": false,
@@ -102725,21 +100146,99 @@
       },
       "SlotTestResult": {
         "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
           "slot_key": {
             "type": "string",
             "title": "Slot Key"
           },
-          "agent_id": {
+          "exemplar_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exemplar Id"
+          },
+          "candidate_id": {
             "type": "string",
+            "title": "Candidate Id"
+          },
+          "candidate_label": {
+            "type": "string",
+            "title": "Candidate Label"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/SlotCandidate"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/SlotTestPrincipal"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Agent Id"
+          },
+          "definition_agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Agent Id"
           },
           "is_version": {
             "type": "boolean",
-            "title": "Is Version"
+            "title": "Is Version",
+            "default": false
           },
           "provenance": {
             "type": "string",
-            "title": "Provenance"
+            "enum": [
+              "system",
+              "org",
+              "user",
+              "slot-pinned",
+              "latest",
+              "agent",
+              "version",
+              "unresolved"
+            ],
+            "title": "Provenance",
+            "default": "unresolved"
+          },
+          "applied_config_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied Config Overrides"
           },
           "output": {
             "type": "string",
@@ -102796,17 +100295,42 @@
               }
             ],
             "title": "Error"
+          },
+          "verdict_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict Note"
+          },
+          "promoted_to_reference_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promoted To Reference At"
           }
         },
         "type": "object",
         "required": [
           "slot_key",
-          "agent_id",
-          "is_version",
-          "provenance",
+          "candidate_id",
+          "candidate_label",
+          "candidate",
+          "principal",
           "structural"
         ],
-        "title": "SlotTestResult"
+        "title": "SlotTestResult",
+        "description": "A persisted result entry stored in slot_exemplar.metadata."
       },
       "SnapBboxBody": {
         "properties": {
