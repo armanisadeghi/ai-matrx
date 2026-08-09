@@ -44,6 +44,7 @@ import {
   Folder,
   FolderGit2,
   FolderKanban,
+  Frame,
   GitBranch,
   Globe,
   Layers,
@@ -208,11 +209,17 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   agent_shortcut: {
     Icon: Zap,
     labelPlural: "Agent Shortcuts",
+    hrefFor: (id) => `/agents/shortcuts/${id}`,
   },
   app: {
     Icon: AppWindow,
     labelPlural: "Agent Apps",
+    hrefFor: (id) => `/agent-apps/${id}`,
   },
+  // `skill` and `workflow` have peeks but NO detail route anywhere in `app/`
+  // (`/agent-connections/skills` is a list; workflows only appear nested under
+  // an org). Until a detail route exists they stay peek-only — do not invent an
+  // `hrefFor` that 404s. Tracked in docs/handoffs/inventory-law-sweep.md.
   skill: {
     Icon: Sparkles,
     labelPlural: "Skills",
@@ -224,6 +231,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   message_template: {
     Icon: LayoutTemplate,
     labelPlural: "Message Templates",
+    hrefFor: (id) => `/settings/message-templates/${id}`,
   },
   // Pick Lists / user lists (`/lists`) — canonical token is structured_list
   // (legacy names picklist / udt_picklists / user_lists are dead).
@@ -246,6 +254,9 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   transcript: {
     Icon: AudioLines,
     labelPlural: "Transcripts",
+    // Matches `primaryRowHref` for kind="transcript" in
+    // features/transcripts/browse/types.ts — one open target, not two.
+    hrefFor: (id) => `/transcripts/processor?focus=${encodeURIComponent(id)}`,
   },
   dataset: {
     Icon: Table,
@@ -310,15 +321,41 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Layers,
     labelPlural: "Flashcard Sets",
   },
+  // The row FlashcardPeek actually reads (education.flashcard_data). An
+  // individual card has no standalone route — it is studied through its set.
+  flashcard_data: {
+    Icon: Layers,
+    labelPlural: "Flashcards",
+  },
+  // A quiz SESSION (education.quiz_sessions) is a taking, not the quiz — the
+  // `/education/quizzes/[id]` route keys on the ASSESSMENT id (see below).
   quiz_session: {
     Icon: ListChecks,
     labelPlural: "Quizzes",
+  },
+  assessment: {
+    Icon: ListChecks,
+    labelPlural: "Assessments",
+    hrefFor: (id) => `/education/quizzes/${id}`,
+  },
+  canvas_item: {
+    Icon: Frame,
+    labelPlural: "Canvas Items",
+    // No `hrefFor`: `/canvas/{id}` has NO route (only /canvas/discover and
+    // /canvas/shared/[token]). Four callsites link there today and 404 —
+    // FOUND_DEFECTS D137.
   },
 
   // ─── Workspaces (containers — also valid as cards) ─────────────────────────
   project: {
     Icon: FolderKanban,
     labelPlural: "Projects",
+    hrefFor: (id) => `/projects/${id}`,
+  },
+  sandbox_instance: {
+    Icon: Boxes,
+    labelPlural: "Sandboxes",
+    hrefFor: (id) => `/sandbox/${id}`,
   },
   task: {
     Icon: ListTodo,
@@ -362,6 +399,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   organization: {
     Icon: Building2,
     labelPlural: "Organizations",
+    hrefFor: (id) => `/organizations/${id}`,
   },
 };
 
