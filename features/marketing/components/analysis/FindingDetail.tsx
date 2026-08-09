@@ -2,8 +2,10 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  CheckCheck,
   ExternalLink,
   FileSearch,
   Loader2,
@@ -33,14 +35,27 @@ import {
   LoadingSurface,
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
-import { useFindingResults } from "@/features/marketing/data/analysis-hooks";
+import {
+  analysisKeys,
+  useFindingResults,
+} from "@/features/marketing/data/analysis-hooks";
+import { resultReasoning } from "@/features/marketing/data/analysis-service";
+import {
+  acknowledgeFinding,
+  suppressFinding,
+  unsuppressFinding,
+} from "@/features/marketing/data/finding-mutations";
 import type { MarketingAnalysisResult } from "@/features/marketing/data/analysis-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import { FindingRemedyCard } from "@/features/marketing/components/analysis/FindingRemedyCard";
+import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   humanLines,
   webCopy,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
 
 /** Immutable result evidence → the shape the surface declares. */
 function projectResult(
@@ -88,8 +103,16 @@ function LifecycleDatum({
 }
 
 function EvidenceInspector({ result }: { result: MarketingAnalysisResult }) {
+  const reasoning = resultReasoning(result.metadata);
   return (
     <div className="grid gap-3 p-3 text-xs">
+      {/* The verdict in words, before the machine fields. Present on every
+          result the analyzer writes — including checks this UI predates. */}
+      {reasoning ? (
+        <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs leading-relaxed text-foreground">
+          {reasoning}
+        </p>
+      ) : null}
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
         <div>
           <dt className="text-[10px] uppercase text-muted-foreground">
@@ -141,6 +164,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
   const [isNavigating, startNavigation] = useTransition();
   const { site, sitePath } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
+  const queryClient = useQueryClient();
   const table = useMarketingTableState({
     defaultSort: { id: "computed_at", direction: "desc" },
   });
@@ -263,7 +287,29 @@ export function FindingDetail({ findingId }: { findingId: string }) {
     if (isNavigating) return;
     startNavigation(() => router.push(href));
   };
-  const itemLabel = data.item?.label || finding.item_key;
+  const itemLabel = data.item?.label || humanizeItemKey(finding.item_key);
+  // The analyzer writes a plain-language sentence on EVERY result — that is
+  // the floor this screen always has, including for a check whose catalogue
+  // row (label/description) does not exist yet.
+  const reasoning = latest ? resultReasoning(latest.metadata) : null;
+  const remedyContext = {
+    itemKey: finding.item_key,
+    itemLabel: data.item?.label ?? null,
+    itemDescription: data.item?.description ?? null,
+    category: finding.category,
+    subcategory: finding.subcategory,
+    severity: finding.severity,
+    reasoning,
+    pageUrl: data.page?.url ?? null,
+    pagePath: data.page?.path ?? null,
+    siteDomain: site.domain,
+  };
+
+  const afterFindingWrite = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: analysisKeys.site(site.id),
+    });
+  };
   const findingCopy = webCopy({
     kind: "web-finding",
     label: itemLabel,
@@ -275,6 +321,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
       ["Finding", finding.id],
       ["Item", finding.item_key],
       ["Label", itemLabel],
+      ["What the analyzer found", reasoning],
       ["Category", `${finding.category} / ${finding.subcategory}`],
       ["Lifecycle", finding.status],
       ["Severity", finding.severity],
@@ -312,6 +359,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
             category: finding.category,
             subcategory: finding.subcategory,
             item_key: finding.item_key,
+            reasoning,
             subject_type: finding.subject_type,
             subject_id: finding.subject_id,
             page_url: data.page?.url ?? null,
@@ -391,6 +439,29 @@ export function FindingDetail({ findingId }: { findingId: string }) {
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <CopyButtons size="icon" {...findingCopy} json={() => data} />
+            {finding.status === "open" || finding.status === "reopened" ? (
+              // "I've seen it and I'm on it" — the finding stays open (only a
+              // passing re-analysis resolves one), but the register stops
+              // reading as untouched.
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0 gap-1.5"
+                onClick={() => {
+                  void acknowledgeFinding(site.id, finding.id)
+                    .then(afterFindingWrite)
+                    .then(() => toast.success("Marked as acknowledged"))
+                    .catch((error: unknown) =>
+                      toast.error("Could not acknowledge this finding", {
+                        description: extractErrorMessage(error),
+                      }),
+                    );
+                }}
+              >
+                <CheckCheck className="h-3.5 w-3.5" />
+                I&rsquo;m on it
+              </Button>
+            ) : null}
             {data.page ? (
               <>
                 <Button
@@ -465,6 +536,26 @@ export function FindingDetail({ findingId }: { findingId: string }) {
           ) : null}
         </div>
       </section>
+
+      {/* The fix, above the evidence. A person who is not an SEO reads this
+          card and knows what to do; the result history below is the proof. */}
+      <FindingRemedyCard
+        context={remedyContext}
+        surfaceName="matrx-user/marketing-findings"
+        pageWorkspaceHref={
+          data.page ? `${sitePath}/pages/${data.page.id}` : null
+        }
+        suppressed={finding.suppressed}
+        onSuppress={async (reason) => {
+          await suppressFinding(site.id, finding.id, reason);
+          await afterFindingWrite();
+        }}
+        onUnsuppress={async () => {
+          await unsuppressFinding(site.id, finding.id);
+          await afterFindingWrite();
+        }}
+        className="shrink-0 overflow-hidden rounded-lg border border-border bg-card"
+      />
 
       <div className="min-h-0 flex-1">
         {results.isError ? (

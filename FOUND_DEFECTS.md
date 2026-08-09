@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D138 — `/marketing/.../audit` dead-ends on a large site: "Audit rollup unavailable" (2026-08-09)
+
+Reproduced on a 325-page site: the audit tab remains on aggregation and then replaces the entire surface with a generic retry error, hiding even catalogue findings that did load. Capture and surface the actual PostgREST error, then page or cap `fetchSiteAuditRows`; the error state must retain doors to findings and the priority queue.
+
 ### D146 — 58 remaining RLS policies call `iam.has_org_access(...)` per row (2026-08-09)
 
 The SECURITY DEFINER helper cannot be inlined or hoisted, so each policy invokes it once per

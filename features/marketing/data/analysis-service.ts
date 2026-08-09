@@ -22,6 +22,7 @@ import type {
 import { assertFound } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import type { Json } from "@/types/database.types";
 
 const FINDING_STATUS = new Set([
   "open",
@@ -110,6 +111,45 @@ async function loadReferencedResults(
     .abortSignal(signal);
   const rows = assertData(response.data, response.error);
   return new Map(rows.map((row) => [row.id, row]));
+}
+
+/**
+ * The analyzer's plain-language sentence for a result (`metadata.reasoning`),
+ * written on EVERY result by aidream `web_crawl/analysis.py`. Returns null
+ * rather than guessing — the UI has its own fallbacks.
+ */
+export function resultReasoning(metadata: Json): string | null {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+  const value = (metadata as Record<string, Json | undefined>).reasoning;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+/** Catalogue labels for a set of item ids — `Map<item_id, label>`. A key the
+ * catalogue does not carry yet is simply absent (never an error). */
+async function loadAnalysisItemLabels(
+  itemIds: Array<string | null>,
+  signal: AbortSignal,
+): Promise<Map<string, string>> {
+  const ids = Array.from(
+    new Set(itemIds.filter((id): id is string => Boolean(id))),
+  );
+  if (ids.length === 0) return new Map();
+  const response = await (await authenticatedWebDb(supabase))
+    .from("analysis_item")
+    .select("id, label")
+    .in("id", ids)
+    .is("deleted_at", null)
+    .abortSignal(signal);
+  const rows = assertData(response.data, response.error);
+  return new Map(
+    rows
+      .filter((row): row is { id: string; label: string } =>
+        Boolean(row.label),
+      )
+      .map((row) => [row.id, row.label]),
+  );
 }
 
 export async function listSitePriorityQueue(
@@ -264,19 +304,39 @@ export async function listSiteFindings(
 
   const response = await query.range(from, to).abortSignal(abortSignal);
   const rows = assertData(response.data, response.error);
-  const pages = await loadPageReferences(
-    siteId,
-    rows.map((row) => row.page_id),
-    abortSignal,
-  );
+  // Three cheap direct reads keyed by the ids already in hand — the register
+  // must be readable WITHOUT opening each row (NO DEAD ENDS: a row that only
+  // shows `canonical_conflicts / high` is not a UI). Every finding's latest
+  // result carries the analyzer's own sentence; that is what we render.
+  const [pages, labels, latestResults] = await Promise.all([
+    loadPageReferences(
+      siteId,
+      rows.map((row) => row.page_id),
+      abortSignal,
+    ),
+    loadAnalysisItemLabels(
+      rows.map((row) => row.item_id),
+      abortSignal,
+    ),
+    loadReferencedResults(
+      siteId,
+      rows.map((row) => row.last_result_id),
+      abortSignal,
+    ),
+  ]);
 
   return {
     rows: rows.map((row) => {
       const page = row.page_id ? pages.get(row.page_id) : null;
+      const latest = row.last_result_id
+        ? latestResults.get(row.last_result_id)
+        : null;
       return {
         ...row,
         page_path: page?.path ?? null,
         page_url: page?.url ?? null,
+        item_label: labels.get(row.item_id) ?? null,
+        reasoning: latest ? resultReasoning(latest.metadata) : null,
       };
     }),
     total: response.count ?? 0,

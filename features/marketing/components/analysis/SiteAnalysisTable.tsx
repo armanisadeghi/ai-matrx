@@ -2,7 +2,13 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CircleGauge, ListChecks, Loader2, RefreshCw } from "lucide-react";
+import {
+  CircleGauge,
+  ExternalLink,
+  ListChecks,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
@@ -38,12 +44,14 @@ import {
   keyFieldsAiVariant,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
 
 function humanPriorityRow(row: PriorityQueueRow): string {
   return humanLines([
     ["Priority", row.priority === null ? null : Number(row.priority).toFixed(2)],
     ["Severity", row.severity],
-    ["Item", row.item_key],
+    ["Item", row.item_key ? humanizeItemKey(row.item_key) : null],
+    ["Item key", row.item_key],
     ["Category", row.category],
     ["Subcategory", row.subcategory],
     ["Page", row.page_path ?? (row.page_id ? row.page_id : "site-level")],
@@ -108,10 +116,19 @@ export function SiteAnalysisTable() {
       header: "Analysis item",
       filter: "text",
       cellKind: "text",
+      // Readable name leads, raw key underneath (it is what the filter and
+      // the server speak). A key the catalogue has no label for still reads.
       cell: (row) => (
-        <span className="block min-w-56 max-w-md truncate font-mono text-[11px] font-medium">
-          {row.item_key || "Unknown item"}
-        </span>
+        <div className="min-w-56 max-w-md">
+          <p className="truncate text-xs font-medium">
+            {row.item_key ? humanizeItemKey(row.item_key) : "Unknown item"}
+          </p>
+          {row.item_key ? (
+            <p className="truncate font-mono text-[10px] text-muted-foreground">
+              {row.item_key}
+            </p>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -142,16 +159,43 @@ export function SiteAnalysisTable() {
       header: "Affected page",
       filter: false,
       sortable: false,
+      // Two doors: the page's workspace, and the live page in a new tab.
       cell: (row) => (
-        <div className="min-w-52 max-w-lg">
-          <p className="truncate font-mono text-[11px]">
-            {row.page_path ||
-              (row.page_id ? row.page_id.slice(0, 12) : "Site-level")}
-          </p>
+        <div className="flex min-w-52 max-w-lg items-center gap-1">
+          <div className="min-w-0 flex-1">
+            {row.page_id ? (
+              <button
+                type="button"
+                className="block w-full cursor-pointer truncate text-left font-mono text-[11px] hover:underline"
+                title="Open the page workspace"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  navigate(`${sitePath}/pages/${row.page_id}`);
+                }}
+              >
+                {row.page_path || row.page_id.slice(0, 12)}
+              </button>
+            ) : (
+              <p className="truncate font-mono text-[11px]">Site-level</p>
+            )}
+            {row.page_url ? (
+              <p className="truncate text-[10px] text-muted-foreground">
+                {row.page_url}
+              </p>
+            ) : null}
+          </div>
           {row.page_url ? (
-            <p className="truncate text-[10px] text-muted-foreground">
-              {row.page_url}
-            </p>
+            <a
+              href={row.page_url}
+              target="_blank"
+              rel="noreferrer"
+              title="Open the live page in a new tab"
+              aria-label="Open the live page in a new tab"
+              className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
           ) : null}
         </div>
       ),

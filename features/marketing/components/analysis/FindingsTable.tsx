@@ -2,7 +2,13 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CircleGauge, ListChecks, Loader2, RefreshCw } from "lucide-react";
+import {
+  CircleGauge,
+  ExternalLink,
+  ListChecks,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -47,11 +53,14 @@ import {
   keyFieldsAiVariant,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { humanizeItemKey } from "@/features/marketing/lib/finding-remedies";
 
 function humanFindingRow(row: FindingListRow): string {
   return humanLines([
     ["Finding", row.id],
-    ["Item", row.item_key],
+    ["Item", row.item_label || humanizeItemKey(row.item_key)],
+    ["Item key", row.item_key],
+    ["What's wrong", row.reasoning],
     ["Category", `${row.category} / ${row.subcategory}`],
     ["Severity", row.severity],
     ["Lifecycle", row.status],
@@ -67,6 +76,8 @@ function projectFindingRow(row: FindingListRow) {
   return {
     id: row.id,
     item_key: row.item_key,
+    item_label: row.item_label,
+    reasoning: row.reasoning,
     category: row.category,
     subcategory: row.subcategory,
     severity: row.severity,
@@ -94,15 +105,43 @@ export function FindingsTable() {
       header: "Finding",
       filter: "text",
       cellKind: "text",
+      // A real link (D112): keyboard-reachable, announced as a link, and
+      // cmd/middle-clickable into a new tab so opening a finding never costs
+      // the user this filtered list.
+      href: (row) => `${sitePath}/findings/${row.id}`,
+      // The catalogue label leads; the raw key stays visible underneath (it's
+      // what the filter and the server speak). A key with no catalogue row —
+      // a check the server added since — humanizes instead of blanking.
       cell: (row) => (
         <div className="min-w-64 max-w-xl">
-          <p className="truncate font-mono text-[11px] font-medium text-foreground">
-            {row.item_key}
+          <p className="truncate text-xs font-medium text-foreground">
+            {row.item_label || humanizeItemKey(row.item_key)}
           </p>
-          <p className="truncate text-[10px] capitalize text-muted-foreground">
-            {row.category} / {row.subcategory}
+          <p className="truncate font-mono text-[10px] text-muted-foreground">
+            {row.item_key}
+            <span className="capitalize">
+              {" "}
+              · {row.category} / {row.subcategory}
+            </span>
           </p>
         </div>
+      ),
+    },
+    {
+      id: "reasoning",
+      accessorKey: "reasoning",
+      header: "What's wrong",
+      // Server-side sort/filter can't reach into the latest result's JSON, and
+      // a control that silently filters one page is worse than none.
+      filter: false,
+      sortable: false,
+      cell: (row) => (
+        <p
+          className="line-clamp-2 min-w-72 max-w-2xl text-[11px] leading-snug text-muted-foreground"
+          title={row.reasoning ?? undefined}
+        >
+          {row.reasoning ?? "Re-run the analysis to capture the explanation."}
+        </p>
       ),
     },
     {
@@ -138,28 +177,44 @@ export function FindingsTable() {
       header: "Page",
       filter: false,
       sortable: false,
+      // Two doors, never one: the page's workspace inside Matrx, and the live
+      // page itself in a new tab (NO DEAD ENDS — a finding names a page, so
+      // the user must be able to reach both without losing this list).
       cell: (row) =>
         row.page_id ? (
-          // Interactive cell: drills straight into the page workspace (the
-          // row itself opens the finding detail).
-          <button
-            type="button"
-            className="block min-w-48 max-w-lg cursor-pointer text-left hover:underline"
-            title="Open the page workspace"
-            onClick={(event) => {
-              event.stopPropagation();
-              navigate(`${sitePath}/pages/${row.page_id}`);
-            }}
-          >
-            <p className="truncate font-mono text-[11px]">
-              {row.page_path || row.page_id.slice(0, 12)}
-            </p>
-            {row.page_url ? (
-              <p className="truncate text-[10px] text-muted-foreground">
-                {row.page_url}
+          <div className="flex min-w-48 max-w-lg items-center gap-1">
+            <button
+              type="button"
+              className="min-w-0 flex-1 cursor-pointer text-left hover:underline"
+              title="Open the page workspace"
+              onClick={(event) => {
+                event.stopPropagation();
+                navigate(`${sitePath}/pages/${row.page_id}`);
+              }}
+            >
+              <p className="truncate font-mono text-[11px]">
+                {row.page_path || row.page_id.slice(0, 12)}
               </p>
+              {row.page_url ? (
+                <p className="truncate text-[10px] text-muted-foreground">
+                  {row.page_url}
+                </p>
+              ) : null}
+            </button>
+            {row.page_url ? (
+              <a
+                href={row.page_url}
+                target="_blank"
+                rel="noreferrer"
+                title="Open the live page in a new tab"
+                aria-label="Open the live page in a new tab"
+                className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
             ) : null}
-          </button>
+          </div>
         ) : (
           <div className="min-w-48 max-w-lg">
             <p className="truncate font-mono text-[11px]">Site-level</p>
