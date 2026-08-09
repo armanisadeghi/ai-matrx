@@ -389,9 +389,17 @@ anti-pattern `features/agents/browse/` was built to kill — one account has 34
 categories and 773 tags). So this conversion needs either a new
 `crm_list_facets` RPC — which per CLAUDE.md means a live migration applied via
 the Supabase MCP plus `pnpm db-types` — or a set of PostgREST count queries.
-That is a DB-touching change, not config assembly. Budget accordingly, and pick
-the RPC-vs-count-queries approach deliberately (`lib/list-scope/FEATURE.md` has
-the template).
+That is a DB-touching change, not config assembly. Budget accordingly.
+
+**Approach is DECIDED, don't re-litigate it: write a `crm_list_facets` RPC.**
+Both live consumers already do exactly that — `agx_list_facets`
+(`features/agents/browse/service.ts:123`) and `trx_list_facets`
+(`features/transcripts/browse/service.ts:88`). A third surface inventing a
+PostgREST-count-query variant would be a second implementation of a solved
+problem, i.e. the defect this campaign exists to kill, committed by the
+campaign itself. Template: `lib/list-scope/FEATURE.md`. Apply the migration
+live via the Supabase MCP and regenerate types — a `.sql` file alone changes
+nothing (CLAUDE.md § Database migrations).
 
 Also: `features/user-lists/` declares `ActionConfig<T>[]` and
 `features/tool-call-visualization/renderers/**` declares `EntityAction[]` —
