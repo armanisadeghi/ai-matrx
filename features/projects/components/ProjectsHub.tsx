@@ -115,7 +115,14 @@ export function ProjectsHub({
     "projects-hub",
     PROJECTS_HUB_VIEW_DEFAULTS,
   );
-  const view = prefs.view;
+  /**
+   * Narrow on read — this hub offers only Cards and Table, while
+   * `ListViewPrefs["view"]` also allows `rows`. Reading `prefs.view` raw makes
+   * the layout and the toggle disagree for any other value: the layout falls
+   * through to cards while NEITHER button renders as selected. Same rule as
+   * `/documents`; see lib/list-views/FEATURE.md.
+   */
+  const view: "cards" | "table" = prefs.view === "table" ? "table" : "cards";
   const [query, setQuery] = React.useState("");
 
   const orgMap = React.useMemo<OrgMap>(() => {
