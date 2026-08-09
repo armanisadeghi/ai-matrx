@@ -897,15 +897,27 @@ Remaining bespoke/fake right-click menus:
 - `features/notes/components/NotesSidebar.tsx` + `NoteTabs.tsx` + `NoteTabItem.tsx`
   — coordinate-anchored `AdvancedMenu` masquerading as right-click (legacy shell;
   dies with it — the modern `NoteSidebarRow` is already on v3).
-- `json-explorer/NavigationRows.tsx` + `processor-extractor/NavigationRows.tsx` —
-  dead `onContextMenu` plumbing predating the v3 wiring in their own hosts.
+- [x] ~~`json-explorer/NavigationRows.tsx` + `processor-extractor/NavigationRows.tsx`
+  — dead `onContextMenu` plumbing~~ **DELETED 2026-08-09**, and it was worse
+  than dead. Both hosts (`RawJsonExplorer.tsx:420`,
+  `ProcessorExtractor.tsx:222`) already wrap these rows in
+  `NonEditableContextMenu`, and no host has ever passed the prop — so it was
+  unreachable, and had anything passed it, a row-level `onContextMenu` would
+  have FOUGHT the v3 menu wrapping it. Removed from four files (the two
+  `NavigationRows`, `NavigationSelects`, and the `types.ts` declaration).
+  **The tell to reuse:** a prop that no call site passes AND whose job the
+  surface's wrapper already does is not "unused", it is a second authority
+  waiting for someone to wire it up.
 - `features/pdf/components/viewer/annotation-layer/PdfAnnotationLayer.tsx:367` —
   suppresses the native menu; `RegionContextMenu.tsx:21` warns not to pass the
   handler on the v3 path, so any surface that does has a **genuine dead end**.
 
-Missing-entirely, ranked: `/agents/all` rows (see the Wave 3 doc lie) ·
-`/transcripts` rows · `AgentListDropdown` · tasks list rows · scheduling ·
-agent shortcuts · agent apps · agent sets · chat pinned agents · CRM rows.
+Missing-entirely, ranked. **`/agents/all` and `/transcripts` rows are DONE** —
+both inherited right-click from the one `rowWrapper` seam on the canonical list
+shell (Wave 3), which is why converting a surface to `EntityListPage` is worth
+more than wiring its menu by hand. Remaining: `AgentListDropdown` · tasks list
+rows · scheduling · agent shortcuts · agent apps · agent sets · chat pinned
+agents · CRM rows.
 
 ---
 
