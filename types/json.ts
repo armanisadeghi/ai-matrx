@@ -62,6 +62,20 @@ export function isJsonObject(value: unknown): value is JsonObject {
     );
 }
 
+/**
+ * Convert a `JsonObject` (values `JsonValue | undefined`) into the strict
+ * `Record<string, JsonValue>` shape generated API request bodies demand,
+ * dropping `undefined` entries (they don't exist in real JSON — `undefined`
+ * only appears via optional-key reads). Cast-free by construction.
+ */
+export function toJsonRecord(obj: JsonObject): Record<string, JsonValue> {
+    const out: Record<string, JsonValue> = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined) out[key] = value;
+    }
+    return out;
+}
+
 /** Narrow an `unknown` to a `JsonArray`. */
 export function isJsonArray(value: unknown): value is JsonArray {
     return Array.isArray(value);
