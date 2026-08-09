@@ -214,6 +214,21 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
     Any hook meant for a dependency array must return a `useCallback`/`useMemo`
     value — **never a bare object literal, and never on the assumption that the
     React Compiler will memoize it for you.**
+  - 🚨 **A resolved LABEL must be stamped with the id it belongs to.** The
+    executions page's `AppScopeBanner` fetched an app's name into a bare
+    `{name, slug}` and wrote it only `if (data)` — so a lookup that MISSED (bad
+    or deleted id) or errored kept the PREVIOUS app's name on screen while the
+    table, the URL and every link below were already the new app. It is the
+    same wrong-record-under-a-confident-label failure as the row-clearing and
+    the fetch race, but on the label the whole page is scoped by, and it is
+    invisible *because nothing changes on screen*. Fix by construction: hold
+    `{forId, name, slug}` and read it back only when `forId === currentId`, and
+    stamp the id even on a miss so "we looked and there is no name" retires the
+    old one. The in-flight window and the miss then both fall back to the id
+    (`EntityRef` truncates it), never to a lie — and a stale `slug` stops
+    linking the previous app's public page. **Any component that resolves a
+    display name for an id-shaped prop has this bug unless the two are stored
+    together.**
   - **An unregistered token silently strips a notice of its doors.**
     `DeepLinkMissNotice`/`EntityDoorControls` resolve route + peek from the
     entity registry, so a token that is not registered (`app_category`) yields

@@ -200,10 +200,23 @@ function AgentAppsExecutionsAdminPageInner() {
  * new tab, peek, public page).
  */
 function AppScopeBanner({ appId }: { appId: string }) {
-  const [app, setApp] = useState<{ name: string | null; slug: string | null }>({
-    name: null,
-    slug: null,
-  });
+  // 🚨 The resolved name is STAMPED WITH THE ID IT BELONGS TO. This banner is
+  // the label the whole page is scoped by, so a name that outlives its id is
+  // the worst thing on the screen: it says "Scoped to app <A>" while the table,
+  // the URL and every link below it are app B.
+  //
+  // The old shape was a bare {name, slug} written only `if (data)`, which meant
+  // a lookup that MISSED (deleted app, bad id) or ERRORED silently kept the
+  // previous app's name — the failure mode was invisible precisely because
+  // nothing changed on screen. Pairing the value with `forId` makes that
+  // unrepresentable: the name is only ever read back when it belongs to the id
+  // currently being rendered, so the in-flight window and the miss both fall
+  // back to the id rather than to a lie.
+  const [resolved, setResolved] = useState<{
+    forId: string;
+    name: string | null;
+    slug: string | null;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -213,14 +226,21 @@ function AppScopeBanner({ appId }: { appId: string }) {
         .select("name, slug")
         .eq("id", appId)
         .maybeSingle();
-      if (!cancelled && data) {
-        setApp({ name: data.name ?? null, slug: data.slug ?? null });
-      }
+      if (cancelled) return;
+      // Stamp the id even on a miss or an error — recording "we looked, and
+      // this id has no name" is what retires the previous app's name.
+      setResolved({
+        forId: appId,
+        name: data?.name ?? null,
+        slug: data?.slug ?? null,
+      });
     })();
     return () => {
       cancelled = true;
     };
   }, [appId]);
+
+  const app = resolved?.forId === appId ? resolved : null;
 
   return (
     <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border bg-accent/40 text-xs">
@@ -228,8 +248,8 @@ function AppScopeBanner({ appId }: { appId: string }) {
       <span className="text-muted-foreground">Scoped to app</span>
       <AgentAppRef
         appId={appId}
-        name={app.name}
-        slug={app.slug}
+        name={app?.name ?? null}
+        slug={app?.slug ?? null}
         alwaysShowActions
       />
       <Link
