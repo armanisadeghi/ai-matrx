@@ -22,7 +22,10 @@ import type {
   WcImpairmentDefinitionRead,
 } from "../../api/types";
 import {
-  MOBILE_TABLE_FROZEN,
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+  MOBILE_TABLE_NOWRAP_CELLS,
 } from "@/components/official/mobile-table/mobileTable";
 
 interface RatingBreakdownTableProps {
@@ -309,11 +312,11 @@ export function RatingBreakdownTable({
           California WC professionals expect to see end-to-end:
           WPI → +Pain → ×FEC → ×Variant → AgeAdj → ×Industrial → Final PD */}
       <div className="w-full overflow-x-auto rounded-lg border border-border bg-background/40">
-        <table className={cn("border-collapse text-sm", MOBILE_TABLE_FROZEN)}>
+        <table className={cn("border-collapse text-sm", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
           <thead className="bg-muted/40">
             <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
               <Th className="w-10 pl-4 text-left">#</Th>
-              <Th className="text-left">Impairment</Th>
+              <Th className={cn("text-left", MOBILE_TABLE_FROZEN_HEAD, "max-sm:bg-muted")}>Impairment</Th>
               <Th className="text-left whitespace-nowrap">AMA code</Th>
               <Th className="text-left">Side</Th>
               <Th className="text-right">WPI</Th>
@@ -417,7 +420,7 @@ function BreakdownRow({ row }: { row: InjuryDetailRow }) {
           {row.index + 1}
         </span>
       </td>
-      <td className="px-2 py-2.5 align-top min-w-0">
+      <td className={cn("px-2 py-2.5 align-top sm:min-w-0", MOBILE_TABLE_FROZEN_CELL)}>
         <span className="font-medium text-foreground">
           {row.impairment.name}
         </span>

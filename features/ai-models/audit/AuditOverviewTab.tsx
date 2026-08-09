@@ -26,6 +26,10 @@ import type { ModelAuditResult, AuditCategory } from "./auditTypes";
 import type { AiModel } from "../types";
 import { ModelNameCell, ProviderBadge } from "./AuditTableShell";
 import ModelDetailSheet, { OpenDetailButton } from "./ModelDetailSheet";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const CATEGORY_LABELS: Record<AuditCategory, string> = {
   core_fields: "Core",
@@ -198,7 +202,7 @@ export default function AuditOverviewTab({
 
       {/* Table */}
       <div className="flex-1 overflow-auto min-h-0">
-        <table className="w-full text-xs border-collapse">
+        <table className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
           <thead className="sticky top-0 z-10 bg-card border-b">
             <tr className="h-8">
               <th className="px-1.5 py-2 w-6" />

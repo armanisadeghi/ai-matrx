@@ -7,10 +7,6 @@
 
 import { asObject, findResult, type MetadataPayload } from "./utils";
 import type { FileAnalysisResultRow } from "@/features/file-analysis/api/file-analysis";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
 
 interface Props {
   results: FileAnalysisResultRow[];
@@ -44,7 +40,7 @@ export function MetadataContent({ results }: Props) {
 
   return (
     <div className="rounded border border-border bg-card">
-      <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
+      <table className="w-full text-xs">
         <tbody>
           {rows.map(([k, v]) => (
             <tr key={k} className="border-b border-border/40 last:border-0">

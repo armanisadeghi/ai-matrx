@@ -178,7 +178,7 @@ export function MemoryCostCard({
             <table className={cn("text-[11px]", MOBILE_TABLE)}>
               <thead className="bg-muted/30 text-muted-foreground">
                 <tr>
-                  <th className={cn("text-left font-medium px-2 py-1", MOBILE_TABLE_FROZEN_HEAD, "max-bg-muted/30")}>Type</th>
+                  <th className={cn("text-left font-medium px-2 py-1", MOBILE_TABLE_FROZEN_HEAD)}>Type</th>
                   <th className={cn("text-right font-medium px-2 py-1", MOBILE_TABLE_CELL)}>Count</th>
                   <th className={cn("text-right font-medium px-2 py-1", MOBILE_TABLE_CELL)}>Cost</th>
                   <th className={cn("text-right font-medium px-2 py-1", MOBILE_TABLE_CELL)}>In</th>

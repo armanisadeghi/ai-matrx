@@ -30,6 +30,10 @@ import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { aiModelService } from "../../service";
 import type { AiModel, AiModelAliasRow } from "../../types";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 const ALIAS_KINDS = ["alias", "deprecated", "latest"] as const;
 type AliasKind = (typeof ALIAS_KINDS)[number];
@@ -315,7 +319,7 @@ export default function AliasesContainer() {
       )}
 
       <div className="min-h-0 flex-1 overflow-auto rounded-md border">
-        <table className="w-full text-left text-xs">
+        <table className={cn("text-left text-xs", MOBILE_TABLE_FROZEN)}>
           <thead className="sticky top-0 bg-muted/60 backdrop-blur">
             <tr className="border-b">
               <th className="px-3 py-2 font-medium">Alias</th>

@@ -1,6 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE,
+} from "@/components/official/mobile-table/mobileTable";
 
 /**
  * Light read-only grid for a workbook sheet's raw cell values. Used by the
@@ -42,7 +45,7 @@ export function WorkbookGrid({
           being crushed under a 100%-width table, and column A freezes
           (spreadsheet convention) so a row stays identifiable while
           scrolling. `sm:` restores the exact desktop rendering. */}
-      <table className="w-max min-w-full max-w-none border-collapse text-xs sm:w-full sm:min-w-0 sm:max-w-full">
+      <table className={cn("border-collapse text-xs", MOBILE_TABLE)}>
         <tbody>
           {rows.map((row, ri) => (
             <tr key={ri}>

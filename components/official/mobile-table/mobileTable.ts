@@ -71,6 +71,16 @@ export const MOBILE_TABLE =
  */
 export const MOBILE_TABLE_CELL = "max-sm:whitespace-nowrap";
 
+/**
+ * The same nowrap rule applied to EVERY cell from the `<table>` element, for
+ * tables that freeze a non-first column (so `MOBILE_TABLE_FROZEN` does not fit)
+ * but still want the one-line-per-cell layout. Pair with `MOBILE_TABLE`.
+ * Do NOT use it on a table whose cells must wrap — a key/value pane, extracted
+ * document text — there, per-cell `MOBILE_TABLE_CELL` is the honest tool.
+ */
+export const MOBILE_TABLE_NOWRAP_CELLS =
+  "max-sm:[&_th]:whitespace-nowrap max-sm:[&_td]:whitespace-nowrap";
+
 /** On the first `<th>`. Freezes the header cell of the identity column. */
 export const MOBILE_TABLE_FROZEN_HEAD =
   "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:min-w-[160px] max-sm:bg-muted";

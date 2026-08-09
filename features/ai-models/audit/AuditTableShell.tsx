@@ -8,6 +8,10 @@ import React from 'react';
 import { CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { AuditIssue } from './auditTypes';
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 export function StatusBadge({ pass }: { pass: boolean }) {
     return pass ? (
@@ -71,7 +75,7 @@ export function AuditTableShell({ children, headers, empty, isEmpty }: AuditTabl
                     {empty ?? <p className="text-sm">No models to show</p>}
                 </div>
             ) : (
-                <table className="w-full text-xs border-collapse">
+                <table className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
                     <thead className="sticky top-0 z-10 bg-card border-b">
                         <tr className="h-8">{headers}</tr>
                     </thead>

@@ -493,7 +493,7 @@ export default function CostDashboard() {
             </colgroup>
             <thead className="bg-muted/60">
               <tr className="border-b border-border/50 text-[10px] uppercase tracking-wide text-muted-foreground">
-                <th className={cn("px-2 py-2 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-0 max-sm:bg-muted/60")}>When</th>
+                <th className={cn("px-2 py-2 text-left font-medium", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-0")}>When</th>
                 <th className="px-2 py-2 text-left font-medium">Phase</th>
                 <th className="px-2 py-2 text-left font-medium">Subject</th>
                 <th className="px-2 py-2 text-left font-medium hidden md:table-cell">

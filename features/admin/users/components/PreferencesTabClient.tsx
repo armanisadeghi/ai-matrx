@@ -23,6 +23,10 @@ import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { USERS_ADMIN_LOCATION } from "../constants";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 // ── drift dashboard ────────────────────────────────────────────────────────
 
@@ -162,7 +166,7 @@ function DriftDashboard() {
         </div>
       ) : report && report.rows.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
+          <table className={cn("text-sm", MOBILE_TABLE_FROZEN)}>
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-medium">User</th>
