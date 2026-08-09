@@ -66,10 +66,16 @@ export function useEntityTitles(refs: EntityTitleRef[]): UseEntityTitlesReturn {
   // Tokens with no registered title column are still skipped: the resolver was
   // never going to answer for them, and `isUnresolved` returns false for that
   // case by design, so a call would be pure waste.
+  // Already-attempted keys are excluded too. A target that does NOT exist never
+  // enters the cache, so without this the first fetch resolves the live ones,
+  // `needed` shrinks to just the missing ones, the key changes, and they get
+  // asked for a second time before settling. One round is enough to prove
+  // absence.
   const needed = refs.filter(
     (r) =>
       tryGetEntityInfo(r.token)?.titleColumn != null &&
-      getCachedEntityTitle(r.token, r.id) == null,
+      getCachedEntityTitle(r.token, r.id) == null &&
+      !attempted[entityTitleCacheKey(r.token, r.id)],
   );
   // Stable dependency for the effect — the set of unresolved keys.
   const neededKey = needed
