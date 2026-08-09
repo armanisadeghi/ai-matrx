@@ -29,6 +29,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -357,6 +358,83 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the compose form.
+ *
+ * Every target is `mode: "draft"`: it stages into `GeneratorForm`'s local form
+ * state through the SAME setter the user's own typing/clicking uses, so the
+ * change is visible in the control, editable, and thrown away if the user
+ * navigates off. NOTHING here submits — Generate spends real money (script
+ * agents, TTS, image/video providers) and stays a human decision, so there is
+ * deliberately no entity-mode target on this surface and no way for an agent
+ * to start a run.
+ *
+ * All targets are `applyPolicy: "ask"` — the user confirms each one in place.
+ * These two clusters are exactly the surface's declared agent roles:
+ * `source_advisor` owns podcast_source_text + podcast_theme, `cast_advisor`
+ * owns podcast_format + podcast_speaker_cast.
+ *
+ * Handlers are registered by `features/podcasts/generator/components/GeneratorForm.tsx`
+ * on its SurfaceRuntimeProvider.
+ *
+ * Deliberately NOT writable: host_count (it re-routes the script agent AND the
+ * TTS provider band, and re-fetches the server cast preview — a structural
+ * choice, not a draft), per-host `voice` (the SERVER owns voice resolution;
+ * agents declare name + gender only, matching the pipeline's own
+ * `<speaker_settings>` contract), show_id / first_show_info (destination and
+ * identity), and every production cap / test-mode toggle (cost controls).
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "podcast_source_text",
+    label: "Source text",
+    description:
+      "Replaces the ENTIRE text in the source box — the topic line for the 'topic' source, or the pasted notes/script for 'rough notes' and 'full script'. This is a full replacement, not an append: read source_text (or source_topic) first and include anything you want to keep. Only valid while a typed-text source is selected; it is refused for the file-URL, website, note, YouTube, and audio sources, which carry their own resolved text. Staged into the form for the user to review — nothing generates until they press Generate.",
+    valueType: "string",
+    updatesValue: "source_text",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "source_material",
+    sortOrder: 100,
+  },
+  {
+    name: "podcast_theme",
+    label: "Theme",
+    description:
+      "Sets the optional freeform framing handed to the script agent, e.g. 'skeptic vs optimist' or 'keep it beginner-friendly'. A short phrase, not a paragraph. Replaces any existing theme; pass an empty string to clear it. Staged into the form for the user to review.",
+    valueType: "string",
+    updatesValue: "theme",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "show_shape",
+    sortOrder: 200,
+  },
+  {
+    name: "podcast_format",
+    label: "Format",
+    description:
+      "Sets the conversational format the script agent is routed to. Exactly one of: educational | news | entertainment | interview | debate | panel | storytelling. Any other value is refused. Staged into the form for the user to review.",
+    valueType: "string",
+    updatesValue: "format",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "show_shape",
+    sortOrder: 210,
+  },
+  {
+    name: "podcast_speaker_cast",
+    label: "Speaker cast",
+    description:
+      "Sets the per-host NAMES and GENDERS, in turn order. Value: an array of objects [{name, gender}], one per host, whose length must exactly equal host_count — read host_count and speaker_cast first. `name` is a non-empty display name; `gender` is one of male | female | neutral and drives the server's gender-matched voice pick. You cannot set voices — the server owns voice resolution, and each host's existing voice choice is preserved. This replaces the full cast, so include every host you want kept. Staged into the form for the user to review.",
+    valueType: "array",
+    updatesValue: "speaker_cast",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "cast",
+    sortOrder: 300,
+  },
+];
+
 export const podcastStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/podcast-studio",
   readiness: "partial",
@@ -396,6 +474,7 @@ truncate_audio_for_testing = true means this run is a cheap ~1-line-per-speaker 
       sortOrder: 110,
     },
   ],
+  writeTargets,
 };
 
 /** One cast entry as emitted in `speaker_cast`. */

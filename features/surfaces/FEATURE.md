@@ -149,7 +149,11 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/podcast-studio` (4 draft targets —
+  `podcast_source_text` / `podcast_theme` / `podcast_format` /
+  `podcast_speaker_cast`, handlers in
+  `features/podcasts/generator/components/GeneratorForm.tsx`; deliberately
+  NO entity target, because Generate spends money and stays human).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +314,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — Podcast Studio composer agent-writable.** `matrx-user/podcast-studio` declares 4 ask-policy `draft` targets, all staging through the SAME `useState` setters the user's own typing/clicking uses in `features/podcasts/generator/components/GeneratorForm.tsx` (handlers registered on its existing `SurfaceRuntimeProvider` via `getWriteHandlers`): `podcast_source_text` (full replacement of the typed-text source box; THROWS when a resolve/URL source is selected, since that text lives elsewhere), `podcast_theme`, `podcast_format` (validated against the live `FORMAT_OPTIONS` constant, not re-typed literals), and `podcast_speaker_cast` (per-host name + gender, length must equal `host_count`, gender validated against the picker's own exported `GENDER_OPTIONS`; each host's existing VOICE is preserved because the server owns voice resolution). The two clusters map exactly onto the surface's declared agent roles — `source_advisor` owns text+theme, `cast_advisor` owns format+cast. **Deliberately NO `entity` target and no way to start a run:** Generate spends real money (script agents, TTS, image/video providers) and stays a human decision; `host_count` also stays human because it re-routes the script agent AND the TTS provider band. Live-verified with a real Badass Agent run on `/podcast/studio/create`: all 4 targets applied in ONE turn, each with its own ask dialog carrying the manifest description verbatim; Apply landed every value in the real form controls; "Keep as is" declined silently and the agent acknowledged it gracefully; asking for `host_count`/target-audience was refused with an accurate account of the four available targets. Zero `surface-writeback` captures. `check:surface-drift` (133 surfaces) + `type-check` green.
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 

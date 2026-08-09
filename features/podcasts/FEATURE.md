@@ -104,6 +104,28 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-09 — **The composer is agent-writable (`matrx-user/podcast-studio`).**
+  `GeneratorForm` already mounted a `SurfaceRuntimeProvider` to EMIT the draft
+  request; it now also registers write handlers on it, so a bound agent can
+  stage four things into the form: the typed-text source box
+  (`podcast_source_text`), the framing theme (`podcast_theme`), the
+  conversational format (`podcast_format`), and the per-host names + genders
+  (`podcast_speaker_cast`). Every handler validates and THROWS on a bad shape —
+  format against the live `FORMAT_OPTIONS`, gender against
+  `SpeakerCastEditor`'s now-exported `GENDER_OPTIONS`, cast length against the
+  current `host_count` — and every one sets the SAME `useState` the user's own
+  typing sets, so an applied value is an ordinary editable form value. All four
+  are `mode: "draft"` + `applyPolicy: "ask"`: the user confirms each in place
+  and nothing is submitted. **The generation path is untouched.** There is
+  deliberately no entity-mode target and no agent route to Generate — a run
+  spends real money, so it stays a human decision — and `host_count` stays
+  human too because it re-routes both the script agent and the TTS provider
+  band. Per-host `voice` is not writable either: the server owns voice
+  resolution (matching the pipeline's own name+gender `<speaker_settings>`
+  contract), so the cast handler merges name/gender per slot and leaves each
+  host's existing voice alone. Live-verified against a real agent run on
+  `/podcast/studio/create` — 4 targets in one turn, Apply landed each value in
+  the real controls, decline stayed silent, an undeclared field was refused.
 - 2026-08-08 (later) — **Title options panel, audience re-pitch, 10-host cap.**
   (1) Run page gained `EpisodeTitlePanel` (`useEpisodeTitleOptions`,
   `podcast.title_optimizer` slot — post-episode only so the agent always sees

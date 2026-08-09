@@ -98,13 +98,14 @@ import {
 } from "../voices";
 import { useVoices } from "../useVoices";
 import { usePodcastCastPreview } from "../usePodcastCastPreview";
-import { SpeakerCastEditor } from "./SpeakerCastEditor";
+import { SpeakerCastEditor, GENDER_OPTIONS } from "./SpeakerCastEditor";
 import type {
   PodcastGenerateRequest,
   PodcastPostPrepOption,
   PodcastSourceKind,
   PodcastLanguageCode,
   PodcastFormat,
+  PodcastSpeakerGender,
 } from "../types";
 import type { PcShow } from "@/features/podcasts/types";
 import { DictionaryIndicatorButton } from "@/features/dictionary/components/DictionaryIndicatorButton";
@@ -410,6 +411,74 @@ export function GeneratorForm({
     });
   };
 
+  // ── Surface write handlers (manifest `writeTargets`) ──────────────────
+  // The write half of the 360 loop. Every handler validates its input and
+  // THROWS on a bad shape — the writeback seam turns throws into safe error
+  // envelopes the agent reads and can correct. Each one stages through the
+  // SAME setter the user's own typing/clicking uses, so an applied value is
+  // an ordinary, editable form value. Nothing here submits: Generate spends
+  // money and stays human. Fresh closures per call (getWriteHandlers contract).
+  const getSurfaceWriteHandlers = () => ({
+    podcast_source_text: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("podcast_source_text expects a non-empty string.");
+      if (activeSource.control !== "text")
+        throw new Error(
+          `podcast_source_text only applies to a typed-text source (topic, rough notes, full script). The selected source is "${sourceKind}" — ask the user to switch sources first.`,
+        );
+      setText(value);
+    },
+    podcast_theme: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "podcast_theme expects a string (empty string clears the theme).",
+        );
+      setTheme(value);
+    },
+    podcast_format: (value: unknown) => {
+      const allowed = FORMAT_OPTIONS.filter((o) => o.enabled).map(
+        (o) => o.value as string,
+      );
+      if (typeof value !== "string" || !allowed.includes(value))
+        throw new Error(
+          `podcast_format expects one of: ${allowed.join(" | ")}.`,
+        );
+      setFormat(value as PodcastFormat);
+    },
+    podcast_speaker_cast: (value: unknown) => {
+      const genders = GENDER_OPTIONS.map((g) => g.value as string);
+      if (!Array.isArray(value) || value.length !== hostCount)
+        throw new Error(
+          `podcast_speaker_cast expects an array of exactly ${hostCount} entries — one per host, in turn order (host_count is ${hostCount}).`,
+        );
+      const entries = value.map((entry, i) => {
+        if (typeof entry !== "object" || entry === null)
+          throw new Error(
+            `podcast_speaker_cast[${i}] expects an object of the shape {name, gender}.`,
+          );
+        const { name, gender } = entry as Record<string, unknown>;
+        if (typeof name !== "string" || !name.trim())
+          throw new Error(
+            `podcast_speaker_cast[${i}].name expects a non-empty string.`,
+          );
+        if (typeof gender !== "string" || !genders.includes(gender))
+          throw new Error(
+            `podcast_speaker_cast[${i}].gender expects one of: ${genders.join(" | ")}.`,
+          );
+        return { name: name.trim(), gender: gender as PodcastSpeakerGender };
+      });
+      // Merge per slot exactly as SpeakerCastEditor's onChange does, so each
+      // host's existing VOICE choice survives — the server owns voices.
+      setSpeakerDrafts((d) => {
+        const next = { ...d };
+        entries.forEach((entry, i) => {
+          next[i] = { ...next[i], name: entry.name, gender: entry.gender };
+        });
+        return next;
+      });
+    },
+  });
+
   /** Switch source — clear the per-source text so stale content never leaks. */
   const handleSourceChange = (kind: PodcastSourceKind) => {
     setSourceKind(kind);
@@ -422,6 +491,7 @@ export function GeneratorForm({
       surfaceName="matrx-user/podcast-studio"
       getScope={getSurfaceScope}
       isEditable={false}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     <div className="space-y-7">
       {/* ── 1. SOURCE ─────────────────────────────────────────────────── */}
