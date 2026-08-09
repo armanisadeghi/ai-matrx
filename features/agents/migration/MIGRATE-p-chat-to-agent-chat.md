@@ -28,7 +28,7 @@
 | Agent picker with system/user/builtin filtering | `AgentSelector`, `AgentPickerSheet`, `SidebarAgents`, `PromptPickerMenu` | PARTIAL — `ChatAgentPicker` exists; covers owned/system/community tabs but lacks user/builtin filtering and the floating `PromptPickerMenu` mid-chat |
 | Conversation recovery / soft-delete history | `useChatPersistence`, `ChatHistorySidebar` reads `cx_conversation` | MATCHED — `(a)/chat` already reads conversations from Redux/cx tables |
 | Sequential vs stacked variable inputs | `GuidedVariableInputs` (sequential), `PublicVariableInputs` (stacked) | MISSING — agent runner uses the unified variable panel; the guided sequential walk-through doesn't exist |
-| Resource pickers (upload, URLs, webpage, YouTube, scraper) | `usePublicScraperContent`, resource picker bundle | PARTIAL — agent runner has resource pills; legacy bundle (PDF optimize, YouTube transcript shortcut, etc.) not all wired |
+| Resource pickers (upload, URLs, webpage, YouTube, scraper) | `useScraperApi` (was `usePublicScraperContent`, deleted 2026-08-09), resource picker bundle | PARTIAL — agent runner has resource pills; legacy bundle (PDF optimize, YouTube transcript shortcut, etc.) not all wired |
 | Voice input | `VoiceMicEngine`, `VoiceMicButton` | MISSING |
 | HTML preview modal in messages | `HtmlPreviewModal` | MISSING (or different — verify) |
 | PDF optimize prompt | `PdfOptimizePrompt` | MISSING |
@@ -80,7 +80,7 @@ Whichever option, the **components** under `features/agents/components/chat/` sh
 | `HtmlPreviewModal` | Promote to `features/agents/components/messages-display/` — reusable across all agent chats |
 | `PdfOptimizePrompt` | `features/agents/components/agent-runner/` resource handler |
 | Mid-chat agent switch (`PromptPickerMenu` equivalent) | `ChatRoomClient` — add a small picker that dispatches `loadAgent(newAgentId)` and starts a fresh instance |
-| Public scraper content (`usePublicScraperContent`) | If used elsewhere, lift to `features/scraper/`; if `/p/chat`-only, port into the new chat input |
+| Public scraper content | RESOLVED 2026-08-09 — `usePublicScraperContent` deleted; every caller uses `useScraperApi()` (browser → Python directly, guests included) |
 | Default agent list for guests | Replace `DEFAULT_AGENTS` hardcoded constant with a `is_public` query against `agx_agent` |
 
 #### 1.4 Replace the deprecated layers

@@ -393,6 +393,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Research (web pipeline: search→scrape→analyze→synthesize→document; live "orchestra" + stat-square rail) | `features/research/FEATURE.md` |
 | **Marketing domain** (umbrella — five peer pillars: brands/websites, content planning, search & keywords, SEO tools, data & operations). **Every marketing surface lives under `/marketing/*` — never a root-level route**; `/seo/*` is reserved for the `(public)` anonymous analyzers. Structure declared once in `features/marketing/lib/marketing-nav.ts` | `features/marketing/FEATURE.md` — canonical pillar table; **never create a sibling `features/seo-*` / `features/content-*`** |
 | ↳ Content Plan (`plan` schema client: tree editor + node panel + pillar map at `/marketing/content-plan`; cross-repo SoR `common-docs/systems/content-planning/FEATURE.md`) | `features/marketing/content-plan/FEATURE.md` |
+| **Growth Loop** — the twelve-stage pipeline research→plan→pages→live site→crawl→findings→fixes, scored on THE THREE PIPES (code/human/AI). **`features/growth-loop/map/loop-map.ts` is the ONLY place its stage/connection/gap statuses live** — flip a gap there in the same change as the code; never restate a status in a doc. Map: `/administration/knowledge/growth-loop`. Vision + campaign: `common-docs/systems/growth-loop/` | `features/growth-loop/FEATURE.md` |
 
 ### Tier 2 — secondary features
 
@@ -437,6 +438,7 @@ Cross-project issue tracker.
 - **Colors:** semantic classes only (`bg-card`, `bg-muted`, `bg-accent`, `text-foreground`, `text-muted-foreground`, `text-primary`, `border-border`). Tokens, elevations (`--elevation-1/2/3`), and gradients (`--gradient-1/2/3`) defined in `app/globals.css`. Token-only color rules + old→semantic mapping: `.claude/skills/ui-dense/data-dense-rules.md` §1.
 - **Loading:** component-library loading states. Never plain "Loading…" text.
 - **Layout:** space-efficient, minimal padding/gaps. **`(core)` AppShell routes:** route chrome in `<PageHeader>`, body wrapper `h-full overflow-hidden` — **never** `h-page` or `calc(100dvh - header)` (`.shell-main` is already full viewport). See [`features/shell/components/header/variants/USAGE.md`](./features/shell/components/header/variants/USAGE.md).
+- **Scroll chains:** `flex-1 min-h-0` bounds a scroll area **only if EVERY ancestor is `flex flex-col`** — and the breaking wrapper is usually in ANOTHER file. One block wrapper leaves the surface at height:auto until an `overflow-hidden` ancestor clips it: no scrollbar, unreachable rows, nothing thrown. Two guards, each sufficient: `pnpm check:scroll-chain` (static, in-file + across component boundaries) and `useClippedContentGuard` (`lib/layout/`, runtime → Error Inspector `layout-scroll-chain`; every `MatrxDataTable` consumes it — **so must every new scroll surface**). `h-full` needs no flex parent, only a definite-height one.
 - **Navigation:** `useTransition` + `startTransition` for all route changes. Loading overlay on the active element. Disable interactive elements during transitions. Guard against duplicate clicks.
 
 ### Browser dialogs are banned
