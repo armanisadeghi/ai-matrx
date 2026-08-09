@@ -53,8 +53,13 @@ export interface UseDurableAgentConversationConfig {
    * hook stays idle until it is non-null.
    */
   storageKey: string | null;
-  /** The tier persona this scope mints with by default. */
-  defaultAgentId: string;
+  /**
+   * The tier persona this scope mints with by default — resolved from the
+   * tier's AGENT SLOT by the caller. `null` until it resolves (or when it
+   * fails to): the hook stays idle, because minting a conversation under the
+   * wrong agent is exactly what the slot system exists to prevent.
+   */
+  defaultAgentId: string | null;
   /** Inline tool names to arm on the active conversation. */
   toolNames: readonly string[];
 }
@@ -93,7 +98,7 @@ function lsSet(key: string, value: string): void {
   }
 }
 
-function readRoster(storageKey: string, defaultAgentId: string): Roster {
+function readRoster(storageKey: string, defaultAgentId: string | null): Roster {
   const raw = lsGet(storageKey + ROSTER_SUFFIX);
   if (raw) {
     try {
@@ -105,7 +110,7 @@ function readRoster(storageKey: string, defaultAgentId: string): Roster {
   }
   // Legacy: the old hooks stored a bare conversation id at `<storageKey>`.
   const legacy = lsGet(storageKey);
-  if (legacy) return { [defaultAgentId]: legacy };
+  if (legacy && defaultAgentId) return { [defaultAgentId]: legacy };
   return {};
 }
 
@@ -208,7 +213,11 @@ export function useDurableAgentConversation(
 
   // ── Resolve on mount / when the scope changes ────────────────────────────
   useEffect(() => {
-    if (!storageKey) return;
+    // Idle until BOTH the scope and the tier's slot-resolved default are known:
+    // a stored active-agent pointer resumes that agent's chat without the slot,
+    // but with neither we would have to invent an agent id — which is the
+    // silent-wrong-default this system exists to kill.
+    if (!storageKey || !defaultAgentId) return;
     const token = ++switchTokenRef.current;
     const activeAgent = lsGet(storageKey + ACTIVE_AGENT_SUFFIX) || defaultAgentId;
     setAgentId(activeAgent);

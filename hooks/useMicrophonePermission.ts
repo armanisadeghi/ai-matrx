@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { acquireMicStream, releaseMicStream } from '@/features/audio/micStream';
 
 export type MicPermissionStatus = 'unknown' | 'granted' | 'denied' | 'prompt';
 
@@ -67,9 +68,12 @@ export function useMicrophonePermission() {
     // Actually request the microphone (triggers browser permission dialog)
     const requestPermission = useCallback(async (): Promise<MicPermissionStatus> => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            // Close the stream immediately — we just needed permission
-            stream.getTracks().forEach(track => track.stop());
+            // Through the mic singleton — we just need the permission grant.
+            // acquire+release leaves the stream in the short keepalive window
+            // (no double mic light, and the recording that usually follows a
+            // grant reuses the warm stream with no second prompt).
+            await acquireMicStream();
+            releaseMicStream();
             setStatus('granted');
             // Persist that we've asked
             setCookie(COOKIE_KEY, 'true', COOKIE_DAYS);

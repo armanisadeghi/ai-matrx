@@ -52,7 +52,17 @@ import {
   useSourceContent,
   useAnalysisForSource,
   useSourceImportance,
+  useYouTubeVideoIndex,
 } from "../../hooks/useResearchState";
+import { parseYouTubeUrl, youTubeEmbedUrl } from "@/lib/media/youtube";
+import {
+  VideoSourceMeta,
+  VideoProcessingChip,
+} from "../shared/VideoSourceMeta";
+import {
+  formatYouTubeCount,
+  formatYouTubeDuration,
+} from "@/features/marketing/discovery/youtube/formatters";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
 import { useStreamDebug } from "../../context/ResearchContext";
@@ -991,6 +1001,17 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   };
 
   const typedSource = source;
+  // Video identity + inline player for YouTube sources (global library read).
+  const videoSources = useMemo(
+    () => (typedSource ? [typedSource] : []),
+    [typedSource],
+  );
+  const { identityFor: videoIdentityFor } = useYouTubeVideoIndex(videoSources);
+  const videoIdentity = typedSource ? videoIdentityFor(typedSource) : undefined;
+  const parsedVideo =
+    typedSource?.source_type === "youtube"
+      ? parseYouTubeUrl(typedSource.url)
+      : null;
   const extraSnippets = typedSource
     ? stringArrayFromJson(typedSource.extra_snippets)
     : [];
@@ -1060,9 +1081,21 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
 
           {typedSource && (
             <>
-              {/* Hero: thumbnail + title */}
+              {/* Hero: player (video) / thumbnail + title */}
               <div className="space-y-3">
-                {typedSource.thumbnail_url ? (
+                {parsedVideo ? (
+                  <div className="w-full aspect-video rounded-lg overflow-hidden bg-black">
+                    <iframe
+                      src={youTubeEmbedUrl(parsedVideo.videoId, {
+                        start: parsedVideo.start,
+                      })}
+                      title={typedSource.title ?? "YouTube video"}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                ) : typedSource.thumbnail_url ? (
                   <div className="w-full aspect-video rounded-lg overflow-hidden bg-muted">
                     <Image
                       src={typedSource.thumbnail_url}
@@ -1086,6 +1119,9 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     {typedSource.title || "Untitled"}
                   </h2>
                 </div>
+                {videoIdentity && (
+                  <VideoSourceMeta identity={videoIdentity} />
+                )}
                 <a
                   href={typedSource.url}
                   target="_blank"
@@ -1102,6 +1138,59 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 <MetaRow label="Host" icon={<Globe className="h-3 w-3" />}>
                   <span>{typedSource.hostname ?? "—"}</span>
                 </MetaRow>
+                {videoIdentity && (
+                  <>
+                    <MetaRow
+                      label="Channel"
+                      icon={<Users className="h-3 w-3" />}
+                    >
+                      <span className="truncate max-w-[14rem]">
+                        {videoIdentity.channel_title ?? "—"}
+                        {videoIdentity.channel_subscriber_count != null && (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            ·{" "}
+                            {formatYouTubeCount(
+                              videoIdentity.channel_subscriber_count,
+                            )}{" "}
+                            subs
+                          </span>
+                        )}
+                      </span>
+                    </MetaRow>
+                    <MetaRow
+                      label="Video"
+                      icon={<Clock className="h-3 w-3" />}
+                    >
+                      <span className="font-mono tabular-nums">
+                        {formatYouTubeDuration(videoIdentity.duration)}
+                        {videoIdentity.view_count != null && (
+                          <span className="text-muted-foreground font-sans">
+                            {" "}
+                            · {formatYouTubeCount(
+                              videoIdentity.view_count,
+                            )}{" "}
+                            views
+                          </span>
+                        )}
+                      </span>
+                    </MetaRow>
+                    <MetaRow
+                      label="Processing"
+                      icon={<Brain className="h-3 w-3" />}
+                    >
+                      <Link
+                        href={`/research/topics/${topicId}/youtube`}
+                        className="inline-flex items-center gap-1 hover:underline"
+                        title="Open the topic YouTube library"
+                      >
+                        <VideoProcessingChip
+                          status={videoIdentity.processing_status}
+                        />
+                      </Link>
+                    </MetaRow>
+                  </>
+                )}
                 <MetaRow label="Best rank" icon={<Hash className="h-3 w-3" />}>
                   {importance?.bestRank != null ? (
                     <span className="font-mono">#{importance.bestRank}</span>

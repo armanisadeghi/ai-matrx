@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Eye,
-  FileText,
   Folder,
   Loader2,
   RefreshCw,
@@ -50,14 +49,8 @@ const TILES: Tile[] = [
     icon: Folder,
     count: (c) => c.categories,
   },
-  {
-    slugSegment: "content-blocks",
-    label: "Content Blocks",
-    description:
-      "Reusable text/template blocks your members can insert from the agent context menu.",
-    icon: FileText,
-    count: (c) => c.contentBlocks,
-  },
+  // Content blocks are managed in the canonical render-blocks editor
+  // (/agent-connections/render-blocks — skill.render_definition).
 ];
 
 export default function OrgShortcutsDashboardPage() {

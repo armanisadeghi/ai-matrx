@@ -47,7 +47,6 @@ import {
   Braces,
   Server,
   FileJson,
-  Lock,
   Globe,
   Archive,
   Folder,
@@ -61,7 +60,10 @@ import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import MarkdownStream from "@/components/MarkdownStream";
-import { SystemAgentCopyForAiMenu } from "@/features/agents/route/SystemAgentCopyForAiMenu";
+import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { agentDefinitionSummary } from "@/features/agents/format";
+import { buildSystemAgentAiPayload } from "@/features/agents/route/buildSystemAgentAiPayload";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";
@@ -369,7 +371,6 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
   const contextSlotCount = contextSlots?.length ?? 0;
   const settingsCount = settingsEntries.length;
   const mcpCount = mcpServers?.length ?? 0;
-  const definitionJson = JSON.stringify(definition ?? {}, null, 2);
 
   const allowJsonView = isAdmin;
   const effectiveView: ViewMode = allowJsonView ? viewMode : "pretty";
@@ -386,29 +387,66 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
             {effectiveView === "pretty" ? "Overview" : "Raw definition (JSON)"}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <Button
+            <CopyButtons
               size="sm"
-              variant="ghost"
-              className="h-7 gap-1.5 text-xs"
-              onClick={() =>
-                handleCopy(
-                  "definition",
-                  definitionJson,
-                  "Agent definition copied as JSON",
-                )
+              label={`${agent.name} definition`}
+              human={() =>
+                agentDefinitionSummary(definition ?? agent, {
+                  liveAgentId,
+                  currentVersionId,
+                  modelLabel,
+                })
               }
-            >
-              {copied === "definition" ? (
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
-              ) : (
-                <Copy className="w-3.5 h-3.5" />
-              )}
-              Copy JSON
-            </Button>
-            <SystemAgentCopyForAiMenu
-              agentId={agentId}
-              liveAgentId={liveAgentId}
-              currentVersionId={currentVersionId}
+              json={() => definition ?? {}}
+              agent={() => ({
+                kind: agent.agentType === "builtin" ? "system-agent" : "agent",
+                location:
+                  agent.agentType === "builtin"
+                    ? "AI Matrx Admin — System Agents · Agent view"
+                    : "AI Matrx — Agent view",
+                description: "Full agent definition, matching the live builder state.",
+                data: definition ?? {},
+                summary: agentDefinitionSummary(definition ?? agent, {
+                  liveAgentId,
+                  currentVersionId,
+                  modelLabel,
+                }),
+                attributes: {
+                  id: liveAgentId,
+                  version,
+                  agentType: agent.agentType,
+                },
+                context: { currentVersionId, category },
+              })}
+              aiVariants={[
+                {
+                  id: "basics",
+                  label: "Basics",
+                  hint: "Identity, IDs, model, variables (no defaults)",
+                  build: () =>
+                    buildSystemAgentAiPayload({
+                      agent: definition ?? agent,
+                      liveAgentId,
+                      currentVersionId,
+                      modelName: modelLabel ?? null,
+                      exportMode: "basics",
+                    }),
+                },
+                {
+                  id: "with-messages",
+                  label: "With messages",
+                  hint: "Basics plus the full messages array",
+                  build: () =>
+                    buildSystemAgentAiPayload({
+                      agent: definition ?? agent,
+                      liveAgentId,
+                      currentVersionId,
+                      modelName: modelLabel ?? null,
+                      exportMode: "with-messages",
+                      messages: messages ?? [],
+                    }),
+                },
+              ]}
             />
             {allowJsonView && (
               <ToggleGroup
@@ -443,6 +481,16 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
               data={definition ?? {}}
               label="Agent Definition"
               className="h-full"
+              agentCopy={() => ({
+                kind: agent.agentType === "builtin" ? "system-agent" : "agent",
+                location:
+                  agent.agentType === "builtin"
+                    ? "AI Matrx Admin — System Agents · Agent view (raw JSON)"
+                    : "AI Matrx — Agent view (raw JSON)",
+                description: "Full agent definition, matching the live builder state.",
+                data: definition ?? {},
+                attributes: { id: liveAgentId, version, agentType: agent.agentType },
+              })}
             />
           </div>
         ) : (
@@ -516,14 +564,6 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                         <Globe className="w-3 h-3" /> Public
                       </Badge>
                     )}
-                    {!agent.isVersion && !agent.isPublic && (
-                      <Badge
-                        variant="outline"
-                        className="gap-1 text-muted-foreground"
-                      >
-                        <Lock className="w-3 h-3" /> Private
-                      </Badge>
-                    )}
                   </div>
                 )}
               </div>
@@ -550,17 +590,6 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                       <Globe className="w-3 h-3" /> Public
                     </Badge>
                   )}
-                {!categoryLabel &&
-                  !category &&
-                  !agent.isVersion &&
-                  !agent.isPublic && (
-                    <Badge
-                      variant="outline"
-                      className="gap-1 text-muted-foreground"
-                    >
-                      <Lock className="w-3 h-3" /> Private
-                    </Badge>
-                  )}
                 {agent.isArchived && (
                   <Badge
                     variant="outline"
@@ -573,6 +602,21 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                   <Badge variant="destructive">Inactive</Badge>
                 )}
               </div>
+
+              {/*
+               * Access truth: who can actually see this agent, and why —
+               * replaces the old "Private" badge, which read one flag and
+               * ignored org visibility, direct shares, and container reach.
+               * Version rows are agent_definition_version, not `agent`, so
+               * only the live agent gets the panel.
+               */}
+              {!agent.isVersion && (
+                <AccessSummaryPanel
+                  entityType="agent"
+                  entityId={liveAgentId}
+                  className="px-0"
+                />
+              )}
 
               {tags && tags.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
@@ -659,11 +703,36 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
             {/* Variables */}
             {variables && variableCount > 0 && (
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
                   <CardTitle className="flex items-center gap-2 text-sm">
                     <Variable className="w-4 h-4 text-purple-500" />
                     Variables ({variableCount})
                   </CardTitle>
+                  <CopyButtons
+                    size="xs"
+                    label="Variables"
+                    human={() =>
+                      variables
+                        .map((v) =>
+                          [
+                            `{{${v.name}}}`,
+                            v.required ? "(required)" : null,
+                            v.helpText ?? null,
+                          ]
+                            .filter(Boolean)
+                            .join(" — "),
+                        )
+                        .join("\n")
+                    }
+                    json={() => variables}
+                    agent={() => ({
+                      kind: "agent-variables",
+                      location: "AI Matrx — Agent view",
+                      description: "Variable definitions for this agent.",
+                      data: variables,
+                      attributes: { agentId: liveAgentId, count: variableCount },
+                    })}
+                  />
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-2">
@@ -709,11 +778,35 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
             {/* Context Slots */}
             {contextSlots && contextSlotCount > 0 && (
               <Card>
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
                   <CardTitle className="flex items-center gap-2 text-sm">
                     <Layers className="w-4 h-4 text-cyan-500" />
                     Context Slots ({contextSlotCount})
                   </CardTitle>
+                  <CopyButtons
+                    size="xs"
+                    label="Context slots"
+                    human={() =>
+                      contextSlots
+                        .map((slot) =>
+                          [slot.key, slot.type, slot.label ?? slot.description ?? null]
+                            .filter(Boolean)
+                            .join(" — "),
+                        )
+                        .join("\n")
+                    }
+                    json={() => contextSlots}
+                    agent={() => ({
+                      kind: "agent-context-slots",
+                      location: "AI Matrx — Agent view",
+                      description: "Context slot definitions for this agent.",
+                      data: contextSlots,
+                      attributes: {
+                        agentId: liveAgentId,
+                        count: contextSlotCount,
+                      },
+                    })}
+                  />
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-2">

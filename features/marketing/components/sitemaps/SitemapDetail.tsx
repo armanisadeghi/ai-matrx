@@ -229,7 +229,7 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
             </button>
           ))}
         </div>
-        <CopyButtons size="icon" {...sitemapCopy} />
+        <CopyButtons size="icon" {...sitemapCopy} json={() => doc} />
         <a
           href={sitemap.data.url}
           target="_blank"

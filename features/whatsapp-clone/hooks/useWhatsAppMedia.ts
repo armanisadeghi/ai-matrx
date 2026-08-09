@@ -90,14 +90,14 @@ export function useWhatsAppMedia(): UseWhatsAppMediaReturn {
 
   const liveMedia = useMemo<WAMediaItem[]>(() => {
     return allFiles
-      .filter((f) => isImage(f.mimeType) || isVideo(f.mimeType))
+      .filter((f) => !f.deletedAt && (isImage(f.mimeType) || isVideo(f.mimeType)))
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
       .map(adaptMedia);
   }, [allFiles]);
 
   const liveDocs = useMemo<WADocItem[]>(() => {
     return allFiles
-      .filter((f) => isDoc(f.mimeType))
+      .filter((f) => !f.deletedAt && isDoc(f.mimeType))
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
       .map(adaptDoc);
   }, [allFiles]);

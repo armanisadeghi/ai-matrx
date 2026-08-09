@@ -75,7 +75,7 @@ import GoogleWorkspaceTab from "./tabs/GoogleWorkspaceTab";
 import SandboxStorageTab from "./tabs/SandboxStorageTab";
 import FeedbackTab from "./tabs/FeedbackTab";
 import ExtensionTab from "./tabs/ExtensionTab";
-import ContentTemplatesTab from "./tabs/ContentTemplatesTab";
+import MessageTemplatesTab from "./tabs/MessageTemplatesTab";
 import VoiceMicTab from "./tabs/VoiceMicTab";
 import MemoryTab from "./tabs/MemoryTab";
 import ConversationFiltersTab from "./tabs/ConversationFiltersTab";
@@ -588,11 +588,11 @@ export const settingsRegistry: SettingsTabDef[] = [
   // ── Templates ─────────────────────────────────────────────────────────────
   {
     id: "templates",
-    label: "Content templates",
+    label: "Message templates",
     icon: FileText,
-    description: "Reusable content templates for your prompts and responses.",
+    description: "Reusable message templates for your prompts and responses.",
     searchKeywords: ["template", "content", "snippets", "saved"],
-    component: ContentTemplatesTab,
+    component: MessageTemplatesTab,
     persistence: "synced",
   },
 

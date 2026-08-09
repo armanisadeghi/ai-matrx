@@ -124,6 +124,20 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 
 ## Change log
 
+- `2026-08-08` — **Hub rebuilt on the canonical entity-list shell.**
+  `/transcripts` is now the second consumer of `lib/entity-list` (config in
+  `features/transcripts/browse/`): ONE server-paged list over the new
+  `trx_list_scoped` / `trx_list_scope_counts` / `trx_list_facets` RPCs
+  (`migrations/trx_list_scoped.sql`, applied + ledgered), collapsing the five
+  hub row shapes to one `kind`-typed row (transcript | session | cleanup |
+  unsorted) with mine/orgs/shared/public scopes, relevance-ranked search
+  (`trx_search_score`, agx tiers), per-column server filters (duration /
+  word-count buckets included), true counts, and inline title rename routed
+  per kind. The sectioned hub stack was deleted (`TranscriptsHubTable`,
+  hub cards/sections, grouping/sort/filter utils, `transcriptsHubService`,
+  hub types/constants). Nested session→recording grouping is dropped pending
+  a MatrxDataTable hierarchy concept; row actions are read-only (open/copy)
+  — both tracked in `docs/handoffs/canonical-entity-list-extraction.md`.
 - `2026-08-08` — **Transcript hub review repair.** `/transcripts` now exposes
   an explicit Mine / organization scope control (Mine by default) and applies
   that scope to processor, studio, cleanup, detached-recording, active-recording,

@@ -26,9 +26,11 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  buildGroomerPresetPayload,
+  groomerPresetVariants,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
 } from "@/components/agent-copy/groomer-types";
 import {
   Facebook,
@@ -538,7 +540,18 @@ export function DiscoveryInbox() {
           </div>
           <div className="flex items-center gap-1.5">
           {rows.length > 0 ? (
-            <CopyButtons size="icon" {...inboxCopy} json={() => rows} />
+            <CopyButtons
+              size="icon"
+              {...inboxCopy}
+              // Everything must be a superset of the graded variants — build
+              // it from the same groomer sections, not from inboxCopy's
+              // rows-only payload.
+              agent={() =>
+                buildGroomerPresetPayload(groomerConfig(), "everything")
+              }
+              json={() => rows}
+              aiVariants={groomerPresetVariants(groomerConfig)}
+            />
           ) : null}
           {rows.length > 0 ? (
             <ExportMenu

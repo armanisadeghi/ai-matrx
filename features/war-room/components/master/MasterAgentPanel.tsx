@@ -19,6 +19,8 @@ import { Radar, Loader2 } from "lucide-react";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { useMasterAgent } from "@/features/war-room/hooks/useMasterAgent";
 import { WarRoomAgentSelector } from "@/features/war-room/components/shared/WarRoomAgentSelector";
+import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
+import { WAR_ROOM_MASTER_AGENT_SLOT } from "@/features/war-room/constants";
 
 export default function MasterAgentPanel() {
   const { conversationId, agentId, ready, switchAgent } = useMasterAgent();
@@ -41,6 +43,12 @@ export default function MasterAgentPanel() {
             Sees every room and thread you own
           </p>
         </div>
+        {/* Change WHICH agent is the master default (the `war_room.master`
+            slot) — the selector above only switches this session's chat. */}
+        <SlotAgentPicker
+          slotKey={WAR_ROOM_MASTER_AGENT_SLOT}
+          className="ml-auto"
+        />
       </header>
 
       {/* Body — the real conversation column, or a loading state until the

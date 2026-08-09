@@ -154,22 +154,24 @@ Org/Owner/Access columns appear only when scope ≠ `mine` — inside "Mine" eve
 
 | File | Role |
 |---|---|
-| `types.ts` | `AgentBrowseRow` (derived from the generated RPC return — never hand-mirrored), `BrowseScope`, `BrowseQuery`, `BrowseScopeCounts` |
-| `service.ts` | The two RPC calls. Browser → Supabase direct; no Next hop, no Python hop |
-| `useAgentBrowse.ts` | Query state + fetch. Generation-guarded so a slow response for an abandoned query can't overwrite a newer one |
-| `useAgentRowActions.tsx` | Binds the registry to behaviour; owns the modals as page-level singletons (not one `ShareModal` per row, which is what `/agents/all` mounts) |
+**The generic shell lives in `lib/entity-list/`** (extracted 2026-08-08 —
+read its `FEATURE.md`): the query hook, scope tabs, toolbar, filter panel,
+column picker, table, and page assembly are shared with `/transcripts` and
+future list surfaces. What remains here is the AGENT half:
+
+| File | Role |
+|---|---|
+| `types.ts` | `AgentBrowseRow` (derived from the generated RPC return — never hand-mirrored), declared scopes, re-exports of the generic vocabulary |
+| `service.ts` | The RPC calls + inline-edit save. Browser → Supabase direct; no Next hop, no Python hop |
+| `listConfig.tsx` | THE config handed to `<EntityListPage>` — service, columns, scopes, row-actions hook + modals, card/row renderers, copy config |
+| `useAgentRowActions.tsx` | Binds the registry to behaviour; owns the modals as page-level singletons (not one `ShareModal` per row) |
 | `agentActionRegistry.tsx` | THE action list |
-| `components/AgentBrowsePage.tsx` | Assembly |
-| `columns.tsx` | EVERY column the row can show, with `defaultHidden` / `locked` / `scopedToShared` flags |
-| `components/AgentBrowseTable.tsx` | Default view — `MatrxDataTable` in **controlled** mode |
-| `components/BrowseFilterPanel.tsx` | Filters & Sort popover over server facets |
-| `components/ColumnPicker.tsx` | Column visibility, persisted |
-| `components/AgentBrowseCards.tsx` | Card view |
+| `columns.tsx` | EVERY column the row can show, with `defaultHidden` / `locked` / `scopedToShared` flags (spec type + cell helpers from `lib/entity-list/columns`) |
+| `components/AgentBrowsePage.tsx` | Thin: `<EntityListPage config>` + this page's slots (notice, Sets/New buttons) |
+| `components/AgentBrowseCards.tsx` | Card view (render prop in the config) |
 | `components/AgentBrowseRows.tsx` | Dense view — full-width rows, aligned zones |
 | `components/ClassicViewNotice.tsx` | TEMPORARY cutover banner → `/agents/classic` |
-| `components/BrowseScopeTabs.tsx` | The four scopes + org dropdown |
-| `components/BrowseToolbar.tsx` | Search, filters, view switcher, density |
-| `components/AddToSetDialog.tsx` | Dialog shell over the existing `useAgentSetsList` + `addAgentToSet` (the existing `AddToSetMenu` renders its own trigger, so it can't be reached from a menu entry) |
+| `components/AddToSetDialog.tsx` | Dialog shell over the existing `useAgentSetsList` + `addAgentToSet` |
 
 ## Invariants
 
@@ -199,10 +201,15 @@ hostile at 2,000.
 - Pre-hydration view flash (above).
 - Multi-select + bulk actions — `MatrxDataTable` has single-row selection only.
 - Column ORDER and width are not user-controlled yet (visibility is).
-- Generalising this into the reusable shell, then retiring `/agents/all` into it.
 
 ## Change log
 
+- **2026-08-08 (extraction)** — Steps 2–5 of the canonical entity-list
+  extraction: the generic halves (query hook, scope tabs, toolbar, filter
+  panel, column picker, table, page shell) moved to `lib/entity-list/`; this
+  surface is now `listConfig.tsx` + `<EntityListPage>`. Behaviour unchanged;
+  the menu's Rename entry (previously latent — no dialog rendered) now opens a
+  TextInputDialog.
 - **2026-08-08** — Added the semantic Agents H1, named the favorite-column
   sort control, raised mobile scope targets to 44px, and sanitized Markdown
   description previews across table and card views.

@@ -66,11 +66,9 @@ import {
 } from "lucide-react";
 import {
   ContentBlockDB,
-  CategoryConfigDB,
-  SubcategoryConfigDB,
+  ContentBlockBlockType,
+  ContentBlockVisibility,
   CreateContentBlockInput,
-  UpdateContentBlockInput,
-  CategoryWithSubcategories,
 } from "@/types/content-blocks-db";
 import { createClient } from "@/utils/supabase/client";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -97,6 +95,29 @@ function extractApiErrorMessage(body: unknown, fallback: string): string {
 
 interface ContentBlocksManagerProps {
   className?: string;
+}
+
+const BLOCK_TYPES: ContentBlockBlockType[] = [
+  "markdown",
+  "xml",
+  "render_kind",
+];
+const VISIBILITIES: ContentBlockVisibility[] = [
+  "public",
+  "internal",
+  "link",
+  "personal",
+];
+
+function normalizeBlockType(raw: string): ContentBlockBlockType {
+  return (BLOCK_TYPES as string[]).includes(raw)
+    ? (raw as ContentBlockBlockType)
+    : "markdown";
+}
+
+interface SkillOption {
+  id: string;
+  label: string;
 }
 
 // Auto-resizing textarea component
@@ -171,6 +192,7 @@ interface Category {
 export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   // State
   const [contentBlocks, setContentBlocks] = useState<ContentBlockDB[]>([]);
+  const [skills, setSkills] = useState<SkillOption[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
@@ -415,9 +437,10 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
       setCategories(rootCategories);
 
-      // Load content blocks
+      // Load content blocks (canonical: skill.render_definition)
       const { data: blockData, error: blockError } = await supabase
-        .from("content_blocks")
+        .schema("skill")
+        .from("render_definition")
         .select("*")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true });
@@ -432,12 +455,27 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
           description: block.description,
           icon_name: block.icon_name,
           category_id: block.category_id,
+          skill_id: block.skill_id,
+          block_type: normalizeBlockType(block.block_type),
+          visibility: block.visibility,
           template: block.template,
           sort_order: block.sort_order ?? 0,
           is_active: block.is_active ?? true,
           created_at: block.created_at ?? "",
           updated_at: block.updated_at ?? "",
         })),
+      );
+
+      // Load render-block skills for the skill_id picker
+      const { data: skillData, error: skillError } = await supabase
+        .schema("skill")
+        .from("definition")
+        .select("id,label")
+        .is("deleted_at", null)
+        .order("label", { ascending: true });
+      if (skillError) throw skillError;
+      setSkills(
+        (skillData ?? []).map((s) => ({ id: s.id, label: s.label ?? s.id })),
       );
     } catch (error) {
       console.error("Error loading data:", error);
@@ -475,7 +513,10 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         label: selectedBlock.label,
         description: selectedBlock.description,
         icon_name: selectedBlock.icon_name,
-        category_id: selectedBlock.category_id, // UUID FK to shortcut_categories
+        category_id: selectedBlock.category_id, // UUID FK to platform.categories
+        skill_id: selectedBlock.skill_id,
+        block_type: selectedBlock.block_type,
+        visibility: selectedBlock.visibility,
         template: selectedBlock.template,
         sort_order: selectedBlock.sort_order,
         is_active: selectedBlock.is_active,
@@ -491,6 +532,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       description: "",
       icon_name: "FileText",
       category_id: categories.length > 0 ? categories[0].id : "", // Use first category UUID
+      skill_id: null,
+      block_type: "markdown",
+      visibility: "public",
       template: "",
       sort_order: 0,
       is_active: true,
@@ -513,12 +557,16 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       const supabase = createClient();
 
       const { error } = await supabase
-        .from("content_blocks")
+        .schema("skill")
+        .from("render_definition")
         .update({
           label: editData.label,
           description: editData.description,
           icon_name: editData.icon_name,
-          category_id: editData.category_id, // UUID FK to shortcut_categories
+          category_id: editData.category_id, // UUID FK to platform.categories
+          skill_id: editData.skill_id ?? null,
+          block_type: editData.block_type,
+          visibility: editData.visibility,
           template: editData.template,
           sort_order: editData.sort_order,
           is_active: editData.is_active,
@@ -555,19 +603,26 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       // Admin-authored blocks are GLOBAL platform-library content → system org
       // (the create form has no per-scope option; global content lives here).
       const organizationId = await resolveSystemOrgId();
-      const { error } = await supabase.from("content_blocks").insert([
-        {
-          block_id: createFormData.block_id ?? "",
-          label: createFormData.label ?? "",
-          description: createFormData.description,
-          icon_name: createFormData.icon_name ?? "FileText",
-          category_id: createFormData.category_id, // UUID FK to shortcut_categories
-          template: createFormData.template ?? "",
-          sort_order: createFormData.sort_order || 0,
-          is_active: createFormData.is_active !== false,
-          organization_id: organizationId,
-        },
-      ]);
+      const { error } = await supabase
+        .schema("skill")
+        .from("render_definition")
+        .insert([
+          {
+            block_id: createFormData.block_id ?? "",
+            label: createFormData.label ?? "",
+            description: createFormData.description,
+            icon_name: createFormData.icon_name ?? "FileText",
+            category_id: createFormData.category_id, // UUID FK to platform.categories
+            skill_id: createFormData.skill_id ?? null,
+            block_type: createFormData.block_type ?? "markdown",
+            // Admin-authored platform-library blocks are visible to everyone.
+            visibility: createFormData.visibility ?? "public",
+            template: createFormData.template ?? "",
+            sort_order: createFormData.sort_order || 0,
+            is_active: createFormData.is_active !== false,
+            organization_id: organizationId,
+          },
+        ]);
 
       if (error) {
         console.error("Supabase error:", error);
@@ -603,7 +658,10 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         label: selectedBlock.label,
         description: selectedBlock.description,
         icon_name: selectedBlock.icon_name,
-        category_id: selectedBlock.category_id, // UUID FK to shortcut_categories
+        category_id: selectedBlock.category_id, // UUID FK to platform.categories
+        skill_id: selectedBlock.skill_id,
+        block_type: selectedBlock.block_type,
+        visibility: selectedBlock.visibility,
         template: selectedBlock.template,
         sort_order: selectedBlock.sort_order,
         is_active: selectedBlock.is_active,
@@ -624,7 +682,8 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
     try {
       const supabase = createClient();
       const { error } = await supabase
-        .from("content_blocks")
+        .schema("skill")
+        .from("render_definition")
         .update({ is_active: !block.is_active })
         .eq("id", block.id);
 
@@ -833,7 +892,8 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
       if (type === "block") {
         const { error } = await supabase
-          .from("content_blocks")
+          .schema("skill")
+          .from("render_definition")
           .delete()
           .eq("id", item.id);
 
@@ -1262,6 +1322,78 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                         />
                       </div>
                     </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="edit-block-type">Block Type</Label>
+                        <Select
+                          value={editData.block_type ?? "markdown"}
+                          onValueChange={(value) =>
+                            handleEditChange(
+                              "block_type",
+                              value as ContentBlockBlockType,
+                            )
+                          }
+                        >
+                          <SelectTrigger id="edit-block-type">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BLOCK_TYPES.map((t) => (
+                              <SelectItem key={t} value={t}>
+                                {t}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-visibility">Visibility</Label>
+                        <Select
+                          value={editData.visibility ?? "public"}
+                          onValueChange={(value) =>
+                            handleEditChange(
+                              "visibility",
+                              value as ContentBlockVisibility,
+                            )
+                          }
+                        >
+                          <SelectTrigger id="edit-visibility">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {VISIBILITIES.map((v) => (
+                              <SelectItem key={v} value={v}>
+                                {v}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-skill">Skill</Label>
+                        <Select
+                          value={editData.skill_id ?? "__none__"}
+                          onValueChange={(value) =>
+                            handleEditChange(
+                              "skill_id",
+                              value === "__none__" ? null : value,
+                            )
+                          }
+                        >
+                          <SelectTrigger id="edit-skill">
+                            <SelectValue placeholder="No skill" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">No skill</SelectItem>
+                            {skills.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                     <div className="flex items-center space-x-2 pl-2">
                       <Checkbox
                         id="edit-is-active"
@@ -1617,6 +1749,55 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                     })
                   }
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="create-block-type">Block Type</Label>
+                <Select
+                  value={createFormData.block_type ?? "markdown"}
+                  onValueChange={(value) =>
+                    setCreateFormData({
+                      ...createFormData,
+                      block_type: value as ContentBlockBlockType,
+                    })
+                  }
+                >
+                  <SelectTrigger id="create-block-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BLOCK_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="create-visibility">Visibility</Label>
+                <Select
+                  value={createFormData.visibility ?? "public"}
+                  onValueChange={(value) =>
+                    setCreateFormData({
+                      ...createFormData,
+                      visibility: value as ContentBlockVisibility,
+                    })
+                  }
+                >
+                  <SelectTrigger id="create-visibility">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VISIBILITIES.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {v}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

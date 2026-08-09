@@ -55,6 +55,10 @@ import type {
   ScopeProps,
 } from "../types";
 import { isValidShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import { agentShortcutRecordSummary } from "../format";
 
 type SortField =
   | "label"
@@ -335,6 +339,54 @@ export function ShortcutList({
                 <Button variant="outline" size="sm" onClick={() => refetch()}>
                   <RefreshCw className="h-3.5 w-3.5" />
                 </Button>
+                {filtered.length > 0 && (
+                  <>
+                    <CopyButtons
+                      size="icon"
+                      label="All shortcuts"
+                      human={() =>
+                        filtered
+                          .map((s) =>
+                            agentShortcutRecordSummary(
+                              s,
+                              categoryById.get(s.categoryId),
+                            ),
+                          )
+                          .join("\n")
+                      }
+                      json={() => filtered}
+                      agent={() => ({
+                        kind: "agent-shortcuts",
+                        location:
+                          "AI Matrx Admin — System Agents · Shortcuts (/administration/agents/system-agents/shortcuts)",
+                        description:
+                          "All agent shortcuts currently matching this list's filters.",
+                        data: filtered,
+                        attributes: { count: filtered.length },
+                        context: {
+                          scope,
+                          scopeId,
+                          total: stats.total,
+                          active: stats.active,
+                          wiredToAgent: stats.wiredToAgent,
+                        },
+                      })}
+                    />
+                    <ExportMenu
+                      label="agent-shortcuts"
+                      items={[
+                        jsonExportItem(() => filtered),
+                        csvExportItem(
+                          () =>
+                            filtered as unknown as Array<
+                              Record<string, unknown>
+                            >,
+                          "CSV",
+                        ),
+                      ]}
+                    />
+                  </>
+                )}
                 {toolbarSlot}
                 {!readonly && onCreate && (
                   <Button size="sm" onClick={onCreate}>
@@ -472,6 +524,54 @@ export function ShortcutList({
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh
                 </Button>
+                {filtered.length > 0 && (
+                  <>
+                    <CopyButtons
+                      size="icon"
+                      label="All shortcuts"
+                      human={() =>
+                        filtered
+                          .map((s) =>
+                            agentShortcutRecordSummary(
+                              s,
+                              categoryById.get(s.categoryId),
+                            ),
+                          )
+                          .join("\n")
+                      }
+                      json={() => filtered}
+                      agent={() => ({
+                        kind: "agent-shortcuts",
+                        location:
+                          "AI Matrx Admin — System Agents · Shortcuts (/administration/agents/system-agents/shortcuts)",
+                        description:
+                          "All agent shortcuts currently matching this list's filters.",
+                        data: filtered,
+                        attributes: { count: filtered.length },
+                        context: {
+                          scope,
+                          scopeId,
+                          total: stats.total,
+                          active: stats.active,
+                          wiredToAgent: stats.wiredToAgent,
+                        },
+                      })}
+                    />
+                    <ExportMenu
+                      label="agent-shortcuts"
+                      items={[
+                        jsonExportItem(() => filtered),
+                        csvExportItem(
+                          () =>
+                            filtered as unknown as Array<
+                              Record<string, unknown>
+                            >,
+                          "CSV",
+                        ),
+                      ]}
+                    />
+                  </>
+                )}
                 {toolbarSlot}
                 {!readonly && onCreate && (
                   <Button onClick={onCreate} size="sm">
@@ -693,28 +793,54 @@ export function ShortcutList({
                   return (
                     <TableRow
                       key={shortcut.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="group/x cursor-pointer hover:bg-muted/50"
                       onClick={() => onEdit?.(shortcut)}
                     >
                       <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 gap-2 font-mono text-xs hover:bg-accent w-full justify-start"
-                              onClick={(e) => handleCopyId(shortcut.id, e)}
-                            >
-                              {copiedId === shortcut.id ? (
-                                <Check className="h-3 w-3 text-success flex-shrink-0" />
-                              ) : (
-                                <Copy className="h-3 w-3 flex-shrink-0" />
-                              )}
-                              <span className="truncate">{shortcut.id}</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Copy ID</TooltipContent>
-                        </Tooltip>
+                        <div className="flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 gap-2 font-mono text-xs hover:bg-accent w-full justify-start"
+                                onClick={(e) => handleCopyId(shortcut.id, e)}
+                              >
+                                {copiedId === shortcut.id ? (
+                                  <Check className="h-3 w-3 text-success flex-shrink-0" />
+                                ) : (
+                                  <Copy className="h-3 w-3 flex-shrink-0" />
+                                )}
+                                <span className="truncate">{shortcut.id}</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy ID</TooltipContent>
+                          </Tooltip>
+                          <CopyButtons
+                            size="xs"
+                            label={shortcut.label}
+                            className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100 shrink-0"
+                            human={() =>
+                              agentShortcutRecordSummary(shortcut, cat)
+                            }
+                            json={() => shortcut}
+                            agent={() => ({
+                              kind: "agent-shortcut",
+                              location:
+                                "AI Matrx Admin — System Agents · Shortcuts (/administration/agents/system-agents/shortcuts)",
+                              description: "A single agent shortcut.",
+                              data: shortcut,
+                              summary: agentShortcutRecordSummary(
+                                shortcut,
+                                cat,
+                              ),
+                              attributes: {
+                                id: shortcut.id,
+                                categoryId: shortcut.categoryId,
+                              },
+                            })}
+                          />
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

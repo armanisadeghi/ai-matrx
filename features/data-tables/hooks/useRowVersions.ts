@@ -11,7 +11,7 @@
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { supabase } from "@/utils/supabase/client";
 
@@ -34,15 +34,26 @@ export function useRowVersions(
     error: null,
   });
   const [reloadToken, setReloadToken] = useState(0);
+  const lastRowIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!rowId) {
+      lastRowIdRef.current = null;
       setState({ versions: [], loading: false, error: null });
       return undefined;
     }
 
     let cancelled = false;
-    setState((s) => ({ ...s, loading: true, error: null }));
+    // A DIFFERENT row must never show the previous row's entries while its
+    // fetch is in flight (a caller could restore the wrong row's snapshot).
+    // Same-row reloads (load-more, refresh) keep the list to avoid flicker.
+    const rowChanged = lastRowIdRef.current !== rowId;
+    lastRowIdRef.current = rowId;
+    setState((s) => ({
+      versions: rowChanged ? [] : s.versions,
+      loading: true,
+      error: null,
+    }));
 
     supabase
       .schema("workbench")

@@ -30,8 +30,12 @@ import type {
 // ---------------------------------------------------------------------------
 
 export interface EditOutput {
-  /** "private" | "public" | "shared". Defaults to "private". */
-  visibility?: "personal" | "public" | "shared";
+  /**
+   * Canonical visibility vocabulary. Defaults to "personal". Never send the
+   * retired spellings "shared"/"private" — the server rewrites either to
+   * "personal", silently downgrading the asset.
+   */
+  visibility?: "personal" | "internal" | "link" | "public";
   /** Logical folder for the result. Defaults to `<source-folder>/edits`. */
   folder?: string;
   /** Output format. Defaults to "png". */

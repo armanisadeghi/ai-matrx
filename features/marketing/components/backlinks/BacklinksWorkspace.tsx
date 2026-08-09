@@ -21,9 +21,11 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
 import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
-import type {
-  AgentCopyGroomerConfig,
-  AgentCopyGroomerSection,
+import {
+  applyGroomerPreset,
+  type AgentCopyGroomerConfig,
+  type AgentCopyGroomerSection,
+  type GroomerPreset,
 } from "@/components/agent-copy/groomer-types";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import {
@@ -577,13 +579,48 @@ export function BacklinksWorkspace() {
     sections: groomerSections(),
   });
 
-  const pageFullData = (): Record<string, unknown> => {
-    const full: Record<string, unknown> = {};
-    for (const section of groomerSections()) {
-      const value = section.build("full");
-      if (value !== null && value !== undefined) full[section.id] = value;
+  // ONE section list feeds everything: the Groomer window, the quick
+  // "Everything" payload, and the graded preset variants below.
+  const pagePresetData = (
+    preset: GroomerPreset,
+  ): { data: Record<string, unknown>; dropped: string[] } => {
+    const sections = groomerSections();
+    const selections = applyGroomerPreset(preset, sections);
+    const data: Record<string, unknown> = {};
+    const dropped: string[] = [];
+    for (const section of sections) {
+      const selection = selections[section.id] ?? "full";
+      if (selection === "off") {
+        dropped.push(section.id);
+        continue;
+      }
+      const value = section.build(selection);
+      if (value !== null && value !== undefined) data[section.id] = value;
     }
-    return full;
+    return { data, dropped };
+  };
+
+  const pageFullData = (): Record<string, unknown> =>
+    pagePresetData("everything").data;
+
+  const pagePresetPayload = (preset: GroomerPreset): AgentPayloadInput => {
+    const { data, dropped } = pagePresetData(preset);
+    return {
+      kind: "marketing-backlinks-page",
+      location: pageLocation,
+      description: `The backlink intelligence workspace for ${site.domain} (${preset} detail).`,
+      data,
+      summary: humanSummarySnapshot(summary, site.domain),
+      // Same envelope context as the Groomer window — a preset must never
+      // silently carry less ambient context than the custom path.
+      context: { seo_environment: seoTarget?.environment ?? undefined },
+      attributes: {
+        site_id: site.id,
+        domain: site.domain,
+        detail: preset,
+        dropped_sections: dropped.length ? dropped.join(",") : undefined,
+      },
+    };
   };
 
   const pageAgentPayload = (): AgentPayloadInput => ({
@@ -592,6 +629,7 @@ export function BacklinksWorkspace() {
     description: `The full backlink intelligence workspace for ${site.domain}.`,
     data: pageFullData(),
     summary: humanSummarySnapshot(summary, site.domain),
+    context: { seo_environment: seoTarget?.environment ?? undefined },
     attributes: { site_id: site.id, domain: site.domain },
   });
 
@@ -703,6 +741,20 @@ export function BacklinksWorkspace() {
               human={pageHuman}
               json={pageFullData}
               agent={pageAgentPayload}
+              aiVariants={[
+                {
+                  id: "balanced",
+                  label: "Balanced",
+                  hint: "Compact sections — top slices, trimmed receipts",
+                  build: () => pagePresetPayload("balanced"),
+                },
+                {
+                  id: "minimal",
+                  label: "Minimal",
+                  hint: "Counts + briefs only; cuttable sections dropped",
+                  build: () => pagePresetPayload("minimal"),
+                },
+              ]}
             />
             <ExportMenu
               label={`backlinks-${site.domain}`}

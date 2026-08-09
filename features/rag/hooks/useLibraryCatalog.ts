@@ -19,8 +19,16 @@ import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlic
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 
-/** How the caller is entitled to a catalog store (null = not entitled). */
-export type CatalogEntitlement = "organization" | "industry" | "global" | null;
+/** How the caller is entitled to a catalog store (null = not entitled).
+ *  'admin' = fallback for Matrx admins with no audience entitlement — any
+ *  admin can read every shared-knowledge library (2026-07-23 any-admin ruling),
+ *  so "Not entitled" would be a lie for them. */
+export type CatalogEntitlement =
+  | "organization"
+  | "industry"
+  | "global"
+  | "admin"
+  | null;
 
 export interface LibraryCatalogItem {
   id: string;
@@ -53,7 +61,12 @@ interface RpcCatalogRow {
 }
 
 function coerceEntitlement(v: string | null): CatalogEntitlement {
-  return v === "organization" || v === "industry" || v === "global" ? v : null;
+  return v === "organization" ||
+    v === "industry" ||
+    v === "global" ||
+    v === "admin"
+    ? v
+    : null;
 }
 
 function toItem(c: RpcCatalogRow): LibraryCatalogItem {

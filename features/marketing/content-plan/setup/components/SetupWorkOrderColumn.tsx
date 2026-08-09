@@ -353,25 +353,46 @@ export function SetupWorkOrderColumn({
                       ) : null}
                       <span className="ml-auto inline-flex items-center gap-3">
                         {onAiNames ? (
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:no-underline"
-                            disabled={!aiReady || aiBusy}
-                            title={
-                              aiReady
-                                ? `Name the ${family.label.toLowerCase()} pages from the research report`
-                                : "Pick a research topic with a finished report in the AI grounding bar first"
-                            }
-                            onClick={() => onAiNames(family.key)}
-                          >
-                            {aiNamingKey === family.key ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Lightbulb className="h-3 w-3" />
-                            )}
-                            AI names
-                            <span className="sr-only"> for {family.label}</span>
-                          </button>
+                          // Unnamed family + report loaded → the AI is the next
+                          // thing to do, so it renders as a REAL button; once
+                          // names exist it steps back to a quiet re-run link.
+                          aiReady && !supplied ? (
+                            <Button
+                              size="sm"
+                              className="h-6 gap-1 px-2 text-[11px]"
+                              disabled={aiBusy}
+                              title={`Name the ${family.label.toLowerCase()} pages from the research report`}
+                              onClick={() => onAiNames(family.key)}
+                            >
+                              {aiNamingKey === family.key ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Lightbulb className="h-3 w-3" />
+                              )}
+                              Name with AI
+                              <span className="sr-only"> for {family.label}</span>
+                            </Button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:no-underline"
+                              disabled={!aiReady || aiBusy}
+                              title={
+                                aiReady
+                                  ? `Rename the ${family.label.toLowerCase()} pages from the research report`
+                                  : "Ground the AI first — pick or create research in the bar above"
+                              }
+                              onClick={() => onAiNames(family.key)}
+                            >
+                              {aiNamingKey === family.key ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Lightbulb className="h-3 w-3" />
+                              )}
+                              AI names
+                              <span className="sr-only"> for {family.label}</span>
+                            </button>
+                          )
                         ) : null}
                         <button
                           type="button"

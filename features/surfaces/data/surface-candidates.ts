@@ -396,7 +396,7 @@ export const SURFACE_CANDIDATES: readonly SurfaceCandidate[] = [
     group: "page",
   },
   {
-    name: "matrx-admin/content-templates",
+    name: "matrx-admin/message-templates",
     client_name: "matrx-admin",
     description: "Content template library",
     sort_order: 390,

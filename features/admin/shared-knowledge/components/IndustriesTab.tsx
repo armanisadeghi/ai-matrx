@@ -264,7 +264,12 @@ export function IndustriesTab({
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-medium text-foreground">
+                    {/* Mobile: wrap so long names stay readable; desktop keeps
+                        the dense one-line row with a hover title. */}
+                    <span
+                      className="break-words font-medium text-foreground sm:truncate"
+                      title={i.name}
+                    >
                       {i.name}
                     </span>
                     <Badge variant="outline" className="shrink-0 text-[10px]">
@@ -279,7 +284,10 @@ export function IndustriesTab({
                       </Badge>
                     ) : null}
                   </div>
-                  <div className="truncate text-xs text-muted-foreground">
+                  <div
+                    className="break-words text-xs text-muted-foreground sm:truncate"
+                    title={`${i.slug} · sort ${i.sortOrder}${i.description ? ` · ${i.description}` : ""}`}
+                  >
                     {i.slug} · sort {i.sortOrder}
                     {i.description ? ` · ${i.description}` : ""}
                   </div>
@@ -288,7 +296,7 @@ export function IndustriesTab({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2"
+                    className="h-9 w-9 p-0 sm:h-7 sm:w-auto sm:px-2"
                     onClick={(e) => {
                       e.stopPropagation();
                       openEdit(i);
@@ -301,7 +309,7 @@ export function IndustriesTab({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2 text-muted-foreground hover:text-destructive"
+                      className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive sm:h-7 sm:w-auto sm:px-2"
                       onClick={(e) => {
                         e.stopPropagation();
                         setDeactivateTarget(i);
@@ -314,7 +322,7 @@ export function IndustriesTab({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                      className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground sm:h-7 sm:w-auto sm:px-2"
                       disabled={activeBusy}
                       onClick={(e) => {
                         e.stopPropagation();

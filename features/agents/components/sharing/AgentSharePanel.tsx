@@ -9,6 +9,7 @@ import { PermissionsList } from "@/features/sharing/components/PermissionsList";
 import { ShareWithUserTab } from "@/features/sharing/components/tabs/ShareWithUserTab";
 import { ShareWithOrgTab } from "@/features/sharing/components/tabs/ShareWithOrgTab";
 import { PublicAccessTab } from "@/features/sharing/components/tabs/PublicAccessTab";
+import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 
 type ShareSubTab = "users" | "organizations" | "public";
 
@@ -41,6 +42,13 @@ export function AgentSharePanel({
   const userPermissions = permissions.filter((p) => p.grantedToUserId);
   const orgPermissions = permissions.filter((p) => p.grantedToOrganizationId);
   const publicPermission = permissions.find((p) => p.isPublic);
+
+  // Every grant mutation refreshes `permissions`; this signature makes the
+  // summary refetch in lockstep so the two can never contradict each other.
+  const grantSignature = permissions
+    .map((p) => `${p.id}:${p.permissionLevel}`)
+    .concat(resourceIsPublic ? "public" : "not-public")
+    .join("|");
 
   const subTabs: {
     id: ShareSubTab;
@@ -98,6 +106,16 @@ export function AgentSharePanel({
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-3">
+          {/*
+           * The truthful summary — direct grants below are only ONE of the
+           * ways this agent is reachable; this lists all of them.
+           */}
+          <AccessSummaryPanel
+            entityType="agent"
+            entityId={agentId}
+            refreshToken={grantSignature}
+            className="px-0 pt-0 border-b border-border/40 pb-3"
+          />
           {activeSubTab === "users" && (
             <>
               <div>

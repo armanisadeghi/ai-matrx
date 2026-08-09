@@ -30,6 +30,13 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from "@/lib/toast";
 import FeedbackDetailDialog from './FeedbackDetailDialog';
+import { CopyButtons } from '@/components/agent-copy/CopyButtons';
+import { ExportMenu } from '@/components/agent-copy/ExportMenu';
+import { csvExportItem, jsonExportItem } from '@/components/agent-copy/export';
+import { feedbackBrief, feedbackRowSummary } from '../format';
+
+const LOCATION =
+    'AI Matrx Admin — Feedback Management · Work Queue (/administration/users/feedback?tab=work-queue)';
 
 const feedbackTypeIcons: Record<string, React.ReactNode> = {
     bug: <AlertCircle className="w-4 h-4 text-red-500" />,
@@ -135,10 +142,58 @@ export default function WorkQueueTab() {
                             {items.length} item{items.length !== 1 ? 's' : ''} in queue
                         </span>
                     </div>
-                    <Button variant="outline" size="sm" onClick={loadQueue} className="gap-1.5">
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        Refresh
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        {items.length > 0 && (
+                            <>
+                                <CopyButtons
+                                    size="icon"
+                                    label="Work queue"
+                                    human={() => items.map(feedbackRowSummary).join('\n')}
+                                    json={() => items}
+                                    agent={() => ({
+                                        kind: 'feedback-work-queue',
+                                        location: LOCATION,
+                                        description:
+                                            'The approved-feedback work queue, in priority order.',
+                                        data: items,
+                                        attributes: { count: items.length },
+                                    })}
+                                    aiVariants={[
+                                        {
+                                            id: 'brief',
+                                            label: 'Queue briefs',
+                                            hint: 'Metadata + trimmed descriptions',
+                                            build: () => ({
+                                                kind: 'feedback-work-queue',
+                                                location: LOCATION,
+                                                description:
+                                                    'Compact digest of the approved-feedback work queue, in priority order.',
+                                                data: items.map(feedbackBrief),
+                                                attributes: { count: items.length },
+                                            }),
+                                        },
+                                    ]}
+                                />
+                                <ExportMenu
+                                    label="feedback-work-queue"
+                                    items={[
+                                        jsonExportItem(() => items),
+                                        csvExportItem(
+                                            () =>
+                                                items.map(feedbackBrief) as unknown as Array<
+                                                    Record<string, unknown>
+                                                >,
+                                            'CSV',
+                                        ),
+                                    ]}
+                                />
+                            </>
+                        )}
+                        <Button variant="outline" size="sm" onClick={loadQueue} className="gap-1.5">
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            Refresh
+                        </Button>
+                    </div>
                 </div>
 
                 {items.length === 0 ? (
@@ -246,7 +301,27 @@ export default function WorkQueueTab() {
                                         )}
                                     </div>
 
-                                    {/* View Button */}
+                                    {/* Copy + View */}
+                                    <CopyButtons
+                                        size="xs"
+                                        className="flex-shrink-0"
+                                        label={`Queue item #${item.work_priority ?? index + 1}`}
+                                        human={() => feedbackRowSummary(item)}
+                                        json={() => item}
+                                        agent={() => ({
+                                            kind: 'feedback-item',
+                                            location: LOCATION,
+                                            description:
+                                                'One approved feedback item from the work queue.',
+                                            data: item,
+                                            summary: feedbackRowSummary(item),
+                                            attributes: {
+                                                id: item.id,
+                                                work_priority: item.work_priority,
+                                                status: item.status,
+                                            },
+                                        })}
+                                    />
                                     <Button
                                         variant="ghost"
                                         size="sm"

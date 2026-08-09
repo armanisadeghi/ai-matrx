@@ -30,6 +30,11 @@ import { AddToSetMenu } from "@/features/agents/agent-sets/components/AddToSetMe
 import { useState } from "react";
 import { toast } from "@/lib/toast-service";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  buildSystemAgentRosterEntries,
+  systemAgentRosterEntrySummary,
+} from "@/features/agents/format";
 
 interface AgentCardProps {
   id: string;
@@ -403,23 +408,48 @@ export function AgentCard({
               iconClassName={isConvertingToTemplate ? "animate-spin" : ""}
             />
           </div>
-          <IconButton
-            icon={isDeleting ? Loader2 : Trash2}
-            tooltip={
-              isDeleting
-                ? "Deleting..."
-                : isDisabled
-                  ? "Please wait..."
-                  : "Delete"
-            }
-            size="sm"
-            variant="ghost"
-            tooltipSide="top"
-            tooltipAlign="center"
-            onClick={handleDelete}
-            disabled={isDeleting || isDisabled}
-            iconClassName={isDeleting ? "animate-spin" : ""}
-          />
+          <div className="flex items-center gap-1 shrink-0">
+            {record && (
+              <CopyButtons
+                size="icon"
+                label={name}
+                human={() =>
+                  systemAgentRosterEntrySummary(
+                    buildSystemAgentRosterEntries([record])[0],
+                  )
+                }
+                json={() => buildSystemAgentRosterEntries([record])[0]}
+                agent={() => ({
+                  kind:
+                    record.agentType === "builtin" ? "system-agent" : "agent",
+                  location:
+                    record.agentType === "builtin"
+                      ? `AI Matrx Admin — System Agents · Roster (${basePath})`
+                      : `AI Matrx — Agents (${basePath})`,
+                  description: "A single agent roster entry.",
+                  data: record,
+                  attributes: { id: record.id, agentType: record.agentType },
+                })}
+              />
+            )}
+            <IconButton
+              icon={isDeleting ? Loader2 : Trash2}
+              tooltip={
+                isDeleting
+                  ? "Deleting..."
+                  : isDisabled
+                    ? "Please wait..."
+                    : "Delete"
+              }
+              size="sm"
+              variant="ghost"
+              tooltipSide="top"
+              tooltipAlign="center"
+              onClick={handleDelete}
+              disabled={isDeleting || isDisabled}
+              iconClassName={isDeleting ? "animate-spin" : ""}
+            />
+          </div>
         </div>
       </div>
 

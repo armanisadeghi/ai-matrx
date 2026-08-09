@@ -58,6 +58,7 @@ export function AiReviewQuotaDialog({
         max_documents: draft.max_documents,
         max_tag_consolidations: draft.max_tag_consolidations,
         max_auto_tag_calls: draft.max_auto_tag_calls,
+        videos_per_keyword: draft.videos_per_keyword,
       });
       onSaved(draft);
       onOpenChange(false);

@@ -77,7 +77,7 @@ function FlashcardSetRenderer({ resource }: { resource: PublicResource }) {
   );
 }
 
-/** Markdown types (note, content_template). */
+/** Markdown types (note, message_template). */
 function MarkdownRenderer({ resource }: { resource: PublicResource }) {
   const content = str(resource.row, "content");
   return (
@@ -105,7 +105,7 @@ function renderBody(resource: PublicResource): React.ReactNode {
     case "fc_set":
       return <FlashcardSetRenderer resource={resource} />;
     case "note":
-    case "content_template":
+    case "message_template":
       return <MarkdownRenderer resource={resource} />;
     default:
       return <GenericRenderer resource={resource} />;

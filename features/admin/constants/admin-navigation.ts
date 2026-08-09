@@ -486,7 +486,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "Braces",
         destinations: [
           destination("/administration/utilities/content-blocks"),
-          destination("/administration/utilities/content-templates"),
+          destination("/administration/utilities/message-templates"),
           destination("/administration/utilities/markdown-tester"),
           destination("/administration/utilities/kind-registry", [
             "/administration/utilities/kind-registry/[kind]",

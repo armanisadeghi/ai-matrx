@@ -37,7 +37,7 @@ function Markdown({ content }: { content: string }) {
   );
 }
 
-/** Text/markdown types (note, content_template): title + markdown body. */
+/** Text/markdown types (note, message_template): title + markdown body. */
 function MarkdownRenderer({ result }: { result: ResolvedShareToken }) {
   const content = str(result.resource, "content");
   return (
@@ -236,7 +236,7 @@ function FolderRenderer({ result }: { result: ResolvedShareToken }) {
 function renderBody(result: ResolvedShareToken, token: string): React.ReactNode {
   switch (result.resourceType) {
     case "note":
-    case "content_template":
+    case "message_template":
     case "working_document":
       return <MarkdownRenderer result={result} />;
     case "code_file":

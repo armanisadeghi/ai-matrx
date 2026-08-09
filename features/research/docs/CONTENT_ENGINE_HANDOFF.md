@@ -19,7 +19,7 @@ The **Output Engine is built and verified end-to-end** for all four formats. A r
 | **Blog output** | `content_to_blog` agent (`d5a17f12`) via `useRunAgent` → cited markdown → `ContentActionBar` (WordPress copy/export) | ✅ real 5.3KB cited article |
 | **Slides output** | `research_to_slides` agent (`8f0bbfc2`) → JSON deck → `Slideshow` renderer inline | ✅ real 10-slide deck "The Mediterranean Diet" rendered + persisted |
 | **SEO output** | `research_to_seo` agent (`de3e5a62`) → JSON (title/meta/slug/keywords/schema.org/OG/FAQ) → `SeoView` card | ✅ real package: 8 keywords, 4 FAQ, JSON-LD |
-| **Agent Copy & Update fix** | `agx_duplicate_version(p_version_id, p_as_system)` RPC — forks the PINNED `agx_version` the server runs, not the (drift/corruption-prone) master; FE carries pinned version_ids (`SYSTEM_AGENT_VERSION_UUIDS`); real-error surfacing | ✅ copy matches version md5 exactly |
+| **Agent Copy & Update fix** | `agx_duplicate_version(p_version_id, p_as_system)` RPC — forks the PINNED `agx_version` the server runs, not the (drift/corruption-prone) master; FE reads pinned version_ids from the agent-slot registry (`useResearchAgentRoles`; the hardcoded `SYSTEM_AGENT_VERSION_UUIDS` map was retired 2026-08-08); real-error surfacing | ✅ copy matches version md5 exactly |
 | **Report-loading fix** | OutputsStudio loads the report via a self-contained client fetch (`getDocument`/`getSynthesis` in a `useEffect`) + a loading state, instead of the shared query hook that got stuck | ✅ post-restart |
 
 **Demo topic:** "Mediterranean diet research" `08870b47-1c29-497a-be0f-2fe1904fde54` (admin-owned) now has all four outputs generated. A representative report was seeded on it for testing (disclosed to owner) — it's real, accurate content.
@@ -72,7 +72,7 @@ So the next generators (a fact-checker, a `gen_visuals`, etc.) follow the same 3
 
 - Studio UI: `features/research/components/outputs/OutputsStudio.tsx` · index model: `…/outputs/outputs.ts`
 - Generator agents (agx_agent ids): blog `d5a17f12-c06e-4b07-8222-3fd1dfbdd85b` · slides `8f0bbfc2-85d9-4913-8cea-b09a50c62be6` · seo `de3e5a62-559b-406a-a6bd-c6064b4ba3fe`
-- Version-dup: `migrations/agx_duplicate_version.sql` · FE pinned versions: `features/research/components/agents/constants.ts` (`SYSTEM_AGENT_VERSION_UUIDS`) · aidream source of truth: `research/agents.py` (`declare_pinned_agent`)
+- Version-dup: `migrations/agx_duplicate_version.sql` · FE pins: DB-truth via `features/research/components/agents/useResearchAgentRoles.ts` (slot registry) · aidream source of truth: `research/agents.py` (`declare_pinned_agent`)
 - Pinned research-agent versions (server runs these, NOT masters): page_summary `17bceb8d…`, keyword_synthesis `fd13758e…`, research_report `faf63fa3…`, updater `bf9c2101…`, consolidation `dbe2f6d1…` (master corrupted), auto_tagger `550b8d0e…` (master corrupted), document_assembly `92cdbe93…`, suggest `f7555ac0…`
 - aidream Wave-0 commit (deploy-pending verify): `084ec9a1`
 

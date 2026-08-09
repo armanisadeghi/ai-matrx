@@ -49,6 +49,9 @@ import {
   fetchAgentAppsAdmin,
   type AgentAppAdminView,
 } from "@/lib/services/agent-apps-admin-service";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
 
 const ADMIN_AGENT_BASE = "/administration/agents/system-agents/agents";
 
@@ -99,6 +102,47 @@ export function AgentLineageTree() {
   }, [apps]);
 
   const isShortcutsLoading = globalQuery.isLoading || userQuery.isLoading;
+
+  // Combined shortcut list across both hydrated scopes — used only to build
+  // the toolbar's copy-all lineage payload (each LineageCard still reads its
+  // own via `selectShortcutsByAgentId`, unaffected by this).
+  const shortcutsByAgent = useMemo(() => {
+    const map = new Map<string, AgentShortcutRecord[]>();
+    for (const s of [...globalQuery.shortcuts, ...userQuery.shortcuts]) {
+      if (!s.agentId) continue;
+      const list = map.get(s.agentId) ?? [];
+      list.push(s);
+      map.set(s.agentId, list);
+    }
+    return map;
+  }, [globalQuery.shortcuts, userQuery.shortcuts]);
+
+  const buildLineageEntries = useCallback(
+    (roots: AgentDefinitionRecord[]) =>
+      roots.map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        description: agent.description ?? null,
+        derived: (derivedBySource.get(agent.id) ?? []).map((d) => ({
+          id: d.id,
+          name: d.name,
+          agentType: d.agentType,
+          updatedAt: d.updatedAt,
+        })),
+        shortcuts: (shortcutsByAgent.get(agent.id) ?? []).map((s) => ({
+          id: s.id,
+          label: s.label,
+          isActive: s.isActive,
+        })),
+        apps: (appsByAgent.get(agent.id) ?? []).map((a) => ({
+          id: a.id,
+          name: a.name,
+          slug: a.slug,
+          status: a.status,
+        })),
+      })),
+    [derivedBySource, shortcutsByAgent, appsByAgent],
+  );
 
   // ── Expand state, lifted so we can offer expand-all / collapse-all ──────
   // A simple `Set` of opened agent ids. The "expand all" button fills it with
@@ -179,6 +223,49 @@ export function AgentLineageTree() {
         <span className="text-xs text-muted-foreground shrink-0">
           {visibleBuiltins.length} agent{visibleBuiltins.length !== 1 ? "s" : ""}
         </span>
+        {visibleBuiltins.length > 0 && (
+          <>
+            <CopyButtons
+              size="icon"
+              label="Agent lineage"
+              human={() =>
+                buildLineageEntries(visibleBuiltins)
+                  .map(
+                    (e) =>
+                      `${e.name} — ${e.derived.length} derived, ${e.shortcuts.length} shortcuts, ${e.apps.length} apps`,
+                  )
+                  .join("\n")
+              }
+              json={() => buildLineageEntries(visibleBuiltins)}
+              agent={() => ({
+                kind: "system-agent-lineage",
+                location:
+                  "AI Matrx Admin — System Agents · Lineage (/administration/agents/system-agents/lineage)",
+                description:
+                  "Lineage map (derived agents, shortcuts, apps) for every system agent matching the search.",
+                data: buildLineageEntries(visibleBuiltins),
+                attributes: { count: visibleBuiltins.length },
+                context: { search: search || undefined },
+              })}
+            />
+            <ExportMenu
+              label="agent-lineage"
+              items={[
+                jsonExportItem(() => buildLineageEntries(visibleBuiltins)),
+                csvExportItem(() => {
+                  return buildLineageEntries(visibleBuiltins).map((e) => ({
+                    id: e.id,
+                    name: e.name,
+                    description: e.description,
+                    derived_count: e.derived.length,
+                    shortcuts_count: e.shortcuts.length,
+                    apps_count: e.apps.length,
+                  }));
+                }, "CSV"),
+              ]}
+            />
+          </>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -256,49 +343,78 @@ function LineageCard({
 
   return (
     <Card className="overflow-hidden">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full flex items-center gap-3 p-3 hover:bg-accent/30 transition-colors text-left"
-      >
-        {isOpen ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-        )}
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
-          <Cpu className="h-4 w-4" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate">{agent.name}</div>
-          <div className="text-xs text-muted-foreground truncate">
-            {agent.description ?? "No description"}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="w-full flex items-center gap-3 p-3 pr-10 hover:bg-accent/30 transition-colors text-left"
+        >
+          {isOpen ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+          )}
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+            <Cpu className="h-4 w-4" />
           </div>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <CountBadge count={derived.length} label="Derived" icon={GitBranch} />
-          <CountBadge
-            count={shortcuts.length}
-            label="Shortcuts"
-            icon={Zap}
-            loading={shortcutsLoading}
-          />
-          <CountBadge
-            count={apps.length}
-            label="Apps"
-            icon={AppWindow}
-            loading={appsLoading}
-          />
-          <Link
-            href={`${ADMIN_AGENT_BASE}/${agent.id}/build`}
-            className="ml-1 text-muted-foreground hover:text-foreground"
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Open in builder"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-      </button>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium truncate">{agent.name}</div>
+            <div className="text-xs text-muted-foreground truncate">
+              {agent.description ?? "No description"}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <CountBadge count={derived.length} label="Derived" icon={GitBranch} />
+            <CountBadge
+              count={shortcuts.length}
+              label="Shortcuts"
+              icon={Zap}
+              loading={shortcutsLoading}
+            />
+            <CountBadge
+              count={apps.length}
+              label="Apps"
+              icon={AppWindow}
+              loading={appsLoading}
+            />
+            <Link
+              href={`${ADMIN_AGENT_BASE}/${agent.id}/build`}
+              className="ml-1 text-muted-foreground hover:text-foreground"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Open in builder"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </button>
+        {/* The header above is a toggle <button> — CopyButtons must never
+            nest inside one, so this renders as an absolute sibling overlay. */}
+        <CopyButtons
+          size="icon"
+          label={agent.name}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
+          human={() =>
+            `${agent.name} — ${derived.length} derived, ${shortcuts.length} shortcuts, ${apps.length} apps`
+          }
+          json={() => ({ agent, derived, shortcuts, apps })}
+          agent={() => ({
+            kind: "system-agent-lineage-node",
+            location:
+              "AI Matrx Admin — System Agents · Lineage (/administration/agents/system-agents/lineage)",
+            description:
+              "One system agent's lineage — derived agents, shortcuts, and apps that reference it.",
+            data: {
+              id: agent.id,
+              name: agent.name,
+              description: agent.description,
+              derived,
+              shortcuts,
+              apps,
+            },
+            attributes: { id: agent.id, totalRefs },
+          })}
+        />
+      </div>
 
       {isOpen && (
         <div className="border-t border-border bg-muted/20 p-3 space-y-3">

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
+import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 import {
   Activity,
   ArrowRight,
@@ -239,6 +240,11 @@ export function SiteOverview() {
 
   const metrics = overview.data;
   const statuses = siteConnectionStatuses(site);
+  // One source for "is GSC usable here" — the KPI cell and the traffic-class
+  // strip must never disagree about whether this site has Search Console.
+  const gscConnected = statuses.some(
+    (status) => status.key === "search_console" && status.state === "connected",
+  );
   const init = parseInitialization(site);
   const initBusy = initPhase === "connecting" || initPhase === "running";
 
@@ -541,12 +547,18 @@ export function SiteOverview() {
               metrics={metrics}
               pendingDiscovered={pendingDiscovered.data ?? 0}
               sitePath={sitePath}
-              gscConnected={statuses.some(
-                (status) =>
-                  status.key === "search_console" &&
-                  status.state === "connected",
-              )}
+              gscConnected={gscConnected}
             />
+
+            {/* Canvas doctrine rung 2/6: the KPI grid above counts PAGES in
+                Google. What the site actually EARNS decomposes by traffic
+                class — a "+25%" hiding money −3% is the failure the class
+                system exists to catch, so it belongs on the overview, not
+                one route away. Renders only when GSC is bound; the strip
+                self-labels its window and states its own empty case. */}
+            {gscConnected ? (
+              <GscClassBar siteId={site.id} siteName={site.name} />
+            ) : null}
 
             <div className="grid gap-3.5 sm:gap-4 lg:grid-cols-2">
               <AttentionCard
@@ -554,6 +566,7 @@ export function SiteOverview() {
                 pendingDiscovered={pendingDiscovered.data ?? 0}
                 statuses={statuses}
                 sitePath={sitePath}
+                domain={site.domain}
               />
               <QuickWorkCard
                 sitePath={sitePath}
@@ -890,11 +903,13 @@ function AttentionCard({
   pendingDiscovered,
   statuses,
   sitePath,
+  domain,
 }: {
   metrics: SiteOverviewMetrics;
   pendingDiscovered: number;
   statuses: SiteConnectionStatus[];
   sitePath: string;
+  domain: string;
 }) {
   const pagesWithoutKeyword = Math.max(
     0,
@@ -970,8 +985,29 @@ function AttentionCard({
       })),
   ];
 
+  const attentionCopy = webCopy({
+    kind: "web-site-attention",
+    label: "Needs attention",
+    description:
+      "Everything on this managed site currently waiting on a human: review queues, open findings, indexing blocks, and connection problems.",
+    surface: `Needs attention — ${domain}`,
+    data: items.map((item) => ({
+      key: item.key,
+      count: item.count,
+      label: item.label,
+      href: item.href,
+    })),
+    lines: items.length
+      ? items.map((item): [string, string] => [
+          item.key,
+          `${item.count !== null ? `${item.count.toLocaleString()} ` : ""}${item.label}`,
+        ])
+      : [["Status", "Nothing needs attention right now"]],
+    attributes: { items: items.length },
+  });
+
   return (
-    <SectionCard title="Needs attention">
+    <SectionCard title="Needs attention" copy={attentionCopy}>
       {items.length ? (
         <ul className="divide-y divide-border">
           {items.map((item) => (

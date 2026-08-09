@@ -60,6 +60,35 @@ import {
   type AgentAppErrorRow,
   type AgentAppExecutionRow,
 } from "@/lib/services/agent-apps-admin-service";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+
+function humanExecution(r: AgentAppExecutionRow): string {
+  return [
+    `${r.app_name ?? r.app_id} — ${r.success ? "OK" : "Failed"}`,
+    `Task: ${r.task_id}`,
+    r.error_message ? `Error: ${r.error_message}` : null,
+    `Tokens: ${r.tokens_used ?? 0} · Cost: $${r.cost?.toFixed(4) ?? "0.0000"}`,
+    r.execution_time_ms ? `Time: ${r.execution_time_ms}ms` : null,
+    `When: ${new Date(r.created_at).toLocaleString()}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function humanError(r: AgentAppErrorRow): string {
+  return [
+    `${r.app_name ?? r.app_id} — ${ERROR_TYPE_LABELS[r.error_type] ?? r.error_type}`,
+    r.resolved ? "Resolved" : "Unresolved",
+    r.error_message ? `Message: ${r.error_message}` : null,
+    r.error_code ? `Code: ${r.error_code}` : null,
+    r.resolution_notes ? `Resolution: ${r.resolution_notes}` : null,
+    `When: ${new Date(r.created_at).toLocaleString()}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
 const ERROR_TYPE_LABELS: Record<string, string> = {
   missing_variable: "Missing Variable",
@@ -262,6 +291,33 @@ function ExecutionsTable() {
               <RefreshCw className="h-3.5 w-3.5 mr-1" />
               Refresh
             </Button>
+            {filtered.length > 0 && (
+              <>
+                <CopyButtons
+                  size="icon"
+                  label={`Executions (${filtered.length})`}
+                  human={() => filtered.map(humanExecution).join("\n\n")}
+                  json={() => filtered}
+                  agent={() => ({
+                    kind: "agent-app-executions",
+                    location: "AI Matrx Admin — Agent Apps — Executions",
+                    description: "Recent executions currently shown (filtered).",
+                    data: filtered,
+                    attributes: { count: filtered.length },
+                  })}
+                />
+                <ExportMenu
+                  label="agent-app-executions"
+                  items={[
+                    jsonExportItem(() => filtered, "JSON (this view)"),
+                    csvExportItem(
+                      () => filtered as unknown as Array<Record<string, unknown>>,
+                      "CSV (this view)",
+                    ),
+                  ]}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -278,11 +334,12 @@ function ExecutionsTable() {
               <TableHead className="text-right">Cost</TableHead>
               <TableHead className="text-right">Time</TableHead>
               <TableHead>When</TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((r) => (
-              <TableRow key={r.id}>
+              <TableRow key={r.id} className="group/x">
                 <TableCell>
                   {r.success ? (
                     <Badge
@@ -337,6 +394,26 @@ function ExecutionsTable() {
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {new Date(r.created_at).toLocaleString()}
+                </TableCell>
+                <TableCell
+                  className="text-right"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <CopyButtons
+                    size="xs"
+                    label={r.app_name ?? r.task_id}
+                    className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
+                    human={() => humanExecution(r)}
+                    json={() => r}
+                    agent={() => ({
+                      kind: "agent-app-execution",
+                      location: "AI Matrx Admin — Agent Apps — Executions",
+                      description: "A single agent-app execution row.",
+                      data: r,
+                      summary: humanExecution(r),
+                      attributes: { id: r.id, success: r.success },
+                    })}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -586,6 +663,33 @@ function ErrorsTable() {
               <RefreshCw className="h-3.5 w-3.5 mr-1" />
               Refresh
             </Button>
+            {filtered.length > 0 && (
+              <>
+                <CopyButtons
+                  size="icon"
+                  label={`Errors (${filtered.length})`}
+                  human={() => filtered.map(humanError).join("\n\n")}
+                  json={() => filtered}
+                  agent={() => ({
+                    kind: "agent-app-errors",
+                    location: "AI Matrx Admin — Agent Apps — Errors",
+                    description: "Errors currently shown (filtered).",
+                    data: filtered,
+                    attributes: { count: filtered.length },
+                  })}
+                />
+                <ExportMenu
+                  label="agent-app-errors"
+                  items={[
+                    jsonExportItem(() => filtered, "JSON (this view)"),
+                    csvExportItem(
+                      () => filtered as unknown as Array<Record<string, unknown>>,
+                      "CSV (this view)",
+                    ),
+                  ]}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -606,7 +710,7 @@ function ErrorsTable() {
             {filtered.map((r) => (
               <TableRow
                 key={r.id}
-                className="cursor-pointer hover:bg-accent/40"
+                className="group/x cursor-pointer hover:bg-accent/40"
                 onClick={() => handleOpen(r)}
               >
                 <TableCell>
@@ -662,18 +766,35 @@ function ErrorsTable() {
                   {new Date(r.created_at).toLocaleString()}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpen(r);
-                    }}
+                  <div
+                    className="flex items-center justify-end gap-1"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Eye className="w-3 h-3 mr-1" />
-                    View
-                  </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7"
+                      onClick={() => handleOpen(r)}
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      View
+                    </Button>
+                    <CopyButtons
+                      size="xs"
+                      label={r.app_name ?? r.error_type}
+                      className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100"
+                      human={() => humanError(r)}
+                      json={() => r}
+                      agent={() => ({
+                        kind: "agent-app-error",
+                        location: "AI Matrx Admin — Agent Apps — Errors",
+                        description: "A single agent-app error row.",
+                        data: r,
+                        summary: humanError(r),
+                        attributes: { id: r.id, resolved: r.resolved },
+                      })}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -700,6 +821,23 @@ function ErrorsTable() {
                 <AlertCircle className="w-5 h-5 text-destructive" />
               )}
               Error Details
+              {selected && (
+                <CopyButtons
+                  size="icon"
+                  label={`Error ${selected.id}`}
+                  className="ml-auto"
+                  human={() => humanError(selected)}
+                  json={() => selected}
+                  agent={() => ({
+                    kind: "agent-app-error",
+                    location: "AI Matrx Admin — Agent Apps — Errors",
+                    description: "The agent-app error record open in this dialog.",
+                    data: selected,
+                    summary: humanError(selected),
+                    attributes: { id: selected.id, resolved: selected.resolved },
+                  })}
+                />
+              )}
             </DialogTitle>
             <DialogDescription>
               Review and manage this error

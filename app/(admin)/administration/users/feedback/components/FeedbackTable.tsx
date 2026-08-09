@@ -79,6 +79,10 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import FeedbackDetailDialog from "./FeedbackDetailDialog";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { feedbackBrief, feedbackRowSummary } from "../format";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -1117,6 +1121,84 @@ export default function FeedbackTable() {
                 </>
               )}
             </span>
+            {feedback.length > 0 && (
+              <div className="flex items-center gap-1">
+                <CopyButtons
+                  size="icon"
+                  label="Feedback list"
+                  human={() =>
+                    filteredAndSortedFeedback
+                      .map(feedbackRowSummary)
+                      .join("\n")
+                  }
+                  json={() => filteredAndSortedFeedback}
+                  agent={() => ({
+                    kind: "feedback-items",
+                    location:
+                      "AI Matrx Admin — Feedback Management · Feedback tab (/administration/users/feedback)",
+                    description:
+                      "All user-feedback records (full rows, unfiltered).",
+                    data: feedback,
+                    attributes: { count: feedback.length },
+                    context: {
+                      visible: filteredAndSortedFeedback.length,
+                      stage: activeStage !== "all" ? activeStage : undefined,
+                      search: searchTerm || undefined,
+                    },
+                  })}
+                  aiVariants={[
+                    {
+                      id: "brief",
+                      label: "Triage briefs",
+                      hint: "Metadata + trimmed descriptions, no AI/testing prose",
+                      build: () => ({
+                        kind: "feedback-items",
+                        location:
+                      "AI Matrx Admin — Feedback Management · Feedback tab (/administration/users/feedback)",
+                        description:
+                          "Compact triage digest of all user-feedback records.",
+                        data: feedback.map(feedbackBrief),
+                        attributes: { count: feedback.length },
+                      }),
+                    },
+                    {
+                      id: "view-brief",
+                      label: "This view (briefs)",
+                      hint: "Only the rows matching the current filters",
+                      build: () => ({
+                        kind: "feedback-items",
+                        location:
+                      "AI Matrx Admin — Feedback Management · Feedback tab (/administration/users/feedback)",
+                        description:
+                          "Compact digest of the currently filtered feedback view.",
+                        data: filteredAndSortedFeedback.map(feedbackBrief),
+                        attributes: {
+                          count: filteredAndSortedFeedback.length,
+                        },
+                        context: {
+                          stage:
+                            activeStage !== "all" ? activeStage : undefined,
+                          search: searchTerm || undefined,
+                        },
+                      }),
+                    },
+                  ]}
+                />
+                <ExportMenu
+                  label="feedback"
+                  items={[
+                    jsonExportItem(() => feedback, "JSON (all feedback)"),
+                    csvExportItem(
+                      () =>
+                        filteredAndSortedFeedback.map(
+                          feedbackBrief,
+                        ) as unknown as Array<Record<string, unknown>>,
+                      "CSV (current view)",
+                    ),
+                  ]}
+                />
+              </div>
+            )}
           </div>
 
           {/* Table */}
@@ -1562,17 +1644,40 @@ export default function FeedbackTable() {
                           })}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewDetails(item);
-                            }}
-                            className="h-7 px-2"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center gap-0.5">
+                            <CopyButtons
+                              size="xs"
+                              label={`Feedback ${item.id.slice(0, 8)}`}
+                              human={() => feedbackRowSummary(item)}
+                              json={() => item}
+                              agent={() => ({
+                                kind: "feedback-item",
+                                location:
+                                  "AI Matrx Admin — Feedback Management · Feedback tab (/administration/users/feedback)",
+                                description:
+                                  "One user-feedback record row (full row, no comment threads).",
+                                data: item,
+                                summary: feedbackRowSummary(item),
+                                attributes: {
+                                  id: item.id,
+                                  type: item.feedback_type,
+                                  status: item.status,
+                                  priority: item.priority,
+                                },
+                              })}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewDetails(item);
+                              }}
+                              className="h-7 px-2"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

@@ -24,6 +24,13 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import EditAnnouncementDialog from './EditAnnouncementDialog';
 import { renderAnnouncementMessage } from '@/utils/render-announcement-message';
+import { CopyButtons } from '@/components/agent-copy/CopyButtons';
+import { ExportMenu } from '@/components/agent-copy/ExportMenu';
+import { csvExportItem, jsonExportItem } from '@/components/agent-copy/export';
+import { announcementSummary } from '../format';
+
+const LOCATION =
+    'AI Matrx Admin — Feedback Management · Announcements (/administration/users/feedback?tab=announcements)';
 
 const announcementIcons: Record<AnnouncementType, React.ReactNode> = {
     info: <Info className="w-4 h-4 text-blue-500" />,
@@ -121,13 +128,41 @@ export default function AnnouncementTable() {
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                         <strong>{announcements.length}</strong> announcement{announcements.length !== 1 ? 's' : ''}
                     </span>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={loadAnnouncements}
-                    >
-                        Refresh
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        <CopyButtons
+                            size="icon"
+                            label="Announcements"
+                            human={() => announcements.map(announcementSummary).join('\n\n')}
+                            json={() => announcements}
+                            agent={() => ({
+                                kind: 'system-announcements',
+                                location: LOCATION,
+                                description: 'All system announcements.',
+                                data: announcements,
+                                attributes: { count: announcements.length },
+                            })}
+                        />
+                        <ExportMenu
+                            label="announcements"
+                            items={[
+                                jsonExportItem(() => announcements),
+                                csvExportItem(
+                                    () =>
+                                        announcements as unknown as Array<
+                                            Record<string, unknown>
+                                        >,
+                                    'CSV',
+                                ),
+                            ]}
+                        />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={loadAnnouncements}
+                        >
+                            Refresh
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="border rounded-lg">
@@ -186,6 +221,24 @@ export default function AnnouncementTable() {
                                             <Badge className={announcementTypeColors[announcement.announcement_type]}>
                                                 {announcement.announcement_type}
                                             </Badge>
+                                            <CopyButtons
+                                                size="xs"
+                                                label={`Announcement "${announcement.title}"`}
+                                                human={() => announcementSummary(announcement)}
+                                                json={() => announcement}
+                                                agent={() => ({
+                                                    kind: 'system-announcement',
+                                                    location: LOCATION,
+                                                    description: 'One system announcement row.',
+                                                    data: announcement,
+                                                    summary: announcementSummary(announcement),
+                                                    attributes: {
+                                                        id: announcement.id,
+                                                        type: announcement.announcement_type,
+                                                        active: announcement.is_active,
+                                                    },
+                                                })}
+                                            />
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -227,7 +280,31 @@ export default function AnnouncementTable() {
                                 {selectedAnnouncement.title}
                             </DialogTitle>
                             <DialogDescription>
-                                {selectedAnnouncement.is_active ? 'Active' : 'Inactive'} announcement
+                                <span className="flex items-center justify-between gap-2">
+                                    <span>
+                                        {selectedAnnouncement.is_active ? 'Active' : 'Inactive'} announcement
+                                    </span>
+                                    <CopyButtons
+                                        size="xs"
+                                        className="mr-6"
+                                        label={`Announcement "${selectedAnnouncement.title}"`}
+                                        human={() => announcementSummary(selectedAnnouncement)}
+                                        json={() => selectedAnnouncement}
+                                        agent={() => ({
+                                            kind: 'system-announcement',
+                                            location: LOCATION,
+                                            description:
+                                                'The system announcement open in the view dialog.',
+                                            data: selectedAnnouncement,
+                                            summary: announcementSummary(selectedAnnouncement),
+                                            attributes: {
+                                                id: selectedAnnouncement.id,
+                                                type: selectedAnnouncement.announcement_type,
+                                                active: selectedAnnouncement.is_active,
+                                            },
+                                        })}
+                                    />
+                                </span>
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">

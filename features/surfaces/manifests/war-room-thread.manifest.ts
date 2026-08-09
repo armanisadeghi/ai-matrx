@@ -9,7 +9,12 @@
  * (terminology / pronunciation layered into the agent).
  *
  * The thread agent ID is hardcoded here (matching the `transcripts-cleanup`
- * pattern) — it mirrors `WAR_ROOM_THREAD_AGENT_ID` in `features/war-room/constants`.
+ * pattern). AGENT ID vs AGENT SLOT: the thread agent's runtime default is the
+ * `war_room.thread` AGENT SLOT (`WAR_ROOM_THREAD_AGENT_SLOT` in
+ * `features/war-room/constants`) — that is what the War Room actually runs.
+ * A manifest is STATIC module-scope data seeded into `ui_surface_agent_role`,
+ * so it cannot resolve a slot; the id below is a SEED MIRROR of the slot's
+ * system default, not a second authority.
  *
  * Runtime scope assembly lives in `features/war-room/lib/war-room-scope.ts`
  * (`buildWarRoomThreadScope`); the emitter is the `<SurfaceRuntimeProvider>`
@@ -25,7 +30,7 @@ import type {
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
-// = WAR_ROOM_THREAD_AGENT_ID (features/war-room/constants.ts)
+// Seed mirror of the `war_room.thread` slot's system default (see the header).
 const WAR_ROOM_THREAD_AGENT_ID = "3153a326-5e0c-4c31-841d-52e8c5e9c39c";
 
 const groups: SurfaceValueGroup[] = [

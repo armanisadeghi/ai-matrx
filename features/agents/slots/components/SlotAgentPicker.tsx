@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { isJsonObject } from "@/types/json";
+import { isJsonObject, type JsonValue } from "@/types/json";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -144,13 +144,20 @@ export function SlotAgentPicker({
       }
       // Preserve any settings-only overrides already on the binding.
       const existing = data.myBinding?.config_overrides;
+      const configOverrides = isJsonObject(existing)
+        ? Object.fromEntries(
+            Object.entries(existing).filter(
+              (entry): entry is [string, JsonValue] => entry[1] !== undefined,
+            ),
+          )
+        : null;
       await putSlotBinding(
         dispatch,
         slotKey,
         { principalType: "user" },
         {
           agentId: candidateId,
-          configOverrides: isJsonObject(existing) ? { ...existing } : null,
+          configOverrides,
         },
       );
       toast.success("This step now runs your agent.");

@@ -191,14 +191,14 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/code/repos/{id}",
     rlsUsesHasPermission: true,
   },
-  content_template: {
-    resourceType: "content_template",
-    tableName: "content_template",
+  message_template: {
+    resourceType: "message_template",
+    tableName: "message_template",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: null,
-    displayLabel: "Content Template",
-    urlPathTemplate: "/settings/content-templates/{id}",
+    displayLabel: "Message Template",
+    urlPathTemplate: "/settings/message-templates/{id}",
     rlsUsesHasPermission: true,
   },
   conversation: {

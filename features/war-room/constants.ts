@@ -11,19 +11,34 @@ export const DEFAULT_SESSION_TITLE = "New War Room";
  */
 export const UNASSIGNED_SECTION_LABEL = "Unassigned threads";
 
-// ── War Room agent personas (the 3-tier "brain") ─────────────────────
-// Builtin, public `agx_agent` rows authored for War Room. Each persona knows
-// its tier role, the read-only board context it receives, and — critically —
-// that it can list/read the user's notes, tasks, projects, transcripts, etc.
-// via the `data` tool (the personas carry data/data_action/workbook/document +
-// context/context_patch in their saved tool set). These are the DEFAULTS each
-// tier mints with; the user can switch to any other agent via the tier's
-// agent picker (the choice is persisted per tier). Replacing the former
-// `AUDIO_ASSISTANT_AGENT_ID` borrow, which had no War Room persona and never
-// reached for the user's data.
-export const WAR_ROOM_THREAD_AGENT_ID = "3153a326-5e0c-4c31-841d-52e8c5e9c39c";
-export const WAR_ROOM_ROOM_AGENT_ID = "7239e128-2a07-4d68-8292-0f530be6f754";
-export const WAR_ROOM_MASTER_AGENT_ID = "639af529-62cc-4c8e-a169-6c9bd5215ae7";
+// ── War Room agent personas (the 3-tier "brain") — AGENT SLOTS ───────
+//
+// Each tier's default persona is an AGENT SLOT, not a hardcoded id (SoR
+// /Users/armanisadeghi/code/common-docs/systems/agent-slots/FEATURE.md; client
+// half `features/agents/slots/`). The slot's system default is the builtin
+// War Room persona — an agent that knows its tier role, the read-only board
+// context it receives, and that it can list/read the user's notes, tasks,
+// projects and transcripts via the `data` tool. Admins repin the slot at
+// /administration/agents/slots; a user overrides it for themselves at
+// /agents/slots or from the SlotAgentPicker in the tier's header.
+//
+// THE PERSISTED-ID DOCTRINE (why this migration needed care):
+//   1. A slot resolves what a NEW conversation is CREATED with. It never
+//      rewrites an id already persisted.
+//   2. A persisted agent id ALWAYS wins: a `conversation → room/thread` edge's
+//      `metadata.agentId`, and the master tier's localStorage roster
+//      (`war-room:master-conversation:<userId>:roster`, keyed by agent id) are
+//      historical records of which agent a conversation was born with. Binding
+//      an existing conversation reads that stored id and never consults the
+//      slot — so every chat created under the old hardcoded ids keeps working
+//      untouched, and a newly-resolved slot cannot orphan an existing edge.
+//   3. Resolution failure is LOUD, never a fallback to a hardcoded id: the
+//      affordance that would MINT a conversation is disabled and the message
+//      surfaces (reportWarRoomError); existing conversations are unaffected
+//      because they never needed the slot.
+export const WAR_ROOM_THREAD_AGENT_SLOT = "war_room.thread";
+export const WAR_ROOM_ROOM_AGENT_SLOT = "war_room.room";
+export const WAR_ROOM_MASTER_AGENT_SLOT = "war_room.master";
 
 // ── Gallery layout tuning (consumed by the generic gallery engine) ───
 export const GALLERY_GAP_PX = 12;

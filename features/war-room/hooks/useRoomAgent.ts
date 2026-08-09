@@ -24,6 +24,11 @@
  * `war_room_create_room`), armed on the bound conversation, and pushes
  * `buildRoomAgentContext(sessionId)` on bind + whenever the room's thread set
  * changes.
+ *
+ * The tier's default persona resolves from the `war_room.room` AGENT SLOT and
+ * is used ONLY when an agent must be RECORDED (stamping a new edge) or when an
+ * edge records none. A persisted agent id always wins — see constants.ts §
+ * the persisted-id doctrine.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -34,7 +39,8 @@ import { setClientTools } from "@/features/agents/redux/execution-system/instanc
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { WAR_ROOM_ROOM_AGENT_ID } from "@/features/war-room/constants";
+import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { WAR_ROOM_ROOM_AGENT_SLOT } from "@/features/war-room/constants";
 import {
   selectActiveConversationIdForRoom,
   selectAssignmentsForContainer,
@@ -79,20 +85,37 @@ interface UseRoomAgentReturn {
 /** In-flight bind dedupe keyed `roomId::conversationId`. */
 const inFlightBinds = new Set<string>();
 
-/** Legacy localStorage roster key of the retired useDurableAgentConversation. */
-function readLegacyRoomConversationId(roomId: string): string | null {
+/**
+ * Legacy localStorage roster key of the retired useDurableAgentConversation.
+ *
+ * PERSISTED VALUES ONLY — deliberately slot-free. These keys were written
+ * under whatever agent id was the default at the time, so resolving today's
+ * slot here could MISS an existing chat and strand it. We read the stored
+ * active-agent pointer, and fall back to whatever single chat the roster
+ * holds — which is exactly what a pre-slot roster contains. The roster KEY is
+ * the agent the chat was born under, so it is returned too and stamped onto
+ * the durable edge verbatim: migrating a legacy chat must never relabel it
+ * with today's slot agent.
+ */
+function readLegacyRoomConversation(
+  roomId: string,
+): { conversationId: string; agentId: string | null } | null {
   if (typeof window === "undefined") return null;
   try {
     const key = `war-room:room-agent:${roomId}`;
     const rosterRaw = window.localStorage.getItem(`${key}:roster`);
     if (rosterRaw) {
       const roster = JSON.parse(rosterRaw) as Record<string, string>;
-      const active =
-        window.localStorage.getItem(`${key}:active-agent`) ||
-        WAR_ROOM_ROOM_AGENT_ID;
-      return roster[active] ?? Object.values(roster)[0] ?? null;
+      const active = window.localStorage.getItem(`${key}:active-agent`);
+      const entry =
+        (active && roster[active]
+          ? ([active, roster[active]] as const)
+          : undefined) ?? Object.entries(roster)[0];
+      if (!entry) return null;
+      return { conversationId: entry[1], agentId: entry[0] };
     }
-    return window.localStorage.getItem(key);
+    const bare = window.localStorage.getItem(key);
+    return bare ? { conversationId: bare, agentId: null } : null;
   } catch {
     return null;
   }
@@ -102,6 +125,25 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const [boundId, setBoundId] = useState<string | null>(null);
+
+  // The tier's default persona — resolved from the slot, never hardcoded. It is
+  // needed ONLY where a NEW edge is stamped or an edge carries no agent id; an
+  // edge that already records its agent binds without ever consulting the slot
+  // (constants.ts § the persisted-id doctrine).
+  const { slot: roomSlot, error: roomSlotError } = useAgentSlot(
+    WAR_ROOM_ROOM_AGENT_SLOT,
+  );
+  const roomAgentId = roomSlot?.agentId ?? null;
+  useEffect(() => {
+    if (roomSlotError) {
+      reportWarRoomError(
+        "room-agent/slot",
+        new Error(
+          `War Room room agent slot "${WAR_ROOM_ROOM_AGENT_SLOT}" could not resolve: ${roomSlotError}`,
+        ),
+      );
+    }
+  }, [roomSlotError]);
 
   const loaded = useAppSelector(
     selectContainerAssignmentsLoaded("room", sessionId),
@@ -133,16 +175,20 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
   // first turn commits. Edging it before then is what stranded phantom chats in
   // room chat lists forever. This fires within milliseconds of the first turn
   // being server-confirmed; a chat that's never used correctly leaves nothing.
+  // Stamping the edge needs the slot: the edge's `metadata.agentId` is the
+  // durable record of which agent this chat runs, and every later bind reads it
+  // back. We wait for resolution rather than stamp a guess — the edge write
+  // simply follows once the slot lands.
   const pendingIsReal = useConversationMaterialized(pendingId);
   useEffect(() => {
-    if (!sessionId || !pendingId || !pendingIsReal) return;
+    if (!sessionId || !pendingId || !pendingIsReal || !roomAgentId) return;
     void dispatch(
       materializeConversationEdge(roomRef(sessionId), pendingId, {
         makeActive: true,
-        metadata: { role: "agent", agentId: WAR_ROOM_ROOM_AGENT_ID },
+        metadata: { role: "agent", agentId: roomAgentId },
       }),
     );
-  }, [sessionId, pendingId, pendingIsReal, dispatch]);
+  }, [sessionId, pendingId, pendingIsReal, roomAgentId, dispatch]);
 
   // ── One-time legacy migration: localStorage chat → durable edge ──────────
   // Same gate: a legacy id can name a chat that was minted but never sent, and
@@ -154,20 +200,40 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
   // `sessionId` changes, and manual memoization is banned (React Compiler).
   // The cost is one `localStorage.getItem` per render of a hook that renders
   // rarely, and only while a room still has no chat.
-  const legacyId =
-    loaded && !activeEdgeId ? readLegacyRoomConversationId(sessionId) : null;
+  const legacy =
+    loaded && !activeEdgeId ? readLegacyRoomConversation(sessionId) : null;
+  const legacyId = legacy?.conversationId ?? null;
+  // The agent the legacy chat was BORN under wins; the slot only fills in for
+  // the oldest form of the key, which stored a bare conversation id and no
+  // agent at all.
+  const legacyAgentId = legacy?.agentId ?? roomAgentId;
   const legacyIsReal = useConversationMaterialized(legacyId);
   useEffect(() => {
-    if (!sessionId || !loaded || activeEdgeId || !legacyId || !legacyIsReal) {
+    if (
+      !sessionId ||
+      !loaded ||
+      activeEdgeId ||
+      !legacyId ||
+      !legacyIsReal ||
+      !legacyAgentId
+    ) {
       return;
     }
     void dispatch(
       attachEntityToContainer(roomRef(sessionId), "conversation", legacyId, {
         makeActive: true,
-        metadata: { role: "agent", agentId: WAR_ROOM_ROOM_AGENT_ID },
+        metadata: { role: "agent", agentId: legacyAgentId },
       }),
     );
-  }, [sessionId, loaded, activeEdgeId, legacyId, legacyIsReal, dispatch]);
+  }, [
+    sessionId,
+    loaded,
+    activeEdgeId,
+    legacyId,
+    legacyIsReal,
+    legacyAgentId,
+    dispatch,
+  ]);
 
   // ── Bind to the target chat (instance + tolerant rehydrate) — NO minting ──
   // `targetId` is the edge-backed chat, or the pending one when a chat was just
@@ -191,9 +257,23 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
             (a) =>
               a.entity_type === "conversation" && a.entity_id === targetId,
           );
+          // The edge's stored agent ALWAYS wins — that is the agent this chat
+          // has been running as, whatever the slot resolves to today. The slot
+          // only covers an edge written before agents were stamped; with
+          // neither we refuse to bind rather than guess an agent (loud).
           const agentId =
             (row?.metadata as { agentId?: string } | null)?.agentId ??
-            WAR_ROOM_ROOM_AGENT_ID;
+            roomAgentId;
+          if (!agentId) {
+            reportWarRoomError(
+              "room-agent/bind",
+              new Error(
+                `room chat ${targetId} has no recorded agent and the "${WAR_ROOM_ROOM_AGENT_SLOT}" slot did not resolve — not binding`,
+              ),
+              { toast: false },
+            );
+            return;
+          }
           await dispatch(
             createManualInstance({
               agentId,
@@ -225,7 +305,7 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
     return () => {
       cancelled = true;
     };
-  }, [sessionId, targetId, boundId, dispatch, store]);
+  }, [sessionId, targetId, boundId, roomAgentId, dispatch, store]);
 
   // ── Arm the room tool set on the bound conversation ──────────────────────
   useEffect(() => {

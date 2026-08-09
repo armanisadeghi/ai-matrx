@@ -27,7 +27,9 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
-import { WAR_ROOM_ROOM_AGENT_ID } from "@/features/war-room/constants";
+import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
+import { WAR_ROOM_ROOM_AGENT_SLOT } from "@/features/war-room/constants";
 import { useRoomAgent } from "@/features/war-room/hooks/useRoomAgent";
 import { useRoomConversationSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { startRoomConversation } from "@/features/war-room/redux/thunks";
@@ -36,6 +38,12 @@ export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
   const dispatch = useAppDispatch();
   const { conversationId, loaded, ready } = useRoomAgent(sessionId);
   const adapter = useRoomConversationSelectAdapter(sessionId);
+  // The persona a NEW room chat starts with. Unresolved ⇒ Start chat is
+  // disabled and says why — never a hardcoded fallback id.
+  const { slot: roomSlot, error: roomSlotError } = useAgentSlot(
+    WAR_ROOM_ROOM_AGENT_SLOT,
+  );
+  const roomAgentId = roomSlot?.agentId ?? null;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -90,16 +98,18 @@ export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
               </span>
               <button
                 type="button"
-                onClick={() =>
-                  void dispatch(
-                    startRoomConversation(sessionId, WAR_ROOM_ROOM_AGENT_ID),
-                  )
-                }
-                className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                disabled={!roomAgentId}
+                title={roomSlotError ?? undefined}
+                onClick={() => {
+                  if (!roomAgentId) return;
+                  void dispatch(startRoomConversation(sessionId, roomAgentId));
+                }}
+                className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Plus className="size-3.5" />
                 Start chat
               </button>
+              <SlotAgentPicker slotKey={WAR_ROOM_ROOM_AGENT_SLOT} />
             </div>
           </div>
         ) : (
