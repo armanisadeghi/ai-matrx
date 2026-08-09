@@ -44,7 +44,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { toast } from "@/lib/toast-service";
+import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
 import {
@@ -313,8 +314,12 @@ export function AgentsGrid() {
   const handleDuplicate = async (id: string) => {
     setDuplicatingIds((prev) => new Set(prev).add(id));
     try {
-      await dispatch(duplicateAgent(id)).unwrap();
-      toast.success("Agent duplicated!");
+      // The thunk returns the copy's id; discarding it left the user with a
+      // new agent and no way to open it.
+      const newAgentId = await dispatch(duplicateAgent(id)).unwrap();
+      toast.success("Agent duplicated", {
+        action: toastDoor("agent", newAgentId),
+      });
     } catch {
       toast.error("Failed to duplicate agent.");
     } finally {

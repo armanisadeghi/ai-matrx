@@ -13,7 +13,8 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
+import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -181,8 +182,14 @@ export function useAgentRowActions({
     async (agent: AgentBrowseRow) => {
       setIsDuplicating(true);
       try {
-        await dispatch(duplicateAgent(agent.id)).unwrap();
-        toast.success(`Duplicated "${agent.name}"`);
+        // `duplicateAgent` RETURNS the new agent's id and every caller in the
+        // repo threw it away — so the user made a copy and had no way to reach
+        // it but to go hunting in the list. The door is the whole point of the
+        // toast.
+        const newAgentId = await dispatch(duplicateAgent(agent.id)).unwrap();
+        toast.success(`Duplicated "${agent.name}"`, {
+          action: toastDoor("agent", newAgentId),
+        });
         refresh();
       } catch (err) {
         toast.error("Could not duplicate agent", {
