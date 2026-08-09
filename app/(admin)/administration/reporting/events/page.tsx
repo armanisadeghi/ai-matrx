@@ -21,6 +21,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 
 interface ActivityRow {
   id: number;
@@ -118,13 +121,19 @@ export default function AdminEventsPage() {
         header: "Entity",
         filter: "select",
         width: 140,
+        // `entity_type` is a MIX: canonical tokens (`party`, `file`) and raw
+        // producer table names (`sch_run`, `file_rag_jobs`). Registered tokens
+        // get the chip and its door; the rest stay a neutral badge — routing
+        // them through EntityTypeChip would paint most of this log destructive-red.
         cell: (r) =>
-          r.entity_type ? (
+          !r.entity_type ? (
+            <span className="text-muted-foreground">—</span>
+          ) : tryGetEntityInfo(r.entity_type) ? (
+            <EntityTypeChip token={r.entity_type} />
+          ) : (
             <Badge variant="outline" className="text-xs">
               {r.entity_type}
             </Badge>
-          ) : (
-            <span className="text-muted-foreground">—</span>
           ),
       },
       {
@@ -133,6 +142,10 @@ export default function AdminEventsPage() {
         header: "Entity ID",
         cellKind: "uuid",
         width: 120,
+        // The audit log names every record in the platform; this is what lets
+        // it open them. Per-row token — unregistered types resolve to no route
+        // and simply stay copyable.
+        fk: { token: (r) => r.entity_type },
       },
       {
         id: "actor_id",
@@ -262,13 +275,47 @@ export default function AdminEventsPage() {
                   <span className="text-muted-foreground">Occurred</span>
                   <span>{new Date(r.occurred_at).toLocaleString()}</span>
                   <span className="text-muted-foreground">Entity type</span>
-                  <span>{r.entity_type ?? "—"}</span>
+                  <span>
+                    {!r.entity_type ? (
+                      "—"
+                    ) : tryGetEntityInfo(r.entity_type) ? (
+                      <EntityTypeChip token={r.entity_type} showToken />
+                    ) : (
+                      r.entity_type
+                    )}
+                  </span>
                   <span className="text-muted-foreground">Entity ID</span>
-                  <span className="break-all font-mono">{r.entity_id ?? "—"}</span>
+                  <span className="break-all">
+                    {r.entity_id ? (
+                      <MatrxUuidCell
+                        value={r.entity_id}
+                        label="Entity"
+                        token={r.entity_type}
+                      />
+                    ) : (
+                      "—"
+                    )}
+                  </span>
                   <span className="text-muted-foreground">Actor</span>
-                  <span className="break-all font-mono">{r.actor_id ?? "—"}</span>
+                  <span className="break-all">
+                    {r.actor_id ? (
+                      <MatrxUuidCell value={r.actor_id} label="Actor" />
+                    ) : (
+                      "—"
+                    )}
+                  </span>
                   <span className="text-muted-foreground">Organization</span>
-                  <span className="break-all font-mono">{r.organization_id ?? "—"}</span>
+                  <span className="break-all">
+                    {r.organization_id ? (
+                      <MatrxUuidCell
+                        value={r.organization_id}
+                        label="Organization"
+                        token="organization"
+                      />
+                    ) : (
+                      "—"
+                    )}
+                  </span>
                 </div>
                 <div>
                   <div className="mb-1 text-xs font-medium text-muted-foreground">Metadata</div>
