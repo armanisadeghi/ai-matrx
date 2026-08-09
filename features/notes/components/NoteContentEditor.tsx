@@ -63,7 +63,10 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { NoteSaveFailureBanner } from "./NoteSaveFailureBanner";
 import { NoteDraftRecoveryBanner } from "./NoteDraftRecoveryBanner";
@@ -559,6 +562,79 @@ export function NoteContentEditor({
     },
     [localContent, handleChangeFlush],
   );
+
+  // ── Write half of the notes surface (manifest `writeTargets`) ──────
+  // Every handler validates its input and THROWS on a bad shape — the
+  // writeback seam (`features/surfaces/runtime/surface-writeback.ts`) turns a
+  // throw into a safe error envelope the agent reads and can correct.
+  //
+  // These are NOT a parallel write path. Content goes through the same
+  // `handleChangeFlush` that content cleanup and artifact materialization use
+  // (→ `updateNoteContent`); title/tags go through the same slice actions the
+  // user's own typing dispatches. All three land on `applyFieldEdit`, so an
+  // agent edit gets an undo entry, marks the field dirty, and is persisted by
+  // the ordinary autosave — indistinguishable from the user having typed it,
+  // and Cmd+Z-able. The folder is the one exception: `folder_name` and
+  // `folder_id` must move together, which only `moveNoteToFolder` does.
+  //
+  // Read-only (a viewer-level sharee, or access still loading) registers NO
+  // handlers at all, so the seam never advertises these targets to an agent.
+  // Throwing instead would mean asking the user to approve a change whose
+  // save RLS is guaranteed to reject.
+  const getSurfaceWriteHandlers = (): SurfaceWriteHandlers => {
+    if (access.loading || readOnly) return {};
+    return {
+      note_content: (value: unknown) => {
+        if (typeof value !== "string")
+          throw new Error("note_content expects a string (the full note body).");
+        handleChangeFlush(value);
+      },
+      append_to_note: (value: unknown) => {
+        if (typeof value !== "string" || !value.trim())
+          throw new Error(
+            "append_to_note expects a non-empty string to add to the end of the note.",
+          );
+        const base = localContentRef.current;
+        handleChangeFlush(base.trim() ? `${base}\n\n${value}` : value);
+      },
+      note_title: (value: unknown) => {
+        if (typeof value !== "string" || !value.trim())
+          throw new Error("note_title expects a non-empty string.");
+        if (/[\r\n]/.test(value))
+          throw new Error("note_title expects a single line — no line breaks.");
+        dispatch(updateNoteLabel({ id: noteId, label: value.trim() }));
+      },
+      note_tags: (value: unknown) => {
+        if (
+          !Array.isArray(value) ||
+          !value.every((tag) => typeof tag === "string" && tag.trim())
+        )
+          throw new Error(
+            "note_tags expects an array of non-empty strings (the FULL tag set — it replaces the existing tags).",
+          );
+        dispatch(
+          updateNoteTags({
+            id: noteId,
+            tags: (value as string[]).map((tag) => tag.trim()),
+          }),
+        );
+      },
+      note_folder: async (value: unknown) => {
+        if (typeof value !== "string" || !value.trim())
+          throw new Error("note_folder expects a folder name string.");
+        const folder = value.trim();
+        // Refuse an unknown name rather than creating a folder as a side
+        // effect: `moveNoteToFolder` resolves through `createFolder`, which
+        // creates-or-gets, so an invented name would silently add a folder to
+        // the user's sidebar. Creating folders stays a human decision.
+        if (!allFolders.includes(folder))
+          throw new Error(
+            `note_folder expects an existing folder. "${folder}" does not exist — choose one of: ${allFolders.join(" | ")}.`,
+          );
+        await dispatch(moveNoteToFolder({ noteId, folder })).unwrap();
+      },
+    };
+  };
 
   // ── Artifact materialization surface ─────────────────────────────
   // Notes as a materialization surface (features/canvas/docs/TWO_WAY_BINDING.md):

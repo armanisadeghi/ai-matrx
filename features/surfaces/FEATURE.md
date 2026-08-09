@@ -122,20 +122,10 @@ internal platform use — never a washed-down user variant beside a private one:
   `applySurfaceWrite` (`runtime/surface-writeback.ts`). Mirrored to
   `ui.ui_surface_write_target` by manifest-sync so aidream feeds them to
   surface-bound agents as a `<surface_write_targets>` block. Live adopters:
-  `matrx-user/marketing-page` (12 targets — intent/meta, draft body, keyword
-  attach/detach, social card, indexability, headings, links, notes, image plan,
-  and image alts — handlers in `features/marketing/components/pages/MarketingPageWriteTargets.tsx`
-  and `PageDraftContentCard`),
-  `matrx-user/keyword-intelligence` (`keyword_selection`, `open_keyword`),
-  `matrx-user/crm-create-party` (`party_draft` — handlers in
-  `features/crm/components/PartyCreateForm.tsx`),
-  `matrx-user/tasks` (8 targets, `TaskEditorBody.tsx`), and
-  `matrx-user/marketing-ranks` (`track_keywords`, `set_tracking_active` —
-  handlers on `RanksWorkspace.tsx`'s provider),
-  `matrx-user/marketing-site` (`site_name`, `site_description` — handlers in
-  `features/marketing/components/site/MarketingSiteWriteTargets.tsx`), and
-  `matrx-user/cms-component` (`component_html_content`,
-  `component_css_content` — draft handlers on the component editor provider). The LSI kind
+  `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
+  `page_supporting_keywords` — handlers in
+  `features/marketing/components/pages/MarketingPageWriteTargets.tsx`) and
+  `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
   components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
@@ -156,42 +146,14 @@ internal platform use — never a washed-down user variant beside a private one:
   platform refuses). **Making a surface agent-writable? Invoke the
   `surface-write-targets` skill** — judgment bar, declaration + handler
   recipe, mandatory live-agent verification, avalanche contract. Live
-  agent-writable adopters: `matrx-user/marketing-page` (12 ask-policy
-  targets — full authoring coverage, the richest write surface),
+  agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`), `matrx-user/crm-create-party` (ONE composite
-  `party_draft` target — the whole capture form is drafted in one act and
-  `party_kind` decides which inputs render, so five micro-targets would ask
-  five times and let an incoherent half-draft land; creating the record is
-  deliberately NOT a target, since dedup/medium-linking/ownership all happen
-  at save). **`crm-create-party` has not had its live agent run yet** —
-  declaration, handler, `type-check` and `check:surface-drift` are done and
-  its manifest/validation primitives are unit-exercised, but the
-  browser-side confirm-and-stage pass is still owed; it is registered in
-  `agent.review_queue` for that), and `matrx-user/marketing-site-keywords`
-  (3 entity targets — `library_keywords` / `keyword_traffic_class` /
-  `attach_page_keywords` through `ensureKeywordId`, `setGscKeywordClass`,
-  and `addPageSupportingKeywords`; handlers in
-  `features/marketing/seo/keyword-research/components/SiteKeywordsWriteTargets.tsx`),
-  and `matrx-user/marketing-site` (2 identity targets through
-  `updateSiteIdentity`), and `matrx-user/schedules` (6 draft-only targets —
-  title/description/prompt/trigger/variables/tags staged through the
-  form's own setters, handlers in `ScheduleForm.tsx`; enable/disable,
-  delete, auth mode and the target agent are deliberately NOT writable),
-  and `matrx-user/agent-builder` (6 draft targets — an
-  agent authoring ANOTHER agent's prompt: `system_instruction` /
-  `append_system_instruction` (full replace vs append, both through
-  `withAgentSystemInstruction` + `setAgentMessages` — the exact pair the
-  System Prompt textarea dispatches on every keystroke), `agent_description`,
-  `agent_name`, `agent_category`, `agent_tags`; handlers in
-  `features/agents/hooks/useAgentBuilderWriteHandlers.ts`, registered on the
-  builder's own provider so they stay wired on every panel/tab. Capabilities
-  — model, tools, MCP servers, skills, variables, output schema — and all
-  governance/visibility stay human-only: an agent changing what another agent
-  may REACH is a capability change, not a copy edit), and
-  `matrx-user/cms-component` (2 draft targets for shared HTML and CSS;
-  save/publish, delete, activation, and naming remain human-only).
+  `TaskEditorBody.tsx`), `matrx-user/notes` (5 targets — `note_content` /
+  `append_to_note` / `note_title` / `note_tags` drafts through the same
+  slice actions the user's typing dispatches, + `note_folder` entity via
+  `moveNoteToFolder`; handlers in `NoteContentEditor.tsx`, withheld on
+  view-only shared notes).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -353,14 +315,7 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 
 ## Change Log
 
-- **2026-08-09 — CMS shared-component editor agent-writable.** `matrx-user/cms-component` declares `component_html_content` and `component_css_content` as ask-policy draft targets with replace/append modes, staging through the editor's existing HTML/CSS state. The components page now mounts the missing `SurfaceRuntimeProvider` with the existing scope builder and write handlers. Save, delete, activation, and rename remain human-only. Live-agent verification covered apply, decline, undeclared-target refusal, correct surface resolution, and confirmed that draft staging did not mutate the persisted row.
-
-- **2026-08-09 — Marketing Ranks agent-writable + Keyword Intelligence `open_keyword`.** `matrx-user/marketing-ranks` declares 2 ask-policy entity targets (`track_keywords` — batch add through the SAME `usePortfolio().addTarget` aidream path as the Track form, mode ids validated against `TRACKING_MODES` with per-mode location rules; `set_tracking_active` — non-destructive pause/resume via `updateTarget`, the Active switch's path; delete stays human); handlers on `RanksWorkspace.tsx`'s provider. `matrx-user/keyword-intelligence` gained `open_keyword` (ui/ask — navigates the window through the canonical related-keyword path, recording window history; handler on `KeywordIntelPanel`'s provider). Live-verified with real Badass Agent runs on `/marketing/.../ranks`: ask dialog per target, applied add landed in `seo.rank_target`, pause flipped exactly the named row, decline returned a non-error envelope, undeclared delete refused. DB mirror rows added to `ui.ui_surface_write_target`.
-- **2026-08-09 — marketing-page write coverage completed (12 targets — the richest write surface).** 8 new ask-policy targets beside the existing 4: `page_remove_keywords` (canonical `removePageKeyword`, supporting role only), `page_social_card`, `page_indexability_plan`, `page_headings_plan`, `page_link_plan`, `page_plan_notes` (six note keys, one composite), `page_image_plan` (append/replace, entries minted `planned`), `page_image_alts` — all through the clobber-safe `updatePageDesiredValues` merge or the association chokepoint. Handler-side staleness fix: `MarketingPageWriteTargets` keeps the freshest RETURNED row (`rowRef`, generalizing the D5 versionRef fix) so several applies in one agent message never read one-save-stale intent/desired state. DB mirror upserted (8 `ui.ui_surface_write_target` rows). Live-verified with two real Badass Agent runs on a page workspace: 9 ask dialogs (4 then 5 targets in one message each) all applied and confirmed in `web.page.desired_values` + `platform.associations` (attach-2/remove-1 keyword cycle), zero version-guard trips; undeclared-target probe (`page_url`) refused loudly with the declared-target list echoed back; unanswered asks from an earlier run declined as non-errors and the agent continued gracefully.
-- **2026-08-09 — Site keywords surface agent-writable (third adopter).** `matrx-user/marketing-site-keywords` declares 3 ask-policy entity targets — `library_keywords` (phrase upsert via the canonical `ensureKeywordId` → `seo.fn_upsert_keyword` + archive-restore), `keyword_traffic_class` (site ruling via `setGscKeywordClass` → `seo.gsc_set_keyword_class`, stamped `origin:"ai"`, `confirmed:true` because the ask-dialog Apply IS the human eyeball; notes required for mismatch validated client-side too), `attach_page_keywords` (`addPageSupportingKeywords`, page_id from a row's `top_page_id`). Handlers in `features/marketing/seo/keyword-research/components/SiteKeywordsWriteTargets.tsx` (mounted by `SiteKeywordPerformanceWorkspace`, refetches the table after evidence-changing writes). Live-verified end-to-end on the Badass Agent: per-target ask dialogs, applied writes confirmed in `seo.site_keyword_value` (+ provenance) and `platform.associations`, decline = clean no-op, undeclared write (site domain) loudly refused, Error Inspector clean. DB mirror rows upserted in `ui.ui_surface_write_target`; readiness → `verified`.
-- **2026-08-09 — Marketing-site surface agent-writable (third adopter).** `matrx-user/marketing-site` declares 2 ask-policy entity targets (`site_name`, `site_description` — the only two identity fields that pass the judgment bar; logo/favicon/og URLs, status, visibility, and the brand move deliberately stay human-only) plus the new `site_description` read value as the evidence twin (emitted by `site-surface-base`, so every site vertical inherits it). Handlers in `features/marketing/components/site/MarketingSiteWriteTargets.tsx` (versionRef guard over `updateSiteIdentity`, mounted by `MarketingSiteLayoutClient` — live on overview/settings/access/cost). Live-verified with a Badass Agent run on the site workspace: per-target ask confirms, description applied + persisted, name declined gracefully, undeclared visibility write refused, zero writeback captures. DB mirror upserted (`ui_surface_write_target` + `ui_surface_value`).
-- **2026-08-09 — Schedules surface agent-writable (third adopter).** `matrx-user/schedules` declares 6 ask-policy draft targets (title, description, prompt, trigger, variables, tags) staged through `ScheduleForm`'s own state setters; the trigger handler validates through the canonical `triggerConfigSchema` PLUS `validateCron` (the Zod branch alone accepts any non-empty expression string, so prose cron staged silently and only failed at save). Arming, deletion, auth mode and the target agent stay human-only. Live-verified end to end: agent drafted a full weekly schedule, six ask dialogs approved, cron `30 8 * * 1` / America/Los_Angeles staged, saved by the user; an undeclared target and an invalid cron both refused loudly.
-- **2026-08-09 — Agent Builder surface agent-writable (third adopter).** `matrx-user/agent-builder` declares 6 draft/`ask` targets — the campaign's highest-leverage surface, an agent authoring ANOTHER agent's system prompt. `system_instruction` (full replace) and `append_system_instruction` (adds a rule without re-sending the prompt) both go through the new `withAgentSystemInstruction` helper + `setAgentMessages` — the exact pair `SystemMessage.tsx`'s textarea dispatches, so a rewrite and the user's typing are indistinguishable and the system message's non-text blocks always round-trip; `SystemMessage.handleTextChange` was refactored onto the same helper so there is ONE rebuild rule. `agent_description` / `agent_name` / `agent_category` / `agent_tags` go through `setAgentField`. Handlers in `features/agents/hooks/useAgentBuilderWriteHandlers.ts`, registered on `AgentBuilderClient`'s provider (desktop + mobile) so they stay wired whichever panel is open; every handler validates and throws, and refuses on a version snapshot or a view-only agent rather than staging edits the user could never save. Deliberately NOT writable: model/tiers, tools, custom tools, MCP servers, skill config, Matrx actions, context slots, variable definitions, output schema, and all governance/visibility — changing what an agent may REACH is a capability change, not a copy edit. Live-verified with a real Badass Agent run on the builder: ask dialog per target carrying the manifest description, Apply staged into the editor (header flipped "No unsaved changes" → "Save changes", read twins updated), "Keep as is" returned `{ok:false,declined:true}` and the agent acknowledged gracefully, append landed at the end of an untouched prompt, and asking it to change the model / make the agent public was refused with an explanation. Surface Context reported `6/6 agent-writable · contract honored`; zero `surface-writeback` captures in the Error Inspector. `check:surface-drift` + `type-check` clean.
+- **2026-08-09 — Notes editor agent-writable (third adopter).** `matrx-user/notes` declares 5 `ask`-policy targets: `note_content` (full body replace) and `append_to_note` (add to the end, existing body untouched) — deliberately two targets rather than one mode-flagged target, so the confirm dialog names which one is about to happen; `note_title` and `note_tags` (full set, replaces); and `note_folder`, the one `entity` target, because a move is only correct when `folder_name` and `folder_id` change together (`moveNoteToFolder`) and there is no draft form of it. Handlers live on the `SurfaceRuntimeProvider` already mounted in `NoteContentEditor.tsx`; the draft ones dispatch the SAME slice actions the user's own typing does (`updateNoteContent` via `handleChangeFlush`, `updateNoteLabel`, `updateNoteTags` → `applyFieldEdit`), so an agent edit gets an undo entry, marks the field dirty, and rides the ordinary autosave — no parallel write path, nothing new in the realtime/freeze-loop hot path. `note_folder` refuses a name not already in `all_folder_names` instead of creating a folder as a side effect (`moveNoteToFolder` → `createFolder` is create-or-get). On a view-only shared note the handler factory returns `{}`, so the seam never advertises a write RLS would reject. Live-verified end to end with Badass Agent (all 5 targets: rewrite + append + retitle + retag + refile; decline on tags; forced bad-folder value returned the handler's own error to the agent verbatim; an undeclared target — visibility — was refused with the declared list).
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
 - **2026-08-08 — Surface auto-adoption at launch.** `launchAgentExecution` now adopts the mounted `<SurfaceRuntimeProvider>` (deepest wins, via `getSurfaceRuntime()`) when the caller passes NEITHER `runtime.surfaceName` NOR `runtime.applicationScope` — name AND live scope together, so every one of the ~33 surface-blind direct launch call sites picks up binding layers, value mappings, write policies, and document evidence on any page with a provider (127 mounts) with zero per-site wiring. Explicit caller values always win; a scope-only launch is untouched; the route-prefix guess (`detectActiveSurface`) is deliberately NOT used here (a name without a mounted runtime has no scope and would fabricate one — it remains the tool-injection fallback only, `build-tool-injection.ts`). A throwing adopted `getScope()` logs loudly and launches surface-named but scope-less. Verified: type gate + A/B against clean main (identical behavior on the dev session whose chat send was already stalled by HMR churn); live confirmation of an adopted scope on a real launch still owed.
