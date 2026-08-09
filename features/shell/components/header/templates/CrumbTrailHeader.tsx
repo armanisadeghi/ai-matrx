@@ -56,6 +56,8 @@ export interface CrumbTrailHeaderProps {
   trail: Crumb[];
   /** Right-slot tap-target actions. */
   right?: React.ReactNode;
+  /** Yield to any page-specific header mounted deeper in the route tree. */
+  fallback?: boolean;
 }
 
 function CrumbOptions({ crumb }: { crumb: Crumb }) {
@@ -134,6 +136,7 @@ export function CrumbTrailHeader({
   backHref,
   trail,
   right,
+  fallback = false,
 }: CrumbTrailHeaderProps) {
   if (trail.length === 0) return null;
   const last = trail[trail.length - 1];
@@ -141,6 +144,7 @@ export function CrumbTrailHeader({
 
   return (
     <RouteHeader
+      fallback={fallback}
       left={
         <>
           <ChevronLeftTapButton href={back} ariaLabel="Back" />

@@ -58,7 +58,7 @@ export function ConditionalWorkbench({ initialShowRight, toggleCookie }: Props) 
   });
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
+    <div className="h-full flex flex-col overflow-hidden bg-textured">
       <header className="flex items-center gap-2 border-b border-border bg-card px-3 py-1.5">
         <h1 className="text-sm font-medium">Conditional panels</h1>
         <div className="text-xs text-muted-foreground ml-2">

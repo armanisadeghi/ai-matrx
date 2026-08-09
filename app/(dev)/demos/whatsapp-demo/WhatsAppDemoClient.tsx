@@ -35,7 +35,7 @@ export function WhatsAppDemoClient({
   };
 
   return (
-    <div className="relative h-[calc(100dvh-var(--header-height,2.5rem))] w-full overflow-hidden bg-textured">
+    <div className="relative h-full w-full overflow-hidden bg-textured">
       <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div
           className={cn(

@@ -13,19 +13,31 @@ interface PageHeaderPortalProps {
   desktop?: React.ReactNode;
   mobile?: React.ReactNode;
   children?: React.ReactNode;
+  fallback?: boolean;
 }
 
-export default function PageHeaderPortal({ desktop, mobile, children }: PageHeaderPortalProps) {
+export default function PageHeaderPortal({
+  desktop,
+  mobile,
+  children,
+  fallback = false,
+}: PageHeaderPortalProps) {
   const [target, setTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    setTarget(document.getElementById("shell-header-center"));
+    const frame = requestAnimationFrame(() => {
+      setTarget(document.getElementById("shell-header-center"));
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   if (!target) return null;
 
   return createPortal(
-    <>
+    <div
+      className="contents"
+      data-page-header-portal={fallback ? "fallback" : "page"}
+    >
       {children && (
         <div className="shell-header-inject flex">{children}</div>
       )}
@@ -35,7 +47,7 @@ export default function PageHeaderPortal({ desktop, mobile, children }: PageHead
       {mobile && (
         <div className="shell-header-inject flex lg:hidden">{mobile}</div>
       )}
-    </>,
+    </div>,
     target,
   );
 }

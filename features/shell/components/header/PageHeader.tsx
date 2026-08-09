@@ -34,15 +34,18 @@ interface PageHeaderProps {
   desktop?: React.ReactNode;
   /** Shown only below lg (mobile). Use with desktop prop. */
   mobile?: React.ReactNode;
+  /** Hidden whenever the same route tree mounts a page-specific header. */
+  fallback?: boolean;
 }
 
 export default function PageHeader({
   children,
   desktop,
   mobile,
+  fallback = false,
 }: PageHeaderProps) {
   return (
-    <PageHeaderPortal desktop={desktop} mobile={mobile}>
+    <PageHeaderPortal desktop={desktop} mobile={mobile} fallback={fallback}>
       {children}
     </PageHeaderPortal>
   );

@@ -119,7 +119,7 @@ function Folders() {
     { icon: Trash, name: "Trash", count: null },
   ];
   return (
-    <div className="h-full overflow-auto bg-muted pt-[var(--shell-header-h)]">
+    <div className="h-full overflow-auto bg-muted">
       <div className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
         Mailboxes
       </div>
@@ -152,7 +152,7 @@ function MessagesList() {
     { from: "Vercel", subject: "Deployment ready", preview: "Production deployment for" },
   ];
   return (
-    <div className="h-full overflow-auto bg-card pt-[var(--shell-header-h)]">
+    <div className="h-full overflow-auto bg-card">
       <div className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
         Inbox · {messages.length}
       </div>
@@ -179,7 +179,7 @@ function MessagesList() {
 
 function Reader() {
   return (
-    <div className="h-full overflow-auto bg-background pt-[var(--shell-header-h)]">
+    <div className="h-full overflow-auto bg-background">
       <div className="px-4 py-3">
         <div className="text-sm font-medium text-foreground">
           PR #2841 needs review
@@ -204,7 +204,7 @@ function Reader() {
 
 function Inspector() {
   return (
-    <div className="h-full overflow-auto bg-muted pt-[var(--shell-header-h)]">
+    <div className="h-full overflow-auto bg-muted">
       <div className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
         <Lightbulb className="h-3 w-3" /> AI summary
       </div>
@@ -224,7 +224,7 @@ function ChatHistorySurface() {
     { id: 4, title: "Quarterly digest", time: "2d" },
   ];
   return (
-    <div className="h-full flex flex-col bg-muted pt-[var(--shell-header-h)]">
+    <div className="h-full flex flex-col bg-muted">
       <div className="p-2 space-y-1.5 shrink-0">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-background">
           <Search className="h-3 w-3 text-muted-foreground shrink-0" />

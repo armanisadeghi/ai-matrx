@@ -17,6 +17,8 @@ export interface RouteTreeBreadcrumbHeaderProps {
   rootLabel: string;
   /** Destination for the root-level back affordance. */
   backHref: string;
+  /** Yield to any page-specific header mounted deeper in the route tree. */
+  fallback?: boolean;
 }
 
 function normalizePath(path: string) {
@@ -45,6 +47,7 @@ export function RouteTreeBreadcrumbHeader({
   basePath,
   rootLabel,
   backHref,
+  fallback = false,
 }: RouteTreeBreadcrumbHeaderProps) {
   const pathname = usePathname() ?? basePath;
   const normalizedBase = `/${normalizePath(basePath)}`;
@@ -101,5 +104,11 @@ export function RouteTreeBreadcrumbHeader({
     }),
   ];
 
-  return <CrumbTrailHeader backHref={backHref} trail={trail} />;
+  return (
+    <CrumbTrailHeader
+      backHref={backHref}
+      trail={trail}
+      fallback={fallback}
+    />
+  );
 }

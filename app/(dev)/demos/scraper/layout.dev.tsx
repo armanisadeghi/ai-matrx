@@ -8,7 +8,7 @@ interface ScraperDemoLayoutProps {
 
 export default function ScraperDemoLayout({ children }: ScraperDemoLayoutProps) {
     return (
-        <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
+        <div className="h-full flex flex-col overflow-hidden bg-textured">
             {children}
         </div>
     );

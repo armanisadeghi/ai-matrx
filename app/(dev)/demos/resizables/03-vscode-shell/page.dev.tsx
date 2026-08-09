@@ -142,7 +142,7 @@ function ActivityBar() {
   // Vertical icon rail — top icons would sit behind the shell header tap targets
   // without the pt offset.
   return (
-    <div className="h-full bg-muted flex flex-col items-center pb-2 gap-1 pt-[var(--shell-header-h)]">
+    <div className="h-full bg-muted flex flex-col items-center pb-2 gap-1">
       {icons.map((Icon, i) => (
         <div
           key={i}
@@ -161,7 +161,7 @@ function ActivityBar() {
 function Sidebar() {
   const items = ["src", "components", "features", "app", "package.json", "README.md"];
   return (
-    <div className="h-full overflow-auto bg-muted pt-[var(--shell-header-h)]">
+    <div className="h-full overflow-auto bg-muted">
       <div className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
         Explorer
       </div>
@@ -188,7 +188,7 @@ function EditorSurface() {
   // Tab strip is interactive (file tabs with X) — pt clears shell header so it
   // never sits behind the header tap targets.
   return (
-    <div className="h-full flex flex-col bg-card pt-[var(--shell-header-h)]">
+    <div className="h-full flex flex-col bg-card">
       <div className="h-8 flex items-center gap-px bg-muted/50 px-1 text-xs shrink-0">
         {tabs.map((t) => (
           <div
@@ -256,7 +256,7 @@ function TerminalLayout({ terminalCookie, terminalLayout }: TerminalLayoutProps)
   // of the screen — but the rule applies uniformly: any panel whose top is
   // interactive clears the header.
   return (
-    <div className="h-full flex flex-col bg-background pt-[var(--shell-header-h)]">
+    <div className="h-full flex flex-col bg-background">
       <div className="h-8 flex items-center gap-px bg-muted/50 px-1 text-xs shrink-0 border-t border-border/40">
         {tabs.map((t) => (
           <div
@@ -359,7 +359,7 @@ function ChatHistorySurface() {
   // Search input + agent dropdown + +New are interactive — pt to keep them
   // visible. Recent chat list below scrolls.
   return (
-    <div className="h-full flex flex-col bg-muted pt-[var(--shell-header-h)]">
+    <div className="h-full flex flex-col bg-muted">
       <div className="p-2 space-y-1.5 shrink-0">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-background">
           <Search className="h-3 w-3 text-muted-foreground shrink-0" />

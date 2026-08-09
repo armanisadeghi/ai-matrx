@@ -39,6 +39,8 @@ interface RouteHeaderProps {
   center?: React.ReactNode;
   /** Contextual actions. Tap buttons self-space; overflow into "…" only when non-redundant. */
   right?: React.ReactNode;
+  /** Yield to any page-specific header mounted deeper in the route tree. */
+  fallback?: boolean;
 }
 
 export function centerSlotWidth(
@@ -51,7 +53,12 @@ export function centerSlotWidth(
   return Math.max(0, total - 2 * Math.max(leftWidth, rightWidth));
 }
 
-export default function RouteHeader({ left, center, right }: RouteHeaderProps) {
+export default function RouteHeader({
+  left,
+  center,
+  right,
+  fallback = false,
+}: RouteHeaderProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const leftRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
@@ -88,7 +95,7 @@ export default function RouteHeader({ left, center, right }: RouteHeaderProps) {
   }, []);
 
   return (
-    <PageHeader>
+    <PageHeader fallback={fallback}>
       <div
         ref={rootRef}
         data-route-header-root
