@@ -21,6 +21,17 @@ surface genuinely needs more; never exempt the surface. If a primitive is
 nearly-unused because it is genuinely *bad*, say so to Arman with evidence
 instead of mass-adopting it.
 
+**This campaign IS a registered Pattern Patrol.** CLAUDE.md's Pattern Patrols
+section lists "unused primitives" among the 10 live patrols
+(`common-docs/systems/pattern-patrols/PATROL_REGISTRY.md`), so this sweep is the
+standing patrol for that pattern, not a one-off. Two consequences: a fix batch
+from here wants **certification by a second adversarial agent** (that is the
+patrol contract, and it is what caught five real defects on PR #72), and a
+violation you spot while off-mission goes to
+[`.matrx/PATROL_SIGHTINGS.md`](../../.matrx/PATROL_SIGHTINGS.md) as one line
+rather than being fixed mid-task. Invoke the `pattern-patrol` skill for the
+mechanics.
+
 **Respect THE FRAGMENTATION LAW.** Invoke the `code-splitting` skill before
 changing how anything enters a chunk. Mass-adopting a heavy primitive across
 many surfaces is exactly how this repo OOM-killed 14 production builds. Measure
@@ -74,14 +85,20 @@ read them rather than inferring from a neighbouring call site.
 
 ## Two constraints the next agent must know
 
-**1. You cannot browser-verify this branch from a Vercel preview.** Every
-deployment for it is `CANCELED` — the release-prefix gate
-(`scripts/vercel-ignore-build.sh`) skips any commit whose first line is not
-release-prefixed, and that applies to PR previews too, not just production
-(verified 2026-08-09 across all three projects). So the only ways to see this
-work running are a local `pnpm dev` or an actual `./scripts/release.sh`. Do NOT
-report a surface as "verified" on the strength of a preview URL that never
-built.
+**1. EVERYTHING HERE IS LIVE — do not write "not deployed yet".** CLAUDE.md
+(§ YOU commit and YOU deploy): a PR/branch session's code **auto-merges to
+`main` and goes live within ~30 minutes**; nobody reviews PRs, and you must not
+spend output deciding what to do with yours. An earlier revision of this doc
+told the next agent to treat the work as pending a ship decision — that was
+wrong, and it was written before the doctrine landed (`2b4e7854`). Corrected.
+
+The one true observation underneath it: **a Vercel PREVIEW never builds for a
+branch here.** The release-prefix gate (`scripts/vercel-ignore-build.sh`) marks
+every non-release-prefixed commit `Ignored`, previews included (verified
+2026-08-09 across all three projects). So "browser-verified" cannot mean a
+preview URL — use a local `pnpm dev`, or verify the LIVE app after the merge
+lands. Never claim a surface is verified on the strength of a preview that
+never built.
 
 **1b. `pnpm check:doc-claims` is RED in any cloud/container session, and it is
 not your change.** CLAUDE.md links cross-repo docs by absolute path
@@ -119,11 +136,11 @@ audit claims were wrong; verify before acting on a number).
 |---|---|---|---|---|
 | P1 | `features/scopes/registry/entityRegistry.ts` `hrefFor` | **21 tokens** (was 13) | **strong, under-populated** | 1 ✅ |
 | P2 | `features/organizations/peek/` (19 kinds) | EntityRef + 2 org surfaces | strong, key-vocabulary mismatch fixed | 1 ✅ |
-| P3 | `components/official/entity-ref/EntityRef.tsx` | **1** (`AgentSlotsConsole`) | strong, ~0% adopted | 2 |
+| P3 | `components/official/entity-ref/EntityRef.tsx` | **7+** (agent-slots, association rail, 2 org surfaces, war-room, scheduling, + PR #74) | adopted; gained `onOpen`/`openInNewTab` | 2 ✅ |
 | P4 | `lib/entity-list/` (`EntityListPage`) | **2** (`/agents/all`, `/transcripts`) | strong, 26 bespoke list pages | 4 |
 | P5 | `components/official/item/` (`ItemMenuConfig`) | 30 files, mostly sidebars | strong, absent from list pages | 3 |
 | P6 | `features/agents/browse/agentActionRegistry.tsx` (23 actions) | **1 route** | strong, 3 rival agent action lists | 3 |
-| P7 | `lib/list-views/useListViewPrefs` | 4 | strong, 4 hand-rolled copies remain | 3 |
+| P7 | `lib/list-views/useListViewPrefs` | **9** | **zero hand-rolled list-style copies left** | 3 ✅ |
 | P8 | `features/context-menu-v3/` | 45 files | **healthy** — backlog doc is stale | 5 |
 | P9 | `features/window-panels/` (153 entries) | very uneven | strong; 4 dead, ~24 grid-only | 6 |
 | P10 | `features/assists/` | **3 producers, 2 render sites** | new (2026-08-08), unadopted | 7 |
