@@ -40,7 +40,11 @@ import {
   type PreviewVariantSpec,
 } from "@/features/files/api/assets";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
-import { IMAGE_STUDIO_SURFACE_NAME } from "@/features/surfaces/manifests/image-studio.manifest";
+import {
+  IMAGE_STUDIO_SURFACE_NAME,
+  createImageStudioScope,
+} from "@/features/surfaces/manifests/image-studio.manifest";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
 import type { Visibility } from "@/features/files/types";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
@@ -68,6 +72,16 @@ function sanitizePathSegment(raw: string): string {
     .replace(/-{2,}/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
+}
+
+/**
+ * Serialize the crop anchor for the surface scope: a named anchor passes
+ * through; a precise focal point (normalized 0-1) becomes "focal x%,y%".
+ */
+function formatCropAnchor(position: ImagePosition): string {
+  return typeof position === "string"
+    ? position
+    : `focal ${Math.round(position.x * 100)}%,${Math.round(position.y * 100)}%`;
 }
 
 const DEFAULT_QUALITY = 88;
@@ -138,6 +152,11 @@ export interface UseImageStudioResult {
   totalVariantCount: number;
   generatedVariantCount: number;
   totalOutputBytes: number;
+
+  // Surface scope (matrx-user/image-studio) — the ONE builder for this
+  // surface, consumed by the shell's SurfaceRuntimeProvider and the
+  // describe-shortcut launch.
+  buildSurfaceScope: () => SurfaceScopePayload;
 }
 
 let fileIdCounter = 0;
@@ -801,6 +820,102 @@ export function useImageStudio(
   );
   const isDescribing = describingFileIds.size > 0;
 
+  // ── Derived ─────────────────────────────────────────────────────────────
+
+  const totalVariantCount = useMemo(
+    () => files.length * selectedPresetIds.length,
+    [files.length, selectedPresetIds.length],
+  );
+
+  const generatedVariantCount = useMemo(
+    () => files.reduce((sum, f) => sum + Object.keys(f.variants).length, 0),
+    [files],
+  );
+
+  const totalOutputBytes = useMemo(
+    () =>
+      files.reduce(
+        (sum, f) =>
+          sum + Object.values(f.variants).reduce((s, v) => s + v.size, 0),
+        0,
+      ),
+    [files],
+  );
+
+  /**
+   * Build the `matrx-user/image-studio` surface scope from the live studio
+   * state. The ONE builder for this surface — consumed by the shell's
+   * <SurfaceRuntimeProvider> and passed explicitly on the describe-shortcut
+   * launch (an explicit surfaceName suppresses the thunk's provider
+   * auto-adoption, so the scope must travel with it).
+   */
+  const buildSurfaceScope = useCallback(
+    (): SurfaceScopePayload =>
+      createImageStudioScope({
+        source_file_count: files.length,
+        source_files: files.slice(0, 50).map((f) => ({
+          name: f.originalName,
+          filename_base: f.filenameBase,
+          mime_type: f.mimeType,
+          size: f.size,
+          width: f.width,
+          height: f.height,
+          status: f.status,
+          variant_count: Object.keys(f.variants).length,
+          metadata_status: f.metadataStatus,
+        })),
+        selected_preset_ids: selectedPresetIds,
+        selected_preset_count: selectedPresetIds.length,
+        output_format: format,
+        output_quality: quality,
+        background_color: backgroundColor,
+        resize_fit: fit,
+        resize_position: formatCropAnchor(position),
+        studio_settings_summary: {
+          selected_preset_ids: selectedPresetIds,
+          output_format: format,
+          output_quality: quality,
+          background_color: backgroundColor,
+          resize_fit: fit,
+          resize_position: formatCropAnchor(position),
+        },
+        total_variant_count: totalVariantCount,
+        generated_variant_count: generatedVariantCount,
+        total_output_bytes: totalOutputBytes,
+        ...(lastSaveResult
+          ? {
+              last_save_result: {
+                folder_path: lastSaveResult.folderPath,
+                saved_count: lastSaveResult.savedCount,
+                failed_filenames: lastSaveResult.failedFilenames,
+              },
+            }
+          : {}),
+        ...(error ? { studio_error: error } : {}),
+        is_processing: isProcessing,
+        is_saving: isSaving,
+        is_describing: isDescribing,
+      }),
+    [
+      files,
+      selectedPresetIds,
+      format,
+      quality,
+      backgroundColor,
+      fit,
+      position,
+      totalVariantCount,
+      generatedVariantCount,
+      totalOutputBytes,
+      lastSaveResult,
+      error,
+      isProcessing,
+      isSaving,
+      isDescribing,
+    ],
+  );
+
+
   // Mutates the file at `fileId` in place via React state.
   const setMetadataState = useCallback(
     (
@@ -960,9 +1075,13 @@ export function useImageStudio(
         //    and the launch thunk reads it from there. If you ever see
         //    "did not return structured JSON" again, the row's column is
         //    null, not the call site's job.
+        // An explicit surfaceName suppresses the launch thunk's provider
+        // auto-adoption, so the live scope must travel WITH the name — a
+        // name-only launch would bind against baseline values only.
         const launchResult = await trigger(DESCRIBE.id, {
           sourceFeature: "image-studio",
           config: { autoRun: false, displayMode: "background" },
+          scope: buildSurfaceScope(),
           runtime: {
             surfaceName: IMAGE_STUDIO_SURFACE_NAME,
             ...(contextHint?.trim()
@@ -1055,6 +1174,7 @@ export function useImageStudio(
       setMetadataState,
       trigger,
       waitForExtraction,
+      buildSurfaceScope,
     ],
   );
 
@@ -1133,27 +1253,6 @@ export function useImageStudio(
     );
   }, []);
 
-  // ── Derived ─────────────────────────────────────────────────────────────
-
-  const totalVariantCount = useMemo(
-    () => files.length * selectedPresetIds.length,
-    [files.length, selectedPresetIds.length],
-  );
-
-  const generatedVariantCount = useMemo(
-    () => files.reduce((sum, f) => sum + Object.keys(f.variants).length, 0),
-    [files],
-  );
-
-  const totalOutputBytes = useMemo(
-    () =>
-      files.reduce(
-        (sum, f) =>
-          sum + Object.values(f.variants).reduce((s, v) => s + v.size, 0),
-        0,
-      ),
-    [files],
-  );
 
   return {
     files,
@@ -1197,5 +1296,7 @@ export function useImageStudio(
     totalVariantCount,
     generatedVariantCount,
     totalOutputBytes,
+
+    buildSurfaceScope,
   };
 }

@@ -51,10 +51,7 @@ const InitialCropWindow = dynamic(
 );
 import { useImageStudio } from "../hooks/useImageStudio";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import {
-  IMAGE_STUDIO_SURFACE_NAME,
-  createImageStudioScope,
-} from "@/features/surfaces/manifests/image-studio.manifest";
+import { IMAGE_STUDIO_SURFACE_NAME } from "@/features/surfaces/manifests/image-studio.manifest";
 import {
   downloadVariantsAsZip,
   type BundleEntry,
@@ -71,16 +68,6 @@ import {
 interface ImageStudioShellProps {
   /** Optional default folder for Save-to-library. */
   defaultFolder?: string;
-}
-
-/**
- * Serialize the crop anchor for the surface scope: a named anchor passes
- * through; a precise focal point becomes "focal x%,y%".
- */
-function formatCropAnchor(position: import("../types").ImagePosition): string {
-  return typeof position === "string"
-    ? position
-    : `focal ${position.x}%,${position.y}%`;
 }
 
 export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
@@ -314,59 +301,10 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
     toast.success(`Described ${studio.files.length} file(s) in ${elapsed}s`);
   }, [studio]);
 
-  // Surface scope — built at trigger time from the live studio state so the
-  // header Agents chrome and bound agents see exactly what the user sees.
-  const getStudioScope = () =>
-    createImageStudioScope({
-      source_file_count: studio.files.length,
-      source_files: studio.files.slice(0, 50).map((f) => ({
-        name: f.originalName,
-        filename_base: f.filenameBase,
-        mime_type: f.mimeType,
-        size: f.size,
-        width: f.width,
-        height: f.height,
-        status: f.status,
-        variant_count: Object.keys(f.variants).length,
-        metadata_status: f.metadataStatus,
-      })),
-      selected_preset_ids: studio.selectedPresetIds,
-      selected_preset_count: studio.selectedPresetIds.length,
-      output_format: studio.format,
-      output_quality: studio.quality,
-      background_color: studio.backgroundColor,
-      resize_fit: studio.fit,
-      resize_position: formatCropAnchor(studio.position),
-      studio_settings_summary: {
-        selected_preset_ids: studio.selectedPresetIds,
-        output_format: studio.format,
-        output_quality: studio.quality,
-        background_color: studio.backgroundColor,
-        resize_fit: studio.fit,
-        resize_position: formatCropAnchor(studio.position),
-      },
-      total_variant_count: studio.totalVariantCount,
-      generated_variant_count: studio.generatedVariantCount,
-      total_output_bytes: studio.totalOutputBytes,
-      ...(studio.lastSaveResult
-        ? {
-            last_save_result: {
-              folder_path: studio.lastSaveResult.folderPath,
-              saved_count: studio.lastSaveResult.savedCount,
-              failed_filenames: studio.lastSaveResult.failedFilenames,
-            },
-          }
-        : {}),
-      ...(studio.error ? { studio_error: studio.error } : {}),
-      is_processing: studio.isProcessing,
-      is_saving: studio.isSaving,
-      is_describing: studio.isDescribing,
-    });
-
   return (
     <SurfaceRuntimeProvider
       surfaceName={IMAGE_STUDIO_SURFACE_NAME}
-      getScope={getStudioScope}
+      getScope={studio.buildSurfaceScope}
     >
     {/* `@container/studio` so the three columns respond to the studio's OWN
         available width, not the viewport. The app sidebar (and the images
