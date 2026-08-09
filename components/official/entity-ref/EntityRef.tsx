@@ -123,6 +123,8 @@ export interface EntityRefProps {
    * named props because they encode a DECISION, while this is plain styling.
    */
   labelClassName?: string;
+  /** Backward-compatible name-label class used by existing Door Law callers. */
+  nameClassName?: string;
   /** Controls stay visible instead of appearing on hover/focus. */
   alwaysShowActions?: boolean;
   /** Surface-specific extra doors (open in window, jump to versions, …). */
@@ -181,6 +183,7 @@ export function EntityRef({
   wrap = false,
   fill = false,
   labelClassName,
+  nameClassName,
   alwaysShowActions = false,
   extraActions,
   onOpen,
@@ -214,6 +217,7 @@ export function EntityRef({
     wrap ? "break-all" : "truncate",
     fill && "grow",
     labelClassName,
+    nameClassName,
   );
 
   return (

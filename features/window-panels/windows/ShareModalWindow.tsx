@@ -192,8 +192,8 @@ export default function ShareModalWindow({
           createShareScope({
             resource_type: resourceType,
             resource_id: resourceId,
-            resource_name: resourceName,
-            share_url: getShareUrl(),
+            resource_name: resourceName ?? "Untitled resource",
+            share_url: getShareUrl() ?? "",
             active_tab: activeTab,
             is_owner: ownerLoading ? undefined : isOwner,
             is_public: loading ? undefined : resourceIsPublic,

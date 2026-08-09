@@ -96,6 +96,8 @@ export interface EntityAltViewProps<TRow> {
   /** True outside "Mine" — owner/org/access carry information there only. */
   showShared: boolean;
   actions: EntityRowActions<TRow>;
+  /** Canonical Door Law route for a row, resolved by the list shell. */
+  hrefFor: (row: TRow) => string | undefined;
 }
 
 export interface EntityFacetSection {
@@ -132,6 +134,12 @@ export interface EntityListConfig<TRow> {
   getRowId: (row: TRow) => string;
   /** Human name for a row — aria labels ("Actions for X"). */
   getRowName: (row: TRow) => string;
+  /** Canonical Door Law configuration for the record-name cell. */
+  door?: {
+    token?: string | ((row: TRow) => string | null | undefined);
+    column?: string;
+    hrefFor?: (row: TRow) => string | undefined;
+  };
   /**
    * Which feature mounted this list. Forwarded to the row's right-click menu,
    * which attributes every shortcut and agent launched from it. Required

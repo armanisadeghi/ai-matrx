@@ -41,6 +41,7 @@ function makeConfig(
     prefsVersion: 1,
     getRowId: (row) => row.id,
     getRowName: (row) => row.id,
+    sourceFeature: "agents-other",
     door,
     useRowActions: () => ({
       actions: { menuFor: () => () => ({ sections: [] }), onOpenRow: () => {} },
