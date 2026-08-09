@@ -13,30 +13,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D147 — the public `/seo` analyzers' "Fetch from URL" button 401s for every anonymous visitor (2026-08-09)
-
-`/seo/metadata` and `/seo/social-preview` are anonymous marketing pages whose primary action
-scrapes the entered URL. That action calls `POST /scraper/quick-scrape`, and aidream mounts the
-**entire** `/scraper` router under `Depends(require_authenticated)`
-(`aidream/api/app.py:1358-1363`) — a guest fingerprint yields `ctx.is_authenticated == False`, so
-production returns `401 token_required` and the user gets "Authentication required. Please sign
-in." on a page that never asks them to sign in. Verified live on aimatrx.com and by curling the
-backend with BOTH `X-Guest-Fingerprint` and `X-Fingerprint-ID` (401 either way).
-
-**Pre-dates the client refactor** (v0.4.351, which deleted the `/api/scraper/content` Next
-proxy): that proxy forwarded the same guest header to the same authenticated endpoint, so it
-401'd identically. Nothing regressed; the dead end was simply invisible while an agent tested
-signed-in.
-
-Fix is an aidream authorization decision, **Arman's or the server's to make, not a frontend
-patch** — either (a) expose a guest-friendly metadata/social-tags fetch under the EXISTING
-`/seo/public` router (`aidream/api/routers/seo_public_tools.py`, mounted with
-`require_guest_or_above`, already home to structured-data/page-audit/robots-check for exactly
-these public tools), or (b) open quick-scrape to guest identities. Until then the button is a
-dead end and should either sign the user in or not render. Related: the "guest users →
-X-Fingerprint-ID" claim in `features/scraper/types/scraper-api.ts` was false for these
-endpoints and has been corrected.
-
 ### D146 — 58 remaining RLS policies call `iam.has_org_access(...)` per row (2026-08-09)
 
 The SECURITY DEFINER helper cannot be inlined or hoisted, so each policy invokes it once per
@@ -662,6 +638,7 @@ One line per fix — title, date, pointer. History lives in git.
 - **D64** — `ContainerResourceSheet` refactored to the keyed derived-state pattern (SlotEditor style): items + search query keyed by `table|column|value`, loading derived, no setState in the effect body; lint clean. 2026-08-09.
 - **D106 (remainder)** — BudgetMeter headline is now a green/yellow/red verdict ("Fine / Getting heavy / Too much", weighed against the active or default ceiling); token count demoted to fine print (`features/research/components/resources/BudgetMeter.tsx`). 2026-08-09.
 - **D106b** — last 4 "Only you" surfaces reworded to honest claims: vault SharePanel reports the grant list (org-admin caveat included), CanvasShareSheet Private = "Not published — no public page or link access", StructuredListManagerV2 Private = "Not shared", education marketing copy scoped to "within your account / workspace you add them to" (FAQ + feature grid). 2026-08-09.
+- **D137 (public /seo analyzers 401 for guests)** — both analyzers now read meta tags through the guest-friendly `/seo/public/page-audit` route via `usePublicPageMetadata`; verified signed-out. 2026-08-09.
 - **D76 / D61** — one root cause, fixed once: `errorCaptureStore.emit()` notified its `useSyncExternalStore` subscribers SYNCHRONOUSLY, so any `captureError` on a render path (content-ir screams, data-shape reads, org-resolution) re-rendered the shell's Error Inspector badge inside another component's render. Notification now defers to a microtask; snapshots stay synchronous. Pinned by `lib/diagnostics/errorCaptureStore.renderSafety.test.tsx`; verified clean in-browser on `/`, `/scraper`, and a live `/chat` stream. 2026-08-09.
 - **D129 (tasks lifecycle)** — all three gaps closed: `operatingTaskId` → `operatingTaskIds` set (add/remove actions, `selectIsTaskOperating`, all thunks/consumers ported); `tasksUi.nowMinute` ticked ~60s by `useNowMinuteTick` on /tasks feeds `selectFilteredTasks`/`selectSmartViewCounts`/`buildSmartViewContext` so snooze expiry + date windows resurface without an unrelated store change; monthly recurrence keeps its month-end anchor via `BYMONTHDAY` (parsed/formatted/honored in `utils/recurrence.ts`, `-1` = last day; `completeTask` stamps it on first roll via `ensureMonthDayAnchor`) — jest suite `features/tasks/utils/__tests__/recurrence.test.ts`. 2026-08-09.
 - **D129** — Apple OAuth secret rotated and verified; hard-coded expiry replaced by live `app_config` credential metadata plus an audited admin editor and actionable Manage toast. 2026-08-07.
