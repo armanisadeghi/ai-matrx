@@ -149,7 +149,11 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/projects` (5 entity targets —
+  name/description/status/priority/target date through `updateProject`,
+  handlers built by
+  `features/projects/agent-context/projectWriteHandlers.ts` on the provider
+  `ProjectWorkspace.tsx` already mounts).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +314,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-09 — Projects surface agent-writable (third adopter).** `matrx-user/projects` declares 5 ask-policy `entity` targets — `project_name`, `project_description`, `project_status`, `project_priority`, `project_target_date` — each with its read twin via `updatesValue`. Every handler goes through `updateProject` (`features/projects/service.ts`), the feature's canonical write path, so `validateProjectName` runs on renames and the hero's `applyPatch` shows the value land; `mode: "entity"` is the honest declaration because the workspace autosaves in place and has no draft/save bar. Handlers are built by the new `features/projects/agent-context/projectWriteHandlers.ts` and passed to the `SurfaceRuntimeProvider` `ProjectWorkspace.tsx` already mounted (`getWriteHandlers`, re-read per apply, so permission + current project are never stale); status/priority vocabularies are checked against the real `PROJECT_STATUS_META` / `PROJECT_PRIORITY_META` constants the pickers use, and a viewer without `canManageSettings` is refused. Identity/ownership (`slug`), membership, the organization move, and the danger zone are deliberately NOT targets. Live-verified with Badass Agent on a real project workspace: one plain-language message drove 4 targets, each ask dialog showed the declared description verbatim, Apply persisted through a reload, "Keep as is" on priority returned a clean decline the agent acknowledged and moved past, a second run converted "the last day of November 2026" to `2026-11-30`, and the Error Inspector recorded zero `surface-writeback` captures.
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
