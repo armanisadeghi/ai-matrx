@@ -125,7 +125,10 @@ internal platform use — never a washed-down user variant beside a private one:
   `matrx-user/marketing-page` (`page_meta_tags`, `page_target_keyword`,
   `page_supporting_keywords` — handlers in
   `features/marketing/components/pages/MarketingPageWriteTargets.tsx`) and
-  `matrx-user/keyword-intelligence` (`keyword_selection`). The LSI kind
+  `matrx-user/keyword-intelligence` (`keyword_selection`) and
+  `matrx-user/research` (`topic_description`, `topic_name`, `add_keywords`,
+  `autonomy_level` — handlers in
+  `features/research/components/shell/ResearchTopicWriteTargets.tsx`). The LSI kind
   components (`meta_tag_options` / `keyword_relationship_research` /
   `keyword_search_metrics`, DB components) call
   `runAction("apply_surface_write", …)` — same seam users' agent-authored
@@ -149,7 +152,11 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/research` (4 entity targets, all `ask`,
+  handlers in `ResearchTopicWriteTargets.tsx` — the first adopter whose
+  handler enforces a FEATURE-OWNED GATE before the canonical write:
+  `add_keywords` clears `evaluateKeywordQuota` first and throws with the
+  shortfall named rather than raising a paid cap for the user).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -311,6 +318,7 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 
 ## Change Log
 
+- **2026-08-09 — Research surface agent-writable.** `matrx-user/research` declares 4 `ask`-policy `entity` targets — `topic_description` / `topic_name` (canonical `updateTopicMeta`), `add_keywords` (canonical `addKeywords`, the `add_subtasks`-shaped "add items" decomposition), `autonomy_level` (canonical `updateTopic`, vocabulary read from `AUTONOMY_CONFIG`) — with handlers in `features/research/components/shell/ResearchTopicWriteTargets.tsx`, mounted from the topic shell via `useSurfaceWriteHandlers` (the marketing-page seam: the shell owns no draft state, so there is nothing to stage into and every target persists). Nothing that SPENDS is a target: search/scrape/analysis/document assembly stay human-started. First adopter to run a feature-owned gate inside a handler — `add_keywords` evaluates `evaluateKeywordQuota` against the topic's LIVE keyword list and throws with the shortfall spelled out instead of raising `max_keywords`/`max_keyword_syntheses` on the user's behalf. Live-verified end to end on a real topic: per-target ask dialogs carrying each target's own description, Apply persisting through a refetch, `Keep as is` declining without an error, an invalid `autonomy_level` refused from the description alone, an over-cap `add_keywords` refused with the numbers, and undeclared asks (bulk-delete sources, reassign organization) unreachable because the tool's `target` enum never offered them. `isEditable` deliberately stays `false` — it gates the `basic-editor` default contract, not write targets.
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
 - **2026-08-08 — Surface auto-adoption at launch.** `launchAgentExecution` now adopts the mounted `<SurfaceRuntimeProvider>` (deepest wins, via `getSurfaceRuntime()`) when the caller passes NEITHER `runtime.surfaceName` NOR `runtime.applicationScope` — name AND live scope together, so every one of the ~33 surface-blind direct launch call sites picks up binding layers, value mappings, write policies, and document evidence on any page with a provider (127 mounts) with zero per-site wiring. Explicit caller values always win; a scope-only launch is untouched; the route-prefix guess (`detectActiveSurface`) is deliberately NOT used here (a name without a mounted runtime has no scope and would fabricate one — it remains the tool-injection fallback only, `build-tool-injection.ts`). A throwing adopted `getScope()` logs loudly and launches surface-named but scope-less. Verified: type gate + A/B against clean main (identical behavior on the dev session whose chat send was already stalled by HMR churn); live confirmation of an adopted scope on a real launch still owed.

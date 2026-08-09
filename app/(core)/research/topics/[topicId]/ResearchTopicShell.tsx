@@ -7,6 +7,7 @@ import {
 } from "@/features/research/context/ResearchContext";
 import ResearchLayoutShell from "@/features/research/components/shell/ResearchLayoutShell";
 import { StreamDebugOverlay } from "@/features/research/components/shared/StreamDebugOverlay";
+import { ResearchTopicWriteTargets } from "@/features/research/components/shell/ResearchTopicWriteTargets";
 import {
   buildResearchContextData,
   RESEARCH_CONTEXT_MENU_PROPS,
@@ -66,11 +67,24 @@ function ResearchSurfaceRuntime({
     });
 
   return (
+    // `isEditable` stays FALSE and is unrelated to the surface's write
+    // targets. It governs one thing only: whether agents bound to the
+    // `matrx-default/basic-editor` contract qualify here
+    // (`qualifyingDefaultSurfaces`), and that contract's text_before /
+    // text_after / selection values are meaningless on a workspace that is a
+    // dashboard, not a text editor — the editable research mounts are the
+    // wizard's Subject textarea and the content editor, not this shell.
+    // Agent-writability is gated per target by `applyPolicy`, which every
+    // research target sets to `ask`.
     <SurfaceRuntimeProvider
       surfaceName={RESEARCH_CONTEXT_MENU_PROPS.surfaceName}
       getScope={getScope}
       isEditable={false}
     >
+      {/* Handlers for the manifest's `writeTargets`. Mounted here, inside the
+          provider AND inside TopicProvider, because the topic store — not this
+          shell — is where the write path's refresh lives. */}
+      <ResearchTopicWriteTargets />
       {children}
     </SurfaceRuntimeProvider>
   );
