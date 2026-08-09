@@ -46,13 +46,15 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
 
 ## Remaining work
 
-1. **Office thumbnails backfill** (aidream — chip spawned 2026-08-08). New-upload page-1 thumbs
-   need verification; pre-existing files need a re-render backfill (mirror
-   `aidream/cli/scan_thumbnail_backfill.py`; note the variant-key dedup trap in FOUND_DEFECTS.md).
-2. **Desktop bundle verification** (matrx-local — chip spawned). PyInstaller sidecar never
+1. **Desktop bundle verification** (matrx-local — chip spawned). PyInstaller sidecar never
    exercised for docx/pptx/openpyxl + templates.
-3. **Files-service catch-up** (ops). `packages/matrx-files/Dockerfile` carries LibreOffice but
+2. **Files-service catch-up** (ops). `packages/matrx-files/Dockerfile` carries LibreOffice but
    that image deploys manually and is not the traffic path yet. Nothing breaks meanwhile.
+3. **AI-generated Office files are born with an icon thumbnail** (aidream — filed in
+   `aidream/FOUND_DEFECTS.md`, 2026-08-09). Files created via `generate_office_asset` →
+   `save_media_envelope_async` get a mime icon at creation even on a LibreOffice host; the same
+   bytes re-render fine afterwards, so it's the creation-time render, not the codec. Healable with
+   `thumbnail_backfill --office --force-rerender`.
 4. **Visual-fidelity preview (optional next rung).** Today's preview is extracted text. A
    LibreOffice→PDF render lane (reusing the convert endpoint) could show true layout — decide if
    fidelity matters before building.
@@ -65,6 +67,16 @@ first real user surfaces shipped: **Word/PowerPoint preview in Files, Convert-to
 
 ## Done
 
+- **2026-08-09 — Office thumbnails, end to end.** New uploads verified in production (fresh
+  docx/pptx → real page-1 renders). Every pre-existing Office master healed:
+  `thumbnail_backfill --office --force-rerender` → audit **22 icons/missing → 0**, all 23 Office
+  masters now render page 1, confirmed through the exact `GET /api/files` payload the Files UI
+  binds to. Required building `force_rerender` (overwrite-in-place, the fix for the variant-key
+  dedup trap) plus a guard that refuses to replace a real thumbnail with an icon fallback — and
+  fixing two defects that made the universal backfill inert for EVERY mime type (bare-row
+  `owner_id` KeyError; a total failure printing a green `DONE ... failed=0`). Knock-on: 155
+  platform-wide files that had no thumbnail at all were healed, and the tracked pre-2026-07-10
+  PDF icon defect was closed (61 icons → 0). aidream `1953f5f04`/`acaa54eaa`, v0.1.740.
 - Office codec (extract ↔ generate ↔ LibreOffice convert) + ingest + chat-attachment reads +
   `office` agent tool + generation service + `POST /office/generate` + MIME routing guard.
 - **2026-08-08:** read-side endpoints (`GET /office/{file_id}/markdown`,
