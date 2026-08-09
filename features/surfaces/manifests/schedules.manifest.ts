@@ -26,6 +26,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -403,6 +404,96 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the schedule
+ * editor (`/schedules/new` and `/schedules/[id]/edit` only; `ScheduleForm`
+ * registers the handlers on its SurfaceRuntimeProvider). Every target is
+ * `mode: "draft"`: it stages into the form's own state through the same
+ * `patch`/`setTrigger` setters the user's typing uses — visible in the
+ * inputs, reversible, persisted only when the user presses Save (Zod
+ * re-validates the whole draft at submit). All targets are
+ * `applyPolicy: "ask"`.
+ *
+ * Deliberately NOT agent-writable: enable/disable, delete, auth mode,
+ * the target agent id, execution surfaces/limits, expiry, and the
+ * persistent conversation id — identity, authorization and arming stay
+ * human decisions.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "schedule_draft_title",
+    label: "Draft title",
+    description:
+      "Stages a new title into the open schedule editor's draft. Plain string, 1-200 characters. The user still saves.",
+    valueType: "string",
+    updatesValue: "schedule_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "schedule_editor",
+    sortOrder: 100,
+  },
+  {
+    name: "schedule_draft_description",
+    label: "Draft description",
+    description:
+      "Stages a full replacement description into the schedule editor's draft. Plain string, max 2000 characters; replaces the whole field — read schedule_draft.description first if you mean to extend it. The user still saves.",
+    valueType: "string",
+    updatesValue: "schedule_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "schedule_editor",
+    sortOrder: 110,
+  },
+  {
+    name: "schedule_draft_prompt",
+    label: "Draft prompt",
+    description:
+      "Stages the prompt the agent will receive on every fire into the schedule editor's draft. Plain string, 1-10000 characters; replaces the whole field — read schedule_draft.prompt first if you mean to extend it. Write it as a complete standalone instruction: each run starts fresh unless the schedule binds a persistent conversation. The user still saves.",
+    valueType: "string",
+    updatesValue: "schedule_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "schedule_editor",
+    sortOrder: 120,
+  },
+  {
+    name: "schedule_draft_trigger",
+    label: "Draft trigger",
+    description:
+      'Stages the WHEN of the schedule into the editor draft — trigger type and config as ONE object, replacing the current trigger. Accepted shapes, exactly: { "type": "cron", "expression": "<5-field cron: minute hour day-of-month month day-of-week>", "tz": "<IANA timezone>" } (e.g. { "type": "cron", "expression": "0 9 * * 1-5", "tz": "America/Los_Angeles" } = weekdays 9:00 AM; "30 8 * * 1" = Mondays 8:30 AM; "0 */4 * * *" = every 4 hours — no seconds field, no @daily macros); { "type": "interval", "every_seconds": <integer >= 60> } (e.g. 3600 = hourly); { "type": "one-shot", "at": "<ISO 8601 datetime>" }; { "type": "heartbeat", "every_seconds": <integer >= 60> }; { "type": "context-match", "kind"?, "url_pattern"?, "hostname"? } (at least one key). Invalid shapes are rejected. The user still saves.',
+    valueType: "object",
+    updatesValue: "schedule_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "schedule_editor",
+    sortOrder: 130,
+  },
+  {
+    name: "schedule_draft_variables",
+    label: "Draft variables",
+    description:
+      "Stages the variable payload merged into every run, as one flat key/value object — replaces the FULL set; include existing entries you want kept, from schedule_draft.variables. Keys are strings; values any JSON. The user still saves.",
+    valueType: "object",
+    updatesValue: "schedule_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "schedule_editor",
+    sortOrder: 140,
+  },
+  {
+    name: "schedule_draft_tags",
+    label: "Draft tags",
+    description:
+      "Stages the schedule's tag set into the draft — replaces the FULL set (include existing tags you want kept, from schedule_draft.tags). Array of up to 50 plain strings, each 1-100 characters. The user still saves.",
+    valueType: "array",
+    updatesValue: "schedule_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "schedule_editor",
+    sortOrder: 150,
+  },
+];
+
 export const schedulesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/schedules",
   readiness: "partial",
@@ -421,6 +512,7 @@ A schedule's target action (agent, prompt, variables, auth mode, execution limit
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**

@@ -31,6 +31,7 @@ import {
 } from "../../redux/tasks/thunks";
 import {
   createTaskFormSchema,
+  triggerConfigSchema,
   type CreateTaskFormValues,
 } from "../../utils/validation";
 import type {
@@ -43,6 +44,7 @@ import type {
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
 import { buildOpenScheduleValues } from "../../lib/schedules-scope";
+import { validateCron } from "@/lib/scheduler-client/next-due";
 import { OneShotForm } from "./triggers/OneShotForm";
 import { IntervalForm } from "./triggers/IntervalForm";
 import { CronForm } from "./triggers/CronForm";
@@ -236,6 +238,88 @@ export function ScheduleForm({ task }: Props) {
     }
   };
 
+  // Write half of the schedules surface (manifest `writeTargets`): every
+  // handler validates its input and THROWS on a bad shape — the writeback
+  // seam converts throws to safe error envelopes. All targets are draft-mode:
+  // they stage through the same `patch`/`setTrigger` setters the user's own
+  // typing uses; the user still saves (submit re-runs the canonical Zod
+  // schema). Fresh closures per call (getWriteHandlers contract).
+  const getSurfaceWriteHandlers = () => ({
+    schedule_draft_title: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim() || value.length > 200)
+        throw new Error(
+          "schedule_draft_title expects a non-empty string of at most 200 characters.",
+        );
+      patch("title", value.trim());
+    },
+    schedule_draft_description: (value: unknown) => {
+      if (typeof value !== "string" || value.length > 2000)
+        throw new Error(
+          "schedule_draft_description expects a string of at most 2000 characters.",
+        );
+      patch("description", value);
+    },
+    schedule_draft_prompt: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim() || value.length > 10000)
+        throw new Error(
+          "schedule_draft_prompt expects a non-empty string of at most 10000 characters.",
+        );
+      patch("prompt", value);
+    },
+    schedule_draft_trigger: (value: unknown) => {
+      // The canonical Zod validator — the same discriminated union the form
+      // submits through. Rejects unknown types, bad cron/interval shapes, etc.
+      const parsed = triggerConfigSchema.safeParse(value);
+      if (!parsed.success) {
+        const detail = parsed.error.issues
+          .map((i) => `${i.path.join(".") || "trigger"}: ${i.message}`)
+          .join("; ");
+        throw new Error(
+          `schedule_draft_trigger rejected — ${detail}. Send one object matching the shapes in the target description (e.g. { "type": "cron", "expression": "0 9 * * 1-5", "tz": "America/Los_Angeles" }).`,
+        );
+      }
+      const { type, ...config } = parsed.data;
+      // The Zod branch only requires a non-empty expression string, so a
+      // human-language "every monday at 8:30am" would stage silently and only
+      // blow up at save. Parse it for real with the canonical cron twin.
+      if (parsed.data.type === "cron") {
+        const cronError = validateCron(parsed.data.expression, parsed.data.tz);
+        if (cronError)
+          throw new Error(
+            `schedule_draft_trigger rejected — "${parsed.data.expression}" is not a valid cron expression (${cronError}). Use 5 space-separated fields: minute hour day-of-month month day-of-week (e.g. "30 8 * * 1" = Mondays at 8:30 AM).`,
+          );
+      }
+      setTrigger(type, config as Record<string, unknown>);
+    },
+    schedule_draft_variables: (value: unknown) => {
+      if (
+        typeof value !== "object" ||
+        value === null ||
+        Array.isArray(value)
+      )
+        throw new Error(
+          "schedule_draft_variables expects a flat key/value object (replaces the full set).",
+        );
+      patch("variables", value as Record<string, unknown>);
+    },
+    schedule_draft_tags: (value: unknown) => {
+      if (
+        !Array.isArray(value) ||
+        value.length > 50 ||
+        !value.every(
+          (t) => typeof t === "string" && t.trim() && t.length <= 100,
+        )
+      )
+        throw new Error(
+          "schedule_draft_tags expects an array of up to 50 non-empty strings (max 100 characters each); it replaces the full set.",
+        );
+      patch(
+        "tags",
+        Array.from(new Set((value as string[]).map((t) => t.trim()))),
+      );
+    },
+  });
+
   // Surface emitter for `matrx-user/schedules` on the create/edit routes.
   // Nested under nothing else on those pages, so this provider owns the live
   // scope: the editor-draft group plus (in edit mode) the saved record the
@@ -244,6 +328,7 @@ export function ScheduleForm({ task }: Props) {
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/schedules"
       isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
       getScope={() =>
         createSchedulesScope({
           ...(task ? buildOpenScheduleValues(task) : {}),
