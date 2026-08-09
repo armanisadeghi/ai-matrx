@@ -43,6 +43,31 @@ A menu that opens but Copy does nothing and the selection bar is empty is a **bu
 
 ---
 
+## Two things the shell may never do to the surface it wraps
+
+The menu is a passenger. Both of these were latent in all 45 consumers and only
+became visible when the canonical list shell started wrapping every `<tr>`.
+
+1. **Never delete the children.** `components/ui/context-menu`'s hydration-safe
+   `ContextMenu` returns `null` until mounted (Radix aria ids differ across the
+   SSR boundary). Wrapping a self-contained panel, that is invisible; wrapping a
+   list row, the surface **paints empty** and fills in after hydration. The
+   shell now renders `children` bare until `useIsMounted` flips — same hydration
+   guarantee, no disappearing act.
+2. **Never steal a live text field's native menu.** A read-only menu
+   (`isEditable === false`) offers Copy and AI actions and no Paste, Undo,
+   spellcheck or autofill — exactly what a user right-clicks a text field FOR,
+   so swallowing that gesture makes the field strictly worse than an unwrapped
+   one. `yieldsToNativeTextMenu` (textarea / text-ish input / contenteditable)
+   yields on every right-click path. **It has to run in the CAPTURE phase:**
+   Radix's open handler is composed into the trigger's bubble-phase
+   `onContextMenu`, so returning early from ours does not stop it, and
+   `preventDefault()` would kill the native menu too. Editable surfaces are the
+   opposite case — they wire text mutation into the menu deliberately and keep
+   it.
+
+---
+
 ## Content-aware sections — the menu reads the selection
 
 Some verbs only make sense for a _kind_ of content, so the menu inspects what it
@@ -214,6 +239,7 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 
 ## Change Log
 
+- `2026-08-09` — **The shell no longer harms the surface it wraps** (see the section above). (1) `ContextMenuV3` renders its children bare until mounted instead of inheriting the ui wrapper's `null` — a wrapped list row used to vanish from the server render and the first client render. (2) A read-only menu yields to the browser's own menu inside a live text field (`yieldsToNativeTextMenu`, capture phase on the desktop trigger + the mobile `onContextMenu` + the mousedown capture path, which would otherwise leave `selectionLocked` stuck on for a menu that never opens). Both surfaced by the canonical list shell's new row-level right-click.
 - `2026-07-27` — **Registered entities are attachable without curated-union casts.** `ContextMenuEntityRef` and the context-assignment write path now consume the generated `EntityTypeToken` contract instead of the older hand-curated `EntityType` subset. Scopeable registered entities such as `web_site` can therefore light up Attach To alongside Share through the standard `entity` prop; association reads/writes still flow through the existing scopes/associations chokepoints.
 - `2026-07-22` — **extraSections gained `checkbox` + `link` item kinds** (desktop: Radix CheckboxItem stays open on toggle / real `<a>` anchors; mobile: toggle-and-close with On/Off sublabel / navigate). Prerequisite for folding `ItemContextMenu` into v3.
 - `2026-07-21` — **Files menus consolidated + PDF region menu born on v3.** (1) `FileRowContextMenu` / `FolderRowContextMenu` / `FileRightClickMenu` rebuilt as v3 wrappers (extraSections; ConfirmDialog deletes; file rows gain agents/Attach/Share via `matrx-user/files` + `entity`). (2) `PdfRegionContextMenu` (features/file-analysis) finished the abandoned 2026-05-11 annotation right-click: v3 `resolveContextOnOpen` on `data-region-id` + extract/promote/redact/delete against the live endpoints. (3) Adversarial review fixes: destroyInstance no longer unregisters registrant-owned widget handles; widget-handle field fallback writes via native setter + input event (controlled-safe); `buildEditableWidgetHandle` is render-pure (capability presence only).

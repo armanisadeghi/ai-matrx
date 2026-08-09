@@ -41,21 +41,22 @@ build time as you go.
 
 ## THE CONVERSION CHECKLIST — read before replacing any hand-rolled door
 
-Sixteen review findings have landed on the Wave 2/3 PR so far. **Most were the
+Eighteen review findings have landed on the Wave 2/3 PR so far. **Most were the
 same mistake in different clothes:** a conversion changed what the original door
 DID. Adopting `EntityRef` is not a drop-in — the hand-rolled code it replaces
 encodes decisions you must carry over deliberately.
 
-Three of the eleven are worth calling out as their own classes, because none is
+Four are worth calling out as their own classes, because none is
 visible in a diff: **6** (correct on the main deployment, broken on a
 satellite), **7** (correct for the surface's rare case, wrong for its common
 one), and **10-11** (correct-looking markup whose EVENTS or HIT AREA silently
 changed). The last group is the dangerous one — 11 had already shipped in three
-surfaces before a bot flagged the fourth.
+surfaces before a bot flagged the fourth, and 13 is the same shape one level
+up — the surface silently changing what the PRIMITIVE does.
 
-Before replacing hand-rolled code with a shared primitive, answer all twelve.
-1-3, 6-7 and 9-10 are door-specific; 4, 5, 8, 11 and 12 apply to ANY primitive
-adoption:
+Before replacing hand-rolled code with a shared primitive, answer all thirteen.
+1-3, 6-7 and 9-10 are door-specific; 4, 5, 8, 11, 12 and 13 apply to ANY
+primitive adoption:
 
 1. **Where did the old primary click go?** `router.push` (in place) or
    `window.open` (new tab)? Preserve it. A rail, sheet, side panel, or dialog
@@ -226,6 +227,35 @@ adoption:
     server snapshot), and the old key is removed only once a synced value
     exists. **Before writing to a synced store from an effect, prove your
     "hydrated" signal actually flips.** *(Caught in review.)*
+
+13. **Does the primitive you are adopting SURVIVE the new context, or just
+    compile in it?** The sibling of 10-11, one level up: those ask whether the
+    primitive changes what the surface does; this asks whether the surface
+    changes what the PRIMITIVE does. Wrapping table rows in `ItemContextMenu`
+    type-checked, rendered, and shipped — and dragged two latent
+    `ContextMenuV3` defects into a context that made them fatal. **Both had
+    been latent in all 45 v3 consumers for months:**
+    - `components/ui/context-menu`'s hydration-safe `ContextMenu` returns
+      `null` until mounted. Around a self-contained panel that is invisible;
+      around a `<tr>` the list **paints empty** and fills in after hydration.
+      A shell may never delete the children it wraps — it now renders them
+      bare until `useIsMounted` flips.
+    - A read-only menu swallowed right-click inside a live `<input>`, so the
+      inline-edit cell lost Paste/Undo/spellcheck — the field became strictly
+      worse than an unwrapped one. **The fix has to run in the CAPTURE phase:**
+      Radix's open handler is composed into the trigger's bubble-phase
+      `onContextMenu`, so an early return does not stop it and
+      `preventDefault()` would kill the native menu too, which is the thing
+      being protected.
+
+    **The reusable move:** when you put a primitive somewhere it has never
+    been, list what the new host assumes that the primitive's previous homes
+    did not — here, "rows exist at first paint" and "the cells contain live
+    text inputs". Then fix it AT THE PRIMITIVE, where the other 45 consumers
+    get the repair too. *(Both caught by Cursor Bugbot; the second is the exact
+    hazard the Wave 3 scouting notes had flagged in advance and the
+    implementation then did not handle — a written-down hazard is not a
+    handled one.)*
 
 Everything the primitive cannot decide for itself is documented on the props;
 read them rather than inferring from a neighbouring call site.
@@ -665,11 +695,16 @@ these — but **not** `AgentListDropdown` (42 consumers) or `AgentActionModal`.
         the shell's dynamic edge. `ItemMenu` already statically imports the thin
         `NonEditableContextMenu`, and `EntityListTable` already imports
         `ItemMenu` — so the chunk graph does not change.
-      - **THE REAL HAZARD, and why this wasn't done blind:** `MatrxDataTable`
-        has inline-editable cells (`EditableTableCell`). A row-level context
-        menu swallows the native right-click inside a text input, destroying
-        copy/paste there. Any wiring MUST exclude editable cells (and verify it
-        in a browser, which a preview URL cannot do — see constraint 1).
+      - **THE REAL HAZARD, flagged here and then not handled — see checklist
+        13.** `MatrxDataTable` has inline-editable cells (`EditableTableCell`);
+        a row-level context menu swallows the native right-click inside a text
+        input, destroying copy/paste there. The first implementation shipped
+        without a guard and Bugbot caught it. **Fixed at `ContextMenuV3`, not
+        here**, and deliberately so: gating the wrapper on "is this row
+        editing?" would change the element tree mid-edit, remounting the `<tr>`
+        and discarding `EditableTableCell`'s local state — the cure would close
+        the edit it was protecting. Yielding to the native menu keeps the
+        wrapper mounted and repairs all 45 v3 consumers at once.
       - Note while there: `ItemContextMenu` hardcodes `sourceFeature="files"`
         for every consumer. Wrong for agents/transcripts; make it a prop.
 - [ ] `useListViewPrefs` — migrate the 4 hand-rolled localStorage copies, each
