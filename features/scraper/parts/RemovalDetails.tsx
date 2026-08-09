@@ -3,6 +3,12 @@ import { detailsMap, typeMap } from "@/features/scraper/constants";
 import { Checkbox } from "@/features/scraper/reusable/checkbox";
 import { Button } from "@/components/ui/button";
 import React, { useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+} from "@/components/official/mobile-table/mobileTable";
 
 type FilterColumn = "type" | "details" | "remover";
 type SortColumn = "text" | FilterColumn;
@@ -162,11 +168,11 @@ const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
       </div>
 
       <div className="w-full overflow-x-auto">
-        <table className="w-full border-collapse table-fixed">
+        <table className={cn("border-collapse sm:table-fixed", MOBILE_TABLE)}>
           <thead>
             <tr>
               <th
-                className="w-9/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
+                className={cn("sm:w-9/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[11rem] max-sm:bg-gray-100 max-sm:dark:bg-gray-700")}
                 onClick={() => handleSort("text")}
               >
                 Text{" "}
@@ -177,7 +183,7 @@ const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
                 )}
               </th>
               <th
-                className="w-1/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
+                className="sm:w-1/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
                 onClick={() => handleSort("type")}
               >
                 Type{" "}
@@ -197,7 +203,7 @@ const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
                 </button>
               </th>
               <th
-                className="w-1/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
+                className="sm:w-1/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
                 onClick={() => handleSort("details")}
               >
                 Details{" "}
@@ -217,7 +223,7 @@ const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
                 </button>
               </th>
               <th
-                className="w-1/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
+                className="sm:w-1/12 border p-2 text-left cursor-pointer bg-gray-100 dark:bg-gray-700"
                 onClick={() => handleSort("remover")}
               >
                 Remover{" "}
@@ -245,19 +251,19 @@ const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
                 className={`${index % 2 === 0 ? "bg-gray-50 dark:bg-gray-800" : "bg-textured"} hover:bg-gray-100 dark:hover:bg-gray-700`}
               >
                 <td
-                  className="border p-2 cursor-pointer overflow-hidden text-ellipsis"
+                  className={cn("border p-2 cursor-pointer sm:overflow-hidden sm:text-ellipsis", MOBILE_TABLE_FROZEN_CELL, "max-sm:min-w-[11rem]")}
                   onClick={() => setSelectedItem(item)}
                   style={{ whiteSpace: "normal" }}
                 >
                   {truncateText(cleanText(item.text), 200)}
                 </td>
-                <td className="border p-2 truncate">
+                <td className="border p-2 sm:truncate">
                   {getDisplayValue(item.type, typeMap)}
                 </td>
-                <td className="border p-2 truncate">
+                <td className="border p-2 sm:truncate">
                   {getDisplayValue(item.details, detailsMap)}
                 </td>
-                <td className="border p-2 truncate">{item.remover}</td>
+                <td className="border p-2 sm:truncate">{item.remover}</td>
               </tr>
             ))}
           </tbody>

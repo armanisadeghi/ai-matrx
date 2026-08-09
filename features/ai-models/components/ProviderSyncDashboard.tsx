@@ -37,6 +37,10 @@ import {
   type ProviderSyncComparisonStatus,
 } from "../utils/providerSyncComparison";
 import type { AiModel, AiProvider } from "../types";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -690,7 +694,7 @@ function ComparisonTable({
 
   return (
     <div className="border-t overflow-x-auto">
-      <table className="w-full text-xs border-collapse">
+      <table className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
         <thead>
           <tr className="border-b">
             <SortableTH

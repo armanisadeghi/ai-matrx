@@ -21,6 +21,11 @@ import { cn } from "@/lib/utils";
 import type { TableColumn } from "./shape";
 import { humanizeEnumValue, isPlainObject } from "./shape";
 import { ResultValue, type ResultDensity } from "./ResultValue";
+import {
+  MOBILE_TABLE,
+  MOBILE_TABLE_FROZEN_CELL,
+  MOBILE_TABLE_FROZEN_HEAD,
+} from "@/components/official/mobile-table/mobileTable";
 
 export interface ResultTableProps {
     rows: Array<Record<string, unknown>>;
@@ -227,15 +232,18 @@ export const ResultTable: React.FC<ResultTableProps> = ({
             {/* Data-density type (text-xs) — a result table is reference material,
                 never louder than the message text around it. */}
             <div className="overflow-x-auto rounded-md border border-border/60">
-                <table className="w-full border-collapse text-xs">
+                <table className={cn("border-collapse text-xs", MOBILE_TABLE)}>
                     <thead>
                         <tr>
-                            {columns.map((col) => {
+                            {columns.map((col, colIdx) => {
                                 const active = sortKey === col.key;
                                 return (
                                     <th
                                         key={col.key}
-                                        className="border-b border-border/60 px-2.5 py-1.5 text-left align-bottom text-[11px] font-medium text-muted-foreground"
+                                        className={cn(
+                                            "border-b border-border/60 px-2.5 py-1.5 text-left align-bottom text-[11px] font-medium text-muted-foreground",
+                                            colIdx === 0 && MOBILE_TABLE_FROZEN_HEAD,
+                                        )}
                                     >
                                         <button
                                             type="button"
@@ -273,8 +281,14 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                         ) : (
                             shown.map((row, ri) => (
                                 <tr key={ri} className="border-b border-border/60 last:border-0 hover:bg-muted/30">
-                                    {columns.map((col) => (
-                                        <td key={col.key} className="px-2.5 py-1.5 align-top text-foreground">
+                                    {columns.map((col, colIdx) => (
+                                        <td
+                                            key={col.key}
+                                            className={cn(
+                                                "px-2.5 py-1.5 align-top text-foreground",
+                                                colIdx === 0 && MOBILE_TABLE_FROZEN_CELL,
+                                            )}
+                                        >
                                             <Cell value={row[col.key]} depth={depth} />
                                         </td>
                                     ))}

@@ -48,6 +48,10 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { reloadAiCatalog } from "../../catalogReload";
 import { aiModelService } from "../../service";
 import type { AiApi, AiEndpoint } from "../../types";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 // ─── Shared bits ─────────────────────────────────────────────────────────────
 
@@ -452,7 +456,7 @@ function SimpleTable<T extends { id: string; is_system: boolean }>({
         </Button>
       </div>
       <div className="flex-1 overflow-auto min-h-0">
-        <table className="w-full caption-bottom text-xs border-collapse">
+        <table className={cn("caption-bottom text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
           <thead className="sticky top-0 z-10 bg-card border-b border-border">
             <tr className="h-8">
               {columns.map((c) => (

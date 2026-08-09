@@ -55,6 +55,10 @@ import {
   initialValuesForVariables,
   pairKindFieldsWithVariables,
 } from "@/features/content-ir/input/kind-input-values";
+import { cn } from "@/lib/utils";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 type SchemaState =
   | { status: "loading" }
@@ -358,7 +362,7 @@ export default function KindInputsTab({
                 sees them.
               </p>
               <div className="mt-1.5 overflow-x-auto">
-                <table className="w-full text-xs">
+                <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
                   <thead>
                     <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                       <th className="py-1 pr-2 font-medium">Field</th>

@@ -31,6 +31,9 @@ import {
 import { useCaptureUploadFeed } from "@/features/media-capture/hooks/useCaptureUploadFeed";
 import { listStoredTusUploads } from "@/features/files/upload/tusUpload";
 import type { StoredTusUploadSummary } from "@/features/files/upload/tusUpload";
+import {
+  MOBILE_TABLE_FROZEN,
+} from "@/components/official/mobile-table/mobileTable";
 
 function probeRecordingMimes(kind: "video" | "audio"): string[] {
   if (
@@ -248,7 +251,7 @@ export function CameraAdminDiagnostics() {
               No capture failures recorded this session.
             </p>
           ) : (
-            <table className="w-full text-left text-xs">
+            <table className={cn("text-left text-xs", MOBILE_TABLE_FROZEN)}>
               <thead>
                 <tr className="border-b border-border text-[11px] uppercase text-muted-foreground">
                   <th className="px-2 py-1 font-medium">Time</th>
