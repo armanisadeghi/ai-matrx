@@ -19,6 +19,13 @@ export interface RecurrenceRule {
   interval: number;
   /** RRULE two-letter day codes, WEEKLY only. */
   byDay?: ("MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU")[];
+  /**
+   * Persistent day-of-month anchor (1–31, or -1 = last day), MONTHLY/YEARLY
+   * only. Without it, successive rolls anchor on the *current* due date, so a
+   * month-end clamp becomes permanent (Jan 31 → Feb 28 → Mar 28 forever —
+   * D129). `completeTask` stamps it on first roll via `ensureMonthDayAnchor`.
+   */
+  byMonthDay?: number;
 }
 
 const DAY_CODES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
@@ -51,14 +58,50 @@ export function parseRecurrenceRule(
           (DAY_CODES as readonly string[]).includes(d),
         )
     : undefined;
-  return { freq, interval, byDay: byDay?.length ? byDay : undefined };
+  const byMonthDayRaw = parts.get("BYMONTHDAY");
+  let byMonthDay: number | undefined;
+  if (byMonthDayRaw !== undefined) {
+    const n = parseInt(byMonthDayRaw, 10);
+    if (n === -1 || (n >= 1 && n <= 31)) byMonthDay = n;
+  }
+  return {
+    freq,
+    interval,
+    byDay: byDay?.length ? byDay : undefined,
+    byMonthDay:
+      freq === "MONTHLY" || freq === "YEARLY" ? byMonthDay : undefined,
+  };
 }
 
 export function formatRecurrenceRule(rule: RecurrenceRule): string {
   const parts = [`FREQ=${rule.freq}`];
   if (rule.interval > 1) parts.push(`INTERVAL=${rule.interval}`);
   if (rule.byDay?.length) parts.push(`BYDAY=${rule.byDay.join(",")}`);
+  if (
+    rule.byMonthDay !== undefined &&
+    (rule.freq === "MONTHLY" || rule.freq === "YEARLY")
+  ) {
+    parts.push(`BYMONTHDAY=${rule.byMonthDay}`);
+  }
   return parts.join(";");
+}
+
+/**
+ * Stamp the original day-of-month anchor into a MONTHLY/YEARLY rule that
+ * doesn't carry one yet, so repeated rolls never lose month-end after a clamp
+ * (D129). Returns the amended rule string, or null when nothing needs to
+ * change (already anchored, weekly/daily, or unparseable).
+ */
+export function ensureMonthDayAnchor(
+  rule: string | null | undefined,
+  fromDate: string,
+): string | null {
+  const r = parseRecurrenceRule(rule);
+  if (!r || !fromDate) return null;
+  if (r.freq !== "MONTHLY" && r.freq !== "YEARLY") return null;
+  if (r.byMonthDay !== undefined) return null;
+  const day = parseDateOnlyLocal(fromDate).getDate();
+  return formatRecurrenceRule({ ...r, byMonthDay: day });
 }
 
 export function describeRecurrenceRule(
@@ -80,8 +123,13 @@ export function describeRecurrenceRule(
       };
       return `${base} on ${r.byDay.map((d) => names[d]).join(", ")}`;
     }
-    case "MONTHLY":
-      return every("month");
+    case "MONTHLY": {
+      const base = every("month");
+      if (r.byMonthDay === undefined) return base;
+      return r.byMonthDay === -1
+        ? `${base} on the last day`
+        : `${base} on day ${r.byMonthDay}`;
+    }
     case "YEARLY":
       return every("year");
   }
@@ -113,7 +161,11 @@ function addMonthsClamped(d: Date, months: number, anchorDay: number): Date {
   const total = d.getMonth() + months;
   const year = d.getFullYear() + Math.floor(total / 12);
   const month = ((total % 12) + 12) % 12;
-  const day = Math.min(anchorDay, daysInMonth(year, month));
+  // anchorDay -1 = last day of the target month (BYMONTHDAY=-1 semantics).
+  const day =
+    anchorDay === -1
+      ? daysInMonth(year, month)
+      : Math.min(anchorDay, daysInMonth(year, month));
   return new Date(year, month, day);
 }
 
@@ -132,7 +184,9 @@ export function nextOccurrence(
   if (!r || !fromDate) return null;
   const floor = todayStr && todayStr > fromDate ? todayStr : fromDate;
   const anchor = parseDateOnlyLocal(fromDate);
-  const anchorDay = anchor.getDate();
+  // The persisted BYMONTHDAY anchor wins over the current due date's day —
+  // a clamped roll (Jan 31 → Feb 28) must not become the new anchor (D129).
+  const anchorDay = r.byMonthDay ?? anchor.getDate();
   const floorDate = parseDateOnlyLocal(floor);
   let cursor = new Date(anchor);
 

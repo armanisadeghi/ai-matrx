@@ -18,3 +18,4 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 ## Cleared
 
 (none yet)
+- 2026-08-09 · loud-recovery/dead-end · /marketing/.../keywords Performance tab renders 'No search queries stored yet' empty state while v_site_keyword_performance returns HTTP 500 — error laundered into fake empty state (spawn chip filed) · found during brand-alias drawer fix
