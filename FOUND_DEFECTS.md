@@ -13,6 +13,31 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D142 — `migrations/agx_list_scoped_v3_all_columns.sql` disagrees with the live function (2026-08-09)
+
+The committed file returns `project_id`; the **deployed** `agx_list_scoped` does not (verified
+live via `pg_get_functiondef` while wiring `/agents/all` doors). Anyone who reads the file to
+reason about that RPC — which columns it returns, what its `ORDER BY` whitelist and `p_filters`
+bag accept — will be wrong, and will ship a sort or filter control the server silently ignores.
+
+This is the migrations-vs-DB rule biting in the read direction: the DB is the source of truth,
+so the file is the thing to correct. Fix: re-derive the file from the live definition (or mark
+it superseded and add the migration that actually produced the live shape). Until then, read the
+live function, never this file.
+
+### D141 — `features/tasks/components/TaskAttachments.tsx` has zero importers, and two docs claim it's live (2026-08-09)
+
+Nothing imports it — `TaskAttachmentsPanel.tsx` superseded it (D23, 2026-06-29) and is what
+`TaskDetails` / `TaskDetailsPanel` / `TaskEditorBody` actually render. Its only remaining reader,
+`taskService.getAttachmentUrl`, now has no callers either.
+
+The reason this is filed rather than deleted: **`features/war-room/FEATURE.md:122` and the
+war-room admin map (`app/(core)/war-room/admin/page.tsx:242`) both state the War Room Task tab
+"reuses … `TaskAttachments`".** That is false against the code. A per-feature admin map exists
+precisely so the surface can't lie about what it owns, so the drift matters more than the dead
+file. Fix: confirm War Room never intended to mount it, then delete the component + the unused
+service function and correct both docs in the same change.
+
 ### D140 — the scheduling admin consoles show only the viewer's own schedules (2026-08-09)
 
 `/administration/automation/scheduling/{tasks,runs,orphan-leases}` present as fleet-wide admin
