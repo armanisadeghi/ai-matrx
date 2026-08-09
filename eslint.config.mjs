@@ -564,6 +564,24 @@ const matrxLintPlugin = {
                                 call.callee.property?.name ?? '',
                             );
                         if (iterating) return false;
+                        // `<NoteRow key={n.id} note={n} />` — the extracted-row
+                        // idiom puts the key at the CALLSITE, so a row that
+                        // takes its record via props would otherwise read as
+                        // that record's own surface.
+                        const fnName =
+                            cur.id?.name ??
+                            (cur.parent?.type === 'VariableDeclarator'
+                                ? cur.parent.id?.name
+                                : null);
+                        if (
+                            fnName &&
+                            /^[A-Z]/.test(fnName) &&
+                            new RegExp(`<${fnName}\\b[^>]*\\bkey=`).test(
+                                context.sourceCode.getText(),
+                            )
+                        ) {
+                            return false;
+                        }
                         if ((cur.params ?? []).some(binds)) return true;
                         // Keep walking outward. A nested helper / IIFE / local
                         // render callback that does not bind the record still

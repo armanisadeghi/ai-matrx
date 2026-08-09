@@ -49,7 +49,7 @@ and imports **no** door mechanism at all — no `next/link`, no `EntityRef`, no
 router, no overlay opener. That is the inventory pass skipped wholesale, and it
 is the highest-confidence signal we have for this law.
 
-**Baseline 2026-08-09: 7 files.** Deliberately short — earlier cuts flagged 21
+**Baseline 2026-08-09: 9 files.** Deliberately short — earlier cuts flagged 21
 and then 16, and audits found most of those DID own a door the checker could
 not see (a local `scopeHref` helper, an `openFilePreview` import, a row whose
 `onClick` hands the handler the record's own id). The rule was tightened each
@@ -59,16 +59,30 @@ time rather than left noisy. Do the inventory pass ONCE per feature.
    `RunsComparisonTable.tsx`. The whole feature was built blind (5 findings, all
    high). A comparison must also **state the verdict, not a timestamp**
    (corollary 3) — check that too.
-2. **Notes (1)** — `features/notes/components/mobile/MobileNotesList.tsx`.
-   `note` has a route; this is cheap.
-3. **Agents & surfaces (2)** —
+2. **Agents (2)** —
    `features/agents/components/inputs/smart-input/RunSkillPicker.tsx`,
-   `features/surfaces/components/bind/SurfaceAgentBindPanel.tsx`.
-4. **Files (1)** — `features/files/components/surfaces/MobileStack.tsx`.
-5. **Demos (1)** — `app/(dev)/demos/scopes/context-lab/page.dev.tsx`. Demos are
+   `features/agents/ui-first-tools/ui/lists/TaskPanel.tsx`. TaskPanel is the
+   sharpest case in the list: it makes a task title a `<button>` that opens an
+   **inline rename**, so the user can edit the record's name but can never reach
+   the record. An affordance that looks like a door and isn't is worse than none.
+3. **Scopes & skills (2)** —
+   `features/scopes/components/entity-context/EntityScopeTagger.tsx`,
+   `features/skills/components/SkillResourcesPanel.tsx`. Both name records the
+   platform can open; neither `scope` nor `skill` has a registry route yet (see
+   the registry-gaps table in `no-dead-ends-sweep.md` — 11 and 3 findings
+   respectively), so these two are gated on that decision.
+4. **Code library (1)** — `features/code/views/library/LibraryTreeNode.tsx`.
+5. **Surfaces (1)** — `features/surfaces/components/bind/SurfaceAgentBindPanel.tsx`.
+6. **Demos (1)** — `app/(dev)/demos/scopes/context-lab/page.dev.tsx`. Demos are
    in scope; the doctrine has no size threshold.
 
-**Beyond the seven**, this law is not fully machine-detectable — the checker
+Two files that appeared on the 2026-08-09 morning cut —
+`features/notes/components/mobile/MobileNotesList.tsx` and
+`features/files/components/surfaces/MobileStack.tsx` — dropped off when the
+row-detection gates were tightened that afternoon. They were false positives,
+not fixes.
+
+**Beyond the nine**, this law is not fully machine-detectable — the checker
 sees a *missing import*, not a *poorer surface*. The scoreboard's worst-features
 ranking is the better hunting ground, and `scripts/dead-ends/FEATURE.md`
 § Known limits says what the detector cannot see (notably: `hooks/`, `utils/`,

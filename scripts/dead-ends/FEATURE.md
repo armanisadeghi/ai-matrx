@@ -98,6 +98,7 @@ and none of the audited versions shipped as-is:
 | 1 | ~31% | `unlinked-count` and `no-doors-in-file` both 0/9 |
 | 2 | ~55% | four *regressions* — skips so aggressive they silenced real violations, including the whole extracted-row-component idiom |
 | 3 | ~50% | the id-prop + selector detail-surface shape (`function X({ agentId })` → `const agent = useAppSelector(…)`), which no parameter check could see |
+| 4 (PR review) | — | the self-subject walk stopped at the first enclosing function; the extracted-row-with-callsite-`key` idiom was silently suppressed; `onActivate` was not recognised as a door |
 
 Against the union of all three audits' hand-checked samples, the shipped version
 keeps **14/14** confirmed true positives and drops **28/28** confirmed false
@@ -139,7 +140,12 @@ Additional gates, each traceable to a real false positive:
   knowing the twin exists and not linking it is worse than saying nothing.
 - **A handler that receives the record's own id is a door** —
   `onClick={() => handleClick(file.id)}` IS the row opening itself, whatever
-  the callback is named.
+  the callback is named. Handler verbs are matched on camel SEGMENTS, not with
+  `\b`: there is no word boundary inside `onActivate`, and a boundary-anchored
+  regex missed the most common "open this row" callback name in the repo.
+- **A component rendered as `<Row key={…} record={…} />` is a ROW**, even
+  though the `key` sits at the callsite rather than inside it. Without this the
+  extracted-row idiom read as the record's own surface and went silent.
 - **"Could not be found" copy is not a dead end** — there is no record to open.
 - **`onClick` must navigate** to count as a door. An accordion toggle used to
   silence every finding in the row it wrapped.
@@ -150,8 +156,8 @@ Additional gates, each traceable to a real false positive:
   suppressed `brokerId`, `call_id`, `nodeId`, `blockId` — every one a real
   record here. Suppressing a real entity is worse than ranking it low.
 
-Measured on the shipped ruleset: **126 findings (68 high, 58 medium) across 80
-files out of 6,803 scanned, in ~9s.**
+Measured on the shipped ruleset: **133 findings (66 high, 67 medium) across 82
+files out of 6,805 scanned, in ~9s.**
 
 ## Known limits — stated, not hidden
 
@@ -238,4 +244,4 @@ new one.
   advisory wiring in `run-release-gates.sh`. Retuned after each of three
   finding-by-finding adversarial audits (~31% → ~55% → ~50% → shipped);
   against the union of their samples, 14/14 true positives kept and 28/28 false
-  positives dropped. Baseline: 126 findings / 68 high across 80 files.
+  positives dropped. Baseline: 133 findings / 66 high across 82 files.

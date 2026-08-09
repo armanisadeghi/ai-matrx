@@ -74,11 +74,40 @@ const REFERENCE_VERB_RE =
   /\b(saved (to|as|in)|added to|moved to|assigned to|linked to|attached to|belongs to|created in|now in|sent to)\s*$/i;
 
 /**
- * `onClick` handlers that actually navigate. Any `onClick` used to count as a
- * door, so an expand/collapse row silenced every finding inside it.
+ * Verbs in a click handler that mean "this opens the record".
+ *
+ * Matched against camel/underscore SEGMENTS of the handler source, not with
+ * `\b` — there is no word boundary inside `onActivate`, so a boundary-anchored
+ * regex missed the single most common "open this row" callback name in this
+ * repo and reported every row that used it.
  */
-const NAVIGATING_HANDLER_RE =
-  /\b(open|push|replace|router|navigate|href|goTo|view|peek|select|show[A-Za-z]*(Detail|Panel|Modal|Sheet|Drawer)|setSelected|onRowOpen|onOpen)/i;
+const NAVIGATING_VERBS = new Set([
+  "open",
+  "push",
+  "replace",
+  "router",
+  "navigate",
+  "href",
+  "goto",
+  "go",
+  "view",
+  "peek",
+  "select",
+  "selected",
+  "activate",
+  "launch",
+  "reveal",
+  "detail",
+  "details",
+  "inspect",
+]);
+
+function handlerNavigates(text: string): boolean {
+  return text
+    .split(/[^A-Za-z0-9]+/)
+    .flatMap((part) => part.split(/(?=[A-Z])/))
+    .some((part) => NAVIGATING_VERBS.has(part.toLowerCase()));
+}
 
 /** Controls that destroy or dismiss — never a door, even with an onClick. */
 const CLOSING_AFFORDANCE_RE =
@@ -646,6 +675,7 @@ function isSelfSubject(node: ts.Node, expr: ts.Expression, sf: ts.SourceFile): b
       if (isIterationCallback(cur)) return false;
       if (isNamedRowRenderer(cur, sf)) return false;
       if (rendersKeyedElement(cur)) return false;
+      if (isRenderedAsRow(cur, sf)) return false;
       if (cur.parameters.some((p) => bindsName(p.name, root))) return true;
       // Do NOT stop here. A nested helper, IIFE or local render callback that
       // does not bind the record still sits inside the component that does —
@@ -746,6 +776,46 @@ function isNamedRowRenderer(fn: ts.Node, sf: ts.SourceFile): boolean {
     `\\.(map|flatMap|forEach)\\(\\s*${escapeRe(name)}\\s*[,)]`,
   );
   return re.test(sf.text);
+}
+
+/**
+ * Is this component rendered as a ROW somewhere — `<NoteRow key={n.id} …/>`?
+ *
+ * The extracted-row-component idiom puts the `key` at the CALLSITE, not inside
+ * the component, so `rendersKeyedElement` cannot see it. Without this, a chip
+ * or row that receives its record via props reads as that record's own surface
+ * and its `{note.id}` goes silent — the same class the `.map()` and
+ * named-helper tests exist to catch, just spelled differently.
+ */
+function isRenderedAsRow(fn: ts.Node, sf: ts.SourceFile): boolean {
+  let name: string | null = null;
+  if (ts.isFunctionDeclaration(fn) && fn.name) name = fn.name.text;
+  else if (
+    fn.parent &&
+    ts.isVariableDeclaration(fn.parent) &&
+    ts.isIdentifier(fn.parent.name)
+  ) {
+    name = fn.parent.name.text;
+  }
+  if (!name || !/^[A-Z]/.test(name)) return false;
+
+  let found = false;
+  const visit = (n: ts.Node): void => {
+    if (found) return;
+    const opening = openingElementOf(n);
+    if (opening && tagNameOf(opening) === name) {
+      const hasKey = opening.attributes.properties.some(
+        (a) => ts.isJsxAttribute(a) && ts.isIdentifier(a.name) && a.name.text === "key",
+      );
+      if (hasKey) {
+        found = true;
+        return;
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return found;
 }
 
 /** Does this function return JSX carrying a `key`? Then it renders a row. */
@@ -1114,7 +1184,7 @@ function findDoorAncestor(node: ts.Node, root: string | null = null): string | n
             const receivesThisId =
               root != null &&
               new RegExp(`\\b${escapeRe(root)}\\??\\.(id|uuid|\\w*(_id|Id))\\b`).test(body);
-            if (!receivesThisId && !NAVIGATING_HANDLER_RE.test(body)) continue;
+            if (!receivesThisId && !handlerNavigates(body)) continue;
           }
           return tag ?? name;
         }
