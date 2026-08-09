@@ -12,6 +12,7 @@
  *   fetchFullAgent               — complete row, marks record clean
  *   fetchAgentVersionHistory     — paginated version list (returns data, no slice storage)
  *   fetchAgentVersionSnapshot    — full version snapshot → stored in agents map (isVersion = true)
+ *   fetchAgentSyncComparison     — identical/differs/unknown verdict for a linked pair
  *
  * Write thunks:
  *   saveAgentField               — optimistic single-field save with rollback
@@ -39,6 +40,14 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Database } from "@/types/database.types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  compareAgentSyncSnapshots,
+  type AgentSyncComparison,
+} from "@/features/agents/sync/compare";
+import {
+  AGENT_SYNC_SNAPSHOT_SELECT,
+  toAgentSyncSnapshot,
+} from "@/features/agents/sync/sync-fields";
 import type {
   AgentDefinition,
   AgentListRow,
@@ -1293,6 +1302,55 @@ export const syncLinkedAgents = createAsyncThunk<
     const targetId = data as string;
     await dispatch(fetchFullAgent(targetId));
     return targetId;
+  },
+);
+
+export interface AgentSyncComparisonArgs {
+  /** The user-side agent of the linked pair. */
+  userAgentId: string;
+  /** The system ("builtin") agent of the linked pair. */
+  systemAgentId: string;
+}
+
+/**
+ * Reads both sides of a linked pair and answers whether they are actually the
+ * same — the question the sync panel exists to answer.
+ *
+ * Reads EXACTLY the columns `agx_sync_linked_agents` copies
+ * (`AGENT_SYNC_SNAPSHOT_SELECT`), raw, so the verdict can never disagree with
+ * what Pull/Push would write. A side RLS hides (or that no longer exists) comes
+ * back as no row, which the comparison reports as `unknown` — never as
+ * "identical".
+ *
+ * Returns data only; nothing is written to the slice.
+ */
+export const fetchAgentSyncComparison = createAsyncThunk<
+  AgentSyncComparison,
+  AgentSyncComparisonArgs,
+  ThunkApi
+>(
+  "agentDefinition/fetchSyncComparison",
+  async ({ userAgentId, systemAgentId }) => {
+    const { data, error } = await supabase
+      .schema("agent")
+      .from("definition")
+      .select(AGENT_SYNC_SNAPSHOT_SELECT)
+      .in("id", [userAgentId, systemAgentId])
+      .returns<Record<string, unknown>[]>();
+    if (error) throw pgErrorToError(error);
+
+    const byId = new Map<string, Record<string, unknown>>();
+    for (const row of data ?? []) {
+      if (typeof row.id === "string") byId.set(row.id, row);
+    }
+
+    const userRow = byId.get(userAgentId);
+    const systemRow = byId.get(systemAgentId);
+
+    return compareAgentSyncSnapshots(
+      userRow ? toAgentSyncSnapshot(userRow) : null,
+      systemRow ? toAgentSyncSnapshot(systemRow) : null,
+    );
   },
 );
 
