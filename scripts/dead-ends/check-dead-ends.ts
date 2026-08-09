@@ -306,6 +306,28 @@ function main(): void {
   }
 
   if (args.write) {
+    // A FILTERED run must never become the committed snapshot. The dashboard
+    // reads report.json as the whole-repo baseline — totals, worst-feature and
+    // worst-file rankings, and the trend series all assume it. Writing a
+    // `--path=features/notes` run would shrink the scoreboard to one feature
+    // and append a bogus low point to the trend, and nothing would say so:
+    // the page would look like the campaign had just been won.
+    //
+    // The docs actively invite the scoped run (`--path=features/notes` is in
+    // the commands block), so adding `--write` to one is a natural keystroke
+    // away. Refuse it, loudly, rather than silently producing a lie.
+    if (args.pathPrefix || args.rule) {
+      const flag = args.pathPrefix ? `--path=${args.pathPrefix}` : `--rule=${args.rule}`;
+      console.error(
+        `\n${RED}[dead-ends] refusing to --write a filtered run (${flag}).${NC}\n` +
+          `${DIM}  report.json is the whole-repo baseline the scoreboard reads; a scoped\n` +
+          `  write would shrink its totals and rankings and add a false trend point.\n` +
+          `  Run the scope without --write to read it, or run 'pnpm check:dead-ends:write'\n` +
+          `  unfiltered to refresh the snapshot.${NC}\n`,
+      );
+      process.exitCode = 2;
+      return;
+    }
     writeFileSync(REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
     const history = readHistory();
     history.push({

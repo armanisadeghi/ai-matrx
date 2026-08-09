@@ -81,6 +81,13 @@ pnpm check:dead-ends --json                # machine-readable
 pnpm check:dead-ends:strict                # exit 1 on any finding
 ```
 
+**`--write` refuses to run with `--path` or `--rule`** (exit 2, loud).
+`report.json` is the whole-repo baseline the scoreboard reads — its totals,
+worst-feature/worst-file rankings and trend all assume it — so writing a scoped
+run would shrink the page to one feature and add a false trend point, looking
+exactly like the campaign had been won. The scoped read is encouraged; the
+scoped write is not a thing.
+
 **The scoreboard is only as fresh as the last committed snapshot.** Run
 `pnpm check:dead-ends:write` and commit `report.json` + `history.json` after a
 sweep; the page shows the scan's age and screams past 7 days. A live 6,800-file
