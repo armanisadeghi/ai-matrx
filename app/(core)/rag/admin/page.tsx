@@ -251,6 +251,14 @@ const RAG_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/(dev)/demos/tool-viz/rag-tools",
       status: "Demo only",
     },
+    {
+      url: "/demos/rag-hit-card",
+      label: "RagHitCard fixtures",
+      description:
+        "The canonical hit card (expanded + compact) rendered from fixtures — no indexed content or retrieval backend needed. Use it for card layout work, especially at 375px.",
+      filePath: "app/(dev)/demos/rag-hit-card",
+      status: "Demo only",
+    },
   ],
 
   relatedFeatures: [

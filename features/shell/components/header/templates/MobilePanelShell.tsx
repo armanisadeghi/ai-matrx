@@ -29,8 +29,14 @@
 // Panels are mounted lazily (only once opened) so a phone never pays to render
 // an inspector the user hasn't asked for. Pass `alwaysMount` for a panel that
 // must keep live state (e.g. a running terminal).
+//
+// Close-on-ACTION (opt-in): route changes auto-dismiss the drawer, but a panel
+// action that is NOT navigation (pick a session, run Clean Up, select a store
+// via a search param) leaves the drawer covering the result. Panel content can
+// call `useMobilePanelClose()` — a no-op outside the drawer (desktop renders
+// the same component) — right where the action fires.
 
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MoreHorizontal, type LucideIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -42,6 +48,17 @@ import {
   BottomSheetHeader,
 } from "@/components/official/bottom-sheet/BottomSheet";
 import { cn } from "@/lib/utils";
+
+const MobilePanelCloseContext = createContext<() => void>(() => {});
+
+/**
+ * Close the enclosing MobilePanelShell drawer after a non-navigation action
+ * (picking an item, firing a run). Safe to call anywhere: outside a drawer —
+ * including the desktop rendering of the same component — it is a no-op.
+ */
+export function useMobilePanelClose(): () => void {
+  return useContext(MobilePanelCloseContext);
+}
 
 export interface MobileShellPanel {
   id: string;
@@ -99,6 +116,11 @@ export function MobilePanelShell({
     setOpenPanelId(id);
   };
 
+  const closeAll = () => {
+    setOpenPanelId(null);
+    setMenuOpen(false);
+  };
+
   return (
     <>
       {hasPanels && (
@@ -116,13 +138,15 @@ export function MobilePanelShell({
       </div>
 
       {/* Panels that opted out of lazy mounting stay alive off-screen. */}
-      {panels
-        ?.filter((p) => p.alwaysMount && p.id !== openPanelId)
-        .map((p) => (
-          <div key={p.id} className="hidden" aria-hidden>
-            {p.content}
-          </div>
-        ))}
+      <MobilePanelCloseContext.Provider value={closeAll}>
+        {panels
+          ?.filter((p) => p.alwaysMount && p.id !== openPanelId)
+          .map((p) => (
+            <div key={p.id} className="hidden" aria-hidden>
+              {p.content}
+            </div>
+          ))}
+      </MobilePanelCloseContext.Provider>
 
       {/* Panel picker */}
       {hasPanels && (
@@ -177,13 +201,18 @@ export function MobilePanelShell({
         />
         <BottomSheetBody>
           <div className="max-h-[70dvh] overflow-auto">
-            {panels
-              ?.filter((p) => p.alwaysMount || everOpened.has(p.id))
-              .map((p) => (
-                <div key={p.id} className={cn(p.id !== openPanelId && "hidden")}>
-                  {p.content}
-                </div>
-              ))}
+            <MobilePanelCloseContext.Provider value={closeAll}>
+              {panels
+                ?.filter((p) => p.alwaysMount || everOpened.has(p.id))
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className={cn(p.id !== openPanelId && "hidden")}
+                  >
+                    {p.content}
+                  </div>
+                ))}
+            </MobilePanelCloseContext.Provider>
           </div>
         </BottomSheetBody>
       </BottomSheet>

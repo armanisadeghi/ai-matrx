@@ -22,7 +22,9 @@ export default function NewTaskPage() {
           </h1>
         </div>
       </PageHeader>
-      <div className="h-full overflow-hidden bg-textured">
+      {/* Static top UI (the form / post-save banner starts at the top) must
+          clear the glass header, or it renders behind it on mobile. */}
+      <div className="h-full overflow-hidden bg-textured pt-[var(--shell-header-h)]">
         <div className="mx-auto h-full w-full max-w-3xl px-4 py-4">
           <TaskCreatePanel
             onSaved={handleSaved}

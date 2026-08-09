@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronsLeft, Loader2, Mic, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -55,6 +56,10 @@ export function StudioSidebar({
   const [isHydrated, setIsHydrated] = useState(false);
   useEffect(() => setIsHydrated(true), []);
 
+  // Session pick/create is a search-param change, not a route change, so the
+  // mobile drawer never auto-dismisses — close it explicitly (no-op on desktop).
+  const closeMobilePanel = useMobilePanelClose();
+
   const handlePick = (id: string) => {
     if (navigateToSession) {
       navigateToSession(id);
@@ -62,6 +67,7 @@ export function StudioSidebar({
       dispatch(activeSessionIdSet(id));
     }
     onPickSession?.(id);
+    closeMobilePanel();
   };
 
   const handleCreate = async () => {
@@ -75,6 +81,7 @@ export function StudioSidebar({
     if (createSessionThunk.fulfilled.match(result) && result.payload?.id) {
       navigateToSession?.(result.payload.id);
       onCreateSession?.(result.payload.id);
+      closeMobilePanel();
     }
   };
 

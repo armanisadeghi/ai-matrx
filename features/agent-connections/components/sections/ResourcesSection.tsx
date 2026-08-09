@@ -47,14 +47,16 @@ export function ResourcesSection() {
         onSearchChange={setSearch}
         searchPlaceholder="Search resources..."
       />
-      <div className="flex items-center gap-1 px-4 pb-2 shrink-0">
+      {/* Chips must never compress: without shrink-0 + a scroll container the
+          global mobile word-break rules wrap each label mid-word at 375px. */}
+      <div className="flex items-center gap-1 px-4 pb-2 shrink-0 overflow-x-auto scrollbar-none">
         {RESOURCE_TYPES.map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTypeFilter(t)}
             className={cn(
-              "text-xs h-6 px-2 rounded-md transition-colors capitalize",
+              "text-xs h-6 px-2 rounded-md transition-colors capitalize shrink-0 whitespace-nowrap",
               typeFilter === t
                 ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:bg-muted/50",
