@@ -321,6 +321,21 @@ are now deleted.**
 
 ### Open
 
+- [ ] **THE `<button>`-NESTING BLOCKER — this is a CLASS, not three one-offs.**
+      Several remaining targets put the record's name *inside a `<button>`*
+      (a collapse toggle, a picker, a selectable card). `EntityRef` renders an
+      `<a>` and its controls render `<button>`s, so dropping it in produces
+      invalid nesting that React warns about and that breaks click handling.
+      **Confirmed at:** `features/notes/components/GlobalSearchResults.tsx:147`
+      (collapse toggle) · `features/skills/components/SkillConfigPicker.tsx:486`
+      and `:598` (both selection buttons; `skill` also has NO registry route, so
+      the only door EntityRef could add there is the peek — and that peek
+      control is itself a `<button>`).
+      **The fix is the same everywhere and is a small restructure, not a
+      substitution:** split the row into a non-button container, keep the
+      toggle/select as its own control, and let the NAME be the `EntityRef`.
+      Budget it as such — an agent who plans these as drop-ins will produce
+      broken markup or, worse, skip them and record them as "done".
 - [ ] **`GlobalSearchResults` is NOT a drop-in — do not convert it blind.** The
       note name at `features/notes/components/GlobalSearchResults.tsx:147` lives
       INSIDE a `<button>` whose click collapses/expands the hit list. Dropping
@@ -635,6 +650,21 @@ sweep gets a row. Guarded by `pnpm check:reuse-index`.
 
 ## Change log
 
+- **2026-08-09** — Wave 2, fifth batch: `KgCostDashboard`'s org column (named
+  the org, wouldn't open it; printed a truncated id when the name hadn't
+  resolved). The trap there is worth copying: **that row's click is an in-page
+  drill-down (`onPick`), not navigation**, so a plain link would have silently
+  replaced the dashboard's primary interaction. `onOpen` preserves it and the
+  doors arrive purely as additions.
+
+  Also found and recorded above: the `<button>`-nesting blocker is a CLASS
+  covering three remaining targets, not three separate surprises.
+
+  Repeat mistake worth naming: my scripted import-inserter targets "the last
+  line starting with `import `", which lands INSIDE a multi-line `import { ... }`
+  block. It broke `ExposureAuditClient` earlier today and I let it break
+  `KgCostDashboard` the same way. `pnpm type-check` caught both instantly —
+  which is the argument for running it per-file rather than per-batch.
 - **2026-08-09** — Wave 2, fourth batch: `/administration/reporting/events`.
   The audit log printed "Entity type: note" and "Entity ID: <uuid>" one line
   apart, both inert — it knew exactly what the record was and would not open it,

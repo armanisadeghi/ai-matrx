@@ -50,6 +50,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   getKgCostSummary,
   listOrgCosts,
@@ -274,11 +275,25 @@ function OrgLeaderboard({
             onClick={() => onPick(row.organization_id)}
           >
             <TableCell className="font-medium">
-              {row.organization_name ?? (
-                <span className="text-muted-foreground">
-                  {row.organization_id.slice(0, 8)}…
-                </span>
-              )}
+              {/* The org was named and unreachable, and where the name hadn't
+                  resolved it printed a truncated id — unopenable AND unusable
+                  for copying.
+
+                  `onOpen` is the load-bearing part: this row's click is an
+                  in-page DRILL-DOWN (`onPick`), not navigation, so handing the
+                  name a plain link would have quietly replaced this dashboard's
+                  primary interaction. Plain click still drills down; the doors
+                  arrive as additions — cmd/middle-click goes natively to the
+                  org, and the hover controls carry new tab and peek. */}
+              <EntityRef
+                token="organization"
+                id={row.organization_id}
+                name={row.organization_name ?? row.organization_id}
+                showIcon={false}
+                wrap
+                onOpen={() => onPick(row.organization_id)}
+                className="font-medium"
+              />
             </TableCell>
             <TableCell className="text-right tabular-nums">
               {fmtUsdShort(row.daily_auto_rag_cost_used_usd)}
