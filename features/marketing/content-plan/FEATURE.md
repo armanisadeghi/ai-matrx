@@ -340,6 +340,13 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-09 — Claude: **Page-layer assist chips in the workspace.**
+  `plan-assists-producer.ts` (deterministic missing-pages sweep: plan nodes ×
+  the WF-11 CMS page map → one navigate chip to Setup's "Realize planned
+  pages" rung; unpaired sites never fire) rendered by
+  `components/PlanAssistStrip.tsx` (the canonical `AssistStrip`,
+  site-filtered, mounted in `ContentPlanWorkbench` under the generate bar on
+  plan-bearing views). See `features/assists/FEATURE.md`.
 - 2026-08-08 — Claude: **Build with AI live progress + in-dialog research
   picker** (Arman's first-test feedback). The dialog now STAYS OPEN through
   the run as a live activity feed: REAL events parsed off the research

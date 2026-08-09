@@ -51,6 +51,7 @@ import {
 import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
 import { useCmsPageMap } from "../hooks/useCmsPageMap";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
+import { PlanAssistStrip } from "./PlanAssistStrip";
 import { PlanGenerateBar } from "./PlanGenerateBar";
 import { PlanRealityBar } from "./PlanRealityBar";
 import type { PlanNodeRow } from "../types";
@@ -346,6 +347,27 @@ export function ContentPlanWorkbench({
             onBulkDeepen={() => setBulkDeepenConfirm(true)}
             onBulkDeepenCancel={bulkDeepen.cancel}
             onBulkDeepenDismiss={bulkDeepen.reset}
+          />
+        ) : null}
+
+        {/* Page-layer assist chips (planned pages missing from the paired
+            CMS site) — plan-bearing views only; the chip's action lands on
+            Setup, so showing it there would be circular. Renders nothing
+            when there are no chips. */}
+        {view === "tree" || view === "table" || view === "map" ? (
+          <PlanAssistStrip
+            siteId={siteId}
+            siteLabel={site ? (site.domain ?? site.name) : null}
+            nodeRows={nodeRows}
+            pagesByNodeId={cmsPages.pagesByNodeId}
+            enabled={
+              !!siteId &&
+              !nodes.isLoading &&
+              !nodes.isError &&
+              nodeRows.length > 0 &&
+              cmsPages.map !== null
+            }
+            className="border-b border-border/40 px-3 py-1.5"
           />
         ) : null}
 

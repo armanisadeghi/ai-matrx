@@ -37,6 +37,10 @@ This feature owns the primitive; each producer sits beside the domain that notic
 - `features/content-ir/studio/shape-assists-producer.ts` — your shape has no custom component → "AI can build a custom UI" (ledger-backed, on `/shapes` visit, capped 5/sweep).
 - `features/workflow-emit/GenericEmitRenderer.tsx` — a workflow output rendered through the generic viewer → ephemeral "Build a beautiful UI for this output" chip (the Surprise-me UI pattern).
 - `features/marketing/search-console/insights-assists-producer.ts` — GSC insight findings become assists (money-page decay / CTR gap → launch `seo.page_analyzer` slot pre-filled with the code-compressed finding; unclassified backlog → navigate to the classification workbench or intake wizard). Swept once per site per session over a fixed 28d-vs-prev window anchored on the site's freshest data day; rendered inline by `components/GscAssistStrip.tsx` via `selectAssistsForSurface`.
+- `features/notes/notes-assists-producer.ts` — unorganized-notes pileup (≥5 notes with no scope tags, no project/task link, no tags, default folder → launch the `notes.organizer` slot pre-filled with the note list). Swept once per user per session over already-loaded Redux state; rendered inline by `components/NotesAssistStrip.tsx` (mounted in `NotesView`).
+- `features/tasks/tasks-assists-producer.ts` — overdue pileup (≥3 open, unsnoozed tasks past due → launch the `tasks.triage_assistant` slot pre-filled with the triage brief). Snooze-aware by construction (waits for `task_user_state`); rendered inline by `components/TasksAssistStrip.tsx` (mounted in `TasksHeaderControls`).
+- `features/marketing/content-plan/plan-assists-producer.ts` — planned pages missing from the paired CMS site (plan nodes × the WF-11 page map → navigate to Setup's "Realize planned pages" rung). Never fires for an unpaired site (normal state, not a finding); rendered inline by `components/PlanAssistStrip.tsx` in the workbench, site-filtered via the dedupe key like the GSC strip.
+- Both new `launch_agent` slots (`notes.organizer`, `tasks.triage_assistant`) are seeded by `migrations/agent_slots_assist_producers_seed.sql`, defaulting to the General Chat agent — swap in purpose-built agents from the admin slots console, no deploy.
 - aidream background producers write rows via the ORM (see the system-of-record's aidream section).
 
 ## Producer rules (non-negotiable)
@@ -48,6 +52,7 @@ This feature owns the primitive; each producer sits beside the domain that notic
 
 ## Change Log
 
+- 2026-08-09 — Three page-layer producers proven on core surfaces: notes unorganized-pileup, tasks overdue-pileup (both `launch_agent` via new swappable slots `notes.organizer` / `tasks.triage_assistant`, seeded in `agent_slots_assist_producers_seed.sql`), content-plan missing-pages (navigate to the Setup bridge). All deterministic over already-loaded state, all rendered by the one `AssistStrip`.
 - 2026-08-08 — UX overhaul to the Claude-Code bar (THE INTENTIONAL-ACTION LAW): hover/click-expand AssistCard, verb-labeled actions with explainer + receipt, generic per-page `AssistStrip` (GSC strip refactored onto it). Page-first doctrine recorded.
 - 2026-08-08 — GSC insights producer wired (search-console feature); extracted `emitAssistTracked` so producers stop hand-mirroring rows into Redux.
 - 2026-08-08 — Created: ledger, registry (3 action kinds), runner, chip, dock, first two producers (shapes missing-component, workflow-emit surprise-UI). Error Inspector source `assists` added.
