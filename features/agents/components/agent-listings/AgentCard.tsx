@@ -31,6 +31,7 @@ import { useState } from "react";
 import { toast } from "@/lib/toast-service";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   buildSystemAgentRosterEntries,
   systemAgentRosterEntrySummary,
@@ -257,13 +258,24 @@ export function AgentCard({
         </div>
       )}
 
-      <div className="p-4 pl-12 pr-8 flex-1 flex flex-col items-center justify-center gap-1.5">
+      <div className="group/entity-ref p-4 pl-12 pr-8 flex-1 flex flex-col items-center justify-center gap-1.5">
+        {/* THE DOOR LAW: the card body opens a chooser modal, so the NAME
+            carries the record's own door — a real anchor, which is what makes
+            cmd-click, middle-click, "open in new tab" and keyboard focus work.
+            `nameClassName` keeps the tile's wrapped, centred title. */}
         <h3
-          className={`text-md font-medium text-foreground text-center line-clamp-3 break-words transition-colors duration-200 ${
+          className={`text-md font-medium text-foreground text-center transition-colors duration-200 ${
             !isDisabled && "group-hover:text-primary"
           }`}
         >
-          {name || "Untitled Agent"}
+          <EntityRef
+            token="agent"
+            id={id}
+            name={name}
+            href={`${basePath}/${id}`}
+            showIcon={false}
+            nameClassName="whitespace-normal break-words line-clamp-3"
+          />
         </h3>
       </div>
       <div className="border-t border-border p-1 bg-card rounded-b-lg min-h-[36px]">

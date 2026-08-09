@@ -360,6 +360,8 @@ function ImagePreviewModal({
 export default function FeedbackTable() {
   const [feedback, setFeedback] = useState<UserFeedback[]>([]);
   const [loading, setLoading] = useState(true);
+  /** True when the last load FAILED — distinct from "loaded and empty". */
+  const [loadFailed, setLoadFailed] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<UserFeedback | null>(
     null,
   );
@@ -473,12 +475,23 @@ export default function FeedbackTable() {
     const result = await getAllFeedback();
     if (result.success && result.data) {
       const { data } = result;
+      setLoadFailed(false);
       setFeedback(data);
       // Keep selectedFeedback fresh from the reloaded list
       setSelectedFeedback((prev) => {
         if (!prev) return prev;
         const fresh = data.find((f) => f.id === prev.id);
         return fresh ?? prev;
+      });
+    } else {
+      // The failure used to be swallowed: `feedback` stayed empty, `loading`
+      // went false, and everything downstream read that as "there is nothing
+      // here". The deep-link effect then blamed the ID ("deleted, or filtered
+      // out") for what was actually a failed read. An empty list we could not
+      // fetch is not an empty list.
+      setLoadFailed(true);
+      toast.error("Couldn't load feedback", {
+        description: result.error ?? "The list may be incomplete or empty.",
       });
     }
     setLoading(false);
@@ -577,6 +590,12 @@ export default function FeedbackTable() {
     if (!item) {
       // Still fetching — the row may yet arrive, so say nothing.
       if (loading) return;
+      // The load FAILED. We cannot tell whether this id exists, so claiming it
+      // was deleted or filtered would be inventing a verdict from data we
+      // never read — and dropping the param would destroy the deep link the
+      // user arrived with. loadFeedback already reported the failure; leave
+      // the URL intact so a retry can still resolve it.
+      if (loadFailed) return;
       // Loaded, and the id is not here. Saying nothing would leave the address
       // bar naming a record the page never showed, which reads as "this link
       // worked" — the dead end this whole sweep exists to remove. Tell the
@@ -592,7 +611,7 @@ export default function FeedbackTable() {
     openedDeepLink.current = deepLinkId;
     setSelectedFeedback(item);
     setDetailDialogOpen(true);
-  }, [deepLinkId, feedback, loading, setDeepLink]);
+  }, [deepLinkId, feedback, loading, loadFailed, setDeepLink]);
 
   const handleDetailOpenChange = useCallback(
     (open: boolean) => {

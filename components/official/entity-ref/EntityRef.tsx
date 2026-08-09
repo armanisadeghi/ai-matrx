@@ -50,6 +50,15 @@ export interface EntityRefProps {
   href?: string;
   /** Show the entity's registry icon before the name. Default true. */
   showIcon?: boolean;
+  /**
+   * Classes for the NAME itself (the anchor / fallback span). The default is a
+   * single truncated line, which is right for a table cell and wrong for a card
+   * tile whose title is allowed to wrap. Pass e.g.
+   * `"whitespace-normal line-clamp-3"` so a card keeps its layout after the
+   * name becomes a door — the alternative (hand-rolling the anchor) is what
+   * this component exists to stop.
+   */
+  nameClassName?: string;
   /** Hide the peek control even when one is registered. */
   disablePeek?: boolean;
   /** Hide the new-tab control (rare — only when the row is already a link). */
@@ -67,6 +76,7 @@ export function EntityRef({
   name,
   href,
   showIcon = true,
+  nameClassName,
   disablePeek = false,
   disableNewTab = false,
   alwaysShowActions = false,
@@ -96,12 +106,15 @@ export function EntityRef({
           href={resolvedHref}
           onClick={stop}
           title={`Open ${label}`}
-          className="min-w-0 truncate text-inherit underline-offset-2 hover:text-primary hover:underline"
+          className={cn(
+            "min-w-0 truncate text-inherit underline-offset-2 hover:text-primary hover:underline",
+            nameClassName,
+          )}
         >
           {label}
         </Link>
       ) : (
-        <span className="min-w-0 truncate" title={label}>
+        <span className={cn("min-w-0 truncate", nameClassName)} title={label}>
           {label}
         </span>
       )}

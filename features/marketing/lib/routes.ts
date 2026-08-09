@@ -35,6 +35,8 @@ export const marketingRoutes = {
   /** In-app index of the PUBLIC SEO utilities (they live under `/seo/*`). */
   tools: () => "/marketing/tools",
   batches: () => "/marketing/batches",
+  /** One batch job's detail workspace (`/marketing/batches/[batchId]`). */
+  batch: (batchId: string) => `/marketing/batches/${batchId}`,
   cost: () => "/marketing/cost",
 
   // ── Reserved routes ────────────────────────────────────────────────────

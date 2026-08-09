@@ -25,7 +25,6 @@ import {
   UserRound,
   Rocket,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -51,8 +50,6 @@ export function AgentShortcutsPanel({
   agentName,
   basePath = "/agents",
 }: AgentShortcutsPanelProps) {
-  const router = useRouter();
-
   // Hydrate both global and user scopes into the slice. The selector below
   // filters across everything the current user can see.
   const globalQuery = useAgentShortcuts({ scope: "global" });
@@ -79,9 +76,8 @@ export function AgentShortcutsPanel({
       (s.organizationId !== null || s.projectId !== null || s.taskId !== null),
   );
 
-  const goToEditor = (shortcutId: string) => {
-    router.push(`${basePath}/${agentId}/shortcuts/${shortcutId}`);
-  };
+  const editorHref = (shortcutId: string) =>
+    `${basePath}/${agentId}/shortcuts/${shortcutId}`;
 
   return (
     <div className="h-full overflow-y-auto pt-12">
@@ -157,7 +153,7 @@ export function AgentShortcutsPanel({
                 <ShortcutRow
                   key={shortcut.id}
                   shortcut={shortcut}
-                  onOpen={() => goToEditor(shortcut.id)}
+                  href={editorHref(shortcut.id)}
                 />
               ))}
             </div>
@@ -216,12 +212,17 @@ function CountCard({
   );
 }
 
+/**
+ * THE DOOR LAW: this row was a `<button>` that called `router.push` — the only
+ * way to reach the shortcut was a plain left click. It is a real anchor now, so
+ * cmd-click, middle-click, "open in new tab" and keyboard focus all work.
+ */
 function ShortcutRow({
   shortcut,
-  onOpen,
+  href,
 }: {
   shortcut: AgentShortcutRecord;
-  onOpen: () => void;
+  href: string;
 }) {
   const category = useAppSelector((state) =>
     selectCategoryById(state, shortcut.categoryId),
@@ -237,9 +238,9 @@ function ShortcutRow({
       : "";
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
+    <Link
+      href={href}
+      title={`Open ${shortcut.label}`}
       className={cn(
         "w-full flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-left transition-colors",
         "hover:bg-accent hover:border-accent-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -311,7 +312,7 @@ function ShortcutRow({
       </div>
 
       <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-    </button>
+    </Link>
   );
 }
 

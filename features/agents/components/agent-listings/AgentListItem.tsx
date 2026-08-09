@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
 interface AgentListItemProps {
   id: string;
@@ -223,10 +224,19 @@ export function AgentListItem({
 
         <FavoriteAgentButton id={id} variant="list" disabled={isDisabled} />
 
-        <div className="flex-1 min-w-0">
+        <div className="group/entity-ref flex-1 min-w-0">
           <div className="flex items-center gap-2">
+            {/* THE DOOR LAW: the row itself opens a chooser modal, so the name
+                is the record's own door — a real anchor (cmd-click, middle
+                click, new tab, keyboard). */}
             <h4 className="text-sm font-medium text-foreground truncate">
-              {name || "Untitled Agent"}
+              <EntityRef
+                token="agent"
+                id={id}
+                name={name}
+                href={`${basePath}/${id}`}
+                showIcon={false}
+              />
             </h4>
             {isArchived && (
               <span className="flex-shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">

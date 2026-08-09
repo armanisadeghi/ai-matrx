@@ -350,12 +350,17 @@ const claims: Claim[] = [
           join(siblings, repoDir),
           join(siblings, `matrx-${repoDir}`),
         ];
-        const checkedOut = repoCandidates.find((d) => existsSync(d));
-        if (!checkedOut) {
+        // Resolve against the first candidate that HAS THE FILE, not the first
+        // that merely exists — with both `common-docs` and `matrx-common-docs`
+        // checked out, picking the directory first would report a dead pointer
+        // for a doc sitting in the other clone.
+        if (repoCandidates.some((d) => existsSync(join(d, rest)))) continue;
+        const anyCheckout = repoCandidates.some((d) => existsSync(d));
+        if (!anyCheckout) {
           unreachable.push(abs);
           continue;
         }
-        if (!existsSync(join(checkedOut, rest))) dead.push(abs);
+        dead.push(abs);
       }
       const parts: string[] = [];
       if (dead.length)

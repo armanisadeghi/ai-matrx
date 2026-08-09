@@ -81,9 +81,19 @@ export function ProjectTaskList({
   // those twelve are hidden behind a collapsed disclosure means the number
   // didn't actually reach the records it described.
   const searchParams = useSearchParams();
-  const [showDone, setShowDone] = React.useState(
-    () => searchParams.get("done") === "1",
-  );
+  const doneParam = searchParams.get("done") === "1";
+  const [showDone, setShowDone] = React.useState(doneParam);
+  // The initializer runs once. Navigating from one project to another keeps
+  // this component mounted, so a fresh `?done=1` would be ignored and the
+  // count link would land on a collapsed Done group again. Re-seed only when
+  // the PARAM ITSELF changes, so a user who manually toggled the group
+  // doesn't have it yanked back on an unrelated re-render.
+  const lastDoneParam = React.useRef(doneParam);
+  React.useEffect(() => {
+    if (lastDoneParam.current === doneParam) return;
+    lastDoneParam.current = doneParam;
+    setShowDone(doneParam);
+  }, [doneParam]);
   const [addingSubFor, setAddingSubFor] = React.useState<string | null>(null);
   const [subTitle, setSubTitle] = React.useState("");
   const [isAddingSub, setIsAddingSub] = React.useState(false);
