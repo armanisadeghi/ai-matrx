@@ -6881,30 +6881,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -7811,6 +7787,32 @@ export interface paths {
         get: operations["export_tag_input_research_topics__topic_id__tag_input_export_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/research/topics/{topic_id}/intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Adopt Topic Intent
+         * @description Make an intent govern a topic — the ONE writer for intent state.
+         *
+         *     Writes `intent_key`, composes and persists `intent_brief` (what every
+         *     agent-facing step reads via `get_topic_context()`), and applies the
+         *     intent's quota package unless `apply_quotas=false`. A client writing
+         *     `intent_key` straight to the DB would leave the brief stale and the
+         *     quotas untouched — route through here.
+         */
+        post: operations["adopt_topic_intent_research_topics__topic_id__intent_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -17013,6 +17015,45 @@ export interface components {
             /** Latency Ms */
             latency_ms: number;
         };
+        /** AdoptIntentRequest */
+        AdoptIntentRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Intent Key */
+            intent_key: string;
+            /**
+             * Apply Quotas
+             * @default true
+             */
+            apply_quotas?: boolean;
+            /**
+             * User Ask
+             * @default
+             */
+            user_ask?: string;
+        };
+        /** AdoptIntentResponse */
+        AdoptIntentResponse: {
+            /** Intent Key */
+            intent_key: string;
+            /** Quota Updates */
+            quota_updates: {
+                [key: string]: number;
+            };
+        };
         /**
          * AgentAssignmentRunRequest
          * @description HTTP form of the workflow batch input with client-injected scope support.
@@ -24555,33 +24596,6 @@ export interface components {
             /** Error */
             error?: string | null;
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -29061,6 +29075,8 @@ export interface components {
             keywords: string[];
             /** Search Provider */
             search_provider?: ("brave" | "google") | null;
+            /** Goals */
+            goals?: (string | null)[] | null;
         };
         /**
          * KeywordReorderRequest
@@ -55339,41 +55355,6 @@ export interface operations {
             };
         };
     };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -57041,6 +57022,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TagInputExport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    adopt_topic_intent_research_topics__topic_id__intent_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdoptIntentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdoptIntentResponse"];
                 };
             };
             /** @description Validation Error */
