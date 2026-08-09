@@ -120,15 +120,15 @@ function LedgerRow({ entry }: { entry: CostLedgerEntry }) {
       <td className="px-2 py-1.5">
         <div className="flex items-center gap-1.5">
           <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="truncate">{entry.phaseLabel}</span>
+          <span className="sm:truncate">{entry.phaseLabel}</span>
         </div>
       </td>
       <td className="px-2 py-1.5">
-        <span className="block truncate" title={entry.subject}>
+        <span className="block sm:truncate" title={entry.subject}>
           {entry.subject}
         </span>
         {entry.agentType && (
-          <span className="block truncate text-[10px] text-muted-foreground/70">
+          <span className="block sm:truncate text-[10px] text-muted-foreground/70">
             {entry.agentType}
           </span>
         )}
@@ -479,7 +479,11 @@ export default function CostDashboard() {
           </select>
         </header>
         <div className="overflow-x-auto">
-          <table className={cn("text-xs sm:min-w-[860px] sm:table-fixed", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
+          {/* The desktop min-width lives on this wrapper, not the table: MOBILE_TABLE
+              already sets `sm:min-w-0`, and two `sm:min-w-*` utilities on one element
+              resolve by stylesheet order, not by cn() argument order. */}
+          <div className="sm:min-w-[860px]">
+          <table className={cn("text-xs sm:table-fixed", MOBILE_TABLE, MOBILE_TABLE_NOWRAP_CELLS)}>
             <colgroup>
               <col className="w-[128px]" />
               <col className="w-[140px]" />
@@ -518,6 +522,7 @@ export default function CostDashboard() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
         {visibleEntries.length === 0 && (
           <p className="px-3 py-6 text-center text-[11px] text-muted-foreground">
