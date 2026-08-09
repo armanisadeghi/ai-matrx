@@ -11,6 +11,7 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/assi
 | Types + action union | `types.ts` | `AssistAction` is the source of truth for `platform.assists.action`. `toAssist` narrows rows; a row that doesn't narrow never renders. `makeEphemeralAssist` = inline chip, no ledger row. |
 | Service | `service.ts` | ONE browser path to `platform.assists`. Mine-scope reads (THE VIEW LAW). `emitAssist` is idempotent by `dedupe_key`; `filterUndecidedKeys` makes dismissals durable (producers must call it before emitting). |
 | Redux | `redux/assistsSlice.ts` | `state.assists`; memoized selectors; `assistEmitted` / `assistDecided` keep the dock live without refetch. |
+| Emit helper | `redux/emitTracked.ts` | `emitAssistTracked` = `emitAssist` + the local Redux mirror in one call — what every client-side producer uses (lives beside the slice because service.ts must not import the slice). |
 | Action registry | `runtime/assist-action-registry.ts` | Mirrors content-ir's kind-action-registry (pure, capability-scoped ctx, never throws into UI). Kinds today: `launch_agent` (agentId or slotKey), `navigate`, `surface_write` (via `applySurfaceWrite`, `origin:"user"` — the chip click is the gesture). New kind = one handler file + one side-effect import in `useAssistRunner.ts`. |
 | Runner | `runtime/useAssistRunner.ts` | The ONE hook chips call. Accept = run action → decide row with receipt. Failures: toast + `captureError({source:"assists"})`. |
 | Chip | `components/AssistChip.tsx` | THE canonical rendering of one assist. Never fork a second chip. |
@@ -26,6 +27,7 @@ This feature owns the primitive; each producer sits beside the domain that notic
 
 - `features/content-ir/studio/shape-assists-producer.ts` — your shape has no custom component → "AI can build a custom UI" (ledger-backed, on `/shapes` visit, capped 5/sweep).
 - `features/workflow-emit/GenericEmitRenderer.tsx` — a workflow output rendered through the generic viewer → ephemeral "Build a beautiful UI for this output" chip (the Surprise-me UI pattern).
+- `features/marketing/search-console/insights-assists-producer.ts` — GSC insight findings become assists (money-page decay / CTR gap → launch `seo.page_analyzer` slot pre-filled with the code-compressed finding; unclassified backlog → navigate to the classification workbench or intake wizard). Swept once per site per session over a fixed 28d-vs-prev window anchored on the site's freshest data day; rendered inline by `components/GscAssistStrip.tsx` via `selectAssistsForSurface`.
 - aidream background producers write rows via the ORM (see the system-of-record's aidream section).
 
 ## Producer rules (non-negotiable)
@@ -37,4 +39,5 @@ This feature owns the primitive; each producer sits beside the domain that notic
 
 ## Change Log
 
+- 2026-08-08 — GSC insights producer wired (search-console feature); extracted `emitAssistTracked` so producers stop hand-mirroring rows into Redux.
 - 2026-08-08 — Created: ledger, registry (3 action kinds), runner, chip, dock, first two producers (shapes missing-component, workflow-emit surprise-UI). Error Inspector source `assists` added.
