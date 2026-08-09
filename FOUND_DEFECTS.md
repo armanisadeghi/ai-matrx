@@ -13,6 +13,47 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D144 — 14 shadcn wrappers blank their own visible content until hydration (2026-08-09)
+
+**Found while fixing one instance of it** (the context-menu wrapper, PR #72).
+Fourteen `components/ui/*` wrappers gate their Radix **Root** on `useIsMounted`
+and `return null`, all carrying the same copy-pasted justification: *"Radix UI
+generates dynamic IDs for aria-controls that can differ between SSR and client."*
+
+```
+tooltip · dropdown-menu · tabs · accordion · collapsible · matrx/dialog
+dialog · alert-dialog · sheet · popover · menubar · hover-card
+navigation-menu · select
+```
+
+**Why this is a defect, not a precaution:** a Radix Root's children include its
+**Trigger**, and a trigger is always-visible page content. Returning `null`
+deletes it from the server render AND the first client render, so the surface
+paints without its tabs / accordion headers / nav bar / menubar / trigger
+buttons and fills them in after hydration — flash of missing content, layout
+shift, and nothing rendered for a crawler. The worst are the five whose whole
+purpose is always-visible chrome: **`tabs`, `accordion`, `collapsible`,
+`navigation-menu`, `menubar`**.
+
+**The justification is at least partly false.** Verified for the context-menu
+case against `@radix-ui/react-context-menu` 2.3.1: the closed trigger renders
+only `data-state` / `data-disabled` — no id, nothing to mismatch. Radix uses
+React's `useId`, which is SSR-stable by design. Each wrapper needs the same
+ten-minute check against its own primitive before its gate is removed; I have
+only done the one.
+
+**Precedent + the fix shape:** `components/ui/context-menu/context-menu.tsx` is
+now ungated and documents the reasoning. A zero-consumer duplicate that had the
+correct implementation all along (`components/ui/context-menu.tsx`) was deleted
+in the same change.
+
+**NOT fixed here, deliberately.** It is 14 shared primitives with app-wide blast
+radius, in a session with no CI and no browser verification, and it is off the
+mission of the sweep that found it. **Patrol candidate** — this is one grep
+(`useIsMounted` + `return null` under `components/ui/`) with a mechanical fix and
+a clear per-file verification step, which is exactly the shape the pattern-patrol
+registry wants.
+
 ### D143 — the files-upload eslint ban points every caller at a file that does not exist (2026-08-09)
 
 `eslint.config.mjs:46-53` bans `@/features/files/upload` + `@/features/files/upload/*`

@@ -19,3 +19,5 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 (none yet)
 - 2026-08-09 · loud-recovery/dead-end · /marketing/.../keywords Performance tab renders 'No search queries stored yet' empty state while v_site_keyword_performance returns HTTP 500 — error laundered into fake empty state (spawn chip filed) · found during brand-alias drawer fix
+
+- 2026-08-09 — **Patrol candidate (nominated):** 14 `components/ui/*` shadcn wrappers gate their Radix Root on `useIsMounted` and `return null`, blanking always-visible triggers/tabs/nav until hydration. Grep: `useIsMounted` + `return null` under `components/ui/`. Evidence + why the stated justification is false: FOUND_DEFECTS D144. Found while fixing the context-menu instance during the Inventory Law sweep (PR #72).
