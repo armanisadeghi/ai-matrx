@@ -314,10 +314,13 @@ primitive-duplication defect, not merely an adoption gap):
 1. `features/agents/browse/columns.tsx:68` + `AgentBrowseRows.tsx:89` +
    `AgentBrowseCards.tsx:115` — `/agents/all`. Convert all three together or
    one entity gets three behaviours.
-2. `features/files/components/surfaces/desktop/FileTableRow.tsx:259` — a bare
-   `<button>`, so no cmd-click/middle-click at all.
-3. `features/dashboard/components/PinnedSection.tsx:61` — favorites already
-   carry `(entityType, entityId)` via `favoriteEntityRef()`; drop-in.
+2. ~~`features/files/components/surfaces/desktop/FileTableRow.tsx`~~ **SHIPPED**
+   — was a bare `<button>`, so no cmd-click/middle-click at all. Now `EntityRef`
+   with `onOpen={onActivate}`: the in-app open is unchanged, the name is also a
+   real anchor to `/files/f/{id}`, and the file peek arrives with it.
+3. ~~`features/dashboard/components/PinnedSection.tsx`~~ **RE-RANKED, not a
+   drop-in** — see the Open list above. It is a card, already a link; it wants a
+   peek control, not an `EntityRef` body swap.
 4. `features/agent-shortcuts/components/ShortcutDirectory.tsx:387` — renders
    **name OR a raw UUID**, both inert.
 5. `features/transcripts/browse/columns.tsx:58` — now unblocked by Wave 1.
@@ -330,10 +333,12 @@ primitive-duplication defect, not merely an adoption gap):
 9. `features/notes/components/GlobalSearchResults.tsx:147` — search results are
    exactly where peek earns its keep.
 
-**Bare-UUID violations** (`never render an id you can't open`):
-`features/admin/relationships/components/ReachabilityInspectorClient.tsx:162`
-(token and id side by side, prints the UUID) ·
-`ExposureAuditClient.tsx:173` (a security audit you cannot click through) ·
+**Bare-UUID violations** (`never render an id you can't open`).
+**Both admin-relationship surfaces are SHIPPED** — `ReachabilityInspectorClient`
+(token and id were side by side; the full id is now the LABEL of an `EntityRef`,
+so an admin can still copy it AND open it) and `ExposureAuditClient` (the named
+resource now opens). Both use `openInNewTab` so the audit survives the click.
+Remaining:
 `app/(admin)/administration/reporting/events/page.tsx:265-271` (three raw
 UUIDs) · `features/skills/components/SkillConfigPicker.tsx:486,598` ·
 `features/pdf-extractor/components/LineageTreeView.tsx:97,224,266` ·
@@ -575,6 +580,13 @@ sweep gets a row. Guarded by `pnpm check:reuse-index`.
 
 ## Change log
 
+- **2026-08-09** — Wave 2, third batch: `FileTableRow` (a filename that was a
+  `<button>`, so a file could not be opened into a tab at all), plus the two
+  admin-relationship surfaces that printed identities they would not open —
+  `ReachabilityInspectorClient` and `ExposureAuditClient`. Both admin ones use
+  `openInNewTab`: an audit that navigates away from itself is a worse tool than
+  one that doesn't link. Pattern worth reusing: where the id must stay readable
+  (an inspector), pass it as `name` — the full id renders AND opens.
 - **2026-08-09** — Wave 2 continued: the three converted rails still hand-rolled
   `window.open` inside `EntityRef.onOpen` — all now `openInNewTab`, both
   `canOpenRow` guards deleted. `/documents` and the shortcut directory converted
