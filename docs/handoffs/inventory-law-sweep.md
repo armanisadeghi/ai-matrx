@@ -41,13 +41,15 @@ build time as you go.
 
 ## THE CONVERSION CHECKLIST — read before replacing any hand-rolled door
 
-Four review findings landed on the Wave 2 PR. **Three were real, and all three
-were the same mistake in different clothes:** a conversion changed what the
-original door DID. Adopting `EntityRef` is not a drop-in — the hand-rolled code
+Ten review findings have landed on the Wave 2/3 PR so far. **Most were the same
+mistake in different clothes:** a conversion changed what the original door DID.
+Two later ones (6 and 7 below) are a distinct class worth knowing about — a
+conversion that is correct on the main deployment and broken on a satellite, and
+one that is correct for the surface's rare case and wrong for its common one. Adopting `EntityRef` is not a drop-in — the hand-rolled code
 it replaces encodes decisions you must carry over deliberately.
 
-Before replacing hand-rolled code with a shared primitive, answer all five.
-The first three are door-specific; 4 and 5 apply to ANY primitive adoption:
+Before replacing hand-rolled code with a shared primitive, answer all seven.
+1-3 and 6-7 are door-specific; 4 and 5 apply to ANY primitive adoption:
 
 1. **Where did the old primary click go?** `router.push` (in place) or
    `window.open` (new tab)? Preserve it. A rail, sheet, side panel, or dialog
@@ -77,6 +79,30 @@ The first three are door-specific; 4 and 5 apply to ANY primitive adoption:
 5. **Does the route you're now pointing at exist?** Verify the page file AND
    that the id TYPE matches (a session id is not an assessment id; a card id is
    not a set id). Where no route exists, render plain text — never fabricate.
+
+6. **Which DEPLOYMENT does this surface ship in?** The registry's canonical
+   route is not canonical everywhere. `manage.aimatrx.com` (`admin` profile)
+   and `demos.aimatrx.com` PARK the other route groups, and `proxy.ts`'s
+   satellite gate redirects any foreign path to the main host — so on an admin
+   surface, `hrefFor` → `/agents/{id}` is not a different page, it is a
+   different ORIGIN, and following it throws away the console with all its
+   filters and grouping. Pass `EntityRef.href` with the admin-side route (the
+   prop is documented for this). **Tell:** the component takes a `mode` prop, or
+   sits under `app/(admin)`, or its neighbours already resolve their urls
+   through a mode-aware helper — if the other urls on the row branch on mode and
+   yours doesn't, yours is the bug. *(Caught in `ShortcutDirectory`; the fix
+   lives in `resolveAgentUrl`, beside the two mode-aware helpers that existed
+   already.)*
+
+7. **Is the name you're passing ever null on the surface's DOMINANT case?**
+   `EntityRef` truncates an id to 8 chars when it has no name — right for a
+   record whose title just hasn't loaded, wrong when the name is *structurally*
+   absent. `adminNonGlobalRowToDirectoryRow` hardcodes `agentName: null`, so
+   every admin row lost the full id it used to print, while the filter dropdown
+   beside it still listed full ids to match against. When the id IS the
+   information, **pass the id as `name`** — it renders whole and becomes a door.
+   *(Caught in `ShortcutDirectory`; the same pattern is deliberate in the
+   reachability inspector.)*
 
 Everything the primitive cannot decide for itself is documented on the props;
 read them rather than inferring from a neighbouring call site.
