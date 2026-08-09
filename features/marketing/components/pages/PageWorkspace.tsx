@@ -77,6 +77,7 @@ import { MarketingUrlRow } from "@/features/marketing/components/shared/Marketin
 import { cn } from "@/lib/utils";
 import { PageQueriesCard } from "@/features/marketing/components/pages/cards/PageQueriesCard";
 import { PageSearchConsoleCard } from "@/features/marketing/components/pages/cards/PageSearchConsoleCard";
+import { PageBlockedChecksCard } from "@/features/marketing/components/pages/cards/PageBlockedChecksCard";
 import { PageFindingsCard } from "@/features/marketing/components/pages/cards/PageFindingsCard";
 import { PageLinksCard } from "@/features/marketing/components/pages/cards/PageLinksCard";
 import { PageBacklinksCard } from "@/features/marketing/components/pages/cards/PageBacklinksCard";
@@ -990,7 +991,12 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "work",
-      current: <PageFindingsCard page={page} />,
+      current: (
+        <>
+          <PageFindingsCard page={page} />
+          <PageBlockedChecksCard page={page} />
+        </>
+      ),
       plan: <PageTasksCard page={page} />,
     },
     {

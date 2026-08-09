@@ -561,6 +561,19 @@ export function analyzeSite(
   return streamCommand(`sites/${siteId}/analyze`, null, callbacks);
 }
 
+/**
+ * "Crawl this site again" — the server derives the config (named preset →
+ * pinned site default → last session's request → defaults) and then behaves
+ * exactly like `startSiteCrawl`. Used by the `site_recrawl` remediation, where
+ * asking a non-technical user to pick crawl options would itself be a dead end.
+ */
+export function rescrapeSite(
+  siteId: string,
+  callbacks?: CrawlStreamCallbacks,
+): Promise<CrawlStreamResult> {
+  return streamCommand(`sites/${siteId}/rescrape`, null, callbacks);
+}
+
 export async function cancelCrawl(sessionId: string): Promise<void> {
   const token = await bearerToken();
   const response = await fetch(

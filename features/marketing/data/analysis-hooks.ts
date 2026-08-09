@@ -6,6 +6,7 @@ import {
   getFindingDetail,
   getSiteAnalysisOverview,
   listFindingResults,
+  listPageBlockedChecks,
   listPageOpenFindings,
   listSiteFindings,
   listSitePriorityQueue,
@@ -23,6 +24,8 @@ export const analysisKeys = {
     [...analysisKeys.site(siteId), "finding", findingId] as const,
   pageOpenFindings: (siteId: string, pageId: string, limit: number) =>
     [...analysisKeys.site(siteId), "page-open-findings", pageId, limit] as const,
+  pageBlockedChecks: (siteId: string, pageId: string) =>
+    [...analysisKeys.site(siteId), "page-blocked-checks", pageId] as const,
   results: (
     siteId: string,
     findingId: string,
@@ -72,6 +75,15 @@ export function usePageOpenFindings(
   return useQuery({
     queryKey: analysisKeys.pageOpenFindings(siteId, pageId, limit),
     queryFn: ({ signal }) => listPageOpenFindings(siteId, pageId, limit, signal),
+    enabled: Boolean(siteId && pageId),
+  });
+}
+
+/** The checks blocked on missing evidence for one page, each with its fix. */
+export function usePageBlockedChecks(siteId: string, pageId: string) {
+  return useQuery({
+    queryKey: analysisKeys.pageBlockedChecks(siteId, pageId),
+    queryFn: ({ signal }) => listPageBlockedChecks(siteId, pageId, signal),
     enabled: Boolean(siteId && pageId),
   });
 }

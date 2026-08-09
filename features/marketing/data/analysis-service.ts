@@ -378,6 +378,56 @@ export async function listPageOpenFindings(
   };
 }
 
+/**
+ * The checks that could NOT run on this page, and the one-click fix each one
+ * is waiting on.
+ *
+ * `web.analysis_result` is insert-only, so a page accumulates one row per
+ * check per analysis run. Only the MOST RECENT run states the current truth —
+ * an older `n_a` whose evidence has since arrived would otherwise show the
+ * user a button for a problem that no longer exists. So: read the page's
+ * newest `computed_at`, then take only that run's `n_a` rows, and keep the
+ * ones the server attached a remediation binding to (a genuinely
+ * not-applicable check — "this page has no images" — carries none and is not
+ * a blocked check).
+ */
+export async function listPageBlockedChecks(
+  siteId: string,
+  pageId: string,
+  signal?: AbortSignal,
+): Promise<MarketingAnalysisResult[]> {
+  const abortSignal = signal ?? new AbortController().signal;
+  const db = await authenticatedWebDb(supabase);
+
+  const latest = await db
+    .from("analysis_result")
+    .select("computed_at")
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    .is("deleted_at", null)
+    .order("computed_at", { ascending: false })
+    .limit(1)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  if (latest.error) throw latest.error;
+  if (!latest.data) return [];
+
+  const response = await db
+    .from("analysis_result")
+    .select(
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, subject_type, subject_id, page_id, item_id, item_key, category, subcategory, provider_id, provider_version, run_id, batch_id, computed_at, status, score, severity, issue_count, confidence, payload_instance_id",
+    )
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    .eq("status", "n_a")
+    .eq("computed_at", latest.data.computed_at)
+    .is("deleted_at", null)
+    .not("metadata->remediation", "is", null)
+    .order("item_key", { ascending: true })
+    .abortSignal(abortSignal);
+  return assertData(response.data, response.error);
+}
+
 export async function getFindingDetail(
   siteId: string,
   findingId: string,
