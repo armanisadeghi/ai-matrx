@@ -79,6 +79,7 @@ import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { supabase } from "@/utils/supabase/client";
 import { appDb } from "@/utils/supabase/appDb";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 function humanExecution(r: AgentAppExecutionRow): string {
   return [
@@ -375,23 +376,34 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
             <div className="grid grid-cols-3 gap-3 min-w-[300px]">
               <Card>
                 <CardContent className="p-2">
-                  <div className="text-xl font-bold">{stats.total}</div>
+                  <UntrustedCount
+                    value={stats.total}
+                    trustworthy={!loadFailed}
+                    label="Total executions"
+                    className="block text-xl font-bold"
+                  />
                   <div className="text-xs text-muted-foreground">Total</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-2">
-                  <div className="text-xl font-bold text-success">
-                    {stats.success}
-                  </div>
+                  <UntrustedCount
+                    value={stats.success}
+                    trustworthy={!loadFailed}
+                    label="Successful executions"
+                    className="block text-xl font-bold text-success"
+                  />
                   <div className="text-xs text-muted-foreground">Success</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-2">
-                  <div className="text-xl font-bold text-destructive">
-                    {stats.failed}
-                  </div>
+                  <UntrustedCount
+                    value={stats.failed}
+                    trustworthy={!loadFailed}
+                    label="Failed executions"
+                    className="block text-xl font-bold text-destructive"
+                  />
                   <div className="text-xs text-muted-foreground">Failed</div>
                 </CardContent>
               </Card>
@@ -566,7 +578,12 @@ function ExecutionsTable({ appId }: { appId: string | null }) {
             ))}
           </TableBody>
         </Table>
-        {filtered.length === 0 && !loading && (
+        {/* 🚨 A failed read has no empty state. "No executions match your
+            filter" is a claim that the read succeeded and found nothing — the
+            exact green report the notice above is contradicting. When the
+            fetch failed the notice IS the empty state; it already says the
+            list is blank because the read broke, and carries the retry. */}
+        {filtered.length === 0 && !loading && !loadFailed && (
           <div className="text-center py-12 text-muted-foreground">
             <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
             No executions match your filter.
@@ -721,23 +738,34 @@ function ErrorsTable({ appId }: { appId: string | null }) {
           <div className="grid grid-cols-3 gap-3 min-w-[300px]">
             <Card>
               <CardContent className="p-2">
-                <div className="text-xl font-bold">{stats.total}</div>
+                <UntrustedCount
+                  value={stats.total}
+                  trustworthy={!loadFailed}
+                  label="Total errors"
+                  className="block text-xl font-bold"
+                />
                 <div className="text-xs text-muted-foreground">Total</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-2">
-                <div className="text-xl font-bold text-destructive">
-                  {stats.unresolved}
-                </div>
+                <UntrustedCount
+                  value={stats.unresolved}
+                  trustworthy={!loadFailed}
+                  label="Unresolved errors"
+                  className="block text-xl font-bold text-destructive"
+                />
                 <div className="text-xs text-muted-foreground">Unresolved</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-2">
-                <div className="text-xl font-bold text-success">
-                  {stats.resolved}
-                </div>
+                <UntrustedCount
+                  value={stats.resolved}
+                  trustworthy={!loadFailed}
+                  label="Resolved errors"
+                  className="block text-xl font-bold text-success"
+                />
                 <div className="text-xs text-muted-foreground">Resolved</div>
               </CardContent>
             </Card>
@@ -959,7 +987,10 @@ function ErrorsTable({ appId }: { appId: string | null }) {
             ))}
           </TableBody>
         </Table>
-        {filtered.length === 0 && !loading && (
+        {/* Same rule as the executions tab, and worse here: a green check over
+            "No errors to review" tells an admin the app is HEALTHY when what
+            actually happened is that we never read its errors. */}
+        {filtered.length === 0 && !loading && !loadFailed && (
           <div className="text-center py-12 text-muted-foreground">
             <CheckCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
             No errors to review.

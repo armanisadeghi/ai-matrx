@@ -94,6 +94,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 
 const statusOptions: { value: FeedbackStatus; label: string; color: string }[] =
   [
@@ -926,12 +927,10 @@ export default function FeedbackTable() {
                           says "—" everywhere and a number nowhere is honest,
                           a bar that silently empties itself is not. */}
                       {(!countsTrustworthy || count > 0) && (
-                        <span
-                          aria-label={
-                            countsTrustworthy
-                              ? undefined
-                              : `${stage.label} count unavailable`
-                          }
+                        <UntrustedCount
+                          value={count}
+                          trustworthy={countsTrustworthy}
+                          label={`${stage.label} count`}
                           className={cn(
                             "min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1",
                             isActive
@@ -940,9 +939,7 @@ export default function FeedbackTable() {
                                 ? "bg-amber-500/20 text-amber-700 dark:text-amber-400"
                                 : "bg-muted-foreground/10 text-muted-foreground",
                           )}
-                        >
-                          {countsTrustworthy ? count : "—"}
-                        </span>
+                        />
                       )}
                       {/* "Your turn" indicator for admin stages with items */}
                       {!isActive && isAdminTurn && count > 0 && (
@@ -968,19 +965,17 @@ export default function FeedbackTable() {
                 )}
               >
                 All
-                <span
-                  aria-label={
-                    countsTrustworthy ? undefined : "Total count unavailable"
-                  }
+                <UntrustedCount
+                  value={feedback.length}
+                  trustworthy={countsTrustworthy}
+                  label="Total count"
                   className={cn(
                     "min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1",
                     activeStage === "all"
                       ? "bg-white/25 text-white dark:bg-black/25 dark:text-black"
                       : "bg-muted-foreground/10 text-muted-foreground",
                   )}
-                >
-                  {countsTrustworthy ? feedback.length : "—"}
-                </span>
+                />
               </button>
             </div>
           </div>
@@ -1447,7 +1442,22 @@ export default function FeedbackTable() {
                       className="text-center py-12 text-muted-foreground"
                     >
                       <div className="flex flex-col items-center gap-1">
-                        {activeStage === "untriaged" && (
+                        {/* 🚨 Every branch below is a REASSURANCE — "All
+                            feedback has been analyzed", "Nothing needs your
+                            decision", under a green check. Each is only true
+                            if the read succeeded. After a failed load the rows
+                            are empty for a reason that has nothing to do with
+                            the queue being clear, and telling an admin their
+                            queue is clear when we never read it is the worst
+                            possible failure of this table. The notice above
+                            carries the retry; here we only refuse to lie. */}
+                        {loadFailed ? (
+                          <span className="text-sm">
+                            Couldn&apos;t load feedback — this is not an empty
+                            queue.
+                          </span>
+                        ) : null}
+                        {!loadFailed && activeStage === "untriaged" && (
                           <>
                             <Component className="w-6 h-6 opacity-30 mb-1" />
                             <span className="text-sm">No untriaged items</span>
@@ -1456,7 +1466,7 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {activeStage === "your_decision" && (
+                        {!loadFailed && activeStage === "your_decision" && (
                           <>
                             <CheckCircle2 className="w-6 h-6 opacity-30 mb-1" />
                             <span className="text-sm">
@@ -1467,7 +1477,7 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {activeStage === "agent_working" && (
+                        {!loadFailed && activeStage === "agent_working" && (
                           <>
                             <Component className="w-6 h-6 opacity-30 mb-1" />
                             <span className="text-sm">
@@ -1478,7 +1488,7 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {activeStage === "test_results" && (
+                        {!loadFailed && activeStage === "test_results" && (
                           <>
                             <ClipboardCheck className="w-6 h-6 opacity-30 mb-1" />
                             <span className="text-sm">Nothing to test</span>
@@ -1487,7 +1497,7 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {activeStage === "user_review" && (
+                        {!loadFailed && activeStage === "user_review" && (
                           <>
                             <UserCheck className="w-6 h-6 opacity-30 mb-1" />
                             <span className="text-sm">
@@ -1498,7 +1508,7 @@ export default function FeedbackTable() {
                             </span>
                           </>
                         )}
-                        {(activeStage === "done" || activeStage === "all") && (
+                        {!loadFailed && (activeStage === "done" || activeStage === "all") && (
                           <span className="text-sm">No items found</span>
                         )}
                       </div>

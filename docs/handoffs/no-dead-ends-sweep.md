@@ -168,6 +168,24 @@ No size threshold, no exemption for admin pages, demos, dialogs, or toasts.
     not check" are opposite claims, and a swallow always publishes the
     reassuring one.** Audit logs, security views, compliance counts: an unread
     log must never render as a clean one.
+  - 🚨 **The banner is only half of it — the EMPTY STATE and every COUNT beside
+    it must stop reporting green too.** Bugbot's next pass caught the agent-app
+    executions console showing the honest amber notice *and*, directly beneath
+    it, "No errors to review" under a green check with `Total 0 · Failed 0` in
+    bold. When two things contradict each other the number wins, because it
+    looks like data. Clearing rows on a failed fetch (correct) turns every
+    `rows.length`-derived counter into `0`, and **zero is the most dangerous
+    default a failed read can produce: it is indistinguishable from good news.**
+    Two moves, both mechanical: gate every reassuring empty state on
+    `!loadFailed` (a failed read has no empty state — the notice already is
+    one), and render every derived number through the primitive
+    **`components/official/stale-data/UntrustedCount.tsx`** (`value` +
+    `trustworthy={!loadFailed}` + `label`), which shows an em dash and carries
+    the screen-reader explanation itself, since an em dash is mute. It is the
+    inline half of `StaleDataNotice`; drive both from the same flag and they
+    cannot disagree. Live on the executions/errors tabs and the feedback stage
+    bar — the second hand-rolled copy of that ternary is what made it a
+    primitive.
 - Test login: `/login` → `admin@admin.com` / `Password1234#`
 
 ## 🚨 NOTHING IN THIS CAMPAIGN HAS BEEN SEEN IN A BROWSER
