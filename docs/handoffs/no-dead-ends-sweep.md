@@ -124,6 +124,16 @@ Ordered by traffic. Each item is independently actionable.
    "canonical". Both carry doors now, so this is cleanup, not a dead end.
    Logged in `.matrx/PATROL_SIGHTINGS.md` (P2).
 
+   ⚠️ **"Zero JSX consumers" does NOT mean the file is dead — do not delete it.**
+   The MODULE is still the shared type contract: `WarRoomResourcesList`,
+   `useThreadResourcesAdapter` and `ThreadResourcesTab` all import
+   `ContainerResourcesAdapter` / `ContainerResourceRow` from it. Deleting the
+   component without first moving those types breaks war-room's build. Collapse
+   means "one implementation, types where they belong", not "remove the loser".
+
+   Also scoped-out deliberately: this is a Tier-1 refactor, not door work. It
+   stays tracked here rather than being folded into a doors wave.
+
 ### Blocked / needs a decision
 
 0. **`scope` still has no registry `hrefFor`.** `/scopes/s/[scopeId]` now
