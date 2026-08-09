@@ -21,8 +21,9 @@ jest.mock("next/link", () => ({
         </a>
     ),
 }));
+const pushMock = jest.fn();
 jest.mock("next/navigation", () => ({
-    useRouter: () => ({ push: jest.fn() }),
+    useRouter: () => ({ push: pushMock }),
 }));
 jest.mock("@/features/organizations/peek/ResourcePeekHost", () => ({
     __esModule: true,
@@ -134,5 +135,25 @@ describe("AgentShortcutsPanel doors", () => {
         const rows = [...container.querySelectorAll('div[role="button"]')];
         expect(rows.length).toBeGreaterThanOrEqual(2);
         expect(container.querySelector("button a")).toBeNull();
+    });
+
+    it("Enter on a nested door does NOT also fire the row action", () => {
+        pushMock.mockClear();
+        const door = container.querySelector<HTMLElement>('a[title="Open Summarize selection"]');
+        act(() => {
+            door!.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+            );
+        });
+        expect(pushMock).not.toHaveBeenCalled();
+
+        // The row itself still responds to Enter.
+        const row = door!.closest<HTMLElement>('div[role="button"]');
+        act(() => {
+            row!.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+            );
+        });
+        expect(pushMock).toHaveBeenCalledWith("/agents/a1/shortcuts/s1");
     });
 });

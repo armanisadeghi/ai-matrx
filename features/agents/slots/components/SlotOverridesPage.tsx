@@ -303,6 +303,9 @@ function SlotCard({
         tabIndex={0}
         onClick={onToggle}
         onKeyDown={(e) => {
+          // Only when the row itself is focused — keydown from a nested door
+          // (link/peek) bubbles here and must not also toggle the card.
+          if (e.target !== e.currentTarget) return;
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             onToggle();
