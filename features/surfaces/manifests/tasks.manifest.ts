@@ -18,6 +18,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -317,6 +318,114 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent (or a rendered kind component)
+ * may WRITE into the open task editor. Field targets are `mode: "draft"`:
+ * they stage into the editor's Redux draft (`patchTaskEdit`) exactly as if
+ * the user typed them — visible, reversible, saved only when the task is
+ * saved. `add_subtasks` and `save_task` are the entity-mode actions.
+ *
+ * All targets are `applyPolicy: "ask"` — a task is the user's commitment
+ * ledger, so every agent-originated change is confirmed in place. Handlers
+ * are registered by `TaskEditorBody.tsx` on its SurfaceRuntimeProvider.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "task_title",
+    label: "Task title",
+    description:
+      "Stages a new title into the open task's draft. Plain string; the user still saves.",
+    valueType: "string",
+    updatesValue: "active_task_title",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "task_identity",
+    sortOrder: 100,
+  },
+  {
+    name: "task_description",
+    label: "Task description",
+    description:
+      "Stages a full replacement description into the open task's draft (markdown-friendly plain text; the live editor content the user sees). The user still saves. To append, read active_task_description first and include the existing text.",
+    valueType: "string",
+    updatesValue: "active_task_description",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "task_content",
+    sortOrder: 200,
+  },
+  {
+    name: "add_subtasks",
+    label: "Add subtasks",
+    description:
+      "Creates child subtasks under the open task immediately (canonical create path; org/project inherited from the parent). Value: array of subtask title strings, in order.",
+    valueType: "array",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "task_content",
+    sortOrder: 210,
+  },
+  {
+    name: "task_status",
+    label: "Task status",
+    description:
+      "Stages a lifecycle status into the draft. One of: inbox | planned | active | completed | cancelled | dismissed. The user still saves.",
+    valueType: "string",
+    updatesValue: "active_task_status",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "task_meta",
+    sortOrder: 300,
+  },
+  {
+    name: "task_priority",
+    label: "Task priority",
+    description:
+      "Stages a priority into the draft. One of: low | medium | high. The user still saves.",
+    valueType: "string",
+    updatesValue: "active_task_priority",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "task_meta",
+    sortOrder: 310,
+  },
+  {
+    name: "task_due_date",
+    label: "Task due date",
+    description:
+      "Stages a due date into the draft as a date-only string (YYYY-MM-DD), or null to clear. The user still saves.",
+    valueType: "string",
+    updatesValue: "active_task_due_date",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "task_meta",
+    sortOrder: 320,
+  },
+  {
+    name: "task_labels",
+    label: "Task labels",
+    description:
+      "Stages the FULL label set into the draft (replaces, not appends — include existing labels you want kept, from active_task_labels). Array of: bug | feature | improvement | docs | design | research | question | blocked.",
+    valueType: "array",
+    updatesValue: "active_task_labels",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "task_meta",
+    sortOrder: 330,
+  },
+  {
+    name: "save_task",
+    label: "Save task",
+    description:
+      "Persists the editor's current staged draft through the canonical save path — equivalent to the user pressing Save. Value is ignored. No-op when nothing is staged.",
+    valueType: "boolean",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "task_identity",
+    sortOrder: 110,
+  },
+];
+
 export const tasksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/tasks",
   readiness: "verified",
@@ -332,6 +441,7 @@ List-level values (task_list, project_list, task_count, search_query) only appea
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One comment as the surface emits it in `comments`. */
