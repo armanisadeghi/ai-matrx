@@ -4,22 +4,17 @@
  * GscAssistStrip — the Search Console dashboard's inline assist chips.
  *
  * Runs the deterministic insight sweep (insights-assists-producer.ts) once
- * per site per session, then renders THIS site's pending assists as the
- * canonical AssistChip row (never a forked chip component). The same rows
+ * per site per session, then renders THIS site's pending assists through the
+ * canonical per-page AssistStrip (never a forked chip component). The same rows
  * also appear in the global AssistsDock; deciding a chip in either place
  * clears both — one ledger, one slice.
  */
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { AssistChip } from "@/features/assists/components/AssistChip";
-import {
-  fetchMyAssists,
-  selectAssistsForSurface,
-  selectAssistsLoaded,
-} from "@/features/assists/redux/assistsSlice";
-import type { RootState } from "@/lib/redux/store";
+import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import type { Assist } from "@/features/assists/types";
 import {
   GSC_ASSIST_SURFACE,
   isGscInsightAssist,
@@ -45,24 +40,10 @@ export function GscAssistStrip({
 }) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
-  const surfaceAssists = useAppSelector((state: RootState) =>
-    selectAssistsForSurface(state, GSC_ASSIST_SURFACE),
+  const siteFilter = useCallback(
+    (a: Assist) => (siteId ? isGscInsightAssist(a, siteId) : false),
+    [siteId],
   );
-  const assists = useMemo(
-    () =>
-      siteId
-        ? surfaceAssists.filter((a) => isGscInsightAssist(a, siteId))
-        : [],
-    [surfaceAssists, siteId],
-  );
-
-  // Rows from earlier sessions: make sure the slice is hydrated even if the
-  // (deferred) global dock hasn't fetched yet. Same guard as the dock — the
-  // `loaded` flag keeps this to at most one fetch either way.
-  const assistsLoaded = useAppSelector(selectAssistsLoaded);
-  useEffect(() => {
-    if (userId && !assistsLoaded) void dispatch(fetchMyAssists({ userId }));
-  }, [userId, assistsLoaded, dispatch]);
 
   useEffect(() => {
     if (!enabled || !siteId || !userId || !dataThrough) return;
@@ -77,13 +58,5 @@ export function GscAssistStrip({
     });
   }, [enabled, siteId, siteLabel, dataThrough, userId, dispatch]);
 
-  if (assists.length === 0) return null;
-
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {assists.map((assist) => (
-        <AssistChip key={assist.id} assist={assist} />
-      ))}
-    </div>
-  );
+  return <AssistStrip surfaceName={GSC_ASSIST_SURFACE} filter={siteFilter} />;
 }
