@@ -446,6 +446,7 @@ function SharedRow({
             name={item.title}
             href={href}
             showIcon={!entry.hideRowIcon}
+            fill
             className="flex-1 min-w-0 text-sm"
           />
           {item.source === "shared" && sharer && (
@@ -505,6 +506,7 @@ function MineRow({
             name={item.title}
             href={href}
             showIcon={!entry.hideRowIcon}
+            fill
             className="flex-1 min-w-0 text-sm"
           />
           {isShared ? (

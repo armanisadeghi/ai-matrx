@@ -114,6 +114,21 @@ export interface EntityRefProps {
    * while `truncate` is on the label element itself.
    */
   wrap?: boolean;
+  /**
+   * The NAME control stretches to fill the width, instead of hugging its text.
+   *
+   * Set this whenever you replace a full-width `<button>`/`<a>` with an
+   * `EntityRef`. A `className` of `flex-1` on the component only stretches the
+   * outer WRAPPER — the clickable label inside it still ends where the text
+   * does, so every pixel of the old control's padding silently stops opening
+   * the record. On a short name in a wide row that is most of the hit target.
+   *
+   * Combines with `truncate` (the default) exactly as the markup it replaces
+   * did: fill the space, ellipsise if the name outgrows it. It also pushes the
+   * hover controls to the far edge, which is why it is opt-in — inside a table
+   * cell you usually want them beside the name.
+   */
+  fill?: boolean;
   /** Controls stay visible instead of appearing on hover/focus. */
   alwaysShowActions?: boolean;
   /** Surface-specific extra doors (open in window, jump to versions, …). */
@@ -154,6 +169,7 @@ export function EntityRef({
   disableNewTab = false,
   openInNewTab = false,
   wrap = false,
+  fill = false,
   alwaysShowActions = false,
   extraActions,
   onOpen,
@@ -170,7 +186,9 @@ export function EntityRef({
 
   const stop = (e: React.MouseEvent) => e.stopPropagation();
   const stopAny = (e: React.SyntheticEvent) => e.stopPropagation();
-  const labelFit = wrap ? "break-all" : "truncate";
+  // One string carries BOTH label decisions so the three label branches
+  // (link / button / inert span) cannot drift apart — they already did once.
+  const labelFit = cn(wrap ? "break-all" : "truncate", fill && "grow");
 
   return (
     <span

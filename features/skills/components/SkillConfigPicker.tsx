@@ -612,6 +612,7 @@ function SelectedTier({
                   name={skill?.label ?? `Unknown skill ${id.slice(0, 8)}`}
                   showIcon={false}
                   onOpen={skill ? () => onSelect(id) : undefined}
+                  fill
                   className="min-w-0 flex-1 text-xs"
                 />
                 <button

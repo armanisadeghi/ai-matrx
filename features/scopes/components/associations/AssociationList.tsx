@@ -400,6 +400,7 @@ export function AssociationList(props: AssociationListProps) {
                                     : undefined
                                 }
                                 openInNewTab={!props.openEntity}
+                                fill
                                 className="min-w-0 flex-1 text-foreground"
                               />
                               {row.originNote && (

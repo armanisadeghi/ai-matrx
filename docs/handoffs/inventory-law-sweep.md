@@ -41,15 +41,20 @@ build time as you go.
 
 ## THE CONVERSION CHECKLIST — read before replacing any hand-rolled door
 
-Ten review findings have landed on the Wave 2/3 PR so far. **Most were the same
-mistake in different clothes:** a conversion changed what the original door DID.
-Two later ones (6 and 7 below) are a distinct class worth knowing about — a
-conversion that is correct on the main deployment and broken on a satellite, and
-one that is correct for the surface's rare case and wrong for its common one. Adopting `EntityRef` is not a drop-in — the hand-rolled code
-it replaces encodes decisions you must carry over deliberately.
+Sixteen review findings have landed on the Wave 2/3 PR so far. **Most were the
+same mistake in different clothes:** a conversion changed what the original door
+DID. Adopting `EntityRef` is not a drop-in — the hand-rolled code it replaces
+encodes decisions you must carry over deliberately.
 
-Before replacing hand-rolled code with a shared primitive, answer all ten.
-1-3, 6-7 and 9-10 are door-specific; 4, 5 and 8 apply to ANY primitive adoption:
+Three of the eleven are worth calling out as their own classes, because none is
+visible in a diff: **6** (correct on the main deployment, broken on a
+satellite), **7** (correct for the surface's rare case, wrong for its common
+one), and **10-11** (correct-looking markup whose EVENTS or HIT AREA silently
+changed). The last group is the dangerous one — 11 had already shipped in three
+surfaces before a bot flagged the fourth.
+
+Before replacing hand-rolled code with a shared primitive, answer all eleven.
+1-3, 6-7 and 9-10 are door-specific; 4, 5, 8 and 11 apply to ANY primitive adoption:
 
 1. **Where did the old primary click go?** `router.push` (in place) or
    `window.open` (new tab)? Preserve it. A rail, sheet, side panel, or dialog
@@ -163,6 +168,24 @@ Before replacing hand-rolled code with a shared primitive, answer all ten.
     overlay as a CHILD owes the same seam, and "it's in a portal" is not the
     answer. *(Caught in `GlobalSearchResults`; latent in all 13 `EntityRef`
     consumers.)*
+
+11. **Did the old control fill the row? Then pass `fill`.** The layout sibling
+    of 8, and it hit FOUR conversions before anyone noticed — including three
+    already shipped. `className="flex-1"` on an `EntityRef` stretches the outer
+    WRAPPER; the clickable label inside still ends where the text does. So a
+    full-width `<button className="flex-1 truncate" onClick={open}>` becomes a
+    name that opens only on its own glyphs, and every pixel of the row's
+    padding silently stops working. On a short name in a wide row that is most
+    of the hit target, and nothing about it looks broken. **Tell:** the markup
+    you deleted had `flex-1`/`w-full` on the CLICKABLE element, not just on a
+    wrapper. `EntityRef.fill` now exists for exactly this; it also restores the
+    original layout, since a full-width label is what pushed the row's trailing
+    badges to the far edge. *(Found by Cursor Bugbot on `SkillConfigPicker`,
+    then generalised by hand to `AssociationList` and both `OrgResourceDetail`
+    rows. `FileTableRow` was checked and is fine — its old button was NOT
+    full-width. `GlobalSearchResults` is deliberately left without `fill`:
+    there the row whitespace has its own action, so a stretched name would
+    steal the collapse toggle.)*
 
 Everything the primitive cannot decide for itself is documented on the props;
 read them rather than inferring from a neighbouring call site.

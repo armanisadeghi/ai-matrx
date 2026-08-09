@@ -186,6 +186,7 @@ export function ContainerResourceSheet({
                       // user has open — same rule as the association rail.
                       openInNewTab
                       showIcon={!entry.hideRowIcon}
+                      fill
                       className="flex-1 min-w-0 text-sm"
                     />
                   </li>
