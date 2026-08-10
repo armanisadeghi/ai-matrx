@@ -370,10 +370,26 @@ const surfaceSpecific: SurfaceValue[] = [
  * Handlers live in `features/agent-apps/route/AgentAppSettingsContent.tsx` —
  * the component that owns both the local input state and the `saveField`
  * wrapper the user's own clicks go through — registered with
- * `useSurfaceWriteHandlers` under the layout's provider. They are therefore
- * live on `/agent-apps/[id]/settings`, the route where these fields are
- * editable; on the other sub-routes the targets are declared but unhandled,
- * which the writeback seam reports honestly.
+ * `useSurfaceWriteHandlers` under the layout's provider. All five are
+ * therefore live on `/agent-apps/[id]/settings`, the route where these
+ * fields are editable.
+ *
+ * MOUNTS, and what a write means OFF the Settings tab. The DRAFT trio is
+ * Settings-only by necessity: a draft stages into an input, and on
+ * overview / run / code / versions there is no input for it to land in — so
+ * those three are simply not offered there (`listAgentWritableTargets()`
+ * skips a declared target with no registered handler, and a forced call gets
+ * the seam's loud "declares … but registered no handler" error rather than
+ * silence). The ENTITY pair has no such dependency — it persists straight
+ * through `saveAppField` and needs only the open row — so
+ * `AgentAppSurfaceRuntime` (the `/agent-apps/[id]` layout, mounted on every
+ * sub-route) registers `app_category` and `app_tags` as well, from the shared
+ * validators in `features/agent-apps/route/agent-app-entity-writes.ts`.
+ * Scoping those two to Settings would have been an artifact of where the
+ * pickers are rendered, not a safety property. On Settings the component's
+ * own registration shadows the layout's (registered handlers win —
+ * `resolveHandlers`), so the write still goes through the same `saveField`
+ * wrapper a picker click uses.
  *
  * Every target is `applyPolicy: "ask"`. `auto` is deliberately absent: the
  * entity pair writes the database with no undo, and even the draft trio

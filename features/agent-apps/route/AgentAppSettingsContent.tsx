@@ -56,6 +56,10 @@ import {
 } from "@/features/agents/redux/agent-apps/thunks";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { AGENT_APPS_SURFACE_NAME } from "@/features/surfaces/manifests/agent-apps.manifest";
+import {
+  validateAppCategory,
+  validateAppTags,
+} from "./agent-app-entity-writes";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import type { AppStatus } from "@/features/agent-apps/types";
 
@@ -197,48 +201,21 @@ export function AgentAppSettingsContent({
       requireOpenApp(app, "app_description");
       setDescription(requireString(value, "app_description"));
     },
+    // The two ENTITY targets share their validators with the layout mount
+    // (agent-app-entity-writes.ts), which registers the same pair so category
+    // and tags are writable from the other sub-routes too — an entity write
+    // needs the row, not this tab's inputs. When Settings IS open these
+    // registered handlers shadow the layout's, so the write still goes
+    // through the `saveField` wrapper the pickers themselves call.
     app_category: async (value) => {
       requireOpenApp(app, "app_category");
-      let next: string | null;
-      if (value === null) {
-        next = null;
-      } else {
-        const raw = requireString(value, "app_category");
-        if (!raw.trim()) {
-          throw new Error(
-            "app_category must be a non-empty string, or null to clear the category — an empty string is not a category.",
-          );
-        }
-        next = raw.trim();
-      }
-      await saveField("category", next, { rethrow: true });
+      await saveField("category", validateAppCategory(value), {
+        rethrow: true,
+      });
     },
     app_tags: async (value) => {
       requireOpenApp(app, "app_tags");
-      if (!Array.isArray(value)) {
-        throw new Error(
-          "app_tags must be an array of strings — it replaces the full tag set.",
-        );
-      }
-      const next = value.map((tag, i) => {
-        if (typeof tag !== "string" || !tag.trim()) {
-          throw new Error(
-            `app_tags[${i}] must be a non-empty string; got ${JSON.stringify(tag)}.`,
-          );
-        }
-        return tag.trim();
-      });
-      const seen = new Set<string>();
-      for (const tag of next) {
-        const key = tag.toLowerCase();
-        if (seen.has(key)) {
-          throw new Error(
-            `app_tags contains the duplicate tag "${tag}" — send each tag once.`,
-          );
-        }
-        seen.add(key);
-      }
-      await saveField("tags", next, { rethrow: true });
+      await saveField("tags", validateAppTags(value), { rethrow: true });
     },
   });
 
