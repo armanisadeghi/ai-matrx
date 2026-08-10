@@ -210,6 +210,7 @@ export function DataStoresPage() {
         select(null);
         list.refresh();
       }}
+      onStoreUpdated={() => list.refresh()}
     />
   );
 
@@ -495,6 +496,7 @@ function StoreDetailPanel({
   detail,
   grantProvenanceLabel,
   onDeleted,
+  onStoreUpdated,
 }: {
   storeId: string;
   detail: ReturnType<typeof useDataStoreDetail>;
@@ -504,6 +506,12 @@ function StoreDetailPanel({
    *  provenance fetch happens exactly once per store. */
   grantProvenanceLabel: string | null;
   onDeleted: () => void;
+  /**
+   * A saved edit changes the row the LEFT column already fetched, so the list
+   * has to re-read or it keeps rendering the pre-save name and description.
+   * Fired by the Edit form's Save and by both `mode:"entity"` write targets.
+   */
+  onStoreUpdated: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -694,6 +702,7 @@ function StoreDetailPanel({
           `Renaming "${open.name}" was refused. Only the store's creator or a member of its organization may change it.`,
         );
       }
+      onStoreUpdated();
     },
 
     store_description: async (value: unknown) => {
@@ -717,6 +726,7 @@ function StoreDetailPanel({
           `Updating the description of "${open.name}" was refused. Only the store's creator or a member of its organization may change it.`,
         );
       }
+      onStoreUpdated();
     },
   });
 
@@ -852,7 +862,10 @@ function StoreDetailPanel({
             }}
             onSave={async (patch) => {
               const ok = await detail.updateStore(patch);
-              if (ok) setEditing(false);
+              if (ok) {
+                setEditing(false);
+                onStoreUpdated();
+              }
             }}
             onCancel={() => setEditing(false)}
           />
