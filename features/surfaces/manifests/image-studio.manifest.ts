@@ -21,7 +21,15 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  IMAGE_FITS,
+  IMAGE_POSITION_ANCHORS,
+  LOSSLESS_OUTPUT_FORMAT,
+  OUTPUT_FORMATS,
+  OUTPUT_QUALITY_BOUNDS,
+} from "@/features/image-studio/constants/conversion-options";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -79,6 +87,17 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 
   // ── Conversion settings (330-369) ─────────────────────────────────────
+  {
+    name: "available_presets",
+    label: "Available presets",
+    description:
+      "The studio's whole preset catalog — `{ id, name, width, height, category }` for every size preset the user can pick. THE vocabulary for `selected_presets`: the ids here are the only ones that target accepts. Always present and constant; it is a static catalog, not user state.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 5200,
+    group: "studio_settings",
+    sortOrder: 325,
+  },
   {
     name: "selected_preset_ids",
     label: "Selected preset IDs",
@@ -261,6 +280,128 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may stage into the converter.
+ *
+ * WHICH PRECEDENT WINS, and why. Two adopters bracket this surface:
+ * `image-generate` folded its whole request into ONE object target
+ * (`generation_request`) because its composite read twin said the fields were
+ * one decision; `marketing-crawls` split its command into `crawl_options` plus
+ * two SEPARATE pattern-list targets because the lists are the crawl's SCOPE
+ * rather than its intensity. **Both win, on different halves of this surface**,
+ * and the split falls exactly where marketing-crawls put it:
+ *
+ *   - `conversion_settings` follows image-generate. Format, quality,
+ *     background fill, fit, and crop anchor are one "how should these come
+ *     out" decision — the user sets them together in one Output-controls
+ *     panel, and the surface already SAYS they are one thing:
+ *     `studio_settings_summary` is a composite read twin of precisely this
+ *     group. Five micro-targets would make the user confirm one coherent
+ *     decision five times.
+ *   - `selected_presets` stands ALONE, for the reason the crawl pattern lists
+ *     do. Presets are the SCOPE of the run — WHICH outputs exist and how many
+ *     variants get produced — not the intensity of the encoding. They are the
+ *     choice a user most wants to read and approve on its own ("you're about
+ *     to make 7 favicons") rather than buried in a settings blob; they are
+ *     routinely set alone (pick a bundle, leave quality); they have their own
+ *     exact 1:1 read twin in `selected_preset_ids`; and their semantics
+ *     differ — a full-list REPLACE of catalog ids versus a partial key patch.
+ *
+ * Both are `mode: "draft"` in the literal sense image-generate used it: the
+ * handler calls the SAME setters the user's own clicks call, so the value is
+ * visible and editable the instant it lands. There is no Save bar because
+ * nothing exists in a database yet — the settings shape the NEXT Generate.
+ *
+ * Both are structured (`object` / `array`) on purpose. The inline-tool layer
+ * parses a JSON-looking argument before the handler sees it, so a string-typed
+ * target could never receive raw JSON text; these accept the parsed structure
+ * directly and the handler never re-parses.
+ *
+ * Neither handler reads page state to decide WHERE a value lands — one is a
+ * full replace, the other sets each key independently — so staging both in a
+ * single agent turn cannot resolve against a stale render closure. The one
+ * piece of live state either consults is the in-flight guard, and that is read
+ * through a ref for exactly that reason.
+ *
+ * WHAT IS NOT WRITABLE, on purpose:
+ *  - **Source images.** Adding a file needs a `File` object with real bytes.
+ *    No agent can produce one, and the studio's files are browser-local until
+ *    saved. Nothing to declare.
+ *  - **Generate.** Reasoned from scratch rather than copied, because the usual
+ *    argument does not apply: unlike an image GENERATION this spends no model
+ *    money — it is sharp work on our own backend. It still does not earn a
+ *    target, for two costs that are specific to this page. First, Generate is
+ *    DESTRUCTIVE to session work: it resets `variants: {}` on every file, so
+ *    an agent firing it discards a batch the user may have just reviewed and
+ *    not yet saved. Second, the shell deliberately interposes a human gate in
+ *    front of it — the first click with auto-named files only raises the
+ *    rename banner, because each file's name becomes the folder and the slug
+ *    for every variant it produces. An agent-driven fire would route around a
+ *    gate that exists precisely to stop unattended runs. So the ORDER vs FIRE
+ *    line lands where `image-generate` and `marketing-site-media` drew it, for
+ *    different reasons: the agent composes the command, the user commits it.
+ *  - **Save to library / Download.** These write into the user's cloud files
+ *    (public CDN URLs by default) or their disk. A human gesture, per both
+ *    adopters that met this line before.
+ *  - The generated OUTPUT — variant counts, output bytes, `last_save_result`.
+ *    An agent writing those would be fabricating results the backend never
+ *    produced.
+ *  - `is_processing` / `is_saving` / `is_describing` — status the page owns.
+ *  - **Per-file names and AI metadata**, though they are genuinely authored
+ *    content an agent drafts well. Two things block them TODAY, and both are
+ *    fixable later: this surface already has a dedicated path for them (the
+ *    `image-studio-describe-01` shortcut writes `updateImageMetadata`), and
+ *    there is no read twin to close the evidence loop — `source_files` carries
+ *    only `metadata_status`, and files are addressable solely by a
+ *    browser-local name. A target that cannot be verified from a read value,
+ *    on rows with no durable id, is not one worth declaring yet.
+ *
+ * Vocabulary and bounds are interpolated from
+ * `features/image-studio/constants/conversion-options.ts` — the same module
+ * `ExportPanel` and `CropControls` render their buttons from and the handler
+ * validates against, so the contract prose cannot drift from the controls.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "selected_presets",
+    label: "Selected presets",
+    description: [
+      "Sets which size presets get produced for every source file on the next Generate — the same tiles the user ticks in the preset catalog.",
+      "Value: an array of preset id strings, e.g. [\"og-image\", \"favicon-32\"].",
+      "REPLACES THE FULL SET — include every preset you want kept, not just the new ones. Read selected_preset_ids for what is ticked right now, and available_presets for the ids that exist. An empty array clears the selection.",
+      "An id that is not in the catalog is rejected by name — nothing is silently dropped.",
+      "Staged only: no image is converted until the user presses Generate.",
+    ].join(" "),
+    valueType: "array",
+    updatesValue: "selected_preset_ids",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "studio_settings",
+    sortOrder: 330,
+  },
+  {
+    name: "conversion_settings",
+    label: "Conversion settings",
+    description: [
+      "Sets the global output settings the next Generate will use — the same controls in the Output controls panel.",
+      "Value: an object with AT LEAST ONE of { output_format, output_quality, background_color, resize_fit, resize_position }. Each key REPLACES that one setting; omit a key to leave the user's value exactly as it is (read studio_settings_summary first).",
+      `output_format — one of: ${OUTPUT_FORMATS.join(" | ")}. Presets that pin their own format (favicons → PNG, avatars → WebP) keep theirs regardless.`,
+      `output_quality — a whole number from ${OUTPUT_QUALITY_BOUNDS.min} to ${OUTPUT_QUALITY_BOUNDS.max}. Lower means smaller files. Ignored by ${LOSSLESS_OUTPUT_FORMAT}, which is always lossless.`,
+      'background_color — a 6-digit hex string like "#ffffff", used to fill transparency when converting to a format without an alpha channel (JPEG, AVIF).',
+      `resize_fit — how each image fills the preset frame, one of: ${IMAGE_FITS.join(" | ")}.`,
+      `resize_position — the crop anchor, which only applies with the "cover" fit: one of ${IMAGE_POSITION_ANCHORS.join(" | ")}. "attention" and "entropy" let the encoder choose the region itself. A precise focal point can only be set by dragging the live preview, so it is not writable here.`,
+      "Refused while a conversion is already running.",
+      "Staged only: no image is converted until the user presses Generate.",
+    ].join(" "),
+    valueType: "object",
+    updatesValue: "studio_settings_summary",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "studio_settings",
+    sortOrder: 365,
+  },
+];
+
 export const IMAGE_STUDIO_SURFACE_NAME = "matrx-user/image-studio";
 
 export const imageStudioManifest: SurfaceManifest = {
@@ -289,13 +430,31 @@ Read the values in three layers:
 Source files are NOT durable cloud records while on this surface. Only after
 "Save to library" do variants get cld_files rows; last_save_result tells you
 where they landed. Never invent file ids for unsaved studio files.
+
+You can also SET UP the conversion for the user: selected_presets for WHICH
+outputs get made (a full-list replace — read selected_preset_ids for what is
+ticked and available_presets for the ids that exist), and conversion_settings
+for HOW they are encoded (format, quality, transparent fill, fit, crop anchor).
+Both only stage the form. The user presses Generate, because Generate discards
+whatever variants are already in the session and the page deliberately asks
+them to name their files first. Saving to their library and downloading stay
+theirs too.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
+
+export interface StudioPresetCatalogEntry {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  category: string;
+}
 
 export interface StudioSourceFileSummary {
   name: string;
@@ -330,6 +489,7 @@ export function createImageStudioScope(values: {
   source_files: StudioSourceFileSummary[];
 
   // Conversion settings
+  available_presets: StudioPresetCatalogEntry[];
   selected_preset_ids: string[];
   selected_preset_count: number;
   output_format: string;

@@ -27,7 +27,7 @@ import type {
   StudioMetadataStatus,
   StudioSourceFile,
 } from "../types";
-import { getPresetById } from "../presets";
+import { PRESET_CATEGORIES, getPresetById } from "../presets";
 import { slugifyFilename } from "../utils/slugify-filename";
 import { buildDescribePreview } from "../utils/build-describe-preview";
 import { DESCRIBE_TEMP_FOLDER_PATH } from "../constants/describe";
@@ -83,6 +83,23 @@ function formatCropAnchor(position: ImagePosition): string {
     ? position
     : `focal ${Math.round(position.x * 100)}%,${Math.round(position.y * 100)}%`;
 }
+
+/**
+ * The preset catalog, flattened once at module load for the surface scope.
+ * Static data — it never depends on studio state, so it is built outside the
+ * hook rather than recomputed per scope build. This is the vocabulary the
+ * `selected_presets` write target validates against, so the agent reading the
+ * surface sees exactly the ids its writes may use.
+ */
+const PRESET_CATALOG_FOR_SCOPE = PRESET_CATEGORIES.flatMap((category) =>
+  category.presets.map((preset) => ({
+    id: preset.id,
+    name: preset.name,
+    width: preset.width,
+    height: preset.height,
+    category: category.name,
+  })),
+);
 
 const DEFAULT_QUALITY = 88;
 const DEFAULT_FORMAT: OutputFormat = "webp";
@@ -864,6 +881,7 @@ export function useImageStudio(
           variant_count: Object.keys(f.variants).length,
           metadata_status: f.metadataStatus,
         })),
+        available_presets: PRESET_CATALOG_FOR_SCOPE,
         selected_preset_ids: selectedPresetIds,
         selected_preset_count: selectedPresetIds.length,
         output_format: format,

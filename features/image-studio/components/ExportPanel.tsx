@@ -26,38 +26,19 @@ import type {
 } from "../types";
 import { formatBytes } from "../utils/format-bytes";
 import { CropControls } from "./CropControls";
+import {
+  OUTPUT_FORMAT_OPTIONS,
+  OUTPUT_QUALITY_BOUNDS,
+  OUTPUT_QUALITY_STEP,
+} from "../constants/conversion-options";
 
-const FORMATS: Array<{
-  id: OutputFormat;
-  label: string;
-  blurb: string;
-  supportsAlpha: boolean;
-}> = [
-  {
-    id: "webp",
-    label: "WebP",
-    blurb: "Best balance — ~30% smaller than JPEG, alpha supported",
-    supportsAlpha: true,
-  },
-  {
-    id: "avif",
-    label: "AVIF",
-    blurb: "Smallest files, slightly slower to decode",
-    supportsAlpha: false,
-  },
-  {
-    id: "jpeg",
-    label: "JPEG",
-    blurb: "Universal support, no alpha",
-    supportsAlpha: false,
-  },
-  {
-    id: "png",
-    label: "PNG",
-    blurb: "Lossless, best for logos/icons, alpha",
-    supportsAlpha: true,
-  },
-];
+/**
+ * The format vocabulary and the quality bounds live in
+ * `constants/conversion-options` — the ONE module the agent write handler
+ * validates against and the surface manifest quotes its enums from, so the
+ * buttons below and the agent-facing contract cannot drift.
+ */
+const FORMATS = OUTPUT_FORMAT_OPTIONS;
 
 interface ExportPanelProps {
   format: OutputFormat;
@@ -249,9 +230,9 @@ export function ExportPanel({
           </div>
           <Slider
             value={[quality]}
-            min={30}
-            max={100}
-            step={1}
+            min={OUTPUT_QUALITY_BOUNDS.min}
+            max={OUTPUT_QUALITY_BOUNDS.max}
+            step={OUTPUT_QUALITY_STEP}
             onValueChange={([v]) => onQualityChange(v)}
           />
           <div className="flex justify-between text-[10px] text-muted-foreground">

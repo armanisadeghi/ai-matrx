@@ -57,7 +57,21 @@ import {
   type BundleEntry,
 } from "../utils/download-bundle";
 import { slugifyFilename } from "../utils/slugify-filename";
-import type { ProcessedVariant } from "../types";
+import { getPresetById } from "../presets";
+import {
+  IMAGE_FITS,
+  IMAGE_POSITION_ANCHORS,
+  LOSSLESS_OUTPUT_FORMAT,
+  OUTPUT_FORMATS,
+  OUTPUT_QUALITY_BOUNDS,
+  isBackgroundColor,
+} from "../constants/conversion-options";
+import type {
+  ImageFit,
+  ImagePositionAnchor,
+  OutputFormat,
+  ProcessedVariant,
+} from "../types";
 import { Edit3, Layers, SlidersHorizontal, X, Zap } from "lucide-react";
 import {
   BottomSheet,
@@ -301,10 +315,159 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
     toast.success(`Described ${studio.files.length} file(s) in ${elapsed}s`);
   }, [studio]);
 
+  // ── Agent write targets (matrx-user/image-studio) ─────────────────────
+  //
+  // When an agent stages several targets in ONE turn, the writeback seam
+  // resolves EVERY handler closure before the user confirms the first ask
+  // dialog. So any live state a handler consults has to be read through a
+  // ref — the render closure a handler was built in may already be a stale
+  // snapshot by the time the user clicks Apply.
+  const isProcessingRef = useRef(studio.isProcessing);
+  isProcessingRef.current = studio.isProcessing;
+
+  // Both handlers validate and THROW on a bad shape; the writeback seam
+  // (`applySurfaceWrite`) turns the throw into a safe error envelope the
+  // agent reads and corrects from. Enum checks run against the same
+  // `constants/conversion-options` module the Output-controls panel renders
+  // its buttons from, and preset ids against the real catalog, so neither
+  // can drift from what the user can actually pick.
+  // Fresh closures per call (the `getWriteHandlers` contract).
+  const getSurfaceWriteHandlers = useCallback(
+    () => ({
+      selected_presets: (value: unknown) => {
+        if (!Array.isArray(value))
+          throw new Error(
+            'selected_presets expects an array of preset id strings, e.g. ["og-image", "favicon-32"]. It REPLACES the full selection — read selected_preset_ids first and include everything you want kept.',
+          );
+
+        // Validate the WHOLE list before touching state — a partial apply
+        // would leave a selection nobody chose.
+        const ids: string[] = [];
+        const unknown: string[] = [];
+        for (const entry of value) {
+          if (typeof entry !== "string" || !entry.trim())
+            throw new Error(
+              "selected_presets entries must be non-empty preset id strings. Read available_presets for the ids that exist.",
+            );
+          const id = entry.trim();
+          if (!getPresetById(id)) unknown.push(id);
+          else if (!ids.includes(id)) ids.push(id);
+        }
+        if (unknown.length > 0)
+          throw new Error(
+            `selected_presets got ${unknown.length} id(s) that are not in the preset catalog: ${unknown.join(", ")}. Read available_presets for the valid ids — nothing was changed.`,
+          );
+
+        // The SAME full-replace path a "recommended bundle" click takes.
+        studio.applyBundle(ids);
+      },
+
+      conversion_settings: (value: unknown) => {
+        if (typeof value !== "object" || value === null || Array.isArray(value))
+          throw new Error(
+            "conversion_settings expects an object: { output_format?, output_quality?, background_color?, resize_fit?, resize_position? }.",
+          );
+        // Refuse rather than edit settings a run already committed to — the
+        // in-flight conversion captured the OLD values, so a mid-run write
+        // would leave the panel describing something nobody produced.
+        if (isProcessingRef.current)
+          throw new Error(
+            "A conversion is already running. conversion_settings cannot be written while variants are being generated — wait for it to finish, then write the next settings.",
+          );
+
+        const patch = value as Record<string, unknown>;
+        const allowedKeys = [
+          "output_format",
+          "output_quality",
+          "background_color",
+          "resize_fit",
+          "resize_position",
+        ];
+        const unknownKeys = Object.keys(patch).filter(
+          (k) => !allowedKeys.includes(k),
+        );
+        if (unknownKeys.length > 0)
+          throw new Error(
+            `conversion_settings got unsupported key(s): ${unknownKeys.join(", ")}. Allowed keys: ${allowedKeys.join(" | ")}. Presets are set with the selected_presets target, not here.`,
+          );
+        if (Object.keys(patch).length === 0)
+          throw new Error(
+            `conversion_settings needs at least one of: ${allowedKeys.join(" | ")}.`,
+          );
+
+        // Validate EVERY key before applying any of them — a partial apply
+        // on a half-valid object would leave settings nobody chose.
+        const apply: Array<() => void> = [];
+        if ("output_format" in patch) {
+          if (
+            typeof patch.output_format !== "string" ||
+            !OUTPUT_FORMATS.includes(patch.output_format as OutputFormat)
+          )
+            throw new Error(
+              `conversion_settings.output_format expects one of: ${OUTPUT_FORMATS.join(" | ")}.`,
+            );
+          const next = patch.output_format as OutputFormat;
+          apply.push(() => studio.setFormat(next));
+        }
+        if ("output_quality" in patch) {
+          if (
+            typeof patch.output_quality !== "number" ||
+            !Number.isInteger(patch.output_quality) ||
+            patch.output_quality < OUTPUT_QUALITY_BOUNDS.min ||
+            patch.output_quality > OUTPUT_QUALITY_BOUNDS.max
+          )
+            throw new Error(
+              `conversion_settings.output_quality expects a whole number from ${OUTPUT_QUALITY_BOUNDS.min} to ${OUTPUT_QUALITY_BOUNDS.max} (${LOSSLESS_OUTPUT_FORMAT} ignores it — it is always lossless).`,
+            );
+          const next = patch.output_quality;
+          apply.push(() => studio.setQuality(next));
+        }
+        if ("background_color" in patch) {
+          if (
+            typeof patch.background_color !== "string" ||
+            !isBackgroundColor(patch.background_color)
+          )
+            throw new Error(
+              'conversion_settings.background_color expects a 6-digit hex string like "#ffffff".',
+            );
+          const next = patch.background_color;
+          apply.push(() => studio.setBackgroundColor(next));
+        }
+        if ("resize_fit" in patch) {
+          if (
+            typeof patch.resize_fit !== "string" ||
+            !IMAGE_FITS.includes(patch.resize_fit as ImageFit)
+          )
+            throw new Error(
+              `conversion_settings.resize_fit expects one of: ${IMAGE_FITS.join(" | ")}.`,
+            );
+          const next = patch.resize_fit as ImageFit;
+          apply.push(() => studio.setFit(next));
+        }
+        if ("resize_position" in patch) {
+          if (
+            typeof patch.resize_position !== "string" ||
+            !IMAGE_POSITION_ANCHORS.includes(
+              patch.resize_position as ImagePositionAnchor,
+            )
+          )
+            throw new Error(
+              `conversion_settings.resize_position expects one of: ${IMAGE_POSITION_ANCHORS.join(" | ")}. A precise focal point is set by dragging the live preview and cannot be written.`,
+            );
+          const next = patch.resize_position as ImagePositionAnchor;
+          apply.push(() => studio.setPosition(next));
+        }
+        for (const run of apply) run();
+      },
+    }),
+    [studio],
+  );
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={IMAGE_STUDIO_SURFACE_NAME}
       getScope={studio.buildSurfaceScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     {/* `@container/studio` so the three columns respond to the studio's OWN
         available width, not the viewport. The app sidebar (and the images

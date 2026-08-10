@@ -273,6 +273,44 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
+- **2026-08-10** — The Convert studio is agent-writable. `ImageStudioShell`
+  now passes `getWriteHandlers` to the `SurfaceRuntimeProvider` it already
+  mounted, registering the two targets `matrx-user/image-studio` declares:
+  `conversion_settings` (a partial `{output_format?, output_quality?,
+  background_color?, resize_fit?, resize_position?}` object) and
+  `selected_presets` (a full-list REPLACE of catalog preset ids), both
+  `applyPolicy: "ask"` / `mode: "draft"`. Handlers call the SAME
+  `useImageStudio` setters the Output-controls panel and the bundle tiles call
+  — `setFormat` / `setQuality` / `setBackgroundColor` / `setFit` /
+  `setPosition`, and `applyBundle` for the preset replace — never a parallel
+  write path. Both validate every key or id before applying any of them and
+  THROW on a bad shape (the writeback seam turns that into an error envelope
+  the agent corrects from); preset ids are checked against the real catalog
+  via `getPresetById` and rejected BY NAME rather than silently dropped.
+  `conversion_settings` also throws while a conversion is in flight, reading
+  `isProcessing` through a ref rather than off its render closure — when an
+  agent stages several targets in one turn the seam resolves every handler
+  before the user confirms the first dialog, so a closure-read guard could act
+  on a stale snapshot. Two settings groups rather than one object because they
+  are different decisions: the encode settings share the existing
+  `studio_settings_summary` composite read twin, while the preset list is the
+  run's SCOPE and has its own 1:1 twin. **Generate itself is not a write
+  target and will not become one** — not for the `image-generate` money
+  reason (converting spends none) but because it resets `variants: {}` on
+  every file, discarding a batch the user may not have saved, and because
+  `handleGenerate` deliberately gates the first click behind the rename banner,
+  since each file's `filenameBase` becomes the folder and slug for all of its
+  variants. Save-to-library, download, and adding source files stay human too.
+  New `constants/conversion-options.ts` is now the ONE home for the output
+  format list, the 30–100 quality bounds, the fit modes, the 3×3 anchor grid
+  and the smart anchors; `ExportPanel`'s format buttons and quality Slider,
+  `CropControls`' fit and focal-point pickers, the handler's enum checks, and
+  the manifest's model-facing contract prose all read from it instead of
+  re-typing the vocabulary (it was written out in three places). The manifest
+  also gained an `available_presets` read value carrying the whole preset
+  catalog, so an agent can discover the ids `selected_presets` accepts.
+  Live-verified with real Badass Agent runs on `/images/convert` — see the
+  surfaces FEATURE.md entry of the same date.
 - **2026-08-10** — Generate mode is agent-writable. `GenerateShellClient`
   now passes `getWriteHandlers` to the `SurfaceRuntimeProvider` it already
   mounted, registering the one target `matrx-user/image-generate` declares:
