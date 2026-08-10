@@ -148,8 +148,22 @@ export function AppConfigClient({
 
   // Nested provider — out-depths the layout's base provider while this tab is
   // mounted, so Run scope carries the tab's live rows and editor state.
-  const getSurfaceScope = () =>
-    createAdminApplicationsScope({
+  const getSurfaceScope = () => {
+    // Read twin of the `app_notice` write target. Sourced from the SAVED row,
+    // not the editor's unsaved draft — an agent reading this is asking "what
+    // is live in the fleet right now", which is what it must replace.
+    const openRow =
+      view.mode === "edit"
+        ? (rows.find((r) => r.app === view.app) ?? null)
+        : null;
+    const savedNotice =
+      openRow &&
+      typeof openRow.config === "object" &&
+      openRow.config !== null &&
+      !Array.isArray(openRow.config)
+        ? (openRow.config as Record<string, unknown>).notice
+        : null;
+    return createAdminApplicationsScope({
       active_tab: "configuration",
       config_row_count: rows.length,
       config_rows_summary: rows.map((r) => ({
@@ -161,7 +175,14 @@ export function AppConfigClient({
       })),
       config_editor_view: view.mode,
       config_editor_app: view.mode === "edit" ? view.app : "",
+      config_editor_notice:
+        savedNotice &&
+        typeof savedNotice === "object" &&
+        !Array.isArray(savedNotice)
+          ? (savedNotice as Record<string, unknown>)
+          : undefined,
     });
+  };
 
   if (view.mode !== "list") {
     const row =

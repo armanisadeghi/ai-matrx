@@ -46,7 +46,12 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+// The notice severity vocabulary is imported from the feature's canonical
+// schema module, never re-typed here — the manifest description, the handler
+// and the editor's own Select all read the SAME list.
+import { NOTICE_LEVELS } from "@/features/admin/applications/config/schema";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const ADMIN_APPLICATIONS_SURFACE_NAME = "matrx-admin/applications";
@@ -191,6 +196,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 330,
     group: "configuration",
   },
+  {
+    name: "config_editor_notice",
+    label: "Operator notice",
+    description:
+      "The SAVED operator broadcast (AppConfigV1.notice) of the app open in the Configuration editor — {level, title, body, url?} — which every installed client shows once. Absent when no notice is set, or when no editor is open. This is the read twin of the app_notice write target: it reflects what is LIVE, not what an unsaved edit has staged.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    sortOrder: 340,
+    group: "configuration",
+  },
 
   // ── Catalogs ─────────────────────────────────────────────────────────────
   {
@@ -332,6 +348,39 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — deliberately ONE, and deliberately only on the Configuration
+ * editor mount.
+ *
+ * The judgment call, written down because the next agent here will re-ask it:
+ * this hub governs SHIPPED CLIENTS, so nearly everything on it is
+ * infrastructure or governance, not authored content. Ruled NO and left with
+ * no target: the three server URLs and `min_supported_app_version` (change what
+ * every installed client talks to / forces upgrades), `flags` (feature
+ * governance), `credential_maintenance` (credential material), the app slug and
+ * schema_version (identity), catalog entries (artifact pinning — key, SHA-256,
+ * size, is_active), the Installations fleet and the History timeline (read-only
+ * reports), and Overview (a summary view that owns no editable state).
+ *
+ * The notice is the one genuine authoring case on the surface: a short operator
+ * broadcast with a severity, a headline and a body — exactly the "authored
+ * content an agent drafts better/faster" shape, and the only field here whose
+ * value comes from writing rather than from knowing an infrastructure fact.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "app_notice",
+    label: "Operator notice",
+    description: `Stage the operator broadcast for the application open in the Configuration editor — the one-shot message every installed client shows once. Value is an object that REPLACES the whole notice: {level, title, body, url?}. \`level\` must be exactly one of ${NOTICE_LEVELS.join(" | ")}; \`title\` and \`body\` are both REQUIRED and non-empty (a broadcast is authored whole, never half-patched); \`url\` is optional and must be an https:// URL — omit it to clear it. Unknown fields are rejected. Applying only STAGES the notice in the editor and marks it active: nothing reaches any client until the admin clicks Save and confirms the diff. Read config_editor_notice first to see what is currently live.`,
+    valueType: "object",
+    updatesValue: "config_editor_notice",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "configuration",
+    sortOrder: 340,
+  },
+];
+
 export const adminApplicationsManifest: SurfaceManifest = {
   surfaceName: ADMIN_APPLICATIONS_SURFACE_NAME,
   readiness: "verified",
@@ -343,12 +392,15 @@ This is an ADMIN surface: the Applications hub at /administration/applications �
 active_tab tells you which tab the admin is on right now and is always present. On Overview, applications_overview_summary and fleet_below_minimum_total describe every known application's config/catalog/fleet standing. On Configuration, config_rows_summary lists the remote runtime config for each application and config_editor_view/config_editor_app say whether one is open for editing. On Catalogs, catalog_kind_summary breaks down remote catalog entries by kind for catalog_selected_app, and catalog_view/catalog_selected_kind/catalog_selected_entry_id track the drill-down. On Installations, the fleet is compared against installation_min_supported_version, with installation_below_min_count naming instances running unsupported builds. On History, history_entry_count and history_fetch_limit describe the merged audit timeline window.
 
 Only the values matching active_tab are populated — each tab mounts its own nested emitter, so everything belonging to another tab is absent, not stale.
+
+You may WRITE exactly one thing here: app_notice, the operator broadcast staged into an open Configuration editor. Everything else on this hub — server URLs, minimum supported version, feature flags, credential maintenance, catalog artifact pinning — is infrastructure and governance you may read and reason about but never write.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**
@@ -373,6 +425,7 @@ export function createAdminApplicationsScope(values: {
   config_rows_summary?: unknown[];
   config_editor_view?: "list" | "edit" | "new";
   config_editor_app?: string;
+  config_editor_notice?: Record<string, unknown>;
   catalog_selected_app?: string;
   catalog_entry_count?: number;
   catalog_kind_summary?: unknown[];

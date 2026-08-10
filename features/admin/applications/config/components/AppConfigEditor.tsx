@@ -44,6 +44,9 @@ import {
   zodIssuesToFieldErrors,
   type ConfigDraft,
 } from "@/features/admin/applications/config/schema";
+import { buildNoticeDraftWrite } from "@/features/admin/applications/config/notice-write-targets";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_APPLICATIONS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-applications.manifest";
 import type {
   AppConfigHistoryRow,
   AppConfigRow,
@@ -89,6 +92,23 @@ export function AppConfigEditor({
   const [pendingSave, setPendingSave] = useState<PendingSave | null>(null);
   const [saving, setSaving] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+
+  // Surface write target `app_notice` — this editor owns the draft, so it
+  // registers the handler itself rather than threading state up to the
+  // provider in AppConfigClient.
+  //
+  // The value is validated SYNCHRONOUSLY, before setDraft: a throw must land in
+  // the writeback seam (which turns it into the error envelope the agent
+  // reads), never inside a React updater where it would surface as an
+  // unhandled render error instead. Staging only — the admin still saves
+  // through the same validate → diff-confirm → RPC path as a hand edit.
+  useSurfaceWriteHandlers(ADMIN_APPLICATIONS_SURFACE_NAME, {
+    app_notice: (value: unknown) => {
+      const notice = buildNoticeDraftWrite(draft.notice, value);
+      setDraft((current) => ({ ...current, notice }));
+      setFieldErrors({});
+    },
+  });
 
   const validate = (): PendingSave | null => {
     const errors: Record<string, string> = {};
