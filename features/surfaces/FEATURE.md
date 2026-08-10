@@ -184,6 +184,159 @@ internal platform use — never a washed-down user variant beside a private one:
   one target list, but `listAgentWritableTargets()` offers a target only
   where a handler is registered, so the read-only detail route gets just the
   two fields that cannot change what a schedule runs or when it fires, while
+  everything behavioural stays editor-only for the user to review and save), and
+  `matrx-user/education-assessment` (8 draft targets on the GENERATOR form —
+  `generation_topic` / `_difficulty` / `_depth` / `_question_types` /
+  `_question_count` / `_exam_type` / `_user_request` / `_time_limit_minutes`;
+  handlers on `AssessmentCreate`'s own provider, staging through the same
+  setters the user's typing uses, so the user still presses Generate — where
+  the COPPA gate, the entitlement guard and `assessmentService.createWithItems`
+  run. A deliberate per-mount split: the `AssessmentDetail` mount of the SAME
+  surface registers no handlers, because it owns a loaded read snapshot rather
+  than editor state and its provider also wraps the mid-attempt take flow), and
+  `matrx-user/html-page` (2 draft
+  targets on the standalone quick-publish editor — `page_seo_metadata`, one
+  object carrying the title/description/keywords the Metadata tab edits
+  together, and `page_html_content`, the whole standalone document; handlers
+  in `features/html-pages/components/HtmlPageEditor.tsx`, which also had to
+  MOUNT the surface's first `SurfaceRuntimeProvider`. The HTML body is the
+  interesting one: it is a Monaco editor, and Monaco swallows `contextmenu`
+  before the v3 menu sees it, so the declared target is the ONLY way an agent
+  can reach the document — there is no user-driven text-replace seam to fall
+  back on. Indexability, canonical URL, OG image, and publish/delete stay
+  human-only: a standalone page goes live the moment it is saved), and
+  `matrx-user/shapes` (6 ask-policy DRAFT targets split across the three
+  studio mounts that own authored state — `NewShapeClient` the /shapes/new
+  intent + sample, `ShapeOwnerEditor` the Details label / title-key / loader,
+  `ShapeTestTab` the input-form payload. The list, Instances, and Schema
+  mounts register nothing, so those routes offer an agent no tool at all. A
+  kind's SLUG, its visibility, and activation are unwritable by design —
+  identity, publishing, and a dual-gate verdict respectively), and
+  `matrx-user/marketing-crawls` (3 ask-policy DRAFT targets staging the
+  crawl command — `crawl_options` as one partial-patch object for the limits,
+  render mode and toggles, plus `crawl_include_patterns` /
+  `crawl_exclude_patterns` as full-list replacements, because a crawl's SCOPE
+  is the decision a user wants to review on its own rather than buried in a
+  settings blob; handlers on `NewCrawlWorkspace`'s own provider, landing
+  through the same setters the user's typing uses. The sessions-list mount
+  registers NONE on purpose — immutable crawl records behind pure table query
+  state. Starting the crawl stays human: it spends real time and budget
+  against the client's own server), and
+  `matrx-user/image-generate` (ONE ask-policy draft target,
+  `generation_request` — a partial `{prompt?, style?, image_size?,
+  image_count?}` object handled in
+  `app/(core)/images/generate/GenerateShellClient.tsx` through the same
+  `useState` setters the user's own typing and Select clicks call. THE
+  reference for a COMPOSITE target: those four fields are ONE request the user
+  composes in a single thought, `generation_request_summary` is already their
+  composite read twin, and every key is optional — `{image_size}` alone leaves
+  a typed prompt untouched — so one confirm dialog covers one request instead
+  of four in a row. Following the `podcast-studio` precedent, **Generate is
+  deliberately NOT a target**: starting a run spends real money on image
+  models, so the human press stays the gate. Results, status flags, and
+  anything about saved files stay undeclared, and the handler THROWS rather
+  than editing a request that is already in flight), and
+  `matrx-admin/agent-apps` (3 ask-policy DRAFT targets — `category_name`,
+  `category_description`, `category_icon` — on the CATEGORIES editor only,
+  handled by
+  `app/(admin)/administration/agents/agent-apps/categories/page.tsx` through
+  the same `handleEditChange` setter the admin's own typing calls, so the
+  admin's Save press stays the only path to `updateAgentAppCategory`. THE
+  clean draft reference: `selected_category` is emitted FROM the live
+  `editData` buffer the handlers write and `category_has_unsaved_changes`
+  from the same `hasUnsaved` flag, so an agent reads back exactly what it
+  staged before anyone saves. **The first agent-writable ADMIN surface, and
+  the shape to copy on one:** a moderation console is overwhelmingly
+  read-only to an agent — featuring, verifying, publishing and suspending
+  apps, rate limits and unblocks, error resolution, and executions/analytics
+  are all undeclared, because they are trust and abuse controls rather than
+  copy. The category pane is the one place an admin authors prose, and even
+  there the category `id` (identity), `sort_order` (mechanical ordering with
+  its own arrow buttons), creation, and deletion (it orphans every app
+  assigned to the category) stay human), and
+  `matrx-admin/applications` (ONE ask-policy DRAFT target, `app_notice` — the
+  operator broadcast every installed client shows once, staged into the
+  Configuration editor by `AppConfigEditor.tsx` and validated by the pure core
+  in `features/admin/applications/config/notice-write-targets.ts`. THE
+  reference for a surface that is mostly OFF-limits: this hub governs shipped
+  CLIENTS, so the three server URLs, `min_supported_app_version`, feature
+  flags, credential maintenance, catalog artifact pinning (key / SHA-256 /
+  size), and the Installations + History reports are all infrastructure or
+  governance and get NO target at all — the notice is the single genuine
+  authoring case on the surface, a short severity + headline + body an agent
+  drafts better than it looks up. Applying only stages the notice and marks it
+  active; the admin still goes through the same validate → diff-confirm →
+  `admin_update_app_config` RPC as a hand edit), and
+  `matrx-admin/system-agents` (4 ask-policy ENTITY targets — `agent_description`,
+  `agent_name`, `agent_category`, `agent_tags` — the catalog prose of one open
+  SYSTEM (builtin) agent, handlers in
+  `features/agents/components/admin/SystemAgentWriteTargets.tsx` through
+  `saveAgentField`, the same thunk `AgentSettingsForm`'s Save dispatches per
+  changed field. THE reference for **verifying an optimistic write actually
+  landed**: `saveAgentField` does throw on failure, but it is a
+  `createAsyncThunk`, so a bare `dispatch` swallows the throw into a `rejected`
+  action and resolves — which is exactly why the admin's own form fails
+  silently today. Each handler `.unwrap()`s AND re-reads the record, throwing
+  when the value did not land. Also the reference for a **per-mount split
+  driven by target-name collision**: handlers are registered on the agent
+  DETAIL page, not the route layout, because the sibling `/build` route nests
+  `matrx-user/agent-builder`, which owns these same four names as reviewable
+  DRAFT targets and wins deepest-first. Everything that decides what a
+  platform-wide agent DOES or may REACH — messages, variables, context slots,
+  tools, custom tools, MCP servers, output schema, skills, model, model tiers —
+  stays human-only, and so do `is_active` / `is_public` / `is_archived`: an
+  agent must never publish, unpublish or retire itself or its siblings).
+  `matrx-admin/database` (ONE ask-policy draft target, `sql_query` — an agent
+  turning a natural-language question into real SQL and STAGING it into the
+  workbench editor at `/administration/database/sql-queries`; handler on
+  `app/(admin)/administration/database/components/enhanced-sql-editor.tsx`,
+  validation core in `features/administration/lib/sql-editor-write-targets.ts`.
+  THE reference for the drafting/execution line on a dangerous surface: the
+  target replaces TEXT IN A TEXTAREA and nothing more — no connection, no run,
+  no cache touched — so staging DDL/DML is fine and the description says so out
+  loud, while **Execute, Cancel, `use_cache` and Clear Cache are deliberately
+  NOT targets** and the handler refuses while a run is in flight. The
+  hub-landing mount at `/administration/database` registers NO handlers on
+  purpose: it owns a static link grid, not editable state).
+  `matrx-admin/tool-registry` (3 ask-policy ENTITY targets on the open tool —
+  `tool_description`, `tool_category`, `tool_tags`, handled in
+  `ToolViewPage.tsx` through the new `updateToolDefinition` wrapper over
+  `PUT /api/admin/tools/[id]`, the `requireAdmin()`-gated door the page's own
+  Active switch and the admin editor already use; `tool.definition` is
+  SELECT-only under RLS, so there is no direct-write shortcut to be tempted
+  by. `entity` rather than the preferred `draft` because the detail route is
+  server-rendered read-only props with no editor state to stage into — editing
+  lives on `/[toolId]/edit`, which does not mount this surface — so each
+  handler validates, writes, then `router.refresh()`es the read twin. THE
+  first ADMIN adopter, and the sharpest capability line yet: `tool_is_active`,
+  `tool_admin_only`, `tool_gating`, `tool_exemptions`, `tool_visibility` and
+  `tool_tier` stay human-only on the `agent-builder` reasoning — one flipped
+  flag re-arms a tool for every agent on the platform — as do the tool's name
+  (the dispatch key; there is no slug), its parameter/output schemas and
+  annotations (a wrong schema breaks every call site), version fields, and
+  everything MCP-provenance-shaped. `tool_group` is excluded for a different
+  reason worth remembering: it is a fair filing label, but NO human editor
+  exposes it, so an entity write there would be a one-way door. The catalogue
+  mount (`McpToolsManager`) registers nothing — it owns only browse state and
+  no open record).
+  `matrx-user/agent-apps` (5 ask-policy targets — the whole storefront of a
+  published mini-app: `app_name` / `app_tagline` / `app_description` as
+  DRAFTS and `app_category` / `app_tags` as ENTITY writes, handlers in
+  `features/agent-apps/route/AgentAppSettingsContent.tsx` through the same
+  local setters and `saveAppField` wrapper the Identity tab's own inputs and
+  pickers use. THE mixed-mode-per-field reference: mode follows the UI rather
+  than the surface — the three text fields have their own dirty marker and
+  Save button, so they stage; the category and tag pickers commit on change,
+  so they persist. Slug, publish status, public sharing, agent binding and
+  component code stay undeclared: those change what the app IS or who can
+  reach it, not how it reads. The two ENTITY targets are additionally
+  registered on the `/agent-apps/[id]` LAYOUT mount
+  (`AgentAppSurfaceRuntime`, via the shared builder in
+  [`features/agent-apps/route/agent-app-entity-writes.ts`](../agent-apps/route/agent-app-entity-writes.ts)),
+  so category and tags can be set from overview / run / code / versions too —
+  an entity write needs no editor, only the row. The draft trio stays
+  Settings-only by necessity: a draft with no input to land in is a write
+  that goes nowhere).
   everything behavioural stays editor-only for the user to review and save),
   and `matrx-user/cms-site` (4 ask-policy DRAFT targets, all on the Settings
   tab — `site_global_css` handled by
@@ -596,6 +749,7 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 
 ## Change Log
 
+- **2026-08-10 — System Agents ADMIN console agent-writable (live-verified) — THE reference for proving an OPTIMISTIC write actually landed, and for a per-mount split forced by target-name collision.** `matrx-admin/system-agents` declares 4 `mode:"entity"` / `applyPolicy:"ask"` targets on the ONE open builtin agent: `agent_description`, `agent_name`, `agent_category`, `agent_tags`. Handlers live in the new `features/agents/components/admin/SystemAgentWriteTargets.tsx` and go through `saveAgentField` — literally the thunk `AgentSettingsForm`'s own Save button dispatches, once per changed field, when an admin edits these four by hand from the header's "Edit Agent Info". No raw supabase anywhere. **The trap this surface is now the reference for:** `saveAgentField` DOES throw on a failed update (rollback + `pgErrorToError`), but it is a `createAsyncThunk`, so a bare `dispatch(...)` swallows that throw into a `rejected` action and resolves happily — the slice has no `extraReducers`, `AgentSaveStatus` reads no error selector, and the admin's own form therefore fails **silently** today (found in passing; NOT fixed here, it is a separate defect in `AgentSettingsForm.handleSave`). A handler copying that call shape would have reported success for a write the server rejected. So every handler here `.unwrap()`s the thunk AND re-reads the record through `selectAgentById` afterwards, throwing when the value did not land — belt and braces, because the thunk is optimistic and a rolled-back value is gone by the time the promise settles. **Why `entity` and not the preferred `draft`:** this route has no staging buffer to write into. The admin's own editor for these fields is `AgentSettingsForm`, which lives in the `agentSettingsWindow` OVERLAY reached from the header options menu, and its draft is component-local `useState` — unreachable from a write handler and gone when the overlay closes. A draft write would dispatch `setAgentField`, redraw the read-only view page with a value that LOOKS saved, arm no Save affordance anywhere on the route, and evaporate on the next navigation. **Why the handlers mount on the DETAIL page and not the route layout** (a new reason for a per-mount split, worth reusing): the sibling `/build` sub-route nests `matrx-user/agent-builder`, which declares these same four target NAMES as reviewable draft targets and wins deepest-first. Registering here as well would have advertised one name twice in the injected tool spec with two contradictory modes; where no handler is registered `listAgentWritableTargets()` offers nothing, so `/build` cleanly keeps the better draft path and the read-only routes get the entity one. **Judgment on a console over SYSTEM agents — the line is drawn hardest here because these are the agents the whole platform runs.** All capability and behaviour wiring stays human-only (`agent_messages`, `agent_variable_definitions`, `agent_context_slots`, `agent_tools`, `agent_custom_tools`, `agent_mcp_servers`, `agent_output_schema`, `agent_skill_config`, `agent_model_id`, `agent_model_tiers`, `agent_settings`, `agent_ui_gates`) — the `agent-builder` call, and it bites hardest on a builtin: one edit changes what a platform-wide agent does for every user at once. So do the publication and trust controls (`agent_is_active`, `agent_is_public`, `agent_is_system`, `agent_is_archived`) — an agent must never publish, unpublish or retire itself or its siblings — and all provenance (`agent_version`, `agent_changed_at`, `agent_source_agent_id`, `agent_source_snapshot_at`). `roster_search_query` is a mechanical filter over a list the agent already reads in full. **`agent_change_note` was RULED OUT on the record rather than assumed:** it is not a column on `agent.definition` at all, `agentDefinitionToUpdate` has no branch for it, and it is written only by the `trg_agx_agent_snapshot_version` trigger reading the transaction-local `app.change_note` GUC, which no client code ever sets — a handler for it could reach no canonical path, so declaring it would be a declared-but-unwireable target. Empirically confirmed: all four applied writes produced version rows with `change_note = NULL`. **Entity writes here are recoverable by construction** — name, description, category and tags are all in that trigger's version-bump discriminator, so each applied write snapshots the prior definition into `agent.definition_version` and bumps `agent_version`. Live-verified with a real Badass Agent run on a **throwaway builtin agent created and deleted for the test** (never a live system agent — a bad description on one is a production defect): one message asking for all four produced four ask dialogs, each carrying the manifest description verbatim, all applied and confirmed by SQL — the agent read the system prompt and replaced a `placeholder` description with an accurate three-sentence account of what the agent does, renamed it, re-filed it, and replaced the full tag set, taking it v1 → v5 with all four prior states preserved as version rows and `is_active`/`is_public`/`is_archived` untouched; the entity toast read "Agent category — done."; "Keep as is" returned a clean decline the agent reported without retrying ("the agent's category remains documentation") and nothing was written; a deliberately bad shape (`agent_tags: 42`) came back to the agent verbatim as `agent_tags expects an array of tag strings and REPLACES the whole set (pass [] to clear all tags).`; and a request to rewrite the system prompt AND set `is_active` false produced NO tool call at all — the agent enumerated the four targets it had, said the messages and the active flag were not among them, and explicitly declined to reach the database directly to force it. Error Inspector, checked in the SAME session as the runs: the only `surface-writeback` capture was the deliberate bad-shape probe (the designed loud behavior — that capture is the control that makes the zero on the valid paths mean something); everything else was the pre-existing `request_context_changed` stream warning. `check:surface-drift` (140 surfaces / 3,402 values) + `type-check` clean. DB mirror sync still pending.
 - **2026-08-10 — Agent Apps ADMIN console agent-writable (live-verified) — the first admin surface, and the clean `mode:"draft"` reference.** `matrx-admin/agent-apps` declares 3 ask-policy draft targets, all on the CATEGORIES editor: `category_name`, `category_description`, `category_icon`. Handlers live on the categories page's existing `SurfaceRuntimeProvider` (`getWriteHandlers`) and go through the SAME `handleEditChange(field, value)` setter the admin's own typing calls, so a staged value and a typed one are indistinguishable, the "Unsaved Changes" badge and Discard button arm identically, and `handleSave` → `updateAgentAppCategory` (the canonical service) remains the ONLY path to the database — no raw supabase anywhere in the write path. **Why this surface earns the draft label the campaign has mostly had to settle `entity` for:** `category_has_unsaved_changes` is emitted from the very `hasUnsaved` flag the handlers flip. `selected_category` was NOT, though — it was emitted from the SAVED row while the pane rendered `editData`, so it disagreed with the form the moment anything was typed (a pre-existing read lie, human typing included). It now emits from the live `editData` buffer, with the value description saying so and naming `category_has_unsaved_changes` as the divergence flag against `categories_list`. That makes the evidence loop real: an agent reads back exactly what it staged, before anyone saves. **Judgment on an admin console:** almost nothing here earns a target. `is_featured` / `is_verified` / publish status, rate limits and unblocks, error resolution, executions and analytics are trust and abuse controls, not copy — all left undeclared, and the intro now says so explicitly so an agent proposes them in words. Even inside the category pane, `id` (identity, and the input is disabled), `sort_order` (mechanical ordering the admin does with the list's own arrows), creation and deletion (deleting orphans every app assigned to the category) stay human. Name/description/icon are three targets rather than one object on purpose: renaming re-labels the category everywhere it is offered to users while a description or icon edit does not, so each gets its own confirm and can be declined independently. `category_icon` validates against the real registry via `isRegisteredOrLucideIconName` — an invented icon name is rejected rather than saved as a broken glyph. Live-verified with a real Badass Agent run on a throwaway category: one message → an ask dialog per target carrying the manifest description verbatim, Apply staged into the real inputs with Discard/Save armed, the ADMIN's Save then persisted to `platform.categories` (name, description and `PenTool` icon confirmed by SQL), "Keep as is" returned `{ok:false, declined:true}` with `is_error:false` and the agent acknowledged the decline without retrying, a deliberately invalid `category_icon: "NotARealIconName123"` came back as the handler's own throw verbatim with nothing staged, and a request to feature/verify apps plus set sort order produced NO `apply_surface_write` call at all — the agent explained the tool exposes only the three category fields. Error Inspector: zero `surface-writeback` captures (only the known pre-existing `request_context_changed` stream warnings). `check:surface-drift` + `type-check` clean. DB mirror sync still pending. **Found in passing, NOT fixed here (out of scope):** `createAgentAppCategory` never sets `created_by`, so `platform.categories`' `std_insert` RLS check (`created_by = auth.uid()`) rejects every category the console tries to create — the Add dialog 403s for any admin. The throwaway used for verification had to be seeded out-of-band; the update path this change rides on is unaffected.
 - **2026-08-10 — Applications hub agent-writable (live-verified) — and `matrx-admin/ai-models` RULED OUT on the judgment bar.** Two results, because the negative one saves the next agent the trip. **`matrx-admin/ai-models` does not earn write targets and should not be re-assigned.** Its detail panel's complete editable set is `AiModelFormData` — `name` (the wire identifier), `common_name`, `provider_id`, `context_window`, `max_tokens`, `is_deprecated` / `is_primary` / `is_premium` (the manifest itself notes deprecation IS the activation signal), `cost_rating` / `speed_rating` (these render the user-facing $-tier and speed dots in every model picker), and the four fallback/retry routing fields — plus `capabilities` (JSON Fields), Controls and Constraints (`ai.api.rules` ⊕ `ai.offering.override`), and a Raw JSON tab that is just all of the above at once. Every one is vendor identity, capability governance, commercially load-bearing tiering, or request routing — the exact line the `agent-builder` adopter drew. That is **zero** YES fields, not merely fewer than two. The one plausible authoring field, `description`, is a real `ai.model_definition` column that the manifest emits and even advertises as "the most common agent job here" — but it has **no editor anywhere in the panel**, and it is absent from `AI_MODEL_COLUMNS`, the whitelist the Raw JSON tab strips against, so the only generic write path would silently drop it. Making that surface writable is a `surface-authoring` job (build the editor first), not this skill's. Of the three named fallbacks, `matrx-admin/tool-registry` (one `is_active` switch on `ToolViewPage`) and `matrx-user/crm-manager` (an inheriting overlay with `values: []` over a list + scope filter) fail the same bar. **`matrx-admin/applications` passes and is now live**: ONE `mode:"draft"` / `applyPolicy:"ask"` target, `app_notice`, staging the operator broadcast (`AppConfigV1.notice`) every installed client shows once. Value is an object REPLACING the whole notice — `{level, title, body, url?}`, with `level` validated against the canonical `NOTICE_LEVELS` imported from `features/admin/applications/config/schema.ts` (the same const the editor's Select renders from and the manifest description interpolates, so the three cannot drift), `title`/`body` required and non-empty because a broadcast is authored whole, `url` optional and checked through the schema's own `httpsUrlSchema`. Validation lives in a pure core (`config/notice-write-targets.ts`, 16 unit tests) kept OUT of the React updater so the throw lands synchronously in the writeback seam; the handler is registered from `AppConfigEditor` via `useSurfaceWriteHandlers` because that component owns the draft, and it preserves the forward-compat `extras` keys the schema promises to round-trip. New read twin `config_editor_notice` is emitted by `AppConfigClient` from the SAVED row, not the unsaved draft — an agent asking what to replace wants what is live in the fleet. **The generalizable lesson is the per-mount NO**: this hub governs shipped CLIENTS, so the three server URLs and `min_supported_app_version` (they change what every installed client talks to, or force upgrades), `flags`, `credential_maintenance`, the app slug and schema version, catalog artifact pinning, and the read-only Installations and History tabs all get no target — a surface can be worth exactly one target and still be worth doing. Live-verified with a real Badass Agent run: the ask dialog carried the manifest description verbatim, Apply staged all four fields into the real editor (the notice inputs did not exist before the write — the notice was disabled — and read back off the DOM afterward with the agent's own copy), a same-message request to set `min_supported_app_version` was refused with the agent explaining `app_notice` is the only target exposed, "Keep as is" left the draft untouched and the agent acknowledged the decline without an error, and a forced `{"level":"urgent"}` came back to the agent verbatim as `app_notice: level must be one of info | warning | critical. Received "urgent".` Error Inspector: zero `surface-writeback` captures on the valid paths (the deliberate invalid call produced exactly one, which is the designed loud behavior). Nothing was saved — the run staged into an existing row's draft only, no throwaway records. `check:surface-drift` + `type-check` + `jest` clean. DB mirror sync still pending.
 - **2026-08-10 — Database admin console agent-writable; THE reference for the drafting/execution line on a surface where execution is the danger.** `matrx-admin/database` declares ONE `mode:"draft"` / `applyPolicy:"ask"` target, `sql_query` — a full replace of the workbench editor buffer. Handler on `app/(admin)/administration/database/components/enhanced-sql-editor.tsx` (which already mounted the provider; only `getWriteHandlers` was missing) calls the SAME `setSqlQuery` the textarea's `onChange`, the template cards, and the history rows call, so staged SQL and typed SQL are indistinguishable. **Why this is safe on a database console, stated plainly because the instinct is to refuse outright:** the target replaces TEXT IN A TEXTAREA. Nothing connects, nothing runs, nothing is invalidated. That is why staging DDL/DML is explicitly allowed and the target description says so out loud — `DROP TABLE …` sitting in the editor is inert characters the admin reads and decides on, identical in risk to the same characters in a chat reply. The risk of this surface is EXECUTION, and execution has no write path: **Execute, Cancel, `use_cache` and Clear Cache are deliberately not targets** (cache behaviour decides whether the next run touches the live database at all — an agent flipping it changes what executing MEANS without changing anything visible in the SQL), and neither are the result/history/timing values, which are the RECORD of what the database actually did. The handler also refuses while `loading`, so results that land always belong to the SQL the admin is looking at. **`replacement_pairs` considered and REJECTED on the judgment bar, not on risk:** the Template Variables pairs do nothing until the admin presses "Apply Replacements to Query", which rewrites `sql_query` — so an agent writing pairs stages a stage, a strictly worse path to what `sql_query` already does in one visible step, and it has no read twin to declare `updatesValue` against. **Per-mount split:** the `DatabaseHubLanding` mount at `/administration/database` registers NO handlers on purpose — a static link grid over a build-time config module, with no editable state an agent could author. Validation lives in a pure core (`features/administration/lib/sql-editor-write-targets.ts`, 16 unit tests) so the throw lands synchronously in `applySurfaceWrite`'s try/catch rather than inside a React updater; it rejects non-strings, markdown-fenced values, empty/whitespace, and anything over `SQL_QUERY_WRITE_MAX_CHARS` (which the manifest description interpolates rather than re-typing). Also corrected a stale manifest doc comment that pointed the workbench at `/administration/database/database-admin` — the emitter is at `/administration/database/sql-queries`; the `database-admin` dashboard has its own editor and mounts no provider. Live-verified with a real Badass Agent run: the ask dialog carried the manifest description verbatim, Apply staged a genuine 11-line `pg_total_relation_size` query into the visible textarea with **nothing executed** (no results panel, no history row), "turn off Use Cache" and "actually RUN it" were both refused with the agent explaining that `sql_query` is the only target it has, "Keep as is" returned `{ok:false, declined:true}` and left a hand-typed query byte-identical, and three forced-invalid calls came back as the handler's own throws quoted verbatim (`sql_query must be a string containing the SQL to stage, got number.`; `sql_query must be raw SQL, not a markdown code block. …`; `No mounted surface declares write target "use_cache".`). The only `surface-writeback` captures in the Error Inspector were those three deliberate contract breaks — the successful Apply produced none. `check:surface-drift` + `type-check` clean. DB mirror sync still pending.
