@@ -40,27 +40,27 @@ lib/redux/slices/
 
 ## Change Log
 
-- 2026-08-10 — **The Feedback window is agent-writable, and mounts the
-  `matrx-user/feedback` surface's FIRST provider.** `FeedbackWindow.tsx` now
-  wraps its `WindowPanel` in a `SurfaceRuntimeProvider`, so the surface is live
-  for exactly as long as the window is open and out-depths the hosting page's
-  surface while it is (deepest wins). The manifest previously said "emitter not
-  wired" and nothing referenced the surface at all, so an agent could neither
-  read the form nor write to it. `getScope` emits the live type, description,
-  attachment count, submission state and admin routing choices;
-  `getWriteHandlers` registers ONE `ask`-policy draft target,
-  `feedback_draft`, taking a partial `{description?, feedback_type?}` — the
-  report body and the chip that classifies it, staged through the same
-  `setDescription` / `setFeedbackType` the textarea's `onChange` and the type
-  chips' `onClick` call. The user still presses Submit: submitting, the
-  attachments, and the admin category/assignee are deliberately not writable.
-  Validation lives in a pure `windows/feedbackDraftWrite.ts` and throws outside
-  any `setState` updater so the writeback seam catches it; the two "is this
-  form still writable?" gates read through refs, because the seam resolves
-  handlers before the user confirms. `FEEDBACK_TYPES` became a runtime `as
-  const` in `types/feedback.types.ts` (with `FeedbackType` derived from it) and
-  the window's chip config a `Record<FeedbackType, …>`, so the vocabulary the
-  manifest advertises and the one the handler validates against cannot drift.
+- 2026-08-10 — **A window's surface is SHADOWED by the host route's own
+  surface — verify overlay surfaces on a route that emits none.** Found while
+  live-verifying the (separately landed) `matrx-user/markdown-editor` write
+  targets through `markdownEditorWindow`. `getSurfaceRuntime()` resolves the
+  DEEPEST registered provider by React-tree depth
+  (`SurfaceRuntimeContext.tsx`), and a window rendered from
+  `OverlayController` sits near the root — SHALLOWER than the provider a route
+  mounts inside its own page tree. So with the Markdown Editor window open on
+  `/dashboard`, the header Agents popover and the agent run both bound to
+  `matrx-user/dashboard`: the agent received the dashboard's scope, reported
+  the editor as empty, and asked the user to paste the text it was looking
+  straight at. The same window on `/welcome` (no competing page surface)
+  resolved to `matrx-user/markdown-editor` correctly and every write target
+  worked. This is depth doing exactly what it is documented to do — a page's
+  rich scope must not be shadowed by an ancestor's generic one — but it means
+  **a floating window that emits a surface only wins where the route emits
+  none.** Two consequences: verify a window-hosted surface on a surface-less
+  route, and do not assume a window's declared surface is what an agent sees
+  wherever the user happens to open it. `applySurfaceWrite` is unaffected — it
+  scans the whole stack for whichever surface DECLARES the target — so this
+  hits scope/binding, not the write routing.
 - 2026-08-08 — Fixed the "window opens invisible" class (watchdog `zero-size`):
   geometry derived from a degenerate 0×0 viewport measurement now falls back to
   sane dims (`safeViewportDims` in `utils/rectClamp.ts`), `registerWindow`
