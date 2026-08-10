@@ -17,11 +17,22 @@ import { Link2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
 import { AgentSyncBody } from "@/features/agents/components/admin/AgentSyncBody";
+import { updateSlotDefinition } from "@/features/admin/agent-slots/service";
 
 interface AgentConvertSystemWindowProps {
   isOpen: boolean;
   onClose: () => void;
   agentId?: string | null;
+  /**
+   * Optional agent-slot context (set by the admin slots console). All three
+   * are plain serializable values carried through overlay data — the repin
+   * callback is constructed HERE, never passed through Redux. When `slotId`
+   * is present the sync body offers "Repin slot to system side" in place,
+   * writing through the console's canonical `updateSlotDefinition` path.
+   */
+  slotId?: string | null;
+  slotKey?: string | null;
+  slotLabel?: string | null;
 }
 
 const WINDOW_ID = "agent-convert-system-window";
@@ -31,8 +42,21 @@ export default function AgentConvertSystemWindow({
   isOpen,
   onClose,
   agentId,
+  slotId,
+  slotKey,
+  slotLabel,
 }: AgentConvertSystemWindowProps) {
   if (!isOpen) return null;
+
+  const repinSlotToSystem = slotId
+    ? async (systemAgentId: string): Promise<void> => {
+        await updateSlotDefinition(slotId, {
+          default_agent_id: systemAgentId,
+          default_agent_version_id: null,
+          use_latest: true,
+        });
+      }
+    : undefined;
 
   if (!agentId) {
     return (
@@ -68,7 +92,14 @@ export default function AgentConvertSystemWindow({
       overlayId={OVERLAY_ID}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <AgentSyncBody key={agentId} agentId={agentId} onClose={onClose} />
+      <AgentSyncBody
+        key={agentId}
+        agentId={agentId}
+        onClose={onClose}
+        slotKey={slotKey ?? undefined}
+        slotLabel={slotLabel ?? slotKey ?? undefined}
+        onRepinToSystem={repinSlotToSystem}
+      />
     </WindowPanel>
   );
 }

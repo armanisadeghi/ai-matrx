@@ -31,9 +31,13 @@
  * Runtime emitters (each mounts its own `<SurfaceRuntimeProvider
  * surfaceName="matrx-user/shapes">` and builds scope at trigger time):
  *   - ShapesListClient.tsx      → catalog values, studio_tab "list"
- *   - ShapeSurfaceRuntime.tsx   → kind identity/schema/activation for the
- *                                 Preview and Schema routes (server-loaded
- *                                 `ShapeDetail` handed to a thin client shell)
+ *   - ShapePreviewTab.tsx       → the Preview route in full: kind identity,
+ *                                 schema, samples, and (owner only) the
+ *                                 activation verdict
+ *   - ShapeSurfaceRuntime.tsx   → the thin server-loaded shell wrapping the
+ *                                 Schema, Instances, and Test ROUTES with kind
+ *                                 identity + schema. On Instances and Test the
+ *                                 tab below it nests DEEPER and wins.
  *   - ShapeInstancesTab.tsx     → kind identity + instances + focused instance
  *   - ShapeTestTab.tsx          → kind identity + the live draft + save state
  *   - NewShapeClient.tsx        → the draft intent/sample, studio_tab "new"
@@ -47,6 +51,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -532,6 +537,131 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The WRITE half — what an agent may drive in the Shape Studio, and (just as
+ * deliberately) what it may not.
+ *
+ * SIX components mount this surface, and the split between them is the whole
+ * design. `listAgentWritableTargets()` only offers a target where THAT mount
+ * registered a handler, so the same manifest list produces a different offer
+ * per route. Who registers what:
+ *
+ *   NewShapeClient        → new_shape_intent, new_shape_sample
+ *   ShapeOwnerEditor      → shape_details_{label,title_key,loading_component}
+ *     (registered by NAME from inside ShapePreviewTab's provider, because the
+ *      owner editor is the deep child that owns that draft state — and it
+ *      renders ONLY for the kind's owner, so a non-owner is offered nothing)
+ *   ShapeTestTab          → test_draft_instance
+ *   ShapesListClient      → NOTHING. Its only page state is the catalog search
+ *                           filter: a mechanical view control, not content an
+ *                           agent produces. Filtering a list the agent can
+ *                           already READ in full (my_shapes / platform_shapes)
+ *                           buys nothing.
+ *   ShapeInstancesTab     → NOTHING. Its state is instance selection, an
+ *                           edit-mode flag, DELETE, and re-pin-to-current-
+ *                           version. Selection is navigation, delete is
+ *                           destructive, and a re-pin is a version operation —
+ *                           none of them clear the bar.
+ *   ShapeSurfaceRuntime   → NOTHING. It is the read-only route shell. It is
+ *                           the ONLY provider on the Schema route, which
+ *                           renders no editor at all; on Instances and Test
+ *                           the tab nested inside it is what registers.
+ *
+ * Every target is `mode: "draft"` and `applyPolicy: "ask"`. Nothing here
+ * persists on its own: the agent stages a value into the exact state the
+ * user's own typing feeds, and the user still presses the page's Save /
+ * Render / Start button. That is the whole safety story, and it is why NONE
+ * of these needed an entity path.
+ *
+ * Ruled out ON PURPOSE, so the next agent does not "helpfully" add them:
+ *   - `kind` (the SLUG) — identity. Renaming an existing kind's slug breaks
+ *     every `__kind` payload, instance, and tool call that references it.
+ *   - `kind_visibility` — internal → public PUBLISHES the shape into the
+ *     shared library. A human decides that.
+ *   - activation (`is_active`) — a VERDICT from the dual gate, not a field.
+ *   - example / instance CRUD and re-pinning — these bump the definition
+ *     version and re-validate every sample; not an agent's call.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  // ------------------------------------------------- /shapes/new composer
+  {
+    name: "new_shape_intent",
+    label: "New-shape intent",
+    description:
+      "Stages the 'What do you want to build?' prose on /shapes/new — the description of the shape to create. Plain string, 1-4000 characters; REPLACES the whole field, so read the new_shape_intent value first if you mean to extend what the user already typed. Nothing is created by this write: the text lands in the textarea and the user still presses 'Start with the agent', which hands the composed brief to the shape-creator agent. Write it as a description of the DATA and what it should look like rendered (fields, types, and how the user wants to see it) — not as an instruction to a person.",
+    valueType: "string",
+    updatesValue: "new_shape_intent",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "shape_draft",
+    sortOrder: 800,
+  },
+  {
+    name: "new_shape_sample",
+    label: "New-shape sample",
+    description:
+      "Stages the optional 'Sample data' example on /shapes/new that the creator agent designs the shape's structure around. For a JSON sample pass the OBJECT OR ARRAY ITSELF — it is written into the box as pretty-printed JSON; never hand-encode it into a quoted string, which lands as escaped \\n and stray quotes. For CSV or plain text pass a plain string. Either way REPLACES the whole field, max 20000 characters rendered, and no markdown fences. Nothing is created by this write: the user still presses 'Start with the agent'.",
+    valueType: "string",
+    updatesValue: "new_shape_sample",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "shape_draft",
+    sortOrder: 810,
+  },
+
+  // ---------------------------------- /shapes/[kind] owner editor → Details
+  {
+    name: "shape_details_label",
+    label: "Shape display name",
+    description:
+      "Stages a new DISPLAY NAME into the owner editor's Details tab on /shapes/[kind]. Plain string, 1-100 characters. This is the human-readable label only — the technical `kind` slug is identity and is NOT writable, so the shape keeps the same slug everywhere. Offered only to the shape's owner, and only staged: the user still presses 'Save details' (which bumps the definition version and re-pins its samples).",
+    valueType: "string",
+    updatesValue: "kind_label",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "kind_identity",
+    sortOrder: 160,
+  },
+  {
+    name: "shape_details_title_key",
+    label: "Instance title field",
+    description:
+      "Stages the `metadata.title_key` choice into the owner editor's Details tab — the top-level payload field used to name saved instances when the user gives no title. Must be a TOP-LEVEL property name of this kind's emitted JSON Schema (read kind_emitted_json_schema and pick a short human-readable string field such as a title or name), or the empty string \"\" to fall back to automatic derivation. Any other value is rejected. Staged only: the user still presses 'Save details'.",
+    valueType: "string",
+    updatesValue: "kind_title_key",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "kind_identity",
+    sortOrder: 175,
+  },
+  {
+    name: "shape_details_loading_component",
+    label: "Streaming loader",
+    description:
+      "Stages the skeleton shown while an instance of this shape is still streaming. Must be one slug from the platform's loading registry — pick the one whose layout matches how this shape renders (e.g. a card-shaped shape takes the card loader, a tabular one the table loader) — or the empty string \"\" for the generic loader. The handler rejects any slug that is not registered and names the accepted set in its error. Staged only: the user still presses 'Save details'.",
+    valueType: "string",
+    updatesValue: "kind_loading_component",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "kind_identity",
+    sortOrder: 185,
+  },
+
+  // ------------------------------------------- /shapes/[kind]/test composer
+  {
+    name: "test_draft_instance",
+    label: "Test draft payload",
+    description:
+      "Seeds the Test tab's input form with a sample payload for this shape. Pass a JSON OBJECT of the shape's own fields — the `__kind` discriminator is added for you, so do not include it. Build it against kind_emitted_json_schema, which is the authority on what is valid; unknown or malformed fields are simply not accepted by the form. This only FILLS the form: the user reviews the fields, presses Render to validate and see it draw through the real component, and presses Save if they want to keep the instance. Replaces whatever is currently in the form.",
+    valueType: "object",
+    updatesValue: "test_draft_instance",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "studio_state",
+    sortOrder: 615,
+  },
+];
+
 export const shapesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/shapes",
   readiness: "partial",
@@ -556,6 +686,7 @@ Detection rows (which XML tag or fence language maps to this kind) are deliberat
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**

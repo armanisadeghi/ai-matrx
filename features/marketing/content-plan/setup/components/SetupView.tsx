@@ -116,6 +116,7 @@ import {
 } from "./PlanReviewSection";
 import { BuildWithAiDialog, type BuildLogEntry } from "./BuildWithAiDialog";
 import { SetupAiBar, type SetupAiRunSummary } from "./SetupAiBar";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
 import { SetupShapeColumn } from "./SetupShapeColumn";
@@ -1804,6 +1805,20 @@ export function SetupView() {
         error={aiError}
         onDismissError={() => setAiError(null)}
       />
+
+      {/* Live AI output for every Setup agent run (shape, names, keywords,
+          entities, review, brief) — the model's stream renders as it arrives,
+          never a bare spinner. */}
+      {agents.live.hasLiveRun ? (
+        <div className="border-b border-border px-3 py-2">
+          <LiveRunDisplay
+            conversationId={agents.live.conversationId}
+            label={agents.live.label ?? "Running the Setup agent"}
+            pending={agents.live.isRunning}
+            onDismiss={agents.live.dismiss}
+          />
+        </div>
+      ) : null}
 
       {site ? (
         <BuildWithAiDialog

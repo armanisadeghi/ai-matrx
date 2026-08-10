@@ -15,9 +15,9 @@
  * compute: the server contract-checks the candidate agent (required
  * variables/context slots + output_schema vs the slot's required output
  * keys) at WRITE time and rejects with a 422 whose detail is shown to the
- * user VERBATIM. `checkSlotContract` below is the instant client-side
- * pre-flight (research's proven compareContracts superset rule); the server
- * check is the authority.
+ * user VERBATIM. `compareStoredContract` (../contract-compare.ts) is the
+ * instant client-side pre-flight (research's proven compareContracts
+ * superset rule); the server check is the authority.
  */
 
 import { createClient } from "@/utils/supabase/client";
@@ -49,35 +49,6 @@ export function parseSlotContract(contract: Json): SlotContract {
     out.requiredContextSlots = slots.filter((v): v is string => typeof v === "string");
   }
   return out;
-}
-
-/** Result of the client-side bind pre-flight — the research-proven superset
- * rule (`compareContracts`) applied to a slot's stored contract. */
-export interface SlotContractCheck {
-  matchedVariables: string[];
-  missingVariables: string[];
-  matchedSlots: string[];
-  missingSlots: string[];
-  passing: boolean;
-}
-
-export function checkSlotContract(
-  contract: SlotContract,
-  candidate: { variableNames: string[]; contextSlotKeys: string[] },
-): SlotContractCheck {
-  const candVars = new Set(candidate.variableNames);
-  const candSlots = new Set(candidate.contextSlotKeys);
-  const matchedVariables = contract.requiredVariables.filter((v) => candVars.has(v));
-  const missingVariables = contract.requiredVariables.filter((v) => !candVars.has(v));
-  const matchedSlots = contract.requiredContextSlots.filter((s) => candSlots.has(s));
-  const missingSlots = contract.requiredContextSlots.filter((s) => !candSlots.has(s));
-  return {
-    matchedVariables,
-    missingVariables,
-    matchedSlots,
-    missingSlots,
-    passing: missingVariables.length === 0 && missingSlots.length === 0,
-  };
 }
 
 export function isPlaceholderSlot(slot: SlotDefinitionRow): boolean {

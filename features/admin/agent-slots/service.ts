@@ -12,6 +12,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { invalidateClientSlotCache } from "@/features/agents/slots/service";
 import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { callApi } from "@/lib/api/call-api";
@@ -159,6 +160,11 @@ export async function updateSlotDefinition(
     .select("*")
     .single();
   if (error) throw error;
+  // Every definition write notifies the slot invalidation bus, so any mounted
+  // consumer — the slots console, useAgentSlot resolvers, pickers — refreshes
+  // no matter which surface performed the repin (console buttons, the pin
+  // editor, or the Linked Agent Sync window).
+  invalidateClientSlotCache(data.slot_key);
   return data;
 }
 
@@ -180,6 +186,105 @@ export async function fetchAgentVersions(
     versionNumber: row.version_number,
     name: row.name,
   }));
+}
+
+// ── Out-of-scope pinned-agent identity (admin lookup) ────────────────────────
+
+/** Identity of a pinned agent the admin's RLS scope cannot read directly. */
+export interface PinnedAgentIdentity {
+  id: string;
+  name: string;
+  agentType: string | null;
+  isArchived: boolean;
+  /** Master version counter, when known. */
+  version: number | null;
+  /** Set when the row is soft-deleted — the pin is pointing at a dead record. */
+  deletedAt: string | null;
+  /** Owner of a personal agent, best effort. */
+  ownerEmail: string | null;
+}
+
+export interface PinnedAgentIdentityResult {
+  /** null = the pinned row no longer exists at all. */
+  agent: PinnedAgentIdentity | null;
+  /** Version number behind a version pin, when the pin stores a version id. */
+  pinnedVersionNumber: number | null;
+  /** The builtin system twin in the agent's lineage, when one exists. */
+  systemTwin: { id: string; name: string } | null;
+}
+
+function parsePinnedAgentIdentity(payload: unknown): PinnedAgentIdentityResult {
+  if (!isJsonObject(payload)) {
+    throw new Error("The pinned-agent lookup returned an invalid response.");
+  }
+  const rawAgent = payload.agent;
+  let agent: PinnedAgentIdentity | null = null;
+  if (isJsonObject(rawAgent) && typeof rawAgent.id === "string") {
+    agent = {
+      id: rawAgent.id,
+      name: typeof rawAgent.name === "string" ? rawAgent.name : rawAgent.id,
+      agentType:
+        typeof rawAgent.agent_type === "string" ? rawAgent.agent_type : null,
+      isArchived: rawAgent.is_archived === true,
+      version: typeof rawAgent.version === "number" ? rawAgent.version : null,
+      deletedAt:
+        typeof rawAgent.deleted_at === "string" ? rawAgent.deleted_at : null,
+      ownerEmail:
+        typeof rawAgent.owner_email === "string" ? rawAgent.owner_email : null,
+    };
+  }
+  const rawTwin = payload.system_twin;
+  const systemTwin =
+    isJsonObject(rawTwin) &&
+    typeof rawTwin.id === "string" &&
+    typeof rawTwin.name === "string"
+      ? { id: rawTwin.id, name: rawTwin.name }
+      : null;
+  return {
+    agent,
+    pinnedVersionNumber:
+      typeof payload.pinned_version_number === "number"
+        ? payload.pinned_version_number
+        : null,
+    systemTwin,
+  };
+}
+
+/**
+ * Resolve WHO a slot's pin points at even when the agent row is outside the
+ * admin's RLS scope (another user's personal agent). Server-side super-admin
+ * lookup — the sanctioned Next admin-route exception, same family as
+ * `/api/admin/users` above. Never render the raw id instead of calling this.
+ */
+export async function fetchPinnedAgentIdentity(
+  slot: SlotDefinitionRow,
+): Promise<PinnedAgentIdentityResult> {
+  const params = new URLSearchParams();
+  // Pass BOTH identifiers when present: agent_id resolves the identity, and
+  // agent_version_id lets the route resolve the pinned version number — a
+  // version-pinned unresolved pin must not lose its pinned-version badge.
+  if (slot.default_agent_id) {
+    params.set("agent_id", slot.default_agent_id);
+  }
+  if (slot.default_agent_version_id) {
+    params.set("agent_version_id", slot.default_agent_version_id);
+  }
+  if ([...params.keys()].length === 0) {
+    return { agent: null, pinnedVersionNumber: null, systemTwin: null };
+  }
+  const response = await fetch(
+    `/api/admin/agent-slots/agent-identity?${params.toString()}`,
+    { cache: "no-store" },
+  );
+  const payload: unknown = await response.json();
+  if (!response.ok) {
+    const message =
+      isJsonObject(payload) && typeof payload.error === "string"
+        ? payload.error
+        : "Failed to resolve the pinned agent.";
+    throw new Error(message);
+  }
+  return parsePinnedAgentIdentity(payload);
 }
 
 /** Picker option shape. Options come from the canonical Redux agent slice

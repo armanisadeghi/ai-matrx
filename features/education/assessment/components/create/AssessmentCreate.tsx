@@ -49,14 +49,24 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { attachSourceRefs } from "@/features/education/trust/grounding";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { createEducationAssessmentScope } from "@/features/surfaces/manifests/education-assessment.manifest";
 import { assessmentService } from "../../data/assessmentService";
 import { ASSESSMENT_AGENTS } from "../../data/agents";
 import { useGenerateQuiz } from "../../data/useGenerateQuiz";
+import {
+  DEPTHS,
+  DIFFICULTIES,
+  QUESTION_TYPES,
+  isDepth,
+  isDifficulty,
+  isQuestionType,
+} from "../../data/types";
 import type {
   AssessmentKind,
   AssessmentSourceKind,
   Depth,
+  Difficulty,
   NewAssessmentItemInput,
   QuestionType,
 } from "../../data/types";
@@ -66,26 +76,42 @@ const FIELD = "text-base"; // 16px+ prevents iOS zoom-on-focus
 
 type SourceMode = "topic" | "deck" | "document";
 
-const DIFFICULTIES = ["Easy", "Medium", "Hard"] as const;
-const DEPTHS: { value: Depth; label: string; hint: string }[] = [
-  { value: "recall", label: "Recall", hint: "Facts & definitions" },
-  { value: "applied", label: "Applied", hint: "Use the concept" },
-  { value: "exam", label: "Exam", hint: "Exam / clinical rigor" },
-];
-const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
-  { value: "multiple_choice", label: "Multiple choice" },
-  { value: "true_false", label: "True / False" },
-  { value: "fill_blank", label: "Fill in the blank" },
-  { value: "short_answer", label: "Short answer" },
-  { value: "written_response", label: "Written response" },
-];
+// Presentation only — the VALUE vocabularies live in data/types.ts and are
+// imported above, so these option lists cannot drift from what the surface's
+// write targets advertise or what their handlers accept. The Records are keyed
+// by the union, so adding a depth/question type fails to compile until it is
+// given UI copy here.
+const DEPTH_COPY: Record<Depth, { label: string; hint: string }> = {
+  recall: { label: "Recall", hint: "Facts & definitions" },
+  applied: { label: "Applied", hint: "Use the concept" },
+  exam: { label: "Exam", hint: "Exam / clinical rigor" },
+};
+const DEPTH_OPTIONS = DEPTHS.map((value) => ({ value, ...DEPTH_COPY[value] }));
+
+const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
+  multiple_choice: "Multiple choice",
+  true_false: "True / False",
+  fill_blank: "Fill in the blank",
+  short_answer: "Short answer",
+  written_response: "Written response",
+};
+const QUESTION_TYPE_OPTIONS = QUESTION_TYPES.map((value) => ({
+  value,
+  label: QUESTION_TYPE_LABELS[value],
+}));
+
 const CHUNK_FETCH_LIMIT = 800;
+/** Bounds the write handlers enforce (the form's own inputs are unbounded text). */
+const TOPIC_MAX = 500;
+const EXAM_TYPE_MAX = 100;
+const USER_REQUEST_MAX = 2000;
+const TIME_LIMIT_MAX_MIN = 600;
 
 export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
   const config: KindConfig = KIND_CONFIG[kind];
   const router = useRouter();
   const base = `/education/${config.base}`;
-  const { generate, isGenerating } = useGenerateQuiz();
+  const { generate, isGenerating, conversationId } = useGenerateQuiz();
   const entitlement = useEntitlementGuard(config.capability);
   // School-safe COPPA gate: an under-13 account with no active guardian link is
   // blocked from AI generation until a parent approves (never a silent failure).
@@ -100,14 +126,12 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
   const seedTopic = searchParams.get("topic")?.trim() ?? "";
   const seedExamType = searchParams.get("examType")?.trim() ?? "";
   const seedDepthRaw = searchParams.get("depth")?.trim() ?? "";
-  const seedDepth: Depth = DEPTHS.some((d) => d.value === seedDepthRaw)
-    ? (seedDepthRaw as Depth)
-    : "applied";
+  const seedDepth: Depth = isDepth(seedDepthRaw) ? seedDepthRaw : "applied";
 
   const [mode, setMode] = useState<SourceMode>("topic");
   const [topic, setTopic] = useState(seedTopic);
   const [count, setCount] = useState(config.defaultCount);
-  const [difficulty, setDifficulty] = useState<(typeof DIFFICULTIES)[number]>("Medium");
+  const [difficulty, setDifficulty] = useState<Difficulty>("Medium");
   const [depth, setDepth] = useState<Depth>(seedDepth);
   const [types, setTypes] = useState<Set<QuestionType>>(new Set());
   const [examType, setExamType] = useState(seedExamType);
@@ -323,10 +347,103 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
       is_generating: isGenerating,
     });
 
+  // Write half of the assessment surface (manifest `writeTargets`). Every
+  // target is draft-mode: it stages through the SAME setters the user's own
+  // typing uses, so the value shows up in the form and the user still presses
+  // Generate — which is where the COPPA gate, the entitlement guard and the
+  // canonical assessmentService write path run. Nothing here spends quota or
+  // writes a row. Handlers validate against the canonical vocabularies
+  // (data/types.ts) and THROW on a bad shape; the writeback seam turns a throw
+  // into a safe error envelope the agent reads. Fresh closures per call
+  // (getWriteHandlers contract). The detail/take mount of this same surface
+  // registers NO handlers — see the manifest's writeTargets docblock.
+  const getSurfaceWriteHandlers = () => ({
+    generation_topic: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim() || value.length > TOPIC_MAX)
+        throw new Error(
+          `generation_topic expects a non-empty string of at most ${TOPIC_MAX} characters.`,
+        );
+      setTopic(value.trim());
+      // The topic field only feeds topic-mode generation; staging it while the
+      // form sits in deck/document mode would be invisible and would not reach
+      // the generator. Switching is reversible — the picked deck/document stays
+      // in state and returns if the user switches back.
+      setMode("topic");
+    },
+    generation_difficulty: (value: unknown) => {
+      if (typeof value !== "string" || !isDifficulty(value))
+        throw new Error(
+          `generation_difficulty expects exactly one of: ${DIFFICULTIES.join(", ")} (case-sensitive).`,
+        );
+      setDifficulty(value);
+    },
+    generation_depth: (value: unknown) => {
+      if (typeof value !== "string" || !isDepth(value))
+        throw new Error(
+          `generation_depth expects exactly one of: ${DEPTHS.join(", ")}.`,
+        );
+      setDepth(value);
+    },
+    generation_question_types: (value: unknown) => {
+      if (!Array.isArray(value))
+        throw new Error(
+          `generation_question_types expects an array of strings drawn from: ${QUESTION_TYPES.join(", ")}. It replaces the full set; [] means an automatic mix.`,
+        );
+      const bad = value.filter((t) => typeof t !== "string" || !isQuestionType(t));
+      if (bad.length > 0)
+        throw new Error(
+          `generation_question_types rejected — unsupported question type(s): ${bad.map((t) => JSON.stringify(t)).join(", ")}. Allowed: ${QUESTION_TYPES.join(", ")}.`,
+        );
+      setTypes(new Set(value as QuestionType[]));
+    },
+    generation_question_count: (value: unknown) => {
+      if (!Number.isInteger(value) || (value as number) < 1)
+        throw new Error(
+          "generation_question_count expects a whole number of at least 1.",
+        );
+      if ((value as number) > config.countMax)
+        throw new Error(
+          `generation_question_count of ${value} exceeds the maximum for a ${config.noun} (${config.countMax}).`,
+        );
+      setCount(value as number);
+    },
+    generation_exam_type: (value: unknown) => {
+      if (typeof value !== "string" || value.length > EXAM_TYPE_MAX)
+        throw new Error(
+          `generation_exam_type expects a string of at most ${EXAM_TYPE_MAX} characters (the empty string clears it).`,
+        );
+      setExamType(value.trim());
+    },
+    generation_user_request: (value: unknown) => {
+      if (typeof value !== "string" || value.length > USER_REQUEST_MAX)
+        throw new Error(
+          `generation_user_request expects a string of at most ${USER_REQUEST_MAX} characters (the empty string clears it).`,
+        );
+      setUserRequest(value);
+    },
+    generation_time_limit_minutes: (value: unknown) => {
+      if (!config.timed)
+        throw new Error(
+          `generation_time_limit_minutes does not apply to a ${config.noun} — only timed kinds (practice tests) have a time limit, and this form has no such control.`,
+        );
+      if (
+        !Number.isInteger(value) ||
+        (value as number) < 0 ||
+        (value as number) > TIME_LIMIT_MAX_MIN
+      )
+        throw new Error(
+          `generation_time_limit_minutes expects a whole number of minutes between 0 and ${TIME_LIMIT_MAX_MIN} (0 means untimed).`,
+        );
+      setTimeLimitMin(value as number);
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/education-assessment"
+      isEditable
       getScope={getScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     <div className="min-h-full w-full bg-textured">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
@@ -356,17 +473,26 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
         </div>
 
         {isGenerating ? (
-          <div className="mt-6 flex flex-col items-center gap-3 rounded-xl border border-border bg-card py-12 text-center">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Generating your {config.noun}…
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Writing {Math.min(config.countMax, Math.max(1, count || 1))}{" "}
-                questions at {depth} depth. This can take a moment.
-              </p>
+          <div className="mt-6 flex flex-col gap-3">
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card py-6 text-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Generating your {config.noun}…
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Writing {Math.min(config.countMax, Math.max(1, count || 1))}{" "}
+                  questions at {depth} depth — watch them arrive below.
+                </p>
+              </div>
             </div>
+            {/* The generator's stream renders live — never a bare spinner. */}
+            <LiveRunDisplay
+              conversationId={conversationId}
+              label={`Writing your ${config.noun}`}
+              pending
+              bodyClassName="max-h-80 overflow-y-auto px-2.5 py-2 text-sm"
+            />
           </div>
         ) : (
           <div className="mt-6 flex flex-col gap-5 rounded-xl border border-border bg-card p-4 sm:p-6">
@@ -506,9 +632,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
                 <Label htmlFor="as-diff">Difficulty</Label>
                 <Select
                   value={difficulty}
-                  onValueChange={(v) =>
-                    setDifficulty(v as (typeof DIFFICULTIES)[number])
-                  }
+                  onValueChange={(v) => setDifficulty(v as Difficulty)}
                 >
                   <SelectTrigger id="as-diff" className={FIELD}>
                     <SelectValue />
@@ -528,7 +652,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
             <div className="flex flex-col gap-1.5">
               <Label>Depth</Label>
               <div className="grid grid-cols-3 gap-2">
-                {DEPTHS.map((d) => (
+                {DEPTH_OPTIONS.map((d) => (
                   <button
                     key={d.value}
                     type="button"
@@ -555,7 +679,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
             <div className="flex flex-col gap-1.5">
               <Label>Question types</Label>
               <div className="flex flex-wrap gap-2">
-                {QUESTION_TYPES.map((t) => (
+                {QUESTION_TYPE_OPTIONS.map((t) => (
                   <label
                     key={t.value}
                     className={cn(

@@ -21,6 +21,11 @@ const OVERLAY_ID = "agentConvertSystemWindow" as const;
 
 export interface OpenAgentConvertSystemWindowOptions {
   agentId?: string | null;
+  /** Optional agent-slot context (admin slots console) — serializable only.
+   * When set, the sync window names the slot and offers an in-diff repin. */
+  slotId?: string | null;
+  slotKey?: string | null;
+  slotLabel?: string | null;
 }
 
 export interface AgentConvertSystemWindowHandle {
@@ -36,6 +41,9 @@ export function useOpenAgentConvertSystemWindow() {
           overlayId: OVERLAY_ID,
           data: {
             agentId: opts.agentId,
+            slotId: opts.slotId,
+            slotKey: opts.slotKey,
+            slotLabel: opts.slotLabel,
           },
         }),
       );

@@ -10,10 +10,8 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   AlertCircle,
-  ArrowRight,
   Check,
   CheckCircle2,
   CopyPlus,
@@ -38,11 +36,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonValue } from "@/types/json";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import {
-  duplicateAgent,
-  duplicateAgentVersion,
-  fetchAgentExecutionMinimal,
-} from "@/features/agents/redux/agent-definition/thunks";
+import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentExecutionPayload,
   selectOwnedAgents,
@@ -51,15 +45,19 @@ import {
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
 import {
-  checkSlotContract,
   parseSlotContract,
   putSlotBinding,
   removeSlotBinding,
   type SlotAgentSummary,
   type SlotBindingRow,
-  type SlotContractCheck,
   type SlotDefinitionRow,
 } from "../overrides";
+import {
+  compareStoredContract,
+  type ComparisonResult,
+} from "../contract-compare";
+import { useCopySlotAgent } from "../useCopySlotAgent";
+import { ContractItem, type ContractRowState } from "./ContractItem";
 
 const THINKING_LEVELS = ["minimal", "low", "medium", "high"] as const;
 type ThinkingLevel = (typeof THINKING_LEVELS)[number];
@@ -93,7 +91,7 @@ export function SlotOverrideEditor({
 }: SlotOverrideEditorProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const router = useRouter();
+  const { copying, copyAndOpen } = useCopySlotAgent();
 
   const ownedAgents = useAppSelector(selectOwnedAgents);
   const sharedAgents = useAppSelector(selectSharedWithMeAgents);
@@ -121,12 +119,11 @@ export function SlotOverrideEditor({
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
-  const [copying, setCopying] = useState(false);
   const [contractCheck, setContractCheck] = useState<
     | { status: "idle" }
     | { status: "checking" }
     | { status: "error"; message: string }
-    | { status: "done"; agentId: string; result: SlotContractCheck }
+    | { status: "done"; agentId: string; result: ComparisonResult }
   >({ status: "idle" });
 
   const contract = useMemo(
@@ -142,13 +139,10 @@ export function SlotOverrideEditor({
         setContractCheck({
           status: "done",
           agentId: candidateId,
-          result: {
-            matchedVariables: [],
-            missingVariables: [],
-            matchedSlots: [],
-            missingSlots: [],
-            passing: true,
-          },
+          result: compareStoredContract(contract, {
+            variableNames: [],
+            contextSlotKeys: [],
+          }),
         });
         return;
       }
@@ -174,7 +168,7 @@ export function SlotOverrideEditor({
         });
         return;
       }
-      const result = checkSlotContract(contract, {
+      const result = compareStoredContract(contract, {
         variableNames: (payload.variableDefinitions ?? []).map((v) => v.name),
         contextSlotKeys: (payload.contextSlots ?? []).map((s) => s.key),
       });
@@ -287,42 +281,23 @@ export function SlotOverrideEditor({
   };
 
   // Fork the slot's current default into an editable personal copy, select it
-  // here, and open the builder (research's proven "Copy & Update" pattern).
-  const handleCopyDefault = async () => {
-    setCopying(true);
-    try {
-      const newId = slot.default_agent_version_id
-        ? await dispatch(
-            duplicateAgentVersion({
-              versionId: slot.default_agent_version_id,
-              asSystem: false,
-            }),
-          ).unwrap()
-        : slot.default_agent_id
-          ? await dispatch(
-              duplicateAgent({
-                agentId: slot.default_agent_id,
-                asSystem: false,
-              }),
-            ).unwrap()
-          : null;
-      if (!newId) {
-        toast.error("This slot has no default agent to copy.");
-        return;
-      }
-      setAgentId(newId);
-      void runContractCheck(newId);
-      toast.success(
-        "Copied — opening your editable version. Save here to connect it.",
-      );
-      router.push(`/agents/${newId}/build`);
-    } catch (err) {
-      const message =
-        (err as { message?: string } | null)?.message ?? "unknown error";
-      toast.error(`Couldn't copy agent: ${message}`);
-    } finally {
-      setCopying(false);
-    }
+  // here, and open the builder — the ONE Copy & Update implementation
+  // (research's proven pattern, shared via useCopySlotAgent).
+  const handleCopyDefault = () => {
+    void copyAndOpen(
+      {
+        defaultAgentId: slot.default_agent_id,
+        defaultAgentVersionId: slot.default_agent_version_id,
+      },
+      {
+        connect: (newId) => {
+          setAgentId(newId);
+          void runContractCheck(newId);
+        },
+        connectedMessage:
+          "Copied — opening your editable version. Save here to connect it.",
+      },
+    );
   };
 
   const selectedAgentName = agentId
@@ -537,11 +512,12 @@ function ContractResult({
   contract,
   contractSize,
 }: {
-  contract: SlotContractCheck;
+  contract: ComparisonResult;
   contractSize: number;
 }) {
   const missing =
     contract.missingVariables.length + contract.missingSlots.length;
+  const extras = contract.extraVariables.length + contract.extraSlots.length;
   const passing = contract.passing;
   if (contractSize === 0) {
     return (
@@ -551,6 +527,26 @@ function ContractResult({
       </p>
     );
   }
+  const requiredRows = (
+    rows: ComparisonResult["matchedVariables"],
+    state: ContractRowState,
+    kind: "variable" | "slot",
+  ) =>
+    rows.map((row) => (
+      <ContractItem
+        key={`${state}-${kind}-${row.name}`}
+        row={row}
+        state={state}
+        showCheck
+        iconSlot={
+          kind === "variable" ? (
+            <Hash className="h-3 w-3" />
+          ) : (
+            <KeyRound className="h-3 w-3" />
+          )
+        }
+      />
+    ));
   return (
     <div
       className={cn(
@@ -577,33 +573,26 @@ function ContractResult({
           ? "Contract satisfied — this agent declares every required input."
           : `Missing ${missing} required input${missing === 1 ? "" : "s"} — it can't run this step.`}
       </p>
-      {!passing ? (
-        <ul className="mt-1.5 space-y-1">
-          {contract.missingVariables.map((name) => (
-            <li
-              key={`v-${name}`}
-              className="flex items-center gap-1.5 text-destructive/90"
-            >
-              <Hash className="h-3 w-3" />
-              <code className="font-mono">{name}</code>
-              <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/60" />
-              <span className="text-muted-foreground">required variable</span>
-            </li>
-          ))}
-          {contract.missingSlots.map((name) => (
-            <li
-              key={`s-${name}`}
-              className="flex items-center gap-1.5 text-destructive/90"
-            >
-              <KeyRound className="h-3 w-3" />
-              <code className="font-mono">{name}</code>
-              <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/60" />
-              <span className="text-muted-foreground">
-                required context slot
-              </span>
-            </li>
-          ))}
-        </ul>
+      <ul className="mt-1.5 divide-y divide-border/30">
+        {requiredRows(contract.matchedVariables, "matched", "variable")}
+        {requiredRows(contract.missingVariables, "missing", "variable")}
+        {requiredRows(contract.matchedSlots, "matched", "slot")}
+        {requiredRows(contract.missingSlots, "missing", "slot")}
+      </ul>
+      {extras > 0 ? (
+        <div className="mt-1.5 border-t border-border/30 pt-1.5">
+          <p className="text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground/80">
+            Beyond the contract ({extras})
+          </p>
+          <ul className="divide-y divide-border/30">
+            {requiredRows(contract.extraVariables, "extra", "variable")}
+            {requiredRows(contract.extraSlots, "extra", "slot")}
+          </ul>
+          <p className="text-[11px] leading-relaxed text-muted-foreground/80">
+            These won&apos;t be supplied by this step. Make sure they have
+            sensible defaults.
+          </p>
+        </div>
       ) : null}
     </div>
   );

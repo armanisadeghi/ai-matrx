@@ -30,10 +30,37 @@ export type QuestionType =
   | "written_response";
 export type Depth = "recall" | "applied" | "exam";
 
-const DEPTHS = ["recall", "applied", "exam"] as const satisfies readonly Depth[];
+/**
+ * The generation vocabularies, in ONE place. The create form's controls, the
+ * surface manifest's write-target descriptions, and the write handlers all
+ * read these — a vocabulary is never re-typed as literals at a call site, so
+ * an added depth/type/difficulty cannot drift between what the UI offers,
+ * what an agent is told it may send, and what the handler accepts.
+ */
+export const DEPTHS = ["recall", "applied", "exam"] as const satisfies readonly Depth[];
 
 export function isDepth(value: string): value is Depth {
   return DEPTHS.some((d) => d === value);
+}
+
+export const QUESTION_TYPES = [
+  "multiple_choice",
+  "true_false",
+  "fill_blank",
+  "short_answer",
+  "written_response",
+] as const satisfies readonly QuestionType[];
+
+export function isQuestionType(value: string): value is QuestionType {
+  return QUESTION_TYPES.some((t) => t === value);
+}
+
+/** Requested difficulty. Title-case — it is passed verbatim to the generator agents. */
+export const DIFFICULTIES = ["Easy", "Medium", "Hard"] as const;
+export type Difficulty = (typeof DIFFICULTIES)[number];
+
+export function isDifficulty(value: string): value is Difficulty {
+  return DIFFICULTIES.some((d) => d === value);
 }
 
 /**

@@ -103,7 +103,3 @@ export const AGENT_ROLE_TEMPLATES: AgentRoleTemplate[] = [
     systemOnly: true,
   },
 ];
-
-/** UUID v4-ish format check — matches the format Supabase RPC expects. */
-export const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

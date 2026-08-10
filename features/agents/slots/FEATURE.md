@@ -25,7 +25,7 @@ Route: `app/(core)/agents/slots/page.tsx` (+ `SlotsHeader` in the shell header c
 - **Swaps are floating-only** (`agent_id` + `use_latest`) — the client run path has no version channel; version pinning is the admin console's business.
 - **Settings editor patches only `model` + `thinking_level`** and preserves unknown `config_overrides` keys it doesn't own.
 - Agent options come from the canonical Redux listing (`fetchAgentsListFull` + `selectOwnedAgents`/`selectSharedWithMeAgents`) — never a raw table query (ESLint `matrx/no-raw-agent-list-query`).
-- **One write path.** Bindings are written ONLY through the aidream bind endpoint (`PUT/DELETE /agent-slots/{slot_key}/binding`) — a supabase `.insert()/.update()` on `agent.slot_binding` from this repo is a defect (it skips bind-time contract enforcement: required variables/context slots superset + the candidate's `output_schema` must carry the slot's required output keys). The server is the authority; `checkSlotContract` is only the instant client pre-flight; the 422 detail is the contract verdict — surface it verbatim. Refresh the generated API types whenever the endpoint changes.
+- **One write path.** Bindings are written ONLY through the aidream bind endpoint (`PUT/DELETE /agent-slots/{slot_key}/binding`) — a supabase `.insert()/.update()` on `agent.slot_binding` from this repo is a defect (it skips bind-time contract enforcement: required variables/context slots superset + the candidate's `output_schema` must carry the slot's required output keys). The server is the authority; `compareStoredContract` (`contract-compare.ts`) is only the instant client pre-flight; the 422 detail is the contract verdict — surface it verbatim. Refresh the generated API types whenever the endpoint changes.
 
 ## Migrating a hardcoded call site (the sweep)
 
@@ -45,8 +45,21 @@ Recipe: React run site → `useSlotRunner`; React non-run site (a `defaultAgentI
 
 **Known gap:** `launchAgentExecution` consumers (content-plan) apply the slot's AGENT but not its `config_overrides` — that path carries model overrides through the instance-model-overrides slice, not a call arg. A settings-only binding is therefore inert there today.
 
+**Known gap — `useSlotRunner`/`useRunAgent` cannot live-render.** They produce
+no requestId (the stream drains into a local string), so a surface using them
+can only show a spinner — which violates the platform's no-spinner rule
+(`docs/handoffs/live-stream-everywhere.md`). A slot run the user WATCHES goes
+through `useLiveAgentRun` (`features/agents/hooks/useLiveAgentRun.ts`, takes
+`slotKey`) + `<LiveRunDisplay>`; keep `useSlotRunner` for genuinely invisible
+plumbing only.
+
 ## Change Log
 
+- 2026-08-10 — W3 review hardening: `SlotAgentPicker`'s pre-flight now FAILS CLOSED when the candidate's execution payload can't be loaded (`agx_get_execution_minimal` returns no row — inaccessible/deleted agent): the apply is blocked with "Could not verify this agent — it may be inaccessible or deleted", even when the slot declares no contract requirements (an agent the RPC can't see is never silently bound). New optional `contractSource` prop: a consumer that DISPLAYS live system-agent requirements (research `AgentRoleCard`) passes that same live declaration so the pre-flight checks what the UI shows (`compareContracts`), falling back to the stored slot contract while it loads. `invalidateClientSlotCache` now also clears the `pinCache` entry, and admin `updateSlotDefinition` fires it after every definition write — so any mounted consumer (incl. the admin slots console, which now subscribes via `onSlotCacheInvalidated`) refreshes after a repin from ANY surface, including the Linked Agent Sync window.
+
+- 2026-08-10 — W3 canonicalization: absorbed research's proven override UI into this feature. New primitives: `contract-compare.ts` (the ONE three-state matched/missing/extra compare — `compareContracts` full-declaration form + `compareStoredContract` stored-contract form; research's two-state `checkSlotContract` clone deleted), `components/ContractItem.tsx` (canonical contract row, pending/matched/missing/extra), `components/SlotResolutionRibbon.tsx` (truthful precedence chain run-scope → user → org → system, `provenance` highlight, per-surface relabels), `components/OverriddenCountBadge.tsx` ("N of M overridden"), and `useCopySlotAgent.ts` (the ONE Copy & Update: fork the exact record the server runs — version when pinned, master when floating, override master when set — with research's failure decomposition: a failed connect is an info toast, never a failed copy). `SlotAgentPicker` gained a controlled-override mode (`override` prop) so surfaces with their own override store (research `rs_topic.agent_config`) reuse the picker + contract pre-flight while keeping their write path; `SlotOverrideEditor`'s contract result now renders all three states via `ContractItem`. Research's `TopicAgentsPage`/`AgentRoleCard` are thin consumers (raw UUID-paste box deleted); the ribbon also sits on `/agents/slots` (page reference + per-card provenance) and the admin console drawer.
+
+- 2026-08-10 — Documented the live-render gap above; content-plan's 7 setup slots + brief writer migrated onto `useLiveAgentRun` (slotKey-aware) with live output.
 - 2026-08-09 — The shared override editor now uses the canonical on-demand `AgentListDropdown`; it shows the chosen agent (or “Keep system agent”) without permanently rendering the full catalogue in every expanded slot.
 
 - 2026-08-09 — DOOR LAW pass on `/agents/slots`: resolved/default/override agents are `EntityRef` doors, organization narratives link to their organization, and slot-card headers permit legally nested door controls. Regression coverage lives in `components/__tests__/slot-overrides-doors.test.tsx`.
