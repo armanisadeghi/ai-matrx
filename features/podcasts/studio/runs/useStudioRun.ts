@@ -397,7 +397,13 @@ export function useStudioRun(runId: string): UseStudioRun {
       setStalled(false);
       setCanReconnect(false);
       let polls = 0;
-      const MAX_POLLS = 80; // ~16 min @ 12s — covers the long TTS audio step
+      // After this many polls the interval relaxes from 12s to 30s. There is
+      // deliberately NO hard stop while the server heartbeat says "alive":
+      // giving up on a healthy long run (many videos easily pass 16 minutes)
+      // is what showed users a fake "interrupted" banner mid-generation. The
+      // server marks the run completed/failed/stalled in the DB; that — not a
+      // client-side timer — is what ends observation.
+      const RELAXED_AFTER_POLLS = 80; // ~16 min @ 12s
       const poll = async () => {
         bgPollTimer = null;
         if (cancelled || streamingRef.current) {
@@ -433,19 +439,18 @@ export function useStudioRun(runId: string): UseStudioRun {
             return; // terminal — stop polling
           }
           if (d.liveness === "stalled") {
-            // No server-side heartbeat — genuinely stuck; offer manual Resume.
+            // No server-side heartbeat for minutes (the pipeline bumps it
+            // every ~30s even mid-video) — genuinely stuck; offer Resume.
             setBackgroundWorking(false);
             setCanReconnect(d.recovery.resumable);
             return;
           }
           // 'alive' — still generating server-side; keep observing.
         }
-        if (polls < MAX_POLLS) {
-          bgPollTimer = setTimeout(poll, 12_000);
-        } else {
-          setBackgroundWorking(false);
-          setCanReconnect(!!backendRunIdRef.current);
-        }
+        bgPollTimer = setTimeout(
+          poll,
+          polls < RELAXED_AFTER_POLLS ? 12_000 : 30_000,
+        );
       };
       bgPollTimer = setTimeout(poll, 6_000);
     }

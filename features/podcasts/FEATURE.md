@@ -104,6 +104,17 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-10 — **Fake "This run was interrupted" banner killed.** Root cause
+  was server-side: `agent_run.last_heartbeat_at` was bumped only on stage
+  commits, so any multi-minute video/audio render exceeded the 180s liveness
+  threshold (`runsRepository.STALL_SECONDS`) and every non-stream reader
+  (reload, phone unlock, background poll) judged a healthy run "stalled" →
+  the interrupted banner. Server fix (aidream `podcast_generator.py` ticker +
+  `RunCheckpointer.touch()`): DB heartbeat every ~30s for the whole pipeline.
+  FE fix (`useStudioRun.watchInBackground`): no hard ~16-min poll cap while
+  the server says "alive" — polls relax to 30s instead of giving up; only
+  completed/failed/stalled ends observation.
+
 - 2026-08-09 — **Agents can fill in the generator form.** `GeneratorForm` now
   registers write handlers for 5 new `matrx-user/podcast-studio` write targets
   (`source_text`, the composite `episode_shape` = language/format/theme/
