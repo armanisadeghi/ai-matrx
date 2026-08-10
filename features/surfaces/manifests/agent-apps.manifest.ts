@@ -19,6 +19,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -334,6 +335,129 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the five Identity fields of an open app.
+ *
+ * WHY THESE FIVE. An agent app is a published product: its name, tagline,
+ * description, category and tags are the entire storefront at `/p/[slug]`,
+ * and they are exactly the "authored copy an agent drafts better/faster"
+ * class. A user who has just built an app has working code and placeholder
+ * marketing text; drafting that copy from what the app actually does is the
+ * single most useful thing an agent can do on this surface.
+ *
+ * WHY NOT THE REST. `app_slug` and `app_id` are identity (the public URL is
+ * built from the slug — renaming it breaks every existing link).
+ * `app_is_public` is a sharing decision and `app_status` (draft → published)
+ * is a release decision — both are the human's call, not a copy edit.
+ * `agent_id` / `app_version` / `pinned_version` / `use_latest` are structural
+ * bindings, `component_code` / `shell_config` / `slot_overrides` belong to
+ * the /code and /layout editors (a different job, not declared here), rate
+ * limits are abuse controls, and deletion stays human by doctrine.
+ *
+ * MODE IS PER-FIELD, because the page's own UI is per-field. Name, tagline
+ * and description are typed into local inputs that show a dirty marker and
+ * their own Save button — a real staging buffer — so those are `draft`: the
+ * agent stages the text, the user reads it in the field and presses Save.
+ * Category and tags have no staging step (their pickers commit on change via
+ * `saveAppField`), so those are `entity` and say so in their descriptions.
+ *
+ * One consequence of `draft` here is worth stating: the read twins
+ * (`app_name`, `app_tagline`, `app_description`) are emitted from the Redux
+ * app row, not from the input's local state, so a staged value does NOT
+ * appear in them until the user presses Save. Each draft description says so
+ * rather than leaving the agent to wonder why its write "did nothing".
+ *
+ * Handlers live in `features/agent-apps/route/AgentAppSettingsContent.tsx` —
+ * the component that owns both the local input state and the `saveField`
+ * wrapper the user's own clicks go through — registered with
+ * `useSurfaceWriteHandlers` under the layout's provider. All five are
+ * therefore live on `/agent-apps/[id]/settings`, the route where these
+ * fields are editable.
+ *
+ * MOUNTS, and what a write means OFF the Settings tab. The DRAFT trio is
+ * Settings-only by necessity: a draft stages into an input, and on
+ * overview / run / code / versions there is no input for it to land in — so
+ * those three are simply not offered there (`listAgentWritableTargets()`
+ * skips a declared target with no registered handler, and a forced call gets
+ * the seam's loud "declares … but registered no handler" error rather than
+ * silence). The ENTITY pair has no such dependency — it persists straight
+ * through `saveAppField` and needs only the open row — so
+ * `AgentAppSurfaceRuntime` (the `/agent-apps/[id]` layout, mounted on every
+ * sub-route) registers `app_category` and `app_tags` as well, from the shared
+ * validators in `features/agent-apps/route/agent-app-entity-writes.ts`.
+ * Scoping those two to Settings would have been an artifact of where the
+ * pickers are rendered, not a safety property. On Settings the component's
+ * own registration shadows the layout's (registered handlers win —
+ * `resolveHandlers`), so the write still goes through the same `saveField`
+ * wrapper a picker click uses.
+ *
+ * Every target is `applyPolicy: "ask"`. `auto` is deliberately absent: the
+ * entity pair writes the database with no undo, and even the draft trio
+ * overwrites text the user may have typed.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "app_name",
+    label: "App name",
+    description:
+      "Stages a new display name into the open app's Name field on the Settings > Identity tab. Value: a non-empty plain string, which REPLACES the current name. This is a draft — it lands in the input with a Save button beside it and the user still presses Save, so the app_name read value does not change until they do.",
+    valueType: "string",
+    updatesValue: "app_name",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "app_identity",
+    sortOrder: 310,
+  },
+  {
+    name: "app_tagline",
+    label: "App tagline",
+    description:
+      "Stages a one-line marketing tagline into the open app's Tagline field on the Settings > Identity tab — the short line shown under the app name in the hub and on the public page. Value: a plain string (pass an empty string to clear it), which REPLACES the current tagline. This is a draft — the user still presses Save, so the app_tagline read value does not change until they do.",
+    valueType: "string",
+    updatesValue: "app_tagline",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "app_identity",
+    sortOrder: 315,
+  },
+  {
+    name: "app_description",
+    label: "App description",
+    description:
+      "Stages the longer description of what the open app does into the Description field on the Settings > Identity tab. Value: a plain string (pass an empty string to clear it), which REPLACES the full description rather than appending — read app_description first and include any existing text you want kept. This is a draft — the user still presses Save, so the app_description read value does not change until they do.",
+    valueType: "string",
+    updatesValue: "app_description",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "app_identity",
+    sortOrder: 320,
+  },
+  {
+    name: "app_category",
+    label: "App category",
+    description:
+      "Sets the open app's category. Saved to the database immediately — there is no draft to review. Value: a plain string naming the category, or null to clear it. The category is free text rather than a fixed enum (the picker offers system categories and accepts a custom one), so prefer an existing category name from the catalog over inventing a near-duplicate.",
+    valueType: "string",
+    updatesValue: "app_category",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "app_identity",
+    sortOrder: 330,
+  },
+  {
+    name: "app_tags",
+    label: "App tags",
+    description:
+      "Sets the open app's tags. Saved to the database immediately — there is no draft to review. Value: an array of non-empty plain strings. This REPLACES the FULL tag set rather than appending — read app_tags first and include every existing tag you want kept, or they are dropped. Pass an empty array to remove all tags.",
+    valueType: "array",
+    updatesValue: "app_tags",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "app_identity",
+    sortOrder: 335,
+  },
+];
+
 export const agentAppsManifest: SurfaceManifest = {
   surfaceName: AGENT_APPS_SURFACE_NAME,
   readiness: "partial",
@@ -344,12 +468,14 @@ export const agentAppsManifest: SurfaceManifest = {
 You are on Agent Apps: the user's workspace for shareable AI mini-apps — each app wraps one agent in a custom UI (a shell kind plus optional custom component code) and can be published publicly at /p/[slug].
 When app_id is present the user has one app open in its workspace; active_view tells you which UI they are on (overview, run, code, settings, versions). When app_id is absent the user is on the hub grid — only the catalog values apply.
 Read app_identity for what the app is, app_content for what it is made of (shell, code, variables, config), and run_state for the active view plus usage evidence. Code-editing work targets component_code; configuration work targets shell_config and variable_schema — never invent usage statistics.
+You can also WRITE the open app's storefront copy through apply_surface_write — its name, tagline, description, category and tags. Name, tagline and description stage into the Settings > Identity inputs for the user to Save; category and tags save to the database as soon as the user approves. Those five are the only writable fields: the slug, publish status, public sharing, agent binding and code are not agent-writable, so propose those in words instead. Writing requires an app to be open (app_id present) and the user to be on the Settings tab — on the hub grid or another sub-route there is nothing to write into.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One hub-grid entry as emitted in `listed_apps_summary`. */

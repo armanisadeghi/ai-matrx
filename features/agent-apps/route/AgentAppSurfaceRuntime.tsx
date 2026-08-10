@@ -11,16 +11,28 @@
  * hydrator hasn't landed yet, the app-specific keys are simply absent, which
  * is exactly what the manifest declares (nothing on this surface is
  * `alwaysAvailable`).
+ *
+ * It also wires the surface's two ENTITY write targets (`app_category`,
+ * `app_tags`) for EVERY sub-route. Those persist straight through
+ * `saveAppField` and need no editor, so scoping them to the Settings tab
+ * would have been an artifact of where the pickers happen to be rendered.
+ * The three DRAFT targets stay registered in `AgentAppSettingsContent`, which
+ * owns the inputs they stage into — a draft with nowhere to land is a write
+ * that goes nowhere. When Settings is open its own registration shadows this
+ * one for the entity pair, so the write goes through the same `saveField`
+ * wrapper the user's own picker clicks use.
  */
 
 import { usePathname } from "next/navigation";
 import { useRef, type ReactNode } from "react";
-import { useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveApp } from "@/features/agents/redux/agent-apps/selectors";
+import { saveAppField } from "@/features/agents/redux/agent-apps/thunks";
 import {
   AGENT_APPS_SURFACE_NAME,
   createAgentAppsScope,
 } from "@/features/surfaces/manifests/agent-apps.manifest";
+import { buildAgentAppEntityWriteHandlers } from "./agent-app-entity-writes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 type ActiveView =
@@ -61,9 +73,30 @@ function asObjectArray(
 
 export function AgentAppSurfaceRuntime({ children }: { children: ReactNode }) {
   const store = useAppStore();
+  const dispatch = useAppDispatch();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
+
+  // Entity write targets, live on every sub-route. The app is read from the
+  // live store at CALL time (same rule as the scope), and the value persists
+  // through the canonical `saveAppField` thunk with `.unwrap()` so a failed
+  // save REJECTS — the writeback seam must hear about it rather than report a
+  // success that never happened. Fresh closures per call (the
+  // `getWriteHandlers` contract).
+  const getSurfaceWriteHandlers = () =>
+    buildAgentAppEntityWriteHandlers({
+      getApp: () => selectActiveApp(store.getState()),
+      persist: async (appId, field, value) => {
+        await dispatch(
+          saveAppField({
+            appId,
+            field,
+            value: value as Parameters<typeof saveAppField>[0]["value"],
+          }),
+        ).unwrap();
+      },
+    });
 
   const getScope = () => {
     const app = selectActiveApp(store.getState());
@@ -122,6 +155,7 @@ export function AgentAppSurfaceRuntime({ children }: { children: ReactNode }) {
     <SurfaceRuntimeProvider
       surfaceName={AGENT_APPS_SURFACE_NAME}
       getScope={getScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       {children}
     </SurfaceRuntimeProvider>
