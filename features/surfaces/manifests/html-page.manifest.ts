@@ -24,6 +24,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -293,6 +294,75 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the agent-writable half of this surface.
+ *
+ * WHY THESE TWO, and why nothing else on a form with seven inputs:
+ *
+ * - The SEO cluster is ONE object target, not three. `meta_title`,
+ *   `meta_description` and `meta_keywords` are authored together on the
+ *   Metadata tab against the same page, they are judged against the same
+ *   character budgets (`features/marketing/seo/serp/metrics.ts`), and an
+ *   agent asked to "improve the SEO" produces all three in one thought.
+ *   Three micro-targets would mean three separate ask dialogs for one
+ *   decision the user makes once — the manifest's own guidance (multiple
+ *   values in one field object beat five micro-targets when they are edited
+ *   together). Every key is optional so a title-only rewrite stays a
+ *   title-only write.
+ * - `html_content` earns a target on the OPPOSITE argument from every other
+ *   surface in this campaign. Elsewhere the body already has a user-driven
+ *   seam: right-click a textarea → the v3 menu → `onTextReplace`. Here the
+ *   body is Monaco, and Monaco swallows `contextmenu` before it reaches our
+ *   `EditableContextMenu` wrapper (documented at length in
+ *   `features/html-pages/README.md` → "Known limitation"). So on the HTML
+ *   tab there is NO usable text-replace path for an agent result at all —
+ *   the declared target is not a convenience over the menu, it is the only
+ *   way an agent can touch the document. That makes it the highest-value
+ *   target on the surface, not a marginal one.
+ *
+ * DELIBERATELY NOT TARGETS:
+ * - `is_indexable` — indexability is a human gate. A standalone page
+ *   publishes the instant it is saved, so flipping noindex→index is a
+ *   publishing decision with SEO consequences the agent cannot own.
+ * - `canonical_url` — a wrong canonical silently de-indexes the page in
+ *   favour of someone else's URL. Identity/routing, not authored content.
+ * - `og_image` — points at a real uploaded asset. An agent can only invent a
+ *   plausible-looking URL, and a broken OG image is worse than none.
+ * - Save/publish, promote-to-site, and delete — actions, human-owned. The
+ *   agent stages; the user still presses Save.
+ *
+ * Both targets are `mode: "draft"` + `applyPolicy: "ask"`: they stage through
+ * the SAME `useState` setters the user's own typing uses, mark the editor
+ * dirty, and leave the Save affordance armed. Nothing reaches `html_pages`
+ * without the user pressing Save.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "page_seo_metadata",
+    label: "Page SEO metadata",
+    description:
+      'Sets this page\'s SEO metadata fields on the Metadata tab. Value is ONE object with any of these OPTIONAL keys: { "meta_title": string, "meta_description": string, "meta_keywords": string }. Only the keys you send are changed — omit a key to leave that field exactly as the user has it; do NOT send a key back unchanged just to fill the shape, and never send an empty string to "keep" a value. Each key REPLACES that field entirely (these are single-line/short-text fields, not append targets) — read `page_seo` first so you are rewriting from what is actually there. meta_title is the HTML <title> and primary SEO title: a non-empty single-line plain string, 15–60 characters recommended, no markdown and no surrounding quotes. meta_description is the search-result snippet: plain prose, 70–160 characters recommended, no HTML. meta_keywords is a single comma-separated string ("wedding photography, portland, elopement"), not an array. Staged into the live editor and marks the page unsaved — the user reviews and presses Save, which is what publishes it.',
+    valueType: "object",
+    updatesValue: "page_seo",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "page_seo",
+    sortOrder: 100,
+  },
+  {
+    name: "page_html_content",
+    label: "Page HTML document",
+    description:
+      "REPLACES the entire HTML document this page publishes with the value. This page is a COMPLETE standalone document, not a fragment: the value must be a full, valid HTML document — <!doctype>, <html>, <head> (with its <title>, meta tags, and <style>), and <body>. Sending a bare fragment or a body-only snippet breaks the published page, and sending a markdown or code-fenced block is always wrong. Read `html_content` first and edit that document rather than writing a new one from scratch, so the page's existing styles, scripts, and structure survive. Staged into the HTML tab's live code editor and marks the page unsaved — the user reviews the diff in the editor and the Preview tab, then presses Save, which is what republishes the live page at its /p/{id} URL.",
+    valueType: "string",
+    updatesValue: "html_content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "page_content",
+    sortOrder: 110,
+  },
+];
+
 export const htmlPageManifest: SurfaceManifest = {
   surfaceName: "matrx-user/html-page",
   readiness: "verified",
@@ -303,8 +373,10 @@ You are on the standalone HTML page system — single, self-contained documents 
 html_pages_structure is the whole library in compact XML with the page in focus marked current="true" — read it before creating a page that may already exist.
 html_content is the COMPLETE document (head, styles, scripts, body), not a fragment: edits must keep it a valid standalone document. active_tab tells you which region the user is in and therefore what content and selection contain — the meta description on "meta", the full document on "html", nothing on "preview".
 The same surface is also mounted on the list route, where only the framing XML and the right-clicked row's identity are populated and every body/editor value is empty. Check page_id before assuming you have a page to work on.
+You can also WRITE here, through apply_surface_write: page_seo_metadata stages the title/description/keywords the Metadata tab edits, and page_html_content stages the whole document into the HTML tab's code editor. Both ask the user first and both only STAGE — the human still presses Save, and on this system Save is what republishes the live page, so nothing you write reaches /p/{id} on its own. Read page_seo and html_content before writing: both targets replace what they touch rather than merging into it. Neither the indexability toggle nor the canonical/OG URLs are writable — those stay the user's call. Both targets need a page actually open in the editor; on the list route there is no buffer and the write is refused.
 </surface_intro>`,
   groups,
+  writeTargets,
   values: mergeBaselineValues(
     pickBaseline(
       "selection",

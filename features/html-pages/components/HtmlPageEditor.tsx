@@ -37,6 +37,7 @@ import { useHtmlPagesManager } from "@/features/html-pages/hooks/useHtmlPagesMan
 import { useHtmlPageSurfaceScope } from "@/features/html-pages/hooks/useHtmlPageSurfaceScope";
 import { HTML_PAGE_CONTEXT_MENU_PROPS } from "@/features/html-pages/agent-context/htmlPageContextMenuProps";
 import { createHtmlPageExtraSections } from "@/features/html-pages/agent-context/htmlPageExtraSections";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
@@ -161,6 +162,100 @@ export default function HtmlPageEditor({
   const getMetaApplicationScope = getApplicationScope(metaDescriptionRef);
   const noTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const getHtmlApplicationScope = getApplicationScope(noTextareaRef);
+
+  // ── Agent write targets (`writeTargets` on the manifest) ─────────────
+  // Both targets are draft-mode: they stage through the SAME setters the
+  // user's own typing uses and mark the editor dirty, so the Save button
+  // arms and the human still publishes. Every handler validates and THROWS
+  // on a bad shape — the writeback seam turns throws into error envelopes
+  // the agent reads. Fresh closures per call (getWriteHandlers contract).
+  const requireLoadedPage = (target: string) => {
+    if (!page?.id)
+      throw new Error(
+        `${target} cannot be applied: no HTML page is loaded in the editor. Open a page at /cms/html-pages/{pageId} first.`,
+      );
+  };
+
+  const SEO_KEYS = ["meta_title", "meta_description", "meta_keywords"] as const;
+
+  const getSurfaceWriteHandlers = () => ({
+    page_seo_metadata: (value: unknown) => {
+      requireLoadedPage("page_seo_metadata");
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          'page_seo_metadata expects one object with any of the optional keys { "meta_title", "meta_description", "meta_keywords" }.',
+        );
+      const patch = value as Record<string, unknown>;
+      const unknownKeys = Object.keys(patch).filter(
+        (k) => !(SEO_KEYS as readonly string[]).includes(k),
+      );
+      if (unknownKeys.length > 0)
+        throw new Error(
+          `page_seo_metadata rejected — unknown key(s): ${unknownKeys.join(", ")}. Only ${SEO_KEYS.join(", ")} are writable. The indexability toggle, canonical URL, and Open Graph image are not agent-writable on this surface.`,
+        );
+      if (Object.keys(patch).length === 0)
+        throw new Error(
+          "page_seo_metadata rejected — the object was empty. Send at least one of meta_title, meta_description, meta_keywords.",
+        );
+      // Validate EVERY field before staging any of them, so a bad description
+      // cannot leave a half-applied title behind.
+      if ("meta_title" in patch) {
+        const t = patch.meta_title;
+        if (typeof t !== "string" || !t.trim() || t.length > 255)
+          throw new Error(
+            "meta_title expects a non-empty string of at most 255 characters (15–60 recommended).",
+          );
+        if (/[\r\n]/.test(t))
+          throw new Error(
+            "meta_title expects a single line — it becomes the HTML <title>.",
+          );
+      }
+      if ("meta_description" in patch) {
+        const d = patch.meta_description;
+        if (typeof d !== "string" || d.length > 2000)
+          throw new Error(
+            "meta_description expects a string of at most 2000 characters (70–160 recommended).",
+          );
+      }
+      if ("meta_keywords" in patch) {
+        const k = patch.meta_keywords;
+        if (typeof k !== "string" || k.length > 500)
+          throw new Error(
+            'meta_keywords expects a single comma-separated string of at most 500 characters (e.g. "one, two, three"), not an array.',
+          );
+      }
+      if ("meta_title" in patch) setMetaTitle((patch.meta_title as string).trim());
+      if ("meta_description" in patch)
+        setMetaDescription(patch.meta_description as string);
+      if ("meta_keywords" in patch)
+        setMetaKeywords((patch.meta_keywords as string).trim());
+      markDirty();
+    },
+    page_html_content: (value: unknown) => {
+      requireLoadedPage("page_html_content");
+      if (typeof value !== "string" || !value.trim())
+        throw new Error(
+          "page_html_content expects a non-empty string containing the complete HTML document.",
+        );
+      if (/^\s*```/.test(value))
+        throw new Error(
+          "page_html_content rejected — the value was wrapped in a markdown code fence. Send the raw HTML document itself, starting with <!doctype html>.",
+        );
+      // A standalone page IS a whole document; a fragment would publish a
+      // broken page at /p/{id}, so refuse it rather than staging it.
+      const lower = value.toLowerCase();
+      if (!lower.includes("<html") || !lower.includes("</html>"))
+        throw new Error(
+          "page_html_content rejected — the value is not a complete HTML document (no <html>…</html>). This page publishes a standalone document: include <!doctype html>, <html>, <head> (with <title>, meta tags, and <style>), and <body>.",
+        );
+      if (!lower.includes("<body"))
+        throw new Error(
+          "page_html_content rejected — the document has no <body> element. Send the full document, not just a <head>.",
+        );
+      setHtmlContent(value);
+      markDirty();
+    },
+  });
 
   const pageExtraSections = createHtmlPageExtraSections({
     dirty,
@@ -459,8 +554,18 @@ export default function HtmlPageEditor({
     </NonEditableContextMenu>
   );
 
+  // The editor publishes the live surface scope AND services its write
+  // targets. Before this provider existed the surface was read-only in
+  // practice: the context menus received `contextData` directly, so nothing
+  // ever registered a runtime and `applySurfaceWrite` had no surface to
+  // resolve a target against.
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={HTML_PAGE_CONTEXT_MENU_PROPS.surfaceName}
+      isEditable
+      getScope={buildSurfaceScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
+    >
       <PageHeader>
         <div className="flex items-center w-full min-w-0 gap-0 p-0 space-x-0 space-y-0">
           <ChevronLeftTapButton
@@ -635,6 +740,6 @@ export default function HtmlPageEditor({
         }
         onOpenChange={(open) => setPromoteOpen(open)}
       />
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

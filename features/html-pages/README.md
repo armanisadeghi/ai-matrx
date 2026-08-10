@@ -717,6 +717,35 @@ description field previously leaked the full (13KB+) HTML document into `content
 builder always read the meta-description textarea's selection against the HTML buffer; fixed in
 `buildHtmlPageContextData.ts` / `useHtmlPageSurfaceScope.ts`.
 
+## Agent WRITE targets (2026-08-10)
+
+`HtmlPageEditor` now also mounts the surface's `<SurfaceRuntimeProvider>` — before this
+it consumed `useHtmlPageSurfaceScope` and passed `contextData` to the v3 menus but never
+registered a runtime, so `applySurfaceWrite` had no surface to resolve a target against.
+Two ask-policy **draft** targets are declared on the manifest and handled in the editor:
+
+| Target | Value | Lands in |
+| --- | --- | --- |
+| `page_seo_metadata` | `{ meta_title?, meta_description?, meta_keywords? }` | `setMetaTitle` / `setMetaDescription` / `setMetaKeywords` + `markDirty()` |
+| `page_html_content` | complete HTML document (string) | `setHtmlContent` + `markDirty()` |
+
+Both stage through the SAME setters the user's typing uses and leave Save armed — the
+human still publishes, and the save flows out the unchanged `onSave` → `HTMLPageService`
+→ `POST /api/html-pages` path (no browser Supabase client, per the authorization section
+above). The SEO fields are ONE object target because the Metadata tab edits them together.
+
+`page_html_content` exists precisely BECAUSE of the Monaco limitation documented below:
+Monaco eats `contextmenu` on its own text, so the v3 menu's `onTextReplace` never fires
+on the HTML tab — the declared target is the only way an agent can reach the document.
+`SmallCodeEditorImpl` does sync external `initialCode` changes into its model, so a
+staged write is visible in the editor immediately.
+
+Handlers validate and THROW: `page_seo_metadata` rejects unknown keys by name, and
+`page_html_content` rejects fragments, markdown code fences, and anything without
+`<html>`/`<body>`. **`is_indexable`, `canonical_url`, `og_image`, publish/promote and
+delete are deliberately NOT writable** — a standalone page goes live the moment it is
+saved, so indexability and canonical identity stay human gates.
+
 ## Canonical SEO metadata rules (2026-07-29)
 
 All HTML page editors and save dialogs import title/description counts,
