@@ -8,7 +8,7 @@
  * (saves as a new version through the normal editor flow) or Discard.
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Check, Loader2, MessageSquare, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
@@ -29,6 +29,11 @@ interface AgentEditRailProps {
   buildScope: () => ApplicationScope;
   /** Apply a proposed diagram (replaces editor source → saved as new version). */
   onApply: (source: string) => void;
+  /**
+   * Reports whether a rail run is in flight, so the workbench can refuse an
+   * agent-originated surface write that would race this one's proposal.
+   */
+  onBusyChange?: (busy: boolean) => void;
   onClose: () => void;
   /** Preselect an agent (e.g. chat right-click → "Edit with Diagram Editor"). */
   initialAgentId?: string | null;
@@ -40,6 +45,7 @@ export function AgentEditRail({
   source,
   buildScope,
   onApply,
+  onBusyChange,
   onClose,
   initialAgentId,
   initialAgentLabel,
@@ -55,6 +61,13 @@ export function AgentEditRail({
 
   const canRun = !!agentId && instruction.trim().length > 0 && !isBusy;
   const hasProposal = Boolean(proposedSource);
+
+  // Closing the panel mid-run unmounts this component, so clear the flag on
+  // the way out — otherwise the workbench would refuse writes forever.
+  useEffect(() => {
+    onBusyChange?.(isBusy);
+    return () => onBusyChange?.(false);
+  }, [isBusy]);
 
   const handleRun = async () => {
     if (!agentId) return;
