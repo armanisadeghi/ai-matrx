@@ -367,6 +367,13 @@ export function ScraperFloatingWorkspace({
   // read below is always the live mode, never a stale snapshot.
   const getSurfaceWriteHandlers = () => ({
     scrape_command: (value: unknown) => {
+      // A run in flight DISABLES these inputs for the user; staging into them
+      // would land a value the user cannot see or correct, against a request
+      // whose parameters are already captured. Refuse loudly instead.
+      if (isAnyLoading)
+        throw new Error(
+          "scrape_command is unavailable while a scrape or search is in flight (is_scraping is true). Wait for the run to finish.",
+        );
       if (typeof value !== "object" || value === null || Array.isArray(value))
         throw new Error(
           "scrape_command expects an object: { mode?, url?, keyword? }.",
@@ -436,6 +443,10 @@ export function ScraperFloatingWorkspace({
       }
     },
     scrape_page_limit: (value: unknown) => {
+      if (isAnyLoading)
+        throw new Error(
+          "scrape_page_limit is unavailable while a scrape or search is in flight (is_scraping is true). Wait for the run to finish.",
+        );
       if (!isValidPageLimit(value))
         throw new Error(
           `scrape_page_limit expects an integer from ${PAGE_LIMIT_MIN} to ${PAGE_LIMIT_MAX}.`,
