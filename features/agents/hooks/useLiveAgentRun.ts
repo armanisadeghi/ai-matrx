@@ -65,7 +65,10 @@ export function useLiveAgentRun(): UseLiveAgentRun {
   const ownedConversationRef = useRef<string | null>(null);
   // Dismissed = the user closed the display. Masks the handles so consumers'
   // panels disappear immediately, even while the run is still finishing.
+  // The ref twin is what the async run() closure reads at completion time
+  // (state would be stale inside the closure).
   const [dismissed, setDismissed] = useState(false);
+  const dismissedRef = useRef(false);
 
   const releaseOwned = () => {
     const owned = ownedConversationRef.current;
@@ -79,24 +82,35 @@ export function useLiveAgentRun(): UseLiveAgentRun {
     // Stale text from run #1 must never leak into run #2's display.
     releaseOwned();
     setDismissed(false);
-    return headless.run<T>({
-      ...opts,
-      displayMode: "direct",
-      keepInstance: true,
-      onConversationCreated: (cid) => {
-        ownedConversationRef.current = cid;
-        opts.onConversationCreated?.(cid);
-      },
-    });
-    // On failure the instance is deliberately KEPT: the display can show the
-    // partial stream + error until the next run or dismiss.
+    dismissedRef.current = false;
+    try {
+      return await headless.run<T>({
+        ...opts,
+        displayMode: "direct",
+        keepInstance: true,
+        onConversationCreated: (cid) => {
+          ownedConversationRef.current = cid;
+          opts.onConversationCreated?.(cid);
+        },
+      });
+      // On failure the instance is deliberately KEPT: the display can show
+      // the partial stream + error until the next run or dismiss.
+    } finally {
+      // Dismissed mid-run: the mask hid the display; now that the run is
+      // over, actually release the instance instead of leaking it until the
+      // next run or unmount.
+      if (dismissedRef.current) {
+        releaseOwned();
+      }
+    }
   }
 
   const dismiss = () => {
     setDismissed(true);
+    dismissedRef.current = true;
     // Destroying the instance under a LIVE stream would strip the request
-    // rows while the run keeps writing — mid-run we only mask; the owned
-    // instance is reaped on the next run or on unmount.
+    // rows while the run keeps writing — mid-run we only mask; run()'s
+    // finally releases the instance the moment the run settles.
     if (!headless.isRunning) {
       releaseOwned();
       headless.reset();

@@ -78,6 +78,9 @@ export function usePlanGenerate(siteId: string | null) {
 
   useEffect(
     () => () => {
+      // Mark cancelled FIRST so the still-pending start() settles silently
+      // instead of toasting a failure for a teardown the user caused.
+      cancelledRef.current = true;
       abortRef.current?.abort();
       if (adoptedRequestIdRef.current) {
         dispatch(removeRequest(adoptedRequestIdRef.current));
@@ -232,6 +235,9 @@ export function usePlanDeepen(siteId: string | null) {
 
   useEffect(
     () => () => {
+      // Mark cancelled FIRST so the still-pending start() settles silently
+      // instead of toasting a failure for a teardown the user caused.
+      cancelledRef.current = true;
       abortRef.current?.abort();
       if (adoptedRequestIdRef.current) {
         dispatch(removeRequest(adoptedRequestIdRef.current));
