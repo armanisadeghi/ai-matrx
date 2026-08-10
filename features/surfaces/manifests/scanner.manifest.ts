@@ -143,7 +143,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "scan_items",
     label: "Captured page list",
     description:
-      "Every page in the session, in output order, as `{ index, kind, source, file_name, label, status, cropped, rotation, enhance }`. Empty array before the user captures anything. Bindable only — noisy for automatic context on a long scan.",
+      "Every page in the session, in output order, as `{ item_id, index, kind, source, file_name, label, status, cropped, rotation, enhance }`. `item_id` is the page's stable local id — it survives reorder, insert and removal, where `index` does not, so it is the key the `scan_page_labels` write target addresses pages by. Empty array before the user captures anything. Bindable only — noisy for automatic context on a long scan.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 1600,
@@ -155,7 +155,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "scan_page_labels",
     label: "Page labels",
     description:
-      "The user's per-page display names, in output order. Empty strings for pages they have not renamed; empty array before any capture. This is the user's own description of what each page IS.",
+      "The user's per-page display names, in output order. Empty strings for pages they have not renamed; empty array before any capture. This is the user's own description of what each page IS. Positional — to WRITE labels use the `scan_page_labels` target, which is keyed by `scan_items[].item_id` rather than by position.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 300,
@@ -345,85 +345,63 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 /**
- * Write half — what an agent may change on an IN-PROGRESS scan.
+ * Write targets — the NAMING half of the scan, and nothing else.
  *
- * The judgment line here is the Save button. Everything below stages into the
- * live `useScanSession` state (`mode: "draft"`); assembling the PDF and running
- * it into the extractor stays the human's press, and so does anything
- * destructive (remove/discard) or mechanical (crop, rotate, enhance, reorder) —
- * an agent has no view of the pixels and no business flipping those.
+ * The scanner's job is to capture EVIDENCE and hand it to the pipeline. The
+ * two things on it that are not evidence are the two things a user types:
+ * what this pile of paper is called, and what each page IS. Both are
+ * routinely left as a timestamp (`defaultScanLabel()` fills "Scan Aug 10
+ * 2:14 PM" at Save) and as bare camera filenames (`scan-01.jpg`), because
+ * naming twelve pages by hand on a phone is exactly the chore people skip —
+ * so an agent the user has just told what they scanned is strictly better
+ * than the default, and both stage into the review UI where the user sees
+ * them before pressing Save.
  *
- * What it DOES have is the OCR evidence the pipeline produces
- * (`scan_processed_pages` carries a per-page `title` and `kind`) plus
- * `scan_items`. Naming a stack of scanned pages from their content is exactly
- * the "labels an agent drafts better/faster" case: the user photographs twelve
- * pages and the agent turns them into "Invoice p1", "Receipt — Delta", "Signed
- * addendum". That is why the two label targets and the title earn their keep.
+ * Deliberately NOT writable, and why:
+ * - **The captured page images and `scan_items` themselves** — this is the
+ *   EVIDENCE. The photographs are the one artifact in the session that
+ *   cannot be regenerated, and their order, crops, rotations and enhance
+ *   derivatives are the user's judgement about their own documents made
+ *   against pixels an agent on this surface cannot see (the scanner loads
+ *   no extracted text — `full_document_text` / `current_page_text` are
+ *   always empty here). Add, remove, reorder, crop, rotate and enhance all
+ *   stay human.
+ * - `scan_uploading_count` / `scan_error_count` / `scan_all_uploaded` /
+ *   `scan_processing_stage` — live capture and pipeline state. These are
+ *   readouts of what the network is doing, not values anybody authors;
+ *   "writing" them would mean lying about durability to the Save gate.
+ * - `file_id` / `processed_document_id` / `scan_session_id` — identity.
+ * - **Save / export** — assembling the PDF spends real pipeline work and
+ *   navigates the user off the surface. That is a human click.
  *
- * Handlers: `features/pdf/scanner/useScannerWriteHandlers.ts` — ONE module,
- * dispatching `setLabel` / `setItemLabel` from `useScanSession`: the identical
- * setters the title input and the per-page rename control call.
- *
- * SKIN SPLIT — where those handlers are registered is part of the contract.
- * `/tools/scanner` locks ONE of two skins per page load (`ScannerRouteClient`),
- * and they do NOT render the same controls:
- *   - Desktop (`DesktopReview`) renders the title `<input>` and a per-card
- *     "Page name" `<input>`, so both targets stage into controls the user is
- *     already looking at. The handlers register THERE, via
- *     `useSurfaceWriteHandlers`.
- *   - Mobile (`ScannerSurface`) renders NEITHER: page labels have no control
- *     and are not even displayed, and the title exists only inside the
- *     `SaveSheet` that opens at commit time. Staging into that is a draft the
- *     user cannot see or correct when it lands, so the mobile skin registers
- *     NOTHING and `listAgentWritableTargets()` offers nothing there. Giving the
- *     phone skin a rename UI is the prerequisite for changing that, not a
- *     handler.
- * Because a target is only offered where a handler is registered, one manifest
- * serves both skins honestly. Registering with the review also scopes the
- * targets out of the desktop Home view for free, and all three handlers refuse
- * once a save is in flight — `ProcessingView` has replaced the review by then
- * and the PDF's name is already captured.
- *
- * OWNERSHIP: the scanner shares no write target with any other surface. Its
- * parent `matrx-user/pdf-extractor` declares none (it is a read-only viewer
- * surface), so deepest-wins resolution never has to choose between them.
+ * Both targets refuse loudly while any page is still uploading, once a save
+ * is running, and when the session holds no pages — writing into a live
+ * capture or into nothing is the failure mode worth being noisy about.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "scan_title",
     label: "Scan title",
     description:
-      "Replaces the scan's title — the name the assembled PDF is saved under. Pass a short filename-friendly string (a few words, no extension, no slashes); it lands in the title box exactly as sent, and it must be a single line of at most " + SCAN_TITLE_MAX_LENGTH + " characters (tabs and newlines are refused, not stripped). Good titles come from what the pages actually ARE, so read `scan_processed_pages` / `scan_page_labels` first rather than guessing. Staged into the scan session only: the user still presses Save to build the PDF. Refused once a save is in flight — the review screen is gone by then and the PDF's name is already captured.",
+      "Stages a title into the scan's title field — the same field the user types in, and the name the assembled PDF is saved under. Plain single-line string, 1-120 characters, no `/` or `\\` (it becomes a filename). Replaces the current title outright; read `scan_title` first if you mean to keep part of it. Nothing is written to the server — the user still presses Save, and if they never set one, Save falls back to a \"Scan <date> <time>\" timestamp. Refused while any page is still uploading, once a save is running, and when the session has no pages.",
     valueType: "string",
     updatesValue: "scan_title",
     mode: "draft",
     applyPolicy: "ask",
     group: "scan_session",
-    sortOrder: 100,
+    sortOrder: 110,
   },
   {
     name: "scan_page_labels",
     label: "Page labels",
     description:
-      "REPLACES every page label at once. Pass an array of strings, one per captured page, in the SAME output order as `scan_page_labels` and `scan_items` — its length must equal the current page count exactly, or the write is refused. Each entry must be a single line of at most " + SCAN_PAGE_LABEL_MAX_LENGTH + " characters. Use an empty string to leave a page unlabeled; nothing is merged, so read `scan_page_labels` first and re-send any label you mean to keep. Use `scan_page_label` instead when renaming a single page. Staged into the scan session; the user still presses Save. Refused once a save is in flight.",
-    valueType: "array",
-    updatesValue: "scan_page_labels",
-    mode: "draft",
-    applyPolicy: "ask",
-    group: "scan_pages",
-    sortOrder: 200,
-  },
-  {
-    name: "scan_page_label",
-    label: "Single page label",
-    description:
-      'Renames ONE page and leaves every other label untouched. Pass an object `{ "index": <0-based position in `scan_items`>, "label": "<new name>" }` — `index` must be an existing page and `label` a single-line string of at most ' + SCAN_PAGE_LABEL_MAX_LENGTH + ' characters (empty string clears that page\'s label). Use this for a one-page correction; use `scan_page_labels` when labelling the whole scan in one go. Staged into the scan session; the user still presses Save. Refused once a save is in flight.',
+      'Renames captured pages — the per-page display name on each review tile, the same field the rename control writes. Value is a PARTIAL object map keyed by the page\'s `item_id`, e.g. `{"9f3c…": "Signature page", "1a20…": "Exhibit B"}`. Take the ids from `scan_items[].item_id`; do NOT pass a positional array, because positions shift on reorder and insert while ids never do. Only the pages you name are touched — the rest keep their labels. Every key must be an `item_id` present in the current session, and every value a single-line string of at most 120 characters; an empty string clears that page back to its filename. Staged into the review list only — the user still presses Save. Refused while any page is still uploading, once a save is running, and when the session has no pages.',
     valueType: "object",
     updatesValue: "scan_page_labels",
     mode: "draft",
     applyPolicy: "ask",
     group: "scan_pages",
-    sortOrder: 210,
+    sortOrder: 250,
   },
 ];
 
@@ -487,6 +465,7 @@ text values are always empty here. \`scan_raw_preview\` is the only text it sees
       },
     ],
   ),
+  writeTargets,
 };
 
 /**
@@ -514,6 +493,7 @@ export function createScannerScope(values: {
   scan_error_count: number;
   scan_all_uploaded: boolean;
   scan_items: Array<{
+    item_id: string;
     index: number;
     kind: string;
     source: string;
