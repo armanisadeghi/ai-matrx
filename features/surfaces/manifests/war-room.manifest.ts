@@ -24,6 +24,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -340,6 +341,93 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the mounted War
+ * Room. Handlers are registered by `WarRoomShell`'s SurfaceRuntimeProvider
+ * (`useWarRoomWriteHandlers`) and run the SAME thunks the user's own controls
+ * dispatch: `updateRoomIdentity` (the RoomIdentityButton popover),
+ * `renameThread` (`useThreadActions.rename`), and `createThread` (QuickAdd).
+ *
+ * WHY THESE FOUR — the judgment bar:
+ *  • `room_name` / `room_description` are authored copy. A room accumulates
+ *    threads faster than its owner renames it; "read my six threads and name
+ *    this room / write me a description" is the canonical agent job, and both
+ *    have exact 1:1 read twins (`room_name`, `room_description`) so the agent
+ *    can read before it replaces.
+ *  • `active_thread_title` is the same authored-label class one level down,
+ *    with a clean read twin (`active_thread_title`). Naming the thread you are
+ *    standing in is a thing a user actually asks for.
+ *  • `add_threads` is DECOMPOSITION — the `add_subtasks` shape from the tasks
+ *    surface. Breaking a room's subject into parallel workstreams is exactly
+ *    what the room agent is positioned to do, and it lands through the same
+ *    `createThread` thunk (canvas anchor, appended position, default note /
+ *    audio / conversation provisioning) that QuickAddThread uses.
+ *
+ * DELIBERATELY EXCLUDED: `room_id` / `room_project_id` / `room_organization_id`
+ * (identity + ownership + the RLS basis — never an agent's call);
+ * `room_resources` and the assignment edges (association plumbing, not authored
+ * content); `is_recording` (a live hardware capture); thread deletion, parking,
+ * pinning and hiding (destructive or purely the user's filing preference); and
+ * `view_mode` / `density` / `projected_tab` (mechanical view toggles nobody
+ * would ask an agent to flip).
+ *
+ * MODE — every target is `mode: "entity"`, because the War Room has NO staging
+ * buffer: the identity popover and the thread-title input both persist on
+ * commit through the thunks above, so a "draft" target would have no editor
+ * state to stage into and no read twin that reflected it. Every target is
+ * therefore `applyPolicy: "ask"` — the confirm dialog IS the review step that a
+ * draft mode would otherwise provide.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "room_name",
+    label: "Room name",
+    description:
+      "Renames this War Room immediately through the same save the room's identity popover uses (persisted, no separate save step). Value: a non-empty plain-text title string, no markdown. Replaces the current name — read room_name first if you mean to refine it.",
+    valueType: "string",
+    updatesValue: "room_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "room_identity",
+    sortOrder: 100,
+  },
+  {
+    name: "room_description",
+    label: "Room description",
+    description:
+      "Writes the room's free-text description immediately through the same save the room's identity popover uses (persisted, no separate save step). Value: a plain-text string (a short paragraph — what this room is for), or an empty string to clear it. Replaces the FULL description — read room_description first and include anything you want kept.",
+    valueType: "string",
+    updatesValue: "room_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "room_identity",
+    sortOrder: 110,
+  },
+  {
+    name: "active_thread_title",
+    label: "Staged thread title",
+    description:
+      "Retitles the thread currently on the Stage (the one active_thread_id names) immediately through the same rename the thread header uses (persisted, no separate save step). Value: a non-empty plain-text title string. Refused when the room has no staged thread — stage one first. Only ever touches the staged thread; to retitle a different one, ask the user to stage it.",
+    valueType: "string",
+    updatesValue: "active_thread_title",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "room_threads",
+    sortOrder: 200,
+  },
+  {
+    name: "add_threads",
+    label: "Add threads",
+    description:
+      "Creates new threads in this room immediately through the canonical create path (canvas-anchored, appended after the existing threads, each provisioned with its default note / audio / conversation) — the same thing the room's Add-thread card does. Value: a non-empty array of thread title strings, in the order they should appear. Appends only — it never renames or removes an existing thread.",
+    valueType: "array",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "room_threads",
+    sortOrder: 210,
+  },
+];
+
 export const warRoomManifest: SurfaceManifest = {
   surfaceName: "matrx-user/war-room",
   readiness: "verified",
@@ -370,6 +458,7 @@ The cockpit view values (view_mode, projected_tab, density) describe how the use
       sortOrder: 10,
     },
   ],
+  writeTargets,
   configNamespaces: [
     {
       namespace: "dictionary",
