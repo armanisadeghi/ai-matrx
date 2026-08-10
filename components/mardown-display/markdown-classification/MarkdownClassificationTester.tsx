@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -15,6 +15,7 @@ import { processMarkdownForRendering } from "./markdown-processor-util";
 import { AstNode } from "./processors/types";
 import { PROCESSOR_CONFIG_TYPE_MAP } from "./processors/processor-registry";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarkdownEditorScope } from "@/features/surfaces/manifests/markdown-editor.manifest";
 
 
@@ -209,11 +210,57 @@ const MarkdownClassificationTester = ({
             ast: ast ?? undefined,
         });
 
+    // Surface write handlers — the write half of the 360 loop (targets are
+    // declared in `markdown-editor.manifest.ts`). Both land through the SAME
+    // `setMarkdown` that `MarkdownInput`'s `onMarkdownChange` calls for the
+    // user's own keystrokes, so the preview, the AST and the processing
+    // pipeline re-derive exactly as they do while typing. No parallel write
+    // path, nothing persisted.
+    const getWriteHandlers = useCallback((): SurfaceWriteHandlers => {
+        // The processing effect has no cancellation guard: if the source moves
+        // while a run is in flight, the older run can resolve last and leave
+        // stale `ast`/`processedData` sitting against the newer text. Refuse
+        // rather than race it.
+        const assertNotProcessing = (target: string) => {
+            if (isLoading)
+                throw new Error(
+                    `${target} cannot be applied while the markdown is being processed. Wait for the current run to finish and try again.`,
+                );
+        };
+        return {
+            markdown_content: (value: unknown) => {
+                assertNotProcessing("markdown_content");
+                if (typeof value !== "string")
+                    throw new Error(
+                        "markdown_content expects a string — the FULL markdown source, which replaces the editor pane.",
+                    );
+                if (!value.trim())
+                    throw new Error(
+                        "markdown_content expects non-empty markdown. Emptying the editor is a human action.",
+                    );
+                setMarkdown(value);
+            },
+            append_markdown_content: (value: unknown) => {
+                assertNotProcessing("append_markdown_content");
+                if (typeof value !== "string")
+                    throw new Error(
+                        "append_markdown_content expects a string — only the new markdown to add to the end of the source.",
+                    );
+                if (!value.trim())
+                    throw new Error(
+                        "append_markdown_content expects non-empty markdown to add.",
+                    );
+                setMarkdown((prev) => (prev.trim() ? `${prev}\n\n${value}` : value));
+            },
+        };
+    }, [isLoading]);
+
     return (
         <SurfaceRuntimeProvider
             surfaceName="matrx-user/markdown-editor"
             getScope={getSurfaceScope}
             isEditable
+            getWriteHandlers={getWriteHandlers}
         >
         <div className="flex flex-col h-full overflow-hidden bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             {/* Controls */}

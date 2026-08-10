@@ -17,6 +17,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -129,6 +130,88 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the Markdown
+ * Editor.
+ *
+ * The judgment bar, applied honestly. This surface has exactly ONE authored
+ * field and seven pipeline readouts, and the split is not close:
+ *
+ * YES — `content`. The markdown source IS the surface: everything to the
+ * right of the divider is derived from it. Drafting, restructuring, tightening
+ * and extending a document is the textbook agent-drafts-better case, and on a
+ * CLASSIFICATION tester it is the whole point of asking an agent at all
+ * ("reshape this profile so the candidate-profile processor parses it
+ * cleanly"). It earns BOTH write shapes — full replacement and append — for
+ * the same reason `agent-builder` splits `system_instruction` /
+ * `append_system_instruction`: adding a section to a 10KB document should not
+ * cost 10KB of re-sent text.
+ *
+ * NO — and each for its own reason, not by omission:
+ *
+ * - `coordinator_id` is the one that looks writable and is actively
+ *   DESTRUCTIVE. Selecting a coordinator in `MarkdownClassificationTester`
+ *   runs an effect that calls `setMarkdown(markdownSamples[...])` — it
+ *   overwrites the editor with that coordinator's first canned sample. An
+ *   agent "choosing the coordinator that suits this document" would delete
+ *   the document. Never offered.
+ * - `sample_id` loads a canned fixture over the editor. Same destruction, and
+ *   picking which fixture to look at is identity, not drafting.
+ * - `processor_id` and `config_id` are pipeline internals that the UI itself
+ *   derives: the coordinator effect sets the processor, and a second effect
+ *   resets the config to the first one matching
+ *   `PROCESSOR_CONFIG_TYPE_MAP[processor]`. An agent write to either would be
+ *   clobbered by the next effect pass. Mechanical, and not stable enough to
+ *   promise.
+ * - `view_id` is the genuine borderline — it is the analogue of
+ *   `markdown-studio`'s `view_mode`, which IS declared. It loses here on two
+ *   counts the studio does not have: it only chooses which renderer draws
+ *   inside ONE tab of the right pane (not a mode the whole page is in), and
+ *   the coordinator effect resets it to `getDefaultViewId(coordinatorId)`
+ *   underneath any agent that sets it. "Switch the structured-view renderer"
+ *   is a toggle a developer flips by hand while testing; nobody asks an agent
+ *   for it. Excluded deliberately.
+ * - `processed_data` and `ast` are parser OUTPUT. They have no write path and
+ *   must not get one — an agent moves them by writing `content` and letting
+ *   the pipeline re-run. That IS the evidence loop on this surface.
+ *
+ * Both targets are `mode: "draft"`: the value lands through the SAME
+ * `setMarkdown` that `MarkdownInput`'s `onMarkdownChange` calls for the user's
+ * own keystrokes, so the preview, the AST and the processed output re-derive
+ * exactly as they do while typing, and nothing is persisted anywhere. Handlers
+ * live on the tester's own provider in
+ * `components/mardown-display/markdown-classification/MarkdownClassificationTester.tsx`
+ * and refuse while a processing run is in flight — that effect has no
+ * cancellation guard, so a write landing mid-run lets the older run's
+ * `ast`/`processed_data` resolve last and sit against the newer text.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "markdown_content",
+    label: "Primary content",
+    description:
+      "REPLACES the entire markdown source in the editor pane with the string you pass, exactly as written; the live preview, the AST and the processing pipeline re-parse it immediately. This is a full replacement, not a merge: read `content` first and include everything you want kept, or use `append_markdown_content` when you only mean to add. Must be non-empty markdown — emptying the editor is a human action. Nothing is saved anywhere; the text is staged in the editor for the user to review.",
+    valueType: "string",
+    updatesValue: "content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "editor_content",
+    sortOrder: 100,
+  },
+  {
+    name: "append_markdown_content",
+    label: "Added content",
+    description:
+      "APPENDS the string you pass to the end of the current markdown source, separated by a blank line. Nothing already in the editor is touched or re-sent — pass ONLY the new text. Use this to add a section, an example or a closing block; use `markdown_content` when the whole document is being rewritten. Must be non-empty markdown. Nothing is saved anywhere; the text is staged in the editor for the user to review.",
+    valueType: "string",
+    updatesValue: "content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "editor_content",
+    sortOrder: 110,
+  },
+];
+
 export const markdownEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/markdown-editor",
   readiness: "verified",
@@ -142,6 +225,7 @@ You are on the Markdown Editor — a split-pane markdown workbench in a floating
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**
