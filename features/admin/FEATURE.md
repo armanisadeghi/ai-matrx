@@ -160,6 +160,21 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-08-10` — Claude: made the Applications Configuration editor
+  agent-writable through the surfaces seam. `matrx-admin/applications` declares
+  ONE `mode:"draft"` / `applyPolicy:"ask"` write target, `app_notice`, staging
+  the operator broadcast (`AppConfigV1.notice`) into the editor draft;
+  validation lives in the pure, unit-tested
+  `config/notice-write-targets.ts` (level checked against the canonical
+  `NOTICE_LEVELS`, `title`/`body` required, `url` through `httpsUrlSchema`,
+  forward-compat `extras` preserved), and the handler registers from
+  `AppConfigEditor` via `useSurfaceWriteHandlers` because that component owns
+  the draft. Staging only — the admin still saves through the same
+  validate → diff-confirm → `admin_update_app_config` RPC as a hand edit. The
+  server URLs, `min_supported_app_version`, flags, credential maintenance and
+  catalog artifact pinning deliberately have NO write path: they are
+  infrastructure and governance, not authored content. New read value
+  `config_editor_notice` emits the SAVED notice as the target's read twin.
 - `2026-08-07` — Codex: extended the existing Applications Configuration
   editor with generic credential-lifecycle metadata and wired global
   super-admin expiry reminders to its deep-linked Manage flow.
