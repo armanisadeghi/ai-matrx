@@ -57,6 +57,48 @@ Model tiers used (keep): cheap `bd68e0a8…` Gemini 3.1 Flash Lite · mid `97920
 
 ---
 
+## STATUS (2026-08-10, this session) — Phases 1-3 SHIPPED, read before continuing
+
+- **Phase 1 DONE (live, FE v0.4.366):** `/expertise` entity-list home (mine/orgs/public),
+  `/expertise/[id]` rule editor (plain-language add/edit/retire, version bump w/ optimistic lock),
+  `/expertise/[id]/desks` (drift flags, run links), `/expertise/admin`. Sidebar + entity registry +
+  peek (RegistryPeek) wired; `shareable_resource_registry.url_path_template` → `/expertise/{id}`.
+- **Phase 2 DONE (FE live v0.4.369; server merged to aidream main, ⚠️ NOT DEPLOYED — needs the next
+  aidream `./scripts/release.sh` run, this container had no Coolify/DB creds):**
+  `aidream/services/expertise_desks/` — POST `/api/expertise-desks/compile`, both shapes (edit +
+  generate) generalized for ANY pack/sections, generic Pack Auditor reused (re-created if missing),
+  `compiled_from_pack`+`pack_version` stamps, typed `desk_compile_*` events, `expertise`
+  SOURCE_FEATURES slug. FE "Create a desk" dialog streams it.
+- **Phase 3 DONE (FE live v0.4.371; server merged, same deploy note):**
+  `aidream/services/expertise_ingest/` — POST `/api/expertise-desks/ingest` (text lane): chunk →
+  llm_to_pydantic distill per chunk → dedupe (cross-chunk + vs pack) → VERBATIM quote verification
+  (whitespace/curly-quote normalization; failures flagged `source_ref.quote_unverified`, never kept
+  as anchors) → draft-only append with `source_ref` + version CAS. FE "From a source" dialog.
+- **Phase 4:** build-by-hand shipped with Phase 1 (RuleEditorDialog IS the plain-language form);
+  "talk it out" covered by Phase 3 (paste/transcribe then ingest). REMAINING: a live back-and-forth
+  interview agent (conversation → draft rules; cleanest via an output_directive shape appending
+  draft principles).
+- **Phase 5:** pack `arman-seo-method` (id 5d353449-5a2c-4034-ac00-97b5defb23ca) scaffolded as a
+  DRAFT owned by arman@titaniumsuccess.com (personal org, sections R/S/F). Prior-override hardening
+  is IN the compiled prompts (PRIOR_OVERRIDE_CLAUSE + mandatory "Conflicts With Common Practice"
+  Chief section + auditor rule 6). REMAINING: update the LIVE generic Pack Auditor's prompt (the MCP
+  account here lacked admin; the compile service's canonical prompt in
+  `aidream/services/expertise_desks/prompts.py::PACK_AUDITOR_PROMPT` is the text to apply), fill the
+  SEO pack with Arman, compile, run, judge.
+- **Phase 6 remaining:** ORM model regen was ALREADY DONE (db/models/platform.py::ExpertisePack —
+  strike that item). Still open: structured outputs (json_schema) for auditor/editor/maker; pack
+  version snapshots (diff view); run-history surface on the desks page (workflow.run/node_outcome);
+  file/PDF ingest via content_processing + page_extraction jobs (deliberately NOT a parallel
+  pipeline — see aidream/services/expertise_ingest/FEATURE.md); Hopkins desk recompile with the
+  generate shape (one click on /expertise once aidream deploys); regen FE api-types/stream-events
+  (`pnpm sync-types`) after the aidream release, then drop the two path casts + switch
+  listConfig sourceFeature "agents-other" → "expertise".
+- **First actions for the next agent:** ① run aidream `./scripts/release.sh` (deploys compile+ingest),
+  ② verify both dialogs end-to-end on aimatrx.com/expertise, ③ recompile Hopkins via the UI,
+  ④ `pnpm sync-types` in matrx-frontend and remove the casts.
+
+---
+
 ## The build plan — 6 phases, in order
 
 ### Phase 1 — THE HOME: `/expertise` in the main app (ai-matrx) 【biggest gap, do first】
