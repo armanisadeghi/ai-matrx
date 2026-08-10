@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 319 active entity tokens. A token here is FK-valid for
+// 321 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -98,6 +98,8 @@ export type EntityTypeToken =
   | "code_file"
   | "code_folder"
   | "code_repository"
+  | "coding_session"
+  | "coding_session_entry"
   | "comment"
   | "comparison_set"
   | "component_group"
@@ -478,6 +480,7 @@ export type ComponentEntityToken =
   | "assessment_item"
   | "canvas_item_state"
   | "cmp_entry"
+  | "coding_session_entry"
   | "component_group"
   | "content_ir_kind_component"
   | "content_ir_kind_component_incident"
@@ -641,6 +644,8 @@ export type ScopeableEntityToken =
   | "code_file"
   | "code_folder"
   | "code_repository"
+  | "coding_session"
+  | "coding_session_entry"
   | "comment"
   | "comparison_set"
   | "component_group"
@@ -980,6 +985,8 @@ export const ENTITY_TYPE_METADATA = {
   "code_file": { token: "code_file", schema: "code", table: "code_files", label: "Code File", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "code_folder": { token: "code_folder", schema: "code", table: "code_file_folders", label: "Code Folder", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "code_repository": { token: "code_repository", schema: "code", table: "code_repositories", label: "Code Repository", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
+  "coding_session": { token: "coding_session", schema: "chat", table: "coding_session", label: "Coding Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "coding_session_entry": { token: "coding_session_entry", schema: "chat", table: "coding_session_entry", label: "Coding Session Entry", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "comment": { token: "comment", schema: "platform", table: "comments", label: "Comment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "comparison_set": { token: "comparison_set", schema: "agent", table: "cmp_comparison_sets", label: "Comparison Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "component_group": { token: "component_group", schema: "public", table: "component_groups", label: "Component Group", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1303,6 +1310,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "code_file",
   "code_folder",
   "code_repository",
+  "coding_session",
+  "coding_session_entry",
   "comment",
   "comparison_set",
   "component_group",
