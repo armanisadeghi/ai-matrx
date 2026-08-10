@@ -29,6 +29,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -384,6 +385,89 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half — the run's INPUTS, and only the inputs.
+ *
+ * The judgment calls behind this list, written down because the surface is
+ * unusually easy to over-declare:
+ *
+ * 1. **Sending the message / executing the run is NOT a target.** The
+ *    `podcast-studio` and `image-generate` precedent applies with extra force
+ *    here: a run spends real money and real time, and the human press is the
+ *    gate. Sharper still on THIS surface — the caller is itself a running
+ *    agent, so a `send_message` target would let an agent start another agent
+ *    run unattended, recursively. Staging the composer is the whole offer;
+ *    the user presses Send.
+ *
+ * 2. **The agent DEFINITION is not writable from here.** `agent_system_instruction`,
+ *    `agent_model_id`, `agent_tools`, `agent_variable_definitions` are read-only
+ *    evidence on this surface — `matrx-user/agent-builder` already owns writing
+ *    them, and duplicating its targets here would give two surfaces two paths to
+ *    the same record.
+ *
+ * 3. **Model OUTPUT is never writable.** `agent_response`, `agent_reasoning`,
+ *    `all_messages`, `tool_calls`, `completion_stats` are the transcript. An
+ *    agent editing the transcript it is being judged on is the one write this
+ *    surface must never offer. Live status (`is_streaming`, `is_executing`,
+ *    `error_message`) is observed, not set.
+ *
+ * 4. **`context_entries` did NOT earn a target.** Filling a context slot means
+ *    naming a declared slot key, and this surface does not expose the agent's
+ *    declared context slots as a value — the vocabulary is not in scope. That
+ *    is exactly the `node_primary_keyword_id` case: an agent cannot honestly
+ *    choose from a list it cannot see, so no declaration.
+ *
+ * 5. **`variable_values` DID earn one, and the vocabulary test is why.**
+ *    `agent_variable_definitions` IS a declared value, and each entry carries
+ *    `customComponent.options` (the allowed values), `required`, `defaultValue`
+ *    and `helpText`. The agent can read the enum before it writes. Where the
+ *    vocabulary genuinely is NOT visible — a Structured-List-bound variable
+ *    (options hydrate from a list resource that never reaches scope), a
+ *    scope-bound variable (the server resolves it authoritatively), or a media
+ *    variable (the value is a MediaRef, not text) — the handler refuses that
+ *    name rather than guessing.
+ *
+ * Two targets, which clears the skill's ~2-YES bar: together they are the
+ * entire request half of a run (the message, and the variables that message
+ * runs with), and they are the only page state a user can still review and
+ * undo before anything is spent.
+ *
+ * Both are `draft` / `applyPolicy: "ask"` and both REFUSE while the run is in
+ * flight (`is_streaming` / `is_executing`) — not out of caution but because
+ * mid-run writes do not survive: the stream dispatches `resetUserVariableValues`
+ * on completion, and a composer staged mid-run gets queued or steered into the
+ * running turn by the next Enter rather than sent as a fresh request.
+ *
+ * Handlers are registered by `AgentRunnerPage` on its `SurfaceRuntimeProvider`
+ * (`features/agents/components/run/AgentRunnerPage.tsx`).
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "user_input_draft",
+    label: "User input draft",
+    description:
+      "Stages text into the run's message box, exactly as if the user had typed it — it is NOT sent. Value: a non-empty string, which REPLACES the whole composer contents (to add to what is there, read `user_input_draft` first and include it). The user reviews it in the composer and presses Send themselves; sending is never an agent action. Refused while the run is streaming or executing.",
+    valueType: "string",
+    updatesValue: "user_input_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "run_request",
+    sortOrder: 355,
+  },
+  {
+    name: "variable_values",
+    label: "Variable values",
+    description:
+      "Fills the agent's declared variables for the next turn. Value: an object of { variableName: value } — a PARTIAL map that merges, so variables you omit keep their current value. Every name must be one the agent declares: read `agent_variable_definitions` first and use its `name`s. Values must match that definition — when it carries `customComponent.options` and `allowOther` is not true, the value must be one of those options (or an array drawn from them for multi-select); otherwise a string, number, boolean, null, or array of strings. Variables bound to a context slot, bound to a Structured List, or of a media type (image/audio/video/youtube/document) are REFUSED — their values are resolved elsewhere and their vocabulary is not visible here. Staged into the run's variable panel for the user to review; nothing is sent. Refused while the run is streaming or executing.",
+    valueType: "object",
+    updatesValue: "variable_values",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "run_request",
+    sortOrder: 360,
+  },
+];
+
 export const agentRunManifest: SurfaceManifest = {
   surfaceName: "matrx-user/agent-run",
   readiness: "verified",
@@ -411,6 +495,7 @@ against what it actually produced, and cite specific turns.
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 export function createAgentRunScope(values: {
