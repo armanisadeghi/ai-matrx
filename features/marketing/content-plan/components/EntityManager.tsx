@@ -233,7 +233,7 @@ export function EntityManager({
         </div>
 
         {/* Live curator output — the agent's stream renders while it works. */}
-        {agents.live.conversationId || agents.live.isRunning ? (
+        {agents.live.hasLiveRun ? (
           <div className="mt-2">
             <LiveRunDisplay
               conversationId={agents.live.conversationId}

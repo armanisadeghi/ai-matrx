@@ -1755,7 +1755,7 @@ export function SetupView() {
       {/* Live AI output for every Setup agent run (shape, names, keywords,
           entities, review, brief) — the model's stream renders as it arrives,
           never a bare spinner. */}
-      {agents.live.conversationId || agents.live.isRunning ? (
+      {agents.live.hasLiveRun ? (
         <div className="border-b border-border px-3 py-2">
           <LiveRunDisplay
             conversationId={agents.live.conversationId}

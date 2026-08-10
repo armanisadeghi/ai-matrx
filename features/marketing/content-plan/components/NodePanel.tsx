@@ -355,7 +355,7 @@ export function NodePanel({
       {/* Live AI output — the model's stream renders here while it works
           (never a bare spinner). Draft brief is a client slot run; Deepen is
           the server pipeline's adopted stream. */}
-      {briefWriter.live.conversationId || briefWriter.live.isRunning ? (
+      {briefWriter.live.hasLiveRun ? (
         <div className="border-b border-border px-4 py-2">
           <LiveRunDisplay
             conversationId={briefWriter.live.conversationId}

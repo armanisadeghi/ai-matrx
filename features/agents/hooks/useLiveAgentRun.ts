@@ -20,7 +20,7 @@
  * live rendering is additive, nothing about the data contract changes.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import {
@@ -42,7 +42,18 @@ export interface UseLiveAgentRun {
   conversationId: string | null;
   /** Live request id (null until the stream connects). */
   activeRequestId: string | null;
-  /** Tear down the finished run's instance and clear transient state. */
+  /**
+   * Gate your `<LiveRunDisplay>` mount on THIS, never on
+   * `conversationId || isRunning` — it goes false the instant the user
+   * dismisses, including mid-run (where `isRunning` stays true until the
+   * promise settles).
+   */
+  hasLiveRun: boolean;
+  /**
+   * Hide the display. Mid-run this only masks (the run continues and its
+   * result still resolves); the instance is destroyed once it is safe —
+   * at the next run, on unmount, or immediately when nothing is running.
+   */
   dismiss: () => void;
 }
 
@@ -52,6 +63,9 @@ export function useLiveAgentRun(): UseLiveAgentRun {
   // The conversation whose instance THIS hook owns (kept alive for the live
   // display; destroyed on re-run / dismiss / unmount).
   const ownedConversationRef = useRef<string | null>(null);
+  // Dismissed = the user closed the display. Masks the handles so consumers'
+  // panels disappear immediately, even while the run is still finishing.
+  const [dismissed, setDismissed] = useState(false);
 
   const releaseOwned = () => {
     const owned = ownedConversationRef.current;
@@ -64,6 +78,7 @@ export function useLiveAgentRun(): UseLiveAgentRun {
   async function run<T = unknown>(opts: LiveAgentRunOptions<T>): Promise<T> {
     // Stale text from run #1 must never leak into run #2's display.
     releaseOwned();
+    setDismissed(false);
     return headless.run<T>({
       ...opts,
       displayMode: "direct",
@@ -78,8 +93,14 @@ export function useLiveAgentRun(): UseLiveAgentRun {
   }
 
   const dismiss = () => {
-    releaseOwned();
-    headless.reset();
+    setDismissed(true);
+    // Destroying the instance under a LIVE stream would strip the request
+    // rows while the run keeps writing — mid-run we only mask; the owned
+    // instance is reaped on the next run or on unmount.
+    if (!headless.isRunning) {
+      releaseOwned();
+      headless.reset();
+    }
   };
 
   useEffect(
@@ -98,7 +119,9 @@ export function useLiveAgentRun(): UseLiveAgentRun {
     dismiss,
     isRunning: headless.isRunning,
     error: headless.error,
-    conversationId: headless.conversationId,
-    activeRequestId: headless.activeRequestId,
+    conversationId: dismissed ? null : headless.conversationId,
+    activeRequestId: dismissed ? null : headless.activeRequestId,
+    hasLiveRun:
+      !dismissed && (headless.conversationId !== null || headless.isRunning),
   };
 }

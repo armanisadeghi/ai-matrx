@@ -17,7 +17,7 @@
  * settle the run. The tree ALWAYS refetches on end — even after an error —
  * because the server may have applied a partial tree before failing.
  */
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
@@ -70,8 +70,22 @@ export function usePlanGenerate(siteId: string | null) {
   // refetch storm (the post-stream invalidation below is the backstop).
   const lastInvalidate = useRef(0);
   // Adopted rows have no owning instance — drop the previous run's row before
-  // starting a new one (the keyword-research adopter's proven pattern).
+  // starting a new one (the keyword-research adopter's proven pattern), on
+  // reset, and on unmount (nothing else reaps them).
   const adoptedRequestIdRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
+
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+    },
+    [dispatch],
+  );
 
   const start = useCallback(
     async (options?: {
@@ -83,6 +97,7 @@ export function usePlanGenerate(siteId: string | null) {
     }) => {
       if (!siteId || inFlight.current) return;
       inFlight.current = true;
+      cancelledRef.current = false;
       setRun({ status: "running", stage: "Starting the generator…" });
       let streamFailure: string | null = null;
 
@@ -91,6 +106,7 @@ export function usePlanGenerate(siteId: string | null) {
         adoptedRequestIdRef.current = null;
       }
       const streamAbort = new AbortController();
+      abortRef.current = streamAbort;
       // The stream is ADOPTED into the canonical execution slice so the
       // model's own tokens render live (`<LiveRunDisplay requestId>`); this
       // hook still sees every event for its typed progress + refetch logic.
@@ -143,9 +159,17 @@ export function usePlanGenerate(siteId: string | null) {
       );
 
       inFlight.current = false;
+      abortRef.current = null;
       // Whatever happened, the server may have written nodes — refetch.
       void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
       void queryClient.invalidateQueries({ queryKey: planKeys.siteStats() });
+
+      // A user dismissal aborted the stream deliberately — settle silently
+      // (no error toast for an action the user chose).
+      if (cancelledRef.current) {
+        cancelledRef.current = false;
+        return;
+      }
 
       if (result.error) {
         const explanation = describeBackendFailure(
@@ -174,7 +198,22 @@ export function usePlanGenerate(siteId: string | null) {
     [dispatch, queryClient, siteId],
   );
 
-  return { run, start, reset: () => setRun(IDLE) };
+  const reset = useCallback(() => {
+    // Dismiss during a run: abort the fetch so the reader is drained and
+    // `inFlight` clears when callApi returns (the server finishes regardless —
+    // detach-on-disconnect).
+    if (inFlight.current) {
+      cancelledRef.current = true;
+      abortRef.current?.abort();
+    }
+    if (adoptedRequestIdRef.current) {
+      dispatch(removeRequest(adoptedRequestIdRef.current));
+      adoptedRequestIdRef.current = null;
+    }
+    setRun(IDLE);
+  }, [dispatch]);
+
+  return { run, start, reset };
 }
 
 /** What NodePanel receives — the workbench owns the hook instance. */
@@ -188,11 +227,25 @@ export function usePlanDeepen(siteId: string | null) {
   const [nodeId, setNodeId] = useState<string | null>(null);
   const inFlight = useRef(false);
   const adoptedRequestIdRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
+
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+    },
+    [dispatch],
+  );
 
   const start = useCallback(
     async (targetNodeId: string) => {
       if (!siteId || inFlight.current) return;
       inFlight.current = true;
+      cancelledRef.current = false;
       setNodeId(targetNodeId);
       setRun({ status: "running", stage: "Deepening (brief + sources)…" });
       let streamFailure: string | null = null;
@@ -202,6 +255,7 @@ export function usePlanDeepen(siteId: string | null) {
         adoptedRequestIdRef.current = null;
       }
       const streamAbort = new AbortController();
+      abortRef.current = streamAbort;
       const consumeStream = dispatch(
         adoptForeignStream({
           onAdopted: ({ requestId }) => {
@@ -233,10 +287,18 @@ export function usePlanDeepen(siteId: string | null) {
       );
 
       inFlight.current = false;
+      abortRef.current = null;
+      // The server may have written the brief regardless of what happened to
+      // the stream — always refetch.
       void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
       void queryClient.invalidateQueries({
         queryKey: planKeys.nodeEdges(targetNodeId),
       });
+
+      if (cancelledRef.current) {
+        cancelledRef.current = false;
+        return;
+      }
 
       if (result.error) {
         const explanation = describeBackendFailure(
@@ -265,7 +327,23 @@ export function usePlanDeepen(siteId: string | null) {
     [dispatch, queryClient, siteId],
   );
 
-  return { run, nodeId, start, reset: () => setRun(IDLE) };
+  const reset = useCallback(() => {
+    // Dismiss mid-run: abort the outbound stream (server work continues and
+    // persists — detach-on-disconnect) so `inFlight` clears and the next
+    // deepen can start immediately; settle silently, no failure toast.
+    if (inFlight.current) {
+      cancelledRef.current = true;
+      abortRef.current?.abort();
+    }
+    if (adoptedRequestIdRef.current) {
+      dispatch(removeRequest(adoptedRequestIdRef.current));
+      adoptedRequestIdRef.current = null;
+    }
+    setNodeId(null);
+    setRun(IDLE);
+  }, [dispatch]);
+
+  return { run, nodeId, start, reset };
 }
 
 // ── bulk deepen (handoff item: fan the SAME deepen over many pages) ─────────
@@ -313,6 +391,16 @@ export function usePlanBulkDeepen(siteId: string | null) {
   const inFlight = useRef(false);
   const cancelRef = useRef(false);
   const adoptedRequestIdRef = useRef<string | null>(null);
+
+  useEffect(
+    () => () => {
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+    },
+    [dispatch],
+  );
 
   const start = useCallback(
     async (targets: Array<{ id: string; route: string }>) => {
@@ -419,6 +507,12 @@ export function usePlanBulkDeepen(siteId: string | null) {
     cancel: () => {
       cancelRef.current = true;
     },
-    reset: () => setRun(BULK_IDLE),
+    reset: () => {
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+      setRun(BULK_IDLE);
+    },
   };
 }

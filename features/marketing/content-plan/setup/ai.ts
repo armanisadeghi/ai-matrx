@@ -705,6 +705,7 @@ export function useSetupAgents(siteId: string | null) {
     activeRequestId,
     dismiss: dismissLive,
     isRunning: liveRunning,
+    hasLiveRun,
   } = useLiveAgentRun();
   const [liveLabel, setLiveLabel] = useState<string | null>(null);
   const [shapeBusy, setShapeBusy] = useState(false);
@@ -895,6 +896,7 @@ export function useSetupAgents(siteId: string | null) {
       activeRequestId,
       label: liveLabel,
       isRunning: liveRunning,
+      hasLiveRun,
       dismiss: dismissLiveRun,
     },
     recommendShape,
