@@ -23,8 +23,10 @@ import {
 import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
 
-export type SaveMode = "create" | "update";
-export type UpdateMethod = "append" | "overwrite";
+// Vocabulary lives in a pure module so the surface manifest can import the
+// same constants this hook validates against (see quickNoteSaveVocabulary).
+export type { SaveMode, UpdateMethod } from "./quickNoteSaveVocabulary";
+import type { SaveMode, UpdateMethod } from "./quickNoteSaveVocabulary";
 
 export interface UseQuickNoteSaveArgs {
   initialContent: string;

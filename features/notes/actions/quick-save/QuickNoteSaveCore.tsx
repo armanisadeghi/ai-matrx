@@ -46,6 +46,8 @@ import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindo
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import type { Note } from "@/features/notes/types";
 import { useQuickNoteSave } from "./useQuickNoteSave";
+import { NOTE_DRAFT_FIELDS } from "./quickNoteSaveVocabulary";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CreateFolderDialog } from "@/features/notes/components/CreateFolderDialog";
 import { createFolder } from "@/features/notes/service/notesService";
 
@@ -66,6 +68,15 @@ export interface QuickNoteSaveCoreProps {
   onCancel?: () => void;
   className?: string;
   saveLabel?: string;
+  /**
+   * Canonical `ui_surface.name` of the shell hosting this core, when that
+   * shell publishes a surface (today: the Quick Note Save WINDOW). Passing it
+   * registers this core's `note_draft` write handler against that surface, so
+   * an agent bound to the window can stage a title / body / folder into the
+   * live form. Omitted by the popover / dialog / overlay shells, which publish
+   * no surface of their own — a core with no surfaceName registers nothing.
+   */
+  surfaceName?: string;
   /**
    * When the host chrome (WindowPanel) provides a footer slot element, the
    * Cancel / Save and post-save action buttons portal into it — they act on
@@ -89,6 +100,7 @@ export function QuickNoteSaveCore({
   onCancel,
   className,
   saveLabel,
+  surfaceName,
   footerHost,
 }: QuickNoteSaveCoreProps) {
   // Defensive: callers occasionally hand us a null content (e.g. when an
@@ -163,6 +175,95 @@ export function QuickNoteSaveCore({
     setShowOverwriteWarning(false);
     await save();
   }, [save]);
+
+  // Write half of the Quick Note Save surface (manifest `writeTargets`): ONE
+  // composite draft target, registered by name because the WINDOW owns the
+  // surface while this core owns the form state. Every accepted key lands
+  // through the same setter the user's own typing uses — `setNoteName`,
+  // `setFolder`, and the refine primitive's `setEditedContent` (the editor's
+  // own onChange) — so nothing here is a parallel write path, and the user
+  // still presses Save Note.
+  //
+  // The save MODE gates the payload: a title and a folder describe a NEW note,
+  // and body text may only be staged where it is additive (a new note, or an
+  // append). Everything that could destroy an existing note — saving, picking
+  // the mode, choosing the target note, choosing overwrite — stays human and
+  // is not a target at all. Bad shapes THROW; the writeback seam turns a throw
+  // into the error envelope the agent reads.
+  useSurfaceWriteHandlers(surfaceName ?? null, {
+    note_draft: (value: unknown) => {
+      if (savedNote)
+        throw new Error(
+          "This capture has already been saved — the form is read-only now. Open a new Quick Note Save to capture something else.",
+        );
+
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          `note_draft expects an object with any of: ${NOTE_DRAFT_FIELDS.join(" | ")}.`,
+        );
+
+      const draft = value as Record<string, unknown>;
+      const keys = Object.keys(draft);
+      if (keys.length === 0)
+        throw new Error("note_draft needs at least one field to stage.");
+
+      const unknown = keys.filter(
+        (key) => !(NOTE_DRAFT_FIELDS as readonly string[]).includes(key),
+      );
+      if (unknown.length > 0)
+        throw new Error(
+          `note_draft does not accept: ${unknown.join(", ")}. Allowed fields: ${NOTE_DRAFT_FIELDS.join(" | ")}.`,
+        );
+
+      /** The sent string for a present key; `undefined` when the key is absent. */
+      const field = (key: string): string | undefined => {
+        if (!(key in draft)) return undefined;
+        const raw = draft[key];
+        if (typeof raw !== "string")
+          throw new Error(`note_draft.${key} expects a string.`);
+        if (!raw.trim())
+          throw new Error(
+            `note_draft.${key} cannot be empty — send a real value or omit the field.`,
+          );
+        return raw;
+      };
+
+      const nextName = field("note_name");
+      const nextFolder = field("folder");
+      const nextContent = field("content");
+
+      // Mode coherence — a value for the wrong mode would land in an input the
+      // user cannot see, or would silently drop their chosen target note.
+      if (mode === "update") {
+        const newNoteOnly = [
+          nextName !== undefined ? "note_name" : null,
+          nextFolder !== undefined ? "folder" : null,
+        ].filter(Boolean);
+        if (newNoteOnly.length > 0)
+          throw new Error(
+            `The form is saving into an EXISTING note, so ${newNoteOnly.join(" and ")} cannot be staged: the title input is not rendered in this mode, and the folder select only filters which notes are listed, so changing it would drop the note the user chose. Ask the user to switch to a new note if that is what they want.`,
+          );
+        // `updateMethod` is this form's own state, typed from UPDATE_METHODS —
+        // TypeScript rejects a comparison against anything not in that union,
+        // so this check cannot drift from the vocabulary.
+        if (nextContent !== undefined && updateMethod === "overwrite")
+          throw new Error(
+            `The form is set to overwrite an existing note, so staging content would replace that note's whole body — refused. Ask the user to switch the update method to "append" (or save to a new note) if they want your text applied.`,
+          );
+      }
+
+      if (nextFolder !== undefined) {
+        const folderName = nextFolder.trim();
+        if (!allFolders.includes(folderName))
+          throw new Error(
+            `"${folderName}" is not one of this form's folders, and this target never creates one. Choose an exact (case-sensitive) name from: ${allFolders.join(" | ")}.`,
+          );
+        setFolder(folderName);
+      }
+      if (nextName !== undefined) setNoteName(nextName.trim());
+      if (nextContent !== undefined) refine.setEditedContent(nextContent);
+    },
+  });
 
   const handlePostSaveAction = useCallback(
     (action: PostSaveAction) => {

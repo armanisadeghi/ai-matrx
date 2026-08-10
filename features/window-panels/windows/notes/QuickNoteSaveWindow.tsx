@@ -13,6 +13,8 @@ import {
   QUICK_NOTE_SAVE_SURFACE_NAME,
   createQuickNoteSaveScope,
 } from "@/features/surfaces/manifests/quick-note-save.manifest";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAllFolders } from "@/features/notes/redux/selectors";
 
 export interface QuickNoteSaveWindowProps {
   isOpen: boolean;
@@ -93,19 +95,41 @@ function QuickNoteSaveWindowInner({
     if (action !== "none") onClose();
   };
 
+  // The folder picker's vocabulary, derived exactly as `useQuickNoteSave`
+  // derives it (Redux folders, plus the opener's default when it is not among
+  // them). Declared because the `note_draft` write target refuses a folder
+  // outside this list — an agent that cannot read the list could only guess.
+  const foldersFromRedux = useAppSelector(selectAllFolders);
+  const allFolderNames = React.useMemo(
+    () =>
+      !defaultFolder || foldersFromRedux.includes(defaultFolder)
+        ? foldersFromRedux
+        : [defaultFolder, ...foldersFromRedux],
+    [foldersFromRedux, defaultFolder],
+  );
+
   // Surface emitter (`matrx-user/quick-note-save`): the window's opener
-  // payload. Live form state lives inside QuickNoteSaveCore and is not
-  // emitted yet (manifest readiness: partial). Nested provider out-depths
-  // the hosting page's surface while the window is open (deepest wins).
+  // payload plus the folder vocabulary. Live form state lives inside
+  // QuickNoteSaveCore and is not emitted yet (manifest readiness: partial) —
+  // the core registers the surface's WRITE handler itself, by name. Nested
+  // provider out-depths the hosting page's surface while the window is open
+  // (deepest wins).
   const getScope = React.useCallback(
     () =>
       createQuickNoteSaveScope({
         content: initialContent,
         default_folder: defaultFolder,
+        all_folder_names: allFolderNames,
         default_note_name: defaultNoteName,
         initial_editor_mode: initialEditorMode,
       }),
-    [initialContent, defaultFolder, defaultNoteName, initialEditorMode],
+    [
+      initialContent,
+      defaultFolder,
+      allFolderNames,
+      defaultNoteName,
+      initialEditorMode,
+    ],
   );
 
   const viewportPad = 24;
@@ -139,6 +163,7 @@ function QuickNoteSaveWindowInner({
             defaultFolder={defaultFolder}
             defaultNoteName={defaultNoteName}
             initialEditorMode={initialEditorMode}
+            surfaceName={QUICK_NOTE_SAVE_SURFACE_NAME}
             onSaved={handleSaved}
             onCancel={onClose}
             footerHost={footerHost}
