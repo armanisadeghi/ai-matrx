@@ -25,6 +25,8 @@ The bench is organized around the decisions an owner actually makes:
 
 Manual exemplars accept both variables JSON and `user_input`. The server persists a capped history (100 entries) in the existing `agent.slot_exemplar.metadata.test_bench_results`; the frontend parses that open JSONB defensively. Owner verdict notes and reference promotion are direct, optimistic-concurrency Supabase updates because they are pure record CRUD. Python owns only agent execution and the result append. API request/response aliases come exclusively from `types/python-generated/api-types.ts`; there is no local response mirror or backend `fetch`. Image outputs still render via `InlineMediaRef` (file_id recovered with `fileIdFromUserFilesUrl`, never a raw expiring URL).
 
+The batch response is non-streaming and includes every selected candidate/exemplar cell. Its `callApi` request therefore uses a ten-minute connection deadline and no total deadline; the original 90-second deadline was proven too short by the live four-exemplar comparison and would hide already-persisted results behind a client timeout.
+
 ## Console shape (2026-08-08 rebuild)
 
 The list is the canonical `MatrxDataTable` (`components/official/matrx-data-table`) — every column sorts + filters, global search, Copy/Copy-for-AI (row + this view), pagination, UUID cell on `id`. Derived `SlotRow` adds a filterable **Health** column (`ok` / `version drift` / `agent archived` / `not a system agent` — worst-first). Row click → side-panel workbench (`SlotDetail`): pin editor + test bench + overrides; the WindowPanel Edit tab reuses the same body. All three agent choices are compact `AgentListDropdown` controls: the selected agent stays visible, while the catalogues mount only on demand. `SlotEditor`/`SlotTestBench` seed local state from props, so `SlotDetail` keys them by slot id — dropping the key regresses to stale cross-slot state (bug found 2026-08-08).
@@ -45,7 +47,7 @@ The page is the `matrx-admin/agent-slots` surface (`features/surfaces/manifests/
 
 ## Change Log
 
-- 2026-08-09 — **Wave 2 owner bench rebuild:** multi-candidate/all-exemplar batch comparisons with explicit Baseline columns; pinned/latest/arbitrary-version/different-agent/current ± override choices; persisted history and verdict notes; one-click reference promotion; manual `user_input`; user/org principal simulation; failed runs inline. The aidream call now uses `callApi` plus generated OpenAPI types, while note/reference CRUD stays direct to `agent.slot_exemplar`.
+- 2026-08-09 — **Wave 2 owner bench rebuild:** multi-candidate/all-exemplar batch comparisons with explicit Baseline columns; pinned/latest/arbitrary-version/different-agent/current ± override choices; persisted history and verdict notes; one-click reference promotion; manual `user_input`; user/org principal simulation; failed runs inline. The aidream call now uses `callApi` plus generated OpenAPI types, while note/reference CRUD stays direct to `agent.slot_exemplar`. Live browser verification found and fixed the original 90-second response deadline; the production four-exemplar comparison now completes under the bench's ten-minute connection budget.
 
 - 2026-08-09 — Replaced the three permanently expanded agent catalogues in the slot workbench (default pin, test candidate, and principal override) with the canonical `AgentListDropdown`. Each trigger now shows its selected agent or default state; opening it preserves the existing search, ownership scopes, filters, previews, record doors, and mobile drawer.
 
