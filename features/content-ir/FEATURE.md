@@ -128,6 +128,17 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
   (identity), `visibility` (publishing), activation (a dual-gate verdict), and
   example/instance CRUD. Live-verified end-to-end with a real agent run on
   `/shapes/new` and on `wine_tasting`'s Preview and Test tabs.
+- 2026-08-10 — claude: **Markdown Studio — the user-facing home of the V2
+  splitter's drift report (`/markdown-studio`) — is now agent-writable;
+  parsing untouched.** `matrx-user/markdown-studio` declares
+  `document_content` / `append_document_content` / `view_mode` (all
+  `applyPolicy:"ask"`), so an agent can draft, restructure or extend the buffer
+  the Analysis view runs `runV2Parser` (→ `content-splitter-v2`) over, and can
+  switch the workspace into that report. Writes land through the studio's own
+  `setContent` — no parser, splitter, or `detectRenderBlocks` code paths
+  changed, and detected blocks re-derive from the new buffer exactly as they do
+  from the user's typing. Recipe + verification: `features/surfaces/FEATURE.md`
+  (360 loop) and the `surface-write-targets` skill.
 - 2026-08-09 — claude: **Doors on the Kind Registry admin surfaces (No Dead
   Ends sweep) — render routing untouched.** The Catalog's Kind cell declares
   `href` (a real `next/link`: keyboard, cmd/middle-click, context menu) and its

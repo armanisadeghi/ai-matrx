@@ -20,6 +20,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -172,6 +173,80 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the studio.
+ *
+ * The judgment bar, applied honestly to this surface: the markdown buffer IS
+ * the surface. A document an agent drafts, restructures, tightens or extends
+ * is the textbook YES case, so `content` gets BOTH write shapes — a full
+ * replacement and an append — for the same reason `agent-builder` splits
+ * `system_instruction` / `append_system_instruction`: adding a section to a
+ * 10KB document should not require the agent to re-send the 10KB.
+ *
+ * `view_mode` is the one judgment call worth writing down. It very nearly
+ * failed the "pure-mechanical toggle nobody would ask an agent to flip" test —
+ * but the two modes are not decoration here: "analysis" is the parser-drift
+ * report, and "restructure this and show me how the parser reads it" is a real
+ * single-message ask that ends in a mode switch. It is declared `mode: "ui"`
+ * (ephemeral, nothing to save) yet kept on `applyPolicy: "ask"` rather than
+ * `auto`, because the switch swaps the entire body of the page out from under
+ * the user; the in-place confirm costs one click and keeps ONE consent model
+ * across every target on this surface.
+ *
+ * Deliberately NOT here, and must stay that way: saving to the sample library
+ * (`create` / `update` mint and overwrite the user's own records — file
+ * management, not drafting), `sample_id` / `sample_name` / `is_from_library`
+ * (identity and ownership of the file behind the buffer), and `is_saving`.
+ * `document_label`, `detected_blocks`, `is_dirty` and `library_sample_count`
+ * are DERIVED read values with no independent write path — an agent changes
+ * them by writing `content`, never directly. Clearing the buffer stays a human
+ * gesture (the editor's Clear button); an empty string is refused.
+ *
+ * Both content targets are `mode: "draft"`: the value lands through the SAME
+ * `setContent` the user's own typing goes through, so `is_dirty` re-derives
+ * itself and the header's Save/Update action stays honest. Nothing reaches the
+ * library until the user presses Save. Handlers live on the studio's own
+ * provider in `components/markdown-studio/MarkdownStudio.tsx`.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "document_content",
+    label: "Primary content",
+    description:
+      "REPLACES the entire markdown buffer with the string you pass — the text lands in the editor pane exactly as written, and the live preview and analysis view re-parse it immediately. This is a full replacement, not a merge: read `content` first and include everything you want kept, or use `append_document_content` instead when you only mean to add. Must be non-empty markdown; clearing the studio is a human action, so an empty string is refused. Staged as unsaved changes — the user reviews and saves to their library.",
+    valueType: "string",
+    updatesValue: "content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "document_content",
+    sortOrder: 100,
+  },
+  {
+    name: "append_document_content",
+    label: "Added content",
+    description:
+      "APPENDS the string you pass to the end of the current markdown buffer, separated by a blank line. Nothing already in the document is touched or re-sent — pass only the new text. Use this to add a section, an example, or a closing paragraph; use `document_content` when the whole document is being rewritten. Must be non-empty markdown. Staged as unsaved changes — the user reviews and saves to their library.",
+    valueType: "string",
+    updatesValue: "content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "document_content",
+    sortOrder: 110,
+  },
+  {
+    name: "view_mode",
+    label: "View mode",
+    description:
+      'Switches which mode the workspace shows. Exactly one of "studio" (editor beside the live rendered preview) or "analysis" (the parser-drift report for the same buffer) — any other value is refused. Ephemeral view state only: the buffer is untouched and there is nothing to save. Use it when the user asks to SEE the document a particular way, not as a step in writing one.',
+    valueType: "string",
+    updatesValue: "view_mode",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "studio_view",
+    sortOrder: 120,
+  },
+];
+
 export const markdownStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/markdown-studio",
   readiness: "verified",
@@ -187,6 +262,7 @@ When asked to write, fix, or transform text here, operate on content and return 
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**
