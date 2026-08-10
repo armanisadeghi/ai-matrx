@@ -30,7 +30,12 @@ import {
   useSavedKeywordResearch,
 } from "../useSavedKeywordResearch";
 import MarkdownStream from "@/components/MarkdownStream";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import SavedResearchFeed from "./SavedResearchFeed";
+
+/** A primary keyword is a search phrase, not a paragraph — the bound the
+ * `research_input_keyword` write target enforces (and advertises). */
+const MAX_STAGED_KEYWORD_LENGTH = 200;
 
 export interface KeywordResearchLauncherProps {
   run: ResearchRunState;
@@ -46,6 +51,14 @@ export interface KeywordResearchLauncherProps {
   /** Org owning the durable saved-research read. Defaults to the effective
    * organization (the same org callApi stamps on the run itself). */
   organizationId?: string | null;
+  /**
+   * Surface whose `research_input_keyword` write target this launcher should
+   * service. ONLY the host that actually mounts that surface passes it — the
+   * workbench does; `KeywordResearchWindow` (a floating overlay above whatever
+   * page the user is on) deliberately does not, so an agent run on the page
+   * underneath can never type into a window that page does not own.
+   */
+  writeTargetSurfaceName?: string | null;
 }
 
 export default function KeywordResearchLauncher({
@@ -56,6 +69,7 @@ export default function KeywordResearchLauncher({
   feedMaxHeightClassName = "max-h-[26rem]",
   onKeywordChange,
   organizationId,
+  writeTargetSurfaceName = null,
 }: KeywordResearchLauncherProps) {
   const [primaryInput, setPrimaryInput] = useState(initialKeyword ?? "");
   const autoRanRef = useRef(false);
@@ -92,6 +106,47 @@ export default function KeywordResearchLauncher({
     if (!primaryInput.trim() || run.status === "running") return;
     void runResearch(primaryInput);
   }, [primaryInput, run.status, runResearch]);
+
+  /**
+   * `research_input_keyword` — the surface write target for this input. The
+   * launcher registers it itself because it OWNS `primaryInput`; the workbench
+   * only publishes the surface. Staging goes through exactly the path the
+   * user's typing goes through (`setPrimaryInput` + `onKeywordChange`), so the
+   * host's emitted value and the box can never disagree. Nothing here starts a
+   * run — `handleRun` stays behind the button.
+   */
+  useSurfaceWriteHandlers(writeTargetSurfaceName, {
+    research_input_keyword: (value: unknown) => {
+      if (typeof value !== "string") {
+        throw new Error(
+          `research_input_keyword expects a string keyword phrase, got ${Array.isArray(value) ? "array" : typeof value}.`,
+        );
+      }
+      const phrase = value.trim();
+      if (!phrase) {
+        throw new Error(
+          "research_input_keyword needs a keyword phrase — an empty string would leave the Research button disabled.",
+        );
+      }
+      if (phrase.length > MAX_STAGED_KEYWORD_LENGTH) {
+        throw new Error(
+          `research_input_keyword: "${phrase.slice(0, 40)}…" is ${phrase.length} characters — a primary keyword must be at most ${MAX_STAGED_KEYWORD_LENGTH}.`,
+        );
+      }
+      if (/[\r\n]/.test(phrase)) {
+        throw new Error(
+          "research_input_keyword takes ONE keyword phrase, not a list — the launcher researches a single primary keyword per run.",
+        );
+      }
+      if (run.status === "running") {
+        throw new Error(
+          "research_input_keyword: the research input is locked while a run is in flight, exactly as it is for the user. Wait for the run to finish.",
+        );
+      }
+      setPrimaryInput(phrase);
+      onKeywordChange?.(phrase);
+    },
+  });
 
   // autoRun: one shot, deferred so the launch's setState never fires inside
   // the effect body of a mounting tree.

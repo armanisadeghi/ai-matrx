@@ -46,6 +46,33 @@ export type KeywordVolumeRefreshResponse = KeywordVolumeRefreshResult;
 
 export const US_LOCATION_CODE = 2840;
 
+/**
+ * How a `cluster_scope` surface write composes with the cluster already on the
+ * explorer — THE vocabulary, imported by both the surface manifest (which
+ * spells it out for the agent) and the workbench handler (which validates
+ * against it). Never re-type these literals anywhere else.
+ */
+export const KEYWORD_CLUSTER_WRITE_MODES = ["replace", "append"] as const;
+export type KeywordClusterWriteMode =
+  (typeof KEYWORD_CLUSTER_WRITE_MODES)[number];
+
+export function isKeywordClusterWriteMode(
+  value: unknown,
+): value is KeywordClusterWriteMode {
+  return KEYWORD_CLUSTER_WRITE_MODES.includes(value as KeywordClusterWriteMode);
+}
+
+/**
+ * The ONE normalization a cluster phrase goes through before it can match a
+ * `seo.keyword.normalized_phrase` — identical to what a completed research run
+ * applies to its artifact phrases in `useKeywordResearch`. Shared so an
+ * agent-set cluster and a run-set cluster can never scope the explorer by
+ * different rules.
+ */
+export function normalizeClusterPhrase(phrase: string): string {
+  return phrase.trim().toLowerCase();
+}
+
 // ─── `seo` tool (action=keyword_data) result shapes ─────────────────────────
 //
 // Backend source of truth: aidream

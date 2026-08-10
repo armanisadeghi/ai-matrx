@@ -8,7 +8,7 @@
  * per-keyword relationship detail on expand.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Archive,
   ArrowDownRight,
@@ -39,7 +39,11 @@ import {
   restoreKeywords,
 } from "../data/queries";
 import KeywordResearchLauncher from "./KeywordResearchLauncher";
-import { normalizeMonthlySearches } from "../types";
+import {
+  KEYWORD_CLUSTER_WRITE_MODES,
+  isKeywordClusterWriteMode,
+  normalizeMonthlySearches,
+} from "../types";
 import type {
   KeywordEdgeView,
   KeywordMarketRow,
@@ -228,6 +232,8 @@ function KeywordDetail({
 export default function KeywordResearchWorkbench() {
   const {
     clusterPhrases,
+    clusterPrimaryKeyword,
+    setCluster,
     clearCluster,
     keywords,
     loading,
@@ -248,6 +254,10 @@ export default function KeywordResearchWorkbench() {
     new Set(),
   );
   const [archiving, setArchiving] = useState(false);
+  // The launcher's input, mirrored for the surface emitter only. A REF, not
+  // state: getScope reads it at trigger time, so the agent still sees the live
+  // value while a keystroke in the launcher never re-renders the table below.
+  const stagedKeywordRef = useRef("");
   // Provenance: keyword ids with at least one live ai_research edge —
   // research-discovered vs hand-added. Null until the batched read lands.
   const [researchIds, setResearchIds] = useState<ReadonlySet<string> | null>(
@@ -403,13 +413,92 @@ export default function KeywordResearchWorkbench() {
       visibleKeywords: sorted,
       run,
       clusterPhrases,
+      clusterPrimaryKeyword,
       volumeStage,
+      stagedKeyword: stagedKeywordRef.current,
     });
+
+  /**
+   * The write targets this component owns (`research_input_keyword` is
+   * registered by the launcher, which owns that input). Both land through the
+   * SAME setters the user's own filter box and cluster chip drive — there is
+   * no second write path into the explorer's scope.
+   */
+  const getWriteHandlers = () => ({
+    library_search: (value: unknown) => {
+      if (typeof value !== "string") {
+        throw new Error(
+          `library_search expects a string (empty string clears the filter), got ${Array.isArray(value) ? "array" : typeof value}.`,
+        );
+      }
+      if (/[\r\n]/.test(value)) {
+        throw new Error(
+          "library_search is a single-line filter box — newlines are not accepted.",
+        );
+      }
+      setSearch(value);
+    },
+    cluster_scope: (value: unknown) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value)) {
+        throw new Error(
+          `cluster_scope expects an object { mode: ${KEYWORD_CLUSTER_WRITE_MODES.join(" | ")}, primary_keyword?: string, phrases: string[] }.`,
+        );
+      }
+      const patch = value as Record<string, unknown>;
+      const unknownKeys = Object.keys(patch).filter(
+        (key) => !["mode", "primary_keyword", "phrases"].includes(key),
+      );
+      if (unknownKeys.length > 0) {
+        throw new Error(
+          `cluster_scope does not accept: ${unknownKeys.join(", ")}. Allowed keys: mode | primary_keyword | phrases.`,
+        );
+      }
+      if (!isKeywordClusterWriteMode(patch.mode)) {
+        throw new Error(
+          `cluster_scope: mode must be one of ${KEYWORD_CLUSTER_WRITE_MODES.join(" | ")}.`,
+        );
+      }
+      if (!Array.isArray(patch.phrases) || patch.phrases.length === 0) {
+        throw new Error(
+          "cluster_scope: phrases must be a non-empty array of keyword strings. To show the whole library again, the user clears the cluster chip — there is no write that clears it.",
+        );
+      }
+      const phrases = patch.phrases.map((entry, index) => {
+        if (typeof entry !== "string" || !entry.trim()) {
+          throw new Error(
+            `cluster_scope: phrases[${index}] must be a non-empty string, got ${typeof entry}.`,
+          );
+        }
+        return entry;
+      });
+      if (
+        patch.primary_keyword !== undefined &&
+        (typeof patch.primary_keyword !== "string" ||
+          !patch.primary_keyword.trim())
+      ) {
+        throw new Error(
+          "cluster_scope: primary_keyword must be a non-empty string when provided — it names the cluster chip.",
+        );
+      }
+      const label = (patch.primary_keyword as string | undefined)?.trim();
+      // Appending onto an existing cluster inherits its name; every other
+      // case is naming a NEW cluster, so the label is required.
+      const appendTo = patch.mode === "append" ? clusterPhrases : null;
+      const nextLabel = label ?? (appendTo ? clusterPrimaryKeyword : null);
+      if (!nextLabel) {
+        throw new Error(
+          "cluster_scope: primary_keyword is required — there is no cluster on screen to append to, so this write names a new one.",
+        );
+      }
+      setCluster(nextLabel, [...(appendTo ?? []), ...phrases]);
+    },
+  });
 
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/keyword-research"
       getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
     <div
       className="flex h-full flex-col overflow-hidden"
@@ -418,7 +507,16 @@ export default function KeywordResearchWorkbench() {
       {/* Research launcher — the canonical shared component (also hosted by
           KeywordResearchWindow, opened from anywhere). */}
       <div className="border-b border-border px-4 py-3">
-        <KeywordResearchLauncher run={run} runResearch={runResearch} />
+        <KeywordResearchLauncher
+          run={run}
+          runResearch={runResearch}
+          // This page mounts the surface, so the launcher services its
+          // `research_input_keyword` target here (the window mount does not).
+          writeTargetSurfaceName="matrx-user/keyword-research"
+          onKeywordChange={(keyword) => {
+            stagedKeywordRef.current = keyword;
+          }}
+        />
       </div>
 
       {/* Explorer toolbar */}
@@ -433,9 +531,9 @@ export default function KeywordResearchWorkbench() {
             style={{ fontSize: "16px" }}
           />
         </div>
-        {clusterPhrases && run.primaryKeyword ? (
+        {clusterPhrases && clusterPrimaryKeyword ? (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 px-2.5 py-1 text-xs text-foreground">
-            Cluster: “{run.primaryKeyword}” · {sorted.length}
+            Cluster: “{clusterPrimaryKeyword}” · {sorted.length}
             <button
               type="button"
               onClick={clearCluster}
