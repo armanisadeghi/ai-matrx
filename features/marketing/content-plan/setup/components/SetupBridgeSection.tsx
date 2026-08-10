@@ -129,8 +129,10 @@ export function SetupBridgeSection({
     publishedPages.find((page) => page.liveUrl)?.liveUrl ??
     null;
   const allRealized = planNodeIds.length > 0 && realizedCount === planNodeIds.length;
+  // "Everything is live" requires everything to EXIST first — pages that were
+  // never realized can't be counted as published by omission.
   const allPublished =
-    planLinkedPages.length > 0 &&
+    allRealized &&
     planLinkedPages.every((page) => page.isPublished && !page.hasDraft);
   const candidates = useLinkCandidates(Boolean(cms) && !linked);
   // Always name the CMS side explicitly when we know it: the bridge then
@@ -601,9 +603,11 @@ export function SetupBridgeSection({
         <Rung
           index={3}
           done={
-            report
-              ? report.ghosts.length === 0 && report.matched > 0
-              : allRealized
+            // Either source of truth may mark this done: the freshest signal
+            // wins, so a stale compare report can't hide completion the live
+            // page map already proves (and vice versa).
+            (report !== null && report.ghosts.length === 0 && report.matched > 0) ||
+            allRealized
           }
           label="Create the pages in the CMS"
           description="Every planned page becomes a real (empty, unpublished) draft page in the CMS, linked to its plan row."
