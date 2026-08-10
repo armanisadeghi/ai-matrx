@@ -52,7 +52,12 @@ import {
 import { cn } from "@/lib/utils";
 
 import { getCatalogEntry } from "../catalog";
-import { extractMermaidTitle } from "../diagram-type";
+import {
+  DETECTABLE_DIAGRAM_TYPES,
+  detectDiagramType,
+  extractMermaidTitle,
+  setMermaidTitle,
+} from "../diagram-type";
 import {
   copyMermaidSource,
   downloadMermaidPng,
@@ -70,6 +75,8 @@ import {
   type MermaidThemePreference,
 } from "../types";
 import { createMermaidEditorScope } from "@/features/surfaces/manifests/mermaid-editor.manifest";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { MERMAID_SURFACE_NAME } from "../hooks/useMermaidAgentEdit";
 import { getFeaturedCatalogEntries } from "../catalog";
 import { CodeModePane } from "../code/CodeModePane";
 import { OutlineModePane } from "../outline/OutlineModePane";
@@ -236,6 +243,52 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
     });
   }, [title, canvasItemId, version, metadata?.conversationId]);
 
+  // ── Surface write handlers (manifest `writeTargets`) ─────────────────────
+  // The write half of the 360 loop, for the agent the user runs from the
+  // header Agents popover. Every handler commits through the SAME editor
+  // action the AI rail's Apply button and the version-restore menu use
+  // (`APPLY_EXTERNAL_SOURCE`), so an agent write is one undo step, feeds the
+  // same autosave, and lands one new version — never a parallel write path.
+  //
+  // Handlers validate and THROW on a bad shape; `applySurfaceWrite` turns a
+  // throw into a safe error envelope the agent reads and can correct from.
+  // The diagram-type vocabulary comes from the detector's own header table,
+  // so the contract can never drift from what the workbench accepts.
+  const aiRailBusyRef = useRef(false);
+  const refuseWhileAiRailRuns = (target: string) => {
+    if (aiRailBusyRef.current)
+      throw new Error(
+        `The workbench's "Edit with AI" panel is mid-run and is about to propose its own diagram. ${target} was NOT applied — writing now would be overwritten or would silently rebase that proposal. Wait for that run to finish (or have the user discard it) and try again.`,
+      );
+  };
+  const getSurfaceWriteHandlers = () => ({
+    diagram_source: (value: unknown) => {
+      refuseWhileAiRailRuns("diagram_source");
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("diagram_source expects a non-empty string of mermaid DSL.");
+      if (value.includes("```"))
+        throw new Error(
+          "diagram_source expects the raw mermaid DSL only — send the text BETWEEN the ``` fences, with no fence markers and no surrounding prose.",
+        );
+      if (detectDiagramType(value) === "unknown")
+        throw new Error(
+          `diagram_source does not open with a diagram type this workbench recognizes. Its first significant line (after any --- frontmatter block) must start one of: ${DETECTABLE_DIAGRAM_TYPES.join(" | ")}.`,
+        );
+      dispatch({ type: "APPLY_EXTERNAL_SOURCE", source: value });
+    },
+    diagram_title: (value: unknown) => {
+      refuseWhileAiRailRuns("diagram_title");
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("diagram_title expects a non-empty string.");
+      // setMermaidTitle throws on a title YAML frontmatter could not read
+      // back, and on source whose frontmatter block is unterminated.
+      dispatch({
+        type: "APPLY_EXTERNAL_SOURCE",
+        source: setMermaidTitle(stateRef.current.source, value),
+      });
+    },
+  });
+
   const structuralOk = state.outcome?.status === "ok";
   const doc = state.outcome?.status === "ok" ? state.outcome.doc : null;
   const codeOnlyReason =
@@ -308,6 +361,11 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
   };
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={MERMAID_SURFACE_NAME}
+      getScope={buildScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
+    >
     <TooltipProvider delayDuration={250}>
       <div className="flex h-full min-h-0 flex-col bg-background">
         {/* Toolbar */}
@@ -539,12 +597,16 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
               initialAgentId={metadata?.aiAgentId}
               initialAgentLabel={metadata?.aiAgentName}
               onApply={(next) => dispatch({ type: "APPLY_EXTERNAL_SOURCE", source: next })}
+              onBusyChange={(busy) => {
+                aiRailBusyRef.current = busy;
+              }}
               onClose={() => setAiOpen(false)}
             />
           )}
         </div>
       </div>
     </TooltipProvider>
+    </SurfaceRuntimeProvider>
   );
 }
 
