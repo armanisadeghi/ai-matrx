@@ -43,6 +43,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -498,11 +499,109 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Agent-writable targets (read/write manifest v1).
+ *
+ * WHAT EARNED A TARGET, and why — the Step-0 judgment, written down so the
+ * next person does not have to re-derive it:
+ *
+ * - `transcript_title` / `transcript_description` — authored copy. A model
+ *   that has just read the transcript names and summarizes it better than a
+ *   person scrubbing audio. The clearest YES on the surface.
+ * - `transcript_body` — the transcript text itself (cleanup, punctuation,
+ *   de-umming, speaker-attribution fixes). The single highest-value thing an
+ *   agent does to a raw ASR transcript.
+ * - `transcript_speaker_label` — relabelling "Speaker 1" as the real person
+ *   is authored labelling derivable from the content ("the host introduces
+ *   himself as Dave"), and it is tedious by hand across dozens of segments.
+ *
+ * DELIBERATELY NOT WRITABLE:
+ *
+ * - `transcript_tags` / `transcript_folder` — the update service accepts
+ *   both, but this viewer renders tags read-only and has NO folder or tag
+ *   editor at all. A target here would let an agent set a value the user
+ *   cannot see staged and cannot correct in place — a write with no user
+ *   twin. Excluded on that ground, not because tagging is a bad agent job;
+ *   if a tag editor lands on this surface, revisit.
+ * - `transcript_source_type`, `audio_file_path`, `video_file_path`,
+ *   `transcript_id`, `transcript_is_draft`, `transcript_created_at` —
+ *   identity / provenance / ownership.
+ * - Deletion (`deleteTranscript`) and Promote-to-Studio — destructive or
+ *   record-forking; those stay human.
+ * - Playback (`is_playing`, `playback_speed`, `playback_volume`,
+ *   `current_playback_time`) — mechanical transport controls. Nobody asks an
+ *   agent to nudge the volume.
+ *
+ * MODE, decided per field rather than by reflex:
+ *
+ * The rule applied here is "draft only where the read-twin actually reflects
+ * the staging buffer". The body editor passes that test: while
+ * `isEditingContent` is true, TranscriptViewer's editor scope path overrides
+ * the `content` value with the LIVE textarea buffer, so a staged body is
+ * visible to the next agent read AND to the user, with the existing Save /
+ * Cancel bar as the commit gate. Title and description fail it: their
+ * read-twins are sourced from the stored `activeTranscript`, never from the
+ * `editTitle` / `editDescription` inputs, so a staged value would be
+ * invisible to the evidence loop. Those two go through the canonical entity
+ * path instead and persist on Apply, exactly like the metadata form's Save.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "transcript_title",
+    label: "Transcript title",
+    description:
+      "Rename the open transcript. Value: { title: string } — a non-empty title, plain text, no timecodes. Replaces the stored title outright. Persists IMMEDIATELY through the same updateTranscript service the header's Edit → Save uses; the new title shows in the header and the transcript list on apply.",
+    valueType: "object",
+    updatesValue: "transcript_title",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "transcript_identity",
+    sortOrder: 100,
+  },
+  {
+    name: "transcript_description",
+    label: "Transcript description",
+    description:
+      "Rewrite the open transcript's description — the short summary shown under the title. Value: { description: string } — plain text, may be empty to clear it. Replaces the stored description outright (this is NOT an append). Persists IMMEDIATELY through the same updateTranscript service the header's Edit → Save uses.",
+    valueType: "object",
+    updatesValue: "transcript_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "transcript_identity",
+    sortOrder: 110,
+  },
+  {
+    name: "transcript_body",
+    label: "Transcript text",
+    description:
+      "Propose a corrected transcript BODY (cleanup, punctuation, removing filler). Value: { text: string, mode?: 'replace' | 'append' } — 'replace' (default) swaps the whole body, 'append' adds after the current text. Paragraphs are separated by BLANK LINES and map onto the existing segments IN ORDER, so keep the same paragraph count and order as `all_segments_text` unless you intend to re-map them. STAGED into the inline transcript editor (it opens if closed) — nothing persists until the user clicks Save.",
+    valueType: "object",
+    updatesValue: "content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "segments",
+    sortOrder: 120,
+  },
+  {
+    name: "transcript_speaker_label",
+    label: "Speaker label",
+    description:
+      "Rename one speaker across EVERY segment they appear in. Value: { from: string, to: string } — `from` must match an existing label in `speaker_list` exactly (case-sensitive); `to` is the new non-empty label. Only the speaker labels change, segment text and timecodes are untouched. Persists IMMEDIATELY through the same updateTranscript segment write the per-segment edit dialog uses.",
+    valueType: "object",
+    updatesValue: "speaker_list",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "speakers",
+    sortOrder: 130,
+  },
+];
+
 export const transcriptsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcripts",
   readiness: "verified",
   label: "Transcripts",
   groups,
+  writeTargets,
   values: mergeBaselineValues(
     // Baseline:
     //   `selection` — browser text selection on the rendered segments. Lazily
