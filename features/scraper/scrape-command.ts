@@ -46,6 +46,8 @@ export const SCRAPE_MODES = [
     input: "url",
     /** Whether this mode is bounded by the page limit. */
     usesPageLimit: false,
+    /** Whether this mode is bounded by the web-search result limit. */
+    usesResultLimit: false,
     /** Model-facing gloss, interpolated into the write-target contract. */
     summary: "scrape one URL directly",
   },
@@ -55,6 +57,7 @@ export const SCRAPE_MODES = [
     label: "Deep",
     input: "keyword",
     usesPageLimit: true,
+    usesResultLimit: false,
     summary: "search a keyword, then scrape the top pages",
   },
   {
@@ -63,6 +66,7 @@ export const SCRAPE_MODES = [
     label: "Web",
     input: "keyword",
     usesPageLimit: false,
+    usesResultLimit: true,
     summary: "search a keyword on the web, scraping nothing until a hit is opened",
   },
 ] as const;
@@ -127,6 +131,29 @@ export const PAGE_LIMIT_MIN = 1;
 export const PAGE_LIMIT_MAX = 20;
 /** What deep mode starts at, and the fallback for an unparseable input. */
 export const PAGE_LIMIT_DEFAULT = 5;
+
+/**
+ * Bounds of the WEB-SEARCH result limit — the "Max" number input beside the
+ * keyword field in search mode (`ScraperKeywordSearchCompactControls`, and the
+ * full-page `ScraperKeywordSearchPageBody`). A different budget from
+ * {@link PAGE_LIMIT_MAX} and deliberately wider: these hits come back
+ * UNSCRAPED, so asking for 50 costs one search request — where 50 pages means
+ * 50 fetches against other people's servers.
+ */
+export const RESULT_LIMIT_MIN = 1;
+export const RESULT_LIMIT_MAX = 100;
+/** What search mode starts at, and the fallback for an unparseable input. */
+export const RESULT_LIMIT_DEFAULT = 10;
+
+/** Runtime guard for the result limit — integer, in bounds. */
+export function isValidResultLimit(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= RESULT_LIMIT_MIN &&
+    value <= RESULT_LIMIT_MAX
+  );
+}
 
 /** Runtime guard for the page limit — integer, in bounds. */
 export function isValidPageLimit(value: unknown): value is number {

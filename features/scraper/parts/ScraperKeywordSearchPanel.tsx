@@ -9,6 +9,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
 import type { SearchResultItem } from "@/features/scraper/types/scraper-api";
 import type { UseScraperKeywordSearchFormReturn } from "@/features/scraper/hooks/useScraperKeywordSearchForm";
+import {
+  RESULT_LIMIT_MAX,
+  RESULT_LIMIT_MIN,
+} from "@/features/scraper/scrape-command";
 import { cn } from "@/lib/utils";
 import { getDomain } from "@/features/scraper/utils/scraper-floating-helpers";
 
@@ -69,8 +73,8 @@ export function ScraperKeywordSearchPageBody({
             <Input
               id="maxResults"
               type="number"
-              min={1}
-              max={100}
+              min={RESULT_LIMIT_MIN}
+              max={RESULT_LIMIT_MAX}
               value={maxResults}
               onChange={(e) => setMaxResults(e.target.value)}
               disabled={isLoading}
@@ -244,8 +248,8 @@ export function ScraperKeywordSearchCompactControls({
           </Label>
           <Input
             type="number"
-            min={1}
-            max={100}
+            min={RESULT_LIMIT_MIN}
+            max={RESULT_LIMIT_MAX}
             value={maxResults}
             onChange={(e) => setMaxResults(e.target.value)}
             disabled={isLoading}

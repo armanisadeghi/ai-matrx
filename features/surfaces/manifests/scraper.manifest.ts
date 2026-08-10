@@ -33,6 +33,8 @@ import type {
 import {
   PAGE_LIMIT_MAX,
   PAGE_LIMIT_MIN,
+  RESULT_LIMIT_MAX,
+  RESULT_LIMIT_MIN,
   SCRAPE_MODES,
   SCRAPE_MODE_ENUM_TEXT,
 } from "@/features/scraper/scrape-command";
@@ -104,6 +106,17 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 2,
     sortOrder: 308,
+    group: "target",
+  },
+  {
+    name: "max_results",
+    label: "Max results",
+    description:
+      "Maximum number of hits the web-search (\"search\") mode will request for the keyword — the budget beside the keyword field. These hits come back unscraped. Absent outside web-search mode.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 309,
     group: "target",
   },
   {
@@ -246,6 +259,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "results",
   },
   {
+    name: "selected_hit_index",
+    label: "Selected hit index",
+    description:
+      "Zero-based index of the web-search hit the user currently has open in the detail pane, within search_hits. Absent when no search has run or no hit is open.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 2,
+    sortOrder: 422,
+    group: "results",
+  },
+  {
     name: "search_hit_count",
     label: "Web search hit count",
     description:
@@ -349,6 +373,27 @@ const surfaceSpecific: SurfaceValue[] = [
  *    might want to accept or decline on its own — which is exactly what a
  *    separate ask dialog gives them. It also has a clean 1:1 read twin
  *    (`max_pages`), which the bundled command object cannot have.
+ *  - `scrape_result_limit` is `scrape_page_limit`'s twin for web-search mode,
+ *    and separate for the same reason. It exists because the "Max" input beside
+ *    the keyword field was not a declared read value at all until 2026-08-10,
+ *    so search mode's budget could be neither read nor set; `max_results`
+ *    closes that and gives this target its 1:1 twin. The ceiling is much
+ *    higher than the page budget on purpose — those hits arrive unscraped.
+ *
+ * WHY THE TWO SELECTION TARGETS: `selected_result_page` and
+ * `selected_search_hit` are not part of the command at all. They answer a
+ * different question, at a different time, against different evidence: "of the
+ * N things ALREADY fetched, which one is worth looking at?" That is a real
+ * judgement an agent makes well after reading `results_overview` /
+ * `search_hits`, and it is `mode: "ui"` — nothing is fetched, nothing is
+ * persisted, and a wrong pick costs one click to undo. `selected_search_hit`
+ * is deliberately the FURTHEST an agent goes toward a scrape: it can put the
+ * hit it judged best in front of the user, and the user presses Scrape.
+ *
+ * `active_result_tab` was considered and declined on the judgement bar: it is a
+ * pure mechanical view flip, and an agent already holds every representation of
+ * the page in its context, so it knows nothing the user doesn't about which tab
+ * they want.
  *
  * MOUNTS: `ScraperFloatingWorkspace` (the `scraperWindow` panel) is the only
  * mount that registers a `SurfaceRuntimeProvider` for this surface, so it is
@@ -377,13 +422,52 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "scrape_page_limit",
     label: "Max pages",
     description:
-      `Stages how many pages the deep ("${SCRAPE_MODES.find((m) => m.usesPageLimit)!.value}") mode will scrape — the page budget, separate from the scrape target. Value: an integer from ${PAGE_LIMIT_MIN} to ${PAGE_LIMIT_MAX} (the same bounds the deep-mode page input enforces on the user); anything outside that, or a non-integer, is refused. Applies to deep mode only — the web-search result count is not exposed on this surface. Read back from max_pages, which the surface reports only while deep mode is active. Staged only: the user still presses Search + scrape. Refused while is_scraping is true — a run is in flight and the inputs are locked.`,
+      `Stages how many pages the deep ("${SCRAPE_MODES.find((m) => m.usesPageLimit)!.value}") mode will scrape — the page budget, separate from the scrape target. Value: an integer from ${PAGE_LIMIT_MIN} to ${PAGE_LIMIT_MAX} (the same bounds the deep-mode page input enforces on the user); anything outside that, or a non-integer, is refused. Applies to deep mode only — web-search mode has its own budget, scrape_result_limit. Read back from max_pages, which the surface reports only while deep mode is active. Staged only: the user still presses Search + scrape. Refused while is_scraping is true — a run is in flight and the inputs are locked.`,
     valueType: "number",
     updatesValue: "max_pages",
     mode: "draft",
     applyPolicy: "ask",
     group: "target",
     sortOrder: 110,
+  },
+  {
+    name: "scrape_result_limit",
+    label: "Max results",
+    description:
+      `Stages how many hits the web-search ("${SCRAPE_MODES.find((m) => m.usesResultLimit)!.value}") mode will request — the twin of scrape_page_limit for the mode that searches without scraping. Value: an integer from ${RESULT_LIMIT_MIN} to ${RESULT_LIMIT_MAX} (the same bounds the "Max" input enforces on the user); anything outside that, or a non-integer, is refused. Applies to web-search mode only. These hits come back UNSCRAPED, which is why the ceiling is far higher than the page budget: 50 hits is one search request, where 50 pages is 50 fetches against other people's servers. Read back from max_results, which the surface reports only while web-search mode is active. Staged only: the user still presses Search. Refused while is_scraping is true — a run is in flight and the inputs are locked.`,
+    valueType: "number",
+    updatesValue: "max_results",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "target",
+    sortOrder: 120,
+  },
+  {
+    name: "selected_result_page",
+    label: "Selected scraped page",
+    description:
+      "Opens one ALREADY-SCRAPED page in the results pane — the same as the user clicking it in the Pages sidebar, and it resets the pane to the Pretty tab exactly as that click does. Value is the zero-based index into results_overview (read it first; the order matches). An out-of-range index is refused with the real count. Nothing is fetched and nothing is persisted: this only changes which of the pages already in this session is on screen, so use it to put the page you just analysed in front of the user. Only available in the URL (\"quick\") and Deep (\"full\") modes, where the scraped-pages sidebar and results pane are rendered.",
+    valueType: "number",
+    updatesValue: "selected_result_index",
+    mode: "ui",
+    // Moving what the user is reading mid-thought is cheap and instantly
+    // reversible, but it IS a change to their screen — same posture as
+    // keyword-intelligence's `open_keyword`. Decline is a normal outcome.
+    applyPolicy: "ask",
+    group: "results",
+    sortOrder: 410,
+  },
+  {
+    name: "selected_search_hit",
+    label: "Selected search hit",
+    description:
+      "Opens one web-search hit in the hit detail pane — the same as the user clicking it in the results list. Value is the zero-based index into search_hits (read it first; the order matches). An out-of-range index is refused with the real count. Nothing is fetched: this SELECTS a hit, it does not scrape it — the Scrape button beside the hit stays the user's to press. This is the useful stopping point once you have judged which hit is actually worth fetching: put it in front of the user and let them run it. Only available in the Web (\"search\") mode, where the hit list and detail pane are rendered.",
+    valueType: "number",
+    updatesValue: "selected_hit_index",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "results",
+    sortOrder: 422,
   },
 ];
 
@@ -397,6 +481,9 @@ You are on the Web scraper surface: the user scrapes live web pages (single URL,
 The primary payload is the SELECTED scraped page: scraped_url / scraped_title identify it, scraped_content_text (also the baseline content) and scraped_content_markdown carry its body, scraped_metadata and scraped_links carry its structure. results_overview lists every page scraped this session; search_hits lists web-search results not yet scraped.
 Everything here is OBSERVED evidence pulled from live pages — never invent content that isn't in the scraped body. Check scrape_success / scrape_failure_reason before treating the content as valid; an empty body means the page came back blank, not that the site has no content.
 target_url and search_keyword are the user's live inputs — what they intend to scrape next, distinct from what has already been scraped.
+You can STAGE the next run for the user but never start it: scrape_command sets the mode and its target, scrape_page_limit the deep-mode page budget, scrape_result_limit the web-search hit budget. Staging only fills the form — the user presses Scrape, because a run spends real time against someone else's server.
+selected_result_page and selected_search_hit put something ALREADY fetched on screen; neither fetches anything. When you have judged which search hit is worth scraping, select it and let the user press the button.
+The scraped_* values are fetched evidence and are NOT writable — a page's body, title, links and metadata are what a real server returned, and this pane feeds RAG ingestion directly, so never try to "correct" them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -438,6 +525,7 @@ export function createScraperScope(values: {
   target_url?: string;
   search_keyword?: string;
   max_pages?: number;
+  max_results?: number;
   scraped_url?: string;
   scraped_title?: string;
   scraped_content_text?: string;
@@ -447,6 +535,7 @@ export function createScraperScope(values: {
   scraped_links?: { internal?: string[]; external?: string[]; media?: string[] };
   selected_result_index?: number;
   search_hits?: ScraperSearchHitEntry[];
+  selected_hit_index?: number;
   scrape_failure_reason?: string;
   scrape_execution_time_ms?: number;
 }): SurfaceScopePayload {

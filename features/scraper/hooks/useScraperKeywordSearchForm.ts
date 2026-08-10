@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import type { SearchResultItem } from "@/features/scraper/types/scraper-api";
+import { RESULT_LIMIT_DEFAULT } from "@/features/scraper/scrape-command";
 
 export interface UseScraperKeywordSearchFormReturn {
   keywords: string;
@@ -27,7 +28,7 @@ export interface UseScraperKeywordSearchFormReturn {
 
 export function useScraperKeywordSearchForm(): UseScraperKeywordSearchFormReturn {
   const [keywords, setKeywords] = useState("");
-  const [maxResults, setMaxResults] = useState("10");
+  const [maxResults, setMaxResults] = useState(String(RESULT_LIMIT_DEFAULT));
   const [selectedHitIndex, setSelectedHitIndex] = useState<number | null>(null);
 
   const {
@@ -52,7 +53,7 @@ export function useScraperKeywordSearchForm(): UseScraperKeywordSearchFormReturn
     setSelectedHitIndex(null);
     const items = await search({
       keywords: [keywords.trim()],
-      total_results_per_keyword: parseInt(maxResults, 10) || 10,
+      total_results_per_keyword: parseInt(maxResults, 10) || RESULT_LIMIT_DEFAULT,
     });
     if (items && items.length > 0) setSelectedHitIndex(0);
   }, [keywords, maxResults, search, reset]);
@@ -72,7 +73,7 @@ export function useScraperKeywordSearchForm(): UseScraperKeywordSearchFormReturn
   const resetAll = useCallback(() => {
     reset();
     setKeywords("");
-    setMaxResults("10");
+    setMaxResults(String(RESULT_LIMIT_DEFAULT));
     setSelectedHitIndex(null);
   }, [reset]);
 
