@@ -125,6 +125,18 @@ import {
 } from "@/features/rag/agent-context/buildRagSearchContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  MULTI_QUERY_DEFAULT,
+  MULTI_QUERY_MAX,
+  MULTI_QUERY_MIN,
+  SOURCE_KIND_FILTERS,
+  SOURCE_KIND_FILTER_BY_VALUE,
+  SOURCE_KIND_FILTER_ENUM_TEXT,
+  isSourceKindFilter,
+  isValidMultiQuery,
+  type SourceKindFilter,
+} from "@/features/rag/search-controls";
 import { ProInput } from "@/components/official/ProInput";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
@@ -177,7 +189,11 @@ const RAG_AGENT_TOOL_IDS = [
 // Shared
 // ===========================================================================
 
-type SourceKindFilter = "all" | "cld_file" | "note" | "code_file";
+/** Hits requested per Search-tab search. Emitted as the surface's `result_limit`. */
+const SEARCH_TAB_RESULT_LIMIT = 25;
+
+/** Max length the `search_query` write target accepts from an agent. */
+const SEARCH_QUERY_MAX_CHARS = 1000;
 
 function useScopeControls(initialStoreId: string | null = null) {
   const stores = useDataStores();
@@ -195,9 +211,12 @@ function useScopeControls(initialStoreId: string | null = null) {
   // whatever writes it. Emitted as the surface's `result_limit`.
   const [resultLimit, setResultLimit] = useState(RESULT_LIMIT_DEFAULT);
 
+  // Resolved wire value for the current filter — `undefined` for "all" (send
+  // no source_kinds at all). The mapping lives in the shared vocabulary so the
+  // toggle, this resolution, and the agent contract cannot drift apart.
   const sourceKinds = useMemo<string[] | undefined>(() => {
-    if (kindFilter === "all") return undefined;
-    return [kindFilter];
+    const kinds = SOURCE_KIND_FILTER_BY_VALUE[kindFilter].sourceKinds;
+    return kinds ? [...kinds] : undefined;
   }, [kindFilter]);
 
   return {
@@ -555,7 +574,15 @@ function ScopeSidebar({
             max={MULTI_QUERY_MAX}
             value={scope.multiQuery}
             onChange={(e) =>
-              scope.setMultiQuery(clampMultiQuery(Number(e.target.value)))
+              scope.setMultiQuery(
+                Math.max(
+                  MULTI_QUERY_MIN,
+                  Math.min(
+                    MULTI_QUERY_MAX,
+                    Number(e.target.value) || MULTI_QUERY_DEFAULT,
+                  ),
+                ),
+              )
             }
             className="w-14 px-1.5 py-1 text-base rounded border bg-background"
           />
@@ -623,22 +650,16 @@ function KindToggle({
   value: SourceKindFilter;
   onChange: (v: SourceKindFilter) => void;
 }) {
-  const options: { v: SourceKindFilter; label: string }[] = [
-    { v: "all", label: "All" },
-    { v: "cld_file", label: "Files" },
-    { v: "note", label: "Notes" },
-    { v: "code_file", label: "Code" },
-  ];
   return (
     <div className="flex items-center rounded-md border p-0.5 text-[11px]">
-      {options.map((o) => (
+      {SOURCE_KIND_FILTERS.map((o) => (
         <button
-          key={o.v}
+          key={o.value}
           type="button"
-          onClick={() => onChange(o.v)}
+          onClick={() => onChange(o.value)}
           className={cn(
             "px-1.5 py-0.5 rounded transition-colors flex-1",
-            value === o.v
+            value === o.value
               ? "bg-primary text-primary-foreground"
               : "hover:bg-muted/40 text-muted-foreground",
           )}
@@ -1057,6 +1078,100 @@ function SearchTab({
     resultExpansionStates.length > 0 &&
     resultExpansionStates.every((expanded) => !expanded);
 
+  // Write handlers for the surface's declared `writeTargets` — the agent
+  // stages the next search request, the user still presses Search.
+  //
+  // Every handler dispatches the SAME setter the user's own typing/clicking
+  // dispatches (`setQuery`, `scope.setRerank`, …), so a staged value is
+  // visible and editable the instant it lands and there is no parallel write
+  // path to drift. Nothing here is persisted: this surface's editable state is
+  // all local `useState`, which is exactly what `mode: "draft"` means for it.
+  //
+  // Validation THROWS. `applySurfaceWrite` converts a throw into a safe error
+  // envelope the agent reads and can correct from, so a wrong value must be
+  // refused loudly rather than coerced — a silently clamped multi-query or a
+  // truthy-coerced "false" would leave the user with a search they did not ask
+  // for and the agent believing it succeeded.
+  const buildWriteHandlers = (): SurfaceWriteHandlers => {
+    // A search in flight has its inputs locked and its request already sent;
+    // staging into them would edit the next run while the user is reading the
+    // current one. Every target shares the guard.
+    const assertIdle = (label: string) => {
+      if (running) {
+        throw new Error(
+          `Cannot change ${label} while a search is running. Wait for the current search to finish, then try again.`,
+        );
+      }
+    };
+
+    const assertBoolean = (value: unknown, label: string): boolean => {
+      if (typeof value !== "boolean") {
+        throw new Error(
+          `${label} must be a boolean (true or false), not ${typeof value === "string" ? `the string "${value}"` : typeof value}.`,
+        );
+      }
+      return value;
+    };
+
+    return {
+      search_query: (value) => {
+        assertIdle("the search query");
+        if (typeof value !== "string") {
+          throw new Error(
+            `search_query must be a plain string, not ${Array.isArray(value) ? "an array" : typeof value}. Send the query text itself, not a JSON object wrapping it.`,
+          );
+        }
+        const trimmed = value.trim();
+        if (!trimmed) {
+          throw new Error(
+            "search_query must not be empty. Send the text to search for.",
+          );
+        }
+        if (trimmed.length > SEARCH_QUERY_MAX_CHARS) {
+          throw new Error(
+            `search_query must be at most ${SEARCH_QUERY_MAX_CHARS} characters (got ${trimmed.length}).`,
+          );
+        }
+        setQuery(trimmed);
+      },
+
+      source_kind_filter: (value) => {
+        assertIdle("the source-kind filter");
+        if (!isSourceKindFilter(value)) {
+          throw new Error(
+            `source_kind_filter must be exactly one of: ${SOURCE_KIND_FILTER_ENUM_TEXT}. Got ${JSON.stringify(value)}. It is a single choice, not an array — use "all" to clear the filter.`,
+          );
+        }
+        scope.setKindFilter(value);
+      },
+
+      rerank: (value) => {
+        assertIdle("the rerank setting");
+        scope.setRerank(assertBoolean(value, "rerank"));
+      },
+
+      multi_query: (value) => {
+        assertIdle("the multi-query count");
+        if (!isValidMultiQuery(value)) {
+          throw new Error(
+            `multi_query must be a whole number from ${MULTI_QUERY_MIN} to ${MULTI_QUERY_MAX}. Got ${JSON.stringify(value)}.`,
+          );
+        }
+        scope.setMultiQuery(value);
+      },
+
+      use_hyde: (value) => {
+        assertIdle("the HyDE setting");
+        scope.setUseHyde(assertBoolean(value, "use_hyde"));
+      },
+
+      expand_entity_clusters: (value) => {
+        assertIdle("the entity-cluster setting");
+        scope.setExpandClusters(assertBoolean(value, "expand_entity_clusters"));
+      },
+    };
+  };
+
   if (reviewHit) {
     const reviewView = hitViewFromSearchHit(reviewHit, {
       name: response
@@ -1113,7 +1228,7 @@ function SearchTab({
       surfaceName={RAG_SEARCH_SURFACE}
       getScope={getResultsApplicationScope}
       isEditable={false}
-      getWriteHandlers={getSurfaceWriteHandlers}
+      getWriteHandlers={buildWriteHandlers}
     >
     <div className="flex flex-col h-full overflow-hidden">
       <header className="border-b p-3">
