@@ -2,7 +2,38 @@
 //
 // Shared tuning constants for the KG suggestion surfaces.
 
-import type { KgSuggestionRow } from "@/features/kg-suggestions/types";
+import type {
+  KgSuggestionRow,
+  KgSuggestionStage,
+  KgSuggestionStatus,
+} from "@/features/kg-suggestions/types";
+
+/**
+ * The status vocabulary the manager's filter chips offer, in display order.
+ * Canonical: the filter bar RENDERS from this and the surface write handler
+ * for `suggestions_filter` VALIDATES against it, so an agent can never be
+ * offered a status the UI does not actually have.
+ */
+export const KG_SUGGESTION_STATUSES: {
+  value: KgSuggestionStatus;
+  label: string;
+}[] = [
+  { value: "pending", label: "Pending" },
+  { value: "accepted", label: "Accepted" },
+  { value: "rejected", label: "Rejected" },
+  { value: "deferred", label: "Deferred" },
+  { value: "expired", label: "Expired" },
+];
+
+/** The stage filter's vocabulary — the two ledgers plus the "any" sentinel. */
+export const KG_SUGGESTION_STAGE_FILTERS: {
+  value: KgSuggestionStage | "all";
+  label: string;
+}[] = [
+  { value: "all", label: "Any stage" },
+  { value: "value", label: "Field value" },
+  { value: "association", label: "Scope link" },
+];
 
 /**
  * Confidence floor (0..1) below which a suggestion is treated as LOW-QUALITY.

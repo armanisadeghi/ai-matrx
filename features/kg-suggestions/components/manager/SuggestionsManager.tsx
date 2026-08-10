@@ -33,6 +33,15 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/utils/cn";
 import { extractErrorMessage } from "@/utils/errors";
 import { useSuggestionsQuery } from "@/features/kg-suggestions/hooks/useSuggestionsQuery";
+import {
+  KG_SUGGESTION_STAGE_FILTERS,
+  KG_SUGGESTION_STATUSES,
+} from "@/features/kg-suggestions/constants";
+import type {
+  KgSuggestionStage,
+  KgSuggestionStatus,
+  KgSuggestionsQuery,
+} from "@/features/kg-suggestions/types";
 import { KgSuggestionRowItem } from "@/features/kg-suggestions/components/KgSuggestionRowItem";
 import {
   SourcePreviewProvider,
@@ -321,10 +330,135 @@ export function SuggestionsManager() {
     );
   }
 
+  // Surface write targets (matrx-user/knowledge) — the SUGGESTIONS mount's two.
+  // Both are `mode: "ui"` and both go through the exact seam the user's own
+  // controls use: `patchQuery` (the filter bar) and `setExpandedId` (the row
+  // chevron). Deliberately absent, and it is the whole point of this queue:
+  // accept / reject / defer / star, and the selection that arms the bulk bar.
+  // A suggestion is a PROPOSAL; turning one into confirmed knowledge stays a
+  // human decision. See the manifest's writeTargets block.
+  const getWriteHandlers = useCallback(
+    () => ({
+      suggestions_filter: (value: unknown) => {
+        if (
+          typeof value !== "object" ||
+          value === null ||
+          Array.isArray(value)
+        )
+          throw new Error(
+            "suggestions_filter expects an object with any subset of: search, statuses, stage, minConfidence, starredOnly, unseenOnly.",
+          );
+        const input = value as Record<string, unknown>;
+        const accepted = [
+          "search",
+          "statuses",
+          "stage",
+          "minConfidence",
+          "starredOnly",
+          "unseenOnly",
+        ];
+        const unknownKeys = Object.keys(input).filter(
+          (k) => !accepted.includes(k),
+        );
+        if (unknownKeys.length > 0)
+          throw new Error(
+            `suggestions_filter does not accept ${unknownKeys.join(", ")}. Accepted keys: ${accepted.join(", ")}. (Org / scope-type / scope / field / source filters and sorting stay with the user.)`,
+          );
+        if (Object.keys(input).length === 0)
+          throw new Error(
+            "suggestions_filter expects at least one of: search, statuses, stage, minConfidence, starredOnly, unseenOnly.",
+          );
+
+        const patch: Partial<KgSuggestionsQuery> = {};
+
+        if ("search" in input) {
+          if (input.search !== null && typeof input.search !== "string")
+            throw new Error(
+              "suggestions_filter.search expects a string or null (null clears it).",
+            );
+          patch.search = (input.search as string | null) || null;
+        }
+        if ("statuses" in input) {
+          // Validate against the SAME constant the filter chips render from.
+          const allowed = KG_SUGGESTION_STATUSES.map((s) => s.value);
+          if (
+            !Array.isArray(input.statuses) ||
+            input.statuses.some(
+              (s) =>
+                typeof s !== "string" ||
+                !allowed.includes(s as KgSuggestionStatus),
+            )
+          )
+            throw new Error(
+              `suggestions_filter.statuses expects an array over: ${allowed.join(" | ")} (an empty array means every status). It REPLACES the current set.`,
+            );
+          patch.statuses = input.statuses as KgSuggestionStatus[];
+        }
+        if ("stage" in input) {
+          const allowed = KG_SUGGESTION_STAGE_FILTERS.map((s) => s.value);
+          if (
+            typeof input.stage !== "string" ||
+            !allowed.includes(input.stage as KgSuggestionStage | "all")
+          )
+            throw new Error(
+              `suggestions_filter.stage expects one of: ${allowed.join(" | ")}.`,
+            );
+          patch.stage = input.stage as KgSuggestionStage | "all";
+        }
+        if ("minConfidence" in input) {
+          if (input.minConfidence !== null) {
+            if (
+              typeof input.minConfidence !== "number" ||
+              !Number.isFinite(input.minConfidence) ||
+              input.minConfidence < 0 ||
+              input.minConfidence > 1
+            )
+              throw new Error(
+                "suggestions_filter.minConfidence expects a number between 0 and 1 (e.g. 0.7 for ≥ 70%), or null for any confidence.",
+              );
+          }
+          patch.minConfidence = input.minConfidence as number | null;
+        }
+        for (const flag of ["starredOnly", "unseenOnly"] as const) {
+          if (flag in input) {
+            if (typeof input[flag] !== "boolean")
+              throw new Error(
+                `suggestions_filter.${flag} expects a boolean.`,
+              );
+            patch[flag] = input[flag] as boolean;
+          }
+        }
+
+        patchQuery(patch);
+      },
+      focused_suggestion_id: (value: unknown) => {
+        if (typeof value !== "string")
+          throw new Error(
+            'focused_suggestion_id expects a string — the id of a listed suggestion, or "" to collapse the open one.',
+          );
+        if (value === "") {
+          setExpandedId(null);
+          return;
+        }
+        // Only the main table renders an expanded row, so an id that is not on
+        // the current page would expand nothing at all. Refuse instead.
+        if (!rows.some((row) => row.id === value))
+          throw new Error(
+            rows.length > 0
+              ? `focused_suggestion_id "${value}" is not a suggestion on the current page. Read suggestions_rows for the listed ids, or narrow the queue with suggestions_filter first.`
+              : "focused_suggestion_id is unavailable: no suggestions are listed right now.",
+          );
+        setExpandedId(value);
+      },
+    }),
+    [patchQuery, rows],
+  );
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/knowledge"
       getScope={getSurfaceScope}
+      getWriteHandlers={getWriteHandlers}
       isEditable={false}
     >
       <SourcePreviewProvider value={{ openPreview }}>
