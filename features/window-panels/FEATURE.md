@@ -40,6 +40,27 @@ lib/redux/slices/
 
 ## Change Log
 
+- 2026-08-10 — **A window's surface is SHADOWED by the host route's own
+  surface — verify overlay surfaces on a route that emits none.** Found while
+  live-verifying the (separately landed) `matrx-user/markdown-editor` write
+  targets through `markdownEditorWindow`. `getSurfaceRuntime()` resolves the
+  DEEPEST registered provider by React-tree depth
+  (`SurfaceRuntimeContext.tsx`), and a window rendered from
+  `OverlayController` sits near the root — SHALLOWER than the provider a route
+  mounts inside its own page tree. So with the Markdown Editor window open on
+  `/dashboard`, the header Agents popover and the agent run both bound to
+  `matrx-user/dashboard`: the agent received the dashboard's scope, reported
+  the editor as empty, and asked the user to paste the text it was looking
+  straight at. The same window on `/welcome` (no competing page surface)
+  resolved to `matrx-user/markdown-editor` correctly and every write target
+  worked. This is depth doing exactly what it is documented to do — a page's
+  rich scope must not be shadowed by an ancestor's generic one — but it means
+  **a floating window that emits a surface only wins where the route emits
+  none.** Two consequences: verify a window-hosted surface on a surface-less
+  route, and do not assume a window's declared surface is what an agent sees
+  wherever the user happens to open it. `applySurfaceWrite` is unaffected — it
+  scans the whole stack for whichever surface DECLARES the target — so this
+  hits scope/binding, not the write routing.
 - 2026-08-08 — Fixed the "window opens invisible" class (watchdog `zero-size`):
   geometry derived from a degenerate 0×0 viewport measurement now falls back to
   sane dims (`safeViewportDims` in `utils/rectClamp.ts`), `registerWindow`
