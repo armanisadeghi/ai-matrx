@@ -125,6 +125,8 @@ describe("agent slot owner bench service", () => {
         path: "/agent-slots/{slot_key}/tests",
         method: "POST",
         pathParams: { slot_key: "seo.classify" },
+        connectTimeoutMs: 10 * 60_000,
+        totalTimeoutMs: null,
         body: expect.objectContaining({
           candidates: [
             expect.objectContaining({

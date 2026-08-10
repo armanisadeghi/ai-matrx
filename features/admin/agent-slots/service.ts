@@ -269,7 +269,11 @@ export async function runSlotTests(
       method: "POST",
       pathParams: { slot_key: slotKey },
       body: request,
-      connectTimeoutMs: 90_000,
+      // Batch responses do not send headers until every exemplar/candidate
+      // cell has completed. Four exemplars × three columns already exceeds
+      // 90 seconds in production, so the connection deadline must cover the
+      // bounded batch rather than the duration of one agent run.
+      connectTimeoutMs: 10 * 60_000,
       totalTimeoutMs: null,
     }),
   );
