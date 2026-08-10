@@ -39,7 +39,10 @@ import {
   sessionListScorePct,
   sessionModeLabel,
 } from "../utils/sessionListDisplay";
-import { ScoreRing, scoreAccentBgClasses } from "./ScoreRing";
+import {
+  ScoreRing,
+  scoreAccentBgClasses,
+} from "@/components/official/ScoreRing";
 
 const STATUS_META: Record<
   string,

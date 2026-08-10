@@ -94,9 +94,10 @@ import {
   saveSiteMediaStandards,
 } from "@/features/marketing/data/media-library";
 import {
+  getPagePerformance,
   getLatestPagespeedFailure,
-  listPagePerformance,
 } from "@/features/marketing/pagespeed/data";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   getLatestAnalyticsFailure,
   listWebAnalyticsDailyForPage,
@@ -394,12 +395,12 @@ export function usePageScreenshots(siteId: string, pageId: string) {
   });
 }
 
-/** Persisted PageSpeed Insights rows for one page (shared query cache — the
- * PageWorkspace surface scope and the Pagespeed card read the same rows). */
+/** Canonical combined PSI history/verdict + GSC window for one page. */
 export function usePagePerformance(siteId: string, pageId: string) {
+  const dispatch = useAppDispatch();
   return useQuery({
     queryKey: [...marketingKeys.page(siteId, pageId), "pagespeed"] as const,
-    queryFn: ({ signal }) => listPagePerformance(pageId, signal),
+    queryFn: ({ signal }) => getPagePerformance(dispatch, pageId, 28, signal),
     enabled: Boolean(siteId && pageId),
   });
 }
@@ -598,7 +599,12 @@ export function useDiscoveredItems(
   pageSize: number,
 ) {
   return useQuery({
-    queryKey: marketingKeys.discovered(brandId ?? "none", status, page, pageSize),
+    queryKey: marketingKeys.discovered(
+      brandId ?? "none",
+      status,
+      page,
+      pageSize,
+    ),
     queryFn: ({ signal }) =>
       listDiscoveredItems(brandId ?? "", status, page, pageSize, signal),
     enabled: Boolean(brandId),

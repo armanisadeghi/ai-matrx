@@ -115,6 +115,7 @@ delete yours and extend ours.
 | An agent's parent / children / system twin (derived, no query) | `selectAgentLineageIndex` / `selectAgentLineage` | `features/agents/redux/agent-definition/selectors.ts` |
 | Run an agent headlessly and get its extracted JSON (one-shot, optional file/audio message parts) — NEVER hand-roll launch+poll (D126) | `useHeadlessAgentJson` (React) / `runHeadlessAgentJson` (thunk-style) | `features/agents/hooks/useHeadlessAgentJson.ts`, `features/agents/redux/execution-system/thunks/run-headless-agent-json.ts` |
 | Resolve Lucide / custom icon by name | `IconResolver` | `components/official/icons/IconResolver.tsx` |
+| Render a 0–100 score as an accessible SVG ring with domain-specific good/warning thresholds | `ScoreRing` | `components/official/ScoreRing.tsx` |
 | 44×44 icon tap targets | `TapTargetButton` + `tap-buttons` | `components/icons/TapTargetButton.tsx`, `components/icons/tap-buttons.tsx` |
 | Single-value picker over a `platform.categories` dimension (FK columns) | `CategorySelect` | `features/scopes/components/CategorySelect.tsx` |
 | Tag an entity with categories via association edges (multi-select + inline create) | `CategoryTagPicker` | `features/scopes/components/CategoryTagPicker.tsx` |
