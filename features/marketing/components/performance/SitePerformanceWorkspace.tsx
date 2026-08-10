@@ -329,7 +329,7 @@ export function SitePerformanceWorkspace() {
                 </div>
                 <ChartContainer
                   config={distributionConfig}
-                  className="mt-3 h-[210px] w-full"
+                  className="mt-3 hidden h-[210px] w-full sm:flex"
                 >
                   <BarChart
                     accessibilityLayer
