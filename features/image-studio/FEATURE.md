@@ -273,6 +273,28 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
+- **2026-08-10** — **`/images/generate` is agent-writable.** The
+  `matrx-user/image-generate` surface now declares 4 `ask`-policy **draft**
+  write targets — `generation_prompt`, `generation_style`, `generation_size`,
+  `generation_count` — with handlers on `GenerateShellClient`'s
+  `<SurfaceRuntimeProvider>`. Each handler calls the same `useState` setter
+  the user's own typing does and THROWS on a bad shape, so a staged agent
+  write is indistinguishable from a keystroke and a bad value comes back to
+  the agent as a readable error instead of being silently coerced. The
+  Generate action is deliberately NOT a target: an agent can compose the
+  entire request, but the user presses Generate, so nothing here spends a
+  metered run or writes a file. Supporting refactor: the size vocabulary that
+  was re-typed in three places (`GenerateShellClient`'s local `type Size`, the
+  `<SelectItem>` list, and `GenerateImageBody.size`) is now canonical in
+  [`types.ts`](types.ts) — `GenerateImageSize` derives from the generated
+  `GenerateImageRequest` contract and `GENERATE_IMAGE_SIZE_LABELS`
+  (`Record<GenerateImageSize, string>`) makes the list exhaustive at compile
+  time, with `GENERATE_IMAGE_SIZES` / `GENERATE_IMAGE_COUNTS` +
+  `isGenerateImageSize` / `isGenerateImageCount` read by the form, the manifest's
+  agent-facing enum prose, and the write handlers alike. Live-verified with a
+  real agent run (four targets from one message, per-target ask dialogs,
+  decline path clean, undeclared target and out-of-enum value both refused
+  loudly). See [`features/surfaces/FEATURE.md`](../surfaces/FEATURE.md).
 - **2026-08-08** — Added `preserveSource` to `ModeShellProps` +
   `EditModeShell`: derivative-only editing (save-as-new-file default, no
   version writes onto the source, AI ops chain on their result rows, versions

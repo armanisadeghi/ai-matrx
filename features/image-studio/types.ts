@@ -5,9 +5,66 @@
  * client and server agree on the shape.
  */
 
+import type { components } from "@/types/python-generated/api-types";
 import type { OutputFormat, StudioPreset } from "./presets";
 
 export type { OutputFormat, StudioPreset };
+
+// ── Generate (text → image) vocabulary ────────────────────────────────────
+// The ONE place the Generate request's closed vocabularies live. The
+// `/images/generate` form, the typed Python client, the surface manifest's
+// write-target contract prose, and the surface write handlers all read from
+// here — nobody re-types the literals, so the enum cannot drift between what
+// the UI offers, what the agent is told, and what the handler accepts.
+
+/**
+ * Aspect intent for text → image generation — DERIVED from the generated
+ * `GenerateImageRequest` contract, never hand-mirrored. A backend enum
+ * rename lights up here first (and then in the label map below).
+ */
+export type GenerateImageSize = NonNullable<
+  components["schemas"]["GenerateImageRequest"]["size"]
+>;
+
+/**
+ * Canonical UI copy per size — and the exhaustiveness pin for the vocabulary.
+ * Because this is a `Record<GenerateImageSize, string>`, adding a size to the
+ * backend contract fails to compile here until it gets a label, and a size
+ * that is not in the contract is rejected as an excess key. `GENERATE_IMAGE_SIZES`
+ * derives from it, so the select options, the agent-facing enum text, and the
+ * handler's validation can never disagree.
+ */
+export const GENERATE_IMAGE_SIZE_LABELS: Record<GenerateImageSize, string> = {
+  square: "Square",
+  portrait: "Portrait",
+  landscape: "Landscape",
+  wide: "Wide (16:9)",
+  tall: "Tall (9:16)",
+};
+
+/** Every accepted size, in display order. */
+export const GENERATE_IMAGE_SIZES = Object.keys(
+  GENERATE_IMAGE_SIZE_LABELS,
+) as GenerateImageSize[];
+
+export function isGenerateImageSize(value: unknown): value is GenerateImageSize {
+  return typeof value === "string" && value in GENERATE_IMAGE_SIZE_LABELS;
+}
+
+/**
+ * How many images one Generate may produce. The backend contract types
+ * `count` as an unbounded integer; this 1-4 window is the product decision
+ * the UI enforces, so it lives here rather than being derived.
+ */
+export const GENERATE_IMAGE_COUNTS = [1, 2, 3, 4] as const;
+
+export type GenerateImageCount = (typeof GENERATE_IMAGE_COUNTS)[number];
+
+export function isGenerateImageCount(
+  value: unknown,
+): value is GenerateImageCount {
+  return (GENERATE_IMAGE_COUNTS as readonly number[]).includes(value as number);
+}
 
 /**
  * Fit mode — controls what happens when the preset's aspect ratio doesn't

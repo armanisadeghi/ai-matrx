@@ -26,6 +26,14 @@ import {
   generateImage,
   type GeneratedImageFile,
 } from "@/features/image-studio/api/python";
+import {
+  GENERATE_IMAGE_COUNTS,
+  GENERATE_IMAGE_SIZES,
+  GENERATE_IMAGE_SIZE_LABELS,
+  isGenerateImageCount,
+  isGenerateImageSize,
+  type GenerateImageSize,
+} from "@/features/image-studio/types";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -34,13 +42,15 @@ import {
   createImageGenerateScope,
 } from "@/features/surfaces/manifests/image-generate.manifest";
 
-type Size = "square" | "portrait" | "landscape" | "wide" | "tall";
+/** Longest prompt/style the form will stage from an agent write. */
+const MAX_PROMPT_CHARS = 4000;
+const MAX_STYLE_CHARS = 200;
 
 export default function GenerateShellClient() {
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState("");
-  const [size, setSize] = useState<Size>("square");
-  const [count, setCount] = useState(1);
+  const [size, setSize] = useState<GenerateImageSize>("square");
+  const [count, setCount] = useState<number>(1);
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<GeneratedImageFile[]>([]);
 
@@ -99,10 +109,55 @@ export default function GenerateShellClient() {
       generation_enabled: IMAGE_STUDIO_BACKEND_CAPABILITIES.generate,
     });
 
+  // Surface write handlers — the write half of the 360 loop. Every handler
+  // stages into the SAME state the user's own typing sets, so an agent write
+  // is indistinguishable from a keystroke and the user still presses
+  // Generate. Bad shapes THROW: the writeback seam turns the throw into an
+  // error envelope the agent reads, which is strictly better than silently
+  // coercing a value nobody chose. Enum checks go through the canonical
+  // guards so the accepted set cannot drift from the declared one.
+  const getSurfaceWriteHandlers = () => ({
+    generation_prompt: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("generation_prompt expects a non-empty string.");
+      if (value.length > MAX_PROMPT_CHARS)
+        throw new Error(
+          `generation_prompt is limited to ${MAX_PROMPT_CHARS} characters; got ${value.length}.`,
+        );
+      setPrompt(value);
+    },
+    generation_style: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "generation_style expects a string (empty string clears it).",
+        );
+      if (value.length > MAX_STYLE_CHARS)
+        throw new Error(
+          `generation_style is limited to ${MAX_STYLE_CHARS} characters; got ${value.length}.`,
+        );
+      setStyle(value);
+    },
+    generation_size: (value: unknown) => {
+      if (!isGenerateImageSize(value))
+        throw new Error(
+          `generation_size expects one of: ${GENERATE_IMAGE_SIZES.join(" | ")}.`,
+        );
+      setSize(value);
+    },
+    generation_count: (value: unknown) => {
+      if (!isGenerateImageCount(value))
+        throw new Error(
+          `generation_count expects a whole number, one of: ${GENERATE_IMAGE_COUNTS.join(" | ")}.`,
+        );
+      setCount(value);
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={IMAGE_GENERATE_SURFACE_NAME}
       getScope={getGenerateScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     <div className="h-full min-h-0 overflow-y-auto overscroll-contain lg:overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(360px,440px)_1fr] gap-3 md:gap-4 p-3 md:p-5">
       <aside className="flex flex-col gap-3 min-h-0">
@@ -120,16 +175,19 @@ export default function GenerateShellClient() {
         <div className="grid grid-cols-2 gap-2 md:gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium">Size</label>
-            <Select value={size} onValueChange={(v) => setSize(v as Size)}>
+            <Select
+              value={size}
+              onValueChange={(v) => setSize(v as GenerateImageSize)}
+            >
               <SelectTrigger className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="square">Square</SelectItem>
-                <SelectItem value="portrait">Portrait</SelectItem>
-                <SelectItem value="landscape">Landscape</SelectItem>
-                <SelectItem value="wide">Wide (16:9)</SelectItem>
-                <SelectItem value="tall">Tall (9:16)</SelectItem>
+                {GENERATE_IMAGE_SIZES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {GENERATE_IMAGE_SIZE_LABELS[s]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -143,7 +201,7 @@ export default function GenerateShellClient() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4].map((n) => (
+                {GENERATE_IMAGE_COUNTS.map((n) => (
                   <SelectItem key={n} value={String(n)}>
                     {n}
                   </SelectItem>

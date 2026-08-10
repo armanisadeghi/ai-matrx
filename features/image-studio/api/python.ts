@@ -24,6 +24,7 @@ import type {
   ImageEditCompleteData,
   ImageGenerateCompleteData,
 } from "@/types/python-generated/stream-events";
+import type { GenerateImageSize } from "../types";
 
 // ---------------------------------------------------------------------------
 // Output options — shared across every op
@@ -366,7 +367,8 @@ export async function listOps(): Promise<ImageOpsCatalog> {
 
 export interface GenerateImageBody {
   prompt: string;
-  size?: "square" | "portrait" | "landscape" | "wide" | "tall";
+  /** Canonical vocabulary — see `GENERATE_IMAGE_SIZE_LABELS` in `../types`. */
+  size?: GenerateImageSize;
   style?: string;
   count?: number;
   model?: string;
