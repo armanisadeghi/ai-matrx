@@ -160,6 +160,29 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-08-10** — **Surface made agent-writable (3 targets) + tutor vocabulary promoted to
+  `types.ts`.** `matrx-user/education-tutor` now declares `writeTargets`: `teaching_mode` and
+  `personality_style` as `entity`/`ask` writes through the SAME
+  `useSetting("userPreferences.tutor.*")` path `TutorSettingsPanel` uses — each ALSO re-dispatching
+  the slot via `setContextEntries`, so a style change reaches the CURRENT conversation's next turn
+  instead of only the next session — and `tutor_message_draft` as a `draft`/`ask`
+  `{text, mode:"replace"|"append"}` write into the composer via `setUserInputText`, the exact action
+  `AgentTextarea` dispatches on every keystroke. A new `composer_draft` READ value is its twin
+  (emitted imperatively inside `getScope()`, never via a selector — subscribing would re-render this
+  client on every keystroke) so an agent can extend a half-typed question rather than wipe it; the
+  composer draft is sacred (`input-draft-protection.ts`), which is why `append` exists at all.
+  Handlers are on `EducationTutorClient`'s existing provider; each validates and THROWS. A
+  READ-ONLY SHARED VIEW registers NO handlers, so an agent is offered nothing on someone else's
+  conversation; the draft handler refuses while `send_blocked` is true, naming the COPPA gate.
+  **NOT writable, deliberately:** `learner_memory` (a real student's accumulated record —
+  destructive, not authoring), `study_material` / `grounding_seed` (assembler output and an
+  immutable prop, both with no setter — a write would be clobbered by the next per-turn refresh),
+  `tutor_agent_id`, the trust envelopes, and every gate/sharing value. The teaching-mode and
+  personality vocabulary moved to a new dependency-free `types.ts`; `settings.ts` re-exports it so
+  every existing importer is unchanged, and the surface manifest — which `pnpm check:surface-drift`
+  imports from a plain tsx script — can now share the constants without dragging
+  `@/lib/redux/store` in behind them. Live-verified with a real Badass Agent run (see
+  `features/surfaces/FEATURE.md`).
 - **2026-07-14** — **Per-turn STRUCTURED trust (target state reached).** Re-authored the tutor agent
   (`d80cc27e` → `cb268e29`, "Education AI Tutor (Structured Trust)", same four context slots + model)
   to emit a hidden per-turn `TrustEnvelope` on the final line of every markdown answer

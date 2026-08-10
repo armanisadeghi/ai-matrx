@@ -8,48 +8,39 @@
 // Persistence lives on the DURABLE platform settings system
 // (`userPreferences.tutor`, features/settings) — synced across devices (IDB +
 // localStorage mirror + Supabase), NOT per-browser localStorage. This module
-// owns the tutor-domain VOCABULARY (the unions + defaults, the single source of
-// truth the userPreferences slice type-imports) plus the non-React accessor and
-// the one-time localStorage→durable migration. React surfaces read/write via
+// owns the durable read path (the non-React accessor) and the one-time
+// localStorage→durable migration. React surfaces read/write via
 // `useSetting("userPreferences.tutor.*")`; non-React callers (grounding) use
 // `getTutorSettings()`.
+//
+// The tutor-domain VOCABULARY itself (unions, allowed-value lists, defaults,
+// guards) lives in the dependency-free `./types` and is re-exported here, so
+// every existing `from "…/tutor/settings"` importer is unchanged while modules
+// that must stay store-free — the `education-tutor` surface manifest, which
+// `pnpm check:surface-drift` imports from a plain tsx script — can import the
+// same constants without dragging `@/lib/redux/store` in behind them.
 
 import { getStore } from "@/lib/redux/store";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
+import {
+  DEFAULT_TUTOR_SETTINGS,
+  isTutorPersonalityStyle,
+  isTutorTeachingMode,
+  type TutorSettings,
+} from "./types";
 
-export type TutorTeachingMode = "Socratic" | "Direct";
-export type TutorPersonalityStyle =
-  | "Encouraging & Step-by-Step"
-  | "Challenging & High-Level"
-  | "Balanced";
-
-export interface TutorSettings {
-  teachingMode: TutorTeachingMode;
-  personalityStyle: TutorPersonalityStyle;
-}
-
-export const TUTOR_TEACHING_MODES: TutorTeachingMode[] = ["Socratic", "Direct"];
-export const TUTOR_PERSONALITY_STYLES: TutorPersonalityStyle[] = [
-  "Encouraging & Step-by-Step",
-  "Challenging & High-Level",
-  "Balanced",
-];
-
-export const DEFAULT_TUTOR_SETTINGS: TutorSettings = {
-  teachingMode: "Socratic",
-  personalityStyle: "Encouraging & Step-by-Step",
-};
-
-function isTeachingMode(v: unknown): v is TutorTeachingMode {
-  return v === "Socratic" || v === "Direct";
-}
-function isPersonalityStyle(v: unknown): v is TutorPersonalityStyle {
-  return (
-    v === "Encouraging & Step-by-Step" ||
-    v === "Challenging & High-Level" ||
-    v === "Balanced"
-  );
-}
+export type {
+  TutorTeachingMode,
+  TutorPersonalityStyle,
+  TutorSettings,
+} from "./types";
+export {
+  TUTOR_TEACHING_MODES,
+  TUTOR_PERSONALITY_STYLES,
+  DEFAULT_TUTOR_SETTINGS,
+  isTutorTeachingMode,
+  isTutorPersonalityStyle,
+} from "./types";
 
 /**
  * Read the learner's tutor settings from the durable store. Non-React accessor
@@ -63,10 +54,10 @@ export function getTutorSettings(): TutorSettings {
   if (!store) return { ...DEFAULT_TUTOR_SETTINGS };
   const tutor = store.getState().userPreferences.tutor;
   return {
-    teachingMode: isTeachingMode(tutor.teachingMode)
+    teachingMode: isTutorTeachingMode(tutor.teachingMode)
       ? tutor.teachingMode
       : DEFAULT_TUTOR_SETTINGS.teachingMode,
-    personalityStyle: isPersonalityStyle(tutor.personalityStyle)
+    personalityStyle: isTutorPersonalityStyle(tutor.personalityStyle)
       ? tutor.personalityStyle
       : DEFAULT_TUTOR_SETTINGS.personalityStyle,
   };
@@ -113,10 +104,10 @@ export function migrateLegacyTutorSettings(): void {
     return;
   }
   const patches: { preference: "teachingMode" | "personalityStyle"; value: string }[] = [];
-  if (isTeachingMode(parsed.teachingMode)) {
+  if (isTutorTeachingMode(parsed.teachingMode)) {
     patches.push({ preference: "teachingMode", value: parsed.teachingMode });
   }
-  if (isPersonalityStyle(parsed.personalityStyle)) {
+  if (isTutorPersonalityStyle(parsed.personalityStyle)) {
     patches.push({ preference: "personalityStyle", value: parsed.personalityStyle });
   }
   // Only seed durable prefs that are still at their default — never clobber a
