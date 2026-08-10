@@ -24,7 +24,10 @@ import {
   type StarterKitOutcome,
 } from "@/features/cms/services/starterKitClient";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceScope";
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 
@@ -155,10 +158,56 @@ export default function SiteSettingsPage() {
     },
   });
 
+  /**
+   * Agent write targets owned by THIS component — `site_global_css` only,
+   * because the Global CSS textarea's buffer lives here. The theme,
+   * navigation, and footer targets are registered by the sections that own
+   * their own drafts (`SiteAdvancedSettings`, via `useSurfaceWriteHandlers`);
+   * `applySurfaceWrite` merges both sources.
+   *
+   * The value lands in the SAME `globalCss` state the user's typing drives, so
+   * nothing persists until they click Save Changes — see the manifest's
+   * `writeTargets` doc comment for why staging (not saving) is what keeps this
+   * honest under `agent_write_policy`.
+   */
+  const buildWriteHandlers = (): SurfaceWriteHandlers => ({
+    site_global_css: (value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(
+          "site_global_css expects an object: { css: string, mode?: 'replace' | 'append' }.",
+        );
+      }
+      const patch = value as { css?: unknown; mode?: unknown };
+      if (typeof patch.css !== "string") {
+        throw new Error(
+          "site_global_css.css must be a string of plain CSS rules.",
+        );
+      }
+      if (/<\/?style[\s>]/i.test(patch.css)) {
+        throw new Error(
+          "site_global_css.css must be plain CSS rules with no <style> tag — the renderer wraps it itself.",
+        );
+      }
+      const mode = patch.mode ?? "replace";
+      if (mode !== "replace" && mode !== "append") {
+        throw new Error(
+          `site_global_css.mode must be "replace" or "append" (got ${JSON.stringify(patch.mode)}).`,
+        );
+      }
+      const css = patch.css;
+      setGlobalCss((prev) =>
+        mode === "append" && prev.trim()
+          ? `${prev.replace(/\s+$/, "")}\n\n${css}`
+          : css,
+      );
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={CMS_SITE_CONTEXT_MENU_PROPS.surfaceName}
       getScope={buildSurfaceScope}
+      getWriteHandlers={buildWriteHandlers}
     >
     <div className="h-full overflow-auto">
       <div className="px-4 sm:px-6 py-6 space-y-6">

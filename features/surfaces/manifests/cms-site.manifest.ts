@@ -39,6 +39,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type { AgentWritePolicy } from "@/features/cms/types";
@@ -368,7 +369,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "site_theme_config",
     label: "Theme config",
     description:
-      "Free-form theme configuration JSON for the site (colors, fonts, tokens the my-matrx renderer consumes). Always emitted — an empty object when the site has never been themed. Displayed read-only under Settings → Advanced today.",
+      "Theme tokens for the site as `{ group: { key: value } }` (plus bare top-level scalars), which the my-matrx renderer flattens into CSS custom properties — `colors.primary_teal` becomes `--color-primary-teal`. Always emitted — an empty object when the site has never been themed. Edited row-by-row in Settings → Theme Tokens.",
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 500,
@@ -412,7 +413,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "site_contact_info",
     label: "Contact info",
     description:
-      "The site's business contact details (address, phone, email, hours) available to rendered pages. Always emitted — an empty object when unset. Displayed read-only under Settings → Advanced.",
+      "The site's business contact details (`{ phone, phone_raw, email, address: { street, city, state, zip } }`) available to rendered pages. Always emitted — an empty object when unset. Edited in Settings → Contact Info.",
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 300,
@@ -550,6 +551,140 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * What agents may WRITE into the site workspace — the write half of the 360
+ * loop. FOUR targets, all on the Settings tab, all `mode: "draft"`, all `ask`.
+ *
+ * WHY DRAFT IS THE WHOLE STORY HERE. Every target lands in the SAME `useState`
+ * the user's own typing drives — `globalCss` on
+ * `app/(core)/cms/[siteId]/settings/page.tsx`, and the per-section drafts in
+ * `features/cms/components/settings/SiteAdvancedSettings.tsx`. Nothing reaches
+ * `client_sites` until the human clicks that section's Save. That distinction
+ * is load-bearing for this feature specifically: `agent_write_policy`
+ * (`blocked | draft_only | full`, `client_sites.settings`) governs what an
+ * agent may SAVE, and staging is not saving — so these targets are honest even
+ * on a `blocked` site, exactly as the cms-component targets are. No target
+ * here calls `CmsSiteService` itself; the human's Save is the only writer.
+ *
+ * There is no draft/publish twin at the SITE level (unlike pages and
+ * components): `client_sites` columns are live. So the human's Save publishes
+ * site-wide immediately — which is why every target is `ask` and none is
+ * `auto`.
+ *
+ * WHY THESE FOUR. Each is authored material an agent plausibly produces, and
+ * each has a real editor with a Save affordance to stage into:
+ *  - `site_global_css` — a stylesheet. The clearest yes on the surface, and
+ *    the editor is a plain `<Textarea>` with no `EditableContextMenu` on it,
+ *    so an agent has NO user-driven text-replace seam to fall back on; a
+ *    declared target is the only way in (the same gap the html-page manifest
+ *    calls out for its Monaco editor).
+ *  - `site_theme_config` — a design-token palette. Pairs with the CSS target:
+ *    the stylesheet consumes the `--color-*` vars these rows generate, so
+ *    "restyle this site" is one coherent ask across two targets.
+ *  - `site_navigation` — `[{label, href}]`. The agent already holds
+ *    `site_structure`, i.e. every page's route and `show_in_nav` flag, so
+ *    "build the menu from my published pages" is a request it can actually
+ *    fulfil rather than guess at.
+ *  - `site_footer_config` — LAYOUT only (columns, headings, copyright, legal
+ *    links). Authored copy assembled from the same page inventory. Declared as
+ *    ONE object because the section saves one object; five micro-targets would
+ *    make five dialogs for one edit.
+ *
+ * Deliberately NOT declared:
+ *  - `site_meta_defaults` — the honest miss, and the reason is a UI gap, not a
+ *    judgment call. It is the best agent-value field on the whole site row
+ *    (site-wide title suffix / description / social image that every page
+ *    inherits), but WF-6 built editors for theme/navigation/footer/contact/
+ *    social and skipped it, so there is no draft state to stage into and no
+ *    Save affordance to review under. The only available path would be an
+ *    immediate `CmsSiteService.updateSite({ metaDefaults })` — an `entity`
+ *    write that both bypasses the human's review and IS a save, which
+ *    `agent_write_policy: "blocked" | "draft_only"` forbids. Build the editor
+ *    first; then this is a one-line target.
+ *  - `site_contact_info` / `site_social_links` — real editors exist, but these
+ *    are transcription, not authorship: an agent cannot produce a business's
+ *    phone number or Instagram URL, it can only retype what it was handed.
+ *  - `site_domain` / `site_slug` — identity. Changing either moves where the
+ *    site serves and breaks every inbound link; the domain additionally has a
+ *    DB CHECK plus DNS/Vercel attachment a write here cannot complete.
+ *  - `site_is_active` and publishing — human gates by design. Flipping active
+ *    takes the site off the internet.
+ *  - Delete site, Install starter kit — destructive/replacing actions behind
+ *    an explicit confirm (starter kit overwrites global CSS wholesale).
+ *  - `site_favicon` — a URL to an asset the agent has not uploaded.
+ *  - `agent_write_policy` / `policy_overrides` — the gate on agent writes is
+ *    not itself agent-writable, for the obvious reason. Super-admin only
+ *    (`adminUpdatePolicy`).
+ *
+ * Read-twin caveat worth stating once: the `site_*` read values are emitted
+ * from the SAVED `client_sites` row, and only `settings_draft` carries unsaved
+ * edits (and only the General/Global-CSS ones). So immediately after a stage,
+ * re-reading `site_theme_config` still shows the old value — the editor is
+ * ahead of the read twin until the human saves.
+ *
+ * ONE-CARD-AT-A-TIME (pre-existing page behaviour, observed in verification).
+ * Each section saves independently and then calls `refreshSite()`, and
+ * `SiteAdvancedSettings` deliberately remounts its sections on the new
+ * `site.updated_at` "so drafts re-seed from truth". The consequence for a
+ * multi-target stage is real: staging three targets and then clicking Save on
+ * each card in turn persisted only the FIRST — the refresh re-seeded the other
+ * cards from the saved row and discarded what was staged there. Each target
+ * persists correctly when staged and saved on its own. This is the settings
+ * page's existing behaviour (a human editing two cards at once loses the same
+ * work), not something the write targets introduced, but write targets make it
+ * far easier to hit, so the intro tells agents to warn the user.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "site_global_css",
+    label: "Global CSS",
+    description:
+      "Stage the site-wide stylesheet into the Global CSS editor on the Settings tab. Value: { css: string, mode?: 'replace' | 'append' } — 'replace' (the default) swaps the whole stylesheet, 'append' adds to the end of what is already there ('append' is the safe choice when you are adding rules rather than restyling). Plain CSS rules only, never a <style> tag. This stylesheet loads on EVERY page of the site and sits under each page's and each shared component's own CSS, so read `site_global_css` first when revising, and prefer the `--` custom properties from `site_theme_config` over hard-coded values. Staging only: it sits in the editor until the human clicks Save Changes, and that Save writes the live column — the whole site renders it immediately.",
+    valueType: "object",
+    updatesValue: "site_global_css",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "site_presentation",
+    sortOrder: 400,
+  },
+  {
+    name: "site_theme_config",
+    label: "Theme tokens",
+    description:
+      "Stage the site's design tokens into the Theme Tokens editor on the Settings tab. Value: the FULL token map as `{ group: { key: value } }` (bare top-level scalars allowed), e.g. `{ colors: { primary: '#0f766e' }, fonts: { body: 'Inter, sans-serif' } }`. Every leaf must be a string or number — nested objects are refused. This REPLACES every row in the editor, so read `site_theme_config` and include the tokens you are keeping. Each row becomes a CSS custom property on the live site (`colors.primary_teal` → `--color-primary-teal`), which is how `site_global_css` and component CSS should reference these values. Values that fail the renderer's safety allowlist are dropped at render time, never served. Staging only: the human clicks Save on the Theme Tokens card.",
+    valueType: "object",
+    updatesValue: "site_theme_config",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "site_presentation",
+    sortOrder: 410,
+  },
+  {
+    name: "site_navigation",
+    label: "Navigation menu",
+    description:
+      "Stage the site's explicit navigation menu into the Navigation editor on the Settings tab. Value: the FULL menu as an array of `{ label, href }` objects, rendered in the order given — it REPLACES the current list, so include every link you are keeping (read `site_navigation`). Both fields are required and non-empty on every entry; no other keys are stored. Hrefs are used verbatim, so use site-relative paths ('/services') for this site's own pages — `site_structure` and `pages_summary` give you every page's real route, and inventing one produces a dead link. An EMPTY array is meaningful and allowed: it clears the explicit menu and lets the site auto-derive its nav from the pages marked show-in-nav. Staging only: the human clicks Save on the Navigation card.",
+    valueType: "array",
+    updatesValue: "site_navigation",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "site_presentation",
+    sortOrder: 420,
+  },
+  {
+    name: "site_footer_config",
+    label: "Footer layout",
+    description:
+      "Stage the site's footer LAYOUT into the Footer editor on the Settings tab. Value: an object with any of `columns` (`[{ heading, links: [{label, href}] }]`), `copyright` (string), `legal_links` (`[{label, href}]`), `show_contact` / `show_social` (booleans), `contact_heading` / `social_heading` (strings). Send ONLY the keys you are changing — keys you omit are left exactly as the editor has them, and any other key present on the saved footer_config (such as `order`) is preserved automatically, so do NOT echo back the whole object you read: a key outside the list above is refused rather than silently dropped. `columns` and `legal_links` REPLACE their current lists in full. Layout only — the footer's contact and social CONTENT comes from `site_contact_info` / `site_social_links`, and these flags only toggle whether those blocks appear. Hrefs work like the navigation target: site-relative paths from `site_structure`. Staging only: the human clicks Save on the Footer card.",
+    valueType: "object",
+    updatesValue: "site_footer_config",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "site_presentation",
+    sortOrder: 430,
+  },
+];
+
 export const cmsSiteManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms-site",
   readiness: "verified",
@@ -563,12 +698,14 @@ The CMS is draft/publish twinned: every content column has a *_draft partner. pa
 agent_write_policy is binding and you must check it before promising any change: "blocked" means no writes at all, "draft_only" means you may save drafts but a human must publish, "full" means you may publish directly.
 Collections values are present only while the user is on the Collections tab; settings_draft only on Settings. Their absence means "not loaded here", not "none exist".
 The inherited owned_sites_summary is the user's other websites — useful for cross-site comparison, but every write you make belongs to site_id unless the user says otherwise.
+You can also WRITE here, through apply_surface_write, but only on the Settings tab (current_mode "settings"): the four targets stage the site's global CSS, theme tokens, navigation menu, and footer layout into the editors the user is looking at, and the user is asked before each one lands. Staging is not saving — the human still clicks that section's Save — so this path is available even under a "blocked" or "draft_only" agent_write_policy. Read the matching value first: theme tokens, navigation, and footer lists REPLACE what is in the editor, so anything you leave out is gone. The site row has no draft twin, so the human's Save publishes site-wide at once. If you stage more than one target, TELL THE USER to save one card at a time and come back to you: saving any card reloads the site and re-seeds the other cards from the saved row, which discards whatever is still staged there — so offer to re-stage the rest after each save rather than letting their work vanish. The site's domain, slug, active flag, and deletion are never writable — those are identity and human gates.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**

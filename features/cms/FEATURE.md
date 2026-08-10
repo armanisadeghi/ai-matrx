@@ -344,6 +344,58 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-10` — **`matrx-user/cms-site` is now agent-WRITABLE — the site's
+  own Settings tab, after the page and component editors.** Four ask-policy
+  DRAFT targets: `site_global_css` (handled on the settings route's existing
+  `SurfaceRuntimeProvider`, staging into the same `globalCss` state the
+  textarea drives, `{css, mode:'replace'|'append'}`), plus `site_theme_config`,
+  `site_navigation` and `site_footer_config`, each registered by the
+  `SiteAdvancedSettings` section that owns that draft via
+  `useSurfaceWriteHandlers` rather than threading five `useState`s up to the
+  route. **No handler calls `CmsSiteService`** — the human's per-section Save
+  is still the only writer, which is precisely what makes these targets legal
+  under `agent_write_policy`: staging is not saving, so they work on a
+  `blocked` or `draft_only` site exactly as the cms-component targets do.
+  There is no draft twin on `client_sites`, so that human Save publishes
+  site-wide at once — hence `ask` on all four and `auto` on none.
+  Validation throws on every bad shape (nested theme leaves, a nav row missing
+  `href`, an unknown footer key). That last one has a live trap behind it:
+  real rows carry footer keys the editor preserves but never edits (`order` on
+  dev-website), and they ARE in the value an agent reads, so an agent echoing
+  the object back gets refused — the error message names the fix ("send only
+  the keys you are changing") instead of just the fault.
+  **`site_meta_defaults` is the deliberate omission and it is a UI gap, not a
+  judgment call.** It is the best agent-value field on the row — the site-wide
+  title suffix / description / social image every page inherits — but WF-6
+  built editors for theme/navigation/footer/contact/social and skipped it, so
+  there is no draft state to stage into and no Save to review under; the only
+  path left would be an immediate `updateSite({metaDefaults})`, which both
+  bypasses the human and IS a save. Build the editor and it becomes a one-line
+  target. Also undeclared: contact/social (transcription, not authorship),
+  domain/slug (identity), `is_active` + publish + delete (human gates), and
+  `agent_write_policy` itself. Two stale read-value descriptions were
+  corrected in the same pass — `site_theme_config` and `site_contact_info`
+  still claimed to be "read-only under Settings → Advanced", which WF-6 ended.
+  **Known pre-existing behaviour the targets make easy to hit:** each section
+  saves then calls `refreshSite()`, and `SiteAdvancedSettings` remounts its
+  sections on the new `site.updated_at` "so drafts re-seed from truth" — so
+  staging three targets and saving the cards one after another persisted only
+  the FIRST; the refresh discarded what was staged on the others. Each target
+  persists correctly when staged and saved alone. A human editing two cards at
+  once loses the same work, so this is the page's existing design, not the
+  write path — but the manifest intro now tells agents to warn the user and
+  re-stage after each save. Worth fixing properly at the page level.
+  Live-verified with real Badass Agent runs on `dev-website`: a per-target ask
+  dialog carrying each manifest description, Apply staging a full stylesheet +
+  a matching token palette + a nav menu built from the site's real page routes,
+  "Keep as is" declining cleanly with the footer untouched, and the human Save
+  persisting to `client_sites` — `global_css` 0 → 2749 chars, `append` mode
+  later taking it to 2851 with the new rule intact, `theme_config` holding the
+  agent's palette, and `footer_config.copyright` set with `order`, `columns`
+  and `legal_links` all preserved (the partial-key contract). An undeclared
+  target (domain, and `site_meta_defaults`) was refused with the agent
+  enumerating the four real targets. Zero `surface-writeback` captures;
+  `check:surface-drift` and `type-check` clean.
 - `2026-08-09` — **`matrx-user/cms-component` is now agent-WRITABLE, and the
   components route finally mounts its own surface runtime.** The manifest
   declares 2 ask-policy draft targets — `component_html_content` and
