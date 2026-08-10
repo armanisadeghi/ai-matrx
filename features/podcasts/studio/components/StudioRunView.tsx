@@ -42,11 +42,13 @@ import { RunTruthInspector } from "@/features/podcasts/studio/components/RunTrut
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
 import { ResearchActivityFeed } from "@/features/podcasts/studio/components/ResearchActivityFeed";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { PodcastRunWriteTargets } from "@/features/podcasts/studio/components/PodcastRunWriteTargets";
 import {
   createPodcastRunScope,
   type PodcastRunSlotEntry,
 } from "@/features/surfaces/manifests/podcast-run.manifest";
 import type { RunAsset } from "@/features/podcasts/studio/runs/run-types";
+import type { PcEpisodeChapter } from "@/features/podcasts/types";
 
 /** Durable refs only — the run's asset URLs are signed and expire, so the
  *  surface emits `file_id` and status, never a link. */
@@ -86,9 +88,18 @@ export function StudioRunView({ runId }: { runId: string }) {
     addAsset,
     selectedCoverUrl,
     selectCover,
+    reflectEpisodeMetadata,
     livePlayer,
     researchActivity,
   } = run;
+
+  // The episode's persisted chapter markers, lifted out of EpisodeChaptersPanel
+  // (which owns the fetch and the canonical save) so the surface can emit them
+  // as the READ TWIN of the `episode_chapters` write target — an agent has to
+  // see the existing start_hint timestamps to preserve them.
+  const [episodeChapters, setEpisodeChapters] = useState<
+    PcEpisodeChapter[] | null
+  >(null);
 
   // When the canonical audio URL lands while the user is listening live, carry
   // the position (and playing state) over to the real player and silence the
@@ -213,6 +224,13 @@ export function StudioRunView({ runId }: { runId: string }) {
       script: state.script || undefined,
       script_preview: state.scriptPreview || undefined,
       source_preview: state.sourcePreview || undefined,
+      episode_chapters: episodeChapters
+        ? episodeChapters.map((c) => ({
+            start_hint: c.start_hint,
+            title: c.title,
+            summary: c.summary,
+          }))
+        : undefined,
       episode_id: state.episodeId ?? undefined,
       episode_slug: state.episodeSlug ?? undefined,
       show_id: state.showId ?? undefined,
@@ -267,6 +285,10 @@ export function StudioRunView({ runId }: { runId: string }) {
       getScope={getSurfaceScope}
       isEditable={false}
     >
+      {/* The write half of matrx-user/podcast-run: episode_title +
+          episode_description. episode_chapters registers itself from
+          EpisodeChaptersPanel, which owns that list and its canonical save. */}
+      <PodcastRunWriteTargets run={run} />
       <EntityModeHeader
         backHref="/podcast/studio"
         entityLabel={isRunning && !streaming ? "Studio run" : "Episode"}
@@ -358,11 +380,17 @@ export function StudioRunView({ runId }: { runId: string }) {
           />
 
           {isDone && state.episodeId && (
-            <EpisodeTitlePanel episodeId={state.episodeId} />
+            <EpisodeTitlePanel
+              episodeId={state.episodeId}
+              onTitleApplied={(title) => reflectEpisodeMetadata({ title })}
+            />
           )}
 
           {isDone && state.episodeId && (
-            <EpisodeChaptersPanel episodeId={state.episodeId} />
+            <EpisodeChaptersPanel
+              episodeId={state.episodeId}
+              onChaptersChange={setEpisodeChapters}
+            />
           )}
         </div>
 
