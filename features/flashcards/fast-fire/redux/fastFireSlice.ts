@@ -30,6 +30,16 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 // from those canonical sources directly (no barrel re-export from this slice).
 import type { GradeResult } from "@/features/education/trust/types";
 import type { SpokenGradeRubric as GradeRubric } from "../agents/grading-core";
+// The drill's configuration shape + defaults live in the canonical
+// `drill-config` module, not here: the surface manifest and the surface write
+// handler both need the bounds and defaults, and a manifest must not import a
+// Redux slice. This slice STORES the config; that module DEFINES it.
+import {
+  DEFAULT_DRILL_CONFIG,
+  type FastFireConfig,
+} from "../drill-config";
+
+export type { FastFireConfig };
 
 // =============================================================================
 // Types
@@ -92,31 +102,6 @@ export interface DrillCard {
   spokenFrontFileId?: string | null;
 }
 
-export interface FastFireConfig {
-  setId: string | null;
-  setName: string | null;
-  secondsPerCard: number;
-  /** Cap the card count (0 / undefined = all cards in the set). */
-  cardLimit: number;
-  /** Show running grades live, or only reveal at the scoreboard. */
-  liveScore: boolean;
-  /** Speak each card's question aloud (pre-generated + cached TTS). Default off. */
-  spokenFronts: boolean;
-  /**
-   * VOICE MODE ONLY: seconds to answer AFTER the question finishes playing. The
-   * answer timer does not start until the audio stops (you never lose time to the
-   * reading), and this is deliberately SHORTER than `secondsPerCard` — in voice
-   * mode you don't spend part of the window reading, so you need less time.
-   */
-  voiceAnswerSeconds: number;
-  /**
-   * Seconds-remaining at which the learner gets the light "almost out of time"
-   * warning beep. Config-driven so each mode/quiz can set its own rule; the timer
-   * only arms it when it lands strictly inside the card's window. 0 disables it.
-   */
-  warningSeconds: number;
-}
-
 /**
  * WHY a card's window closed. `timeout` = the clock ran out (the learner may not
  * have noticed — we show the prominent TIME'S UP hold). `skip` = the learner hit
@@ -164,20 +149,9 @@ export interface FastFireState {
 // Initial state
 // =============================================================================
 
-const DEFAULT_CONFIG: FastFireConfig = {
-  setId: null,
-  setName: null,
-  secondsPerCard: 12,
-  cardLimit: 0,
-  liveScore: true,
-  spokenFronts: false,
-  voiceAnswerSeconds: 8,
-  warningSeconds: 3,
-};
-
 const initialState: FastFireState = {
   phase: "idle",
-  config: DEFAULT_CONFIG,
+  config: DEFAULT_DRILL_CONFIG,
   cards: [],
   currentIndex: -1,
   lastAdvanceReason: null,
@@ -218,7 +192,7 @@ const fastFireSlice = createSlice({
       return {
         ...initialState,
         phase: "setup",
-        config: { ...DEFAULT_CONFIG, setId },
+        config: { ...DEFAULT_DRILL_CONFIG, setId },
       };
     },
 

@@ -39,6 +39,11 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { MediaDevicesPanel } from "@/features/audio/components/devices/MediaDevicesPanel";
 import { updateConfig } from "../redux/fastFireSlice";
+import {
+  DRILL_CONFIG_BOUNDS,
+  DEFAULT_DRILL_CONFIG,
+  maxVoiceAnswerSeconds,
+} from "../drill-config";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireLauncher } from "../hooks/useFastFireLauncher";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
@@ -190,12 +195,17 @@ export function FastFireSetup() {
               </span>
             </div>
             <Slider
-              min={3}
-              max={30}
+              min={DRILL_CONFIG_BOUNDS.secondsPerCard.min}
+              max={DRILL_CONFIG_BOUNDS.secondsPerCard.max}
               step={1}
               value={[config.secondsPerCard]}
               onValueChange={(v) =>
-                dispatch(updateConfig({ secondsPerCard: v[0] ?? 12 }))
+                dispatch(
+                  updateConfig({
+                    secondsPerCard:
+                      v[0] ?? DEFAULT_DRILL_CONFIG.secondsPerCard,
+                  }),
+                )
               }
             />
           </div>
@@ -213,12 +223,16 @@ export function FastFireSetup() {
               </span>
             </div>
             <Slider
-              min={0}
-              max={10}
+              min={DRILL_CONFIG_BOUNDS.warningSeconds.min}
+              max={DRILL_CONFIG_BOUNDS.warningSeconds.max}
               step={1}
               value={[config.warningSeconds]}
               onValueChange={(v) =>
-                dispatch(updateConfig({ warningSeconds: v[0] ?? 3 }))
+                dispatch(
+                  updateConfig({
+                    warningSeconds: v[0] ?? DEFAULT_DRILL_CONFIG.warningSeconds,
+                  }),
+                )
               }
             />
             <p className="mt-1.5 text-[11px] text-muted-foreground">
@@ -238,12 +252,16 @@ export function FastFireSetup() {
               </span>
             </div>
             <Slider
-              min={0}
-              max={50}
+              min={DRILL_CONFIG_BOUNDS.cardLimit.min}
+              max={DRILL_CONFIG_BOUNDS.cardLimit.max}
               step={1}
               value={[config.cardLimit]}
               onValueChange={(v) =>
-                dispatch(updateConfig({ cardLimit: v[0] ?? 0 }))
+                dispatch(
+                  updateConfig({
+                    cardLimit: v[0] ?? DEFAULT_DRILL_CONFIG.cardLimit,
+                  }),
+                )
               }
             />
             <p className="mt-1.5 text-[11px] text-muted-foreground">
@@ -359,12 +377,17 @@ export function FastFireSetup() {
                 </span>
               </div>
               <Slider
-                min={3}
-                max={Math.max(3, config.secondsPerCard)}
+                min={DRILL_CONFIG_BOUNDS.voiceAnswerSeconds.min}
+                max={maxVoiceAnswerSeconds(config.secondsPerCard)}
                 step={1}
                 value={[config.voiceAnswerSeconds]}
                 onValueChange={(v) =>
-                  dispatch(updateConfig({ voiceAnswerSeconds: v[0] ?? 8 }))
+                  dispatch(
+                    updateConfig({
+                      voiceAnswerSeconds:
+                        v[0] ?? DEFAULT_DRILL_CONFIG.voiceAnswerSeconds,
+                    }),
+                  )
                 }
               />
               <p className="mt-1.5 text-[11px] text-muted-foreground">
