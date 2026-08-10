@@ -11455,6 +11455,61 @@
         }
       }
     },
+    "/seo/sites/{site_id}/performance": {
+      "get": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Read Site Performance",
+        "description": "Site-wide PageSpeed coverage, score distribution, percentiles, traffic-\nqualified worst pages, and performance changes over the selected window.",
+        "operationId": "read_site_performance_seo_sites__site_id__performance_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "window_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 30,
+              "title": "Window Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePerformanceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/sites/{site_id}/analytics/sync": {
       "post": {
         "tags": [
@@ -98783,6 +98838,263 @@
         "type": "object",
         "title": "SiteIntakeRunBody"
       },
+      "SitePerformanceChangePage": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "desktop"
+            ],
+            "title": "Strategy"
+          },
+          "previous_performance_score": {
+            "type": "number",
+            "title": "Previous Performance Score"
+          },
+          "current_performance_score": {
+            "type": "number",
+            "title": "Current Performance Score"
+          },
+          "delta": {
+            "type": "number",
+            "title": "Delta"
+          },
+          "previous_observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Previous Observed At"
+          },
+          "current_observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Current Observed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "url",
+          "strategy",
+          "previous_performance_score",
+          "current_performance_score",
+          "delta",
+          "previous_observed_at",
+          "current_observed_at"
+        ],
+        "title": "SitePerformanceChangePage"
+      },
+      "SitePerformanceCoverage": {
+        "properties": {
+          "total_measurable_pages": {
+            "type": "integer",
+            "title": "Total Measurable Pages"
+          },
+          "pages_ever_measured": {
+            "type": "integer",
+            "title": "Pages Ever Measured"
+          },
+          "pages_measured_last_30_days": {
+            "type": "integer",
+            "title": "Pages Measured Last 30 Days"
+          },
+          "percent_covered": {
+            "type": "number",
+            "title": "Percent Covered"
+          },
+          "estimated_cycles_remaining": {
+            "type": "integer",
+            "title": "Estimated Cycles Remaining"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total_measurable_pages",
+          "pages_ever_measured",
+          "pages_measured_last_30_days",
+          "percent_covered",
+          "estimated_cycles_remaining"
+        ],
+        "title": "SitePerformanceCoverage"
+      },
+      "SitePerformanceDistribution": {
+        "properties": {
+          "good": {
+            "type": "integer",
+            "title": "Good",
+            "default": 0
+          },
+          "needs_work": {
+            "type": "integer",
+            "title": "Needs Work",
+            "default": 0
+          },
+          "poor": {
+            "type": "integer",
+            "title": "Poor",
+            "default": 0
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SitePerformanceDistribution"
+      },
+      "SitePerformancePercentiles": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          },
+          "median": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median"
+          },
+          "p25": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P25"
+          },
+          "p75": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P75"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SitePerformancePercentiles"
+      },
+      "SitePerformanceResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/SitePerformanceCoverage"
+          },
+          "mobile_distribution": {
+            "$ref": "#/components/schemas/SitePerformanceDistribution"
+          },
+          "mobile_scores": {
+            "$ref": "#/components/schemas/SitePerformancePercentiles"
+          },
+          "desktop_scores": {
+            "$ref": "#/components/schemas/SitePerformancePercentiles"
+          },
+          "worst_pages_with_traffic": {
+            "items": {
+              "$ref": "#/components/schemas/SiteTrafficPerformancePage"
+            },
+            "type": "array",
+            "title": "Worst Pages With Traffic"
+          },
+          "most_improved": {
+            "items": {
+              "$ref": "#/components/schemas/SitePerformanceChangePage"
+            },
+            "type": "array",
+            "title": "Most Improved"
+          },
+          "most_regressed": {
+            "items": {
+              "$ref": "#/components/schemas/SitePerformanceChangePage"
+            },
+            "type": "array",
+            "title": "Most Regressed"
+          },
+          "suggested_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SitePerformanceSuggestedAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "generated_at",
+          "window_days",
+          "coverage",
+          "mobile_distribution",
+          "mobile_scores",
+          "desktop_scores"
+        ],
+        "title": "SitePerformanceResponse"
+      },
+      "SitePerformanceSuggestedAction": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "sync_path": {
+            "type": "string",
+            "title": "Sync Path"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "url",
+          "sync_path"
+        ],
+        "title": "SitePerformanceSuggestedAction"
+      },
       "SiteScheduleStatusResponse": {
         "properties": {
           "site_id": {
@@ -98893,6 +99205,46 @@
         "additionalProperties": false,
         "type": "object",
         "title": "SiteStrategyResult"
+      },
+      "SiteTrafficPerformancePage": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "performance_score": {
+            "type": "number",
+            "title": "Performance Score"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "gsc_clicks": {
+            "type": "integer",
+            "title": "Gsc Clicks"
+          },
+          "gsc_impressions": {
+            "type": "integer",
+            "title": "Gsc Impressions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "url",
+          "performance_score",
+          "observed_at",
+          "gsc_clicks",
+          "gsc_impressions"
+        ],
+        "title": "SiteTrafficPerformancePage"
       },
       "SkillCreate": {
         "properties": {

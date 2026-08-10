@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   TrendingUp,
   Loader2,
+  Timer,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
@@ -75,6 +76,7 @@ function sectionSuffix(
     "discovery",
     "sitemaps",
     "coverage",
+    "performance",
     "audit",
     "pages",
     "structure",
@@ -189,6 +191,11 @@ export function MarketingSiteLayoutClient({
         }))}
         modes={[
           { name: "Overview", href: `${base}`, icon: Gauge },
+          {
+            name: "Performance",
+            href: `${base}/performance`,
+            icon: Timer,
+          },
           {
             name: "Discovery",
             href: `${base}/discovery`,

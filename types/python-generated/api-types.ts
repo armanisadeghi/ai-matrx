@@ -4551,6 +4551,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/performance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Site Performance
+         * @description Site-wide PageSpeed coverage, score distribution, percentiles, traffic-
+         *     qualified worst pages, and performance changes over the selected window.
+         */
+        get: operations["read_site_performance_seo_sites__site_id__performance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/analytics/sync": {
         parameters: {
             query?: never;
@@ -36933,6 +36954,116 @@ export interface components {
              */
             force_refresh?: boolean;
         };
+        /** SitePerformanceChangePage */
+        SitePerformanceChangePage: {
+            /** Page Id */
+            page_id: string;
+            /** Url */
+            url: string;
+            /**
+             * Strategy
+             * @enum {string}
+             */
+            strategy: "mobile" | "desktop";
+            /** Previous Performance Score */
+            previous_performance_score: number;
+            /** Current Performance Score */
+            current_performance_score: number;
+            /** Delta */
+            delta: number;
+            /**
+             * Previous Observed At
+             * Format: date-time
+             */
+            previous_observed_at: string;
+            /**
+             * Current Observed At
+             * Format: date-time
+             */
+            current_observed_at: string;
+        };
+        /** SitePerformanceCoverage */
+        SitePerformanceCoverage: {
+            /** Total Measurable Pages */
+            total_measurable_pages: number;
+            /** Pages Ever Measured */
+            pages_ever_measured: number;
+            /** Pages Measured Last 30 Days */
+            pages_measured_last_30_days: number;
+            /** Percent Covered */
+            percent_covered: number;
+            /** Estimated Cycles Remaining */
+            estimated_cycles_remaining: number;
+        };
+        /** SitePerformanceDistribution */
+        SitePerformanceDistribution: {
+            /**
+             * Good
+             * @default 0
+             */
+            good?: number;
+            /**
+             * Needs Work
+             * @default 0
+             */
+            needs_work?: number;
+            /**
+             * Poor
+             * @default 0
+             */
+            poor?: number;
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+        };
+        /** SitePerformancePercentiles */
+        SitePerformancePercentiles: {
+            /**
+             * Count
+             * @default 0
+             */
+            count?: number;
+            /** Median */
+            median?: number | null;
+            /** P25 */
+            p25?: number | null;
+            /** P75 */
+            p75?: number | null;
+        };
+        /** SitePerformanceResponse */
+        SitePerformanceResponse: {
+            /** Site Id */
+            site_id: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Window Days */
+            window_days: number;
+            coverage: components["schemas"]["SitePerformanceCoverage"];
+            mobile_distribution: components["schemas"]["SitePerformanceDistribution"];
+            mobile_scores: components["schemas"]["SitePerformancePercentiles"];
+            desktop_scores: components["schemas"]["SitePerformancePercentiles"];
+            /** Worst Pages With Traffic */
+            worst_pages_with_traffic?: components["schemas"]["SiteTrafficPerformancePage"][];
+            /** Most Improved */
+            most_improved?: components["schemas"]["SitePerformanceChangePage"][];
+            /** Most Regressed */
+            most_regressed?: components["schemas"]["SitePerformanceChangePage"][];
+            suggested_action?: components["schemas"]["SitePerformanceSuggestedAction"] | null;
+        };
+        /** SitePerformanceSuggestedAction */
+        SitePerformanceSuggestedAction: {
+            /** Page Id */
+            page_id: string;
+            /** Url */
+            url: string;
+            /** Sync Path */
+            sync_path: string;
+        };
         /** SiteScheduleStatusResponse */
         SiteScheduleStatusResponse: {
             /** Site Id */
@@ -36978,6 +37109,24 @@ export interface components {
             unknown_topic_slugs?: string[];
             /** Open Questions */
             open_questions?: string[];
+        };
+        /** SiteTrafficPerformancePage */
+        SiteTrafficPerformancePage: {
+            /** Page Id */
+            page_id: string;
+            /** Url */
+            url: string;
+            /** Performance Score */
+            performance_score: number;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Gsc Clicks */
+            gsc_clicks: number;
+            /** Gsc Impressions */
+            gsc_impressions: number;
         };
         /** SkillCreate */
         SkillCreate: {
@@ -50886,6 +51035,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PagePerformanceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_site_performance_seo_sites__site_id__performance_get: {
+        parameters: {
+            query?: {
+                window_days?: number;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitePerformanceResponse"];
                 };
             };
             /** @description Validation Error */
