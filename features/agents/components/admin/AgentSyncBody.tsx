@@ -77,6 +77,16 @@ const USER_AGENT_BASE_PATH = "/agents";
 interface AgentSyncBodyProps {
   agentId: string;
   onClose: () => void;
+  /**
+   * Optional slot context — set when this comparison was opened FROM an agent
+   * slot (the admin slots console). When present, the linked-pair view names
+   * the slot it is judging ("This is what slot X runs") and, with
+   * `onRepinToSystem`, offers "Repin slot to system side" inside the diff.
+   * Every other caller passes nothing and is unchanged.
+   */
+  slotKey?: string;
+  slotLabel?: string;
+  onRepinToSystem?: (systemAgentId: string) => Promise<void>;
 }
 
 function formatTimestamp(iso: string | null | undefined): string {
@@ -177,7 +187,13 @@ function resolvePair(
   return { userSide: self, systemSide };
 }
 
-export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
+export function AgentSyncBody({
+  agentId,
+  onClose,
+  slotKey,
+  slotLabel,
+  onRepinToSystem,
+}: AgentSyncBodyProps) {
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const dispatch = useAppDispatch();
@@ -206,6 +222,7 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
   } | null>(null);
   const [comparisonRetry, setComparisonRetry] = useState(0);
   const [confirmPushOpen, setConfirmPushOpen] = useState(false);
+  const [repinBusy, setRepinBusy] = useState(false);
 
   const counterpart =
     counterpartState?.agentId === agentId ? counterpartState.result : null;
@@ -527,9 +544,58 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
       (comparison.behaviorFields.length > 0 || comparison.profileFields.length > 0),
   );
 
+  const slotDisplayName = slotLabel ?? slotKey ?? null;
+  const runRepinToSystem = async () => {
+    if (!onRepinToSystem || !systemSide) return;
+    setRepinBusy(true);
+    try {
+      await onRepinToSystem(systemSide.id);
+      toast.success(
+        `Slot ${slotDisplayName ?? slotKey ?? "(unknown)"} repinned to the system agent "${systemSide.name}" (tracks latest).`,
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Repinning the slot failed.",
+      );
+    } finally {
+      setRepinBusy(false);
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 border-b border-border bg-card/40 px-4 pt-3">
+        {slotDisplayName && (
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs">
+              <Badge variant="outline" className="text-[10px]">
+                Agent slot
+              </Badge>
+              <span>
+                This is what slot{" "}
+                <span className="font-mono font-medium">{slotDisplayName}</span>{" "}
+                runs.
+              </span>
+            </div>
+            {onRepinToSystem && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 shrink-0 gap-1 px-1.5 text-[11px]"
+                disabled={repinBusy || busy !== null}
+                title={`Repin slot ${slotDisplayName} to the system agent "${systemSide.name}" (tracks latest)`}
+                onClick={() => void runRepinToSystem()}
+              >
+                {repinBusy ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <ShieldCheck className="h-3 w-3" />
+                )}
+                Repin slot to system side
+              </Button>
+            )}
+          </div>
+        )}
         <div className="flex items-start gap-3 pb-3">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <div className="text-xs leading-relaxed text-muted-foreground">

@@ -41,22 +41,53 @@ import {
   selectSharedWithMeAgents,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
+import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { ContextSlot } from "@/features/agents/types/agent-api-types";
 import {
-  checkSlotContract,
   fetchSlotPickerData,
   parseSlotContract,
   putSlotBinding,
   removeSlotBinding,
   type SlotPickerData,
 } from "../overrides";
+import { compareContracts, compareStoredContract } from "../contract-compare";
+
+/** Externally-owned override store (e.g. research's per-topic
+ * `rs_topic.agent_config`). When provided, picking a candidate still runs the
+ * contract pre-flight (against `contractSource` when supplied, else the
+ * slot's stored contract) but the WRITE goes through these callbacks instead
+ * of a user `agent.slot_binding`. */
+export interface SlotAgentPickerOverrideControl {
+  /** The current override agent id, or null when the default runs. */
+  agentId: string | null;
+  apply: (candidateId: string) => Promise<void> | void;
+  reset: () => Promise<void> | void;
+}
+
+/** A live full-declaration comparison source (a system agent's declared
+ * variables + context slots) for the pre-flight, in place of the slot's
+ * STORED contract. Same shape `selectAgentExecutionPayload` returns. */
+export interface SlotContractSource {
+  variableDefinitions: VariableDefinition[] | null;
+  contextSlots: ContextSlot[];
+}
 
 export function SlotAgentPicker({
   slotKey,
   className,
+  override,
+  contractSource,
 }: {
   slotKey: string;
   /** Styles the trigger button. */
   className?: string;
+  override?: SlotAgentPickerOverrideControl;
+  /** When set, the contract pre-flight compares the candidate against THIS
+   * live declaration (canonical `compareContracts`) instead of the slot's
+   * stored contract — research passes the live system agent so what the role
+   * card SHOWS is what the pre-flight CHECKS. Pass null while the live
+   * declaration is still loading; the stored contract is the fallback. */
+  contractSource?: SlotContractSource | null;
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -93,7 +124,11 @@ export function SlotAgentPicker({
     void dispatch(fetchAgentsListFull());
   }, [open, load, dispatch]);
 
-  const overrideAgentId = data?.myBinding?.is_enabled ? (data.myBinding.agent_id ?? null) : null;
+  const overrideAgentId = override
+    ? override.agentId
+    : data?.myBinding?.is_enabled
+      ? (data.myBinding.agent_id ?? null)
+      : null;
   const overrideAgentName = overrideAgentId
     ? ([...ownedAgents, ...sharedAgents].find((a) => a.id === overrideAgentId)
         ?.name ?? "your agent")
@@ -102,47 +137,85 @@ export function SlotAgentPicker({
   const handlePick = async (candidateId: string) => {
     if (!data || saving || candidateId === overrideAgentId) return;
     setPreflight(null);
+    // `null` means the consumer's live declaration is still LOADING (distinct
+    // from `undefined` = "no live source, use the stored contract"). Never
+    // fall back to the stored contract while the surface is showing live
+    // requirements — that gap let an override save before the real check ran.
+    if (contractSource === null) {
+      setPreflight(
+        "Still loading this step's live requirements — try again in a moment.",
+      );
+      return;
+    }
+    // Picking the system default is a RESET, never a redundant override row.
+    if (candidateId === data.defaultAgentId) {
+      if (overrideAgentId) {
+        await handleReset();
+      } else {
+        toast.info("Already running the system default.");
+      }
+      return;
+    }
     setSaving(true);
     try {
-      // Instant client pre-flight (the server's bind-time check is authoritative).
-      const contract = parseSlotContract(data.slot.contract);
-      if (contract.requiredVariables.length + contract.requiredContextSlots.length > 0) {
-        await dispatch(fetchAgentExecutionMinimal(candidateId)).unwrap();
-        const payload = selectAgentExecutionPayload(store.getState(), candidateId);
-        if (payload.isReady) {
-          const check = checkSlotContract(contract, {
+      // Instant client pre-flight (the server's bind-time check is
+      // authoritative for binding writes; for externally-owned overrides this
+      // pre-flight IS the gate). The candidate must at least RESOLVE — an
+      // agent the execution RPC can't see (inaccessible, deleted) is never
+      // silently bound, even when the slot declares no contract requirements.
+      await dispatch(fetchAgentExecutionMinimal(candidateId)).unwrap();
+      const payload = selectAgentExecutionPayload(store.getState(), candidateId);
+      if (!payload.isReady) {
+        setPreflight(
+          "Could not verify this agent — it may be inaccessible or deleted.",
+        );
+        return;
+      }
+      // Comparison source: the live declaration when the consumer supplied
+      // one (what the surface SHOWS is what we CHECK), else the slot's
+      // stored contract.
+      const check = contractSource
+        ? compareContracts(contractSource, {
+            variableDefinitions: payload.variableDefinitions,
+            contextSlots: payload.contextSlots ?? [],
+          })
+        : compareStoredContract(parseSlotContract(data.slot.contract), {
             variableNames: (payload.variableDefinitions ?? []).map((v) => v.name),
             contextSlotKeys: (payload.contextSlots ?? []).map((s) => s.key),
           });
-          if (!check.passing) {
-            setPreflight(
-              `That agent can't run this step — missing: ${[
-                ...check.missingVariables,
-                ...check.missingSlots,
-              ].join(", ")}`,
-            );
-            return;
-          }
-        }
+      if (!check.passing) {
+        setPreflight(
+          `That agent can't run this step — missing: ${[
+            ...check.missingVariables,
+            ...check.missingSlots,
+          ]
+            .map((r) => r.name)
+            .join(", ")}`,
+        );
+        return;
       }
-      // Preserve any settings-only overrides already on the binding.
-      const existing = data.myBinding?.config_overrides;
-      const configOverrides = isJsonObject(existing)
-        ? Object.fromEntries(
-            Object.entries(existing).filter(
-              (entry): entry is [string, JsonValue] => entry[1] !== undefined,
-            ),
-          )
-        : null;
-      await putSlotBinding(
-        dispatch,
-        slotKey,
-        { principalType: "user" },
-        {
-          agentId: candidateId,
-          configOverrides,
-        },
-      );
+      if (override) {
+        await override.apply(candidateId);
+      } else {
+        // Preserve any settings-only overrides already on the binding.
+        const existing = data.myBinding?.config_overrides;
+        const configOverrides = isJsonObject(existing)
+          ? Object.fromEntries(
+              Object.entries(existing).filter(
+                (entry): entry is [string, JsonValue] => entry[1] !== undefined,
+              ),
+            )
+          : null;
+        await putSlotBinding(
+          dispatch,
+          slotKey,
+          { principalType: "user" },
+          {
+            agentId: candidateId,
+            configOverrides,
+          },
+        );
+      }
       toast.success("This step now runs your agent.");
       load();
     } catch (err) {
@@ -159,8 +232,14 @@ export function SlotAgentPicker({
     setPreflight(null);
     setSaving(true);
     try {
-      await removeSlotBinding(dispatch, slotKey, { principalType: "user" });
-      toast.success("Back to the system default.");
+      if (override) {
+        // The owning surface's reset announces its own success (e.g.
+        // research's "Override removed.") — a second toast here doubles it.
+        await override.reset();
+      } else {
+        await removeSlotBinding(dispatch, slotKey, { principalType: "user" });
+        toast.success("Back to the system default.");
+      }
       load();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

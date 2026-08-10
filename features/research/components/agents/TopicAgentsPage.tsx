@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Loader2, ShieldCheck, Workflow } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { OverriddenCountBadge } from "@/features/agents/slots/components/OverriddenCountBadge";
+import { SlotResolutionRibbon } from "@/features/agents/slots/components/SlotResolutionRibbon";
 import { useTopicContext } from "../../context/ResearchContext";
 import { updateTopic } from "../../service";
 import { AGENT_CONFIG_KEYS, type AgentConfigKey } from "../../admin/types";
@@ -125,46 +127,19 @@ export default function TopicAgentsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span
-              className={
-                overrideCount > 0
-                  ? "inline-flex items-center gap-1.5 rounded-full bg-primary/8 px-2.5 py-1 text-[11.5px] font-medium text-primary ring-1 ring-inset ring-primary/15"
-                  : "inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 text-[11.5px] font-medium text-muted-foreground ring-1 ring-inset ring-border/60"
-              }
-            >
-              <ShieldCheck className="h-3 w-3" />
-              <span className="tabular-nums">
-                {overrideCount} of {overridableCount}
-              </span>{" "}
-              overridden
-            </span>
+            <OverriddenCountBadge
+              overridden={overrideCount}
+              total={overridableCount}
+            />
           </div>
         </div>
 
-        {/* Resolution chain */}
-        <div className="mt-4 rounded-xl border border-border/50 bg-muted/30 px-3.5 py-2.5">
-          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11.5px]">
-            <Workflow className="h-3 w-3 text-muted-foreground/70" />
-            <span className="font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
-              Resolution
-            </span>
-            <span className="ml-1 rounded-md bg-card px-1.5 py-0.5 font-medium text-foreground ring-1 ring-inset ring-border/60">
-              Explicit per-call
-            </span>
-            <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/50" />
-            <span className="rounded-md bg-card px-1.5 py-0.5 font-medium text-foreground ring-1 ring-inset ring-border/60">
-              Topic override
-            </span>
-            <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/50" />
-            <span className="rounded-md bg-card px-1.5 py-0.5 text-muted-foreground ring-1 ring-inset ring-border/40">
-              Template default
-            </span>
-            <ArrowRight className="h-2.5 w-2.5 text-muted-foreground/50" />
-            <span className="rounded-md bg-card px-1.5 py-0.5 text-muted-foreground ring-1 ring-inset ring-border/40">
-              System fallback
-            </span>
-          </div>
-        </div>
+        {/* The canonical, truthful precedence chain — run-scope here is the
+            per-topic override (rs_topic.agent_config). */}
+        <SlotResolutionRibbon
+          className="mt-4"
+          labels={{ run: "Topic override" }}
+        />
       </header>
 
       {/* ── Role cards ─────────────────────────────────────────── */}

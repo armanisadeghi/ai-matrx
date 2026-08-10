@@ -53,8 +53,13 @@ export function onSlotCacheInvalidated(
 }
 
 export function invalidateClientSlotCache(slotKey?: string): void {
-  if (slotKey) cache.delete(slotKey);
-  else cache.clear();
+  if (slotKey) {
+    cache.delete(slotKey);
+    pinCache.delete(slotKey);
+  } else {
+    cache.clear();
+    pinCache.clear();
+  }
   for (const listener of invalidationListeners) listener(slotKey);
 }
 
