@@ -29,6 +29,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -319,6 +320,89 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Agent-writable targets — the organization's authored PROFILE COPY, nothing else.
+ *
+ * All three land through `updateOrganization` (`features/organizations/service.ts`),
+ * the exact service the user's own "Edit → Save" in `GeneralSettings` calls. The
+ * org home (`OrgWorkspace`, where this surface is mounted) has NO draft buffer of
+ * its own — it renders the loaded org row directly — so every target is
+ * `mode: "entity"`: the save is immediate, and the read twin (`org_name`,
+ * `org_description`, `org_abbreviation`) re-emits from the server row the service
+ * returns. `applyPolicy: "ask"` on all three; nothing here writes unattended.
+ *
+ * WHY THESE THREE. Name and description are plainly authored copy: the description
+ * especially is the org's own statement of what it does, and a placeholder is the
+ * normal state. The abbreviation is the third and it IS a judgment call — it looks
+ * like an identifier, but it is not one: `org_slug` is the identifier (immutable,
+ * routes resolve on it), while the abbreviation is a 2-3 letter DISPLAY label
+ * chosen for the places the full name will not fit. Nothing keys off it, changing
+ * it breaks no link, and "which three letters read as this org" is exactly the
+ * naming judgment an agent can make. So it earns a target — with the same
+ * `validateOrganizationAbbreviation` gate the form uses, and refused outright on a
+ * personal workspace, which is pinned to ME.
+ *
+ * DELIBERATELY NOT WRITABLE:
+ *   - `org_website` — a fact, not authored copy. The agent cannot verify a URL is
+ *     the right one, and a wrong website on an org page reads as authoritative.
+ *   - `org_slug`, `org_id`, `org_created_at`, `org_is_personal` — identity. The
+ *     slug is immutable after creation (the form marks it read-only) and the rest
+ *     are server-owned.
+ *   - Members, roles, invitations, contribution review, `can_manage` — permissions
+ *     are never an agent's call.
+ *   - Deleting the org, and the logo (a file upload/crop flow, not a value).
+ *
+ * Every handler refuses loudly when the viewer is not an owner/admin (`can_manage`
+ * false) — the same gate that hides the form's Edit button.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "org_name",
+    label: "Organization name",
+    description: [
+      "Renames the organization currently open in the workspace, saved immediately through the page's canonical update service (the same one the Settings → General form saves with).",
+      "Plain string, 3-50 characters. Replaces the whole name — read org_name first if you mean to adjust it rather than replace it.",
+      "This changes the display name everywhere the org appears; it does NOT change org_slug, which is fixed at creation and is what URLs resolve on. Refused unless the viewer is an owner or admin (can_manage true).",
+    ].join(" "),
+    valueType: "string",
+    updatesValue: "org_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "org_identity",
+    sortOrder: 500,
+  },
+  {
+    name: "org_description",
+    label: "Organization description",
+    description: [
+      "Rewrites the open organization's description, saved immediately through the page's canonical update service (the same one the Settings → General form saves with).",
+      "Plain string, max 500 characters; pass an empty string to clear it. Replaces the whole field — read org_description first if you mean to extend it.",
+      "This is the org's own statement of what it does, shown under the name on the org home. Write it for someone deciding whether this workspace is the right place for their work. Refused unless the viewer is an owner or admin (can_manage true).",
+    ].join(" "),
+    valueType: "string",
+    updatesValue: "org_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "org_identity",
+    sortOrder: 510,
+  },
+  {
+    name: "org_abbreviation",
+    label: "Organization abbreviation",
+    description: [
+      "Sets the open organization's compact 2-3 letter label, saved immediately through the page's canonical update service (the same one the Settings → General form saves with).",
+      "Exactly 2 or 3 UPPERCASE letters A-Z, no digits, spaces, or punctuation — anything else is rejected, never corrected. Derive it from org_name (Acme Robotics → AR or ACR).",
+      "This is a display label used where the full name will not fit; it is not an identifier and nothing resolves on it (org_slug does). Refused on a personal workspace, which is always ME, and unless the viewer is an owner or admin (can_manage true).",
+    ].join(" "),
+    valueType: "string",
+    updatesValue: "org_abbreviation",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "org_identity",
+    sortOrder: 520,
+  },
+];
+
 export const organizationsManifest: SurfaceManifest = {
   surfaceName: ORGANIZATIONS_SURFACE_NAME,
   readiness: "verified",
@@ -335,6 +419,7 @@ Respect viewer_role: only owners and admins (can_manage true) manage members, se
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One member entry as emitted in `members_summary`. */
