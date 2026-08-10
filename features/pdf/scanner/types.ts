@@ -8,6 +8,20 @@
  * without conversion.
  */
 
+// ── Authored-metadata bounds ─────────────────────────────────────────────
+// The scan's title and its per-page names are the only AUTHORED fields on
+// this surface (everything else is captured/uploaded evidence), and both are
+// agent-writable. The limits live HERE rather than as literals inside the
+// handlers: the surface manifest interpolates them into its write-target
+// contract prose and `useScannerWriteHandlers` enforces them, so what the
+// agent is TOLD and what the page ACCEPTS cannot drift apart.
+
+/** Max characters for `scan_title` — it becomes the saved PDF's filename. */
+export const SCAN_TITLE_MAX_LENGTH = 120;
+
+/** Max characters for one page's display label (`ScanItem.label`). */
+export const SCAN_PAGE_LABEL_MAX_LENGTH = 80;
+
 export type QuadPoint = [number, number];
 
 export interface Quad {

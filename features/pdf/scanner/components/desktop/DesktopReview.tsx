@@ -8,6 +8,12 @@
  * Grid is for scanning the set at a glance; List is for reordering
  * (dnd-kit, the house drag primitive). Source chips distinguish camera
  * captures from imported files.
+ *
+ * This is also the scanner surface's WRITE site. The title input below and the
+ * per-card "Page name" inputs are the only authored-metadata controls the
+ * scanner has, so the manifest's `scan_title` / `scan_page_labels` /
+ * `scan_page_label` handlers are registered here rather than on the provider —
+ * see `useScannerWriteHandlers` for why that placement is the contract.
  */
 
 import React, { useMemo, useState } from "react";
@@ -42,11 +48,14 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SCANNER_SURFACE_NAME } from "@/features/surfaces/manifests/scanner.manifest";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { cn } from "@/lib/utils";
 
 import { ENHANCE_LABELS } from "../../enhance";
 import type { ScanItem } from "../../types";
 import type { UseScanSessionResult } from "../../useScanSession";
+import { useScannerWriteHandlers } from "../../useScannerWriteHandlers";
 
 interface DesktopReviewProps {
   session: UseScanSessionResult;
@@ -90,6 +99,14 @@ export function DesktopReview({
   };
 
   const saveDisabled = !session.allUploaded || saving;
+
+  // The surface's write targets are wired HERE because this component renders
+  // the controls they stage into; `saving` is passed so the handlers can refuse
+  // once ProcessingView has replaced the review.
+  useSurfaceWriteHandlers(
+    SCANNER_SURFACE_NAME,
+    useScannerWriteHandlers(session, { saving })(),
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

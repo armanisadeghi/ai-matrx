@@ -13,9 +13,17 @@
  * calls `getScope` when the user hits Run), so it always reflects the live
  * session rather than a stale render copy.
  *
- * Same story for the WRITE half: `getWriteHandlers` is registered here so both
- * skins get the surface's `writeTargets` from one place
- * (`useScannerWriteHandlers`), for the same anti-fork reason.
+ * The WRITE half deliberately does NOT live here, and that is the one place
+ * the two skins genuinely differ. `useScannerWriteHandlers` is registered from
+ * `DesktopReview` via `useSurfaceWriteHandlers` — the component that renders
+ * the title input and the per-card "Page name" input. Registering on this
+ * provider would advertise the targets on the mobile capture skin too, which
+ * renders no rename UI at all and shows the title only inside the Save sheet,
+ * and on the desktop Home view, where the review is not on screen. A target is
+ * only offered where a handler is registered, so keeping the handlers with the
+ * inputs is what makes the offer honest. ONE handler module, still — the
+ * anti-fork rule is about the engine, not about pretending both skins render
+ * the same controls.
  */
 
 import type { ReactNode } from "react";
@@ -25,7 +33,6 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 
 import type { UseScanSaveFlowResult } from "./useScanSaveFlow";
 import type { UseScanSessionResult } from "./useScanSession";
-import { useScannerWriteHandlers } from "./useScannerWriteHandlers";
 
 interface ScannerSurfaceRuntimeProps {
   session: UseScanSessionResult;
@@ -38,8 +45,6 @@ export function ScannerSurfaceRuntime({
   flow,
   children,
 }: ScannerSurfaceRuntimeProps) {
-  const getWriteHandlers = useScannerWriteHandlers(session);
-
   const getScope = () => {
     const items = session.items;
     const sourceCounts = items.reduce(
@@ -105,7 +110,6 @@ export function ScannerSurfaceRuntime({
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/scanner"
       getScope={getScope}
-      getWriteHandlers={getWriteHandlers}
       isEditable={false}
     >
       {children}

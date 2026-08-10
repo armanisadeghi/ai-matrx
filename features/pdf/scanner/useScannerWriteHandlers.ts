@@ -28,11 +28,36 @@
  * `session` is read through a ref rather than closed over, because a handler
  * runs at APPLY time — potentially several turns after it was registered — and
  * must see the pages as they are THEN, not as they were at the last render.
+ *
+ * WHERE THIS IS REGISTERED IS PART OF THE CONTRACT. These handlers are wired
+ * from `DesktopReview` (`useSurfaceWriteHandlers`), the component that renders
+ * the title input and the per-card "Page name" input — NOT from the provider in
+ * `ScannerSurfaceRuntime`. A target is only offered to an agent where a handler
+ * is registered, and the scanner's two skins render different controls: the
+ * mobile capture skin has no page-rename UI at all and shows the title only
+ * inside the Save sheet at commit time, so staging there would be a draft the
+ * user cannot see or correct. Registering with the review also takes the
+ * desktop Home view out of scope for free. Same rule, stated once: never stage
+ * a value into a control that is not on screen.
  */
 
 import { useCallback, useRef } from "react";
 
+import {
+  SCAN_PAGE_LABEL_MAX_LENGTH,
+  SCAN_TITLE_MAX_LENGTH,
+} from "./types";
 import type { UseScanSessionResult } from "./useScanSession";
+
+interface ScannerWriteContext {
+  /**
+   * True once Save runs — `ProcessingView` covers the review and the PDF's
+   * name is already captured into the save stream. Handlers refuse rather than
+   * staging into inputs that are gone, the way the scraper's handlers refuse
+   * while a scrape is in flight.
+   */
+  saving: boolean;
+}
 
 /**
  * Structured values arrive already parsed: the inline-tool layer JSON-parses a
@@ -53,6 +78,26 @@ function parseStructured(value: unknown): unknown {
   }
 }
 
+/**
+ * Every authored string on this surface lands in a ONE-LINE input, so a tab or
+ * newline is refused rather than stripped — silently rewriting a value is the
+ * coercion the doctrine bars, and the agent should hear about it.
+ */
+function requireSingleLine(value: string, target: string, max: number): string {
+  if (/[\n\r\t]/.test(value)) {
+    throw new Error(
+      `${target} must be a single line — it is rendered in a one-line input. Remove the line breaks and tabs.`,
+    );
+  }
+  const trimmed = value.trim();
+  if (trimmed.length > max) {
+    throw new Error(
+      `${target} is ${trimmed.length} characters; the limit is ${max}.`,
+    );
+  }
+  return trimmed;
+}
+
 /** A label string — may be empty (that is how a page is left unlabeled). */
 function requireLabel(value: unknown, target: string): string {
   if (typeof value !== "string") {
@@ -60,22 +105,42 @@ function requireLabel(value: unknown, target: string): string {
       `${target} expects a string label; got ${JSON.stringify(value)}.`,
     );
   }
-  return value.trim();
+  return requireSingleLine(value, target, SCAN_PAGE_LABEL_MAX_LENGTH);
 }
 
 export function useScannerWriteHandlers(
   session: UseScanSessionResult,
+  context: ScannerWriteContext,
 ): () => Record<string, (value: unknown) => void> {
   const sessionRef = useRef(session);
   sessionRef.current = session;
+  const contextRef = useRef(context);
+  contextRef.current = context;
 
   return useCallback(() => {
+    /**
+     * Shared precondition for every target: the review's inputs must actually
+     * be on screen. Checked at APPLY time, not registration time.
+     */
+    const assertEditable = () => {
+      if (contextRef.current.saving) {
+        throw new Error(
+          "The scan is being saved and processed — the review screen with the title and page-name inputs is no longer on display, and the saved PDF's name is already captured. No scanner metadata can be staged now.",
+        );
+      }
+    };
+
     return {
       scan_title: (value: unknown) => {
+        assertEditable();
         if (typeof value !== "string") {
           throw new Error("scan_title expects a string.");
         }
-        const title = value.trim();
+        const title = requireSingleLine(
+          value,
+          "scan_title",
+          SCAN_TITLE_MAX_LENGTH,
+        );
         if (!title) {
           throw new Error(
             "scan_title expects a non-empty string — the saved PDF needs a name.",
@@ -91,6 +156,7 @@ export function useScannerWriteHandlers(
       },
 
       scan_page_labels: (value: unknown) => {
+        assertEditable();
         const parsed = parseStructured(value);
         if (!Array.isArray(parsed)) {
           throw new Error(
@@ -121,6 +187,7 @@ export function useScannerWriteHandlers(
       },
 
       scan_page_label: (value: unknown) => {
+        assertEditable();
         const parsed = parseStructured(value);
         if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
           throw new Error(
