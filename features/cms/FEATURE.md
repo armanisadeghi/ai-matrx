@@ -344,6 +344,36 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-10` — **`matrx-user/html-page` (the standalone quick-publish
+  editor) is now agent-WRITABLE, and `HtmlPageEditor` finally mounts a
+  surface runtime.** The manifest declares 2 ask-policy DRAFT targets:
+  `page_seo_metadata` — one object of optional `meta_title` /
+  `meta_description` / `meta_keywords`, kept as a single target because the
+  Metadata tab authors all three together — and `page_html_content`, the
+  COMPLETE standalone document. Handlers live in
+  `features/html-pages/components/HtmlPageEditor.tsx` and stage through the
+  same `useState` setters + `markDirty()` the user's own typing uses, so the
+  header Save button arms and **the human still publishes** — nothing reaches
+  `html_pages` without that click. Before this, the editor consumed
+  `useHtmlPageSurfaceScope` and handed `contextData` to the v3 menus but
+  mounted NO `<SurfaceRuntimeProvider>`, so no write target could ever have
+  resolved; mounting it (fed by the existing hook) was part of this change.
+  The write path is unchanged and still canonical — the draft flows out
+  through the existing `onSave` → `HTMLPageService` → `POST /api/html-pages`
+  → secret-key server route; **no browser Supabase client for
+  `viyklljfdhtidwecakwx` was added or needed.** The HTML target matters more
+  here than on a textarea surface: Monaco owns `contextmenu` on its own text
+  (see `features/html-pages/README.md` → "Known limitation"), so the declared
+  target is the ONLY way an agent can touch the document. Validation is loud
+  — `page_seo_metadata` rejects unknown keys by name (so an agent reaching
+  for `is_indexable` or `canonical_url` through the object is refused), and
+  `page_html_content` rejects fragments, markdown code fences, and anything
+  missing `<html>`/`<body>`, since a standalone page publishes whole.
+  Deliberately NOT writable: `is_indexable` and publishing (a standalone page
+  goes live the instant it is saved), `canonical_url`, `og_image`, delete, and
+  promote-to-site. Live-verified end-to-end with a real Badass Agent run on a
+  throwaway page (apply → save → row confirmed, decline clean, undeclared
+  target refused, zero writeback captures).
 - `2026-08-09` — **`matrx-user/cms-component` is now agent-WRITABLE, and the
   components route finally mounts its own surface runtime.** The manifest
   declares 2 ask-policy draft targets — `component_html_content` and
