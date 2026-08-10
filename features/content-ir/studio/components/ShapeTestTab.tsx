@@ -63,6 +63,11 @@ export default function ShapeTestTab({
   const [renderKey, setRenderKey] = useState(0);
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // Agent-staged seed for the input form. `KindInputForm.initialValue` is read
+  // ONCE per form load (documented: not a controlled value), so a seed must
+  // arrive with a new `key` to remount the form — hence the counter.
+  const [formSeed, setFormSeed] = useState<Record<string, unknown> | null>(null);
+  const [formSeedKey, setFormSeedKey] = useState(0);
 
   async function saveInstance(): Promise<void> {
     if (!isRecordValue(instance)) {
@@ -142,11 +147,38 @@ export default function ShapeTestTab({
     [kind, label, kindDefinitionId, kindVersion, titleKey, instance, saveState],
   );
 
+  // Write half of the shapes surface, Test-tab leg (manifest `writeTargets`).
+  // The agent SEEDS the canonical input form — it does not set the rendered
+  // instance directly. That is deliberate: `KindInputForm.onSubmit` is the one
+  // thing that guarantees a structurally valid instance (it runs the real
+  // activation-gate ajv leg), so writing `instance` behind the form's back
+  // would hand Save a payload nothing validated. The agent fills the form; the
+  // user presses Render, which validates exactly as their own typing would.
+  // Throws on a bad shape — the seam converts that to an error envelope.
+  const getSurfaceWriteHandlers = () => ({
+    test_draft_instance: (value: unknown) => {
+      if (!isRecordValue(value))
+        throw new Error(
+          "test_draft_instance expects a JSON object of this shape's fields (no __kind key, no array or scalar root).",
+        );
+      if (Object.keys(value).length === 0)
+        throw new Error("test_draft_instance expects at least one field.");
+      setFormSeed(value);
+      setFormSeedKey((k) => k + 1);
+      // The staged payload is not the rendered one until the user presses
+      // Render, so clear any stale render/save state rather than implying the
+      // preview below reflects what just landed in the form.
+      setInstance(null);
+      setSaveState({ status: "idle" });
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/shapes"
       getScope={getSurfaceScope}
-      isEditable={false}
+      isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       <div className="grid gap-4 lg:grid-cols-2">
         {/* The form */}
@@ -157,7 +189,9 @@ export default function ShapeTestTab({
             </span>
           </div>
           <KindInputForm
+            key={formSeedKey}
             kind={kind}
+            initialValue={formSeed ?? undefined}
             submitLabel="Render"
             onSubmit={(value) => {
               setInstance(value);

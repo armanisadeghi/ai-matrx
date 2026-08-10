@@ -53,6 +53,63 @@ export default function NewShapeClient() {
     [intent, sample, agentId],
   );
 
+  // Write half of the shapes surface, /shapes/new leg (manifest
+  // `writeTargets`): the agent stages the two authored inputs into the SAME
+  // setState the user's own typing calls, and the user still presses "Start
+  // with the agent". Both handlers validate and THROW on a bad shape — the
+  // writeback seam turns a throw into a safe error envelope the agent reads.
+  // Fresh closures per call (getWriteHandlers contract).
+  const getSurfaceWriteHandlers = () => ({
+    new_shape_intent: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("new_shape_intent expects a non-empty string.");
+      if (value.length > 4000)
+        throw new Error(
+          `new_shape_intent expects at most 4000 characters (got ${value.length}).`,
+        );
+      setIntent(value);
+    },
+    new_shape_sample: (value: unknown) => {
+      // Sample data is free text (JSON, CSV, prose) — but the tool layer
+      // parses a JSON-looking argument before it ever reaches us, so an agent
+      // sending a raw `{...}` sample cannot get it here AS a string; it
+      // arrives already parsed. Accept that and write out the pretty JSON
+      // text the textarea is documented to hold. That is this field's own
+      // format, not a coercion of a wrong value — the alternative taught
+      // agents to double-encode, which is exactly the bug guarded below.
+      let text: string;
+      if (typeof value === "string") {
+        text = value;
+      } else if (typeof value === "object" && value !== null) {
+        text = JSON.stringify(value, null, 2);
+      } else {
+        throw new Error(
+          'new_shape_sample expects sample data: a JSON object/array, or a string of JSON, CSV, or plain text. Pass "" to clear it.',
+        );
+      }
+
+      const trimmed = text.trim();
+      if (trimmed.length > 1 && trimmed.startsWith('"') && trimmed.endsWith('"')) {
+        let inner: unknown;
+        try {
+          inner = JSON.parse(trimmed);
+        } catch {
+          inner = undefined;
+        }
+        if (typeof inner === "string" && /^[[{]/.test(inner.trim()))
+          throw new Error(
+            "new_shape_sample received JSON that was encoded twice — the value is a quoted string whose contents are themselves JSON, which would show the user escaped \\n and stray quote marks. Send the sample as a JSON object/array directly.",
+          );
+      }
+
+      if (text.length > 20000)
+        throw new Error(
+          `new_shape_sample expects at most 20000 characters (got ${text.length}).`,
+        );
+      setSample(text);
+    },
+  });
+
   if (slotLoading) return null;
 
   if (!agentId) {
@@ -86,7 +143,8 @@ export default function NewShapeClient() {
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/shapes"
       getScope={getSurfaceScope}
-      isEditable={false}
+      isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       <div className="mx-auto max-w-2xl space-y-4">
         <div className="rounded-md border border-border bg-card p-4">
