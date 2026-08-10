@@ -236,28 +236,360 @@ internal platform use — never a washed-down user variant beside a private one:
   models, so the human press stays the gate. Results, status flags, and
   anything about saved files stay undeclared, and the handler THROWS rather
   than editing a request that is already in flight), and
-  `matrx-user/keyword-research` (2 ask-policy targets on the workbench —
-  `research_seed_keyword`, a DRAFT staging the primary keyword into the
-  Research input through the launcher's own `setPrimaryInput` +
-  `onKeywordChange` (the exact pair the user's typing calls), and
-  `keyword_selection`, a `ui` target moving the row checkboxes through
-  `setSelectedIds`. THE reference for VALIDATING A SELECTION AGAINST WHAT IS
-  ON SCREEN: every id must belong to a row in `visible_keywords` right now
-  and one unknown id rejects the WHOLE write, so a selection can never act on
-  rows the user cannot see; `mode: "replace" | "add"` is spelled out in the
-  contract because a silent replace-vs-union is what makes an agent look like
-  it lost the user's work. Kept at `ask` rather than the `auto` a `ui` target
-  could take, because the one bulk action wired to this selection is Archive.
-  Following the `image-generate` / `podcast-studio` precedent, **Research is
-  deliberately NOT a target** — the run is an outbound billable pipeline, so
-  the human press stays the gate — the archive path stays human because
-  destructive stays human, and `library_search` was considered and REJECTED
-  as a pure-mechanical filter nobody would ask an agent to flip. Both
-  handlers THROW while a run is in flight rather than mutating state the
-  running request owns. A per-mount split like `education-assessment`: the
-  launcher is SHARED with the floating `KeywordResearchWindow`, so it
-  registers its handler only when a host passes `writeSurfaceName` — the
-  window mounts a different surface and offers no tool).
+  `matrx-admin/agent-apps` (3 ask-policy DRAFT targets — `category_name`,
+  `category_description`, `category_icon` — on the CATEGORIES editor only,
+  handled by
+  `app/(admin)/administration/agents/agent-apps/categories/page.tsx` through
+  the same `handleEditChange` setter the admin's own typing calls, so the
+  admin's Save press stays the only path to `updateAgentAppCategory`. THE
+  clean draft reference: `selected_category` is emitted FROM the live
+  `editData` buffer the handlers write and `category_has_unsaved_changes`
+  from the same `hasUnsaved` flag, so an agent reads back exactly what it
+  staged before anyone saves. **The first agent-writable ADMIN surface, and
+  the shape to copy on one:** a moderation console is overwhelmingly
+  read-only to an agent — featuring, verifying, publishing and suspending
+  apps, rate limits and unblocks, error resolution, and executions/analytics
+  are all undeclared, because they are trust and abuse controls rather than
+  copy. The category pane is the one place an admin authors prose, and even
+  there the category `id` (identity), `sort_order` (mechanical ordering with
+  its own arrow buttons), creation, and deletion (it orphans every app
+  assigned to the category) stay human), and
+  `matrx-admin/applications` (ONE ask-policy DRAFT target, `app_notice` — the
+  operator broadcast every installed client shows once, staged into the
+  Configuration editor by `AppConfigEditor.tsx` and validated by the pure core
+  in `features/admin/applications/config/notice-write-targets.ts`. THE
+  reference for a surface that is mostly OFF-limits: this hub governs shipped
+  CLIENTS, so the three server URLs, `min_supported_app_version`, feature
+  flags, credential maintenance, catalog artifact pinning (key / SHA-256 /
+  size), and the Installations + History reports are all infrastructure or
+  governance and get NO target at all — the notice is the single genuine
+  authoring case on the surface, a short severity + headline + body an agent
+  drafts better than it looks up. Applying only stages the notice and marks it
+  active; the admin still goes through the same validate → diff-confirm →
+  `admin_update_app_config` RPC as a hand edit).
+  `matrx-admin/database` (ONE ask-policy draft target, `sql_query` — an agent
+  turning a natural-language question into real SQL and STAGING it into the
+  workbench editor at `/administration/database/sql-queries`; handler on
+  `app/(admin)/administration/database/components/enhanced-sql-editor.tsx`,
+  validation core in `features/administration/lib/sql-editor-write-targets.ts`.
+  THE reference for the drafting/execution line on a dangerous surface: the
+  target replaces TEXT IN A TEXTAREA and nothing more — no connection, no run,
+  no cache touched — so staging DDL/DML is fine and the description says so out
+  loud, while **Execute, Cancel, `use_cache` and Clear Cache are deliberately
+  NOT targets** and the handler refuses while a run is in flight. The
+  hub-landing mount at `/administration/database` registers NO handlers on
+  purpose: it owns a static link grid, not editable state).
+  `matrx-admin/tool-registry` (3 ask-policy ENTITY targets on the open tool —
+  `tool_description`, `tool_category`, `tool_tags`, handled in
+  `ToolViewPage.tsx` through the new `updateToolDefinition` wrapper over
+  `PUT /api/admin/tools/[id]`, the `requireAdmin()`-gated door the page's own
+  Active switch and the admin editor already use; `tool.definition` is
+  SELECT-only under RLS, so there is no direct-write shortcut to be tempted
+  by. `entity` rather than the preferred `draft` because the detail route is
+  server-rendered read-only props with no editor state to stage into — editing
+  lives on `/[toolId]/edit`, which does not mount this surface — so each
+  handler validates, writes, then `router.refresh()`es the read twin. THE
+  first ADMIN adopter, and the sharpest capability line yet: `tool_is_active`,
+  `tool_admin_only`, `tool_gating`, `tool_exemptions`, `tool_visibility` and
+  `tool_tier` stay human-only on the `agent-builder` reasoning — one flipped
+  flag re-arms a tool for every agent on the platform — as do the tool's name
+  (the dispatch key; there is no slug), its parameter/output schemas and
+  annotations (a wrong schema breaks every call site), version fields, and
+  everything MCP-provenance-shaped. `tool_group` is excluded for a different
+  reason worth remembering: it is a fair filing label, but NO human editor
+  exposes it, so an entity write there would be a one-way door. The catalogue
+  mount (`McpToolsManager`) registers nothing — it owns only browse state and
+  no open record).
+  `matrx-user/agent-apps` (5 ask-policy targets — the whole storefront of a
+  published mini-app: `app_name` / `app_tagline` / `app_description` as
+  DRAFTS and `app_category` / `app_tags` as ENTITY writes, handlers in
+  `features/agent-apps/route/AgentAppSettingsContent.tsx` through the same
+  local setters and `saveAppField` wrapper the Identity tab's own inputs and
+  pickers use. THE mixed-mode-per-field reference: mode follows the UI rather
+  than the surface — the three text fields have their own dirty marker and
+  Save button, so they stage; the category and tag pickers commit on change,
+  so they persist. Slug, publish status, public sharing, agent binding and
+  component code stay undeclared: those change what the app IS or who can
+  reach it, not how it reads. The two ENTITY targets are additionally
+  registered on the `/agent-apps/[id]` LAYOUT mount
+  (`AgentAppSurfaceRuntime`, via the shared builder in
+  [`features/agent-apps/route/agent-app-entity-writes.ts`](../agent-apps/route/agent-app-entity-writes.ts)),
+  so category and tags can be set from overview / run / code / versions too —
+  an entity write needs no editor, only the row. The draft trio stays
+  Settings-only by necessity: a draft with no input to land in is a write
+  that goes nowhere).
+  everything behavioural stays editor-only for the user to review and save),
+  and `matrx-user/cms-site` (4 ask-policy DRAFT targets, all on the Settings
+  tab — `site_global_css` handled by
+  `app/(core)/cms/[siteId]/settings/page.tsx`'s provider, plus
+  `site_theme_config` / `site_navigation` / `site_footer_config` registered by
+  the three sections that own those drafts in
+  `features/cms/components/settings/SiteAdvancedSettings.tsx`. Nothing here
+  calls `CmsSiteService` — the human's per-section Save is the only writer,
+  which is what keeps the targets legal under the CMS's own
+  `agent_write_policy`: staging is not saving. Domain, slug, active flag,
+  delete, contact/social content and the write policy itself stay undeclared).
+  `matrx-user/code-editor` (3 ask-policy draft targets on the Monaco buffer —
+  `replace_selection` (edits only the highlighted range, and THROWS when
+  nothing is selected rather than guessing one), `insert_at_cursor` (adds at
+  the caret, or after the selection when there is one), and
+  `current_file_content` (whole-file rewrite). Handlers on
+  `features/code/agent-context/CodeWorkspaceContextMenu.tsx`'s own provider,
+  reusing the same `executeEdits` paths the right-click AI actions already
+  use — so an agent edit joins Monaco's UNDO STACK exactly like the user's
+  own typing, which is what makes `draft` mean something here: ⌘Z reverses
+  it and nothing reaches disk. The whole-file target deliberately does one
+  `executeEdits` over the full range instead of `model.setValue()`, which
+  would discard that undo history. Saving, file lifecycle (create / rename /
+  delete / close), filesystem + workspace switching, and the diagnostics
+  stay undeclared — persisting is the human gesture the safety story rests on).
+  `matrx-user/education-fastfire` (ONE ask-policy DRAFT target, `drill_config`
+  — a partial-patch object over the drill's pace and behavior
+  (`secondsPerCard` / `cardLimit` / `warningSeconds` / `liveScore` /
+  `spokenFronts` / `voiceAnswerSeconds`), handler on `FastFireSurface`'s own
+  provider dispatching the same `updateConfig` action the learner's sliders
+  dispatch. THE deliberately-small adopter, and the PHASE-GUARD reference:
+  this surface has exactly one mount, but that mount wraps the drill's whole
+  lifecycle, so the handler refuses any patch outside `drill_phase: "setup"`
+  rather than silently changing a clock the learner is already racing — a
+  per-PHASE posture where `schedules` needed a per-MOUNT one. The set picker
+  is unwritable for the same reason education-assessment left its deck picker
+  out: the read half publishes only the set already loaded, never the
+  learner's library, so an agent could only guess a UUID. Running the drill,
+  advancing cards and grading stay human — they are the learner's own study
+  actions, and the drill exists so that THEY answer out loud).
+  `matrx-user/education-tutor` (3 ask-policy targets — `teaching_mode` /
+  `personality_style` as ENTITY writes onto the learner's durable
+  `userPreferences.tutor.*` setting, the exact `useSetting` path
+  `TutorSettingsPanel` writes, each also mirrored into the RUNNING
+  conversation's context slot via the same `setContextEntries` dispatch the
+  client uses at launch, so the change lands on the very next turn instead of
+  only the next session; plus `tutor_message_draft`, a `{text, mode:
+  replace|append}` DRAFT into the composer through `setUserInputText` — the
+  same action the learner's own keystrokes dispatch — with `composer_draft`
+  added as its read twin so an agent can EXTEND a half-typed question instead
+  of destroying it (the composer draft is sacred; see
+  `input-draft-protection.ts`). Handlers on `EducationTutorClient`'s own
+  provider. THE reference for a surface that is mostly NOT writable: nearly
+  everything it emits is session telemetry, derived grounding, a trust
+  envelope or a gate, and none of that becomes editable by being declared —
+  `study_material` and `grounding_seed` are assembler output with no setter
+  (a write would be clobbered by the next per-turn refresh), `learner_memory`
+  is a real student's accumulated record, and the trust envelopes are the
+  tutor's own honesty record about its answers. A READ-ONLY SHARED VIEW
+  registers NO handlers at all, so an agent on someone else's conversation is
+  offered nothing).
+  `matrx-user/education-grade-work` (2 draft targets on the COMPOSER —
+  `problem_text` and `expected_answer`, handlers on `GradeWorkSurface.tsx`'s
+  own provider through the same `setProblem` / `setExpected` the textareas
+  call, so the learner still attaches the photo and presses Grade. THE
+  input-vs-output reference: the whole `grading` group (`grade_result` /
+  `grade_explanation` / `grade_misconception` / `grade_steps` /
+  `work_transcription` / `grading_status`) is grader OUTPUT and stays
+  undeclared by doctrine — writing the grade a student received would forge
+  the verdict the surface exists to earn. Starting the run is NOT a target
+  either, unlike `tasks`' `save_task`: the grade is metered and COPPA-gated,
+  so spending a minor's quota stays a human gesture. Handlers also refuse to
+  stage while a verdict is on screen or a run is in flight, because the
+  composer is unmounted then and a silent `setState` would report "applied"
+  for a value nobody can see).
+  `matrx-user/markdown-editor` (2 ask-policy DRAFT targets on the floating
+  Markdown Editor / classification tester — `markdown_content` (full replace)
+  and `append_markdown_content`, the `agent-builder` replace/append pair
+  applied to the document that DRIVES the classification pipeline. Handlers on
+  `MarkdownClassificationTester`'s own provider, landing through the same
+  `setMarkdown` that `MarkdownInput`'s `onMarkdownChange` calls for the user's
+  keystrokes, so the preview, the AST and the processed output re-derive
+  exactly as they do while typing. THE reference for **a pipeline-selector
+  exclusion that is a safety property, not taste**: `coordinator_id` looks
+  writable and is actively DESTRUCTIVE — selecting a coordinator runs an effect
+  that calls `setMarkdown(markdownSamples[...])`, so an agent "choosing the
+  coordinator that suits this document" would delete the document. `sample_id`
+  destroys it the same way; `processor_id` / `config_id` are re-derived by
+  effects and would be clobbered; `view_id` — the analogue of
+  `markdown-studio`'s declared `view_mode` — loses here because it only picks
+  the renderer inside ONE tab of the right pane and the coordinator effect
+  resets it underneath. `processed_data` / `ast` are parser OUTPUT with no
+  write path by design: an agent moves them by writing content and letting the
+  pipeline re-run, which IS the evidence loop on this surface).
+  `matrx-user/markdown-studio` (3 ask-policy targets on the full-page markdown
+  workspace — `document_content` / `append_document_content` (replace vs
+  append, the `agent-builder` pair applied to a document: both land through the
+  SAME `setContent` the editor textarea's `handleChange` calls, so `is_dirty`
+  re-derives itself and the header's Save/Update action stays honest) plus
+  `view_mode`, the first `mode:"ui"` target held at `ask` rather than `auto`
+  because switching studio↔analysis swaps the whole page body. Handlers sit on
+  the studio's own provider in `components/markdown-studio/MarkdownStudio.tsx`
+  and every content write REFUSES while a library save is in flight, since that
+  request carries the buffer captured when it started. Saving to the sample
+  library and `sample_id` / `sample_name` / `is_from_library` stay human-only —
+  file identity and ownership are not drafting — and an empty string is refused
+  because clearing the studio is a human gesture).
+  `matrx-user/marketing-site-media` (3 ask-policy DRAFT targets across TWO
+  mounts — `media_order`, one partial-patch object carrying the Generate
+  view's whole image order (type from the REAL `MEDIA_ORDER_PRESETS`
+  vocabulary, brief, style, size overrides), registered by
+  `SiteMediaWriteTargets` on the WORKSPACE so it survives view switches;
+  plus `media_standards_slots` / `media_standards_notes`, registered by
+  `MediaStandardsView`, which genuinely owns that draft — so those two are
+  offered only while the Standards view is open, and the manifest descriptions
+  say so. Landing this lifted the order form out of `GenerateMediaView` into
+  the workspace, which also closed the manifest's own readiness gap: the order
+  is now emitted as the `media_order_draft` read twin. The judgment line here
+  is ORDER vs FIRE — an agent fills the order and the USER presses "Order this
+  image", because generating spends money and mints a `web.brand_asset` row;
+  promoting, uploading, deleting and `is_primary` stay human for ownership.
+  Crawled alt text is observed EVIDENCE, not editable state — authoring alt
+  text belongs to `marketing-page`'s `page_image_alts`, not here).
+  `matrx-user/mermaid-editor` (2 ask-policy `entity` targets — `diagram_source`
+  (replace-whole mermaid DSL) and `diagram_title` (the source's YAML
+  frontmatter `title:`), handlers on the Mermaid Workbench's own provider
+  through the SAME `APPLY_EXTERNAL_SOURCE` editor action the "Edit with AI"
+  rail's Apply and the version-restore menu dispatch. THE reference for a
+  surface that already had a bespoke agent path: the rail is a modal one-shot
+  the user must open and type into, these targets are for the conversational
+  agent in the header popover — same commit path, no duplication. Also the
+  reference for `entity` chosen as a TRUTH claim: the workbench has no Save
+  button, so `draft`'s "nothing is saved until you save" would be a lie).
+  `matrx-user/quick-note-save` (ONE ask-policy draft target, `note_draft` —
+  a partial `{note_name?, folder?, content?}` object handled in
+  `QuickNoteSaveCore` through the same `setNoteName` / `setFolder` setters and
+  the refine primitive's `setEditedContent` that the user's own typing calls.
+  THE reference for a MODE-GATED target: this overlay saves either into a NEW
+  note or into an EXISTING one, and the handler validates the payload against
+  the live mode — `note_name` and `folder` are refused in "update" mode (the
+  title input is not rendered there, and the folder select only filters which
+  notes are listed, so writing it would drop the user's chosen target note),
+  and `content` is refused under "update" + "overwrite", where the staged text
+  would replace an existing note's body wholesale. Saving, the mode itself,
+  the target note, and the update method are all undeclared — those are the
+  decisions that can destroy the user's writing. It is also the first adopter
+  registering through `useSurfaceWriteHandlers` where the WINDOW publishes the
+  scope and the CORE owns the form state, and the first whose handler is
+  gated behind a prop (`surfaceName`) so the popover / dialog / overlay shells
+  reusing that core register nothing).
+  identity, publishing, and a dual-gate verdict respectively),
+  and `matrx-user/rag-data-stores` (3 ask-policy targets across the page's TWO
+  write-capable mounts — `new_store_draft` (ONE composite object: name / kind
+  / description, the crm-create-party shape, because all three are filled in a
+  single act of drafting and consumed by one Create) staged by
+  `CreateStoreInline`, plus `store_name` / `store_description` as entity
+  targets wired by `StoreDetailPanel` through
+  `useDataStoreDetail.updateStore`; handlers all in
+  `features/rag/components/data-stores/DataStoresPage.tsx`. THE collapsed-form
+  reference: the create form owns no visible state while collapsed, so its
+  handler OPENS the form and stages into it rather than writing somewhere the
+  user cannot see — the choice is spelled out in the target description so the
+  agent knows what it is asking for. `kind` is draft-only on purpose:
+  `updateStore` deliberately does not patch it, so on an EXISTING store there
+  is no canonical write path to wire it to. Deleting a store, removing a
+  member, adding/uploading a source, and publishing to an audience stay
+  undeclared; a granted read-only shared library throws before the write).
+  `matrx-user/scraper` (2 draft targets that STAGE the next scrape and never
+  run it — `scrape_command`, a partial-patch `{mode?, url?, keyword?}` object,
+  plus `scrape_page_limit`. THE reference for **why a command belongs in ONE
+  object**: the mode picks which config input the workspace renders AND which
+  of the two keyword stores is live, so split targets would let an agent's
+  keyword land in whichever store the PREVIOUS mode pointed at — a silent race
+  on staged React state. One object means the handler resolves mode and field
+  together and refuses an incoherent pair outright. The page cap stays its own
+  target because it is a different decision — how much of someone else's
+  server to spend — with its own bounds and a clean 1:1 read twin. Handlers on
+  `ScraperFloatingWorkspace`'s existing provider; running the scrape is
+  deliberately NOT agent-drivable).
+  `matrx-user/task-create` (ONE ask-policy composite draft target,
+  `task_draft` — `{title, description, priority, due_date}` staged through the
+  same setters the user's typing uses, handlers registered from
+  `TaskQuickCreateCore.tsx` via `useSurfaceWriteHandlers`. THE overlay
+  reference: the surface exists only while the quick-create WINDOW is open, so
+  closing it unregisters everything and the tool stops being offered — a call
+  made anyway fails loudly with `No mounted surface declares write target
+  "task_draft"`, never silently. Composite because a one-shot capture form is a
+  single act of drafting consumed by a single save: one ask, one coherent
+  proposal. Project and scopes stay unwritable because the surface emits the
+  SELECTED ids but no pick lists, so an agent could not name a legal value; the
+  source link and Create task stay human — that is where the link edges and
+  scope assignments get written).
+  `matrx-user/transcripts` (4 ask-policy targets on the `/transcripts/processor`
+  viewer — `transcript_title` / `transcript_description` /
+  `transcript_speaker_label` as ENTITY writes through the canonical
+  `updateTranscript` thunk, plus `transcript_body` as a DRAFT into the inline
+  editor; handlers on `TranscriptViewer.tsx`'s own provider. THE reference for
+  choosing mode by whether the READ TWIN can see the buffer: this surface has
+  two staging buffers, and only one of them is observable. The body editor's
+  scope path overrides the `content` value with the live textarea while
+  `isEditingContent` is true, so a staged body is visible to the next agent
+  read and to the user, with the existing Save/Cancel bar as the gate — draft
+  is honest there. Title and description read from the stored transcript and
+  never from `editTitle`/`editDescription`, so staging them would be invisible
+  to the evidence loop; those persist on Apply instead. `transcript_speaker_label`
+  relabels one speaker across every segment through the same segment write the
+  per-segment edit dialog uses. Tags and folder are deliberately NOT writable
+  even though the update service accepts both: this viewer renders tags
+  read-only and has no folder control, so a target there would set a value the
+  user can neither see staged nor correct in place — a write with no user twin.
+  Deletion and Promote-to-Studio stay human; playback transport stays
+  undeclared as mechanical).
+  `matrx-user/transcripts-cleanup` (3 ask-policy targets on the cleanup pad —
+  `cleaned_transcript_text` / `custom_output_text` drafts, each taking
+  `{text, mode?: replace | append}` and landing through the same
+  `handleResponseChange` / `handleCustomChange` the pane textareas'
+  `onChange` calls, plus `session_title` as an entity target through
+  `updateSessionThunk`. Handlers + the surface's FIRST `SurfaceRuntimeProvider`
+  are on `CleanupPad.tsx` — the page previously emitted scope only through the
+  context menu, so header-launched runs had no live surface at all. Another
+  per-mount split: the `variant="embedded"` pads (War Room thread Audio tabs)
+  register NOTHING, because a room can mount several of them over DIFFERENT
+  sessions and deepest-wins would land an agent write in whichever tile
+  mounted last. `raw_transcript_text` is deliberately undeclared — it is the
+  SOURCE OF TRUTH and the one artifact that cannot be regenerated; the
+  mic/transcription flags are live-device actions, not values).
+  `matrx-user/workbooks` (3 ask-policy targets on the EDITOR route only —
+  `workbook_name` / `workbook_description` as entity writes through the
+  canonical `renameWorkbook` / new `updateWorkbookDescription` service
+  setters, plus `workbook_sheet_names` as a draft write registered from
+  `WorkbookEditor` (the deep-child seam) because the sheets live inside the
+  Univer instance, not on the page. The sheet target is THE reference for
+  riding a third-party editor's own command stream: it renames through
+  `FWorksheet.setName()`, the exact Univer command a user's tab rename fires,
+  so it flows into the existing `onCommandExecuted` → `isSnapshotMutation` →
+  dirty → 2.5s debounced autosave rather than writing a snapshot of its own.
+  Its value is a PARTIAL map keyed by sheet id, fully validated (real ids,
+  1-31 chars, no `: \ / ? * [ ]`, unique across the RESULT so a name swap is
+  legal) before the first `setName`, so a bad entry renames nothing. The
+  library route registers NOTHING on purpose: it is a roster of N workbooks
+  and a write target carries one value with no entity selector, so its only
+  mutations are create, import (needs a `File`) and delete. `workbook_snapshot`
+  stays undeclared by doctrine — bulk-replacing every cell of a user's
+  spreadsheet is destructive, not authoring — as do permissions, visibility,
+  provenance and every structural sheet edit).
+  `matrx-user/organizations` (3 ask-policy ENTITY targets on the org HOME —
+  `org_name` / `org_description` / `org_abbreviation`, handlers on
+  `OrgWorkspace.tsx`'s own provider through `updateOrganization`, the exact
+  service the Settings → General form's Save calls. `entity` rather than the
+  preferred `draft` for the `tool-registry` reason: the org home renders the
+  loaded row and owns no editor state, and the form that does staging lives on
+  `/settings`, which does not mount this surface — so each handler writes and
+  then re-seeds the page from the returned row, which is also the read twin.
+  THE reference for **a canonical writer that swallows its own failures**:
+  `updateOrganization` returns `{success:false, error}` instead of throwing, so
+  an unchecked handler would report success for a rejected write; `applyOrgPatch`
+  checks the result, then re-checks each field on the row the service just
+  persisted and throws when it did not land. The judgment call worth recording is
+  `org_abbreviation`, which LOOKS like an identifier and is not: `org_slug` is
+  the identifier (immutable, URLs resolve on it), while the abbreviation is a
+  2-3 letter display label for the places the full name will not fit, so
+  choosing it is naming work — validated by the form's own
+  `validateOrganizationAbbreviation` and refused outright on a personal
+  workspace, which is pinned to ME. `org_website` is deliberately NOT a target
+  even though the same service accepts it: a URL is a fact the agent cannot
+  verify, and a wrong one on an org page reads as authoritative. Slug, id,
+  creation metadata, the logo (a crop/upload flow), deletion, and every
+  member / role / invitation / contribution control stay undeclared — the last
+  group by doctrine, since permissions are never an agent's call — and every
+  handler refuses when the viewer is not owner/admin, the same gate that hides
+  the form's Edit button. The `/organizations` LIST mount registers nothing:
+  it owns a roster of N orgs and no open record for a target to name).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -425,6 +757,7 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **2026-08-10 — Marketing Crawls surface agent-writable.** `matrx-user/marketing-crawls` declares 3 `draft`/`ask` targets that stage the crawl COMMAND on the New Crawl workspace: `crawl_options` (ONE partial-patch object — `max_pages`, `concurrency`, `render_mode`, and the four toggles, because they are a single "how hard do we hit this host" decision held in one state object; five micro-targets would make the user confirm one command five times) plus `crawl_include_patterns` / `crawl_exclude_patterns` (full-list replacements — a crawl's SCOPE is what a user most wants to review on its own, the lists are frequently set alone, and they live in separate raw-textarea state). Handlers on `NewCrawlWorkspace`'s own provider land through the same `setOptions` / `setIncludeText` / `setExcludeText` setters the user's typing uses; patterns go through the SAME `invalidCrawlPatterns` regex gate as the form, and every handler refuses while the form is locked mid-run. New `features/marketing/crawler/crawl-options.ts` is now THE crawl-command vocabulary — `CRAWL_RENDER_MODES` (which `CrawlStartOptions["render_mode"]` now DERIVES from), `CRAWL_COMMAND_TOGGLES`, the bounds, and the canonical labels — imported by the launch form's controls, interpolated into the manifest descriptions, and validated against in the handler, so the three cannot drift. **Per-mount posture:** `CrawlsTable` registers no handlers on purpose — pure search/filter/sort/page state over immutable `web.crawl_session` evidence. **Not writable:** starting or canceling a crawl (it spends real time and budget against the client's own server — the human presses Start crawl), and the `CrawlStartOptions` keys this form renders no control for (`max_depth`, `politeness_delay_ms`, `host_rps`, `host_burst`, `seed_urls`, `screenshot_kinds`, `list_mode`) — staging a value the user cannot see or correct is not a draft. Live-verified with a real Badass Agent run on vasaro.com: one message → an ask dialog per target carrying the manifest description, Apply staged all three (250 pages / 4 fetches / browser_always / robots ON / `^/blog/` / `^/tag/`+`^/author/`), "Keep as is" left the form untouched and the agent acknowledged the decline, an undeclared target was refused (`No mounted surface declares write target "crawl_max_depth"`), and a deliberately illegal `{"concurrency": 99}` came back to the agent as the handler's own throw (`crawl_options: concurrency must be an integer between 1 and 32.`) with nothing staged. Zero `surface-writeback` captures. `check:surface-drift` + `type-check` clean.
 - **2026-08-10 — Image Generate agent-writable; THE reference for a composite draft target, and for refusing the expensive button.** `matrx-user/image-generate` (`/images/generate`) declares ONE ask-policy `mode:"draft"` target, `generation_request` — a partial `{prompt?, style?, image_size?, image_count?}` object. Handler lives in `app/(core)/images/generate/GenerateShellClient.tsx` (which already mounted the provider; only `getWriteHandlers` was missing) and calls the same `setPrompt` / `setStyle` / `setSize` / `setCount` the textarea, the input and the Selects call, so a staged request and a typed one are indistinguishable. **Why ONE target and not four:** these fields are one request the user composes in a single thought, `generation_request_summary` is literally their composite read twin, and every key being optional preserves per-field granularity (`{image_size}` alone leaves a typed prompt alone) while costing one confirm dialog instead of four. The trade is stated in the manifest: the user accepts or declines the object whole. **Generate is deliberately NOT a target** (the `podcast-studio` precedent — a run spends real money on image models, the human press is the gate); results, `is_generating`/`generation_enabled`, and anything about saved files/folders stay undeclared, and the handler THROWS rather than editing a request already in flight. The size vocabulary moved out of a re-typed union into `features/image-studio/constants/generation-options.ts`, which the Selects render from, the handler validates against, the manifest's contract prose interpolates, and `GenerateImageBody` now types — five copies collapsed to one. Live-verified with a real Badass Agent run: the ask dialog carried the manifest's own prose with the enum spelled out from the constant, Apply staged a genuinely good 900-character prompt + Landscape + "editorial illustration" into the visible form with Generate still enabled and unpressed and the results panel still empty, "Keep as is" returned `{ok:false, declined:true}` (the agent acknowledged and offered alternatives, no error) and left the form byte-identical, and "start the generation run" produced NO `apply_surface_write` call at all — the tool advertises only `generation_request`. Worth knowing for the campaign: Badass Agent answered that last one with its OWN image tool and volunteered that the result had not gone through the form's Generate — the surface seam held, but a globally-bound agent's own capabilities are a separate axis from what a surface exposes. Zero `surface-writeback` captures; `check:surface-drift` + `type-check` clean.
 - **2026-08-10 — Agent Apps surface agent-writable; the mixed-mode-per-field reference.** `matrx-user/agent-apps` declares 5 ask-policy targets covering the entire storefront of a published mini-app: `app_name` / `app_tagline` / `app_description` as `mode:"draft"` and `app_category` / `app_tags` as `mode:"entity"`. The generalizable bit is that **mode is a property of the FIELD's UI, not of the surface**: on the Settings > Identity tab the three text fields are bound to local state with their own dirty marker and Save button (a real staging buffer → draft), while the category and tag pickers commit on change (no staging step → entity). Splitting them is what makes each target's description true. Handlers in `features/agent-apps/route/AgentAppSettingsContent.tsx` via `useSurfaceWriteHandlers` under the `[id]` layout's provider, routing through the same local setters the inputs use and the same `saveField` wrapper the pickers call (`saveAppField` thunk); `saveField` gained an opt-in `{rethrow}` so an agent write reports failure instead of only toasting it. Every handler throws on a bad shape and refuses when no app row has hydrated. Deliberately NOT writable: `slug` (the public `/p/[slug]` URL), publish status, `is_public`, agent/version binding, component code, shell config and rate limits — those change what the app IS or who can reach it. Because the read twins come from the Redux row rather than the inputs, each draft description states that the twin only moves once the user saves. Live-verified with real Badass Agent runs: all 5 targets confirmed in one message with the manifest's own prose in each dialog; drafts staged into the inputs with the Save button appearing and the DB untouched until the user pressed Save; category and tags persisted immediately (tags proved full-set replace by keeping an existing tag); "Keep as is" returned a clean decline the agent did not retry; a publish/visibility request was refused because those targets are not in the tool's enum; and a deliberately bad `app_tags` shape came back as the handler's own error text with nothing written. Zero unintended `surface-writeback` captures (the one capture observed was the intentional bad-shape probe). `check:surface-drift` + `type-check` clean.
+- **2026-08-10 — Organizations surface agent-writable; THE reference for a canonical writer that SWALLOWS its own failures.** `matrx-user/organizations` declares 3 ask-policy `entity` targets on the org home — `org_name`, `org_description`, `org_abbreviation` — with handlers on `OrgWorkspace.tsx`'s existing provider (it published scope but had no `getWriteHandlers`). All three go through `updateOrganization`, the exact service `GeneralSettings`' Save calls, plus the same best-effort `invalidateAndRefetchFullContext()` + `ensureScopeTree({refresh:true})` that form runs afterwards. **The transferable finding is the failure shape.** `updateOrganization` never throws: a validation miss or an RLS refusal comes back as `{success:false, error}`, and its own `validateOrgName` / `validateOrganizationAbbreviation` gates return early the same way. A handler that just awaited it would return cleanly on a write the database rejected, and the seam would report success to the agent — the exact "optimistic or error-swallowing write path" trap. `applyOrgPatch` therefore checks `result.success`, then re-checks every field it sent against the row the service just persisted (`.select().single()`, so it is the server's value, not an optimistic guess) and throws naming the field that did not land. **When the canonical function returns a result object instead of throwing, the handler owes the agent that check.** The judgment call worth recording is `org_abbreviation`: it LOOKS like an identifier and is not — `org_slug` is the identifier (immutable, URLs resolve on it, the form marks it read-only) while the abbreviation is a 2-3 letter DISPLAY label for where the full name will not fit, nothing keys off it, and picking it is naming work. `org_website` went the other way despite the same service accepting it: a URL is a fact the agent cannot verify and a wrong one reads as authoritative — **"the service accepts it" is not the bar; "an agent produces it better" is.** `entity` rather than `draft` for the `tool-registry` reason — the org home renders the loaded row and the staging form lives on `/settings`, which does not mount this surface — and the `/organizations` LIST mount registers nothing, having a roster of N orgs and no open record a target could name. Members, roles, invitations and contribution review stay undeclared by doctrine, deletion and the logo crop stay human, and every handler refuses when the viewer is not owner/admin (the gate that hides the form's Edit button) with `org_abbreviation` also refusing on a personal workspace, which is pinned to `ME`. Live-verified with real Badass Agent runs on a throwaway org: one message produced three ask dialogs quoting each manifest description verbatim, Apply persisted all three (`iam.organizations` confirmed by SQL) and the hero `h1` and description re-rendered in place; "Keep as is" declined with no error and no row change; a deliberately invalid abbreviation ("Northwind Compliance") surfaced the handler's own throw and left the row at `NCG`; and asked to change the slug, delete the org, or promote a member, the agent made no `apply_surface_write` call at all and named the three writable targets. Error Inspector: zero `surface-writeback` captures on the clean runs, and exactly one on the bad-shape probe — the induced throw itself. `check:surface-drift` + `type-check` clean; DB mirror sync pending.
 - **2026-08-10 — CMS site workspace agent-writable; the campaign's clearest case of a target blocked by a MISSING EDITOR rather than by doctrine.** `matrx-user/cms-site` declares 4 ask-policy draft targets on its Settings tab: `site_global_css` on the route's own provider (staging into the `globalCss` state the textarea drives), and `site_theme_config` / `site_navigation` / `site_footer_config` registered from inside `SiteAdvancedSettings`'s three sections via `useSurfaceWriteHandlers` — the deep-child seam earning its keep, since lifting five `useState`s per section into the route to satisfy the provider prop is exactly the plumbing that gets skipped. No handler touches `CmsSiteService`; the human's per-section Save remains the only writer, which is what makes the targets legal under the CMS's `agent_write_policy` (`blocked | draft_only | full`) — **staging is not saving**, so they work even on a blocked site. `client_sites` has no draft twin, so that Save publishes site-wide at once: `ask` on all four, `auto` on none. **The transferable lesson is `site_meta_defaults`.** It is the single best agent-value field on the surface (site-wide title suffix / description / social image every page inherits) and it got NO target — not because writing it is wrong, but because WF-6 built editors for theme/nav/footer/contact/social and skipped it, leaving no draft state to stage into and no Save to review under. The only remaining path would be an immediate `updateSite({metaDefaults})`: an entity write that bypasses the human AND is a save, which the site's own policy forbids. **When the judgment bar says YES but there is no editor, the answer is "build the editor first", not "reach for entity mode"** — declaring it would have converted a UI gap into a policy violation. Second reusable find: strict unknown-key rejection collides with real rows, because `footer_config` carries keys the editor preserves but never edits (`order`), and those keys are IN the value the agent reads — so a refusal message has to name the fix ("send only the keys you are changing"), or the agent loops echoing back what it just read. Third: **a multi-target stage can be silently undone by the page's own save-then-refresh**. Each settings section saves and calls `refreshSite()`, and `SiteAdvancedSettings` remounts on the new `updated_at` "so drafts re-seed from truth" — so staging three targets and saving the cards one by one persisted only the first. Pre-existing (a human editing two cards loses the same work) but write targets make it routine, so the intro instructs agents to warn the user and re-stage after each save. **When a surface has several independently-saved cards, check what one card's save does to the others' drafts before declaring targets across all of them.** Live-verified with real Badass Agent runs on `dev-website`: per-target ask dialogs carrying each manifest description verbatim, Apply staging a full stylesheet plus a matching token palette plus a nav menu built from the site's actual page routes, "Keep as is" leaving the footer untouched with no error, the human Save persisting to `client_sites` (`global_css` 0 → 2749 chars), and an undeclared target refused. Zero `surface-writeback` captures; `check:surface-drift` + `type-check` clean.
 - **2026-08-10 — Grade Work composer agent-writable; THE input-vs-output reference.** `matrx-user/education-grade-work` declares exactly 2 draft/`ask` targets — `problem_text` and `expected_answer` — wired on `GradeWorkSurface.tsx`'s own provider through the same `setProblem` / `setExpected` the two textareas call, so an agent stages the problem it just posed (and a full-credit rubric worth grading against) and the learner still attaches the photo and presses Grade. Two only, deliberately: that mount authors exactly two things plus a photo `File` no agent can produce, and a third was NOT invented to pad the count. The value of this adopter is the line it draws. Everything in the `grading` group — `grade_result`, `grade_explanation`, `grade_misconception`, `grade_steps`, `work_transcription`, `grading_status` — is grader OUTPUT and stays undeclared by doctrine: letting an agent write the grade a student received would forge the verdict this surface exists to earn. `photo_attached` is derived status, not an input. Starting the run is not a target either, unlike `tasks`' `save_task` — the grade is metered (`education.image_grade`) and COPPA-gated, so spending a minor's quota stays a human gesture. Handlers refuse to stage while a verdict is on screen or a run is in flight, because the composer is unmounted then and a silent `setState` would report "applied" for a value nobody can see. Both handlers say "plain text string, not JSON and not JSON-encoded" in the throw itself: the inline-tool layer parses a JSON-looking argument before the handler sees it, and an agent told only "expected a string" tends to "fix" that by double-encoding, landing escaped newlines and stray quotes in the learner's box. Live-verified with a real Badass Agent run: both targets confirmed in one message with the manifest's own prose per dialog, Apply landed both values in the boxes, "Keep as is" left the rubric untouched and returned a non-error the agent acknowledged, a deliberate object argument surfaced the handler's throw verbatim to the model with the textarea uncorrupted and no double-encode retry, and an ask to write the grade was refused with the agent naming the only two writable targets. Zero `surface-writeback` captures on a clean page load; `check:surface-drift` + `type-check` clean.
 - **2026-08-10 — Restored the Agent Builder write-target docs a merge dropped.** The 2026-08-09 entry below and the adopter-list clause landed in `68b1c007` and were lost in a later merge resolution while the CODE stayed intact — the docs claimed the campaign's highest-leverage surface was not agent-writable when it is. Nothing changed in the surface itself. **A merge that resolves a `FEATURE.md` conflict by taking one side wholesale silently reverts documentation for shipped code** — reconcile both sides.

@@ -43,13 +43,26 @@ import {
   getOrganizationBySlugOrId,
   getUserRole,
   getOrganizationMembers,
+  updateOrganization,
 } from "@/features/organizations/service";
 import type { Organization, OrganizationMemberWithUser } from "@/features/organizations/types";
+import {
+  validateOrgName,
+  validateOrganizationAbbreviation,
+  type UpdateOrganizationOptions,
+} from "@/features/organizations/types";
+import { toast } from "@/lib/toast";
 import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
 import { format } from "date-fns";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useDispatchThunk,
+} from "@/lib/redux/hooks";
+import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
   fetchScopeTypes,
   selectScopeTypesByOrg,
@@ -84,6 +97,7 @@ export function OrgWorkspace() {
   const params = useParams();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   const orgId = params.orgId as string;
 
   const [organization, setOrganization] = React.useState<Organization | null>(null);
@@ -279,10 +293,93 @@ export function OrgWorkspace() {
       selection: window.getSelection()?.toString() || undefined,
     });
 
+  // ── Surface write targets (org_name / org_description / org_abbreviation) ─
+  // Every target is `mode: "entity"`: this page has no draft buffer, so a write
+  // goes straight through `updateOrganization` — the SAME service the Settings →
+  // General form saves with. That service SWALLOWS failures into
+  // `{ success: false, error }` rather than throwing, so an unchecked call would
+  // report success for a write the server rejected; `applyOrgPatch` checks the
+  // result, re-checks the returned row, and throws so the agent hears the refusal.
+  const applyOrgPatch = async (
+    target: string,
+    updates: UpdateOrganizationOptions,
+  ) => {
+    if (!isAdmin) {
+      throw new Error(
+        `${target} refused: editing organization details requires owner or admin, and this viewer's role is "${userRole ?? "unresolved"}" (can_manage false).`,
+      );
+    }
+    const result = await updateOrganization(organization.id, updates);
+    if (!result.success || !result.organization) {
+      throw new Error(
+        `${target} was rejected and nothing was saved: ${result.error ?? "the update returned no organization row"}.`,
+      );
+    }
+    // The service returns the row it just persisted (`.select().single()`), so
+    // this compares against the server's own value, not our optimistic guess.
+    for (const [key, sent] of Object.entries(updates)) {
+      const landed = result.organization[key as keyof Organization];
+      if ((landed ?? "") !== sent) {
+        throw new Error(
+          `${target} did not land: the saved organization still reads ${key}=${JSON.stringify(landed ?? "")} after writing ${JSON.stringify(sent)}.`,
+        );
+      }
+    }
+    setOrganization(result.organization);
+    // Mirrors the General settings form's own post-save refresh so the org
+    // switcher and scope tree stop showing the old name. Best-effort by design.
+    try {
+      await dispatchThunk(invalidateAndRefetchFullContext());
+      await dispatchThunk(ensureScopeTree({ refresh: true }));
+    } catch {
+      // Hierarchy refresh is best-effort; the workspace already re-rendered.
+    }
+    toast.success("Organization updated successfully");
+  };
+
+  // Fresh closures per call (the getWriteHandlers contract) so each handler
+  // reads the organization currently loaded, not the one at mount.
+  const getSurfaceWriteHandlers = () => ({
+    org_name: async (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error("org_name expects a string.");
+      const next = value.trim();
+      const validation = validateOrgName(next);
+      if (!validation.valid)
+        throw new Error(`org_name rejected: ${validation.error}`);
+      await applyOrgPatch("org_name", { name: next });
+    },
+    org_description: async (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "org_description expects a string (empty string clears it).",
+        );
+      if (value.length > 500)
+        throw new Error(
+          `org_description rejected: max 500 characters, got ${value.length}.`,
+        );
+      await applyOrgPatch("org_description", { description: value });
+    },
+    org_abbreviation: async (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error("org_abbreviation expects a string.");
+      if (organization.isPersonal)
+        throw new Error(
+          "org_abbreviation refused: a personal workspace is always abbreviated ME.",
+        );
+      const next = value.trim();
+      const validation = validateOrganizationAbbreviation(next);
+      if (!validation.valid)
+        throw new Error(`org_abbreviation rejected: ${validation.error}`);
+      await applyOrgPatch("org_abbreviation", { abbreviation: next });
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={ORGANIZATIONS_SURFACE_NAME}
       getScope={getSurfaceScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
       isEditable={false}
     >
     <div className="h-dvh overflow-y-auto bg-textured">
