@@ -19,7 +19,8 @@ import { Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildFastFireSurfaceScope } from "../fastfire-surface-scope";
-import { openSetup, resetFastFire } from "../redux/fastFireSlice";
+import { openSetup, resetFastFire, updateConfig } from "../redux/fastFireSlice";
+import { parseDrillConfigPatch } from "../drill-config";
 import { selectFastFirePhase, selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireDrill } from "../hooks/useFastFireDrill";
 import { FastFireSetup } from "./FastFireSetup";
@@ -65,6 +66,41 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
 
   // Live scope for the surface system — read from the store at Run time only.
   const getScope = () => buildFastFireSurfaceScope(store.getState());
+
+  // Write half of the surface (manifest `writeTargets`). ONE draft-mode target:
+  // the drill's setup configuration. It dispatches the SAME `updateConfig`
+  // action the learner's own slider dragging dispatches — never a parallel write
+  // path — so the staged value shows up on the setup form and stays reversible.
+  // Nothing durable happens until the USER presses "Start FastFire" (which is
+  // where the mic prompt, the session open and the entitlement gate live).
+  //
+  // Validation lives in `parseDrillConfigPatch` (the canonical drill-config
+  // module, which also supplies the bounds the manifest advertises and the
+  // sliders offer) and THROWS on a bad shape; the writeback seam turns a throw
+  // into a safe error envelope the calling agent reads and can correct against.
+  // Read live state from the store, not the render closure — a handler can be
+  // invoked between renders. Fresh closures per call (getWriteHandlers contract).
+  const getSurfaceWriteHandlers = () => ({
+    drill_config: (value: unknown) => {
+      const state = store.getState();
+      const { phase: livePhase, config: liveConfig } = state.fastFire;
+      // The provider wraps every phase, but the setup FORM only exists in
+      // `setup` — once the drill starts, the config is locked into the running
+      // queue and timers, so a patch would silently do nothing (or worse,
+      // change the clock mid-answer). Refuse loudly instead.
+      if (livePhase !== "setup") {
+        throw new Error(
+          `drill_config can only be changed on the FastFire setup screen. The drill is currently in the "${livePhase}" phase` +
+            (livePhase === "idle"
+              ? " (still loading)."
+              : livePhase === "complete" || livePhase === "finalizing"
+                ? " — the session is over; the learner can start a new one to reconfigure."
+                : " — the learner is mid-drill and racing a clock; do not interrupt them."),
+        );
+      }
+      dispatch(updateConfig(parseDrillConfigPatch(value, liveConfig)));
+    },
+  });
 
   let body: ReactNode;
   switch (phase) {
@@ -121,7 +157,9 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/education-fastfire"
+      isEditable
       getScope={getScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       {body}
     </SurfaceRuntimeProvider>

@@ -25,7 +25,12 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  DRILL_CONFIG_BOUNDS,
+  type FastFireConfig,
+} from "@/features/flashcards/fast-fire/drill-config";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -250,6 +255,70 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the FastFire DRILL
+ * SETUP form, and (just as deliberately) what it may not.
+ *
+ * ONE target, on purpose. The judgment call, written down:
+ *
+ * WHAT EARNS IT. The setup screen is a planning form, and the plan is genuinely
+ * derivable from what the learner says: "I've got five minutes before class" is
+ * a card count plus a pace; "read them to me, I'm walking" is voice mode plus a
+ * shorter answer window. Those are four real fields an agent can compute
+ * (`secondsPerCard`, `cardLimit`, `voiceAnswerSeconds`, `spokenFronts`), plus
+ * two cheap companions the learner sets in the same breath (`warningSeconds`,
+ * `liveScore`). They are edited TOGETHER on one screen, in one decision, so per
+ * the skill's own preference they are ONE object target with a partial patch —
+ * not six micro-targets producing six confirm dialogs for a single ask.
+ *
+ * WHAT DOES NOT, AND WHY:
+ *   • The SET PICKER (`setId`/`setName`) is not writable, for exactly the
+ *     reason `education-assessment` left its deck/document pickers out: the
+ *     surface exposes no options to choose FROM. The read half publishes only
+ *     the set already loaded (`set_id`/`set_name`) — the learner's library
+ *     lives in `FastFireSetup`'s local React state and never reaches the scope.
+ *     An agent handed a `set_id` target could only guess a UUID, and a
+ *     confidently-wrong deck is worse than no target at all. If the library is
+ *     ever published as a read value, this becomes a good second target.
+ *   • RUNNING the drill — start, skip a card, abort, replay, grade — stays
+ *     human. These are the learner's own study actions; the whole point of
+ *     FastFire is that THEY answer out loud against a clock. An agent driving
+ *     the clock would be driving the study session itself.
+ *   • The scoreboard's review filter is pure view state (`all|correct|
+ *     incorrect`) — the mechanical-toggle class the bar excludes.
+ *
+ * MODE + POLICY. `draft` + `ask`: the handler dispatches the SAME
+ * `updateConfig` action the learner's own slider dragging dispatches, so the
+ * value appears on the setup form, is visibly reversible by dragging, and
+ * reaches nothing durable — the drill only opens a `study_session` when the
+ * USER presses "Start FastFire", which is also where the mic prompt and the
+ * `education.live_grade` entitlement gate run. Nothing here spends quota,
+ * records an attempt, or writes a row.
+ *
+ * MOUNTS. This surface has exactly ONE mount —
+ * `FastFireSurface.tsx`, the phase router, which wraps the drill's whole
+ * lifecycle and owns the slice the config lives in. It registers this handler.
+ * There is no second mount to reason about (the sibling `CaptureTestSurface` is
+ * an audio-debug harness that mounts no surface at all). The handler is
+ * nonetheless PHASE-GUARDED rather than mount-guarded: the same provider stays
+ * mounted through `countdown`/`card_recording`/`complete`, where the setup form
+ * is off screen and the config is already locked into the running drill, so a
+ * patch outside `setup` is refused with an error saying so.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "drill_config",
+    label: "Drill configuration",
+    description: `Stages the drill's pace and behavior into the FastFire setup form, before the learner starts. Accepts a PARTIAL object — include only the fields you mean to change; omitted fields keep their current value (read drill_config first to see them). Writable fields: secondsPerCard (whole number ${DRILL_CONFIG_BOUNDS.secondsPerCard.min}-${DRILL_CONFIG_BOUNDS.secondsPerCard.max}, the answer clock per card); cardLimit (whole number ${DRILL_CONFIG_BOUNDS.cardLimit.min}-${DRILL_CONFIG_BOUNDS.cardLimit.max}, where 0 means every card in the set); warningSeconds (whole number ${DRILL_CONFIG_BOUNDS.warningSeconds.min}-${DRILL_CONFIG_BOUNDS.warningSeconds.max}, seconds-left for the warning beep, 0 = off); liveScore (boolean, show grades during the drill vs only on the scoreboard); spokenFronts (boolean, read each question aloud — voice mode); voiceAnswerSeconds (whole number ${DRILL_CONFIG_BOUNDS.voiceAnswerSeconds.min}-${DRILL_CONFIG_BOUNDS.voiceAnswerSeconds.max}, voice-mode answer window, and it may not exceed secondsPerCard). Out-of-range or wrongly-typed values are REJECTED, never clamped. Only these fields are accepted — notably the flashcard set is NOT writable here; the learner picks that themselves. Applies only while the setup screen is up (drill_phase "setup"); once the drill is running the config is locked. The user still presses Start FastFire.`,
+    valueType: "object",
+    updatesValue: "drill_config",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "drill",
+    sortOrder: 100,
+  },
+];
+
 export const educationFastfireManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-fastfire",
   readiness: "partial",
@@ -264,6 +333,7 @@ Grades stream in asynchronously, so absence of a grade means "not resolved yet",
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  writeTargets,
 };
 
 /** One entry in `drill_cards` / the `current_card` object. */
@@ -295,17 +365,13 @@ export interface FastFireGradeSummary {
   errored: number;
 }
 
-/** The `drill_config` composite (mirrors `FastFireConfig`). */
-export interface FastFireDrillConfig {
-  setId: string | null;
-  setName: string | null;
-  secondsPerCard: number;
-  cardLimit: number;
-  liveScore: boolean;
-  spokenFronts: boolean;
-  voiceAnswerSeconds: number;
-  warningSeconds: number;
-}
+/**
+ * The `drill_config` composite. Aliased to the canonical `FastFireConfig`
+ * rather than re-declared: this is both the read value's shape and the write
+ * target's field vocabulary, so a hand-copied mirror here would be a silent
+ * drift path the moment a setting is added.
+ */
+export type FastFireDrillConfig = FastFireConfig;
 
 /**
  * Type-safe payload helper. Required keys (no `?`) mirror every value declared
