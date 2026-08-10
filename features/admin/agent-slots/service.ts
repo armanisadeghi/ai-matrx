@@ -12,6 +12,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { invalidateClientSlotCache } from "@/features/agents/slots/service";
 import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { callApi } from "@/lib/api/call-api";
@@ -159,6 +160,11 @@ export async function updateSlotDefinition(
     .select("*")
     .single();
   if (error) throw error;
+  // Every definition write notifies the slot invalidation bus, so any mounted
+  // consumer — the slots console, useAgentSlot resolvers, pickers — refreshes
+  // no matter which surface performed the repin (console buttons, the pin
+  // editor, or the Linked Agent Sync window).
+  invalidateClientSlotCache(data.slot_key);
   return data;
 }
 
@@ -254,11 +260,16 @@ export async function fetchPinnedAgentIdentity(
   slot: SlotDefinitionRow,
 ): Promise<PinnedAgentIdentityResult> {
   const params = new URLSearchParams();
+  // Pass BOTH identifiers when present: agent_id resolves the identity, and
+  // agent_version_id lets the route resolve the pinned version number — a
+  // version-pinned unresolved pin must not lose its pinned-version badge.
   if (slot.default_agent_id) {
     params.set("agent_id", slot.default_agent_id);
-  } else if (slot.default_agent_version_id) {
+  }
+  if (slot.default_agent_version_id) {
     params.set("agent_version_id", slot.default_agent_version_id);
-  } else {
+  }
+  if ([...params.keys()].length === 0) {
     return { agent: null, pinnedVersionNumber: null, systemTwin: null };
   }
   const response = await fetch(

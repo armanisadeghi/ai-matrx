@@ -6,6 +6,9 @@ import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 /**
  * GET /api/admin/agent-slots/agent-identity?agent_id=<id>
  * GET /api/admin/agent-slots/agent-identity?agent_version_id=<id>
+ * GET /api/admin/agent-slots/agent-identity?agent_id=<id>&agent_version_id=<id>
+ *   (version-pinned pin: identity from agent_id, pinned version number from
+ *   agent_version_id)
  *
  * Super-admin-only identity lookup for a slot's pinned agent when the pin
  * points at a row the admin's RLS scope cannot read (another user's personal
@@ -51,7 +54,10 @@ export async function GET(request: Request) {
     let agentId = agentIdParam;
     let pinnedVersionNumber: number | null = null;
 
-    if (!agentId && versionIdParam) {
+    // Resolve version context whenever a version id is supplied — alongside
+    // OR instead of agent_id. A version-pinned slot passes both; dropping the
+    // version here would lose the pinned-version badge.
+    if (versionIdParam) {
       const { data: version, error: versionError } = await adminClient
         .schema("agent")
         .from("definition_version")
@@ -68,7 +74,7 @@ export async function GET(request: Request) {
           { status: 500 },
         );
       }
-      agentId = version?.agent_id ?? null;
+      agentId = agentId ?? version?.agent_id ?? null;
       pinnedVersionNumber = version?.version_number ?? null;
     }
 

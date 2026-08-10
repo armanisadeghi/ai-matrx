@@ -50,6 +50,7 @@ import {
   type AgentSlotSummary,
   type AgentSlotsHealthSummary,
 } from "@/features/surfaces/manifests/agent-slots.manifest";
+import { onSlotCacheInvalidated } from "@/features/agents/slots/service";
 import { SlotOverridePanel } from "@/features/agents/slots/components/SlotOverridePanel";
 import { SlotResolutionRibbon } from "@/features/agents/slots/components/SlotResolutionRibbon";
 import { SlotTestBench } from "./SlotTestBench";
@@ -1091,6 +1092,11 @@ export function AgentSlotsConsole() {
     dispatch(fetchAgentsListFull());
     fetchData();
   }, [dispatch, fetchData]);
+
+  // Any slot write anywhere — including a repin made from the Linked Agent
+  // Sync window (updateSlotDefinition fires the invalidation bus) — reloads
+  // this console, so it never shows a stale pin after an out-of-band change.
+  useEffect(() => onSlotCacheInvalidated(() => reload()), [reload]);
 
   const toggleEnabled = useCallback(
     async (row: SlotRow, enabled: boolean) => {

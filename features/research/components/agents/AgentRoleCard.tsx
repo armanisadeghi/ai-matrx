@@ -340,6 +340,18 @@ export function AgentRoleCard({
                 </span>
                 <SlotAgentPicker
                   slotKey={role.slotKey}
+                  // The card renders requirements from the LIVE system agent —
+                  // so the pre-flight must check against that same live
+                  // declaration, not the slot's stored (possibly stale/empty)
+                  // contract. Null while loading → stored-contract fallback.
+                  contractSource={
+                    systemPayload.isReady
+                      ? {
+                          variableDefinitions: systemPayload.variableDefinitions,
+                          contextSlots: systemPayload.contextSlots,
+                        }
+                      : null
+                  }
                   override={{
                     agentId: currentOverrideId,
                     apply: async (candidateId) => {
