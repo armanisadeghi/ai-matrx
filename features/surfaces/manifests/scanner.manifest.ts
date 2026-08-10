@@ -20,8 +20,20 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  SCAN_PAGE_LABEL_MAX_LENGTH,
+  SCAN_TITLE_MAX_LENGTH,
+} from "@/features/pdf/scanner/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+/**
+ * `ui_surface.name` for the scanner. Exported because THREE places must agree
+ * on it: this manifest, the provider mount (`ScannerSurfaceRuntime`), and the
+ * review skin that registers the write handlers (`DesktopReview`).
+ */
+export const SCANNER_SURFACE_NAME = "matrx-user/scanner";
 
 /**
  * The scanner's own sections. Parent group keys are NOT declared here —
@@ -332,8 +344,91 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half — what an agent may change on an IN-PROGRESS scan.
+ *
+ * The judgment line here is the Save button. Everything below stages into the
+ * live `useScanSession` state (`mode: "draft"`); assembling the PDF and running
+ * it into the extractor stays the human's press, and so does anything
+ * destructive (remove/discard) or mechanical (crop, rotate, enhance, reorder) —
+ * an agent has no view of the pixels and no business flipping those.
+ *
+ * What it DOES have is the OCR evidence the pipeline produces
+ * (`scan_processed_pages` carries a per-page `title` and `kind`) plus
+ * `scan_items`. Naming a stack of scanned pages from their content is exactly
+ * the "labels an agent drafts better/faster" case: the user photographs twelve
+ * pages and the agent turns them into "Invoice p1", "Receipt — Delta", "Signed
+ * addendum". That is why the two label targets and the title earn their keep.
+ *
+ * Handlers: `features/pdf/scanner/useScannerWriteHandlers.ts` — ONE module,
+ * dispatching `setLabel` / `setItemLabel` from `useScanSession`: the identical
+ * setters the title input and the per-page rename control call.
+ *
+ * SKIN SPLIT — where those handlers are registered is part of the contract.
+ * `/tools/scanner` locks ONE of two skins per page load (`ScannerRouteClient`),
+ * and they do NOT render the same controls:
+ *   - Desktop (`DesktopReview`) renders the title `<input>` and a per-card
+ *     "Page name" `<input>`, so both targets stage into controls the user is
+ *     already looking at. The handlers register THERE, via
+ *     `useSurfaceWriteHandlers`.
+ *   - Mobile (`ScannerSurface`) renders NEITHER: page labels have no control
+ *     and are not even displayed, and the title exists only inside the
+ *     `SaveSheet` that opens at commit time. Staging into that is a draft the
+ *     user cannot see or correct when it lands, so the mobile skin registers
+ *     NOTHING and `listAgentWritableTargets()` offers nothing there. Giving the
+ *     phone skin a rename UI is the prerequisite for changing that, not a
+ *     handler.
+ * Because a target is only offered where a handler is registered, one manifest
+ * serves both skins honestly. Registering with the review also scopes the
+ * targets out of the desktop Home view for free, and all three handlers refuse
+ * once a save is in flight — `ProcessingView` has replaced the review by then
+ * and the PDF's name is already captured.
+ *
+ * OWNERSHIP: the scanner shares no write target with any other surface. Its
+ * parent `matrx-user/pdf-extractor` declares none (it is a read-only viewer
+ * surface), so deepest-wins resolution never has to choose between them.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "scan_title",
+    label: "Scan title",
+    description:
+      "Replaces the scan's title — the name the assembled PDF is saved under. Pass a short filename-friendly string (a few words, no extension, no slashes); it lands in the title box exactly as sent, and it must be a single line of at most " + SCAN_TITLE_MAX_LENGTH + " characters (tabs and newlines are refused, not stripped). Good titles come from what the pages actually ARE, so read `scan_processed_pages` / `scan_page_labels` first rather than guessing. Staged into the scan session only: the user still presses Save to build the PDF. Refused once a save is in flight — the review screen is gone by then and the PDF's name is already captured.",
+    valueType: "string",
+    updatesValue: "scan_title",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "scan_session",
+    sortOrder: 100,
+  },
+  {
+    name: "scan_page_labels",
+    label: "Page labels",
+    description:
+      "REPLACES every page label at once. Pass an array of strings, one per captured page, in the SAME output order as `scan_page_labels` and `scan_items` — its length must equal the current page count exactly, or the write is refused. Each entry must be a single line of at most " + SCAN_PAGE_LABEL_MAX_LENGTH + " characters. Use an empty string to leave a page unlabeled; nothing is merged, so read `scan_page_labels` first and re-send any label you mean to keep. Use `scan_page_label` instead when renaming a single page. Staged into the scan session; the user still presses Save. Refused once a save is in flight.",
+    valueType: "array",
+    updatesValue: "scan_page_labels",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "scan_pages",
+    sortOrder: 200,
+  },
+  {
+    name: "scan_page_label",
+    label: "Single page label",
+    description:
+      'Renames ONE page and leaves every other label untouched. Pass an object `{ "index": <0-based position in `scan_items`>, "label": "<new name>" }` — `index` must be an existing page and `label` a single-line string of at most ' + SCAN_PAGE_LABEL_MAX_LENGTH + ' characters (empty string clears that page\'s label). Use this for a one-page correction; use `scan_page_labels` when labelling the whole scan in one go. Staged into the scan session; the user still presses Save. Refused once a save is in flight.',
+    valueType: "object",
+    updatesValue: "scan_page_labels",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "scan_pages",
+    sortOrder: 210,
+  },
+];
+
 export const scannerManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/scanner",
+  surfaceName: SCANNER_SURFACE_NAME,
   readiness: "verified",
   inheritsFrom: "matrx-user/pdf-extractor",
   label: "Scanner",
@@ -355,6 +450,7 @@ This surface never loads extracted document text; the inherited PDF Extractor
 text values are always empty here. \`scan_raw_preview\` is the only text it sees.
 </surface_intro>`,
   groups,
+  writeTargets,
   values: mergeBaselineValues(
     pickBaseline(
       "selection",
