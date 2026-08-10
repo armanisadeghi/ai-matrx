@@ -25,6 +25,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -271,6 +272,91 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop. This surface spans TWO provider mounts and they
+ * get DIFFERENT postures on purpose — one manifest, one target list, but
+ * `listAgentWritableTargets()` only offers a target where that mount actually
+ * registered a handler, so per-mount registration is what splits them.
+ *
+ * **The library route (`app/(core)/workbooks/page.tsx`) registers NOTHING —
+ * deliberately.** It is a roster of N workbooks with no open record, and a
+ * write target carries ONE value with no entity selector: "set the
+ * description" there has no addressable subject. Its only mutations are
+ * create (a creation action, not a field write), import (needs a `File` an
+ * agent cannot supply) and delete (destructive, human-only). Read-only is the
+ * correct posture for that mount, not an oversight.
+ *
+ * **The editor route (`app/(core)/workbooks/[id]/page.tsx`) owns the two
+ * entity targets** — `workbook_name` and `workbook_description`, the pair of
+ * human-authored fields on `udt_workbooks`. Both persist immediately through
+ * the canonical `workbook-service` setters (`renameWorkbook` /
+ * `updateWorkbookDescription`) — never a direct `.from("udt_workbooks")`
+ * write. They are `entity` rather than the usually-preferred `draft` for the
+ * same reason `schedule_title` is on `ScheduleDetail`: this route has no Save
+ * bar. The header's rename field commits only on blur/Enter, so a staged
+ * draft value would sit in an input the user may never focus and be lost on
+ * navigation — the write must land or not happen at all.
+ *
+ * **`WorkbookEditor` (the deep child that owns Univer) registers
+ * `workbook_sheet_names`** via `useSurfaceWriteHandlers`, because the sheets
+ * live inside the editor instance, not on the page. It is `draft`: renaming
+ * through `FWorksheet.setName()` fires the SAME Univer command the user's own
+ * sheet-tab rename fires, so it flows through `onCommandExecuted` →
+ * `isSnapshotMutation` → dirty → the editor's 2.5s debounced autosave, and
+ * Univer's own undo reverses it.
+ *
+ * All three are `applyPolicy: "ask"` — a workbook is the user's data, so
+ * every agent-originated change is confirmed in place.
+ *
+ * Deliberately NOT agent-writable anywhere on this surface:
+ *   - `workbook_snapshot` — bulk-replacing every cell of a user's spreadsheet
+ *     is destructive, not authoring, and there is no single canonical
+ *     "overwrite the grid" gesture to route it through. Agents read the
+ *     snapshot and tell the user what to change.
+ *   - `workbook_permissions` / `is_public` — permissions and visibility.
+ *   - `workbook_id` / `workbook_source` — identity and provenance.
+ *   - deleting a workbook or a sheet, and adding/reordering sheets — the
+ *     destructive and structural edits stay human.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "workbook_name",
+    label: "Workbook name",
+    description:
+      "Renames the workbook open at /workbooks/[id] and saves it immediately through the canonical rename path; the header name field updates in place. Plain string, 1-200 characters, replacing the whole name — read workbook_name first if you mean to extend it rather than replace it. Renames only the file; it does not touch any sheet name or any cell. Refused when the user only has viewer access.",
+    valueType: "string",
+    updatesValue: "workbook_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_workbook",
+    sortOrder: 100,
+  },
+  {
+    name: "workbook_description",
+    label: "Workbook description",
+    description:
+      "Rewrites the open workbook's description and saves it immediately through the canonical update path — this is the blurb shown under the workbook's name in the /workbooks library. Plain string up to 2000 characters; replaces the FULL text, so read workbook_description first if you mean to extend it, and pass an empty string to clear it. Refused when the user only has viewer access.",
+    valueType: "string",
+    updatesValue: "workbook_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_workbook",
+    sortOrder: 110,
+  },
+  {
+    name: "workbook_sheet_names",
+    label: "Sheet names",
+    description:
+      'Renames one or more sheets of the open workbook in the live editor. Value is an object keyed by SHEET ID with the new name as the value, e.g. { "sheet-01": "Q3 Revenue", "sheet-02": "Assumptions" } — read workbook_sheets first to get the ids. This is a PARTIAL map, not a full replacement: sheets you leave out keep their current names, and it can never add, delete or reorder a sheet. Each name must be 1-31 characters, must not contain any of : \\ / ? * [ ], and must be unique across the workbook once every rename in the map is applied. Invalid or unknown-id entries are rejected and NOTHING is renamed. The rename lands in the editor like your own tab rename and is persisted by the editor\'s autosave a couple of seconds later; Undo reverses it. Refused when the user only has viewer access or the editor has not finished booting.',
+    valueType: "object",
+    updatesValue: "workbook_sheets",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "workbook_content",
+    sortOrder: 120,
+  },
+];
+
 export const workbooksManifest: SurfaceManifest = {
   surfaceName: "matrx-user/workbooks",
   readiness: "partial",
@@ -289,6 +375,7 @@ workbook_snapshot is the whole workbook and can be very large — it is bindable
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**
