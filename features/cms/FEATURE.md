@@ -344,6 +344,31 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-10` — **The CMS hub (`matrx-user/cms`) is now agent-WRITABLE — one
+  target, `new_site_draft`.** The manifest declares a single ask-policy DRAFT
+  target: a partial `{name?, slug?, domain?}` object staged into the Create New
+  Site dialog, handled on `app/(core)/cms/page.tsx`'s existing
+  `SurfaceRuntimeProvider` through the same `handleNameChange` / `setNewSlug` /
+  `setNewDomain` the dialog's own inputs call. Sending `name` alone re-derives
+  the slug exactly as typing in the Name field does. **The handler opens the
+  dialog when it is shut**, because the dialog is a modal and the header Agents
+  button is `aria-hidden` while it is open — so every agent write necessarily
+  arrives with it closed, and staging into an invisible form would report
+  "applied" for something nobody can see. The site-slug and custom-domain rules
+  moved out of an inline regex chain in the page into the new
+  [`utils/siteSlug.ts`](./utils/siteSlug.ts) (`CMS_SITE_SLUG_PATTERN` /
+  `_RULE`, `deriveCmsSiteSlug`, `isValidCmsSiteSlug`, plus the bare-hostname
+  domain twins), so the page, the write handler, and the manifest's model-facing
+  prose share ONE definition; a malformed slug or a scheme-bearing domain is
+  rejected, never silently corrected. **`CmsSiteService.createSite` is
+  deliberately NOT a target** — it mints a real `client_sites` row the user owns
+  and routes away, so the human presses Create Site; `is_active`,
+  `agent_write_policy`, the data API key, and the identity of any existing site
+  stay human-only too. Live-verified on `/cms` with a real agent run (apply,
+  decline, undeclared-target refusal, and a deliberate invalid slug whose throw
+  reached the agent verbatim). See `features/surfaces/FEATURE.md` for the full
+  adopter entry.
+
 - `2026-08-10` — **`matrx-user/html-page` (the standalone quick-publish
   editor) is now agent-WRITABLE, and `HtmlPageEditor` finally mounts a
   surface runtime.** The manifest declares 2 ask-policy DRAFT targets:
