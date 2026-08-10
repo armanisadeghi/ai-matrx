@@ -10,6 +10,10 @@
 // front door to it. Metered with the canonical entitlement guard/meter
 // (education.image_grade), pre-visible before the action (TRUST mandate).
 //
+// Agent-writable (manifest `writeTargets`): an agent may stage the two composer
+// fields — the problem and the model answer / rubric — each behind an in-place
+// confirm. It may NOT write the grade, and it may not press Grade.
+//
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useState } from "react";
@@ -124,10 +128,62 @@ export function GradeWorkSurface() {
       ...(grader.error ? { grade_error: grader.error } : {}),
     });
 
+  // Write half of the surface (manifest `writeTargets`): an agent stages the
+  // composer text the learner would otherwise retype — the problem it just
+  // posed, or a full-credit rubric worth grading against. Both handlers call
+  // the SAME setters the textareas' onChange calls (never a parallel write
+  // path), and the learner still attaches the photo and presses Grade.
+  //
+  // Two things every handler here must do:
+  //  - THROW on a bad shape; the writeback seam turns a throw into a safe
+  //    error envelope the agent reads back.
+  //  - Say "not JSON-encoded" out loud. The inline-tool layer parses a
+  //    JSON-looking argument before it reaches us, so JSON text arrives as an
+  //    object; an agent told only "expected a string" tends to "fix" that by
+  //    double-encoding, which lands escaped \n and stray quotes in the box.
+  //
+  // Staging is refused unless the composer is actually on screen: once a grade
+  // renders, the textareas are unmounted, so a silent setState would report
+  // "applied" for a value nobody can see.
+  const requireComposer = (target: string) => {
+    if (graded)
+      throw new Error(
+        `${target} cannot be staged right now: a grade is already on screen, so the composer is closed. The learner must press "Grade another" to start a new problem.`,
+      );
+    if (busy)
+      throw new Error(
+        `${target} cannot be staged while a grading run is in flight.`,
+      );
+  };
+
+  const getSurfaceWriteHandlers = () => ({
+    problem_text: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "problem_text expects a plain text string — the problem itself, not JSON and not a JSON-encoded string.",
+        );
+      if (!value.trim())
+        throw new Error(
+          "problem_text expects a non-empty problem statement — grading cannot start without one.",
+        );
+      requireComposer("problem_text");
+      setProblem(value);
+    },
+    expected_answer: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "expected_answer expects a plain text string — the model answer or rubric, not JSON and not a JSON-encoded string. Pass an empty string to clear it and let the grader solve the problem itself.",
+        );
+      requireComposer("expected_answer");
+      setExpected(value);
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/education-grade-work"
       getScope={getScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     <div className="mx-auto max-w-2xl px-3 pb-16 pt-6 sm:px-6">
       {/* Header */}

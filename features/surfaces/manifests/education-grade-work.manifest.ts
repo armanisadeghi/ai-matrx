@@ -17,6 +17,10 @@
  *   problem  What the learner is asking to have graded
  *   grading  The run state + the resolved step-level verdict
  *
+ * Write half (read/write v1): the two composer fields — problem_text and
+ * expected_answer — are agent-writable as `draft` + `ask`. The grading group is
+ * grader OUTPUT and is deliberately never writable; see the writeTargets block.
+ *
  * Emitter: `features/education/assessment/grade-work/GradeWorkSurface.tsx`.
  */
 
@@ -25,6 +29,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import type { GradeStep } from "@/features/education/trust/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
@@ -162,6 +167,56 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half (read/write v1) — the COMPOSER ONLY.
+ *
+ * Exactly two targets, and deliberately only two: the mount
+ * (GradeWorkSurface.tsx) authors exactly two things the learner types — the
+ * problem and the optional model answer / rubric — plus a photo `File`, which
+ * no agent can produce. Both are `draft` + `ask`: the agent stages text into
+ * the composer, and the learner still attaches the photo of their work and
+ * presses "Grade my work" themselves.
+ *
+ * What is deliberately NOT writable, and must never become writable:
+ *
+ *  - Everything in the `grading` group (grading_status, grade_result,
+ *    grade_explanation, grade_misconception, grade_steps, work_transcription,
+ *    grade_error) is GRADER OUTPUT. Letting an agent write the grade a student
+ *    received would forge the verdict this whole surface exists to earn.
+ *  - `photo_attached` is derived status, not an input — the learner attaches
+ *    the photo.
+ *  - Starting the run is NOT a target (no "grade it" action, unlike the tasks
+ *    surface's `save_task`). The grade is metered (education.image_grade) and
+ *    COPPA-gated; spending a minor's quota is a human's call, so the button
+ *    stays human-pressed.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "problem_text",
+    label: "Problem statement",
+    description:
+      'Stages the problem statement into the composer\'s "The problem" box — the exact problem the learner solved on paper (e.g. "Solve for x: 3(x + 2) = 15", or an essay prompt). Value is a PLAIN TEXT STRING, never JSON and never JSON-encoded: pass the problem text itself. Replaces the whole box — read problem_text first if you mean to refine rather than overwrite. Grading does NOT start: the learner still attaches a photo of their handwritten work and presses "Grade my work".',
+    valueType: "string",
+    updatesValue: "problem_text",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "problem",
+    sortOrder: 300,
+  },
+  {
+    name: "expected_answer",
+    label: "Model answer / rubric",
+    description:
+      'Stages the optional model answer or full-credit rubric into the composer\'s "Model answer or rubric" box — the correct result and what full credit must show, which the vision grader then grades the photo against. Value is a PLAIN TEXT STRING, never JSON and never JSON-encoded; pass an empty string to clear it, which makes the grader solve the problem itself and grade against its own solution. Replaces the whole box — read expected_answer first if you mean to refine rather than overwrite. Grading does NOT start: the learner still attaches a photo and presses "Grade my work".',
+    valueType: "string",
+    updatesValue: "expected_answer",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "problem",
+    sortOrder: 310,
+  },
+];
+
 export const educationGradeWorkManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-grade-work",
   readiness: "partial",
@@ -176,6 +231,7 @@ Grades here are on meaning, never exact-string, and the learner can rightfully d
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  writeTargets,
 };
 
 /**

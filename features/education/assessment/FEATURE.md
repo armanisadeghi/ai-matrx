@@ -141,6 +141,22 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- **2026-08-10** — **The Grade Work composer is agent-writable — inputs only.**
+  `features/surfaces/manifests/education-grade-work.manifest.ts` declares 2
+  `mode: "draft"`, `applyPolicy: "ask"` targets — `problem_text` and
+  `expected_answer` — and `GradeWorkSurface` registers the handlers on its own
+  `SurfaceRuntimeProvider`, staging through the same `setProblem` /
+  `setExpected` the textareas call. An agent can put up the problem it just
+  posed and a full-credit rubric to grade against; the learner still attaches
+  the photo and presses Grade, where the COPPA gate, the
+  `education.image_grade` meter and `useGradeWork.grade` run. The whole
+  `grading` group is grader OUTPUT and is deliberately NOT writable — an agent
+  must never be able to write the grade a student received — and starting the
+  run is not a target, because spending a minor's metered quota is a human
+  gesture. Staging is refused while a verdict is on screen or a run is in
+  flight (the composer is unmounted then). Live-verified with a real agent
+  run: per-target confirms, Apply, decline, an invalid-shape throw reaching
+  the model, and a refused attempt to write the grade.
 - **2026-08-10** — **The generator is agent-writable.**
   `features/surfaces/manifests/education-assessment.manifest.ts` declares 8
   `mode: "draft"`, `applyPolicy: "ask"` write targets covering the whole generation
