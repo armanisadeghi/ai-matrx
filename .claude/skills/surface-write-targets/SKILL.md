@@ -90,7 +90,17 @@ Mock nothing. On a dev server (`pnpm dev:status` for existing ones; login
    staged value + Save bar; entity → persisted + toast); Keep as is
    declines without an error and the agent acknowledges gracefully.
 4. Ask for something you did NOT declare — expect a loud refusal.
-5. Check the Error Inspector — zero new `surface-writeback` captures.
+5. Send one deliberately INVALID value and confirm your handler's throw
+   reaches the agent verbatim. A good model often refuses to send a value it
+   can see is invalid — say you are testing validation and want the exact
+   error. Confirm nothing was staged (validate-then-apply).
+6. Check the Error Inspector — zero new `surface-writeback` captures, **on a
+   page load where you did NOT force an invalid value**. A handler throw is a
+   capture BY DESIGN: `applySurfaceWrite`'s catch routes to `fail()`, which
+   fires `toast.error` AND `captureError({source:"surface-writeback"})`. Step
+   5 therefore MANUFACTURES a capture. Reload (captures are per page load),
+   redo only the valid applies + a decline, and check that load — otherwise
+   you find your own test and report a defect that is not one.
 
 Then run `pnpm check:surface-drift` and `pnpm type-check`. Also run the
 manifest sync (admin surfaces page) or note it pending — the DB mirror
@@ -124,3 +134,27 @@ server-side; the client tool works either way.
 - Multiple values in one field object (like `page_meta_tags`
   `{meta_title?, meta_description?}`) beat five micro-targets when they're
   edited together; separate targets when they're independent decisions.
+- **The inline-tool layer PARSES a JSON-looking argument before your handler
+  sees it.** A `valueType: "string"` target cannot receive raw JSON text — it
+  arrives already parsed as an object, the handler throws, and the agent
+  "fixes" it by double-encoding (escaped `\n`, stray quotes in the field).
+  If a target legitimately takes structured data, accept the OBJECT and
+  serialize it yourself. Bit `shapes`; don't rediscover it.
+- **CHECK FOR A COLLISION BEFORE YOU WRITE ANYTHING, and again before you
+  commit.** These chips fan out in parallel and the same surface gets
+  assigned more than once. `git fetch origin main` and confirm the manifest
+  still lacks `writeTargets` ON LATEST MAIN — not on your clone's base, which
+  goes stale within the hour — and `git ls-remote origin <your-branch>` to
+  see whether someone is already pushing there. If a DIFFERENT design already
+  landed on main, it wins: do NOT merge a competing target set on top of it
+  (two targets covering the same fields is a defect, not a merge), keep the
+  landed work, and contribute only what is genuinely additive. Never
+  force-push over another agent's branch. Scraper hit this three ways at
+  once — a branch implementation, a second agent on the same branch name, and
+  a third, better design already merged to main.
+- A surface can have several provider mounts, and the ROUTE is often not one
+  of them. Confirm which component actually mounts `SurfaceRuntimeProvider`
+  before verifying — an agent run on a page with no mounted runtime is
+  offered no write tool at all, which looks exactly like a broken target.
+  (Scraper's live mount is the `scraperWindow` floating panel, not
+  `/scraper`.)
