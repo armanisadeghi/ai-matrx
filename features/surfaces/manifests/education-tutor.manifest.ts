@@ -33,7 +33,17 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+// The tutor style VOCABULARY, from the feature's dependency-free canonical
+// module — the SAME constants the settings panel renders as the learner's
+// options and the write handlers validate against. Spelled into the target
+// descriptions below rather than re-typed, so the enum an agent is told can
+// never drift from the enum it is checked against.
+import {
+  TUTOR_PERSONALITY_STYLES,
+  TUTOR_TEACHING_MODES,
+} from "@/features/education/tutor/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -153,6 +163,17 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 300,
     autoContext: false,
     sortOrder: 360,
+    group: "session",
+  },
+  {
+    name: "composer_draft",
+    label: "Composer draft",
+    description:
+      "The message the learner currently has typed in the tutor composer and has NOT sent yet. Absent when the composer is empty, and on a read-only shared view (which has no composer). This is the read twin of the `tutor_message_draft` write target — read it before staging a message if you mean to extend what the learner already wrote rather than replace it.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    sortOrder: 370,
     group: "session",
   },
 
@@ -301,11 +322,102 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — what an agent may CHANGE on the tutor surface.
+ *
+ * This surface is mostly READ-ONLY by nature, and the target list is short on
+ * purpose. Most of what it emits is session telemetry (`conversation_id`,
+ * `message_count`, `is_fresh_session`, `is_shared_view`, `is_embedded`),
+ * derived grounding, a trust envelope, or a gate — none of which is editable
+ * page state, and none of which becomes editable just because it is declared.
+ * Three things on this page are genuinely the learner's to change, and all
+ * three have a real on-page control and a canonical write path:
+ *
+ *   teaching_mode / personality_style — the learner's two durable tutor knobs
+ *     (`userPreferences.tutor.*`, the same setting `TutorSettingsPanel`
+ *     writes through `useSetting`). "Stop quizzing me, just explain it" is a
+ *     thing a learner says mid-session, and it is exactly this pref.
+ *   tutor_message_draft — the composer, staged through the SAME
+ *     `setUserInputText` action the learner's own keystrokes dispatch. The
+ *     learner still presses send; nothing is sent on their behalf.
+ *
+ * Deliberately NOT agent-writable, and why:
+ *   • `study_material` and `grounding_seed` — NOT state. `study_material` is
+ *     the assembler's output (`assembleTutorGrounding`), overwritten from a
+ *     fresh re-assembly after EVERY turn; a write would be silently clobbered
+ *     on the next message. `grounding_seed` is an immutable prop from the
+ *     Ask-Tutor entry point. Neither has a control, a setter, or an owner on
+ *     this page — a target for either would be a parallel write path.
+ *   • `learner_memory` — a real learner's accumulated record over the study
+ *     spine. An agent rewriting a student's history is destructive, not
+ *     authoring. Derived besides.
+ *   • `tutor_agent_id` — which agent teaches is a capability decision.
+ *   • Sharing/visibility, the entitlement meter, and the COPPA guardian gate —
+ *     permission and compliance state; an agent never routes around a gate.
+ *   • The trust envelopes — the tutor's own honesty record about its answers.
+ *     Letting anything edit them is the one change that would make the whole
+ *     trust surface worthless.
+ *
+ * PER-MOUNT POSTURE. One component (`EducationTutorClient`) mounts this
+ * surface, but it renders in three postures and they do NOT get the same
+ * treatment:
+ *   • Owner, standalone route (`/education/tutor/new` + `/[conversationId]`)
+ *     — all three targets.
+ *   • Owner, EMBEDDED (the Ask-Tutor side panel over another study page) —
+ *     all three. It is the same learner, the same live conversation, and it
+ *     has its own real composer; the only difference is where it is painted.
+ *   • READ-ONLY SHARED VIEW (`is_shared_view`) — NO handlers at all, so
+ *     `listAgentWritableTargets()` offers an agent nothing here. This is
+ *     someone else's conversation opened at view-only level: the composer is
+ *     not even rendered and the styles belong to its owner, not the viewer.
+ *
+ * Every target is `applyPolicy: "ask"`. The two style knobs are `entity` (the
+ * durable pref saves immediately); the composer is `draft` (the learner still
+ * presses send, which is where the entitlement meter and the school-safe gate
+ * run).
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "teaching_mode",
+    label: "Teaching mode",
+    description: `Sets how the tutor teaches this learner. Exactly one of: ${TUTOR_TEACHING_MODES.join(" | ")} (case-sensitive) — "Socratic" leads with questions and hints so the learner reaches the answer themselves, "Direct" explains fully and then checks understanding. Saves the learner's durable preference immediately (it follows them across devices) AND updates the running conversation's tutor context, so the tutor's very next turn already teaches this way. Changes only HOW the tutor explains — never what it knows about the learner.`,
+    valueType: "string",
+    updatesValue: "teaching_mode",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "tutor_style",
+    sortOrder: 100,
+  },
+  {
+    name: "personality_style",
+    label: "Personality style",
+    description: `Sets the tutor's tone for this learner. Exactly one of: ${TUTOR_PERSONALITY_STYLES.join(" | ")} (case-sensitive, including the "&" and the capitalisation). Saves the learner's durable preference immediately (it follows them across devices) AND updates the running conversation's tutor context, so the tutor's very next turn already speaks this way. Changes only the tone — never the tutor's grounding or what it is willing to claim.`,
+    valueType: "string",
+    updatesValue: "personality_style",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "tutor_style",
+    sortOrder: 110,
+  },
+  {
+    name: "tutor_message_draft",
+    label: "Draft message",
+    description:
+      'Types a message into the tutor composer FOR the learner to review and send. Value: { "text": string (1-8000 characters), "mode"?: "replace" | "append" } — "replace" (default) swaps whatever is in the composer, "append" adds after it on a new line, so read `composer_draft` first if you mean to extend what the learner already wrote. This only STAGES the text: nothing is sent, no tutor message is spent, and the learner still presses send. Use it to help a stuck learner ask their tutor a precise question — never to answer for them, and never to put words in their mouth they did not ask for.',
+    valueType: "object",
+    updatesValue: "composer_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "session",
+    sortOrder: 120,
+  },
+];
+
 export const educationTutorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-tutor",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter shipped and complete for everything the tutor client loads. Not yet stamped verified: the DB sync + a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, and no agent roles are declared yet (the tutor agent itself is a fixed default, not a surface role).",
+    "Manifest + emitter shipped and complete for everything the tutor client loads. Write targets (3) are live and were verified end-to-end with a real agent run — ask dialog per target, Apply landing through the canonical paths, decline clean, undeclared target refused, handler throws reaching the agent. Not yet stamped verified: the DB sync (writeTargets are code-only v1, not yet mirrored to ui.ui_surface_write_target) + a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, and no agent roles are declared yet (the tutor agent itself is a fixed default, not a surface role).",
   label: "AI Tutor",
   urlPattern: "/education/tutor/[conversationId]",
   intro: `<surface_intro>
@@ -315,6 +427,7 @@ Respect the Gates group before proposing anything that sends a message: when sen
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  writeTargets,
 };
 
 /**
@@ -335,6 +448,7 @@ export function createEducationTutorScope(values: {
   // alwaysAvailable: false → optional
   selection?: string;
   context?: Record<string, unknown>;
+  composer_draft?: string;
   grounding_seed?: Record<string, unknown>;
   learner_memory?: string;
   study_material?: string;

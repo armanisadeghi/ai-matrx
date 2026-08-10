@@ -31,6 +31,8 @@ import { loadConversation } from "@/features/agents/redux/execution-system/thunk
 import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import { setFocus, clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   selectConversationMessages,
   selectMessageCount,
@@ -47,8 +49,18 @@ import { canEditAccess } from "@/utils/permissions/access-core";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { Eye } from "lucide-react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationTutorScope } from "@/features/surfaces/manifests/education-tutor.manifest";
+import { useSetting } from "@/features/settings/hooks/useSetting";
 import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
+import {
+  TUTOR_TEACHING_MODES,
+  TUTOR_PERSONALITY_STYLES,
+  isTutorTeachingMode,
+  isTutorPersonalityStyle,
+  type TutorTeachingMode,
+  type TutorPersonalityStyle,
+} from "../settings";
 import {
   assembleTutorGrounding,
   type TutorGroundingSeed,
@@ -62,6 +74,8 @@ import { TutorTurnTrust } from "./TutorTurnTrust";
 
 const SOURCE_FEATURE = "education-tutor" as const;
 const BASE_PATH = "/education/tutor/[conversationId]";
+/** Ceiling for an agent-staged composer message (surface write target). */
+const COMPOSER_DRAFT_MAX = 8000;
 
 export interface EducationTutorClientProps {
   /** Set only when opening an EXISTING conversation (/education/tutor/[id]). */
@@ -441,6 +455,18 @@ export function EducationTutorClient({
     };
   }, [conversationId, messageCount, authReady, isSharedView, seed, dispatch]);
 
+  // ── The learner's two durable tutor knobs ─────────────────────────────────
+  // The SAME setting path `TutorSettingsPanel` writes through, so an agent
+  // changing the style goes down the learner's own write path (durable +
+  // synced across devices), not a parallel one. Only the setters are used here
+  // — the surface reports what the tutor was ACTUALLY given via `groundingRef`.
+  const [, setTeachingModePref] = useSetting<TutorTeachingMode>(
+    "userPreferences.tutor.teachingMode",
+  );
+  const [, setPersonalityStylePref] = useSetting<TutorPersonalityStyle>(
+    "userPreferences.tutor.personalityStyle",
+  );
+
   if (isInitializing || !conversationId) {
     return (
       <div className="flex h-full flex-col overflow-hidden bg-textured">
@@ -451,6 +477,108 @@ export function EducationTutorClient({
 
   const showEmptyState = !hideLanding && isFreshRoute && messageCount === 0;
 
+  // ── Write half of the tutor surface (manifest `writeTargets`) ─────────────
+  // Three targets, and the manifest's writeTargets docblock records why only
+  // three: everything else this surface emits is session telemetry, derived
+  // grounding, a trust envelope, or a gate — not editable state.
+  //
+  // POSTURE: a READ-ONLY SHARED VIEW registers NO handlers at all, so
+  // `listAgentWritableTargets()` offers an agent nothing on someone else's
+  // conversation. The owner's standalone route and the embedded Ask-Tutor
+  // panel both get the full set — same learner, same live conversation.
+  //
+  // Every handler validates and THROWS on a bad shape; the writeback seam
+  // turns a throw into a safe error envelope the agent reads. Nothing is
+  // silently coerced. Fresh closures per call (getWriteHandlers contract).
+  const getSurfaceWriteHandlers = (): SurfaceWriteHandlers => {
+    if (isSharedView) return {};
+
+    // Mirror a style change into the RUNNING conversation's tutor context —
+    // the same `setContextEntries` dispatch used at launch and on every memory
+    // refresh, so the next turn already teaches this way instead of the change
+    // only landing on the learner's NEXT session. The per-turn refresh
+    // overwrites learner_memory/study_material only, so this survives. Keeping
+    // `groundingRef` in step means the surface's read twin reports what the
+    // tutor actually has, not what it was launched with.
+    const applyStyleToLiveSession = (
+      key: "teaching_mode" | "personality_style",
+      label: string,
+      value: string,
+    ) => {
+      dispatch(
+        setContextEntries({
+          conversationId,
+          entries: [{ key, value, type: "text", label }],
+        }),
+      );
+      const current = groundingRef.current;
+      if (current) groundingRef.current = { ...current, [key]: value };
+    };
+
+    return {
+      teaching_mode: (value: unknown) => {
+        if (!isTutorTeachingMode(value))
+          throw new Error(
+            `teaching_mode expects exactly one of: ${TUTOR_TEACHING_MODES.join(", ")} (case-sensitive).`,
+          );
+        setTeachingModePref(value);
+        applyStyleToLiveSession("teaching_mode", "Teaching mode", value);
+      },
+
+      personality_style: (value: unknown) => {
+        if (!isTutorPersonalityStyle(value))
+          throw new Error(
+            `personality_style expects exactly one of: ${TUTOR_PERSONALITY_STYLES.join(", ")} (case-sensitive).`,
+          );
+        setPersonalityStylePref(value);
+        applyStyleToLiveSession("personality_style", "Personality style", value);
+      },
+
+      tutor_message_draft: (value: unknown) => {
+        // Never stage a message the learner cannot send. The COPPA gate in
+        // particular is not something to route around — refuse and say why.
+        if (sendBlocked)
+          throw new Error(
+            coppa.blocked
+              ? "tutor_message_draft refused — this account is under 13 with no active guardian link, so AI use is blocked until a parent approves. Do not work around this gate."
+              : "tutor_message_draft refused — this learner has reached their tutor-message limit, so a staged message could not be sent.",
+          );
+        if (typeof value !== "object" || value === null || Array.isArray(value))
+          throw new Error(
+            'tutor_message_draft expects an object: { "text": string, "mode"?: "replace" | "append" }.',
+          );
+        const { text, mode: writeMode } = value as {
+          text?: unknown;
+          mode?: unknown;
+        };
+        if (typeof text !== "string" || !text.trim())
+          throw new Error(
+            "tutor_message_draft expects a non-empty `text` string — the message to put in the composer.",
+          );
+        if (text.length > COMPOSER_DRAFT_MAX)
+          throw new Error(
+            `tutor_message_draft \`text\` is ${text.length} characters; the maximum is ${COMPOSER_DRAFT_MAX}.`,
+          );
+        if (
+          writeMode !== undefined &&
+          writeMode !== "replace" &&
+          writeMode !== "append"
+        )
+          throw new Error(
+            `tutor_message_draft \`mode\` must be "replace" or "append" when present, got ${JSON.stringify(writeMode)}.`,
+          );
+        const current = selectUserInputText(conversationId)(store.getState());
+        const next =
+          writeMode === "append" && current.trim()
+            ? `${current.trimEnd()}\n${text}`
+            : text;
+        // The SAME action the learner's own keystrokes dispatch (see
+        // AgentTextarea) — never a parallel write path into the composer.
+        dispatch(setUserInputText({ conversationId, text: next }));
+      },
+    };
+  };
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/education-tutor"
@@ -458,8 +586,14 @@ export function EducationTutorClient({
       // `conversation_id` is a genuine guarantee (alwaysAvailable: true).
       // Scope is assembled at TRIGGER time from live refs — the grounding ref
       // is whatever the tutor was last actually given, never a re-assembly.
+      getWriteHandlers={getSurfaceWriteHandlers}
       getScope={() => {
         const grounding = groundingRef.current;
+        // Read the composer imperatively at TRIGGER time: subscribing to the
+        // draft would re-render this whole client on every keystroke.
+        const composerDraft = isSharedView
+          ? ""
+          : selectUserInputText(conversationId)(store.getState());
         return createEducationTutorScope({
           conversation_id: conversationId,
           tutor_agent_id: agentId,
@@ -470,6 +604,7 @@ export function EducationTutorClient({
           grounding_available: grounding !== null,
           send_blocked: sendBlocked,
           compliance_blocked: coppa.blocked,
+          ...(composerDraft.trim() ? { composer_draft: composerDraft } : {}),
           ...(seed ? { grounding_seed: { ...seed } } : {}),
           ...(grounding
             ? {
