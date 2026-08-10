@@ -25,6 +25,7 @@ import { isErrorEvent, type TypedStreamEvent } from "@/lib/api/types";
 import type { components } from "@/types/python-generated/api-types";
 
 import { listKeywordEdges, listKeywordsWithMarket } from "./data/queries";
+import { normalizeClusterPhrase } from "./types";
 import type {
   KeywordEdgeView,
   KeywordResearchResponse,
@@ -158,9 +159,15 @@ export function useKeywordResearch(organizationId?: string | null) {
   const [search, setSearch] = useState("");
   const [run, setRun] = useState<ResearchRunState>({ status: "idle" });
   const [volumeStage, setVolumeStage] = useState<string | null>(null);
-  // The phrases of the last research run — when set, the explorer scopes to
-  // this cluster instead of the whole universal library.
+  // The active cluster scope — when set, the explorer lists only these
+  // phrases instead of the whole universal library. Set by a completed
+  // research run OR by a `cluster_scope` surface write; the label is what the
+  // explorer's cluster chip names, so the two always travel together (a
+  // phrase set with no label would filter the table with nothing to clear).
   const [clusterPhrases, setClusterPhrases] = useState<string[] | null>(null);
+  const [clusterPrimaryKeyword, setClusterPrimaryKeyword] = useState<
+    string | null
+  >(null);
   const abortRef = useRef<AbortController | null>(null);
   /** The adopted `activeRequests` row this hook owns, so it can reap it. */
   const adoptedRequestIdRef = useRef<string | null>(null);
@@ -190,6 +197,25 @@ export function useKeywordResearch(organizationId?: string | null) {
     const timer = setTimeout(() => void reload(search), search ? 250 : 0);
     return () => clearTimeout(timer);
   }, [search, reload]);
+
+  /**
+   * THE one way the explorer's cluster scope is set. A completed research run
+   * calls it with the artifact's phrases; the `cluster_scope` surface write
+   * calls it with an agent-composed working set. Phrases are normalized here
+   * (and here only) so both callers scope the table by identical rules.
+   * Returns the deduped phrase list that actually landed.
+   */
+  const setCluster = useCallback(
+    (primaryKeyword: string, phrases: string[]): string[] => {
+      const normalized = Array.from(
+        new Set(phrases.map(normalizeClusterPhrase).filter(Boolean)),
+      );
+      setClusterPrimaryKeyword(primaryKeyword);
+      setClusterPhrases(normalized);
+      return normalized;
+    },
+    [],
+  );
 
   // Leaving the page reaps this hook's adopted row too — the work keeps running
   // server-side (a disconnect never stops it) and is re-read from the durable
@@ -387,18 +413,16 @@ export function useKeywordResearch(organizationId?: string | null) {
       }
       storeActiveRun(null);
       const artifact = completedResult.artifact;
-      const phrases = [
-        artifact.primary_keyword || phrase,
+      const primary = artifact.primary_keyword || phrase;
+      setCluster(primary, [
+        primary,
         ...(artifact.keyword_lists ?? []).flatMap(
           (list) => list.keywords ?? [],
         ),
-      ]
-        .map((keyword) => keyword.trim().toLowerCase())
-        .filter(Boolean);
-      setClusterPhrases(Array.from(new Set(phrases)));
+      ]);
       void reload(search);
     },
-    [dispatch, organizationId, reload, search],
+    [dispatch, organizationId, reload, search, setCluster],
   );
 
   const runResearch = useCallback(
@@ -498,7 +522,10 @@ export function useKeywordResearch(organizationId?: string | null) {
     [],
   );
 
-  const clearCluster = useCallback(() => setClusterPhrases(null), []);
+  const clearCluster = useCallback(() => {
+    setClusterPhrases(null);
+    setClusterPrimaryKeyword(null);
+  }, []);
 
   /** Re-read the library with the current search (post-archive/restore). */
   const reloadKeywords = useCallback(() => {
@@ -507,6 +534,8 @@ export function useKeywordResearch(organizationId?: string | null) {
 
   return {
     clusterPhrases,
+    clusterPrimaryKeyword,
+    setCluster,
     clearCluster,
     keywords,
     loading,

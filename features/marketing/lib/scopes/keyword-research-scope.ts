@@ -57,8 +57,16 @@ export interface KeywordResearchScopeInput {
   run: ResearchRunState;
   /** Phrases of the active cluster scope, or null when showing the full library. */
   clusterPhrases: string[] | null;
+  /** Name of the active cluster — what the explorer's cluster chip reads. */
+  clusterPrimaryKeyword: string | null;
   /** Stage label of an in-flight volume refresh, when one is running. */
   volumeStage: string | null;
+  /**
+   * The launcher's input as it stands right now — typed but not run. Read
+   * from the workbench's ref at trigger time (never state), so the table does
+   * not re-render on every keystroke in a box above it.
+   */
+  stagedKeyword: string;
 }
 
 export function buildKeywordResearchScope({
@@ -66,7 +74,9 @@ export function buildKeywordResearchScope({
   visibleKeywords,
   run,
   clusterPhrases,
+  clusterPrimaryKeyword,
   volumeStage,
+  stagedKeyword,
 }: KeywordResearchScopeInput): SurfaceScopePayload {
   const artifact = run.result?.artifact;
   return createKeywordResearchScope({
@@ -77,10 +87,11 @@ export function buildKeywordResearchScope({
       ? visibleKeywords.slice(0, MAX_VISIBLE_KEYWORDS).map(projectKeyword)
       : undefined,
     cluster_primary_keyword: clusterPhrases?.length
-      ? (run.primaryKeyword ?? undefined)
+      ? (clusterPrimaryKeyword ?? undefined)
       : undefined,
     cluster_phrases: clusterPhrases?.length ? clusterPhrases : undefined,
     run_primary_keyword: run.primaryKeyword ?? undefined,
+    research_input_keyword: stagedKeyword.trim() ? stagedKeyword : undefined,
     run_stage: run.stage ?? undefined,
     run_id: run.runId ?? undefined,
     research_artifact: artifact

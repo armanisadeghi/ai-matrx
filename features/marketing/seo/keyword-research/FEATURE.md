@@ -209,6 +209,26 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-10 — **The workbench is agent-writable** (`matrx-user/keyword-research`,
+  3 `ask`-policy targets — see `features/surfaces/FEATURE.md` for the full
+  entry). `library_search` and `cluster_scope` land through the explorer's own
+  setters; `research_input_keyword` stages the launcher input, which
+  `KeywordResearchLauncher` now services itself via `useSurfaceWriteHandlers`
+  when — and only when — the host passes `writeTargetSurfaceName` (the
+  workbench does; `KeywordResearchWindow` deliberately does not, so an agent on
+  the page underneath cannot type into a floating window). **The cluster scope
+  now has one owner:** `useKeywordResearch` exposes
+  `setCluster(primaryKeyword, phrases)` plus `clusterPrimaryKeyword`, both the
+  completed-run path and the agent write go through it, and the explorer chip
+  reads that label instead of `run.primaryKeyword` — so a cluster with no run
+  behind it is still named and still clearable. `KEYWORD_CLUSTER_WRITE_MODES` /
+  `isKeywordClusterWriteMode` / `normalizeClusterPhrase` moved into `types.ts`
+  as THE vocabulary the manifest prose and the handler both consume.
+  **Unchanged by design:** starting a research run is not a write target (it
+  spends a paid provider request plus agent calls — the human presses
+  Research), and no fetched value (artifact, result, visible rows, volume
+  stage) is writable at all; provider evidence is never agent-editable.
+  Live-verified end to end with a real agent run.
 - 2026-08-08 — Site keywords route split into `SiteKeywordsView` (Performance |
   Classification toggle, URL state `?view=`). Classification is the
   search-console feature's `KeywordClassificationWorkspace` — traffic-class
