@@ -90,6 +90,23 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
 
 ## Change Log
 
+- 2026-08-10 — claude: **The Markdown Editor / classification tester — the
+  workbench this pipeline is developed against — is now agent-writable;
+  classification untouched.** `matrx-user/markdown-editor` declares
+  `markdown_content` and `append_markdown_content` (both
+  `applyPolicy:"ask"`, `mode:"draft"`), so an agent can draft, restructure or
+  extend the markdown that `processMarkdownForRendering` runs the selected
+  coordinator → processor → config chain over. Writes land through
+  `MarkdownClassificationTester`'s own `setMarkdown` — no processor, config,
+  coordinator or view code changed, and `ast` / `processed_data` re-derive from
+  the new source exactly as they do from the user's typing. That is the point:
+  the fastest way to test whether a document classifies cleanly is to have an
+  agent reshape it in place and watch the pipeline re-run. The pipeline
+  SELECTORS are deliberately not writable — picking a coordinator or a sample
+  overwrites the editor with that preset's canned fixture, so an agent touching
+  them would destroy the document under test. Recipe + verification:
+  `features/surfaces/FEATURE.md` (360 loop) and the `surface-write-targets`
+  skill.
 - 2026-08-10 — claude: **The /shapes studio is agent-writable — 6 draft
   targets, no entity path.** `matrx-user/shapes` gained `writeTargets`
   (`features/surfaces/manifests/shapes.manifest.ts`) plus handlers on the
