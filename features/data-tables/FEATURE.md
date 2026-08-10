@@ -465,6 +465,27 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-10 — claude: **Workbooks surface is agent-writable (3 ask-policy write
+  targets on the `/workbooks/[id]` route only).** `workbook_name` and
+  `workbook_description` persist immediately through `workbook-service` — the
+  existing `renameWorkbook` plus a new `updateWorkbookDescription` sibling, so
+  neither handler writes `udt_workbooks` directly. `commitRename` on the editor
+  page was refactored into one `applyRename(name)` that the header field's
+  blur/Enter commit AND the write handler both call, so an agent rename takes the
+  identical path to the user typing one. `workbook_sheet_names` is registered by
+  `WorkbookEditor` itself (`useSurfaceWriteHandlers`) because the sheets live in
+  the Univer instance: it renames via `FWorksheet.setName()`, the SAME Univer
+  command a user's sheet-tab rename fires, so it rides the existing
+  `onCommandExecuted` → `isSnapshotMutation` → dirty → 2.5s autosave and is
+  reversed by Univer's Undo — no new snapshot write path exists or was needed.
+  Its value is a partial `{sheetId: newName}` map validated in full (real ids,
+  1-31 chars, no `: \ / ? * [ ]`, uniqueness checked against the post-apply
+  result) before the first `setName`, so an invalid entry renames nothing.
+  `/workbooks` (the library) registers no handlers on purpose — a roster of N
+  workbooks has no addressable subject for a single-value write.
+  `workbook_snapshot` stays deliberately unwritable: bulk-overwriting a user's
+  cells is destructive, not authoring. Live-verified with real agent runs (see
+  `features/surfaces/FEATURE.md`).
 - 2026-08-09 — claude: **`/documents` hub view toggle moved onto `useListViewPrefs`**
   (`surfaceKey` `documents-hub`). The page's local `HubViewMode` union, the
   `documents-hub-view` localStorage key, and its `useState`/`useEffect` pair are

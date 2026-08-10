@@ -18,6 +18,7 @@ import { readWorkbookScopeSource } from "@/features/data-tables/workbook-scope-s
 import {
   getWorkbook,
   renameWorkbook,
+  updateWorkbookDescription,
 } from "@/features/data-tables/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 
@@ -92,17 +93,74 @@ export default function WorkbookPage({
     currentUserId !== null &&
     workbook.user_id === currentUserId;
 
-  const commitRename = async () => {
-    if (!workbook || renameDraft === workbook.workbook_name) return;
+  // The ONE rename path. The header field's blur/Enter commit and the
+  // `workbook_name` write target both land here, so an agent-originated
+  // rename is indistinguishable from the user typing it — same service call,
+  // same optimistic state, same revert on failure.
+  const applyRename = async (name: string) => {
+    if (!workbook || name === workbook.workbook_name) return;
     setRenameSaving(true);
-    const res = await renameWorkbook(id, renameDraft);
+    const res = await renameWorkbook(id, name);
     setRenameSaving(false);
-    if (!isServiceFailure(res)) {
-      setWorkbook(res.data);
-    } else {
+    if (isServiceFailure(res)) {
       setRenameDraft(workbook.workbook_name);
+      throw new Error(res.error);
     }
+    setWorkbook(res.data);
+    setRenameDraft(res.data.workbook_name);
   };
+
+  const commitRename = () => {
+    // The field has already reverted to the persisted name on failure, and a
+    // blur is trivially retryable — swallow here so an unhandled rejection
+    // never escapes the event handler. Agent writes go through the handler
+    // below instead, where the throw becomes an error envelope the agent reads.
+    void applyRename(renameDraft).catch(() => {});
+  };
+
+  // Write half of `matrx-user/workbooks` for the EDITOR route. Only the two
+  // human-authored fields of the workbook row are wired here; the sheet-name
+  // target belongs to `WorkbookEditor`, which owns the Univer instance, and
+  // the library route registers nothing at all (see the manifest's
+  // `writeTargets` doc block for the per-mount rationale). Both persist
+  // immediately through `workbook-service` — never a direct table write — and
+  // both validate then THROW on a bad shape, which the writeback seam turns
+  // into an error envelope the agent reads. Fresh closures per call
+  // (getWriteHandlers contract).
+  const getSurfaceWriteHandlers = () => ({
+    workbook_name: async (value: unknown) => {
+      if (
+        typeof value !== "string" ||
+        !value.trim() ||
+        value.trim().length > 200
+      )
+        throw new Error(
+          "workbook_name expects a non-empty string of at most 200 characters.",
+        );
+      if (!workbook)
+        throw new Error("The workbook has not finished loading yet.");
+      if (!canEdit)
+        throw new Error(
+          "This workbook is open in viewer-only mode — the user does not have edit permission, so it cannot be renamed.",
+        );
+      await applyRename(value.trim());
+    },
+    workbook_description: async (value: unknown) => {
+      if (typeof value !== "string" || value.length > 2000)
+        throw new Error(
+          "workbook_description expects a string of at most 2000 characters.",
+        );
+      if (!workbook)
+        throw new Error("The workbook has not finished loading yet.");
+      if (!canEdit)
+        throw new Error(
+          "This workbook is open in viewer-only mode — the user does not have edit permission, so its description cannot be changed.",
+        );
+      const res = await updateWorkbookDescription(id, value);
+      if (isServiceFailure(res)) throw new Error(res.error);
+      setWorkbook(res.data);
+    },
+  });
 
   if (error) {
     return (
@@ -182,6 +240,7 @@ export default function WorkbookPage({
       surfaceName="matrx-user/workbooks"
       isEditable={canEdit}
       getScope={getScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       <RouteHeader
         left={

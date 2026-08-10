@@ -307,6 +307,18 @@ export default function WorkbooksLandingPage() {
   // Surface emitter for `matrx-user/workbooks` on the library route. Built at
   // trigger time from live state; the open-workbook / sheet / editor values
   // belong to /workbooks/[id] and are deliberately absent here.
+  //
+  // This mount registers NO write handlers, on purpose. The surface HAS
+  // agent-writable targets, but every one of them addresses a single open
+  // workbook, and a write target carries one value with no entity selector —
+  // on a roster of N workbooks "set the description" has no subject. The only
+  // mutations this route offers are create (a creation action, not a field
+  // write), import (needs a `File` an agent cannot supply) and delete
+  // (destructive, human-only), so read-only is the correct posture here rather
+  // than an oversight. `listAgentWritableTargets()` offers a target only where
+  // its mount registered a handler, so the editor route's targets stay
+  // invisible from the library. See the `writeTargets` doc block in
+  // features/surfaces/manifests/workbooks.manifest.ts.
   const getScope = () =>
     createWorkbooksScope({
       workbooks_load_status: { loading, error },

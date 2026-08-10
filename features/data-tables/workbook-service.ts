@@ -132,6 +132,34 @@ export async function renameWorkbook(
   return { success: true, data: data as Workbook };
 }
 
+/**
+ * Rewrite the workbook's description. Sibling of `renameWorkbook` — the two
+ * human-authored fields on `udt_workbooks` each get a named setter so callers
+ * never hand-roll a `.from("udt_workbooks").update(...)`. Pass `null` (or an
+ * empty string) to clear it.
+ *
+ * Written by the import flow at creation ("Imported from <file>") and, since
+ * the workbooks surface became agent-writable, by the `workbook_description`
+ * write target on `/workbooks/[id]`.
+ */
+export async function updateWorkbookDescription(
+  workbookId: string,
+  description: string | null,
+): Promise<ServiceResult<Workbook>> {
+  const { data, error } = await supabase
+    .schema("workbench")
+    .from("udt_workbooks")
+    .update({
+      description: description && description.length > 0 ? description : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", workbookId)
+    .select("*")
+    .single();
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: data as Workbook };
+}
+
 export async function deleteWorkbook(
   workbookId: string,
 ): Promise<ServiceResult<true>> {

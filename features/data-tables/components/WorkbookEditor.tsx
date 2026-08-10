@@ -48,12 +48,20 @@ import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
 import { WorkbookCursorOverlay } from "./WorkbookCursorOverlay";
 import { getLatestSnapshot, saveSnapshot } from "../workbook-service";
 import { registerWorkbookScopeSource } from "../workbook-scope-source";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { isServiceFailure } from "../types";
 import { downloadUniverAsXlsx } from "../univer-to-xlsx";
 import { WorkbookHistoryViewer } from "./WorkbookHistoryViewer";
 import { WorkbookSheetReferenceCopyButton } from "./WorkbookSheetReferenceCopyButton";
 
 type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
+
+/**
+ * Characters Excel (and therefore Univer) rejects in a sheet name. Used by the
+ * `workbook_sheet_names` surface write target so a bad name is refused with a
+ * readable reason instead of failing silently inside Univer.
+ */
+const SHEET_NAME_FORBIDDEN_CHARS = /[:\\/?*[\]]/;
 
 type Props = {
   workbookId: string;
@@ -573,6 +581,83 @@ export default function WorkbookEditor({
     collabSelfUid,
     remoteAwareness,
   ]);
+
+  // Write half of the `matrx-user/workbooks` surface, EDITOR-STATE side. The
+  // page above registers the two `udt_workbooks` entity targets; the sheets
+  // live in the Univer instance one level down here, so this component
+  // registers `workbook_sheet_names` by name instead (the deep-child seam).
+  // Renaming goes through `FWorksheet.setName()` — the SAME Univer command the
+  // user's own sheet-tab rename fires — so it flows into the onCommandExecuted
+  // listener above, marks the workbook dirty and rides the normal 2.5s
+  // debounced autosave. Never a snapshot write of our own.
+  //
+  // Everything is validated BEFORE the first setName call: a rename map that
+  // half-applies and then fails would leave the workbook in a state neither
+  // the user nor the agent asked for.
+  useSurfaceWriteHandlers("matrx-user/workbooks", {
+    workbook_sheet_names: (value: unknown) => {
+      if (!editableRef.current)
+        throw new Error(
+          "This workbook is open in viewer-only mode — the user does not have edit permission, so its sheets cannot be renamed.",
+        );
+      const workbook = apiRef.current?.getActiveWorkbook?.();
+      if (!workbook)
+        throw new Error(
+          "The workbook editor has not finished booting — there are no sheets to rename yet.",
+        );
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          'workbook_sheet_names expects an object keyed by sheet id, e.g. { "sheet-01": "Q3 Revenue" }.',
+        );
+      const entries = Object.entries(value as Record<string, unknown>);
+      if (entries.length === 0)
+        throw new Error(
+          "workbook_sheet_names expects at least one { sheetId: newName } entry.",
+        );
+
+      const nameBySheetId = new Map(
+        workbook.getSheets().map((sheet) => [sheet.getSheetId(), sheet.getSheetName()]),
+      );
+
+      for (const [sheetId, name] of entries) {
+        if (!nameBySheetId.has(sheetId))
+          throw new Error(
+            `workbook_sheet_names: "${sheetId}" is not a sheet id in this workbook. Read workbook_sheets for the ids — this workbook has ${[...nameBySheetId.keys()].map((sheetKey) => `"${sheetKey}"`).join(", ")}.`,
+          );
+        if (typeof name !== "string" || name.trim().length === 0)
+          throw new Error(
+            `workbook_sheet_names: the new name for "${sheetId}" must be a non-empty string.`,
+          );
+        if (name.trim().length > 31)
+          throw new Error(
+            `workbook_sheet_names: "${name.trim()}" is ${name.trim().length} characters — sheet names are limited to 31.`,
+          );
+        if (SHEET_NAME_FORBIDDEN_CHARS.test(name))
+          throw new Error(
+            `workbook_sheet_names: "${name}" contains a character sheet names cannot use (: \\ / ? * [ ]).`,
+          );
+      }
+
+      // Uniqueness is checked against the RESULT of applying the whole map,
+      // not the current state — so swapping two sheets' names is legal, while
+      // colliding with a sheet the map leaves alone is not.
+      const resultingNames = new Map(nameBySheetId);
+      for (const [sheetId, name] of entries)
+        resultingNames.set(sheetId, (name as string).trim());
+      const seen = new Set<string>();
+      for (const name of resultingNames.values()) {
+        const key = name.toLowerCase();
+        if (seen.has(key))
+          throw new Error(
+            `workbook_sheet_names: applying these renames would leave two sheets named "${name}". Sheet names must be unique.`,
+          );
+        seen.add(key);
+      }
+
+      for (const [sheetId, name] of entries)
+        workbook.getSheetBySheetId(sheetId)?.setName((name as string).trim());
+    },
+  });
 
   // Save-status pill text/style.
   const statusPill = useMemo(() => statusPillFor(saveStatus), [saveStatus]);
