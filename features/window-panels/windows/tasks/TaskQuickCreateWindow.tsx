@@ -13,6 +13,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import {
   TASK_CREATE_SURFACE_NAME,
   createTaskCreateScope,
+  type TaskCreateDraftScope,
 } from "@/features/surfaces/manifests/task-create.manifest";
 
 export interface TaskQuickCreateWindowProps {
@@ -75,10 +76,14 @@ function TaskQuickCreateWindowInner({
     onClose();
   };
 
-  // Surface emitter (`matrx-user/task-create`): the window's opener payload.
-  // Live form state lives inside TaskQuickCreateCore and is not emitted yet
-  // (manifest readiness: partial). Nested provider out-depths the hosting
-  // page's surface while the window is open (deepest wins, by design).
+  // Surface emitter (`matrx-user/task-create`): the window's opener payload
+  // plus the LIVE form draft. TaskQuickCreateCore owns the form state and
+  // publishes it into this ref (and registers the surface's write handlers)
+  // — only for this mount, so the /tasks/new route's core stays out of it.
+  // Nested provider out-depths the hosting page's surface while the window is
+  // open (deepest wins, by design).
+  const draftRef = React.useRef<TaskCreateDraftScope | null>(null);
+
   const getScope = React.useCallback(
     () =>
       createTaskCreateScope({
@@ -89,6 +94,18 @@ function TaskQuickCreateWindowInner({
         prefill_title: prePopulate?.title,
         prefill_description: prePopulate?.description,
         prefill_priority: prePopulate?.priority,
+        // Never absent while mounted: the core publishes on its first commit,
+        // and this seeds the same shape for the window between mount and it.
+        task_draft: draftRef.current ?? {
+          title: prePopulate?.title ?? "",
+          description: prePopulate?.description ?? "",
+          priority: prePopulate?.priority ?? "",
+          due_date: "",
+          project_id: "",
+          scope_ids: [],
+          link_scope: "message",
+          saved_task_id: null,
+        },
         content: prePopulate?.description,
       }),
     [source, prePopulate],
@@ -130,6 +147,7 @@ function TaskQuickCreateWindowInner({
             onSaved={handleSaved}
             onCancel={onClose}
             footerHost={footerHost}
+            surfaceDraftRef={draftRef}
           />
         </div>
       </WindowPanel>
