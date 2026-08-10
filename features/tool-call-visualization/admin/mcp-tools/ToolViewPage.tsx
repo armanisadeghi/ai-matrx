@@ -35,11 +35,20 @@ import { mcpServerHref } from "@/features/tool-registry/doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { toolBrief, toolSummary } from "./format";
 import type { Database, Json } from "@/types/database.types";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_TOOL_REGISTRY_SURFACE_NAME,
   createAdminToolRegistryScope,
 } from "@/features/surfaces/manifests/admin-tool-registry.manifest";
+import { updateToolDefinition } from "./tool-definition.service";
+import {
+  normalizeToolCategory,
+  normalizeToolDescription,
+  normalizeToolTags,
+} from "./tool-metadata";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -285,12 +294,7 @@ export function ToolViewPage({ tool }: Props) {
     const prev = isActive;
     setIsActive(value);
     try {
-      const res = await fetch(`/api/admin/tools/${tool.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_active: value }),
-      });
-      if (!res.ok) throw new Error("Failed");
+      await updateToolDefinition(tool.id, { is_active: value });
       toast({ title: value ? "Tool activated" : "Tool deactivated" });
     } catch {
       setIsActive(prev);
@@ -370,10 +374,57 @@ export function ToolViewPage({ tool }: Props) {
     });
   };
 
+  // Surface write handlers — the open-tool half of the manifest's
+  // `writeTargets` (the catalogue mount registers none; see the manifest's
+  // writeTargets block for why). Three authored-metadata fields only:
+  // description, category, tags. Everything capability-shaped — is_active,
+  // admin_only, gating, exemptions, visibility, tier — plus the name, the
+  // parameter/output schemas, annotations and MCP provenance stays human-only.
+  //
+  // These are `mode: "entity"`: this page holds no editor state to stage a
+  // draft into, so each handler validates against the SAME constants the
+  // manifest quotes and then writes through `updateToolDefinition` — the one
+  // admin door (`PUT /api/admin/tools/[id]`, `requireAdmin()`-gated), which is
+  // also what the Active switch above uses. The validators THROW on a bad
+  // shape; the writeback seam turns that into the error envelope the agent
+  // reads. `router.refresh()` re-runs the server fetch so the read twin the
+  // agent sees next reflects what actually landed.
+  const buildWriteHandlers = (): SurfaceWriteHandlers => ({
+    tool_description: async (value) => {
+      const description = normalizeToolDescription(value);
+      await updateToolDefinition(tool.id, { description });
+      toast({ title: "Tool description updated" });
+      router.refresh();
+    },
+    tool_category: async (value) => {
+      const category = normalizeToolCategory(value);
+      await updateToolDefinition(tool.id, { category });
+      toast({
+        title: category ? `Category set to "${category}"` : "Category cleared",
+      });
+      router.refresh();
+    },
+    tool_tags: async (value) => {
+      const tags = normalizeToolTags(value);
+      await updateToolDefinition(tool.id, { tags });
+      toast({
+        title: tags.length
+          ? `Tags updated (${tags.length})`
+          : "All tags cleared",
+      });
+      router.refresh();
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_TOOL_REGISTRY_SURFACE_NAME}
       getScope={getSurfaceScope}
+      getWriteHandlers={buildWriteHandlers}
+      // Stays FALSE and is unrelated to the write targets above: it governs
+      // whether `matrx-default/basic-editor` agents qualify here, and this is
+      // a read-only detail view, not a text editor. Agent-writability is
+      // gated per target by `applyPolicy`, which every target sets to "ask".
       isEditable={false}
     >
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
