@@ -61,6 +61,18 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openImageViewer } from "@/features/window-panels/windows/image/openImageViewer";
+import {
+  isScrapeMode,
+  isValidPageLimit,
+  PAGE_LIMIT_DEFAULT,
+  PAGE_LIMIT_MAX,
+  PAGE_LIMIT_MIN,
+  SCRAPE_MODE_BY_VALUE,
+  SCRAPE_MODE_BY_WORKSPACE_MODE,
+  SCRAPE_MODE_ENUM_TEXT,
+  toScrapeMode,
+  type WorkspaceMode,
+} from "@/features/scraper/scrape-command";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
@@ -68,8 +80,6 @@ import { openImageViewer } from "@/features/window-panels/windows/image/openImag
 // read-only scraped-results region → NonEditableContextMenu.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-
-type WorkspaceMode = "web" | "url" | "batch";
 
 interface ScrapeItemState {
   loading: boolean;
@@ -96,7 +106,7 @@ export function ScraperFloatingWorkspace({
   );
   const [url, setUrl] = useState(initialUrl ?? "");
   const [keyword, setKeyword] = useState("");
-  const [maxPages, setMaxPages] = useState("5");
+  const [maxPages, setMaxPages] = useState(String(PAGE_LIMIT_DEFAULT));
 
   // Re-seed when the overlay is re-opened against a different URL while still
   // mounted (the opener updates `data.url`; this component instance persists).
@@ -155,7 +165,8 @@ export function ScraperFloatingWorkspace({
     failureReason: activeError,
     targetUrl: mode === "url" ? url : undefined,
     searchKeyword: mode === "web" ? keywordForm.keywords : keyword,
-    maxPages: mode === "batch" ? parseInt(maxPages, 10) || 5 : undefined,
+    maxPages:
+      mode === "batch" ? parseInt(maxPages, 10) || PAGE_LIMIT_DEFAULT : undefined,
     results: scrapedResults,
     selectedIndex: safeScrapedIndex,
     searchHits: keywordForm.flatResults,
@@ -213,7 +224,7 @@ export function ScraperFloatingWorkspace({
 
     const results = await batchApi.searchAndScrapeLimited({
       keyword: keyword.trim(),
-      max_page_read: parseInt(maxPages, 10) || 5,
+      max_page_read: parseInt(maxPages, 10) || PAGE_LIMIT_DEFAULT,
       get_text_data: true,
       get_overview: true,
       get_links: true,
@@ -345,6 +356,93 @@ export function ScraperFloatingWorkspace({
       instanceId: `scraper-img-${encodeURIComponent(selectedScraped.url).slice(0, 80)}`,
     });
   }, [dispatch, selectedScraped]);
+
+  // ── Write half of the scraper surface (manifest `writeTargets`) ─────────
+  // An agent may STAGE the next scrape command; it may never run one — that
+  // spends real time on someone else's server and stays the user's click.
+  // Every handler validates against the SAME `scrape-command` constants the
+  // manifest's contract prose is interpolated from, and THROWS on a bad shape
+  // (the writeback seam turns a throw into a safe error envelope the agent
+  // reads). Fresh closures per call (the getWriteHandlers contract), so `mode`
+  // read below is always the live mode, never a stale snapshot.
+  const getSurfaceWriteHandlers = () => ({
+    scrape_command: (value: unknown) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          "scrape_command expects an object: { mode?, url?, keyword? }.",
+        );
+      const patch = value as Record<string, unknown>;
+      const accepted = ["mode", "url", "keyword"];
+      const unsupported = Object.keys(patch).filter(
+        (key) => !accepted.includes(key),
+      );
+      if (unsupported.length > 0)
+        throw new Error(
+          `scrape_command got unsupported key(s): ${unsupported.join(", ")}. Accepted keys: ${accepted.join(" | ")}.`,
+        );
+      if (!accepted.some((key) => key in patch))
+        throw new Error(
+          `scrape_command needs at least one of: ${accepted.join(" | ")}.`,
+        );
+
+      // Resolve the mode this command runs in FIRST: it decides which config
+      // input the workspace renders, so a field belonging to another mode is
+      // refused rather than staged where the user cannot see it.
+      const nextMode = "mode" in patch ? patch.mode : toScrapeMode(mode);
+      if (!isScrapeMode(nextMode))
+        throw new Error(
+          `scrape_command.mode expects one of: ${SCRAPE_MODE_ENUM_TEXT}.`,
+        );
+      const spec = SCRAPE_MODE_BY_VALUE[nextMode];
+
+      let nextUrl: string | undefined;
+      if ("url" in patch) {
+        if (typeof patch.url !== "string" || !patch.url.trim())
+          throw new Error("scrape_command.url expects a non-empty string.");
+        if (spec.input !== "url")
+          throw new Error(
+            `scrape_command.url does not apply in "${spec.value}" mode (${spec.summary}). Send { mode, url } together to switch mode and stage the URL in one call.`,
+          );
+        const normalized = normalizeUrl(patch.url);
+        if (!normalized)
+          throw new Error(
+            `scrape_command.url is not a usable URL: "${patch.url}".`,
+          );
+        nextUrl = normalized;
+      }
+
+      let nextKeyword: string | undefined;
+      if ("keyword" in patch) {
+        if (typeof patch.keyword !== "string" || !patch.keyword.trim())
+          throw new Error("scrape_command.keyword expects a non-empty string.");
+        if (spec.input !== "keyword")
+          throw new Error(
+            `scrape_command.keyword does not apply in "${spec.value}" mode (${spec.summary}). Send { mode, keyword } together to switch mode and stage the keyword in one call.`,
+          );
+        nextKeyword = patch.keyword.trim();
+      }
+
+      // Everything is validated before ANY state moves — a rejected key must
+      // never leave a half-applied command staged in the form.
+      if ("mode" in patch) setMode(spec.workspaceMode);
+      if (nextUrl !== undefined) setUrl(nextUrl);
+      if (nextKeyword !== undefined) {
+        // Which store holds the keyword depends on the mode — deep mode keeps
+        // its own, web search uses the keyword form's. Resolved from the mode
+        // THIS call staged, which is the whole reason mode and keyword share
+        // one target instead of racing as two.
+        if (spec.workspaceMode === "web") keywordForm.setKeywords(nextKeyword);
+        else setKeyword(nextKeyword);
+      }
+    },
+    scrape_page_limit: (value: unknown) => {
+      if (!isValidPageLimit(value))
+        throw new Error(
+          `scrape_page_limit expects an integer from ${PAGE_LIMIT_MIN} to ${PAGE_LIMIT_MAX}.`,
+        );
+      setMaxPages(String(value));
+    },
+  });
 
   const showScrapeMain = mode === "url" || mode === "batch";
   const showWebMain = mode === "web";
@@ -502,13 +600,16 @@ export function ScraperFloatingWorkspace({
   const sidebarContent = (
     <div className="flex flex-col min-h-0 h-full">
       <div className="flex items-center gap-1 p-2 border-b border-border bg-muted/20 shrink-0">
+        {/* Display order is a UI choice; the LABELS come from the canonical
+            scrape-command module so the button, the agent-facing contract and
+            the handler's validation can never disagree about a mode. */}
         {(
           [
-            { id: "web" as const, label: "Web", icon: Search },
-            { id: "url" as const, label: "URL", icon: Zap },
-            { id: "batch" as const, label: "Deep", icon: Globe },
-          ] as const
-        ).map(({ id, label, icon: Icon }) => (
+            { id: "web", icon: Search },
+            { id: "url", icon: Zap },
+            { id: "batch", icon: Globe },
+          ] as ReadonlyArray<{ id: WorkspaceMode; icon: typeof Search }>
+        ).map(({ id, icon: Icon }) => (
           <button
             key={id}
             type="button"
@@ -521,7 +622,7 @@ export function ScraperFloatingWorkspace({
             )}
           >
             <Icon className="w-3 h-3" />
-            {label}
+            {SCRAPE_MODE_BY_WORKSPACE_MODE[id].label}
           </button>
         ))}
       </div>
@@ -609,8 +710,8 @@ export function ScraperFloatingWorkspace({
               />
               <Input
                 type="number"
-                min={1}
-                max={20}
+                min={PAGE_LIMIT_MIN}
+                max={PAGE_LIMIT_MAX}
                 value={maxPages}
                 onChange={(e) => setMaxPages(e.target.value)}
                 disabled={isAnyLoading}
@@ -704,6 +805,7 @@ export function ScraperFloatingWorkspace({
       surfaceName={SCRAPER_CONTEXT_MENU_PROPS.surfaceName}
       getScope={getConfigApplicationScope}
       isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       <WindowPanel
         title="Web Scraper"

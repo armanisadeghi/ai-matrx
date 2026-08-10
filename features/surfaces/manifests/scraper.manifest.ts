@@ -13,6 +13,11 @@
  * result, retry failures). Both content and metadata are first-class
  * declarations.
  *
+ * The write half (`writeTargets`, below) covers the other direction: an agent
+ * can STAGE the next scrape command — target, mode, page budget — but never
+ * run it. See the docblock above `writeTargets` for the split and the
+ * per-mount reasoning.
+ *
  * State is local to the workspace component (no central Redux slice), so
  * `ScraperFloatingWorkspace` rebuilds `contextData` from live state via
  * `features/scraper/agent-context/buildScraperContextData.ts`.
@@ -23,7 +28,14 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  PAGE_LIMIT_MAX,
+  PAGE_LIMIT_MIN,
+  SCRAPE_MODES,
+  SCRAPE_MODE_ENUM_TEXT,
+} from "@/features/scraper/scrape-command";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -303,6 +315,78 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the scrape COMMAND, staged for the user to run.
+ *
+ * What earns a target here is the planning half of this surface: which URL to
+ * scrape, which keyword to search, in which mode, and how many pages deep. All
+ * four are things an agent derives from the conversation ("check what their
+ * pricing page says", "pull the top 10 results for X") and all four have read
+ * twins, so the evidence loop closes: read `scrape_mode` / `target_url` /
+ * `search_keyword` / `max_pages`, write them back.
+ *
+ * RUNNING the scrape is deliberately NOT agent-drivable. It spends real
+ * wall-clock time and puts load on someone else's server, so it stays a human
+ * click — the agent stages the command, the user presses Scrape. Everything
+ * downstream of a run (the results, the extracted content, the metadata) is
+ * observed evidence and is read-only by nature.
+ *
+ * WHY ONE COMMAND OBJECT PLUS ONE SCALAR, and not four scalars or one blob:
+ *
+ *  - `scrape_command` bundles mode + url + keyword because they are ONE
+ *    decision that must resolve ATOMICALLY. The mode picks which config input
+ *    the workspace renders AND which of the two keyword stores is live (deep
+ *    mode's own keyword vs. the web-search form's). Split into separate
+ *    targets, an agent that sets the keyword and then the mode would have its
+ *    keyword land in whichever store the PREVIOUS mode pointed at — a real
+ *    race on staged React state, and one that fails silently because the user
+ *    just sees an empty field. One object means the handler sees the mode and
+ *    the field together and can refuse an incoherent pair outright.
+ *  - `scrape_page_limit` stays separate because it is a genuinely different
+ *    decision: not "what do we scrape" but "how much of someone else's server
+ *    do we spend". It is routinely adjusted without touching the target, it
+ *    carries its own bounds vocabulary, and it is the one field here a user
+ *    might want to accept or decline on its own — which is exactly what a
+ *    separate ask dialog gives them. It also has a clean 1:1 read twin
+ *    (`max_pages`), which the bundled command object cannot have.
+ *
+ * MOUNTS: `ScraperFloatingWorkspace` (the `scraperWindow` panel) is the only
+ * mount that registers a `SurfaceRuntimeProvider` for this surface, so it is
+ * the only mount that offers these targets. The `/scraper/*` route pages
+ * (`app/(core)/scraper/**`) have their own local URL and keyword inputs but
+ * mount no surface runtime at all — they emit none of this surface's read
+ * values either, so an agent there has neither the evidence to write from nor
+ * a handler to write through. Giving them targets would mean adopting the
+ * surface on those routes first (read side included); that is its own task,
+ * not a write-target one. Deepest-wins resolution means adding it later
+ * shadows nothing declared here.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "scrape_command",
+    label: "Scrape command",
+    description:
+      `Stages WHAT the workspace will scrape and in which mode. Value is a partial patch object: { mode?: ${SCRAPE_MODE_ENUM_TEXT}, url?: string, keyword?: string } — omitted keys keep their current value, and at least one key must be present. Modes: ${SCRAPE_MODES.map((m) => `"${m.value}" (${m.summary})`).join(", ")}. \`url\` applies only in "${SCRAPE_MODES.find((m) => m.input === "url")!.value}" mode and is stored normalized (https:// is added when the scheme is omitted); \`keyword\` applies only in ${SCRAPE_MODES.filter((m) => m.input === "keyword").map((m) => `"${m.value}"`).join(" and ")} mode. Sending a field the resolved mode does not use is REFUSED rather than staged into an input the user cannot see — send the mode in the SAME call as the field it enables. Read the current command back from scrape_mode / target_url / search_keyword. This only STAGES the command: the user still presses Scrape, and running the scrape is never an agent action.`,
+    valueType: "object",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "target",
+    sortOrder: 100,
+  },
+  {
+    name: "scrape_page_limit",
+    label: "Max pages",
+    description:
+      `Stages how many pages the deep ("${SCRAPE_MODES.find((m) => m.usesPageLimit)!.value}") mode will scrape — the page budget, separate from the scrape target. Value: an integer from ${PAGE_LIMIT_MIN} to ${PAGE_LIMIT_MAX} (the same bounds the deep-mode page input enforces on the user); anything outside that, or a non-integer, is refused. Applies to deep mode only — the web-search result count is not exposed on this surface. Read back from max_pages, which the surface reports only while deep mode is active. Staged only: the user still presses Search + scrape.`,
+    valueType: "number",
+    updatesValue: "max_pages",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "target",
+    sortOrder: 110,
+  },
+];
+
 export const scraperManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scraper",
   readiness: "verified",
@@ -319,6 +403,7 @@ target_url and search_keyword are the user's live inputs — what they intend to
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One scraped page as emitted in the `results_overview` surface value. */

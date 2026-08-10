@@ -8,6 +8,10 @@ import type { ScraperResult } from "@/features/scraper/hooks/useScraperApi";
 import type { SearchResultItem } from "@/features/scraper/types/scraper-api";
 import type { ScrapedDetailTabId } from "@/features/scraper/parts/ScrapedResultDetailTabs";
 import { contentLength } from "@/features/scraper/utils/scraper-floating-helpers";
+import {
+  toScrapeMode,
+  type WorkspaceMode,
+} from "@/features/scraper/scrape-command";
 
 /**
  * Placements offered by the scraper context menu (target wiring with
@@ -42,20 +46,13 @@ export const SCRAPER_CONTEXT_MENU_PROPS = {
   enabledPlacements: [...SCRAPER_CONTEXT_MENU_PLACEMENTS],
 };
 
-/** The workspace's three input modes mapped onto the manifest's `scrape_mode`. */
-export type ScraperWorkspaceMode = "web" | "url" | "batch";
-
-const MODE_TO_SCRAPE_MODE: Record<
-  ScraperWorkspaceMode,
-  "quick" | "full" | "search"
-> = {
-  // Single-URL quick scrape.
-  url: "quick",
-  // Keyword search → scrape N pages (the "deep" mode).
-  batch: "full",
-  // Keyword web search (no scrape until a hit is opened).
-  web: "search",
-};
+/**
+ * The workspace's three input modes mapped onto the manifest's `scrape_mode`.
+ * Both the vocabulary and the mapping live in `features/scraper/scrape-command`
+ * — the same module the manifest's write contract and the workspace's write
+ * handlers use, so the mode an agent reads back is the mode it can write.
+ */
+export type ScraperWorkspaceMode = WorkspaceMode;
 
 /** Map the live `links` bag onto the manifest's `{ internal, external, media }`. */
 function buildLinkGroups(links: ScraperResult["links"] | undefined): {
@@ -156,7 +153,7 @@ export function buildScraperContextData(
     isScraping = false,
   } = args;
 
-  const scrapeMode = MODE_TO_SCRAPE_MODE[mode];
+  const scrapeMode = toScrapeMode(mode);
   const resultsOverview = results.map(toOverviewEntry);
   const hitEntries = searchHits.map(toSearchHitEntry);
 
