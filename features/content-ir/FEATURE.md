@@ -90,6 +90,27 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
 
 ## Change Log
 
+- 2026-08-10 — claude: **The /shapes studio is agent-writable — 6 draft
+  targets, no entity path.** `matrx-user/shapes` gained `writeTargets`
+  (`features/surfaces/manifests/shapes.manifest.ts`) plus handlers on the
+  three studio mounts that own authored state: `NewShapeClient`
+  (`new_shape_intent` / `new_shape_sample`), `ShapeOwnerEditor`
+  (`shape_details_label` / `_title_key` / `_loading_component`, registered via
+  `useSurfaceWriteHandlers` from inside `ShapePreviewTab`'s provider, owner-only
+  by construction), and `ShapeTestTab` (`test_draft_instance`). Everything is
+  `mode: "draft"` + `applyPolicy: "ask"` — nothing here calls
+  `shape-authoring-service` or `instance-service` on an agent's say-so; the
+  user still presses Start with the agent / Save details / Render, so the
+  version bump, the example re-pin, and the structural-leg validation all stay
+  on the human's click. `test_draft_instance` deliberately SEEDS
+  `KindInputForm` (`initialValue` + a remount key) instead of setting the
+  rendered instance, because `onSubmit` is what guarantees a schema-valid
+  payload — writing `instance` directly would hand Save something nothing
+  validated. `ShapeOwnerEditor`'s tabs became controlled so a staged Details
+  write brings that tab forward. Unwritable by design: the `kind` slug
+  (identity), `visibility` (publishing), activation (a dual-gate verdict), and
+  example/instance CRUD. Live-verified end-to-end with a real agent run on
+  `/shapes/new` and on `wine_tasting`'s Preview and Test tabs.
 - 2026-08-09 — claude: **Doors on the Kind Registry admin surfaces (No Dead
   Ends sweep) — render routing untouched.** The Catalog's Kind cell declares
   `href` (a real `next/link`: keyboard, cmd/middle-click, context menu) and its

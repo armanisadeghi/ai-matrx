@@ -23,6 +23,7 @@ import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 import ShapeActivationControl from "@/features/content-ir/studio/components/ShapeActivationControl";
 import type { ShapeActivationVerdict } from "@/features/content-ir/studio/shape-authoring-service";
 import KindExampleManager from "@/features/content-ir/studio/components/KindExampleManager";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import KindContentBlockGenerator from "@/features/content-ir/studio/components/KindContentBlockGenerator";
 import { ownerUpsertKindContentBlock } from "@/features/content-ir/studio/kind-content-block-service";
 import {
@@ -105,6 +106,9 @@ export default function ShapeOwnerEditor({
   );
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+  // Controlled so an agent-staged Details write can bring that tab forward —
+  // a value staged behind a hidden tab reads to the user as nothing happening.
+  const [activeTab, setActiveTab] = useState("examples");
 
   const titleKeyOptions = titleKeyOptionsFromJsonSchema(emittedJsonSchema);
   const loadingOptions = Object.keys(KIND_LOADING_COMPONENTS).sort();
@@ -115,6 +119,64 @@ export default function ShapeOwnerEditor({
     const canonical = examples.rows.find((row) => row.isCanonical);
     return (canonical ?? examples.rows[0]).data;
   }, [examples]);
+
+  // Write half of the shapes surface, owner-editor leg (manifest
+  // `writeTargets`). Registered BY NAME rather than on a provider: the surface
+  // provider for /shapes/[kind] is ShapePreviewTab, but this component is what
+  // owns the Details draft state — and it renders only when the viewer owns
+  // the kind, so a non-owner's page offers an agent nothing at all.
+  //
+  // All three are `mode: "draft"`: they stage into the same setState the
+  // user's own edits call, and the user still presses "Save details" (which is
+  // what runs `updateOwnedShapeProfile`, bumps the version, and re-pins the
+  // samples). Deliberately NOT writable: `visibility` (internal → public
+  // publishes the shape) and the `kind` slug itself (identity).
+  //
+  // Each handler validates against the REAL vocabulary the select offers —
+  // the schema's own top-level properties and the loading registry's keys —
+  // and throws on anything else, which the writeback seam hands back to the
+  // agent as an error envelope naming the accepted set.
+  useSurfaceWriteHandlers("matrx-user/shapes", {
+    shape_details_label: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("shape_details_label expects a non-empty string.");
+      if (value.length > 100)
+        throw new Error(
+          `shape_details_label expects at most 100 characters (got ${value.length}).`,
+        );
+      setLabel(value.trim());
+      setActiveTab("details");
+    },
+    shape_details_title_key: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          'shape_details_title_key expects a string — a top-level schema property name, or "" for automatic.',
+        );
+      if (value !== "" && !titleKeyOptions.includes(value))
+        throw new Error(
+          titleKeyOptions.length > 0
+            ? `shape_details_title_key expects "" (automatic) or one of this kind's top-level schema properties: ${titleKeyOptions.join(" | ")}.`
+            : 'shape_details_title_key expects "" — this kind\'s emitted JSON Schema exposes no top-level properties to title from.',
+        );
+      setTitleKey(value);
+      setActiveTab("details");
+    },
+    shape_details_loading_component: (value: unknown) => {
+      // Mirror EXACTLY what the select below offers: "" (Generic) plus every
+      // registered slug except "generic", which "" already means.
+      const accepted = loadingOptions.filter((slug) => slug !== "generic");
+      if (typeof value !== "string")
+        throw new Error(
+          'shape_details_loading_component expects a string — a registered loader slug, or "" for the generic loader.',
+        );
+      if (value !== "" && !accepted.includes(value))
+        throw new Error(
+          `shape_details_loading_component expects "" (generic) or one of: ${accepted.join(" | ")}.`,
+        );
+      setLoadingComponent(value);
+      setActiveTab("details");
+    },
+  });
 
   async function saveProfile(): Promise<void> {
     setProfileSaving(true);
@@ -174,7 +236,7 @@ export default function ShapeOwnerEditor({
         />
       </div>
 
-      <Tabs defaultValue="examples" className="p-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="p-4">
         <TabsList>
           <TabsTrigger value="examples">Sample data</TabsTrigger>
           <TabsTrigger value="teaching">Teaching block</TabsTrigger>
