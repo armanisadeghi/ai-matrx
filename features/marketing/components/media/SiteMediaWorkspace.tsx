@@ -31,8 +31,13 @@ import { GenerateMediaView } from "@/features/marketing/components/media/Generat
 import { StockSourcesView } from "@/features/marketing/components/media/StockSourcesView";
 import { MediaStandardsView } from "@/features/marketing/components/media/MediaStandardsView";
 import { SiteVideosView } from "@/features/marketing/components/media/SiteVideosView";
+import { SiteMediaWriteTargets } from "@/features/marketing/components/media/SiteMediaWriteTargets";
 import { parseSiteMediaStandards } from "@/features/marketing/data/media-library";
 import type { ResearchImageRow } from "@/features/marketing/data/media-library";
+import {
+  EMPTY_MEDIA_ORDER_DRAFT,
+  type MediaOrderDraft,
+} from "@/features/marketing/lib/site-media-write-targets";
 import type { SnapshotMediaAsset } from "@/features/marketing/lib/snapshot-media";
 
 /**
@@ -96,11 +101,22 @@ export function SiteMediaWorkspace() {
     [site.settings],
   );
 
-  const [pendingBrief, setPendingBrief] = useState<string | null>(null);
+  /**
+   * The Generate view's image order, owned HERE rather than in that view so it
+   * survives view switches — which is what lets the surface emit it as
+   * `media_order_draft` and lets the `media_order` write target stay
+   * registered on every view (see SiteMediaWriteTargets).
+   */
+  const [order, setOrder] = useState<MediaOrderDraft>(EMPTY_MEDIA_ORDER_DRAFT);
+
+  const setBrief = useCallback(
+    (brief: string) => setOrder((current) => ({ ...current, brief })),
+    [],
+  );
 
   const orderReplacement = useCallback(
     (asset: SnapshotMediaAsset) => {
-      setPendingBrief(
+      setBrief(
         [
           `Replace an existing site image${asset.alt ? ` ("${asset.alt}")` : ""}.`,
           asset.sizeLabel ? `The current image is ${asset.sizeLabel}.` : null,
@@ -115,12 +131,12 @@ export function SiteMediaWorkspace() {
       );
       setView("generate");
     },
-    [setView],
+    [setView, setBrief],
   );
 
   const useResearchBrief = useCallback(
     (image: ResearchImageRow) => {
-      setPendingBrief(
+      setBrief(
         [
           "Create an original image inspired by a reference found in research.",
           image.alt || image.caption
@@ -135,7 +151,7 @@ export function SiteMediaWorkspace() {
       );
       setView("generate");
     },
-    [setView],
+    [setView, setBrief],
   );
 
   // Surface emitter — nested inside the site provider (deeper wins), built at
@@ -146,6 +162,7 @@ export function SiteMediaWorkspace() {
       base: getBaseValues(),
       view,
       standards,
+      order,
       mediaRows: queryClient.getQueryData<SiteMediaPageRow[]>(
         marketingKeys.siteMedia(site.id),
       ),
@@ -166,6 +183,7 @@ export function SiteMediaWorkspace() {
       surfaceName={MARKETING_SITE_MEDIA_SURFACE_NAME}
       getScope={getScope}
     >
+    <SiteMediaWriteTargets onOrderChange={setOrder} />
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-7xl space-y-4 p-3 sm:p-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -195,6 +213,17 @@ export function SiteMediaWorkspace() {
               );
             })}
           </nav>
+          {order.brief.trim() && view !== "generate" ? (
+            <button
+              type="button"
+              onClick={() => setView("generate")}
+              title={order.brief}
+              className="flex items-center gap-1 rounded-md border border-primary/40 bg-primary/5 px-2 py-1 text-[10px] text-primary transition-colors hover:bg-primary/10"
+            >
+              <Sparkles className="h-3 w-3" />
+              Image order drafted — review
+            </button>
+          ) : null}
         </div>
 
         {view === "crawled" ? (
@@ -222,8 +251,8 @@ export function SiteMediaWorkspace() {
           <GenerateMediaView
             brandId={brandId}
             standards={standards}
-            initialBrief={pendingBrief}
-            onBriefConsumed={() => setPendingBrief(null)}
+            order={order}
+            onOrderChange={setOrder}
           />
         ) : (
           <MediaStandardsView standards={standards} />

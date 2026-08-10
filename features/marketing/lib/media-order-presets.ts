@@ -30,10 +30,17 @@ export interface MediaOrderPreset {
    * Lower-cased tokens matched against the site's standard slot names —
    * the first matching slot's dimensions/format take over the defaults.
    */
-  slotTokens: string[];
+  slotTokens: readonly string[];
 }
 
-export const MEDIA_ORDER_PRESETS: MediaOrderPreset[] = [
+/**
+ * THE preset vocabulary. `as const satisfies` keeps the ids literal so
+ * `MediaOrderPresetId` below is a real union — the surface manifest
+ * interpolates that union into its agent-facing `media_order` description and
+ * the write handler validates against `isMediaOrderPresetId`, so the menu, the
+ * contract the agent reads, and the runtime check can never drift apart.
+ */
+export const MEDIA_ORDER_PRESETS = [
   {
     id: "hero",
     label: "Hero / banner",
@@ -106,7 +113,35 @@ export const MEDIA_ORDER_PRESETS: MediaOrderPreset[] = [
     height: 900,
     slotTokens: ["illustration"],
   },
-];
+] as const satisfies readonly MediaOrderPreset[];
+
+/**
+ * The id union of every preset on the menu, derived from the array above —
+ * so a preset added to the menu is automatically part of the vocabulary the
+ * manifest advertises and the handler accepts. There is no second list to
+ * keep in sync.
+ */
+export type MediaOrderPresetId = (typeof MEDIA_ORDER_PRESETS)[number]["id"];
+
+/** Every preset id, in menu order — the ONE list agent-facing prose quotes. */
+export const MEDIA_ORDER_PRESET_IDS: readonly MediaOrderPresetId[] =
+  MEDIA_ORDER_PRESETS.map((preset) => preset.id);
+
+/** Menu labels keyed by id, for prose that names the types. */
+export const MEDIA_ORDER_PRESET_LABELS: Readonly<
+  Record<MediaOrderPresetId, string>
+> = Object.fromEntries(
+  MEDIA_ORDER_PRESETS.map((preset) => [preset.id, preset.label]),
+) as Record<MediaOrderPresetId, string>;
+
+export function isMediaOrderPresetId(
+  value: unknown,
+): value is MediaOrderPresetId {
+  return (
+    typeof value === "string" &&
+    MEDIA_ORDER_PRESET_IDS.includes(value as MediaOrderPresetId)
+  );
+}
 
 export interface ResolvedOrderDimensions {
   width: number;

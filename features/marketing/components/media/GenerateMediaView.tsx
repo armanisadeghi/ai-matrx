@@ -9,7 +9,7 @@
  * `web.brand_asset` rows (source `generated`) — never a chat-only artifact.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
@@ -34,54 +34,60 @@ import {
   buildSiteImageSpec,
   resolveOrderDimensions,
   type MediaOrderPreset,
+  type MediaOrderPresetId,
 } from "@/features/marketing/lib/media-order-presets";
 import { MARKETING_SITE_MEDIA_SURFACE_NAME } from "@/features/marketing/lib/scopes/site-media-scope";
+import type { MediaOrderDraft } from "@/features/marketing/lib/site-media-write-targets";
 import type { SiteMediaStandards } from "@/features/marketing/data/media-library";
 import type { BrandAssetKind } from "@/features/marketing/types";
 
 /** Which library kind a generated image of each preset lands under. */
-const PRESET_ASSET_KIND: Record<string, BrandAssetKind> = {
+const PRESET_ASSET_KIND: Partial<Record<MediaOrderPresetId, BrandAssetKind>> = {
   hero: "hero_image",
   "share-card": "og_image",
 };
 
+/**
+ * The order form is CONTROLLED by `SiteMediaWorkspace`, which owns the draft so
+ * it survives view switches and can be read (`media_order_draft`) and written
+ * (`media_order`) by agents. Only the in-flight generation state is local.
+ */
 export function GenerateMediaView({
   brandId,
   standards,
-  initialBrief,
-  onBriefConsumed,
+  order,
+  onOrderChange,
 }: {
   brandId: string;
   standards: SiteMediaStandards;
-  /** Prefilled subject (from "Order replacement" / "Use as brief"). */
-  initialBrief: string | null;
-  onBriefConsumed: () => void;
+  order: MediaOrderDraft;
+  onOrderChange: (
+    updater: (current: MediaOrderDraft) => MediaOrderDraft,
+  ) => void;
 }) {
   const dispatch = useAppDispatch();
   const { site } = useMarketingSite();
   const createAsset = useCreateBrandAsset();
   const assetsQuery = useBrandAssets(brandId);
 
-  const [presetId, setPresetId] = useState<string>(
-    MEDIA_ORDER_PRESETS[0]?.id ?? "hero",
-  );
-  const [subject, setSubject] = useState("");
-  const [styleOverride, setStyleOverride] = useState("");
-  const [widthOverride, setWidthOverride] = useState("");
-  const [heightOverride, setHeightOverride] = useState("");
   const [generating, setGenerating] = useState(false);
 
-  // Consume an incoming brief exactly once (effect, not render side effect).
-  useEffect(() => {
-    if (initialBrief) {
-      setSubject(initialBrief);
-      onBriefConsumed();
-    }
-  }, [initialBrief, onBriefConsumed]);
+  const {
+    type: presetId,
+    brief: subject,
+    style: styleOverride,
+    width: widthOverride,
+    height: heightOverride,
+  } = order;
+  const patch = (next: Partial<MediaOrderDraft>) =>
+    onOrderChange((current) => ({ ...current, ...next }));
 
-  const preset: MediaOrderPreset =
+  // Not annotated `MediaOrderPreset` on purpose: the const array's literal
+  // type keeps `preset.id` a MediaOrderPresetId, which is what indexes
+  // PRESET_ASSET_KIND below without a cast.
+  const preset =
     MEDIA_ORDER_PRESETS.find((item) => item.id === presetId) ??
-    MEDIA_ORDER_PRESETS[0]!;
+    MEDIA_ORDER_PRESETS[0];
 
   const resolved = useMemo(
     () => resolveOrderDimensions(preset, standards),
@@ -112,7 +118,7 @@ export function GenerateMediaView({
    */
   const ORDER_DEADLINE_MS = 5 * 60_000;
 
-  const order = async () => {
+  const placeOrder = async () => {
     if (!subject.trim()) {
       toast.error("Describe the subject before ordering the image.");
       return;
@@ -193,7 +199,7 @@ export function GenerateMediaView({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setPresetId(item.id)}
+                onClick={() => patch({ type: item.id })}
                 className={cn(
                   "rounded-lg border p-2 text-left transition-colors",
                   active
@@ -234,7 +240,7 @@ export function GenerateMediaView({
         </h3>
         <Textarea
           value={subject}
-          onChange={(event) => setSubject(event.target.value)}
+          onChange={(event) => patch({ brief: event.target.value })}
           minHeight={64}
           maxHeight={160}
           placeholder={`What should this ${preset.label.toLowerCase()} show? Subject, mood, key elements…`}
@@ -244,7 +250,7 @@ export function GenerateMediaView({
             <Label className="text-xs">Style (optional override)</Label>
             <Input
               value={styleOverride}
-              onChange={(event) => setStyleOverride(event.target.value)}
+              onChange={(event) => patch({ style: event.target.value })}
               placeholder={preset.style}
             />
           </div>
@@ -253,7 +259,7 @@ export function GenerateMediaView({
             <Input
               value={widthOverride}
               onChange={(event) =>
-                setWidthOverride(event.target.value.replace(/\D/g, ""))
+                patch({ width: event.target.value.replace(/\D/g, "") })
               }
               placeholder={String(resolved.width)}
               inputMode="numeric"
@@ -264,7 +270,7 @@ export function GenerateMediaView({
             <Input
               value={heightOverride}
               onChange={(event) =>
-                setHeightOverride(event.target.value.replace(/\D/g, ""))
+                patch({ height: event.target.value.replace(/\D/g, "") })
               }
               placeholder={String(resolved.height)}
               inputMode="numeric"
@@ -290,7 +296,7 @@ export function GenerateMediaView({
             size="sm"
             className="h-8"
             disabled={generating || createAsset.isPending}
-            onClick={() => void order()}
+            onClick={() => void placeOrder()}
           >
             {generating ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
