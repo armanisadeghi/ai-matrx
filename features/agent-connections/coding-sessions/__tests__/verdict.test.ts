@@ -1,4 +1,8 @@
-import { bridgeReadHealth, fidelityVerdict } from "../verdict";
+import {
+  bridgeReadHealth,
+  fidelityVerdict,
+  formatSessionTimestamp,
+} from "../verdict";
 import { CODING_SESSION_PROVIDER_META, providerMeta } from "../catalog";
 import {
   APP_META,
@@ -59,6 +63,7 @@ describe("coding-session storage health", () => {
   const now = Date.parse("2026-08-09T12:00:00Z");
 
   it("distinguishes an empty successful read from a failed read", () => {
+    expect(bridgeReadHealth(null, null, now).label).toBe("Checking storage");
     expect(bridgeReadHealth(null, true, now).label).toBe("Storage reachable");
     expect(bridgeReadHealth(null, false, now).label).toBe("Status unavailable");
   });
@@ -70,5 +75,9 @@ describe("coding-session storage health", () => {
     expect(bridgeReadHealth("2026-08-09T08:00:00Z", true, now).tone).toBe(
       "stale",
     );
+  });
+
+  it("renders corrupt timestamps as an explicit data error", () => {
+    expect(formatSessionTimestamp("not-a-timestamp")).toBe("Invalid timestamp");
   });
 });

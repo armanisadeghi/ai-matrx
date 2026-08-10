@@ -108,6 +108,20 @@ export interface ConversationMenuContext {
     /** Remove this conversation's source from the current scope's view. */
     onHide?: () => void;
   };
+  /**
+   * Inline rename belongs to ItemRow. Set false when a non-row host consumes
+   * this menu, otherwise the registry's fallback rename command is a no-op.
+   */
+  showRename?: boolean;
+  /** Hide Pin/Unpin when the host could not resolve canonical user state. */
+  showFavorite?: boolean;
+  /**
+   * Hide conversation deletion when the host record would survive it and
+   * become an orphaned/dead link (for example a provider-session binding).
+   */
+  showDelete?: boolean;
+  /** Reconcile a host-owned read model after a successful mutation. */
+  onMutationSuccess?: () => void;
   dispatch: AppDispatch;
 }
 
@@ -159,6 +173,7 @@ export function buildConversationMenu(
             icon: Pencil,
             intent: "rename",
             shortcutKey: "r",
+            hidden: ctx.showRename === false,
             // ItemRow intercepts `intent: "rename"` and drives inline edit;
             // this no-op is the fallback for non-row consumers.
             onSelect: () => {},
@@ -169,6 +184,7 @@ export function buildConversationMenu(
             icon: ctx.isFavorite ? PinOff : Pin,
             iconClassName: ctx.isFavorite ? "text-amber-500" : undefined,
             shortcutKey: "p",
+            hidden: ctx.showFavorite === false,
             onSelect: async () => {
               const result = await ctx.dispatch(
                 setConversationFavorite({
@@ -178,6 +194,8 @@ export function buildConversationMenu(
               );
               if (setConversationFavorite.rejected.match(result)) {
                 toast.error(result.payload?.message ?? "Failed to update pin");
+              } else {
+                ctx.onMutationSuccess?.();
               }
             },
           },
@@ -285,6 +303,8 @@ export function buildConversationMenu(
                 toast.error(
                   result.payload?.message ?? "Failed to update archive status",
                 );
+              } else {
+                ctx.onMutationSuccess?.();
               }
             },
           },
@@ -311,6 +331,7 @@ export function buildConversationMenu(
                     "Failed to update knowledge-graph setting",
                 );
               } else {
+                ctx.onMutationSuccess?.();
                 toast.success(
                   next
                     ? "Excluded from knowledge graph"
@@ -329,6 +350,7 @@ export function buildConversationMenu(
             label: "Delete",
             icon: Trash2,
             tone: "destructive",
+            hidden: ctx.showDelete === false,
             onSelect: async () => {
               const ok = await confirm({
                 title: "Delete conversation",
@@ -351,6 +373,7 @@ export function buildConversationMenu(
               if (softDeleteConversation.rejected.match(result)) {
                 toast.error(result.payload?.message ?? "Delete failed");
               } else {
+                ctx.onMutationSuccess?.();
                 toast.success("Conversation deleted");
               }
             },

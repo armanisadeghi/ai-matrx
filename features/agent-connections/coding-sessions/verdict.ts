@@ -48,11 +48,26 @@ export type BridgeReadHealth = {
   tone: "healthy" | "waiting" | "stale" | "error";
 };
 
+export function formatSessionTimestamp(value: string): string {
+  const timestampMs = Date.parse(value);
+  return Number.isFinite(timestampMs)
+    ? new Date(timestampMs).toLocaleString()
+    : "Invalid timestamp";
+}
+
 export function bridgeReadHealth(
   lastSeenAt: string | null,
-  readSucceeded: boolean,
+  readSucceeded: boolean | null,
   nowMs: number,
 ): BridgeReadHealth {
+  if (readSucceeded === null) {
+    return {
+      label: "Checking storage",
+      detail: "AI Matrx is checking your private coding-session store.",
+      tone: "waiting",
+    };
+  }
+
   if (!readSucceeded) {
     return {
       label: "Status unavailable",

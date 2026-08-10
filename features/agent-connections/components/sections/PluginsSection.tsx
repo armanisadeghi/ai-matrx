@@ -33,9 +33,13 @@ import {
 import {
   bridgeReadHealth,
   fidelityVerdict,
+  formatSessionTimestamp,
 } from "../../coding-sessions/verdict";
 import { useCodingSessions } from "../../coding-sessions/useCodingSessions";
-import type { CodingSessionView } from "../../coding-sessions/service";
+import {
+  CODING_SESSION_PAGE_SIZE,
+  type CodingSessionView,
+} from "../../coding-sessions/service";
 
 export function PluginsSection() {
   const [search, setSearch] = useState("");
@@ -56,6 +60,7 @@ export function PluginsSection() {
       <CodingSessionDetail
         session={selectedSession}
         onBack={() => setSelectedSessionId(null)}
+        onMutationSuccess={refresh}
       />
     );
   }
@@ -76,9 +81,12 @@ export function PluginsSection() {
 
   const health = bridgeReadHealth(
     sessions[0]?.last_seen_at ?? null,
-    error === null,
+    checkedAtMs === 0 ? null : error === null,
     checkedAtMs,
   );
+  const atPageLimit = sessions.length === CODING_SESSION_PAGE_SIZE;
+  const initialReadFailed =
+    filteredSessions.length === 0 && sessions.length === 0 && error !== null;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -169,7 +177,7 @@ export function PluginsSection() {
                     </span>
                   </span>
                   <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                    {count} session{count === 1 ? "" : "s"}
+                    {count} shown
                   </span>
                 </button>
               );
@@ -196,7 +204,7 @@ export function PluginsSection() {
               </p>
             </div>
             <span className="text-xs tabular-nums text-muted-foreground">
-              {filteredSessions.length}
+              {filteredSessions.length} shown
             </span>
           </div>
 
@@ -205,7 +213,7 @@ export function PluginsSection() {
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading coding sessions…
             </div>
-          ) : filteredSessions.length === 0 && !error ? (
+          ) : initialReadFailed ? null : filteredSessions.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center">
               <Code2 className="mx-auto h-7 w-7 text-muted-foreground/60" />
               <p className="mt-2 text-sm font-medium text-foreground">
@@ -225,10 +233,17 @@ export function PluginsSection() {
                   key={session.id}
                   session={session}
                   onInspect={() => setSelectedSessionId(session.id)}
+                  onMutationSuccess={refresh}
                 />
               ))}
             </div>
           )}
+          {atPageLimit ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Showing the latest {CODING_SESSION_PAGE_SIZE} sessions. Older
+              sessions are not included in these displayed counts.
+            </p>
+          ) : null}
         </section>
       </div>
 
@@ -343,16 +358,20 @@ function ClaudeInstallStatus({ sessionCount }: { sessionCount: number }) {
 function CodingSessionRow({
   session,
   onInspect,
+  onMutationSuccess,
 }: {
   session: CodingSessionView;
   onInspect: () => void;
+  onMutationSuccess: () => void;
 }) {
   const meta = providerMeta(session.provider);
   const Icon = meta?.icon ?? Code2;
   const title = session.conversation?.title?.trim() || "Untitled conversation";
   const verdict = fidelityVerdict(session.fidelity);
   const dispatch = useAppDispatch();
-  const sourceApp = meta?.sourceApp ?? session.provider;
+  const sourceApp =
+    session.conversation?.source_app ?? meta?.sourceApp ?? session.provider;
+  const sourceFeature = session.conversation?.source_feature ?? "code-editor";
 
   return (
     <div className="group/entity-ref flex items-center gap-3 border-b border-border/40 px-3 py-2.5 last:border-b-0 hover:bg-muted/30">
@@ -377,7 +396,7 @@ function CodingSessionRow({
           <span aria-hidden>·</span>
           <span>{verdict.label}</span>
           <span aria-hidden>·</span>
-          <span>{new Date(session.last_seen_at).toLocaleString()}</span>
+          <span>{formatSessionTimestamp(session.last_seen_at)}</span>
         </div>
       </div>
       <span
@@ -397,11 +416,15 @@ function CodingSessionRow({
           buildConversationMenu({
             conversationId: session.conversation_id,
             title,
-            isFavorite: false,
-            isArchived: session.status === "archived",
-            excludeFromKg: false,
+            isFavorite: session.isFavorite,
+            isArchived: session.conversation?.status === "archived",
+            excludeFromKg: session.conversation?.exclude_from_kg ?? false,
             href: `/chat/${session.conversation_id}`,
-            source: { app: sourceApp, feature: "code-editor" },
+            source: { app: sourceApp, feature: sourceFeature },
+            showRename: false,
+            showFavorite: session.favoriteStateKnown,
+            showDelete: false,
+            onMutationSuccess,
             dispatch,
           })
         }
@@ -422,15 +445,19 @@ function CodingSessionRow({
 function CodingSessionDetail({
   session,
   onBack,
+  onMutationSuccess,
 }: {
   session: CodingSessionView;
   onBack: () => void;
+  onMutationSuccess: () => void;
 }) {
   const dispatch = useAppDispatch();
   const meta = providerMeta(session.provider);
   const title = session.conversation?.title?.trim() || "Untitled conversation";
   const verdict = fidelityVerdict(session.fidelity);
-  const sourceApp = meta?.sourceApp ?? session.provider;
+  const sourceApp =
+    session.conversation?.source_app ?? meta?.sourceApp ?? session.provider;
+  const sourceFeature = session.conversation?.source_feature ?? "code-editor";
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -460,11 +487,15 @@ function CodingSessionDetail({
             buildConversationMenu({
               conversationId: session.conversation_id,
               title,
-              isFavorite: false,
-              isArchived: session.status === "archived",
-              excludeFromKg: false,
+              isFavorite: session.isFavorite,
+              isArchived: session.conversation?.status === "archived",
+              excludeFromKg: session.conversation?.exclude_from_kg ?? false,
               href: `/chat/${session.conversation_id}`,
-              source: { app: sourceApp, feature: "code-editor" },
+              source: { app: sourceApp, feature: sourceFeature },
+              showRename: false,
+              showFavorite: session.favoriteStateKnown,
+              showDelete: false,
+              onMutationSuccess,
               dispatch,
             })
           }
@@ -513,7 +544,7 @@ function CodingSessionDetail({
           <DetailValue>{formatText(session.status)}</DetailValue>
           <DetailTerm>Last activity</DetailTerm>
           <DetailValue>
-            {new Date(session.last_seen_at).toLocaleString()}
+            {formatSessionTimestamp(session.last_seen_at)}
           </DetailValue>
           <DetailTerm>Runtime</DetailTerm>
           <DetailValue>
