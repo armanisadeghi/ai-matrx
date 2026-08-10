@@ -21,11 +21,13 @@ import {
     Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type {
-    ImageFit,
-    ImagePosition,
-    ImagePositionAnchor,
-} from "../types";
+import type { ImageFit, ImagePosition, ImagePositionAnchor } from "../types";
+import {
+    CROPPING_IMAGE_FIT,
+    IMAGE_FIT_OPTIONS,
+    POSITION_ANCHOR_GRID,
+    SMART_POSITION_OPTIONS,
+} from "../constants/conversion-options";
 
 interface CropControlsProps {
     fit: ImageFit;
@@ -34,63 +36,26 @@ interface CropControlsProps {
     onPositionChange: (position: ImagePosition) => void;
 }
 
-const FIT_OPTIONS: Array<{
-    id: ImageFit;
-    label: string;
-    blurb: string;
-    icon: React.ReactNode;
-}> = [
-    {
-        id: "cover",
-        label: "Cover",
-        blurb: "Fill the frame — crops overflow. Best for hero/social images.",
-        icon: <Crop className="h-3.5 w-3.5" />,
-    },
-    {
-        id: "contain",
-        label: "Contain",
-        blurb: "Fit the whole image; pad with background. Best for logos and flyers.",
-        icon: <Maximize2 className="h-3.5 w-3.5" />,
-    },
-    {
-        id: "inside",
-        label: "Inside",
-        blurb: "Shrink to fit without cropping or padding. Output may be smaller than the preset.",
-        icon: <Scaling className="h-3.5 w-3.5" />,
-    },
-];
+/**
+ * The vocabulary (ids, labels, blurbs) lives in
+ * `constants/conversion-options` — the ONE module the agent write handler
+ * validates against and the surface manifest quotes its enums from. Only the
+ * icons are local, mapped by id, because that module stays JSX-free.
+ */
+const FIT_ICONS: Record<ImageFit, React.ReactNode> = {
+    cover: <Crop className="h-3.5 w-3.5" />,
+    contain: <Maximize2 className="h-3.5 w-3.5" />,
+    inside: <Scaling className="h-3.5 w-3.5" />,
+};
 
-const POSITION_GRID: Array<{ id: ImagePositionAnchor; label: string }> = [
-    { id: "top-left", label: "Top-left" },
-    { id: "top", label: "Top" },
-    { id: "top-right", label: "Top-right" },
-    { id: "left", label: "Left" },
-    { id: "center", label: "Center" },
-    { id: "right", label: "Right" },
-    { id: "bottom-left", label: "Bottom-left" },
-    { id: "bottom", label: "Bottom" },
-    { id: "bottom-right", label: "Bottom-right" },
-];
+const SMART_ICONS: Partial<Record<ImagePositionAnchor, React.ReactNode>> = {
+    attention: <Flame className="h-3 w-3" />,
+    entropy: <Scan className="h-3 w-3" />,
+};
 
-const SMART_OPTIONS: Array<{
-    id: ImagePositionAnchor;
-    label: string;
-    blurb: string;
-    icon: React.ReactNode;
-}> = [
-    {
-        id: "attention",
-        label: "Attention",
-        blurb: "Crops toward the most visually prominent area (faces, high contrast).",
-        icon: <Flame className="h-3 w-3" />,
-    },
-    {
-        id: "entropy",
-        label: "Entropy",
-        blurb: "Crops toward the region with the most detail / texture.",
-        icon: <Scan className="h-3 w-3" />,
-    },
-];
+const FIT_OPTIONS = IMAGE_FIT_OPTIONS;
+const POSITION_GRID = POSITION_ANCHOR_GRID;
+const SMART_OPTIONS = SMART_POSITION_OPTIONS;
 
 export function CropControls({
     fit,
@@ -124,7 +89,7 @@ export function CropControls({
                                 : "border-border bg-background hover:bg-muted/40",
                         )}
                     >
-                        {opt.icon}
+                        {FIT_ICONS[opt.id]}
                         {opt.label}
                     </button>
                 ))}
@@ -133,8 +98,8 @@ export function CropControls({
                 {activeFit?.blurb}
             </p>
 
-            {/* Position picker — only when fit = "cover" */}
-            {fit === "cover" && (
+            {/* Position picker — only when the fit mode actually crops */}
+            {fit === CROPPING_IMAGE_FIT && (
                 <div className="space-y-2 pt-1 border-t border-border">
                     <label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
                         Focal point
@@ -214,7 +179,7 @@ export function CropControls({
                                             : "border-border bg-background hover:bg-muted/40",
                                     )}
                                 >
-                                    {opt.icon}
+                                    {SMART_ICONS[opt.id]}
                                     {opt.label}
                                 </button>
                             ))}
