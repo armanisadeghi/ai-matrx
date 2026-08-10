@@ -273,6 +273,26 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
+- **2026-08-10** — Generate mode is agent-writable. `GenerateShellClient`
+  now passes `getWriteHandlers` to the `SurfaceRuntimeProvider` it already
+  mounted, registering the one target `matrx-user/image-generate` declares:
+  `generation_request`, a partial `{prompt?, style?, image_size?,
+  image_count?}` object on `applyPolicy: "ask"` / `mode: "draft"`. The handler
+  calls the SAME `setPrompt` / `setStyle` / `setSize` / `setCount` the form's
+  own controls call — never a parallel write path — validates every key before
+  applying any of them, and THROWS on a bad shape (the writeback seam turns
+  that into an error envelope the agent corrects from). It also throws while
+  `busy` is true rather than rewriting a request that is already in flight.
+  **Generate itself is not a write target and will not become one**: a run
+  spends real money on image models, so the human press stays the gate — an
+  agent may fill the form, only the user commits it. New
+  `constants/generation-options.ts` is now the ONE home for the aspect
+  vocabulary and the 1–4 count bounds; the size Select, the count Select, the
+  handler's enum check, `GenerateImageBody.size`, and the manifest's
+  model-facing contract prose all read from it instead of re-typing the union
+  (it was written out in three places). Live-verified with a real Badass Agent
+  run on `/images/generate` — see the surfaces FEATURE.md entry of the same
+  date.
 - **2026-08-08** — Added `preserveSource` to `ModeShellProps` +
   `EditModeShell`: derivative-only editing (save-as-new-file default, no
   version writes onto the source, AI ops chain on their result rows, versions
