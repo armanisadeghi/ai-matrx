@@ -65,7 +65,7 @@ type PageState =
       retryable: boolean;
       detail?: ErrorDetail;
     }
-  | { kind: "redirecting"; message: string }
+  | { kind: "redirecting"; message: string; redirectUrl: string }
   | { kind: "consent"; details: OAuthAuthorizationDetails; user: SupabaseUser };
 
 // ---------------------------------------------------------------------------
@@ -285,6 +285,7 @@ export default function ConsentClient() {
           kind: "redirecting",
           message:
             "You have already authorized this application. Redirecting...",
+          redirectUrl,
         });
         window.location.href = redirectUrl;
         return;
@@ -334,6 +335,7 @@ export default function ConsentClient() {
       setPageState({
         kind: "redirecting",
         message: "Authorization granted. Redirecting...",
+        redirectUrl: data.redirect_url,
       });
       window.location.href = data.redirect_url;
     } catch (err) {
@@ -380,6 +382,7 @@ export default function ConsentClient() {
       setPageState({
         kind: "redirecting",
         message: "Authorization denied. Redirecting...",
+        redirectUrl: data.redirect_url,
       });
       window.location.href = data.redirect_url;
     } catch (err) {
@@ -425,7 +428,10 @@ export default function ConsentClient() {
             />
           )}
           {pageState.kind === "redirecting" && (
-            <RedirectingState message={pageState.message} />
+            <RedirectingState
+              message={pageState.message}
+              redirectUrl={pageState.redirectUrl}
+            />
           )}
           {pageState.kind === "consent" && (
             <ConsentForm
@@ -529,7 +535,13 @@ function ErrorState({
   );
 }
 
-function RedirectingState({ message }: { message: string }) {
+function RedirectingState({
+  message,
+  redirectUrl,
+}: {
+  message: string;
+  redirectUrl: string;
+}) {
   return (
     <div className="p-6 sm:p-8 text-center space-y-4">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -539,6 +551,12 @@ function RedirectingState({ message }: { message: string }) {
         <h2 className="text-lg font-semibold text-foreground">Redirecting</h2>
         <p className="text-sm text-muted-foreground">{message}</p>
       </div>
+      <Button asChild variant="outline">
+        <a href={redirectUrl}>
+          Continue to application
+          <ExternalLink className="ml-2 h-4 w-4" />
+        </a>
+      </Button>
     </div>
   );
 }
