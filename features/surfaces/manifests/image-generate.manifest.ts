@@ -21,7 +21,13 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  IMAGE_GENERATE_MAX_COUNT,
+  IMAGE_GENERATE_MIN_COUNT,
+  IMAGE_GENERATE_SIZES,
+} from "@/features/image-studio/constants/generation-options";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -150,6 +156,70 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may put into the request form.
+ *
+ * JUDGMENT BAR, applied honestly. This surface has exactly four inputs, and
+ * the one that matters is `prompt`: turning "something for the homepage" into
+ * a real image prompt is the textbook YES case — authored content an agent
+ * drafts better and faster than the user will. `style` is the same kind of
+ * writing one field over. `image_size` is genuinely derivable from the intent
+ * ("a hero banner" → landscape/wide), and `image_count` is a plain "give me 3
+ * variations". Nothing here is identity, ownership, or destructive.
+ *
+ * ONE object target, not four. These four fields are not four decisions —
+ * they are ONE request the user composes in a single thought, and the surface
+ * already says so: `generation_request_summary` is literally the composite
+ * read twin of exactly this object. Per the `surface-write-targets` trap
+ * ("multiple values in one field object beat five micro-targets when they're
+ * edited together"), one target also means ONE confirm dialog for one request
+ * instead of four in a row. Every key is OPTIONAL and partial — writing only
+ * `{image_size}` leaves a prompt the user typed untouched — so the granularity
+ * of separate targets is kept without the dialog spam. The cost, stated
+ * plainly: the user accepts or declines the object as a whole and cannot keep
+ * the new prompt while rejecting the new size. That trade is worth it here
+ * because the fields are re-derived together anyway; on a surface where they
+ * were independent decisions with different consumers, it would not be.
+ *
+ * `mode: "draft"` in the literal sense — the handler calls the SAME `useState`
+ * setters the user's own typing calls, so the value is visible and editable
+ * the instant it lands. There is no Save bar because nothing exists in the
+ * database yet.
+ *
+ * WHAT IS NOT WRITABLE, on purpose:
+ *  - **Generate.** Following the `podcast-studio` precedent: starting a run
+ *    spends real money on image models, so the human press stays the gate.
+ *    An agent may fill the form; only the user commits it.
+ *  - The generated results — `result_file_ids` / `result_count` are the
+ *    record of what the backend actually produced. An agent writing them
+ *    would be fabricating output.
+ *  - `is_generating` / `generation_enabled` — status the page owns, not
+ *    settings. (The handler REFUSES while `is_generating` is true rather
+ *    than editing a form whose request is already in flight.)
+ *  - Anything about saved files, folders, or file identity — results are
+ *    persisted `cld_files` rows and belong to the files surfaces.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "generation_request",
+    label: "Generation request",
+    description:
+      "Stages the next image request into the form the user is looking at. NOTHING is generated and nothing is spent — the user still presses Generate. " +
+      "Value: an object with AT LEAST ONE of `{ prompt, style, image_size, image_count }`. Each key REPLACES that one field; omit a key to leave it exactly as the user left it (read `generation_request_summary` first if you mean to extend rather than replace). " +
+      "`prompt` — the free-text description of the image to generate; a non-empty string. " +
+      '`style` — a free-text style modifier such as "editorial illustration"; pass an empty string to clear it. ' +
+      `\`image_size\` — the aspect, one of: ${IMAGE_GENERATE_SIZES.join(" | ")}. ` +
+      `\`image_count\` — how many images one Generate produces; a whole number from ${IMAGE_GENERATE_MIN_COUNT} to ${IMAGE_GENERATE_MAX_COUNT}. Only change it when the user asked for a specific number of variations. ` +
+      "Refused while a generation is already in flight.",
+    valueType: "object",
+    updatesValue: "generation_request_summary",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation_request",
+    sortOrder: 300,
+  },
+];
+
 export const IMAGE_GENERATE_SURFACE_NAME = "matrx-user/image-generate";
 
 export const imageGenerateManifest: SurfaceManifest = {
@@ -168,7 +238,10 @@ library.
 
 Read generation_request_summary for what the user is asking for — helping
 sharpen a prompt is the most valuable thing an agent can do here, especially
-when prompt is empty or vague. result_file_ids are durable cloud file UUIDs;
+when prompt is empty or vague, and the generation_request write target lets
+you put that sharpened request straight into the form. Filling the form is
+never the same as running it: pressing Generate spends real money on image
+models and stays the user's move. result_file_ids are durable cloud file UUIDs;
 resolve image bytes from those ids, never from URLs. generation_enabled false
 means the backend endpoint has not shipped for this build — the user can
 still draft prompts.
@@ -178,6 +251,7 @@ still draft prompts.
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**

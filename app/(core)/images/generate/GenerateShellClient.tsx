@@ -27,6 +27,14 @@ import {
   type GeneratedImageFile,
 } from "@/features/image-studio/api/python";
 import { IMAGE_STUDIO_BACKEND_CAPABILITIES } from "@/features/image-studio/constants/backend-capabilities";
+import {
+  IMAGE_GENERATE_COUNTS,
+  IMAGE_GENERATE_MAX_COUNT,
+  IMAGE_GENERATE_MIN_COUNT,
+  IMAGE_GENERATE_SIZES,
+  IMAGE_GENERATE_SIZE_OPTIONS,
+  type ImageGenerateSize,
+} from "@/features/image-studio/constants/generation-options";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -34,12 +42,10 @@ import {
   createImageGenerateScope,
 } from "@/features/surfaces/manifests/image-generate.manifest";
 
-type Size = "square" | "portrait" | "landscape" | "wide" | "tall";
-
 export default function GenerateShellClient() {
   const [prompt, setPrompt] = useState("");
   const [style, setStyle] = useState("");
-  const [size, setSize] = useState<Size>("square");
+  const [size, setSize] = useState<ImageGenerateSize>("square");
   const [count, setCount] = useState(1);
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<GeneratedImageFile[]>([]);
@@ -99,10 +105,96 @@ export default function GenerateShellClient() {
       generation_enabled: IMAGE_STUDIO_BACKEND_CAPABILITIES.generate,
     });
 
+  // Surface write handlers — the ONE declared target, `generation_request`.
+  // Every branch calls the SAME `useState` setter the user's own typing and
+  // Select clicks call, so a staged value and a typed one are indistinguishable
+  // and the user can edit or discard it. Generate itself is deliberately NOT a
+  // target (it spends real money on image models — the human press is the
+  // gate), so nothing here can start a run. Validation THROWS on a bad shape;
+  // the writeback seam (`applySurfaceWrite`) turns the throw into a safe error
+  // envelope the agent reads and corrects from. Enum checks run against the
+  // same constants the Selects below render from, so the two cannot drift.
+  // Fresh closures per call (the `getWriteHandlers` contract).
+  const getSurfaceWriteHandlers = () => ({
+    generation_request: (value: unknown) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          "generation_request expects an object: { prompt?, style?, image_size?, image_count? }.",
+        );
+      // Refuse rather than edit a request that is already on its way to the
+      // backend — the run in flight used the OLD values, so a mid-run write
+      // would leave the form describing something nobody generated.
+      if (busy)
+        throw new Error(
+          "A generation is already running. generation_request cannot be written while a run is in flight — wait for it to finish, then write the next request.",
+        );
+
+      const patch = value as Record<string, unknown>;
+      const allowedKeys = ["prompt", "style", "image_size", "image_count"];
+      const unknownKeys = Object.keys(patch).filter(
+        (k) => !allowedKeys.includes(k),
+      );
+      if (unknownKeys.length > 0)
+        throw new Error(
+          `generation_request got unsupported key(s): ${unknownKeys.join(", ")}. Allowed keys: ${allowedKeys.join(" | ")}.`,
+        );
+      if (Object.keys(patch).length === 0)
+        throw new Error(
+          `generation_request needs at least one of: ${allowedKeys.join(" | ")}.`,
+        );
+
+      // Validate EVERY key before applying any of them — a partial apply on a
+      // half-valid object would leave the form in a state nobody chose.
+      const apply: Array<() => void> = [];
+      if ("prompt" in patch) {
+        if (typeof patch.prompt !== "string" || !patch.prompt.trim())
+          throw new Error(
+            "generation_request.prompt expects a non-empty string describing the image.",
+          );
+        const next = patch.prompt;
+        apply.push(() => setPrompt(next));
+      }
+      if ("style" in patch) {
+        if (typeof patch.style !== "string")
+          throw new Error(
+            "generation_request.style expects a string (empty string clears it).",
+          );
+        const next = patch.style;
+        apply.push(() => setStyle(next));
+      }
+      if ("image_size" in patch) {
+        if (
+          typeof patch.image_size !== "string" ||
+          !IMAGE_GENERATE_SIZES.includes(patch.image_size as ImageGenerateSize)
+        )
+          throw new Error(
+            `generation_request.image_size expects one of: ${IMAGE_GENERATE_SIZES.join(" | ")}.`,
+          );
+        const next = patch.image_size as ImageGenerateSize;
+        apply.push(() => setSize(next));
+      }
+      if ("image_count" in patch) {
+        if (
+          typeof patch.image_count !== "number" ||
+          !Number.isInteger(patch.image_count) ||
+          patch.image_count < IMAGE_GENERATE_MIN_COUNT ||
+          patch.image_count > IMAGE_GENERATE_MAX_COUNT
+        )
+          throw new Error(
+            `generation_request.image_count expects a whole number from ${IMAGE_GENERATE_MIN_COUNT} to ${IMAGE_GENERATE_MAX_COUNT}.`,
+          );
+        const next = patch.image_count;
+        apply.push(() => setCount(next));
+      }
+      for (const run of apply) run();
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={IMAGE_GENERATE_SURFACE_NAME}
       getScope={getGenerateScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     <div className="h-full min-h-0 overflow-y-auto overscroll-contain lg:overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(360px,440px)_1fr] gap-3 md:gap-4 p-3 md:p-5">
       <aside className="flex flex-col gap-3 min-h-0">
@@ -120,16 +212,19 @@ export default function GenerateShellClient() {
         <div className="grid grid-cols-2 gap-2 md:gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium">Size</label>
-            <Select value={size} onValueChange={(v) => setSize(v as Size)}>
+            <Select
+              value={size}
+              onValueChange={(v) => setSize(v as ImageGenerateSize)}
+            >
               <SelectTrigger className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="square">Square</SelectItem>
-                <SelectItem value="portrait">Portrait</SelectItem>
-                <SelectItem value="landscape">Landscape</SelectItem>
-                <SelectItem value="wide">Wide (16:9)</SelectItem>
-                <SelectItem value="tall">Tall (9:16)</SelectItem>
+                {IMAGE_GENERATE_SIZE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -143,7 +238,7 @@ export default function GenerateShellClient() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4].map((n) => (
+                {IMAGE_GENERATE_COUNTS.map((n) => (
                   <SelectItem key={n} value={String(n)}>
                     {n}
                   </SelectItem>

@@ -19,6 +19,7 @@ import { postJson, postNdjson } from "@/lib/python-client";
 import { apiGet } from "@/lib/api/typed-client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { components } from "@/types/python-generated/api-types";
+import type { ImageGenerateSize } from "@/features/image-studio/constants/generation-options";
 import type {
   GeneratedImageFileItem,
   ImageEditCompleteData,
@@ -366,7 +367,7 @@ export async function listOps(): Promise<ImageOpsCatalog> {
 
 export interface GenerateImageBody {
   prompt: string;
-  size?: "square" | "portrait" | "landscape" | "wide" | "tall";
+  size?: ImageGenerateSize;
   style?: string;
   count?: number;
   model?: string;
