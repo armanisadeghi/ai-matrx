@@ -47,6 +47,7 @@ import {
   useRoomView,
   type RoomMode,
 } from "./roomViewContext";
+import { useWarRoomWriteHandlers } from "./useWarRoomWriteHandlers";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 // The TIER-2 ROOM agent panel — its floating WindowPanel wrapper plus the whole
@@ -117,6 +118,11 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
     ],
   );
 
+  // Write half of the same surface (manifest `writeTargets`) — the shell owns
+  // the room's session state, so it is also the one place that can service an
+  // agent's write. Handlers run the room's own thunks; see the hook.
+  const getRoomWriteHandlers = useWarRoomWriteHandlers(sessionId);
+
   // Restore the room VIEW on open, two complementary layers:
   //   • URL params (thread + view + density) — the fast, shareable layer; a
   //     refresh or a copied link restores exactly what was on screen. Mounted
@@ -167,6 +173,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/war-room"
       getScope={getRoomScope}
+      getWriteHandlers={getRoomWriteHandlers}
     >
     <div className="@container h-full flex flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
       {/* ── Header — injected into the shell's glass row via <PageHeader>.

@@ -171,6 +171,30 @@ Dev-login → `/war-room/all`. Create a room; add threads. **Stage mode:** the l
 
 ## Change Log
 
+- 2026-08-10 — **The room surface is now agent-WRITABLE (4 targets).**
+  `matrx-user/war-room` declares `room_name`, `room_description`,
+  `active_thread_title` and `add_threads` — all `mode: "entity"`,
+  `applyPolicy: "ask"`. Handlers live in
+  `components/room/useWarRoomWriteHandlers.ts` and register on the
+  `SurfaceRuntimeProvider` `WarRoomShell` already mounted (only
+  `getWriteHandlers` was missing); nothing else in the room changed. Every
+  handler runs the room's OWN thunk — `updateRoomIdentity` (what
+  `RoomIdentityButton` dispatches), `renameThread` (what
+  `useThreadActions.rename` dispatches), and `createThread` (what
+  `QuickAddThread` dispatches, with the canvas anchor and the same appended
+  `position`) — so an agent-originated change and a user-driven one are the
+  same write. **If you add a target here, copy the failure handling, not just
+  the dispatch:** these thunks are optimistic and/or swallow their errors into
+  a toast, so awaiting them proves nothing. `updateRoomIdentity` reports
+  through its boolean; the other two are checked against the store afterwards
+  and throw when the value did not land. `active_thread_title` resolves the
+  staged thread exactly as `lib/war-room-scope.ts` resolves the
+  `active_thread_id` it emits, and throws when no thread is staged rather than
+  writing into nothing. Everything destructive or structural stays human-only:
+  thread delete, park, pin and hide, resource assignments, the room's
+  project/organization, and recording. Live-verified end to end with real
+  Badass Agent runs on a throwaway room — see `features/surfaces/FEATURE.md`
+  for the full evidence.
 - 2026-08-09 — **Canonical tool vocabulary.** Renamed the conversation→thread
   map from the misleading tool “binding registry” to
   `thread-target-registry.ts` (`register/get/clearWarRoomThreadTarget`). War
