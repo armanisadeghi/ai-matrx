@@ -6,8 +6,8 @@
  * Drives:
  *   - the predicate `isScribeToolName` used by `surfaceDelegatedToolCall` to
  *     route `tool_delegated` events to the scribe dispatcher.
- *   - the inline tool defs in `tools/tool-defs.ts` (declared on the request so
- *     the server offers them WITHOUT a server-side tool-registry change).
+ *   - the current Inline tool defs in `tools/tool-defs.ts` (a known durability
+ *     deviation pending a separate Registered-tool migration).
  *   - the dispatch registry in `tools/registry.ts`.
  *   - per-conversation arming: `ScribeScreen` calls
  *     `addClientTool({ conversationId, toolName })` once the session's assistant

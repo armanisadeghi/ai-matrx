@@ -21,6 +21,25 @@ If you ever find yourself reaching for a third input — a priority column, a de
 
 A capability map. Rows in `tool.definition` describe contracts. Rows in `tool.executor` describe who can run things. Rows in `tool.binding` connect the two. Rows in `tool.surface_defaults` shape what shows up per surface. That's the whole system.
 
+### The registry is NOT the only way a tool exists
+
+**Read this before you write "the database is the only source of truth" anywhere.** That sentence is false, and repeating it has caused real damage.
+
+There are **two legitimate, permanent paths** by which a tool becomes callable:
+
+1. A **registered tool** — has a `tool.definition` row. Durable, discoverable, drift-checked, visible to admin UIs.
+2. An **inline tool** — declared on the request itself, with no DB row at all. The server offers it for that request and forgets it.
+
+Inline tools are **first-class and permanently supported**. They are the mechanism by which agents and users author tools **on the fly** — which is a product capability, not a loophole. **Never remove, deprecate, or "clean up" the inline path.** A doc, gate, or review comment that treats registration as mandatory is wrong and must be corrected.
+
+What IS wrong is choosing the ephemeral path for a permanent thing:
+
+> **The durability rule.** If a tool ships in the codebase — a file someone maintains, a name someone depends on — it is durable, and durable tools belong in `tool.definition`. Inline is for tools that did not exist before this request: generated, composed, or hand-authored at runtime.
+>
+> A durable tool declared inline creates an exception for something that is a rule. It is invisible to every drift guard, every admin surface, and every "what can this agent do?" query, for no benefit.
+
+Ask one question: *did this tool exist before the request arrived?* No → inline is correct. Yes → register it.
+
 ### What the system is NOT
 
 - It is not a registry of code locations. Executors own their own internal registries; the DB does not store `function_path` for anyone.
@@ -36,6 +55,12 @@ These definitions are normative. If code, comments, or documentation drift from 
 
 ### Tool
 A named, versioned **contract**. Lives in `tool.definition`. Defines what arguments come in, what shape comes out, and what policy applies (`admin_only`, `tier`, `gating`, `dedupe_exempt`, `validation_exempt`). A tool knows nothing about who runs it.
+
+### Registered tool
+A tool with a row in `tool.definition`. The durable form. Everything in Parts 3–6 about bindings, surfaces, and bundles applies to registered tools.
+
+### Inline tool
+A tool **declared on the request** and never written to `tool.definition`. Same contract shape, same execution path, same validation — it simply has no durable identity. Exists so agents and users can author tools **at runtime**. Permanently supported (see Part 1). Subject to the durability rule: correct for something authored in the moment, wrong for something that ships in the repo.
 
 ### Executor
 An **addressable capability provider**. Lives in `tool.executor`. A process, a package, a browser context, or an MCP server — anything that can dispatch tool calls. Identified by a canonical `name` (PK). Equal citizens — no "server vs client" category exists in the schema.
@@ -57,6 +82,29 @@ A **labeled collection of tools**. Lives in `tool_bundle` + `tool_bundle_member`
 
 ### Gate
 A **boolean function** referenced by name in `tool.definition.gating`. The function itself lives in code (`matrx_ai.tools.gates.*`). The DB stores only the gate name and arguments to pass.
+
+### Arming
+**Turning a tool on for one conversation, at runtime, from the component that holds the state the tool needs.** Wire field: `client_tools`. Client state: the `instanceClientTools` slice. Server: consumed in `tool_merge.py`.
+
+Arming is the answer to *"this tool only works where a particular thing is on screen."* A War Room write tool cannot act without a mounted tile panel; a Scribe playback tool cannot act without a live Scribe session. Neither is a property of the executor (the code sits in the same Next.js runtime as everything else) and neither is a property of the surface (the same agent runs on surfaces where the tool must stay dark). It is a property of **a live UI instance**, so only that instance can switch it on — the panel arms on mount and disarms on unmount.
+
+**Not to be confused with:**
+- a **Binding** — "this executor CAN run it," static and durable. Arming is "right now, for this conversation, it IS available."
+- a **Client** — despite the wire name `client_tools`, arming has nothing to do with which client you are on.
+
+### Reach — the three questions, never conflated
+
+Every "why can/can't the agent call this?" resolves to exactly one of these. Answering with the wrong one is the most common design error in this system:
+
+| Question | Concept | Where it lives | Lifetime |
+|---|---|---|---|
+| *Where can this code run?* | **Executor** (via Binding) | `tool.executor` + `tool.binding` | Durable |
+| *Where is it offered by default?* | **Surface** (via Surface defaults) | `ui.ui_surface` + `tool.surface_defaults` | Durable |
+| *Is it live for this conversation right now?* | **Arming** | request `client_tools` | Per-conversation |
+
+A tool that needs specific UI state is **not** a new executor. There is no second runtime — inventing `matrx-user.war-room` would encode a lie about where the code lives, and S3 already forbids sub-executors created for organization rather than genuine specialization.
+
+But it is also **not global**, and the system must say so out loud. Hence R16.
 
 ### Inheritance — executors
 An executor can declare a `parent_executor_name`. The child **unions** the parent's bindings with its own. Used for granular sub-executors (e.g., `matrx-user.chat` inheriting from `matrx-user`).
@@ -131,6 +179,22 @@ User-authored bundles (`tool_bundle.is_system = false`) exist for ad-hoc groupin
 ### R15. Gate names that don't resolve must crash the server at startup.
 
 Gate functions live in code. The startup pass in `aidream/startup/tools_check.py` must walk every `tool.definition.gating` array, look up each gate name in the Python registry, and **crash if any gate doesn't resolve**. A tool that references a missing gate is a configuration bug, not a runtime warning.
+
+### R16. A tool that needs UI state must be armed, and must never be ambient.
+
+If a tool cannot execute without something being mounted on screen, then:
+
+1. It is **armed** by the component that owns that state — on mount, off on unmount.
+2. It **must NOT** appear in any surface's `always_include_tools`. Putting it there advertises a capability the agent cannot actually use, and the failure surfaces as a confusing tool error rather than an honest absence.
+3. Its inability to run elsewhere is **stated in its description**, so the agent understands the constraint instead of retrying.
+
+The point of this rule is that "not every tool is global" has to be **visible in the system**, not folklore. Arming is how a tool is properly assigned to where it actually executes when that "where" is a live UI instance rather than a process. Treating such a tool as ambient — quietly bound and quietly advertised everywhere — is the drift this rule exists to stop.
+
+### R17. Do not use the word "binding" for anything except `tool.binding`.
+
+`Binding` means exactly one thing: an executor can run a tool. Naming any other map, registry, or association a "binding" — a conversation→tile lookup, a panel→handler wiring, a UI state association — collides head-on with the single most load-bearing word in this system and guarantees that a future reader (human or agent) mis-reads one for the other.
+
+Call the other thing what it is: a target, a scope, a route, a registry, an association. Never a binding.
 
 ---
 
@@ -241,6 +305,11 @@ If you see any of these in a PR, push back:
 8. **An MCP-specific code path that doesn't go through `tool.executor` + `tool.binding`.** R9 violation. MCP isn't special.
 9. **A tool referenced by name in a new FK column.** R10 violation. Use the UUID.
 10. **String parsing of executor names to derive properties** (e.g., `if name.startswith("mcp.")`). The properties exist as real columns. `mcp_server_id IS NOT NULL` tells you it's an MCP executor; you don't need to parse the name.
+11. **Any claim that the database is the ONLY source of truth for tools.** Part 1 is explicit: inline tools are a permanent, first-class path. This sentence has shipped in multiple repos and is the reason durable tools got built inline "because the registry felt mandatory and heavy." Correct it wherever you find it.
+12. **A durable tool declared inline.** The inverse error, and the one that actually happened (war-room, scribe, war-room-master). If it lives in the repo, it gets a `tool.definition` row.
+13. **A new sub-executor created because a page shows different tools.** S3 violation. That is Surface defaults, or Arming if it needs live UI state. A sub-executor requires a genuinely separate runtime.
+14. **The word "binding" used for anything other than `tool.binding`.** R17 violation.
+15. **A UI-state-dependent tool listed in `always_include_tools`.** R16 violation. It will be advertised to an agent that cannot call it.
 
 ---
 
@@ -255,3 +324,35 @@ If yes, the change is probably fine.
 If you have to explain a third input, you have to explain why the previous design's mess won't return. That explanation needs to be very, very good.
 
 The old system was rebuilt because five inputs to one decision became unmaintainable. The new system has two. **Keep it that way.**
+
+---
+
+The upstream one-screen block below is copied verbatim. Its logical table names
+map in this repo to the live schema-qualified relations `tool.definition`,
+`tool.executor`, `tool.binding`, `tool.surface_defaults`, and `ui.ui_surface`.
+
+## Canonical vocabulary — the one-screen version
+
+Copy this block verbatim into any repo that needs it. Do not paraphrase; paraphrase is how drift starts.
+
+| Term | Means | Lives in |
+|---|---|---|
+| **Tool** | A named, versioned contract | `tool_def` (registered) or the request (inline) |
+| **Registered tool** | A tool with a durable `tool_def` row | `tool_def` |
+| **Inline tool** | A tool declared on the request, no DB row — for tools authored at runtime. Permanently supported | the request |
+| **Executor** | An addressable runtime that can dispatch tool calls | `tool_executor` |
+| **Binding** | This executor can run this tool. Nothing else, ever | `tool_binding` |
+| **Client** | The application hosting surfaces | `ui_client` |
+| **Surface** | A page or panel within a client | `ui_surface` |
+| **Surface defaults** | Per-surface include/exclude rules | `tool_surface_defaults` |
+| **Arming** | Turning a tool on for one conversation, at runtime, from the component holding the state it needs | request `client_tools` |
+| **Bundle** | A labeled tool collection; a shortcut in surface defaults | `tool_bundle` |
+| **Gate** | A boolean function deciding if a tool may run | name in `tool_def.gating`, code in `matrx_ai.tools.gates.*` |
+
+**Two paths to existence:** registered (durable) · inline (runtime-authored). Both permanent. Durability decides which.
+
+**Three questions about reach, never conflated:** *where can the code run?* → Executor · *where is it offered?* → Surface · *is it live right now?* → Arming.
+
+## Changelog
+
+- 2026-08-09 — **Vocabulary hardening.** Named the two paths to existence (**registered** vs **inline**) and killed the "database is the only source of truth" claim: inline tools are a permanent, first-class capability so agents and users can author tools on the fly, and the doctrine that suppressed them is what pushed durable tools onto the inline path. Added the **durability rule** (did it exist before the request? no → inline; yes → register). Named the previously-anonymous fourth mechanism **Arming** (adopted from the term already used organically in matrx-frontend), and added the three-questions-about-reach table separating Executor / Surface / Arming. New hard rules R16 (UI-state tools are armed, never ambient — so "not every tool is global" is visible in the system rather than folklore) and R17 (the word "binding" is reserved for `tool_binding`). Five new code-review anti-patterns. Ruling on sub-executors: a page needing different tools is Surface defaults or Arming, never a sub-executor — there is no second runtime to point at.

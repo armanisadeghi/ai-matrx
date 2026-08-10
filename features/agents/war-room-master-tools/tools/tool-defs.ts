@@ -2,12 +2,12 @@
  * War Room MASTER INLINE tool definitions — the model-facing `{name,
  * description, input_schema}` for each master tool.
  *
- * Emitted as `ToolSpecInline` (`kind:"inline"`) on the master agent's request
- * (see build-tool-injection.ts `isWarRoomMasterToolName` branch). Inline specs
- * let the server offer a client-delegated tool it doesn't know about — exactly
- * right here: the `war_room_*` master names are NOT in the server registry, so
- * declaring them inline is what makes the master able to call them with NO
- * server-side change.
+ * Currently emitted as Inline tools (`kind:"inline"`) on the master request
+ * and armed per conversation via wire `client_tools`. Inline tools are a
+ * permanent, first-class path, but these durable definitions ship in this repo
+ * and therefore SHOULD be Registered tools in `tool.definition`. That known
+ * durability-rule violation is left for a separate registration migration;
+ * this file describes the current state, not the intended endpoint.
  *
  * PROVIDER-SAFE SCHEMAS (matches war-room-tools/tools/tool-defs.ts and commit
  * "keep inline tool schemas provider-safe"): every property is a plain

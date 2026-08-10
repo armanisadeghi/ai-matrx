@@ -13,21 +13,40 @@ The AI loop decides what tool to call. The server normally executes it. If you t
 3. Waits for you to POST the result back.
 4. Resumes the loop with your result and continues.
 
-There is one control knob: the `client_tools` array in the request body. Any tool name in that array is delegated. Everything else runs on the server.
+This per-conversation switch is **Arming**. Its wire field is `client_tools`;
+frontend state lives in the `instanceClientTools` slice; aidream consumes it in
+`tool_merge.py`. Arming is not a Binding and does not describe which Client is
+running. It says only that this tool is live for this conversation right now.
 
 ---
 
-## Two ways to register a client-handled tool
+## Two permanent paths to tool existence
 
-### 1. Database-registered tool (recommended, shared across users)
+### 1. Registered tool
 
-The tool exists in `tool.definition` like any other tool — same schema, same `parameters`, `description`, etc. It is **not** marked specially in the DB. To make a specific request treat it as client-handled, include its name in `client_tools`.
+A Registered tool has a durable row in `tool.definition`. To arm it for one
+conversation, include its name in `client_tools`.
 
-> **Important:** there is no "always client-handled" flag on the tool row today. It is a per-request decision. If you always want a given DB tool delegated, the frontend is responsible for always adding it to `client_tools`. See the [Open question](#open-question-mark-db-tools-as-client-handled-permanently) section at the bottom.
+There is no "always client-handled" flag on the definition. Execution reach is
+represented by a Binding to an Executor; default offering is represented by
+Surface defaults; live UI availability is represented by Arming. Do not merge
+those three questions into a tool-row flag.
 
-### 2. Inline custom tool (one-off or client-only tool)
+### 2. Inline tool
 
-Pass a `custom_tools: [...]` array in the request. Each entry follows the MCP `Tool` spec. **You do not need to add its name to `client_tools`** — custom tools are **always** delegated back to the caller (that's their entire purpose; the server has no implementation for them).
+An Inline tool is declared on the request and has no DB row. Inline tools are a
+permanent, first-class capability for tools authored by an agent or user at
+runtime. Never remove or discourage this path.
+
+Durability decides which path is correct: did the tool exist before the request
+arrived? No means Inline tool. Yes means Registered tool. A code-defined tool
+that ships in this repo is durable and belongs in `tool.definition`, even if its
+current implementation still sends an inline spec.
+
+On the legacy wire, pass an inline definition in `custom_tools`; inline tools
+are delegated to the caller because the server has no implementation for them.
+The current frontend funnels both paths through `buildToolInjection` as
+`ToolSpec` entries (`kind: "registered"` or `kind: "inline"`).
 
 ```ts
 custom_tools: [
@@ -153,7 +172,8 @@ Response:
 
 **Timing:** the server does NOT hold a connection open waiting for you — a delegated call HARD-SUSPENDS the loop (the stream ends) and the turn is persisted as `paused`. You may answer in seconds, minutes, hours, or weeks; when you POST results the server returns `continuation_needed` and you open `/resume`. The only timeout is a far-future server-side **abandonment backstop** on `cx_tool_call.expires_at` (default 30 days, per-tool override via `tools.max_client_wait_seconds`) — and even an expired call is superseded by a late genuine answer. The client never enforces its own answer deadline. (For *long-running* local work, still prefer a background job + short-circuit so the user isn't staring at a spinner.)
 
-**The AI loop continues on the same stream** you're already reading. You do NOT open a new stream after posting results.
+The original stream has ended. If the callback says continuation is needed,
+open the conversation's `/resume` stream.
 
 ---
 
@@ -178,7 +198,9 @@ POST /ai/manual                 ───▶
 POST /ai/conversation/{id}/tool_results ───▶
   { results: [{ call_id:"call_abc123", tool_name:"write_file",
                 output:"wrote 128 bytes" }] }
-                              ◀───   { resolved:["call_abc123"], count:1 }
+                              ◀───   { resolved:["call_abc123"], count:1,
+                                      continuation_needed:true }
+POST /ai/conversation/{id}/resume ───▶
                                      [AI loop resumes — streams more events]
                               ◀───   chunk, tool_event(...), ... end
 ```
@@ -187,13 +209,13 @@ POST /ai/conversation/{id}/tool_results ───▶
 
 ## Quick reference — what to implement
 
-1. **Register tool names** you handle locally:
-   - DB tool → add its exact `name` to `client_tools` on every request where it should be delegated.
-   - Inline tool → put it in `custom_tools` (no `client_tools` entry needed).
+1. **Choose the correct existence path**:
+   - Registered tool → durable `tool.definition` row; arm its exact name in `client_tools` when live UI state is required.
+   - Inline tool → declare its full contract on the request.
 2. **Listen for** `tool_event` with `event === "tool_delegated"`. Use `ToolDelegatedToolEvent` from `stream-events.ts`.
 3. **Execute** using `payload.data.arguments`.
 4. **POST** to `/ai/conversation/{conversation_id}/tool_results` with the same `call_id`.
-5. **Keep reading the same stream** — the AI loop resumes automatically.
+5. **Resume when requested** — open the conversation's `/resume` stream after posting results.
 
 ---
 
@@ -201,8 +223,8 @@ POST /ai/conversation/{id}/tool_results ───▶
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `404 not_found` from tool_results POST | `call_id` genuinely unknown — a stale POST or wrong client (NOT a normal timeout: a delegated row lives ~30 days and a late answer is accepted/superseded) | Don't POST a `call_id` the server never delegated; the stream stays alive |
-| Stream ends before you POST | AI loop hit a `client_tool_timeout` error and the model finished without you | Execute faster, or adjust the tool's wait policy in `tool.definition` |
+| `404 not_found` from tool_results POST | `call_id` genuinely unknown — a stale POST or wrong client (NOT a normal timeout: a delegated row lives ~30 days and a late answer is accepted/superseded) | Don't POST a `call_id` the server never delegated; surface the stale callback loudly |
+| Resume does not start | The result callback did not request continuation, or the conversation is no longer paused | Inspect the callback envelope and current conversation state before opening `/resume` |
 | Tool invoked but never delegated | Tool name was not in `client_tools`, or inline `custom_tools` entry had a different name than what the model called | Verify `client_tools` contains the *exact* tool `name`; for `custom_tools`, the `name` field *is* what the model sees |
 | `is_error: true` result | Your local executor reported an error | Include `error_message`; the server feeds it back to the model as a tool error and the loop continues gracefully |
 
@@ -222,16 +244,16 @@ Request/response types for the endpoints are in `aidream/api/generated/api-types
 
 ---
 
-## Open question: mark DB tools as "client-handled" permanently?
+## Reach: answer the right question
 
-Today, if you want a DB-registered tool to always be executed client-side, the frontend has to remember to include its name in `client_tools` on every request. There is no `is_client_handled` column on `tool.definition`.
+| Question | Concept | Lifetime |
+|---|---|---|
+| Where can this code run? | Executor via Binding | Durable |
+| Where is it offered by default? | Surface via Surface defaults | Durable |
+| Is it live for this conversation right now? | Arming via `client_tools` | Per-conversation |
 
-If we want a "set it once, forget it" story for DB tools, the cleanest addition is:
-
-- Add `tool.definition.execution_side` (`'server' | 'client'`, default `'server'`).
-- When the registry loads a row with `execution_side = 'client'`, the executor auto-delegates even if the name isn't in the request's `client_tools`.
-
-**This change has not been made yet — flag it if you want it and we'll add the column + type regeneration in one pass.** For now: just include the tool name in `client_tools` per request.
+A page needing a different set of tools does not justify a sub-executor. Use
+Surface defaults for durable inclusion or Arming when live UI state is required.
 
 ---
 

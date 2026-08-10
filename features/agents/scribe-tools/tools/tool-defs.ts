@@ -2,11 +2,11 @@
  * Scribe INLINE tool definitions — the model-facing `{name, description,
  * input_schema}` for each scribe tool.
  *
- * Emitted as `ToolSpecInline` (`kind:"inline"`) on the agent request (see
- * build-tool-injection.ts). Inline specs are the supported way to offer a
- * client-delegated tool the server has NO registry entry for: the server adds
- * it to the model's tool list with the supplied JSON Schema and emits
- * `tool_delegated` when called — no server-side registration needed.
+ * Currently emitted as an Inline tool (`kind:"inline"`) on the request and
+ * armed per conversation through wire `client_tools`. Inline tools are a
+ * permanent, first-class path, but this durable definition ships in the repo
+ * and therefore SHOULD be a Registered tool in `tool.definition`. That known
+ * durability-rule violation is left for a separate registration migration.
  *
  * The JSON Schemas are hand-written and MUST stay in lockstep with the Zod
  * validators in `schemas.ts` (the Zod schema is the runtime gate; this is what

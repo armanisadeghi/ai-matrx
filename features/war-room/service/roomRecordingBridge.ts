@@ -8,7 +8,7 @@
 // down; the remounted pad re-attaches through this bridge + the recordings
 // slice (ownership is keyed by the studio session id, not a component mount).
 //
-// Same module-registry pattern as `war-room-tools/binding-registry.ts` and
+// Same module-registry pattern as `war-room-tools/thread-target-registry.ts` and
 // `threadFileRagCache.ts` — an imperative handle that must be reachable from
 // any pad instance regardless of where it sits in the React tree (grid tile,
 // stage, combined view). Observable STATE lives in Redux (`warRoom.audioRecording`

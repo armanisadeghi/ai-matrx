@@ -2,8 +2,9 @@
 /**
  * Tool-drift gate — the matrx-frontend half of the unified code↔DB system.
  *
- * The DATABASE (`tool.definition`) is the single source of truth. This gate proves
- * the ACTUAL CODE matches it: it serializes the REAL Zod `argsSchema` of every
+ * `tool.definition` is the source of truth for REGISTERED tool contracts. This
+ * gate proves the ACTUAL CODE for this registered set matches it: it serializes
+ * the REAL Zod `argsSchema` of every
  * UI-first tool — the exact schema the dispatcher validates against at
  * features/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk.ts
  * (`entry.schema.safeParse`) — and diffs it against
@@ -33,10 +34,15 @@
  *   1  drift found (code ≠ DB)
  *   2  unexpected error / DB fetch failed
  *
- * When it fires: the DB is the source of truth, so bring the handler's Zod
- * (features/agents/ui-first-tools/tools/schemas.ts) to match `tool.definition` —
- * or, if the DB itself is wrong, change it (admin API / migration), then match
- * code. Never push code→DB silently.
+ * Inline tools are the other permanent, first-class path and have no DB row;
+ * this registered-tool gate intentionally does not inspect them. Durability is
+ * the divider: a tool that existed before the request belongs in
+ * `tool.definition`; a tool authored at request time belongs inline.
+ *
+ * When it fires: reconcile the registered contract deliberately. Bring the
+ * handler's Zod schema to match `tool.definition`, or if the registered row is
+ * wrong, change it through the admin API / migration and then match code. Never
+ * push code→DB silently.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";

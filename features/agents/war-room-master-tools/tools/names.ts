@@ -7,8 +7,8 @@
  *   - the predicate `isWarRoomMasterToolName` used by `surfaceDelegatedToolCall`
  *     to route `tool_delegated` events to the master dispatcher (parallel to
  *     `isWarRoomToolName` for the per-tile war-room tools).
- *   - the inline tool defs in `tools/tool-defs.ts` (declared on the request so
- *     the server can offer them WITHOUT a server-side registry change).
+ *   - the current Inline tool defs in `tools/tool-defs.ts` (a known durability
+ *     deviation pending a separate Registered-tool migration).
  *   - the dispatch registry in `tools/registry.ts`.
  *   - per-conversation arming: `useMasterAgent` calls
  *     `setClientTools({ conversationId: masterConvId, tools: WAR_ROOM_MASTER_TOOL_NAMES })`
@@ -21,8 +21,8 @@
  * armed one family never accidentally dispatches the other.
  *
  * READING FILES IS A SERVER TOOL: an attached file's extracted text is read by
- * the server-side `file_read` tool (armed on the three War Room
- * agent.definition rows — no client arming, no per-file manifest plumbing, no
+ * the server-side `file_read` Registered tool (included on the three War Room
+ * agent.definition rows — no Arming, no per-file manifest plumbing, no
  * hard-suspend). The client-delegated `war_room_read_file` was deleted (D15).
  *
  * REUSED ON THE TILE AGENT: the read-only members (`war_room_read_thread`,

@@ -81,9 +81,9 @@ import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrac
 import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 import { WAR_ROOM_TOOL_NAMES } from "@/features/agents/war-room-tools/tools/names";
 import {
-  registerWarRoomToolBinding,
-  clearWarRoomToolBinding,
-} from "@/features/agents/war-room-tools/binding-registry";
+  registerWarRoomThreadTarget,
+  clearWarRoomThreadTarget,
+} from "@/features/agents/war-room-tools/thread-target-registry";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildWarRoomThreadScope } from "@/features/war-room/lib/war-room-scope";
 
@@ -346,19 +346,19 @@ export default function ThreadAgentPanel({
   // ── Arm the War Room WRITE tools on THIS conversation only ───────────────
   // The war-room agent is the same studio-assistant agent used by Scribe; the
   // ONLY thing that lets it EDIT the tile (vs just see it) is arming the
-  // war_room_* client tools here + binding the tile so the handlers know which
-  // tile to mutate. Scribe never mounts this panel, so its conversation stays
+  // war_room_* client tools here + registering the thread target so handlers
+  // know what they may mutate. Scribe never mounts this panel, so its conversation stays
   // read-only. buildToolInjection reads instanceClientTools on every turn and
   // declares these as delegated tools; the server then offers them to the agent
   // and emits `tool_delegated` when one is called (routed to the war-room
   // dispatcher, which gates the write behind the user's approval).
   useEffect(() => {
     if (!conversationId) return undefined;
-    registerWarRoomToolBinding(conversationId, threadId);
+    registerWarRoomThreadTarget(conversationId, threadId);
     dispatch(
       setClientTools({
         conversationId,
-        // Plus the read-only master-family members (no tile binding, no HITL —
+        // Plus the read-only master-family members (no thread target, no HITL —
         // routed to the read dispatcher by name): war_room_read_thread to read
         // ANOTHER thread's chain by its tile id, and war_room_read_resource to
         // read ANY <resources> row (any registered entity type) or a
@@ -375,7 +375,7 @@ export default function ThreadAgentPanel({
       }),
     );
     return () => {
-      clearWarRoomToolBinding(conversationId, threadId);
+      clearWarRoomThreadTarget(conversationId, threadId);
       // Disarm on unmount so a later non-war-room use of the same conversation
       // (should never happen — it's durable per session — but be exact) doesn't
       // keep these tools offered.
