@@ -10,6 +10,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { supabase } from "@/utils/supabase/client";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import { isJsonRecord, type CrawlEvent } from "@/features/marketing/types";
+import type { CrawlRenderMode } from "@/features/marketing/crawler/crawl-options";
 
 /**
  * Feed every scraper-boundary failure to the admin Error Inspector.
@@ -56,8 +57,8 @@ export interface CrawlStartOptions {
   include_patterns: string[];
   exclude_patterns: string[];
   politeness_delay_ms: number;
-  render_mode:
-    "http_only" | "http_first" | "browser_always" | "browser_with_screenshot";
+  /** Derived from `CRAWL_RENDER_MODES` — the vocabulary cannot drift. */
+  render_mode: CrawlRenderMode;
   capture_screenshots: boolean;
   screenshot_kinds: string[];
   seed_urls: string[];

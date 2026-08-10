@@ -34,6 +34,16 @@ import {
   invalidCrawlPatterns,
   parsePatternLines,
 } from "@/features/marketing/crawler/crawl-defaults";
+import {
+  CRAWL_COMMAND_TOGGLES,
+  CRAWL_COMMAND_TOGGLE_LABELS,
+  CRAWL_CONCURRENCY_BOUNDS,
+  CRAWL_MAX_PAGES_BOUNDS,
+  CRAWL_RENDER_MODES,
+  CRAWL_RENDER_MODE_LABELS,
+  isCrawlRenderMode,
+  type CrawlCommandToggle,
+} from "@/features/marketing/crawler/crawl-options";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -47,6 +57,98 @@ type RunStatus =
   | "failed";
 
 // Site crawl defaults round-trip ONLY through crawler/crawl-defaults.ts.
+
+/**
+ * The one-line explanation under each toggle. Keyed by the shared
+ * `CrawlCommandToggle` union, so a toggle added to the vocabulary fails the
+ * build here until it gets its copy — the checkboxes, the manifest's
+ * `crawl_options` description, and the write handler stay the same set.
+ * Labels themselves are canonical in `crawler/crawl-options.ts`.
+ */
+const TOGGLE_DETAIL: Record<CrawlCommandToggle, string> = {
+  seed_from_sitemap: "Add sitemap URLs to the discovery queue.",
+  follow_subdomains: "Treat subdomains as crawlable scope.",
+  capture_screenshots: "Store page visuals for later vision analysis.",
+  respect_robots: "Off by default for authorized first-party crawls.",
+};
+
+/**
+ * The `crawl_options` write target's accepted keys — exactly the controls this
+ * form renders, from the same vocabulary the manifest interpolates into the
+ * target description. Anything else (max_depth, host_rps, seed_urls, …) has no
+ * control here, so staging it would put a value in front of a user who cannot
+ * see or correct it.
+ */
+const OPTION_KEYS: readonly string[] = [
+  "max_pages",
+  "concurrency",
+  "render_mode",
+  ...CRAWL_COMMAND_TOGGLES,
+];
+
+/** Integer bound check that THROWS — the seam turns it into the agent's error. */
+function stagedInteger(
+  raw: unknown,
+  key: string,
+  bounds: { min: number; max: number },
+): number {
+  if (
+    typeof raw !== "number" ||
+    !Number.isInteger(raw) ||
+    raw < bounds.min ||
+    raw > bounds.max
+  ) {
+    throw new Error(
+      `crawl_options: ${key} must be an integer between ${bounds.min} and ${bounds.max}.`,
+    );
+  }
+  return raw;
+}
+
+function stagedBoolean(raw: unknown, key: string): boolean {
+  if (typeof raw !== "boolean") {
+    throw new Error(`crawl_options: ${key} must be true or false.`);
+  }
+  return raw;
+}
+
+/**
+ * Validate a pattern-list write and return the lines to stage. Patterns run
+ * through the SAME `invalidCrawlPatterns` gate as the user's typing — the one
+ * that exists because the server historically accepted broken regexes and
+ * silently skipped them, widening a crawl the user thought was constrained.
+ */
+function stagedPatterns(
+  target: string,
+  field: "include_patterns" | "exclude_patterns",
+  value: unknown,
+): string[] {
+  if (!Array.isArray(value)) {
+    throw new Error(
+      `${target} expects an array of regex strings (empty array clears the list).`,
+    );
+  }
+  const patterns = value.map((entry, index) => {
+    if (typeof entry !== "string") {
+      throw new Error(
+        `${target}: entry ${index} must be a string, got ${typeof entry}.`,
+      );
+    }
+    return entry;
+  });
+  const problems = invalidCrawlPatterns({
+    include_patterns: field === "include_patterns" ? patterns : [],
+    exclude_patterns: field === "exclude_patterns" ? patterns : [],
+  });
+  if (problems.length) {
+    throw new Error(
+      `${target}: invalid pattern(s) — ${problems
+        .map((problem) => `"${problem.pattern}" (${problem.error})`)
+        .join("; ")}.`,
+    );
+  }
+  return patterns;
+}
 
 export function NewCrawlWorkspace() {
   const { site, sitePath, crawlActivity } = useMarketingSite();
@@ -180,9 +282,106 @@ export function NewCrawlWorkspace() {
     }
   };
 
+  /**
+   * Write half of `matrx-user/marketing-crawls` (manifest `writeTargets`).
+   * Registered from THIS mount only — the sessions table registers none, so
+   * the targets are simply not offered there.
+   *
+   * Everything lands through the same `setOptions` / `setIncludeText` /
+   * `setExcludeText` setters the user's own typing uses, so the staged command
+   * is visible, editable, and thrown away by a reload like any other draft.
+   * Starting the crawl is deliberately not a target: `start()` spends real
+   * time against the client's server, and the human presses Start crawl.
+   */
+  const getSurfaceWriteHandlers = () => ({
+    crawl_options: (value: unknown) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value)) {
+        throw new Error(
+          `crawl_options expects an object with any of: ${OPTION_KEYS.join(" | ")}.`,
+        );
+      }
+      if (controlsDisabled) {
+        throw new Error(
+          "crawl_options: the launch form is locked while a crawl is running or the activity feed is erroring — nothing can be staged right now.",
+        );
+      }
+      const patch = value as Record<string, unknown>;
+      const keys = Object.keys(patch);
+      if (keys.length === 0) {
+        throw new Error("crawl_options needs at least one setting to stage.");
+      }
+      const unknown = keys.filter((key) => !OPTION_KEYS.includes(key));
+      if (unknown.length > 0) {
+        throw new Error(
+          `crawl_options does not accept: ${unknown.join(", ")}. Allowed keys: ${OPTION_KEYS.join(" | ")}.`,
+        );
+      }
+
+      // Validate the WHOLE payload before touching state — a half-applied
+      // command is worse than a rejected one.
+      const next: Partial<CrawlStartOptions> = {};
+      if ("max_pages" in patch) {
+        next.max_pages = stagedInteger(
+          patch.max_pages,
+          "max_pages",
+          CRAWL_MAX_PAGES_BOUNDS,
+        );
+      }
+      if ("concurrency" in patch) {
+        next.concurrency = stagedInteger(
+          patch.concurrency,
+          "concurrency",
+          CRAWL_CONCURRENCY_BOUNDS,
+        );
+      }
+      if ("render_mode" in patch) {
+        if (!isCrawlRenderMode(patch.render_mode)) {
+          throw new Error(
+            `crawl_options: render_mode must be one of ${CRAWL_RENDER_MODES.join(" | ")}.`,
+          );
+        }
+        next.render_mode = patch.render_mode;
+      }
+      for (const key of CRAWL_COMMAND_TOGGLES) {
+        if (key in patch) next[key] = stagedBoolean(patch[key], key);
+      }
+
+      setOptions((current) => ({ ...current, ...next }));
+    },
+
+    crawl_include_patterns: (value: unknown) => {
+      if (controlsDisabled) {
+        throw new Error(
+          "crawl_include_patterns: the launch form is locked while a crawl is running — nothing can be staged right now.",
+        );
+      }
+      const patterns = stagedPatterns(
+        "crawl_include_patterns",
+        "include_patterns",
+        value,
+      );
+      setIncludeText(patterns.join("\n"));
+    },
+
+    crawl_exclude_patterns: (value: unknown) => {
+      if (controlsDisabled) {
+        throw new Error(
+          "crawl_exclude_patterns: the launch form is locked while a crawl is running — nothing can be staged right now.",
+        );
+      }
+      const patterns = stagedPatterns(
+        "crawl_exclude_patterns",
+        "exclude_patterns",
+        value,
+      );
+      setExcludeText(patterns.join("\n"));
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-crawls"
+      getWriteHandlers={getSurfaceWriteHandlers}
       getScope={() =>
         createMarketingCrawlsScope({
           ...getBaseValues(),
@@ -221,8 +420,8 @@ export function NewCrawlWorkspace() {
                   </Label>
                   <ClampedNumberInput
                     id="crawl-max-pages"
-                    min={1}
-                    max={50_000}
+                    min={CRAWL_MAX_PAGES_BOUNDS.min}
+                    max={CRAWL_MAX_PAGES_BOUNDS.max}
                     value={options.max_pages}
                     disabled={controlsDisabled}
                     onChange={(value) => update("max_pages", value)}
@@ -238,8 +437,8 @@ export function NewCrawlWorkspace() {
                   </Label>
                   <ClampedNumberInput
                     id="crawl-concurrency"
-                    min={1}
-                    max={32}
+                    min={CRAWL_CONCURRENCY_BOUNDS.min}
+                    max={CRAWL_CONCURRENCY_BOUNDS.max}
                     value={options.concurrency}
                     disabled={controlsDisabled}
                     onChange={(value) => update("concurrency", value)}
@@ -256,71 +455,40 @@ export function NewCrawlWorkspace() {
                 <Select
                   value={options.render_mode}
                   disabled={controlsDisabled}
-                  onValueChange={(value) =>
-                    update(
-                      "render_mode",
-                      value as CrawlStartOptions["render_mode"],
-                    )
-                  }
+                  onValueChange={(value) => {
+                    if (isCrawlRenderMode(value)) update("render_mode", value);
+                  }}
                 >
                   <SelectTrigger className="h-8">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="http_first">
-                      HTTP, browser fallback
-                    </SelectItem>
-                    <SelectItem value="http_only">HTTP only</SelectItem>
-                    <SelectItem value="browser_always">
-                      Browser every page
-                    </SelectItem>
-                    <SelectItem value="browser_with_screenshot">
-                      Browser + screenshots
-                    </SelectItem>
+                    {CRAWL_RENDER_MODES.map((mode) => (
+                      <SelectItem key={mode} value={mode}>
+                        {CRAWL_RENDER_MODE_LABELS[mode]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {[
-                {
-                  key: "seed_from_sitemap" as const,
-                  label: "Seed from sitemap",
-                  detail: "Add sitemap URLs to the discovery queue.",
-                },
-                {
-                  key: "follow_subdomains" as const,
-                  label: "Follow subdomains",
-                  detail: "Treat subdomains as crawlable scope.",
-                },
-                {
-                  key: "capture_screenshots" as const,
-                  label: "Capture screenshots",
-                  detail: "Store page visuals for later vision analysis.",
-                },
-                {
-                  key: "respect_robots" as const,
-                  label: "Respect robots.txt",
-                  detail: "Off by default for authorized first-party crawls.",
-                },
-              ].map((item) => (
+              {CRAWL_COMMAND_TOGGLES.map((key) => (
                 <label
-                  key={item.key}
+                  key={key}
                   className="flex cursor-pointer items-start gap-2 rounded-md border border-border px-2.5 py-2"
                 >
                   <Checkbox
-                    checked={options[item.key]}
+                    checked={options[key]}
                     disabled={controlsDisabled}
-                    onCheckedChange={(checked) =>
-                      update(item.key, checked === true)
-                    }
+                    onCheckedChange={(checked) => update(key, checked === true)}
                     className="mt-0.5"
                   />
                   <span>
                     <span className="block text-xs font-medium">
-                      {item.label}
+                      {CRAWL_COMMAND_TOGGLE_LABELS[key]}
                     </span>
                     <span className="block text-[10px] leading-4 text-muted-foreground">
-                      {item.detail}
+                      {TOGGLE_DETAIL[key]}
                     </span>
                   </span>
                 </label>
