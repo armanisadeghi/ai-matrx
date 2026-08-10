@@ -125,15 +125,13 @@ import {
 } from "@/features/rag/agent-context/buildRagSearchContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
-  MULTI_QUERY_DEFAULT,
+  FILTERABLE_SOURCE_KIND_ENUM_TEXT,
   MULTI_QUERY_MAX,
   MULTI_QUERY_MIN,
-  SOURCE_KIND_FILTERS,
-  SOURCE_KIND_FILTER_BY_VALUE,
-  SOURCE_KIND_FILTER_ENUM_TEXT,
-  isSourceKindFilter,
+  SEARCH_FILTER_BY_SOURCE_KIND,
+  SEARCH_SOURCE_KIND_FILTERS,
+  isFilterableSourceKind,
   isValidMultiQuery,
   type SourceKindFilter,
 } from "@/features/rag/search-controls";
@@ -189,7 +187,11 @@ const RAG_AGENT_TOOL_IDS = [
 // Shared
 // ===========================================================================
 
-/** Hits requested per Search-tab search. Emitted as the surface's `result_limit`. */
+/**
+ * Hits requested per Search-tab search. Emitted as the surface's
+ * `result_limit`. A constant, not a control — which is why `result_limit` has
+ * no write target (see the manifest's `writeTargets` docblock).
+ */
 const SEARCH_TAB_RESULT_LIMIT = 25;
 
 /** Max length the `search_query` write target accepts from an agent. */
@@ -579,7 +581,7 @@ function ScopeSidebar({
                   MULTI_QUERY_MIN,
                   Math.min(
                     MULTI_QUERY_MAX,
-                    Number(e.target.value) || MULTI_QUERY_DEFAULT,
+                    Number(e.target.value) || MULTI_QUERY_MIN,
                   ),
                 ),
               )
@@ -650,9 +652,11 @@ function KindToggle({
   value: SourceKindFilter;
   onChange: (v: SourceKindFilter) => void;
 }) {
+  // Rendered from the shared vocabulary, so the positions the user can click
+  // are exactly the ones the `retrieval_source_kinds` write target accepts.
   return (
     <div className="flex items-center rounded-md border p-0.5 text-[11px]">
-      {SOURCE_KIND_FILTERS.map((o) => (
+      {SEARCH_SOURCE_KIND_FILTERS.map((o) => (
         <button
           key={o.value}
           type="button"
@@ -988,67 +992,114 @@ function SearchTab({
       selectionRange: null,
       contextData,
     });
-  // ── Write half of the RAG Search surface (manifest `writeTargets`) ───────
-  // An agent may STAGE the next search — the query text and how hard the
-  // pipeline looks for it. It may never touch the retrieval SCOPE (data store,
-  // source kinds, working-context org/scopes, ACL bypass): that is what the
-  // search is ALLOWED to see, and nothing here declares a target for it, so
-  // the seam refuses those by name. Running the search stays the user's press.
+  // ── Write half of the rag-search surface (manifest `writeTargets`) ───────
+  // An agent may STAGE the next retrieval query, its scope, and its pipeline
+  // knobs; it may never run the search (that spends embedding/rerank/HyDE
+  // calls, and the agent has its own knowledge_search tool anyway) and it may
+  // never touch a result — those are retrieved evidence. Every handler
+  // validates against the SAME `search-controls` constants the manifest's
+  // contract prose is interpolated from and the sidebar renders, and THROWS on
+  // a bad shape (the writeback seam turns a throw into a safe error envelope
+  // the agent reads). Each handler dispatches the very setter the user's own
+  // typing/clicking uses — never a parallel write path.
   //
-  // Both handlers validate against the SAME `search-pipeline` constants the
-  // manifest's contract prose is interpolated from, and THROW on a bad shape
-  // (the writeback seam turns a throw into a safe error envelope the agent
-  // reads). Every setter below is a stable useState setter and nothing is read
-  // off this closure, so a turn that stages both targets cannot half-apply one
-  // against a stale snapshot — and the five interdependent pipeline dials are
-  // ONE object target, resolved in a single call.
+  // No in-flight guard here, unlike the scraper: this form's inputs stay
+  // enabled while a search runs (the user can retype mid-flight), so refusing
+  // an agent would be stricter than the human path for no reason.
   const getSurfaceWriteHandlers = () => ({
     search_query: (value: unknown) => {
       if (typeof value !== "string")
+        throw new Error("search_query expects a string.");
+      if (!value.trim())
         throw new Error(
-          `search_query expects a plain text string, got ${Array.isArray(value) ? "an array" : typeof value}. Send the query words themselves as text — not JSON, and not an object.`,
+          "search_query expects a non-empty string — a blank query cannot be searched.",
         );
-      const next = value.trim();
-      if (!next) throw new Error("search_query expects a non-empty string.");
-      if (next.length > SEARCH_QUERY_MAX_CHARS)
-        throw new Error(
-          `search_query is limited to ${SEARCH_QUERY_MAX_CHARS} characters (got ${next.length}). Send the query, not the document.`,
-        );
-      setQuery(next);
+      setQuery(value);
     },
-    retrieval_pipeline: (value: unknown) => {
+    retrieval_data_store: (value: unknown) => {
+      // null is the real "All accessible content" selection, not a clear-to-
+      // nothing: it searches everything the user can see.
+      if (value === null) {
+        scope.setStoreId(null);
+        return;
+      }
+      if (typeof value !== "string" || !value.trim())
+        throw new Error(
+          "retrieval_data_store expects a data-store UUID string, or null for \"All accessible content\".",
+        );
+      if (scope.stores.loading)
+        throw new Error(
+          "retrieval_data_store is unavailable while the data-store list is still loading — the id cannot be checked against what the user actually has. Try again shortly.",
+        );
+      const match = scope.stores.stores.find((s) => s.id === value);
+      if (!match)
+        throw new Error(
+          `retrieval_data_store got "${value}", which is not one of this user's data stores. Choose an id from the available_data_stores value (${
+            scope.stores.stores.length
+          } available), or send null for "All accessible content".`,
+        );
+      scope.setStoreId(match.id);
+    },
+    retrieval_source_kinds: (value: unknown) => {
+      if (!Array.isArray(value))
+        throw new Error(
+          `retrieval_source_kinds expects an array of source kinds (${FILTERABLE_SOURCE_KIND_ENUM_TEXT}), or [] to clear the filter to "All".`,
+        );
+      // The toggle is single-select, so a longer list has no position that
+      // could render it. Refuse rather than silently keeping the first entry.
+      if (value.length > 1)
+        throw new Error(
+          `retrieval_source_kinds got ${value.length} kinds, but this surface's source-kind toggle is single-select and can show at most one. Send one kind, or [] to clear the filter to "All".`,
+        );
+      if (value.length === 0) {
+        scope.setKindFilter("all");
+        return;
+      }
+      const [kind] = value;
+      if (!isFilterableSourceKind(kind))
+        throw new Error(
+          `retrieval_source_kinds got "${String(kind)}", which this surface's toggle cannot select. Allowed: ${FILTERABLE_SOURCE_KIND_ENUM_TEXT}. Content of other kinds is reached through the data store scope instead.`,
+        );
+      const filter = SEARCH_FILTER_BY_SOURCE_KIND[kind];
+      if (!filter)
+        throw new Error(
+          `retrieval_source_kinds has no toggle position for "${kind}".`,
+        );
+      scope.setKindFilter(filter.value);
+    },
+    retrieval_tuning: (value: unknown) => {
       if (typeof value !== "object" || value === null || Array.isArray(value))
         throw new Error(
-          `retrieval_pipeline expects an object with any of: ${PIPELINE_PATCH_KEYS.join(", ")}. Send it as structured data, not as a JSON string.`,
+          "retrieval_tuning expects an object: { rerank?, use_hyde?, multi_query?, expand_entity_clusters? }.",
         );
       const patch = value as Record<string, unknown>;
+      const accepted = [
+        "rerank",
+        "use_hyde",
+        "multi_query",
+        "expand_entity_clusters",
+      ];
       const unsupported = Object.keys(patch).filter(
-        (key) => !PIPELINE_PATCH_KEYS.includes(key),
+        (key) => !accepted.includes(key),
       );
       if (unsupported.length > 0)
         throw new Error(
-          `retrieval_pipeline got unsupported key(s): ${unsupported.join(", ")}. Accepted keys: ${PIPELINE_PATCH_KEYS.join(" | ")}. The retrieval scope (data store, source kinds, organization, scopes, ACL bypass) is not writable on this surface — it decides what the search is permitted to see.`,
+          `retrieval_tuning got unsupported key(s): ${unsupported.join(", ")}. Accepted keys: ${accepted.join(" | ")}.`,
         );
-      if (!PIPELINE_PATCH_KEYS.some((key) => key in patch))
+      if (!accepted.some((key) => key in patch))
         throw new Error(
-          `retrieval_pipeline needs at least one of: ${PIPELINE_PATCH_KEYS.join(" | ")}.`,
+          `retrieval_tuning needs at least one of: ${accepted.join(" | ")}.`,
         );
 
       // Validate EVERY key before any state moves — a rejected key must never
-      // leave half a settings change staged in the sidebar.
-      for (const key of PIPELINE_FLAG_KEYS) {
+      // leave a half-applied strategy staged in the sidebar.
+      for (const key of ["rerank", "use_hyde", "expand_entity_clusters"]) {
         if (key in patch && typeof patch[key] !== "boolean")
-          throw new Error(
-            `retrieval_pipeline.${key} expects a boolean (true or false).`,
-          );
+          throw new Error(`retrieval_tuning.${key} expects a boolean.`);
       }
       if ("multi_query" in patch && !isValidMultiQuery(patch.multi_query))
         throw new Error(
-          `retrieval_pipeline.multi_query expects a whole number from ${MULTI_QUERY_MIN} to ${MULTI_QUERY_MAX} (${MULTI_QUERY_MIN} = no expansion).`,
-        );
-      if ("result_limit" in patch && !isValidResultLimit(patch.result_limit))
-        throw new Error(
-          `retrieval_pipeline.result_limit expects a whole number from ${RESULT_LIMIT_MIN} to ${RESULT_LIMIT_MAX} (default ${RESULT_LIMIT_DEFAULT}).`,
+          `retrieval_tuning.multi_query expects an integer from ${MULTI_QUERY_MIN} to ${MULTI_QUERY_MAX}.`,
         );
 
       if ("rerank" in patch) scope.setRerank(patch.rerank as boolean);
@@ -1057,8 +1108,6 @@ function SearchTab({
         scope.setExpandClusters(patch.expand_entity_clusters as boolean);
       if ("multi_query" in patch)
         scope.setMultiQuery(patch.multi_query as number);
-      if ("result_limit" in patch)
-        scope.setResultLimit(patch.result_limit as number);
     },
   });
 
@@ -1222,11 +1271,14 @@ function SearchTab({
 
   return (
     // Registers the live retrieval scope + last results for the header Agents
-    // chrome. Mounted INSIDE the Search tab (deepest provider wins) so the
-    // scope it publishes always carries the query and results on screen.
+    // chrome, and the write handlers behind the manifest's `writeTargets`.
+    // Mounted INSIDE the Search tab (deepest provider wins) so the scope it
+    // publishes always carries the query and results on screen — and so the
+    // write targets are offered only on the tab that actually has a search box.
     <SurfaceRuntimeProvider
       surfaceName={RAG_SEARCH_SURFACE}
       getScope={getResultsApplicationScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
       isEditable={false}
       getWriteHandlers={buildWriteHandlers}
     >
