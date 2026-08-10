@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   BookOpen,
   CheckCircle2,
+  FileUp,
   Hammer,
   ChevronDown,
   ChevronRight,
@@ -35,6 +36,7 @@ import {
   type PrincipleSeverity,
 } from "../../types";
 import { CompileDeskDialog } from "./CompileDeskDialog";
+import { IngestSourceDialog } from "./IngestSourceDialog";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 
 /**
@@ -182,6 +184,7 @@ export function PackDetailPage({ packId }: { packId: string }) {
   const [editorSection, setEditorSection] = useState<string | undefined>();
   const [confirmActivate, setConfirmActivate] = useState(false);
   const [compileOpen, setCompileOpen] = useState(false);
+  const [ingestOpen, setIngestOpen] = useState(false);
   const userId = useAppSelector(selectUserId);
 
   useEffect(() => {
@@ -404,18 +407,29 @@ export function PackDetailPage({ packId }: { packId: string }) {
           className="h-8 max-w-xs"
         />
         {canEdit ? (
-          <Button
-            size="sm"
-            className="h-8"
-            onClick={() => {
-              setEditing(undefined);
-              setEditorSection(undefined);
-              setEditorOpen(true);
-            }}
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Add rule
-          </Button>
+          <>
+            <Button
+              size="sm"
+              className="h-8"
+              onClick={() => {
+                setEditing(undefined);
+                setEditorSection(undefined);
+                setEditorOpen(true);
+              }}
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Add rule
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={() => setIngestOpen(true)}
+            >
+              <FileUp className="mr-1 h-4 w-4" />
+              From a source
+            </Button>
+          </>
         ) : null}
       </div>
 
@@ -512,6 +526,18 @@ export function PackDetailPage({ packId }: { packId: string }) {
         onCompiled={() => {
           void listDesksForPack(pack.id)
             .then(setDesks)
+            .catch(() => undefined);
+        }}
+      />
+      <IngestSourceDialog
+        open={ingestOpen}
+        onOpenChange={setIngestOpen}
+        pack={pack}
+        onIngested={() => {
+          void getPack(pack.id)
+            .then((p) => {
+              if (p) setPack(p);
+            })
             .catch(() => undefined);
         }}
       />
