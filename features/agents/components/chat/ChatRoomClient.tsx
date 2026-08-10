@@ -38,7 +38,17 @@ import {
 } from "./agent-context/buildChatContextData";
 import { buildChatRunConfiguration } from "./agent-context/buildChatRunConfiguration";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  CHAT_CONVERSATION_TITLE_MAX,
+  CHAT_DRAFT_WRITE_MODES,
+  CHAT_INPUT_DRAFT_MAX,
+  isChatDraftWriteMode,
+} from "@/features/surfaces/manifests/chat.manifest";
+import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import {
   selectUserInputEntryExists,
   selectUserInputText,
@@ -561,10 +571,94 @@ export function ChatRoomClient({
     });
   };
 
+  // ── Surface write handlers (`matrx-user/chat`) ───────────────────────────
+  // The write half of this surface. Both handlers close over THIS component's
+  // `conversationId` — the conversation actually on the page — so a staged
+  // draft always lands in the page composer and never in the message box of
+  // whatever agent run asked for it. Which fields earn a target (and the
+  // longer list that deliberately does NOT) is written down beside the
+  // declarations in `features/surfaces/manifests/chat.manifest.ts`.
+  //
+  // Plain fn, rebuilt per render; the provider holds it and calls it at write
+  // time, so every handler reads live state.
+  const getSurfaceWriteHandlers = (): SurfaceWriteHandlers => ({
+    conversation_title: async (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          `conversation_title expects a plain string, got ${Array.isArray(value) ? "an array" : `a ${typeof value}`}.`,
+        );
+      const title = value.trim();
+      if (!title)
+        throw new Error(
+          "conversation_title expects a non-empty title — clearing a conversation's name back to Untitled is a human action.",
+        );
+      if (title.length > CHAT_CONVERSATION_TITLE_MAX)
+        throw new Error(
+          `conversation_title is ${title.length} characters; the maximum is ${CHAT_CONVERSATION_TITLE_MAX}.`,
+        );
+      // A fresh chat holds a CLIENT-MINTED id — the `chat.conversation` row is
+      // written when the first turn commits. Renaming before that updates zero
+      // rows without erroring, while every optimistic mirror happily shows the
+      // new title: a rename that silently did not happen. Gate on the same
+      // predicate URL promotion uses; `timeoutMs: 0` makes it a single probe
+      // rather than that path's 3-minute poll.
+      const persisted = await waitForConversationPersisted(conversationId, {
+        timeoutMs: 0,
+      });
+      if (!persisted)
+        throw new Error(
+          "conversation_title refused — this conversation has not been saved yet, so there is no row to rename. Its row is created when the first turn completes.",
+        );
+      // The canonical rename thunk every conversation list dispatches (it owns
+      // the optimistic mirrors and the revert) — never a raw supabase update.
+      const result = await dispatch(
+        renameConversation({ conversationId, title }),
+      );
+      if (renameConversation.rejected.match(result))
+        throw new Error(
+          `conversation_title failed to save — ${result.payload?.message ?? "the rename was rejected."}`,
+        );
+    },
+
+    input_draft: (value: unknown) => {
+      const modes = CHAT_DRAFT_WRITE_MODES.map((m) => `"${m}"`).join(" | ");
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          `input_draft expects an object: { "text": string, "mode"?: ${modes} }.`,
+        );
+      const { text, mode: writeMode } = value as {
+        text?: unknown;
+        mode?: unknown;
+      };
+      if (typeof text !== "string" || !text.trim())
+        throw new Error(
+          "input_draft expects a non-empty `text` string — the message to stage in the composer.",
+        );
+      if (text.length > CHAT_INPUT_DRAFT_MAX)
+        throw new Error(
+          `input_draft \`text\` is ${text.length} characters; the maximum is ${CHAT_INPUT_DRAFT_MAX}.`,
+        );
+      if (writeMode !== undefined && !isChatDraftWriteMode(writeMode))
+        throw new Error(
+          `input_draft \`mode\` must be ${modes} when present, got ${JSON.stringify(writeMode)}.`,
+        );
+      const current = selectUserInputText(conversationId)(store.getState()) ?? "";
+      const next =
+        writeMode === "append" && current.trim()
+          ? `${current.trimEnd()}\n${text}`
+          : text;
+      // The SAME action the user's own keystrokes dispatch (AgentTextarea and
+      // NewChatLandingInput both call this) — never a parallel write path, so
+      // undo, draft protection and the send flow all behave identically.
+      dispatch(setUserInputText({ conversationId, text: next }));
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={CHAT_CONTEXT_MENU_PROPS.surfaceName}
       getScope={getChatScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
       isEditable
     >
       <div className="flex h-full flex-col overflow-hidden bg-textured">

@@ -16,8 +16,49 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+// ---------------------------------------------------------------------------
+// Write-contract vocabulary — ONE definition, imported by both the manifest
+// descriptions below (what an agent is told) and the handlers in
+// `ChatRoomClient.tsx` (what is actually accepted), so the advertised
+// contract and the enforced contract can never drift apart.
+// ---------------------------------------------------------------------------
+
+/** How a composer draft write lands: swap the buffer, or add after it. */
+export const CHAT_DRAFT_WRITE_MODES = ["replace", "append"] as const;
+export type ChatDraftWriteMode = (typeof CHAT_DRAFT_WRITE_MODES)[number];
+
+/** Value shape the `input_draft` write target accepts. */
+export interface ChatInputDraftWrite {
+  text: string;
+  mode?: ChatDraftWriteMode;
+}
+
+/** Enum check for `ChatInputDraftWrite.mode`, against the vocabulary above. */
+export function isChatDraftWriteMode(
+  value: unknown,
+): value is ChatDraftWriteMode {
+  return (CHAT_DRAFT_WRITE_MODES as readonly unknown[]).includes(value);
+}
+
+/**
+ * Upper bound on a staged composer draft. The composer itself has no
+ * maxLength (a human can paste anything), so this is a write-path guard
+ * against a model dumping a document into a chat box rather than a limit the
+ * user shares — generous enough for a long authored message.
+ */
+export const CHAT_INPUT_DRAFT_MAX = 20_000;
+
+/**
+ * Upper bound on an agent-written conversation title. `chat.conversation.title`
+ * is an unbounded text column and the sidebar's own rename field sets no
+ * maxLength, so this is the write path's own bound: a title is a SIDEBAR LABEL,
+ * and past a couple of hundred characters it is prose in the wrong place.
+ */
+export const CHAT_CONVERSATION_TITLE_MAX = 200;
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -352,6 +393,88 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Write targets (2026-08-10) — the judgment bar, written down.
+//
+// Chat is a RECORD of a conversation wrapped around ONE authored field. That
+// asymmetry decides the whole list:
+//
+//   YES — `input_draft`: the message the user has not sent yet. This is the
+//   textbook "authored content an agent drafts better/faster" case: help me
+//   phrase this, turn my notes into a question, extend what I started. The
+//   user still presses send, so the draft target is fully reversible.
+//
+//   YES — `conversation_title`: an authored label, trivially derivable from
+//   the transcript the agent can already read, and the one field on this
+//   surface a user routinely leaves at its auto-generated default.
+//
+//   NO — SENDING the message. The send is the outward-facing act: it spends a
+//   turn, bills a model, and (with the inbox modes) can steer or interrupt a
+//   run in flight. The human press is the gate, exactly as `podcast-studio`
+//   and `image-generate` kept Generate human.
+//
+//   NO — editing what was already said (`all_messages`, `last_user_message`,
+//   `current_message_text`, `full_conversation_text`). Those are the RECORD of
+//   what was actually said by whom. An agent rewriting them does not edit a
+//   draft, it fabricates history — the captured-evidence line. Note the route
+//   HAS a user-driven edit path ("Edit & resubmit" → fork / overwriteAndResend);
+//   it stays a human affordance because the value of the record is that a human
+//   wrote it.
+//
+//   NO — the run configuration (`added_tools`, `added_skills`, `model`,
+//   `sandbox_binding`). Following `agent-builder`: changing what an agent may
+//   REACH is a capability change, not a copy edit.
+//
+//   NO — `attached_resources`. The read half publishes lean `{id, block_type,
+//   status}` refs of what is ALREADY attached, never the user's library, so an
+//   agent could only guess UUIDs — the same reason `education-fastfire` left
+//   its set picker and `education-assessment` its deck picker out.
+//
+//   NO — switching the bound agent (identity/provenance: `initial_agent_id` is
+//   read-only by this feature's own model), and deleting/archiving a
+//   conversation (destructive stays human).
+//
+//   NO — `working_document` / `scratchpad`. Lean refs here; their bodies ride
+//   their own surfaces and belong to those surfaces' write targets.
+//
+// PER-MOUNT POSTURE: `matrx-user/chat` has exactly ONE `SurfaceRuntimeProvider`
+// — `ChatRoomClient`, which backs all three routes (/chat/new via
+// ChatNewClient's landingContent, /chat/a/[agentId], /chat/[conversationId])
+// and owns the conversation id both handlers key off. The surface name appears
+// in three OTHER places, none of which mount a runtime and none of which
+// therefore offer an agent anything: `RunSettingsEditor` and
+// `RunControlsTabPanel` pass it to a v3 context menu over Chat Options (whose
+// fields are run capability — see the NO above), and `NewChatLandingInput`
+// passes it to its `EditableContextMenu`, and that composer already sits
+// INSIDE ChatRoomClient's provider, so its draft is covered by `input_draft`
+// through the same Redux key.
+// ---------------------------------------------------------------------------
+
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "conversation_title",
+    label: "Conversation title",
+    description: `Renames the open conversation — the label it carries in the chat history sidebar. Value: a plain non-empty string, trimmed, at most ${CHAT_CONVERSATION_TITLE_MAX} characters; an empty or blank title is REFUSED, because clearing a conversation's name back to "Untitled" is a human decision. Saved IMMEDIATELY through the canonical rename path. Refused when the conversation has not been persisted yet — a brand-new chat on /chat/new or /chat/a/[agentId] holds a client-minted id and has no row to rename until its first turn finishes; read \`conversation_message_count\` first. This changes the label only and never touches a message.`,
+    valueType: "string",
+    updatesValue: "conversation_title",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "conversation",
+    sortOrder: 310,
+  },
+  {
+    name: "input_draft",
+    label: "Composer draft",
+    description: `Types text into THIS conversation's composer for the user to review and send. Value: { "text": string (1-${CHAT_INPUT_DRAFT_MAX} characters), "mode"?: ${CHAT_DRAFT_WRITE_MODES.map((m) => `"${m}"`).join(" | ")} } — "${CHAT_DRAFT_WRITE_MODES[0]}" (the default) swaps whatever is in the composer, "${CHAT_DRAFT_WRITE_MODES[1]}" adds after it on a new line, so read the \`input_draft\` value first if you mean to extend what the user already typed rather than discard it. This ONLY stages text: nothing is sent, no turn is spent, no run is steered or interrupted, and the user still presses send. It lands in the CONVERSATION's composer on the page — never in the message box of whatever agent run you are executing inside.`,
+    valueType: "object",
+    updatesValue: "input_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "composer",
+    sortOrder: 400,
+  },
+];
+
 export const chatManifest: SurfaceManifest = {
   surfaceName: "matrx-user/chat",
   readiness: "verified",
@@ -368,6 +491,7 @@ No value is guaranteed: launches also happen from the pre-conversation hero comp
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** Lean composer-attachment entry emitted in `attached_resources`. */

@@ -37,7 +37,22 @@ import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AgentRunHeader } from "./AgentRunHeader";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  CHAT_CONVERSATION_TITLE_MAX,
+  CHAT_DRAFT_WRITE_MODES,
+  CHAT_INPUT_DRAFT_MAX,
+  isChatDraftWriteMode,
+} from "@/features/surfaces/manifests/chat.manifest";
+import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
+import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { useAgentRunSurfaceScope } from "@/features/agents/hooks/useAgentRunSurfaceScope";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { setVariableValuesWithUndo } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.thunks";
@@ -517,11 +532,145 @@ export function AgentRunnerPage({
 
   if (!isAgentRunSurface) return body;
 
+  // ── Surface write handlers (`matrx-user/agent-run`) ──────────────────────
+  // The write half of this surface. Which fields earn a target — and the
+  // longer list that deliberately does NOT, because this page is the
+  // instrument that MEASURES an agent — is written down beside the
+  // declarations in `features/surfaces/manifests/agent-run.manifest.ts`.
+  //
+  // POSTURE: this whole block sits past the `isAgentRunSurface` gate above, so
+  // the `/code` workspace (which mounts this same component under
+  // `sourceFeature: "code-editor"`) registers no provider and is offered
+  // nothing — its conversation is a different feature's and a draft staged
+  // into it would be staged against the wrong surface.
+  //
+  // Every handler closes over `activeConversationId` — the run actually on the
+  // page — so a staged draft lands in THIS message box and never in the one
+  // belonging to whatever agent run asked for it. Plain fn, rebuilt per
+  // render; the provider calls it at write time, so handlers read live state.
+  const getSurfaceWriteHandlers = (): SurfaceWriteHandlers => {
+    const handlers: SurfaceWriteHandlers = {
+      user_input_draft: (value: unknown) => {
+        const modes = CHAT_DRAFT_WRITE_MODES.map((m) => `"${m}"`).join(" | ");
+        if (typeof value !== "object" || value === null || Array.isArray(value))
+          throw new Error(
+            `user_input_draft expects an object: { "text": string, "mode"?: ${modes} }.`,
+          );
+        const { text, mode: writeMode } = value as {
+          text?: unknown;
+          mode?: unknown;
+        };
+        if (typeof text !== "string" || !text.trim())
+          throw new Error(
+            "user_input_draft expects a non-empty `text` string — the message to stage in the run's message box.",
+          );
+        if (text.length > CHAT_INPUT_DRAFT_MAX)
+          throw new Error(
+            `user_input_draft \`text\` is ${text.length} characters; the maximum is ${CHAT_INPUT_DRAFT_MAX}.`,
+          );
+        if (writeMode !== undefined && !isChatDraftWriteMode(writeMode))
+          throw new Error(
+            `user_input_draft \`mode\` must be ${modes} when present, got ${JSON.stringify(writeMode)}.`,
+          );
+        const current =
+          selectUserInputText(activeConversationId)(store.getState()) ?? "";
+        const next =
+          writeMode === "append" && current.trim()
+            ? `${current.trimEnd()}\n${text}`
+            : text;
+        // The SAME action the user's own keystrokes dispatch (AgentTextarea,
+        // via the AgentConversationColumn this page renders) — never a
+        // parallel write path, so undo, the sacred draft protection in
+        // `input-draft-protection.ts`, and the send flow all behave identically.
+        dispatch(setUserInputText({ conversationId: activeConversationId, text: next }));
+      },
+
+      conversation_title: async (value: unknown) => {
+        if (typeof value !== "string")
+          throw new Error(
+            `conversation_title expects a plain string, got ${Array.isArray(value) ? "an array" : `a ${typeof value}`}.`,
+          );
+        const title = value.trim();
+        if (!title)
+          throw new Error(
+            "conversation_title expects a non-empty title — clearing a run's name back to Untitled is a human action.",
+          );
+        if (title.length > CHAT_CONVERSATION_TITLE_MAX)
+          throw new Error(
+            `conversation_title is ${title.length} characters; the maximum is ${CHAT_CONVERSATION_TITLE_MAX}.`,
+          );
+        // A fresh run holds a CLIENT-MINTED id — the `chat.conversation` row
+        // is written when the first turn commits. Renaming before that updates
+        // zero rows without erroring, while every optimistic mirror happily
+        // shows the new title: a rename that silently did not happen. Same
+        // single-probe gate the chat surface uses (`timeoutMs: 0`).
+        const persisted = await waitForConversationPersisted(
+          activeConversationId,
+          { timeoutMs: 0 },
+        );
+        if (!persisted)
+          throw new Error(
+            "conversation_title refused — this run has not been saved yet, so there is no row to rename. Its row is created when the first turn completes.",
+          );
+        // The canonical rename thunk every conversation list dispatches (it
+        // owns the optimistic mirrors and the revert) — never a raw update.
+        const result = await dispatch(
+          renameConversation({ conversationId: activeConversationId, title }),
+        );
+        if (renameConversation.rejected.match(result))
+          throw new Error(
+            `conversation_title failed to save — ${result.payload?.message ?? "the rename was rejected."}`,
+          );
+      },
+    };
+
+    // Offered ONLY when this agent declares variables — which is exactly when
+    // the variable inputs are rendered for the user to edit. An agent with no
+    // variables is offered no target at all, rather than one that always throws.
+    const declaredNow = selectInstanceVariableDefinitions(activeConversationId)(
+      store.getState(),
+    );
+    if (declaredNow.length > 0) {
+      handlers.variable_values = (value: unknown) => {
+        if (typeof value !== "object" || value === null || Array.isArray(value))
+          throw new Error(
+            'variable_values expects an object of { "<variable name>": <value> }.',
+          );
+        const patch = value as Record<string, unknown>;
+        const keys = Object.keys(patch);
+        if (!keys.length)
+          throw new Error(
+            "variable_values expects at least one variable to set; an empty object would change nothing.",
+          );
+        // Re-read at APPLY time: the run's instance (and so its declared
+        // variables) can change between the target being offered and the
+        // write landing.
+        const declared = selectInstanceVariableDefinitions(
+          activeConversationId,
+        )(store.getState()).map((d) => d.name);
+        const unknownNames = keys.filter((k) => !declared.includes(k));
+        if (unknownNames.length)
+          throw new Error(
+            `variable_values refused — ${unknownNames.map((n) => `"${n}"`).join(", ")} ${unknownNames.length === 1 ? "is not a variable" : "are not variables"} this agent declares. Declared variables: ${declared.map((n) => `"${n}"`).join(", ")}. Nothing was applied.`,
+          );
+        // The SAME action every variable-input variant dispatches. It MERGES,
+        // so variables the caller omitted keep their values — as documented.
+        dispatch(
+          setUserVariableValues({
+            conversationId: activeConversationId,
+            values: patch,
+          }),
+        );
+      };
+    }
+
+    return handlers;
+  };
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/agent-run"
       getScope={getAgentRunScope}
-      isEditable
       getWriteHandlers={getSurfaceWriteHandlers}
     >
       {body}
