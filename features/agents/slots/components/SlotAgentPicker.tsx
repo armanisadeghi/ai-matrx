@@ -137,6 +137,25 @@ export function SlotAgentPicker({
   const handlePick = async (candidateId: string) => {
     if (!data || saving || candidateId === overrideAgentId) return;
     setPreflight(null);
+    // `null` means the consumer's live declaration is still LOADING (distinct
+    // from `undefined` = "no live source, use the stored contract"). Never
+    // fall back to the stored contract while the surface is showing live
+    // requirements — that gap let an override save before the real check ran.
+    if (contractSource === null) {
+      setPreflight(
+        "Still loading this step's live requirements — try again in a moment.",
+      );
+      return;
+    }
+    // Picking the system default is a RESET, never a redundant override row.
+    if (candidateId === data.defaultAgentId) {
+      if (overrideAgentId) {
+        await handleReset();
+      } else {
+        toast.info("Already running the system default.");
+      }
+      return;
+    }
     setSaving(true);
     try {
       // Instant client pre-flight (the server's bind-time check is
@@ -214,11 +233,13 @@ export function SlotAgentPicker({
     setSaving(true);
     try {
       if (override) {
+        // The owning surface's reset announces its own success (e.g.
+        // research's "Override removed.") — a second toast here doubles it.
         await override.reset();
       } else {
         await removeSlotBinding(dispatch, slotKey, { principalType: "user" });
+        toast.success("Back to the system default.");
       }
-      toast.success("Back to the system default.");
       load();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
