@@ -4,7 +4,7 @@
  * ADMIN SURFACE. Drives `/administration/agents/lookups` — tabbed CRUD over
  * three small reference tables: `ui_client`, `ui_surface` (legacy quick
  * editor — the page itself points admins to `/administration/ui/surfaces`
- * for real surface work), and `tool_executor`. Backed by
+ * for real surface work), and `tool.executor`. Backed by
  * `features/tool-registry/lookups/components/LookupsAdminPage.tsx`.
  *
  * What an agent bound here may safely do: read the active tab and the
@@ -110,7 +110,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "tool_executors_list",
     label: "Tool executors",
     description:
-      "Every row loaded from tool_executor: name (PK), description, parent_executor_name, mcp_server_id, is_active, config JSON. Bindable rather than auto-context.",
+      "Every row loaded from tool.executor: name (PK), description, parent_executor_name, mcp_server_id, is_active, config JSON. Bindable rather than auto-context.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 1500,
@@ -121,7 +121,7 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "tool_executor_count",
     label: "Tool executor count",
-    description: "Number of tool_executor rows loaded.",
+    description: "Number of tool.executor rows loaded.",
     valueType: "number",
     alwaysAvailable: true,
     typicalCharCount: 3,
@@ -140,7 +140,7 @@ export const adminLookupsManifest: SurfaceManifest = {
   intro: `<surface_intro>
 This is an ADMIN surface: the Tool Registry lookups console at /administration/agents/lookups.
 
-Three reference tables, one per tab (lookups_tab): ui_client (client apps that can hold surfaces), ui_surface (a legacy quick editor — real surface work belongs on /administration/ui/surfaces), and tool_executor (capability providers a tool can bind to, e.g. mcp.<slug>, aidream, matrx-local).
+Three reference tables, one per tab (lookups_tab): ui.ui_client (client apps that can hold surfaces), ui.ui_surface (a legacy quick editor — real surface work belongs on /administration/ui/surfaces), and tool.executor (capability providers a tool can bind to, e.g. mcp.<slug>, aidream, matrx-local).
 
 What you may safely do: help the admin draft a clear name/description for a new client, surface, or executor row, or explain what an existing row is for from its fields. You never create, save, activate, or deactivate a row yourself — those are the admin's own dialog and toggle actions.
 </surface_intro>`,
@@ -168,7 +168,7 @@ export interface AdminLookupUiSurfaceRow {
   is_active: boolean | null;
 }
 
-/** One row from tool_executor. */
+/** One row from tool.executor. */
 export interface AdminLookupToolExecutorRow {
   name: string;
   description: string | null;

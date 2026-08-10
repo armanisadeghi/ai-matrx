@@ -23,7 +23,7 @@ import type { Database } from "@/types/database.types";
  * source_kind renders its badge, category drives grouping).
  */
 export interface ToolSearchOption {
-  /** `tool_def.id` when known — enables the /administration/agents/mcp-tools link. */
+  /** `tool.definition.id` when known — enables the /administration/agents/mcp-tools link. */
   id?: string;
   name: string;
   display_name?: string | null;

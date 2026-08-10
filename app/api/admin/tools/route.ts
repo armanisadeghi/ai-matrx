@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await requireAdmin();
-    // tool_def has RLS with a read-only (SELECT) policy and no write policy,
+    // tool.definition has RLS with a read-only (SELECT) policy and no write policy,
     // so inserts must go through the admin client after the admin gate above.
     const supabase = createAdminClient();
     const body = await request.json();

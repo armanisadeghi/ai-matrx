@@ -77,7 +77,7 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
   // is a SUCCESS — coloring the group red mislabels it. A genuine turn failure
   // surfaces at the turn level (the assistant error card), not here.
 
-  // When every tool in the run is the same kind, name it ("Updated `tool_def`
+  // When every tool in the run is the same kind, name it ("Updated records
   // · 10 calls"); otherwise stay generic ("10 tool calls").
   const uniformToolName = (() => {
     const first = entries[0]?.toolName;

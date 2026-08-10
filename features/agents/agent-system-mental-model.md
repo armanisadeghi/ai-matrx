@@ -324,7 +324,8 @@ When a Shortcut or App wants the agent to mutate surrounding UI — replace sele
 
 **Lifecycle firing.** `handle.onComplete` fires at stream end for EVERY display mode (not just autoRun/direct as the prior design did). `handle.onError` fires on widget-method failures AND on stream-level errors.
 
-Ten canonical widget tools are seeded in `public.tools` (tag `widget-capable`):
+Ten canonical widget tools live in `tool.definition` (tag `widget-capable`) and
+are bound to `matrx-ai-core` through `tool.binding`:
 
 `widget_text_replace` · `widget_text_insert_before` · `widget_text_insert_after` · `widget_text_prepend` · `widget_text_append` · `widget_text_patch` · `widget_update_field` · `widget_update_record` · `widget_attach_media` · `widget_create_artifact`
 

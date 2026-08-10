@@ -716,7 +716,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Tool Definitions",
         description:
-          "The 380-row tool_def catalog — every tool the platform can run (built-in, browser, server, MCP). Per-tool admin: identity, parameters, executors, surfaces, bundles, gating, UI components, test samples, incidents. Bulk activate / deactivate / delete.",
+          "The tool.definition catalog — every tool the platform can run (built-in, browser, server, MCP). Per-tool admin: identity, parameters, executors, surfaces, bundles, gating, UI components, test samples, incidents. Bulk activate / deactivate / delete.",
         iconName: "TestTube",
         link: "/administration/agents/mcp-tools",
       },
@@ -739,7 +739,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Tool Runtimes",
         description:
-          "Tools per executor: pick an executor (matrx-ai-core, aidream, matrx-local, chrome-extension, matrx-user, or mcp.<slug>) and manage which tools it can handle. Manages tool_binding rows (a pure M2M between tool_def and tool_executor).",
+          "Tools per executor: pick an executor (matrx-ai-core, aidream, matrx-local, chrome-extension, matrx-user, or mcp.<slug>) and manage which tools it can handle. Manages tool.binding rows (a pure M2M between tool.definition and tool.executor).",
         iconName: "Cpu",
         link: "/administration/agents/executor-surfaces",
         isNew: true,
@@ -755,7 +755,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Lookups",
         description:
-          "CRUD for tool-registry lookup tables: ui_client, ui_surface (basic), tool_executor. Foundation tables every other registry feature reads.",
+          "CRUD for tool-registry lookup tables: ui.ui_client, ui.ui_surface (basic), tool.executor. Foundation tables every other registry feature reads.",
         iconName: "SlidersHorizontal",
         link: "/administration/agents/lookups",
         isNew: true,
@@ -763,7 +763,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "New Tool Definition",
         description:
-          "Create a new row in the tool_def catalog (identity, parameters, executors, surfaces).",
+          "Create a new row in the tool.definition catalog (identity, parameters, executors, surfaces).",
         iconName: "Pencil",
         link: "/administration/agents/mcp-tools/new",
       },

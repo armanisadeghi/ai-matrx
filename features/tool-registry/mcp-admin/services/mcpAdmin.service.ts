@@ -34,7 +34,7 @@ export async function listServerConfigs(serverId: string): Promise<McpConfigRow[
 
 /**
  * Tools owned by an MCP server.
- * The 2026 refactor introduced `tool_def.managed_by_server_id` as the
+ * The 2026 refactor introduced `tool.definition.managed_by_server_id` as the
  * authoritative link — preferred over the legacy `${slug}:%` name pattern.
  */
 export async function listServerTools(
@@ -283,7 +283,7 @@ export interface ProvisionMcpServerInput {
 export interface ProvisionMcpServerResult {
   server_id: string;
   server_slug: string;
-  /** Name of the paired `tool_executor` row (was "executor_kind" pre-2026). */
+  /** Name of the paired `tool.executor` row (was "executor_kind" pre-2026). */
   executor: string;
   bundle_id: string;
   bundle_name: string;
@@ -295,8 +295,8 @@ export interface ProvisionMcpServerResult {
 /**
  * Atomic 5-step MCP provisioning. Inserts:
  *   1. tool_mcp_server row
- *   2. paired tool_executor row named `mcp.<slug>` (mcp_server_id = new server)
- *   3. lister tool in tool_def named `bundle:list_<slug>`
+ *   2. paired tool.executor row named `mcp.<slug>` (mcp_server_id = new server)
+ *   3. lister tool in tool.definition named `bundle:list_<slug>`
  *   4. system bundle in tool_bundle named <slug>, lister linked
  *
  * Returns IDs of all created rows + the recommended next step

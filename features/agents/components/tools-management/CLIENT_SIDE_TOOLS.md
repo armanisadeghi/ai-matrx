@@ -21,7 +21,7 @@ There is one control knob: the `client_tools` array in the request body. Any too
 
 ### 1. Database-registered tool (recommended, shared across users)
 
-The tool exists in the `tools` table like any other tool — same schema, same `parameters`, `description`, etc. It is **not** marked specially in the DB. To make a specific request treat it as client-handled, include its name in `client_tools`.
+The tool exists in `tool.definition` like any other tool — same schema, same `parameters`, `description`, etc. It is **not** marked specially in the DB. To make a specific request treat it as client-handled, include its name in `client_tools`.
 
 > **Important:** there is no "always client-handled" flag on the tool row today. It is a per-request decision. If you always want a given DB tool delegated, the frontend is responsible for always adding it to `client_tools`. See the [Open question](#open-question-mark-db-tools-as-client-handled-permanently) section at the bottom.
 
@@ -202,7 +202,7 @@ POST /ai/conversation/{id}/tool_results ───▶
 | Symptom | Cause | Fix |
 |---|---|---|
 | `404 not_found` from tool_results POST | `call_id` genuinely unknown — a stale POST or wrong client (NOT a normal timeout: a delegated row lives ~30 days and a late answer is accepted/superseded) | Don't POST a `call_id` the server never delegated; the stream stays alive |
-| Stream ends before you POST | AI loop hit a `client_tool_timeout` error and the model finished without you | Execute faster, or raise `tool_def.timeout_seconds` in the DB for that tool |
+| Stream ends before you POST | AI loop hit a `client_tool_timeout` error and the model finished without you | Execute faster, or adjust the tool's wait policy in `tool.definition` |
 | Tool invoked but never delegated | Tool name was not in `client_tools`, or inline `custom_tools` entry had a different name than what the model called | Verify `client_tools` contains the *exact* tool `name`; for `custom_tools`, the `name` field *is* what the model sees |
 | `is_error: true` result | Your local executor reported an error | Include `error_message`; the server feeds it back to the model as a tool error and the loop continues gracefully |
 
@@ -224,11 +224,11 @@ Request/response types for the endpoints are in `aidream/api/generated/api-types
 
 ## Open question: mark DB tools as "client-handled" permanently?
 
-Today, if you want a DB-registered tool to always be executed client-side, the frontend has to remember to include its name in `client_tools` on every request. There is no `is_client_handled` column on the `tools` table.
+Today, if you want a DB-registered tool to always be executed client-side, the frontend has to remember to include its name in `client_tools` on every request. There is no `is_client_handled` column on `tool.definition`.
 
 If we want a "set it once, forget it" story for DB tools, the cleanest addition is:
 
-- Add `tools.execution_side` (`'server' | 'client'`, default `'server'`).
+- Add `tool.definition.execution_side` (`'server' | 'client'`, default `'server'`).
 - When the registry loads a row with `execution_side = 'client'`, the executor auto-delegates even if the name isn't in the request's `client_tools`.
 
 **This change has not been made yet — flag it if you want it and we'll add the column + type regeneration in one pass.** For now: just include the tool name in `client_tools` per request.
@@ -239,7 +239,7 @@ If we want a "set it once, forget it" story for DB tools, the cleanest addition 
 
 For UI-driven agent actions (replace selected text, insert text, update a record field, attach media, create an artifact), **don't hand-build the `client_tools` array**. Use the **WidgetHandle** system:
 
-1. 10 canonical `widget_*` tools are seeded in `public.tools` (tag: `widget-capable`). See [`WIDGET_TOOLS_SEED.sql`](WIDGET_TOOLS_SEED.sql).
+1. 10 canonical `widget_*` tools live in `tool.definition` (tag: `widget-capable`) with active `tool.binding` rows for `matrx-ai-core`. See [`WIDGET_TOOLS_SEED.sql`](WIDGET_TOOLS_SEED.sql).
 2. A widget registers a `WidgetHandle` object once via `useWidgetHandle()`. The handle exposes method implementations (`onTextReplace`, `onAttachMedia`, ...) plus lifecycle (`onComplete`, `onError`).
 3. The submit-body assembler in `execute-instance.thunk.ts` reads the handle live per-turn and derives `client_tools = deriveClientToolsFromHandle(handle)`. **You do not manage `client_tools` manually for widget tools.**
 4. When the model invokes a `widget_*` tool, `process-stream.ts` branches to `dispatchWidgetAction`, which calls the matching handle method and POSTs the result through a microtask batcher that coalesces concurrent tool calls into one request.

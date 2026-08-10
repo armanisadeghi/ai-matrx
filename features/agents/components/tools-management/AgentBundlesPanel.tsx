@@ -73,7 +73,7 @@ function classifyOverlap(
  * A bundle bundles many tools behind a single lister tool the model expands on
  * demand — so an agent can carry a whole capability (GitHub, Linear, Postgres…)
  * for the cost of one tool slot instead of dozens. Selecting a bundle writes
- * its contributed `tool_def` UUID(s) into the agent's `tools` array via the
+ * its contributed `tool.definition` UUID(s) into the agent's `tools` array via the
  * same `setAgentTools` path every other tool uses.
  *
  * Overlap with individually-picked tools is surfaced as a gentle nudge — green

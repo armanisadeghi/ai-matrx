@@ -754,7 +754,7 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
     script: "gate:tools",
     title: "Tool / DB drift gate",
     description:
-      "Diffs advertised client-side tools against the tool_def/tool_binding " +
+      "Diffs advertised client-side tools against tool.definition/tool.binding " +
       "tables in the shared DB.",
     severity: "warning",
     expectedDurationSec: 30,

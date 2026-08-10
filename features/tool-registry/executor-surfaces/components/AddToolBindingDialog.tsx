@@ -12,7 +12,7 @@ import {
 } from "@/features/tool-registry/executor-surfaces/services/executor-surfaces.service";
 
 interface Props {
-  /** The owning `tool_executor.name`. */
+  /** The owning `tool.executor.name`. */
   executorName: string;
   onClose: () => void;
   /** Called after at least one tool was successfully bound. */
@@ -21,7 +21,7 @@ interface Props {
 
 /**
  * Executor-binding flavor of the shared ToolSearchDialog: lists tools not
- * yet bound to this executor, "Bind" inserts a `tool_binding` row.
+ * yet bound to this executor, "Bind" inserts a `tool.binding` row.
  */
 export function AddToolBindingDialog({
   executorName,

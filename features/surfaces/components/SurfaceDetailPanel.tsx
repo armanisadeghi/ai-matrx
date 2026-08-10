@@ -496,7 +496,7 @@ export function SurfaceDetailPanel({
           <div className="text-[11px] text-muted-foreground mb-2 leading-relaxed">
             Tools force-included on this surface via{" "}
             <code className="font-mono bg-muted px-1 py-0.5 rounded">
-              tool_surface_defaults.always_include_tools
+              tool.surface_defaults.always_include_tools
             </code>
             . Edit the underlying surface defaults to change inclusions.
           </div>

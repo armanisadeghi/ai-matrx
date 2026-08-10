@@ -121,7 +121,7 @@ interface Props {
 
 /**
  * Full-screen per-surface admin editor at /administration/ui/surfaces/<name>.
- * Every DB-owned `ui_surface` + `tool_surface_defaults` field is editable;
+ * Every DB-owned `ui.ui_surface` + `tool.surface_defaults` field is editable;
  * value definitions stay code-first (view + drift chips only).
  */
 export function SurfaceAdminDetailPage({
@@ -325,7 +325,7 @@ export function SurfaceAdminDetailPage({
     }
   };
 
-  // ── tool_surface_defaults writes ───────────────────────────────────────────
+  // ── tool.surface_defaults writes ──────────────────────────────────────────
 
   const patchDefaults = async (
     patch: Parameters<typeof upsertSurfaceToolDefaults>[1],
@@ -1247,7 +1247,7 @@ function HierarchySection({
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// Tool defaults (tool_surface_defaults)
+// Tool defaults (tool.surface_defaults)
 // ───────────────────────────────────────────────────────────────────────────
 
 type DefaultsPatch = Parameters<typeof upsertSurfaceToolDefaults>[1];
@@ -1359,12 +1359,12 @@ function ToolDefaultsSection({
     <section className="space-y-2">
       <SectionHeading
         title="Tool defaults"
-        hint="tool_surface_defaults — which tools/bundles are force-included or banned on this surface, plus per-tool argument defaults and injection. The row is created on first edit."
+        hint="tool.surface_defaults — which tools/bundles are force-included or banned on this surface, plus per-tool argument defaults and injection. The row is created on first edit."
       />
       <div className="space-y-4 rounded-md border border-border bg-card p-3">
         {!defaults && (
           <div className="rounded-md border border-dashed border-border px-3 py-2 text-[11px] text-muted-foreground">
-            No <code className="font-mono">tool_surface_defaults</code> row yet
+            No <code className="font-mono">tool.surface_defaults</code> row yet
             — this surface inherits everything from its parent chain. Any edit
             below creates the row.
           </div>

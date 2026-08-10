@@ -29,7 +29,7 @@ import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-to
 
 interface Props {
   /**
-   * The executor being viewed. Post-2026 refactor: this is a `tool_executor`
+   * The executor being viewed. Post-2026 refactor: this is a `tool.executor`
    * row plus aggregate counts — no longer the conflated executor-surface.
    */
   executor: ExecutorWithStats;
@@ -372,7 +372,7 @@ function BindingRow({
               <Badge
                 variant="outline"
                 className="text-[9px] h-4 px-1 text-muted-foreground"
-                title="The underlying tool_def row is inactive"
+                title="The underlying tool.definition row is inactive"
               >
                 tool inactive
               </Badge>

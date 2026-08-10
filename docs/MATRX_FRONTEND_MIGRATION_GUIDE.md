@@ -1,5 +1,10 @@
 # matrx-frontend Migration Guide — Tool Registry Redesign
 
+> **Historical migration narrative (May 2026).** The names in this document
+> describe the pre–June schema transition and are not valid live query targets.
+> Current tables are `tool.definition`, `tool.binding`, and
+> `tool.surface_defaults`.
+>
 > Audience: matrx-frontend developers (dashboard, admin UIs, future user-facing UIs).
 >
 > Companion docs: [TOOL_REGISTRY_REDESIGN.md](TOOL_REGISTRY_REDESIGN.md), [CLIENT_REGISTRATION_GUIDE.md](CLIENT_REGISTRATION_GUIDE.md), [MATRX_EXTEND_MIGRATION_GUIDE.md](MATRX_EXTEND_MIGRATION_GUIDE.md), [MATRX_LOCAL_MIGRATION_GUIDE.md](MATRX_LOCAL_MIGRATION_GUIDE.md), [FRONTEND_TOOL_INJECTION_NOTES.md](FRONTEND_TOOL_INJECTION_NOTES.md).

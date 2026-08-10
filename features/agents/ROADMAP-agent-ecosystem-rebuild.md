@@ -54,7 +54,7 @@ callbacks: { widgetHandleId?; originalText? }
 
 `useWidgetHandle(handle)` registers one object (capability methods + lifecycle) with CallbackManager; the launch-path reads it live per-turn to derive `client_tools`; `process-stream.ts` routes `widget_*` tool_delegated events to the matching method and posts results through a microtask batcher to `/ai/conversations/{id}/tool_results`.
 
-**Seeded in `public.tools` (tag `widget-capable`):**
+**Registered in `tool.definition` (tag `widget-capable`) and bound through `tool.binding`:**
 
 `widget_text_replace` · `widget_text_insert_before` · `widget_text_insert_after` · `widget_text_prepend` · `widget_text_append` · `widget_text_patch` · `widget_update_field` · `widget_update_record` · `widget_attach_media` · `widget_create_artifact`
 

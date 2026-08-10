@@ -19,7 +19,7 @@ If you ever find yourself reaching for a third input — a priority column, a de
 
 ### What the system IS
 
-A capability map. Rows in `tool_def` describe contracts. Rows in `tool_executor` describe who can run things. Rows in `tool_binding` connect the two. Rows in `tool_surface_defaults` shape what shows up per surface. That's the whole system.
+A capability map. Rows in `tool.definition` describe contracts. Rows in `tool.executor` describe who can run things. Rows in `tool.binding` connect the two. Rows in `tool.surface_defaults` shape what shows up per surface. That's the whole system.
 
 ### What the system is NOT
 
@@ -35,28 +35,28 @@ A capability map. Rows in `tool_def` describe contracts. Rows in `tool_executor`
 These definitions are normative. If code, comments, or documentation drift from them, the code/comments/documentation is wrong.
 
 ### Tool
-A named, versioned **contract**. Lives in `tool_def`. Defines what arguments come in, what shape comes out, and what policy applies (`admin_only`, `tier`, `gating`, `dedupe_exempt`, `validation_exempt`). A tool knows nothing about who runs it.
+A named, versioned **contract**. Lives in `tool.definition`. Defines what arguments come in, what shape comes out, and what policy applies (`admin_only`, `tier`, `gating`, `dedupe_exempt`, `validation_exempt`). A tool knows nothing about who runs it.
 
 ### Executor
-An **addressable capability provider**. Lives in `tool_executor`. A process, a package, a browser context, or an MCP server — anything that can dispatch tool calls. Identified by a canonical `name` (PK). Equal citizens — no "server vs client" category exists in the schema.
+An **addressable capability provider**. Lives in `tool.executor`. A process, a package, a browser context, or an MCP server — anything that can dispatch tool calls. Identified by a canonical `name` (PK). Equal citizens — no "server vs client" category exists in the schema.
 
 ### Binding
-The **M2M relationship** in `tool_binding` asserting that an executor can run a tool. Its presence means capability. Its absence means inability. It has no other meaning.
+The **M2M relationship** in `tool.binding` asserting that an executor can run a tool. Its presence means capability. Its absence means inability. It has no other meaning.
 
 ### Client
 The **application or runtime environment** that hosts surfaces (Chrome extension, Next.js web app, etc.). Tracked in `ui_client`, which we don't own — we just consume it. Convention: the root executor's `name` matches the client's `name`. They are not formally linked by FK; the relationship is by convention, not constraint.
 
 ### Surface
-A **page or panel within a client**. Lives in `ui_surface` (not ours; we consume it). Surfaces have two new columns we added: `executor_name` (FK → `tool_executor`) and `parent_surface_name` (self-FK for inheritance).
+A **page or panel within a client**. Lives in `ui.ui_surface` (not ours; we consume it). Surfaces have two new columns we added: `executor_name` (FK → `tool.executor`) and `parent_surface_name` (self-FK for inheritance).
 
 ### Surface defaults
-**Per-surface include/exclude rules and argument defaults.** Lives in `tool_surface_defaults`. One row per surface that has opinions. Surfaces without a row inherit purely from the parent chain.
+**Per-surface include/exclude rules and argument defaults.** Lives in `tool.surface_defaults`. One row per surface that has opinions. Surfaces without a row inherit purely from the parent chain.
 
 ### Bundle
 A **labeled collection of tools**. Lives in `tool_bundle` + `tool_bundle_member`. A syntactic shortcut for inclusion in surface defaults. **NOT** a tool, **NOT** an executor, **NOT** part of routing.
 
 ### Gate
-A **boolean function** referenced by name in `tool_def.gating`. The function itself lives in code (`matrx_ai.tools.gates.*`). The DB stores only the gate name and arguments to pass.
+A **boolean function** referenced by name in `tool.definition.gating`. The function itself lives in code (`matrx_ai.tools.gates.*`). The DB stores only the gate name and arguments to pass.
 
 ### Inheritance — executors
 An executor can declare a `parent_executor_name`. The child **unions** the parent's bindings with its own. Used for granular sub-executors (e.g., `matrx-user.chat` inheriting from `matrx-user`).
@@ -70,23 +70,23 @@ A surface can declare a `parent_surface_name`. Surface defaults walk the chain r
 
 These rules exist to prevent the system from drifting back into its previous mess. The DB enforces several of them; you must enforce the rest in code review.
 
-### R1. `tool_binding` is a pure join. Do not add columns.
+### R1. `tool.binding` is a pure join. Do not add columns.
 
-The only allowed columns on `tool_binding` are: `tool_id`, `executor_name`, `is_active`, `created_at`, `updated_at`. **Nothing else, ever.** If you need per-(tool, executor) configuration, it lives in the executor's own code, not in this table.
+The only allowed columns on `tool.binding` are: `tool_id`, `executor_name`, `is_active`, `created_at`, `updated_at`. **Nothing else, ever.** If you need per-(tool, executor) configuration, it lives in the executor's own code, not in this table.
 
 Violation pattern to watch for: "we just need a small `priority` field" or "let's add a `delegated_to` for routing hints." That's how the old system grew its mess. The answer is always no.
 
-### R2. No `kind` or category discriminators on `tool_executor`.
+### R2. No `kind` or category discriminators on `tool.executor`.
 
 The row's existence and its `mcp_server_id` column ARE the discriminators. MCP executor? `mcp_server_id IS NOT NULL`. Server executor? Listed in the runtime registry. Client executor? The request's `client_executor_name` walks up to it. We do not need — and will not add — a `kind` enum.
 
-### R3. No `function_path`, `source_app`, or any code-location columns on `tool_def`.
+### R3. No `function_path`, `source_app`, or any code-location columns on `tool.definition`.
 
 Executors own their internal registries. The DB stores the contract; the executor knows how to dispatch. If executor code and DB disagree on what tools exist, the executor crashes loudly at startup. **Loud failure beats silent confusion.**
 
 ### R4. No live executor presence / heartbeat in the DB.
 
-`tool_executor.is_active` means "admin-disabled" or "deprecated." It does NOT mean "currently reachable." Live availability is a runtime registry concern owned by the orchestrator. The DB describes what *can* exist; runtime describes what *does* exist right now.
+`tool.executor.is_active` means "admin-disabled" or "deprecated." It does NOT mean "currently reachable." Live availability is a runtime registry concern owned by the orchestrator. The DB describes what *can* exist; runtime describes what *does* exist right now.
 
 ### R5. No covert use of `metadata` jsonb as a schema.
 
@@ -104,13 +104,13 @@ When the agent picks a tool to call and multiple applicable executors have bindi
 
 Enforced by trigger. Three levels is enough for any reasonable granularity (e.g., `matrx-user.workspace.chat`). If you find yourself wanting depth 4, you're modeling something else — make it a sibling, not a descendant.
 
-### R9. MCP tools live in `tool_def` like any other tool.
+### R9. MCP tools live in `tool.definition` like any other tool.
 
-When an MCP server advertises a tool, we create a `tool_def` row with `source_kind='mcp_discovered'` and `managed_by_server_id` set. It gets a `tool_binding` to the `mcp.<slug>` executor. From the rest of the system's perspective, it's just a tool. There is no "MCP tool" code path.
+When an MCP server advertises a tool, we create a `tool.definition` row with `source_kind='mcp_discovered'` and `managed_by_server_id` set. It gets a `tool.binding` row for the `mcp.<slug>` executor. From the rest of the system's perspective, it's just a tool. There is no "MCP tool" code path.
 
 ### R10. Tools are referenced by UUID, not by name, in FKs.
 
-Names can change (rare, but it happens). UUIDs don't. `agx_agent.tools` is `uuid[]`. `tool_bundle_member.tool_id` is `uuid`. `cx_tool_call.tool_id` is `uuid` (loose reference). Don't introduce name-based FKs to `tool_def`. The `name` column on `tool_def` is a business key with a unique index, not a stable identifier.
+Names can change (rare, but it happens). UUIDs don't. `agx_agent.tools` is `uuid[]`. `tool_bundle_member.tool_id` is `uuid`. `cx_tool_call.tool_id` is `uuid` (loose reference). Don't introduce name-based FKs to `tool.definition`. The `name` column on `tool.definition` is a business key with a unique index, not a stable identifier.
 
 ### R11. Naming compatibility is not preserved across the migration.
 
@@ -122,15 +122,15 @@ Old executor kinds (`server:matrx_ai`, `matrx-ai.core`, `matrx-extend.browser`, 
 
 ### R13. `arg_injection` is reserved. Do not use it yet.
 
-`tool_surface_defaults.arg_injection` is a placeholder column for future dynamic binding from `ui_surface_value`. Until that feature is designed and shipped, the column stays empty `{}` and is ignored by resolvers. Reserving the column name now means we don't have to migrate the table when it does ship.
+`tool.surface_defaults.arg_injection` is a placeholder column for future dynamic binding from `ui_surface_value`. Until that feature is designed and shipped, the column stays empty `{}` and is ignored by resolvers. Reserving the column name now means we don't have to migrate the table when it does ship.
 
 ### R14. Bundle membership: surface defaults reference SYSTEM bundles only.
 
-User-authored bundles (`tool_bundle.is_system = false`) exist for ad-hoc grouping in user UIs. They must never appear in `tool_surface_defaults.always_include_bundles` or `never_include_bundles`. The resolver only expands system bundles. If you need a tool group for a surface, make it a system bundle.
+User-authored bundles (`tool_bundle.is_system = false`) exist for ad-hoc grouping in user UIs. They must never appear in `tool.surface_defaults.always_include_bundles` or `never_include_bundles`. The resolver only expands system bundles. If you need a tool group for a surface, make it a system bundle.
 
 ### R15. Gate names that don't resolve must crash the server at startup.
 
-Gate functions live in code. The startup pass in `aidream/startup/tools_check.py` must walk every `tool_def.gating` array, look up each gate name in the Python registry, and **crash if any gate doesn't resolve**. A tool that references a missing gate is a configuration bug, not a runtime warning.
+Gate functions live in code. The startup pass in `aidream/startup/tools_check.py` must walk every `tool.definition.gating` array, look up each gate name in the Python registry, and **crash if any gate doesn't resolve**. A tool that references a missing gate is a configuration bug, not a runtime warning.
 
 ---
 
@@ -152,7 +152,7 @@ If `matrx-mobile` wants its own runtime someday, the matrx-mobile team adds the 
 
 ### S4. Surface defaults should be sparse.
 
-If a surface has no opinions, it has no `tool_surface_defaults` row. The default behavior — "give me every tool my executor can run" — is the right starting point for most surfaces. Don't preemptively create empty rows.
+If a surface has no opinions, it has no `tool.surface_defaults` row. The default behavior — "give me every tool my executor can run" — is the right starting point for most surfaces. Don't preemptively create empty rows.
 
 ### S5. `always_include_tools` is an override, not a manifest.
 
@@ -187,25 +187,25 @@ The system is designed so that misconfiguration produces immediate, obvious fail
 1. Decide which executor(s) will run it. Usually exactly one.
 2. Call `tool_register(p_def jsonb, p_executor_names text[])` with the tool definition and the executor names.
 3. Confirm the binding(s) exist.
-4. If the tool needs to appear on a specific surface by default, add it to that surface's `tool_surface_defaults.always_include_tools` — but only if it wouldn't appear automatically from the executor universe.
+4. If the tool needs to appear on a specific surface by default, add it to that surface's `tool.surface_defaults.always_include_tools` — but only if it wouldn't appear automatically from the executor universe.
 
 ### "I want a new surface to have a different tool set."
 
 1. Confirm the surface has the right `executor_name` set on `ui_surface`.
-2. Insert a row into `tool_surface_defaults` with the include/exclude arrays you need.
+2. Insert a row into `tool.surface_defaults` with the include/exclude arrays you need.
 3. If your surface has a parent surface, remember exclusions accumulate.
 
 ### "I want to add a new client runtime (e.g., a mobile app)."
 
-1. Add a `tool_executor` row with the canonical name (e.g., `matrx-mobile`).
-2. Add `tool_binding` rows for every tool the runtime implements.
+1. Add a `tool.executor` row with the canonical name (e.g., `matrx-mobile`).
+2. Add `tool.binding` rows for every tool the runtime implements.
 3. Tell the UI team to add the corresponding `ui_client` row.
 4. When `ui_surface` rows are created for the new client, set their `executor_name`.
 
 ### "I want to add MCP support for a new provider."
 
 1. Add a `tool_mcp_server` row with the slug, endpoint, auth strategy, etc.
-2. The corresponding `tool_executor` row (`mcp.<slug>`) is created automatically on next sync.
+2. The corresponding `tool.executor` row (`mcp.<slug>`) is created automatically on next sync.
 3. MCP tools are discovered and registered via `tool_register_mcp_discovered` — you don't add them by hand.
 
 ### "A tool exists on two executors and the wrong one is being called."
@@ -216,7 +216,7 @@ The system is designed so that misconfiguration produces immediate, obvious fail
 
 ### "I want to deprecate a tool."
 
-1. Set `tool_def.is_active = false`.
+1. Set `tool.definition.is_active = false`.
 2. The tool stops appearing in resolution.
 3. After a soak period, you can delete it (cascade deletes its bindings).
 4. Don't try to "soft-rename" a deprecated tool by changing its name to something funny. The UUID is the identity.
@@ -231,14 +231,14 @@ There is no direct "tool → surfaces" query because surface inclusion is comput
 
 If you see any of these in a PR, push back:
 
-1. **A new column on `tool_binding`.** R1 violation. The PR needs a different design.
+1. **A new column on `tool.binding`.** R1 violation. The PR needs a different design.
 2. **A `if is_client_side` or `if delegated` check in code.** Those concepts no longer exist. The PR is operating on a mental model that's two versions out of date.
 3. **A `function_path` string assembled in Python.** R3 violation. The executor knows how to dispatch its own tools.
 4. **A "fallback if tool not found" branch in dispatch.** R10 + R15 violation. Loud failure is the design.
-5. **A heartbeat / health column added to `tool_executor`.** R4 violation. Runtime liveness belongs in the orchestrator's registry.
+5. **A heartbeat / health column added to `tool.executor`.** R4 violation. Runtime liveness belongs in the orchestrator's registry.
 6. **A new RPC that takes both a UUID and a name parameter to "support either."** Pick one. `tool_get` accepts a name OR UUID by detecting the format — that's a one-time concession for ergonomics, not a pattern to copy.
 7. **A surface defaults row with 50 entries in `always_include_tools`.** S5 violation. You're using it as a manifest, not an override. The right answer is probably a system bundle.
-8. **An MCP-specific code path that doesn't go through `tool_executor` + `tool_binding`.** R9 violation. MCP isn't special.
+8. **An MCP-specific code path that doesn't go through `tool.executor` + `tool.binding`.** R9 violation. MCP isn't special.
 9. **A tool referenced by name in a new FK column.** R10 violation. Use the UUID.
 10. **String parsing of executor names to derive properties** (e.g., `if name.startswith("mcp.")`). The properties exist as real columns. `mcp_server_id IS NOT NULL` tells you it's an MCP executor; you don't need to parse the name.
 

@@ -1,5 +1,9 @@
 # Tool Registry — Gap Analysis & Roadmap
 
+> **Historical gap snapshot (2026-05-05).** Retired names below describe the
+> pre–June registry and must not be used for live queries. Current tables are
+> `tool.definition`, `tool.binding`, and `tool.surface_defaults`.
+
 **Author**: 2026-05-05 emergency-restoration follow-up
 **Scope**: every gap I can identify in the post-0023 Tool Registry system relative to "complete and production-grade"
 **Status of bedrock**: app boots, every legacy table reference (frontend + server-side RPCs) repointed, 5 admin pages shipped (`/admin/lookups`, `/administration/agents/mcp-tools`, `/admin/bundles`, `/admin/mcp-servers`, `/admin/surfaces`)

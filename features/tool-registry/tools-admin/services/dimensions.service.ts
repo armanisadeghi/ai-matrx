@@ -106,14 +106,14 @@ export async function removeToolBinding(args: {
   if (error) throw error;
 }
 
-// ─── Surfaces (force-inclusions from tool_surface_defaults) ──────────────────
+// ─── Surfaces (force-inclusions from tool.surface_defaults) ─────────────────
 
 /**
  * Find every surface that force-includes this tool — either directly via
  * `always_include_tools`, or transitively via `always_include_bundles`.
  *
  * Surfaces declare a set of tool names (and bundle names) they force-include.
- * To answer "where does this tool show up?" we scan `tool_surface_defaults`
+ * To answer "where does this tool show up?" we scan `tool.surface_defaults`
  * looking for the tool's name in those arrays. Surfaces with no entries here
  * still resolve this tool wherever its executor bindings allow.
  */
@@ -181,7 +181,7 @@ export async function listSurfacesIncludingTool(
 
 /**
  * Add a tool to a surface's `always_include_tools` array.
- * Creates the `tool_surface_defaults` row if it doesn't yet exist.
+ * Creates the `tool.surface_defaults` row if it doesn't yet exist.
  */
 export async function addToolToSurface(args: {
   toolId: string;
@@ -283,7 +283,7 @@ export async function listToolBundleMemberships(toolId: string): Promise<BundleM
     .filter((m): m is BundleMembership => m !== null);
 }
 
-// ─── Gating (jsonb column on tool_def) ───────────────────────────────────────
+// ─── Gating (jsonb column on tool.definition) ───────────────────────────────
 //
 // Gate functions live in `matrx_ai.tools.gates.*`. The DB stores only the gate
 // name and arguments to pass. Per doctrine R15, gate names that don't resolve
@@ -352,7 +352,7 @@ export interface ToolCatalogOption {
 }
 
 /**
- * The full `tool_def` catalog (active AND inactive — callers filter) for
+ * The full `tool.definition` catalog (active AND inactive — callers filter) for
  * generic tool pickers, e.g. the surface tool-defaults editor.
  */
 export async function listAllToolOptions(): Promise<ToolCatalogOption[]> {

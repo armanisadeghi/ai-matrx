@@ -286,10 +286,10 @@ After the user-requested "go all in" pass, the page picks up:
 
 - **Per-surface detail drawer** ([SurfaceDetailDrawer.tsx](./components/SurfaceDetailDrawer.tsx)) opens on row name click or chevron. Shows:
   - Identity edit (active toggle, description edit, **rename**)
-  - "Tools on this surface" — joined `tl_def_surface ⋈ tl_def`, click-through to the tool admin
+  - "Tools on this surface" — resolves `tool.surface_defaults` names against `tool.definition`, click-through to the tool admin
   - "Agents visible here" — joined `agx_agent_surface ⋈ agx_agent`
   - "Custom tool UI components" — `tl_ui` rows scoped to this surface
-- **Rename support** with FK cascade. Backend migration `ui_surface_fk_cascade_on_update` adds `ON UPDATE CASCADE` to the three FKs (`tl_def_surface.surface_name`, `agx_agent_surface.surface_name`, `tl_ui.surface_name`), so renames are a single atomic UPDATE that auto-propagates to all dependent rows.
+- **Rename support** with cascade-aware writes across `tool.surface_defaults`, agent-surface associations, and `tool.ui`, so a rename propagates to every dependent row.
 - **Bulk delete** in the bulk action bar. The confirm aggregates tool/agent reference counts across all selected rows and warns explicitly that DELETE is non-cascading (FK behavior on delete is `NO ACTION`).
 - **"Add from candidates" dialog** ([SurfaceCandidatesDialog.tsx](./components/SurfaceCandidatesDialog.tsx)) — a curated catalog ([data/surface-candidates.ts](./data/surface-candidates.ts)) of ~70 plausible-but-unseeded surfaces (window-panel overlays, second-tier admin pages, agent embedding widgets, etc.) discovered via codebase inventory. Filter by client / kind / search, multi-select, optionally force-active on insert, bulk insert in a single round-trip.
 - **"New client" dialog** inline (NewClientDialog at the bottom of the page file). Avoids round-tripping to `/admin/lookups` to add a `ui_client`.

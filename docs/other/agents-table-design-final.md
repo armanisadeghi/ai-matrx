@@ -1,5 +1,9 @@
 # AI Matrx — `agents` Table Design (Final)
 
+> **Historical design narrative.** Its SQL predates the June 2026 schema split;
+> retired tool-table names below are preserved only to document that proposal.
+> Live tool contracts are in `tool.definition`.
+
 > This document defines the ideal unified `agents` table that replaces
 > `prompts` and `prompt_builtins`, along with the supporting `agent_tools`
 > junction table and unified `agent_versions` table.

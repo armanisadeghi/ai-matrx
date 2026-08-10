@@ -368,7 +368,7 @@ export async function buildToolInjection(
   }
 
   // The DB-registered surface name the server resolves to a tool set via
-  // tool_resolve_for_request + tool_surface_defaults.always_include_tools
+  // tool_resolve_for_request + tool.surface_defaults.always_include_tools
   // (e.g. matrx-user/chat carries the UI-first tools; most surfaces carry
   // none — matrx-default/default is intentionally empty).
   // Resolution order:
