@@ -39,6 +39,18 @@ import { AgentRunHeader } from "./AgentRunHeader";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useAgentRunSurfaceScope } from "@/features/agents/hooks/useAgentRunSurfaceScope";
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { setVariableValuesWithUndo } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.thunks";
+import {
+  selectInstanceVariableDefinitions,
+  selectUserVariableValues,
+} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import {
+  selectIsExecuting,
+  selectIsStreaming,
+} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";
+import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 const RUN_INITIAL_MESSAGE_LIMIT = 12;
@@ -334,6 +346,147 @@ export function AgentRunnerPage({
     );
   }
 
+  // Write half of the `matrx-user/agent-run` surface (manifest `writeTargets`).
+  // Both targets stage the run's INPUTS through the exact paths the user's own
+  // typing uses — `setUserInputText` is what `AgentTextarea.handleTextChange`
+  // dispatches, and `setVariableValuesWithUndo` wraps the same
+  // `setUserVariableValues` the variable panels dispatch, adding the combined
+  // { text, userValues } undo snapshot so the user can Cmd+Z an agent's fill.
+  // Nothing here sends: the user still presses Send.
+  //
+  // Both refuse mid-flight. That is not politeness — a mid-run write does not
+  // survive: `process-stream` dispatches `resetUserVariableValues` when the turn
+  // completes, and text staged during a run is queued/steered into the RUNNING
+  // turn by the next Enter instead of being sent as a fresh request. Silently
+  // staging a value that is about to vanish is worse than refusing loudly.
+  //
+  // Fresh closures per call (the getWriteHandlers contract); state is read from
+  // the store at apply time, never captured at render.
+  const getSurfaceWriteHandlers = () => {
+    const cid = activeConversationId;
+
+    const assertRunIdle = (target: string) => {
+      const state = store.getState();
+      if (selectIsExecuting(cid)(state) || selectIsStreaming(cid)(state)) {
+        throw new Error(
+          `${target} cannot be applied while this run is in flight (is_executing / is_streaming). Wait for the turn to finish and try again.`,
+        );
+      }
+    };
+
+    return {
+      user_input_draft: (value: unknown) => {
+        if (typeof value !== "string" || !value.trim()) {
+          throw new Error("user_input_draft expects a non-empty string.");
+        }
+        assertRunIdle("user_input_draft");
+        dispatch(
+          setUserInputText({
+            conversationId: cid,
+            text: value,
+            userValues: selectUserVariableValues(cid)(store.getState()),
+          }),
+        );
+      },
+
+      variable_values: async (value: unknown) => {
+        if (
+          typeof value !== "object" ||
+          value === null ||
+          Array.isArray(value)
+        ) {
+          throw new Error(
+            "variable_values expects an object of { variableName: value }.",
+          );
+        }
+        const incoming = value as Record<string, unknown>;
+        const names = Object.keys(incoming);
+        if (names.length === 0) {
+          throw new Error(
+            "variable_values expects at least one variable to set.",
+          );
+        }
+
+        assertRunIdle("variable_values");
+
+        const definitions = selectInstanceVariableDefinitions(cid)(
+          store.getState(),
+        );
+        if (definitions.length === 0) {
+          throw new Error(
+            "This run's agent declares no variables, so there is nothing to fill.",
+          );
+        }
+        const declared = definitions.map((d) => d.name).join(" | ");
+
+        for (const name of names) {
+          const def = definitions.find((d) => d.name === name);
+          if (!def) {
+            throw new Error(
+              `"${name}" is not a variable this agent declares. Declared variables: ${declared}.`,
+            );
+          }
+          // Context-bound: the server resolves this one from the active scope,
+          // and a client value would clobber it.
+          if (def.binding?.itemKey || def.binding?.contextItemId) {
+            throw new Error(
+              `"${name}" is bound to a context slot and is resolved from the active scope — it cannot be set from here.`,
+            );
+          }
+          // Structured-list options hydrate from a list resource that is not in
+          // this surface's scope, so the allowed values are not visible.
+          if (readStructuredList(def.customComponent)) {
+            throw new Error(
+              `"${name}" draws its options from a Structured List whose values are not exposed on this surface — set it in the variable panel.`,
+            );
+          }
+          // Media variables carry a MediaRef (an uploaded file), not text.
+          if (isMediaVariableType(def.customComponent?.type)) {
+            throw new Error(
+              `"${name}" is a ${def.customComponent?.type} variable and takes an uploaded file reference, not a written value.`,
+            );
+          }
+
+          const v = incoming[name];
+          const isScalar =
+            v === null ||
+            typeof v === "string" ||
+            typeof v === "number" ||
+            typeof v === "boolean";
+          const isStringArray =
+            Array.isArray(v) && v.every((item) => typeof item === "string");
+          if (!isScalar && !isStringArray) {
+            throw new Error(
+              `"${name}" expects a string, number, boolean, null, or an array of strings.`,
+            );
+          }
+
+          const options = def.customComponent?.options;
+          if (
+            options &&
+            options.length > 0 &&
+            def.customComponent?.allowOther !== true &&
+            v !== null
+          ) {
+            const chosen = Array.isArray(v) ? v : [v];
+            const bad = chosen.filter(
+              (item) => !options.includes(String(item)),
+            );
+            if (bad.length > 0) {
+              throw new Error(
+                `"${name}" only accepts: ${options.join(" | ")}. Rejected: ${bad.join(", ")}.`,
+              );
+            }
+          }
+        }
+
+        await dispatch(
+          setVariableValuesWithUndo({ conversationId: cid, values: incoming }),
+        ).unwrap();
+      },
+    };
+  };
+
   const body = (
     <div className="relative flex flex-col h-full overflow-hidden">
       <DebugSessionActivator />
@@ -368,6 +521,8 @@ export function AgentRunnerPage({
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/agent-run"
       getScope={getAgentRunScope}
+      isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       {body}
     </SurfaceRuntimeProvider>
