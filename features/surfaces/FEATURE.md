@@ -158,7 +158,16 @@ internal platform use — never a washed-down user variant beside a private one:
   `add_subtasks`/`save_task` entity actions, handlers in
   `TaskEditorBody.tsx`), `matrx-user/marketing-brand` (2 ask-policy entity
   targets through `updateBrand`; confirmed facts/assets/properties have no
-  write path by doctrine — human-owned, promoted via discovery review).
+  write path by doctrine — human-owned, promoted via discovery review),
+  `matrx-user/schedules` (8 ask-policy targets across the surface's TWO
+  write-capable mounts — 6 `schedule_draft_*` drafts wired by
+  `ScheduleForm.tsx`, plus `schedule_title` / `schedule_description` as
+  entity targets wired by `ScheduleDetail.tsx` through
+  `updateScheduledTask`. THE per-mount-posture reference: one manifest and
+  one target list, but `listAgentWritableTargets()` offers a target only
+  where a handler is registered, so the read-only detail route gets just the
+  two fields that cannot change what a schedule runs or when it fires, while
+  everything behavioural stays editor-only for the user to review and save).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -320,6 +329,7 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 
 ## Change Log
 
+- **2026-08-10 — Schedules detail route agent-writable; first surface with a per-MOUNT write posture.** The 2026-08-09 pass made the schedules EDITOR writable (6 `schedule_draft_*` targets on `ScheduleForm`); this completes the surface's other write-capable mount. `ScheduleDetail` (`/schedules/[id]`) now registers `schedule_title` and `schedule_description` as `mode:"entity"`, ask-policy, through the canonical `updateScheduledTask` thunk (invariant 1 intact — no new `.from('sch_*')`). The generalizable bit: a surface with several providers does NOT need one flat posture. One manifest, one target list, and `listAgentWritableTargets()` offering only where a handler is registered is enough for the editor to expose reversible drafts while the read-only detail route exposes just two immediately-persisted fields. The line drawn — and worth copying — is that the detail route gets ONLY fields that cannot change what the entity does or when it does it; prompt and trigger changes stay editor-only so the user reviews the whole schedule before it is armed, and `enabled`/auth-mode/agent-binding/limits remain undeclared everywhere. Live-verified with a real Badass Agent run: both entity targets confirmed per-target with the manifest's own prose, applied, and still correct after a full page reload; an undeclared target (pause) was refused with the agent explaining only two targets exist; zero `surface-writeback` captures.
 - **2026-08-09 — Marketing brand cockpit agent-writable (live-verified).** `matrx-user/marketing-brand` declares 2 ask-policy entity targets (`brand_profile` — merge-patch of the full editorial profile, `brand_identity` — industry/description copy), both through `updateBrand` with the version guard; handlers in `features/marketing/components/brands/MarketingBrandWriteTargets.tsx`, pure validation/merge core in `features/marketing/lib/brand-write-targets.ts` (unit-tested). Verified with a real agent run: per-target ask dialogs, applies persisted (v12→v16 on the test brand), decline path clean, undeclared brand-name write refused, zero writeback captures. Mirrored to `ui.ui_surface_write_target`. Confirmed business facts/assets/properties deliberately have NO write path — the surface doctrine keeps confirmed truth human-owned (candidates flow through the discovery review inbox).
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 

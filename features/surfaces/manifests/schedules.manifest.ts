@@ -405,17 +405,35 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 /**
- * Write half of the 360 loop — what an agent may WRITE into the schedule
- * editor (`/schedules/new` and `/schedules/[id]/edit` only; `ScheduleForm`
- * registers the handlers on its SurfaceRuntimeProvider). Every target is
- * `mode: "draft"`: it stages into the form's own state through the same
- * `patch`/`setTrigger` setters the user's typing uses — visible in the
- * inputs, reversible, persisted only when the user presses Save (Zod
- * re-validates the whole draft at submit). All targets are
- * `applyPolicy: "ask"`.
+ * Write half of the 360 loop. This surface has TWO write-capable mounts and
+ * they get DIFFERENT postures on purpose — one manifest, one target list,
+ * but `listAgentWritableTargets()` only offers a target where that mount
+ * registered a handler, so per-mount registration is what splits them.
  *
- * Deliberately NOT agent-writable: enable/disable, delete, auth mode,
- * the target agent id, execution surfaces/limits, expiry, and the
+ * **Draft targets (`schedule_draft_*`) — `ScheduleForm` only**
+ * (`/schedules/new`, `/schedules/[id]/edit`). Every one is `mode: "draft"`:
+ * it stages into the form's own state through the same `patch`/`setTrigger`
+ * setters the user's typing uses — visible in the inputs, reversible,
+ * persisted only when the user presses Save (Zod re-validates the whole
+ * draft at submit). This is where the consequential fields live (prompt,
+ * trigger), because staging is exactly what makes them safe: the user
+ * reviews the whole schedule before it is armed.
+ *
+ * **Entity targets (`schedule_title`, `schedule_description`) —
+ * `ScheduleDetail` only** (`/schedules/[id]`). The detail route owns no
+ * draft state and has no Save bar, so a draft write there would land
+ * nowhere; these two persist immediately through the canonical
+ * `updateScheduledTask` thunk. They are deliberately the ONLY entity
+ * targets: title and description describe the schedule to humans and cannot
+ * change what it runs or when it fires. An agent that wants a schedule to
+ * behave differently edits the draft and lets the user save it.
+ *
+ * All targets are `applyPolicy: "ask"` — a schedule is standing authority to
+ * act on the user's behalf, so every agent-originated change is confirmed in
+ * place.
+ *
+ * Deliberately NOT agent-writable on either mount: enable/disable, delete,
+ * auth mode, the target agent id, execution surfaces/limits, expiry, and the
  * persistent conversation id — identity, authorization and arming stay
  * human decisions.
  */
@@ -491,6 +509,34 @@ const writeTargets: SurfaceWriteTarget[] = [
     applyPolicy: "ask",
     group: "schedule_editor",
     sortOrder: 150,
+  },
+
+  // ── Entity targets — the DETAIL route (`ScheduleDetail`) only ──────────
+  // No draft state exists here, so these persist immediately. Scoped hard to
+  // the two fields that cannot change execution behaviour.
+  {
+    name: "schedule_title",
+    label: "Schedule title",
+    description:
+      "Renames the open schedule and saves it immediately through the canonical update path. Plain string, 1-200 characters. Changes only how the schedule is labelled — not what it runs, and not when it fires.",
+    valueType: "string",
+    updatesValue: "schedule_title",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_schedule",
+    sortOrder: 200,
+  },
+  {
+    name: "schedule_description",
+    label: "Schedule description",
+    description:
+      "Rewrites the open schedule's description and saves it immediately through the canonical update path. Plain string up to 2000 characters; pass an empty string to clear. Replaces the whole field — read schedule_description first if you mean to extend it. Changes only the human explanation, not what the schedule runs or when it fires.",
+    valueType: "string",
+    updatesValue: "schedule_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_schedule",
+    sortOrder: 210,
   },
 ];
 

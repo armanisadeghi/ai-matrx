@@ -16,6 +16,7 @@ import {
   deleteScheduledTask,
   runTaskNowThunk,
   toggleTaskEnabled,
+  updateScheduledTask,
 } from "../../redux/tasks/thunks";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
@@ -43,6 +44,7 @@ interface Props {
  * already loaded), so no extra fetch is introduced.
  */
 export function ScheduleDetail({ taskId }: Props) {
+  const dispatch = useAppDispatch();
   const { task } = useTaskDetail(taskId);
   const { tasks, status, error } = useScheduledTasks();
   const {
@@ -51,9 +53,43 @@ export function ScheduleDetail({ taskId }: Props) {
     error: runsError,
   } = useTaskRuns(taskId);
 
+  // Write half of the schedules surface, ENTITY side (the editor registers the
+  // `schedule_draft_*` targets instead — see ScheduleForm). This route owns no
+  // draft state and has no Save bar, so a draft write would land nowhere; the
+  // only two targets it wires persist immediately through the canonical
+  // `updateScheduledTask` thunk (invariant 1 — never a direct `.from('sch_*')`
+  // write). Both are deliberately fields that cannot change what the schedule
+  // runs or when it fires; anything behavioural stays editor-only so the user
+  // reviews the whole schedule before saving. Handlers validate and THROW on a
+  // bad shape — the writeback seam converts throws to error envelopes the
+  // agent reads. Fresh closures per call (getWriteHandlers contract).
+  const getSurfaceWriteHandlers = () => ({
+    schedule_title: async (value: unknown) => {
+      if (typeof value !== "string" || !value.trim() || value.trim().length > 200)
+        throw new Error(
+          "schedule_title expects a non-empty string of at most 200 characters.",
+        );
+      await dispatch(
+        updateScheduledTask(taskId, { taskPatch: { title: value.trim() } }),
+      );
+    },
+    schedule_description: async (value: unknown) => {
+      if (typeof value !== "string" || value.length > 2000)
+        throw new Error(
+          "schedule_description expects a string of at most 2000 characters.",
+        );
+      await dispatch(
+        updateScheduledTask(taskId, {
+          taskPatch: { description: value || null },
+        }),
+      );
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/schedules"
+      getWriteHandlers={getSurfaceWriteHandlers}
       getScope={() =>
         createSchedulesScope({
           ...buildScheduleRosterValues(tasks, status, error),
