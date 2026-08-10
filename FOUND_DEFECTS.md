@@ -13,6 +13,17 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D147 — the documented full-repo lint gate is baseline-red with 2,475 errors (2026-08-09)
+
+`pnpm lint` on canonical `main` reports 5,286 findings: 2,475 errors and 2,811
+warnings, including thousands outside the changed paths of the run that found
+it. A changed-file before/after comparison still works (the 2026-08-09 surface
+integration added zero lint errors and removed one), but the documented
+full-repo command cannot currently distinguish a regression from existing
+debt. Establish an explicit ratcheted baseline or clear the errors so the
+command becomes an actionable gate again; do not hide new errors with blanket
+disables.
+
 ### D138 — `/marketing/.../audit` dead-ends on a large site: "Audit rollup unavailable" (2026-08-09)
 
 Reproduced on a 325-page site: the audit tab remains on aggregation and then replaces the entire surface with a generic retry error, hiding even catalogue findings that did load. Capture and surface the actual PostgREST error, then page or cap `fetchSiteAuditRows`; the error state must retain doors to findings and the priority queue.
