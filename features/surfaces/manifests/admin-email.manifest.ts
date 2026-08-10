@@ -16,11 +16,13 @@
  *
  * SECURITY: no SMTP credentials, API keys, or the allowed-domain enforcement
  * logic are declared — `allowed_from_domains` is informational display text
- * only (what the config API returned), never a value an agent can bypass.
+ * only (what the config API returned), never a value an agent can bypass. The
+ * same holds for the write half: `custom_from` is NOT a write target, so no
+ * agent can propose the address this mail appears to come from.
  *
- * Emitters: NONE YET. `AdminEmailPage` (email/page.tsx) is a client component
- * with plenty of `useState` describing exactly this form, but has no
- * `SurfaceRuntimeProvider` mount — see readinessNote.
+ * Emitters: `AdminEmailPage` (email/page.tsx) mounts the surface's first (and
+ * only) `SurfaceRuntimeProvider`, publishing the scope below and servicing the
+ * one write target — see readinessNote for what is still missing.
  */
 
 import type {
@@ -28,7 +30,13 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  EMAIL_BODY_MAX_CHARS,
+  EMAIL_DRAFT_KEYS,
+  EMAIL_SUBJECT_MAX_CHARS,
+} from "@/features/admin/shared/email-compose-draft";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const ADMIN_EMAIL_SURFACE_NAME = "matrx-admin/email";
@@ -156,11 +164,93 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The write half — ONE target, and the reasoning for the line it draws.
+ *
+ * WHAT AN AGENT MAY WRITE HERE: the copy. Subject and body are authored
+ * content an agent drafts better and faster than a person typing into a
+ * textarea — the textbook YES on the judgment bar, and the thing this page's
+ * own Tips card ("keep subject lines clear and concise", "personalize when
+ * possible") is asking for.
+ *
+ * WHAT IT MAY NOT, and why each is a category and not a preference:
+ *
+ *  - RECIPIENTS. `recipient_mode`, `custom_emails_raw` and `selected_user_ids`
+ *    are identity plus blast radius: they decide WHO on the platform receives
+ *    a mass email. An agent that can quietly widen an announcement from three
+ *    addresses to every selected account is the exact write this campaign
+ *    refuses, and staging it into a collapsed panel is worse — the admin is
+ *    reviewing prose in a confirm dialog, not auditing a recipient list. They
+ *    stay undeclared, and the target description says so out loud so an agent
+ *    asked to "add the whole team" explains rather than improvises.
+ *  - THE FROM ADDRESS. `custom_from` decides who the mail appears to come
+ *    from. That is sender identity, and the module docblock's SECURITY note
+ *    governs it: `allowed_from_domains` is display text the API returned, so
+ *    an agent writing here would be proposing a spoof it cannot itself verify.
+ *  - SENDING. There is no `send_email` target and there will not be one. The
+ *    agent drafts; the admin presses "Send Email". This is the same line
+ *    `image-generate` drew at Generate (the press spends real money),
+ *    `marketing-crawls` drew at starting a crawl, and `scraper` drew at
+ *    running a scrape (the press spends someone else's server) — copied here
+ *    deliberately, because an email is the one action on this list that cannot
+ *    be undone at all once it leaves.
+ *
+ * WHY ONE PARTIAL-PATCH OBJECT AND NOT TWO TARGETS — the deliberate call
+ * between the two precedents:
+ *
+ *  - `image-generate`'s `generation_request` (one object beat five micro
+ *    targets) is the right model here, and `marketing-crawls`' separate
+ *    targets are not, because subject and body are not independent decisions.
+ *    They are ONE piece of copy: an announcement's subject IS the promise its
+ *    body keeps, and the admin reviewing a draft wants to accept or reject the
+ *    email, not half of it. Split into two targets, "Keep as is" on the
+ *    subject and "Apply" on the body leaves a mismatched pair that reads as a
+ *    mistake nobody made — the failure `scraper` avoided by bundling mode with
+ *    the field the mode enables.
+ *  - It is also the ordering fix. When an agent stages several targets in one
+ *    turn the seam resolves every handler closure BEFORE the first dialog is
+ *    confirmed, so interdependent fields spread over two targets are read off
+ *    the same (possibly stale) render. One object resolves both fields
+ *    atomically — the `scraper` argument, applied to a smaller surface.
+ *  - Partial-patch keeps the fine-grained ask that separate targets would have
+ *    bought: "make the subject punchier" sends `{ subject }` alone and the
+ *    body is untouched, because an omitted key is never written.
+ *
+ * NO TEMPLATE TARGET, deliberately. Picking a template does exactly one thing
+ * (`handleTemplateSelect` copies that template's subject and message into the
+ * same two fields), so a `apply_template` target would be a second door onto
+ * the state `email_draft` already owns — two writes in one turn racing to
+ * clobber each other, for zero capability an agent does not already have. The
+ * template list is a read value (`available_templates`, each entry carrying
+ * its own `subject`/`message`), so an agent that wants a template writes that
+ * template's copy through `email_draft` and the admin sees exactly what lands.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "email_draft",
+    label: "Email draft",
+    description:
+      `Stages the email COPY into the compose form the admin is looking at. Nothing is sent and nothing leaves the building — the admin still presses "Send Email", and that press is never an agent action. ` +
+      `Value: an object with AT LEAST ONE of { ${EMAIL_DRAFT_KEYS.join(", ")} }. Each key REPLACES that whole field; omit a key to leave it exactly as the admin left it (nothing here appends — read the current draft back from the \`subject\` and \`message_body\` values first if you mean to extend rather than replace). ` +
+      `\`subject\` — the subject line; a non-empty plain-text string, ONE line only (it is an email header, so line breaks are refused), at most ${EMAIL_SUBJECT_MAX_CHARS} characters. ` +
+      `\`message_body\` — the plain-text body; a non-empty plain-text string, at most ${EMAIL_BODY_MAX_CHARS} characters. Real newlines are fine and are preserved as written. This form sends PLAIN TEXT, not HTML — markup arrives as literal characters, so write prose, not tags. ` +
+      `Send both as plain text, not JSON and not JSON-encoded. ` +
+      `To reuse a quick-start template, read \`available_templates\` and write that entry's subject/message through this target so the admin can see and edit what lands. ` +
+      `WHO the email goes to is NOT writable — recipient_mode, the typed address list, the selected users, and the From address have no write target on this surface. If the admin asks you to change the recipients, say that they set those themselves and describe what you would pick. ` +
+      `Refused while is_sending is true — a send is already in flight against the OLD copy, so editing it would leave the form describing something nobody sent.`,
+    valueType: "object",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "compose",
+    sortOrder: 300,
+  },
+];
+
 export const adminEmailManifest: SurfaceManifest = {
   surfaceName: ADMIN_EMAIL_SURFACE_NAME,
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Manifest-only — no emitter wired. AdminEmailPage (app/(admin)/administration/users/email/page.tsx) holds every value declared here in local useState but has no SurfaceRuntimeProvider mount or ApplicationScope builder.",
+    "Manifest + AdminEmailPage emitter wired (the page mounts the surface's SurfaceRuntimeProvider and services the email_draft write target). Remaining: no `data-surface-value` anchors, no DB mirror of writeTargets, and the read values have not had a full completeness audit against the page.",
   label: "Email Users",
   urlPattern: "/administration/users/email",
   intro: `<surface_intro>
@@ -168,13 +258,14 @@ This is an ADMIN surface: the Email Users compose tool at /administration/users/
 
 recipient_mode tells you whether custom_emails_raw or selected_user_ids is the live recipient list. subject and message_body are the draft; available_templates lists quick-start options the admin can pick from. is_sending is true only while a send POST is in flight; last_send_result reflects the LAST attempt only, never anything current or planned.
 
-What you may safely do: help draft or improve subject/message copy, suggest a template, or reason about the selected recipients. You never send the email yourself — sending is the admin pressing "Send Email".
+What you may safely do: help draft or improve subject/message copy, suggest a template, or reason about the selected recipients. The email_draft write target lets you put that copy straight into the form. You never send the email yourself — sending is the admin pressing "Send Email" — and you never choose the recipients or the From address: those have no write target here.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One quick-start template as loaded from `/api/admin/email`. */
