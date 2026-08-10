@@ -42,21 +42,34 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import {
-  checkSlotContract,
   fetchSlotPickerData,
   parseSlotContract,
   putSlotBinding,
   removeSlotBinding,
   type SlotPickerData,
 } from "../overrides";
+import { compareStoredContract } from "../contract-compare";
+
+/** Externally-owned override store (e.g. research's per-topic
+ * `rs_topic.agent_config`). When provided, picking a candidate still runs the
+ * contract pre-flight against the slot's stored contract but the WRITE goes
+ * through these callbacks instead of a user `agent.slot_binding`. */
+export interface SlotAgentPickerOverrideControl {
+  /** The current override agent id, or null when the default runs. */
+  agentId: string | null;
+  apply: (candidateId: string) => Promise<void> | void;
+  reset: () => Promise<void> | void;
+}
 
 export function SlotAgentPicker({
   slotKey,
   className,
+  override,
 }: {
   slotKey: string;
   /** Styles the trigger button. */
   className?: string;
+  override?: SlotAgentPickerOverrideControl;
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -93,7 +106,11 @@ export function SlotAgentPicker({
     void dispatch(fetchAgentsListFull());
   }, [open, load, dispatch]);
 
-  const overrideAgentId = data?.myBinding?.is_enabled ? (data.myBinding.agent_id ?? null) : null;
+  const overrideAgentId = override
+    ? override.agentId
+    : data?.myBinding?.is_enabled
+      ? (data.myBinding.agent_id ?? null)
+      : null;
   const overrideAgentName = overrideAgentId
     ? ([...ownedAgents, ...sharedAgents].find((a) => a.id === overrideAgentId)
         ?.name ?? "your agent")
@@ -104,13 +121,15 @@ export function SlotAgentPicker({
     setPreflight(null);
     setSaving(true);
     try {
-      // Instant client pre-flight (the server's bind-time check is authoritative).
+      // Instant client pre-flight (the server's bind-time check is
+      // authoritative for binding writes; for externally-owned overrides this
+      // pre-flight IS the gate).
       const contract = parseSlotContract(data.slot.contract);
       if (contract.requiredVariables.length + contract.requiredContextSlots.length > 0) {
         await dispatch(fetchAgentExecutionMinimal(candidateId)).unwrap();
         const payload = selectAgentExecutionPayload(store.getState(), candidateId);
         if (payload.isReady) {
-          const check = checkSlotContract(contract, {
+          const check = compareStoredContract(contract, {
             variableNames: (payload.variableDefinitions ?? []).map((v) => v.name),
             contextSlotKeys: (payload.contextSlots ?? []).map((s) => s.key),
           });
@@ -119,30 +138,36 @@ export function SlotAgentPicker({
               `That agent can't run this step — missing: ${[
                 ...check.missingVariables,
                 ...check.missingSlots,
-              ].join(", ")}`,
+              ]
+                .map((r) => r.name)
+                .join(", ")}`,
             );
             return;
           }
         }
       }
-      // Preserve any settings-only overrides already on the binding.
-      const existing = data.myBinding?.config_overrides;
-      const configOverrides = isJsonObject(existing)
-        ? Object.fromEntries(
-            Object.entries(existing).filter(
-              (entry): entry is [string, JsonValue] => entry[1] !== undefined,
-            ),
-          )
-        : null;
-      await putSlotBinding(
-        dispatch,
-        slotKey,
-        { principalType: "user" },
-        {
-          agentId: candidateId,
-          configOverrides,
-        },
-      );
+      if (override) {
+        await override.apply(candidateId);
+      } else {
+        // Preserve any settings-only overrides already on the binding.
+        const existing = data.myBinding?.config_overrides;
+        const configOverrides = isJsonObject(existing)
+          ? Object.fromEntries(
+              Object.entries(existing).filter(
+                (entry): entry is [string, JsonValue] => entry[1] !== undefined,
+              ),
+            )
+          : null;
+        await putSlotBinding(
+          dispatch,
+          slotKey,
+          { principalType: "user" },
+          {
+            agentId: candidateId,
+            configOverrides,
+          },
+        );
+      }
       toast.success("This step now runs your agent.");
       load();
     } catch (err) {
@@ -159,7 +184,11 @@ export function SlotAgentPicker({
     setPreflight(null);
     setSaving(true);
     try {
-      await removeSlotBinding(dispatch, slotKey, { principalType: "user" });
+      if (override) {
+        await override.reset();
+      } else {
+        await removeSlotBinding(dispatch, slotKey, { principalType: "user" });
+      }
       toast.success("Back to the system default.");
       load();
     } catch (err) {

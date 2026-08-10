@@ -288,6 +288,20 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-10 — Per-topic agents page (W3) became a thin consumer of the canonical
+  agent-slots primitives (`features/agents/slots/`): `compareContracts` /
+  `systemContractRows` / `ComparisonResult` moved to
+  `features/agents/slots/contract-compare.ts` (research's `agents/utils.ts` keeps
+  only `shortUuid`); `ContractItem` rows, the `SlotResolutionRibbon` (truthful
+  chain: Topic override → Your override → Org override → System default),
+  `OverriddenCountBadge`, and the shared `useCopySlotAgent` Copy & Update hook
+  (failure decomposition preserved) are consumed from there. The raw UUID-paste
+  box + Validate button in `AgentRoleCard` was replaced by the canonical
+  `SlotAgentPicker` in controlled-override mode — the write path is unchanged
+  (`rs_topic.agent_config` keyed `<kind>_agent_id` via TopicAgentsPage
+  onApply/onRemove; the picker's contract pre-flight is the gate, since that
+  path has no server-side bind check).
+
 - 2026-08-09 — **The research surface is agent-WRITABLE.** `matrx-user/research`
   declares four `writeTargets`, all `mode: "entity"` + `applyPolicy: "ask"`:
   `topic_description` and `topic_name` (canonical `updateTopicMeta`),

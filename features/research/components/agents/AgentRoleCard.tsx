@@ -1,58 +1,44 @@
 "use client";
 
+/**
+ * AgentRoleCard — one research pipeline role, backed by an agent slot.
+ * Thin consumer of the canonical agent-slots primitives
+ * (`features/agents/slots/`): ContractItem rows, the shared Copy & Update
+ * hook (useCopySlotAgent), and SlotAgentPicker in controlled-override mode —
+ * the write path stays research's own `rs_topic.agent_config` (via
+ * onApply/onRemove from TopicAgentsPage). The old raw UUID paste box +
+ * Validate button was replaced by the canonical picker (its contract
+ * pre-flight blocks a non-conforming candidate before the write).
+ */
+
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
-  AlertCircle,
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  CircleDashed,
   ClipboardCopy,
+  CopyPlus,
   Hash,
   KeyRound,
+  Loader2,
   Lock,
-  Plus,
-  RotateCcw,
   ShieldCheck,
   Trash2,
-  XCircle,
-  CopyPlus,
-  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useAppStore,
-} from "@/lib/redux/hooks";
-import {
-  fetchAgentExecutionMinimal,
-  duplicateAgent,
-  duplicateAgentVersion,
-} from "@/features/agents/redux/agent-definition/thunks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentById,
   selectAgentExecutionPayload,
 } from "@/features/agents/redux/agent-definition/selectors";
 import type { RootState } from "@/lib/redux/store";
+import { systemContractRows } from "@/features/agents/slots/contract-compare";
+import { useCopySlotAgent } from "@/features/agents/slots/useCopySlotAgent";
+import { ContractItem } from "@/features/agents/slots/components/ContractItem";
+import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
 import type { AgentRoleDefinition } from "./constants";
-import { UUID_PATTERN } from "./constants";
-import {
-  compareContracts,
-  shortUuid,
-  systemContractRows,
-  type ComparisonResult,
-  type ContractRow,
-} from "./utils";
+import { shortUuid } from "./utils";
 
 // ─── Status pills ──────────────────────────────────────────────────────────
 
@@ -92,72 +78,7 @@ function StatusPill({
   );
 }
 
-// ─── Contract row ──────────────────────────────────────────────────────────
-
-type RowState = "pending" | "matched" | "missing";
-
-function ContractItem({
-  row,
-  state,
-  showCheck,
-  iconSlot,
-}: {
-  row: ContractRow;
-  state: RowState;
-  showCheck: boolean;
-  /** Optional leading icon (e.g., Hash for variables, key for slots). */
-  iconSlot?: React.ReactNode;
-}) {
-  const Status =
-    state === "matched"
-      ? CheckCircle2
-      : state === "missing"
-        ? XCircle
-        : CircleDashed;
-
-  const statusClass =
-    state === "matched"
-      ? "text-emerald-600 dark:text-emerald-400"
-      : state === "missing"
-        ? "text-destructive"
-        : "text-muted-foreground/50";
-
-  return (
-    <li className="flex items-start gap-2.5 py-1.5">
-      {iconSlot ? (
-        <span className="mt-0.5 text-muted-foreground/60">{iconSlot}</span>
-      ) : null}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <code className="font-mono text-[12.5px] font-medium text-foreground">
-            {row.name}
-          </code>
-          {row.type ? (
-            <span className="text-[10.5px] uppercase tracking-wider text-muted-foreground/70">
-              {row.type}
-            </span>
-          ) : null}
-        </div>
-        {row.helpText ? (
-          <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground line-clamp-2">
-            {row.helpText}
-          </p>
-        ) : null}
-      </div>
-      {showCheck ? (
-        <Status className={cn("mt-0.5 h-4 w-4 shrink-0", statusClass)} />
-      ) : null}
-    </li>
-  );
-}
-
 // ─── Role card ─────────────────────────────────────────────────────────────
-
-type Phase =
-  | { kind: "idle" }
-  | { kind: "validating" }
-  | { kind: "error"; message: string }
-  | { kind: "result"; candidateId: string; comparison: ComparisonResult };
 
 interface AgentRoleCardProps {
   role: AgentRoleDefinition;
@@ -176,9 +97,8 @@ export function AgentRoleCard({
   onRemove,
 }: AgentRoleCardProps) {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
-  const router = useRouter();
   const Icon = role.icon;
+  const { copying, copyAndOpen } = useCopySlotAgent();
 
   const systemPayload = useAppSelector((s: RootState) =>
     selectAgentExecutionPayload(s, role.systemAgentId),
@@ -199,21 +119,7 @@ export function AgentRoleCard({
     }
   }, [dispatch, role.systemAgentId, systemPayload.isReady]);
 
-  const [draft, setDraft] = useState("");
-  const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [removeOpen, setRemoveOpen] = useState(false);
-  const [extrasOpen, setExtrasOpen] = useState(false);
-  const [copying, setCopying] = useState(false);
-
-  const trimmed = draft.trim();
-  const hasDraft = trimmed.length > 0;
-  const draftIsValid = UUID_PATTERN.test(trimmed);
-
-  // Subscribe to the candidate's redux record so the candidate name renders
-  // once the list-fetch populates it (parent prefetches `agx_get_list_full`).
-  const candidateAgent = useAppSelector((s: RootState) =>
-    phase.kind === "result" ? selectAgentById(s, phase.candidateId) : undefined,
-  );
 
   const systemRows = useMemo(
     () =>
@@ -226,149 +132,22 @@ export function AgentRoleCard({
     [systemPayload],
   );
 
-  const showResult = phase.kind === "result";
-  const matchedVarSet = useMemo(
-    () =>
-      showResult
-        ? new Set(phase.comparison.matchedVariables.map((r) => r.name))
-        : new Set<string>(),
-    [phase, showResult],
-  );
-  const matchedSlotSet = useMemo(
-    () =>
-      showResult
-        ? new Set(phase.comparison.matchedSlots.map((r) => r.name))
-        : new Set<string>(),
-    [phase, showResult],
-  );
-
-  const handleValidate = async () => {
-    if (!draftIsValid) {
-      toast.error("Enter a valid agent UUID.");
-      return;
-    }
-    if (!systemPayload.isReady) {
-      toast.error("System contract still loading. Try again in a moment.");
-      return;
-    }
-    if (trimmed === role.systemAgentId) {
-      toast.info("That's the system default — already in use.");
-      return;
-    }
-    setPhase({ kind: "validating" });
-    try {
-      await dispatch(fetchAgentExecutionMinimal(trimmed)).unwrap();
-    } catch {
-      setPhase({
-        kind: "error",
-        message: "Couldn't load that agent. Check the ID and access.",
-      });
-      return;
-    }
-    // The thunk returns silently when the RPC produces no row (no access /
-    // doesn't exist). Re-read the payload from the store to detect that.
-    const after = selectAgentExecutionPayload(store.getState(), trimmed);
-    if (!after.isReady) {
-      setPhase({
-        kind: "error",
-        message:
-          "Agent not found, or you don't have access. Make sure it's shared with you and the ID is correct.",
-      });
-      return;
-    }
-    const sysAfter = selectAgentExecutionPayload(
-      store.getState(),
-      role.systemAgentId,
-    );
-    if (!sysAfter.isReady) {
-      setPhase({
-        kind: "error",
-        message: "System contract failed to load. Reload the page.",
-      });
-      return;
-    }
-    const comparison = compareContracts(
+  // Copy & Update — the ONE shared implementation (fork the exact record the
+  // server runs; a failed connect must not masquerade as a failed copy).
+  const handleCopyUpdate = () => {
+    void copyAndOpen(
       {
-        variableDefinitions: sysAfter.variableDefinitions,
-        contextSlots: sysAfter.contextSlots,
+        overrideAgentId: currentOverrideId,
+        defaultAgentId: role.systemAgentId,
+        defaultAgentVersionId: role.systemVersionId,
       },
       {
-        variableDefinitions: after.variableDefinitions,
-        contextSlots: after.contextSlots,
-      },
-    );
-    setPhase({ kind: "result", candidateId: trimmed, comparison });
-  };
-
-  const handleClear = () => {
-    setDraft("");
-    setPhase({ kind: "idle" });
-    setExtrasOpen(false);
-  };
-
-  // Copy & Update: duplicate the role's current agent (override or system) into
-  // a personal, editable copy via agx_duplicate_agent, connect it as the
-  // override, then open it in the builder so the user can tweak it.
-  const handleCopyUpdate = async () => {
-    setCopying(true);
-    try {
-      // Fork the EXACT agent the server runs. With no override, a version-pinned
-      // slot runs the pinned `agx_version` (not the master) — so duplicate the
-      // VERSION, or the user edits a different/corrupted agent. A FLOATING slot
-      // (systemVersionId null) runs the latest master, so forking the master IS
-      // forking what runs. With an override, that's the user's own master row.
-      // Dispatch inside each branch so each thunk action keeps its own type
-      // (a ternary between two different thunks has no single dispatch overload).
-      const forkMasterId = currentOverrideId
-        ?? (role.systemVersionId == null ? role.systemAgentId : null);
-      const newId = forkMasterId
-        ? await dispatch(
-            duplicateAgent({ agentId: forkMasterId, asSystem: false }),
-          ).unwrap()
-        : await dispatch(
-            duplicateAgentVersion({
-              versionId: role.systemVersionId as string,
-              asSystem: false,
-            }),
-          ).unwrap();
-      // The copy is the critical step — once it exists, open it for editing no
-      // matter what. Connecting it as this role's override is best-effort; a
-      // failed connect must not masquerade as a failed copy.
-      try {
-        await onApply(newId);
-        toast.success("Copied — opening your editable version to update");
-      } catch {
-        toast.info(
+        connect: (newId) => onApply(newId),
+        connectedMessage: "Copied — opening your editable version to update",
+        copiedOnlyMessage:
           "Copied your editable version — connect it to this role later",
-        );
-      }
-      router.push(`/agents/${newId}/build`);
-    } catch (err) {
-      // `.unwrap()` re-throws a Redux SerializedError (a plain object with a
-      // `.message`), NOT an Error instance — so `instanceof Error` would hide
-      // the real cause behind "unknown error". Read `.message` off either shape.
-      const message =
-        (err as { message?: string } | null)?.message ?? "unknown error";
-      toast.error(`Couldn't copy agent: ${message}`);
-    } finally {
-      setCopying(false);
-    }
-  };
-
-  const handleApply = async () => {
-    if (phase.kind !== "result" || !phase.comparison.passing) return;
-    try {
-      await onApply(phase.candidateId);
-      toast.success("Override applied.");
-      setDraft("");
-      setPhase({ kind: "idle" });
-    } catch (err) {
-      toast.error(
-        `Couldn't apply override: ${
-          err instanceof Error ? err.message : "unknown error"
-        }`,
-      );
-    }
+      },
+    );
   };
 
   const copyId = (id: string) => {
@@ -462,14 +241,8 @@ export function AgentRoleCard({
                       <ContractItem
                         key={row.name}
                         row={row}
-                        showCheck={showResult}
-                        state={
-                          showResult
-                            ? matchedVarSet.has(row.name)
-                              ? "matched"
-                              : "missing"
-                            : "pending"
-                        }
+                        state="pending"
+                        showCheck={false}
                         iconSlot={<Hash className="h-3 w-3" />}
                       />
                     ))}
@@ -484,14 +257,8 @@ export function AgentRoleCard({
                       <ContractItem
                         key={row.name}
                         row={row}
-                        showCheck={showResult}
-                        state={
-                          showResult
-                            ? matchedSlotSet.has(row.name)
-                              ? "matched"
-                              : "missing"
-                            : "pending"
-                        }
+                        state="pending"
+                        showCheck={false}
                         iconSlot={<KeyRound className="h-3 w-3" />}
                       />
                     ))}
@@ -502,7 +269,7 @@ export function AgentRoleCard({
           )}
         </section>
 
-        {/* Override / Validation */}
+        {/* Override */}
         <section className="bg-card px-5 py-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <h4 className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -557,108 +324,33 @@ export function AgentRoleCard({
                 />
               ) : null}
 
-              <div className={cn("space-y-2", overrideActive && "mt-3")}>
-                <label className="block">
-                  <span className="text-[11px] font-medium text-muted-foreground">
-                    {overrideActive ? "Replace with another agent" : "Custom agent ID"}
-                  </span>
-                  <div className="mt-1.5 flex items-stretch gap-1.5">
-                    <input
-                      type="text"
-                      value={draft}
-                      onChange={(e) => {
-                        setDraft(e.target.value);
-                        if (phase.kind !== "idle")
-                          setPhase({ kind: "idle" });
-                      }}
-                      placeholder="00000000-0000-0000-0000-000000000000"
-                      spellCheck={false}
-                      autoComplete="off"
-                      className={cn(
-                        "min-w-0 flex-1 rounded-md border bg-background px-2.5 font-mono text-[12.5px] text-foreground transition-colors",
-                        "outline-none placeholder:text-muted-foreground/50",
-                        "focus:border-primary/40 focus:ring-2 focus:ring-primary/15",
-                        hasDraft && !draftIsValid
-                          ? "border-destructive/50"
-                          : "border-border/70",
-                      )}
-                      style={{ fontSize: "16px" }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleValidate();
-                        }
-                      }}
-                    />
-                    {hasDraft ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={handleClear}
-                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border/70 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                            aria-label="Clear input"
-                          >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>Clear</TooltipContent>
-                      </Tooltip>
-                    ) : null}
-                    <Button
-                      type="button"
-                      onClick={handleValidate}
-                      disabled={
-                        !draftIsValid ||
-                        phase.kind === "validating" ||
-                        !systemPayload.isReady
-                      }
-                      className="h-9 shrink-0 gap-1.5 rounded-md px-3.5 text-[13px]"
-                    >
-                      {phase.kind === "validating" ? (
-                        <span className="inline-flex h-3 w-3 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                      ) : (
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                      )}
-                      Validate
-                    </Button>
-                  </div>
-                  {hasDraft && !draftIsValid ? (
-                    <p className="mt-1 text-[11.5px] text-destructive">
-                      Not a valid UUID.
-                    </p>
-                  ) : null}
-                </label>
-              </div>
-
-              {/* Validation result */}
-              {phase.kind === "error" ? (
-                <div className="mt-3 rounded-md border border-destructive/25 bg-destructive/5 p-3">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="mt-px h-4 w-4 shrink-0 text-destructive" />
-                    <div className="min-w-0 flex-1 text-[12.5px]">
-                      <p className="font-medium text-destructive">
-                        Validation failed
-                      </p>
-                      <p className="mt-0.5 text-destructive/80">
-                        {phase.message}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {showResult ? (
-                <ValidationResult
-                  comparison={phase.comparison}
-                  candidateId={phase.candidateId}
-                  candidateName={candidateAgent?.name}
-                  isApplying={isApplying}
-                  onApply={handleApply}
-                  extrasOpen={extrasOpen}
-                  onToggleExtras={() => setExtrasOpen((v) => !v)}
+              {/* The canonical picker (search, tabs, favorites, contract
+                  pre-flight) in controlled-override mode — writes stay on
+                  rs_topic.agent_config via onApply/onRemove. */}
+              <div
+                className={cn(
+                  "flex flex-wrap items-center justify-between gap-2",
+                  overrideActive && "mt-3",
+                )}
+              >
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  {overrideActive
+                    ? "Replace with another agent"
+                    : "Choose one of your agents"}
+                </span>
+                <SlotAgentPicker
+                  slotKey={role.slotKey}
+                  override={{
+                    agentId: currentOverrideId,
+                    apply: async (candidateId) => {
+                      await onApply(candidateId);
+                    },
+                    reset: async () => {
+                      await onRemove();
+                    },
+                  }}
                 />
-              ) : null}
+              </div>
             </>
           )}
         </section>
@@ -778,163 +470,6 @@ function SystemOnlyPanel({ agentId }: { agentId: string }) {
       <p className="mt-2 font-mono text-[10.5px] text-muted-foreground/70">
         {shortUuid(agentId)}
       </p>
-    </div>
-  );
-}
-
-function ValidationResult({
-  comparison,
-  candidateId,
-  candidateName,
-  isApplying,
-  onApply,
-  extrasOpen,
-  onToggleExtras,
-}: {
-  comparison: ComparisonResult;
-  candidateId: string;
-  candidateName?: string;
-  isApplying: boolean;
-  onApply: () => void;
-  extrasOpen: boolean;
-  onToggleExtras: () => void;
-}) {
-  const totalVars =
-    comparison.matchedVariables.length + comparison.missingVariables.length;
-  const totalSlots =
-    comparison.matchedSlots.length + comparison.missingSlots.length;
-  const extrasCount =
-    comparison.extraVariables.length + comparison.extraSlots.length;
-
-  const tone: Tone = comparison.passing ? "success" : "destructive";
-  const Icon = comparison.passing ? CheckCircle2 : XCircle;
-
-  return (
-    <div className="mt-3 space-y-2.5">
-      <div
-        className={cn(
-          "flex items-start gap-2 rounded-md border p-3",
-          comparison.passing
-            ? "border-emerald-500/25 bg-emerald-500/5"
-            : "border-destructive/25 bg-destructive/5",
-        )}
-      >
-        <Icon
-          className={cn(
-            "mt-px h-4 w-4 shrink-0",
-            comparison.passing
-              ? "text-emerald-600 dark:text-emerald-400"
-              : "text-destructive",
-          )}
-        />
-        <div className="min-w-0 flex-1 space-y-1">
-          <p
-            className={cn(
-              "text-[13px] font-medium",
-              comparison.passing
-                ? "text-emerald-700 dark:text-emerald-400"
-                : "text-destructive",
-            )}
-          >
-            {comparison.passing
-              ? "Contract satisfied"
-              : `Missing ${comparison.missingVariables.length + comparison.missingSlots.length} required field${
-                  comparison.missingVariables.length +
-                    comparison.missingSlots.length ===
-                  1
-                    ? ""
-                    : "s"
-                }`}
-          </p>
-          <div className="flex flex-wrap gap-1.5 text-[11px]">
-            <StatusPill tone={tone}>
-              <span className="tabular-nums">
-                {comparison.matchedVariables.length}/{totalVars}
-              </span>{" "}
-              variables
-            </StatusPill>
-            <StatusPill tone={tone}>
-              <span className="tabular-nums">
-                {comparison.matchedSlots.length}/{totalSlots}
-              </span>{" "}
-              context slots
-            </StatusPill>
-            {extrasCount > 0 ? (
-              <button
-                type="button"
-                onClick={onToggleExtras}
-                className="inline-flex items-center gap-1 rounded-full bg-muted/50 px-2 py-0.5 text-muted-foreground ring-1 ring-inset ring-border/60 transition-colors hover:bg-muted"
-              >
-                <Plus className="h-3 w-3" />
-                {extrasCount} extra{extrasCount === 1 ? "" : "s"}
-                <ChevronDown
-                  className={cn(
-                    "h-2.5 w-2.5 transition-transform",
-                    extrasOpen && "rotate-180",
-                  )}
-                />
-              </button>
-            ) : null}
-          </div>
-          <p
-            className="truncate font-mono text-[10.5px] text-muted-foreground/80"
-            title={candidateName ?? candidateId}
-          >
-            {candidateName ? `${candidateName} · ` : null}
-            {shortUuid(candidateId)}
-          </p>
-        </div>
-      </div>
-
-      {extrasOpen && extrasCount > 0 ? (
-        <div className="rounded-md border border-border/40 bg-muted/30 px-3 py-2 text-[12px] text-muted-foreground">
-          <p className="mb-1 text-[10.5px] font-medium uppercase tracking-[0.08em] text-muted-foreground/80">
-            Candidate has more than required
-          </p>
-          <ul className="space-y-1">
-            {comparison.extraVariables.map((row) => (
-              <li
-                key={`v-${row.name}`}
-                className="flex items-center gap-2 text-[11.5px]"
-              >
-                <Hash className="h-2.5 w-2.5 text-muted-foreground/50" />
-                <code className="font-mono text-foreground/90">{row.name}</code>
-                <span className="text-muted-foreground/60">— variable</span>
-              </li>
-            ))}
-            {comparison.extraSlots.map((row) => (
-              <li
-                key={`s-${row.name}`}
-                className="flex items-center gap-2 text-[11.5px]"
-              >
-                <KeyRound className="h-2.5 w-2.5 text-muted-foreground/50" />
-                <code className="font-mono text-foreground/90">{row.name}</code>
-                <span className="text-muted-foreground/60">— slot</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 leading-relaxed text-muted-foreground/80">
-            These won&apos;t be supplied by the research pipeline. Make sure
-            they have sensible defaults.
-          </p>
-        </div>
-      ) : null}
-
-      {comparison.passing ? (
-        <Button
-          type="button"
-          onClick={onApply}
-          disabled={isApplying}
-          className="h-9 w-full gap-2 rounded-md text-[13px] sm:w-auto"
-        >
-          {isApplying ? (
-            <span className="inline-flex h-3 w-3 animate-spin rounded-full border-2 border-current border-r-transparent" />
-          ) : (
-            <Check className="h-3.5 w-3.5" />
-          )}
-          Apply override
-        </Button>
-      ) : null}
     </div>
   );
 }

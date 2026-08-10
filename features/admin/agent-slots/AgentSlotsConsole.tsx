@@ -10,6 +10,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Copy,
   GitBranch,
   History,
   Link2,
@@ -24,7 +25,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { isJsonObject } from "@/types/json";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import {
+  duplicateAgent,
+  fetchAgentsListFull,
+} from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentLineageIndex,
   selectBuiltinAgents,
@@ -47,11 +51,14 @@ import {
   type AgentSlotsHealthSummary,
 } from "@/features/surfaces/manifests/agent-slots.manifest";
 import { SlotOverridePanel } from "@/features/agents/slots/components/SlotOverridePanel";
+import { SlotResolutionRibbon } from "@/features/agents/slots/components/SlotResolutionRibbon";
 import { SlotTestBench } from "./SlotTestBench";
 import {
   fetchAgentVersions,
+  fetchPinnedAgentIdentity,
   fetchSlotConsoleData,
   updateSlotDefinition,
+  type PinnedAgentIdentityResult,
   type SlotAgentOption,
   type SlotBindingRow,
   type SlotConsoleData,
@@ -300,13 +307,16 @@ function RepinToTwinButton({
   );
 }
 
-/** Opens the existing Linked Agent Sync window for an agent. */
+/** Opens the existing Linked Agent Sync window for an agent. Pass `slot` so
+ * the diff inside knows WHICH slot it is judging and can repin it in place. */
 function LinkedSyncButton({
   agentId,
   label = "Linked Agent Sync…",
+  slot,
 }: {
   agentId: string;
   label?: string;
+  slot?: SlotDefinitionRow;
 }) {
   const openConvertSystem = useOpenAgentConvertSystemWindow();
   return (
@@ -317,12 +327,257 @@ function LinkedSyncButton({
       title="Create or inspect this agent's linked system twin"
       onClick={(e) => {
         e.stopPropagation();
-        openConvertSystem({ agentId });
+        openConvertSystem({
+          agentId,
+          slotId: slot?.id,
+          slotKey: slot?.slot_key,
+          slotLabel: slot?.label ?? slot?.slot_key,
+        });
       }}
     >
       <Link2 className="h-3 w-3" />
       {label}
     </Button>
+  );
+}
+
+/**
+ * ONE-CLICK promote: duplicate the pinned agent as a system agent
+ * (`agx_duplicate_agent(p_as_system => true)` — super-admin-gated in the RPC)
+ * and immediately repin the slot to the new twin, tracking latest. Replaces
+ * the old multi-step Linked Agent Sync detour for the common case; the window
+ * stays reachable as "Advanced…" beside it.
+ */
+function CreateSystemTwinButton({
+  slot,
+  agentId,
+  agentName,
+  onSaved,
+  label = "Create system twin + repin",
+}: {
+  slot: SlotDefinitionRow;
+  agentId: string;
+  agentName?: string;
+  onSaved: () => void;
+  label?: string;
+}) {
+  const dispatch = useAppDispatch();
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-6 gap-1 px-1.5 text-[11px]"
+      disabled={busy}
+      title={`Duplicate ${agentName ?? "the pinned agent"} as a system agent and repin ${slot.slot_key} to the new twin (tracks latest)`}
+      onClick={async (e) => {
+        e.stopPropagation();
+        setBusy(true);
+        let twinId: string | null = null;
+        try {
+          twinId = await dispatch(
+            duplicateAgent({ agentId, asSystem: true }),
+          ).unwrap();
+          await updateSlotDefinition(slot.id, {
+            default_agent_id: twinId,
+            default_agent_version_id: null,
+            use_latest: true,
+          });
+          toast.success(
+            `Created a system twin and repinned ${slot.slot_key} to it (latest).`,
+            {
+              action: toastDoor("agent", twinId, {
+                href: agentHref(twinId, "builtin"),
+              }),
+            },
+          );
+          onSaved();
+        } catch (error: unknown) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          if (twinId) {
+            // The twin exists — never bury that. Hand the admin its door and
+            // reload so the repin can be finished in the editor.
+            toast.error(`System twin created, but the repin failed: ${message}`, {
+              action: toastDoor("agent", twinId, {
+                href: agentHref(twinId, "builtin"),
+              }),
+            });
+            onSaved();
+          } else {
+            toast.error(`Create system twin failed: ${message}`);
+          }
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      {busy ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <Copy className="h-3 w-3" />
+      )}
+      {label}
+    </Button>
+  );
+}
+
+/**
+ * The unresolved-pin branch of the identity card. The Redux lineage index
+ * cannot see a pin that points at another user's personal agent, so this asks
+ * the server (super-admin lookup) WHO the pin is, then renders the identity
+ * WITH its door plus the two remedies in place: repin to an existing system
+ * twin, or one-click create-twin-and-repin. Never a bare id, never a dead end.
+ */
+function UnresolvedPinCard({
+  row,
+  onSaved,
+}: {
+  row: SlotRow;
+  onSaved: () => void;
+}) {
+  const [lookup, setLookup] = useState<{
+    slotId: string;
+    result: PinnedAgentIdentityResult;
+  } | null>(null);
+  const [lookupError, setLookupError] = useState<{
+    slotId: string;
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPinnedAgentIdentity(row.slot)
+      .then((result) => {
+        if (cancelled) return;
+        setLookup({ slotId: row.slot.id, result });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setLookupError({
+          slotId: row.slot.id,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [row.slot]);
+
+  const result = lookup?.slotId === row.id ? lookup.result : null;
+  const error = lookupError?.slotId === row.id ? lookupError.message : null;
+  const agent = result?.agent ?? null;
+
+  return (
+    <div className="space-y-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2.5 text-xs">
+      <div className="font-medium text-rose-600">
+        This slot&apos;s pin is outside your direct reach.
+      </div>
+
+      {result === null && error === null && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Identifying the pinned agent…
+        </div>
+      )}
+
+      {error !== null && (
+        <div className="space-y-1">
+          <p className="text-rose-600">
+            {HEALTH_HINT["unresolved pin"]} The server lookup also failed:{" "}
+            {error}
+          </p>
+          {row.agentId && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">Pinned agent:</span>
+              <EntityRef
+                token="agent"
+                id={row.agentId}
+                name={row.agentName}
+                href={agentHref(row.agentId, row.agentType)}
+                alwaysShowActions
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {result !== null && agent === null && (
+        <p className="text-rose-600">
+          The pinned agent no longer exists — the record was deleted. Repin
+          this slot to a system agent below.
+        </p>
+      )}
+
+      {result !== null && agent !== null && (
+        <>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <EntityRef
+              token="agent"
+              id={agent.id}
+              name={agent.name}
+              href={agentHref(agent.id, agent.agentType)}
+              alwaysShowActions
+            />
+            <Badge
+              variant="outline"
+              className={HEALTH_CLASS["not a system agent"]}
+            >
+              {agent.agentType === "builtin"
+                ? "System agent"
+                : "Personal agent"}
+            </Badge>
+            {agent.ownerEmail && (
+              <Badge variant="outline">owner: {agent.ownerEmail}</Badge>
+            )}
+            {result.pinnedVersionNumber != null && (
+              <Badge variant="outline">
+                pinned v{result.pinnedVersionNumber}
+              </Badge>
+            )}
+            {agent.isArchived && <Badge variant="secondary">archived</Badge>}
+            {agent.deletedAt && <Badge variant="secondary">deleted</Badge>}
+          </div>
+          <p className="text-muted-foreground">
+            A slot default serves every user, so this pin must move to a
+            system agent.
+          </p>
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {result.systemTwin ? (
+              <>
+                <LineageChip
+                  label="system twin"
+                  agent={{
+                    id: result.systemTwin.id,
+                    name: result.systemTwin.name,
+                    agentType: "builtin",
+                    isSystem: true,
+                  }}
+                  Icon={ShieldCheck}
+                />
+                <RepinToTwinButton
+                  slot={row.slot}
+                  twin={{
+                    id: result.systemTwin.id,
+                    name: result.systemTwin.name,
+                    agentType: "builtin",
+                    isSystem: true,
+                  }}
+                  onSaved={onSaved}
+                />
+              </>
+            ) : agent.deletedAt === null ? (
+              <CreateSystemTwinButton
+                slot={row.slot}
+                agentId={agent.id}
+                agentName={agent.name}
+                onSaved={onSaved}
+              />
+            ) : null}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -341,22 +596,7 @@ function SlotAgentIdentityCard({
   onSaved: () => void;
 }) {
   if (row.health === "unresolved pin") {
-    return (
-      <div className="space-y-1 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-600">
-        <div className="font-medium">
-          This slot&apos;s agent could not be read.
-        </div>
-        <p>
-          {HEALTH_HINT["unresolved pin"]}
-          {row.agentId && (
-            <>
-              {" "}
-              Pinned id <span className="font-mono">{row.agentId}</span>.
-            </>
-          )}
-        </p>
-      </div>
-    );
+    return <UnresolvedPinCard row={row} onSaved={onSaved} />;
   }
   if (!row.agentId) return null;
   const isSystem = row.agentType === "builtin";
@@ -445,13 +685,24 @@ function SlotAgentIdentityCard({
             Versions
           </a>
         </Button>
+        {!isSystem && !lineage.systemTwin && (
+          <CreateSystemTwinButton
+            slot={row.slot}
+            agentId={row.agentId}
+            agentName={row.agentName}
+            onSaved={onSaved}
+          />
+        )}
         <LinkedSyncButton
           agentId={row.agentId}
           label={
             lineage.systemTwin
               ? "Compare with system twin…"
-              : "Linked Agent Sync…"
+              : !isSystem
+                ? "Advanced…"
+                : "Linked Agent Sync…"
           }
+          slot={row.slot}
         />
         {!isSystem && lineage.systemTwin && (
           <RepinToTwinButton
@@ -697,6 +948,9 @@ function SlotDetail({
       {row.slot.description && (
         <p className="text-xs text-muted-foreground">{row.slot.description}</p>
       )}
+      {/* The canonical precedence chain — the admin edits the SYSTEM layer
+          here; user/org overrides below sit above it at runtime. */}
+      <SlotResolutionRibbon />
       {/* WHAT you have, with every door on it — before any picker. */}
       <SlotAgentIdentityCard row={row} lineage={lineage} onSaved={onSaved} />
       <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -1031,9 +1285,11 @@ export function AgentSlotsConsole() {
                 </>
               )}
               {r.health === "not a system agent" && !twin && r.agentId && (
-                <LinkedSyncButton
+                <CreateSystemTwinButton
+                  slot={r.slot}
                   agentId={r.agentId}
-                  label="Create system twin…"
+                  agentName={r.agentName}
+                  onSaved={reload}
                 />
               )}
             </div>

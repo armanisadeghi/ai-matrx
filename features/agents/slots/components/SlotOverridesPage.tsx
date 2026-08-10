@@ -39,6 +39,8 @@ import {
   type SlotOverridesData,
 } from "../overrides";
 import { SlotOverridePanel } from "./SlotOverridePanel";
+import { OverriddenCountBadge } from "./OverriddenCountBadge";
+import { SlotResolutionRibbon } from "./SlotResolutionRibbon";
 
 interface SlotView {
   slot: SlotDefinitionRow;
@@ -198,11 +200,21 @@ export function SlotOverridesPage() {
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-4xl px-4 pb-16 pt-[calc(var(--shell-header-h)+0.75rem)]">
-        <p className="mb-4 text-[13px] leading-relaxed text-muted-foreground">
-          Every step below runs a system-provided agent. Swap in one of your own agents, or keep
-          the system agent and override its settings. Your override wins over your organization's;
-          both win over the system default.
-        </p>
+        <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+          <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-muted-foreground">
+            Every step below runs a system-provided agent. Swap in one of your own agents, or
+            keep the system agent and override its settings.
+          </p>
+          <OverriddenCountBadge
+            overridden={
+              views.filter((v) => v.provenance !== "system" || v.settingsOnly)
+                .length
+            }
+            total={views.length}
+          />
+        </div>
+        {/* The canonical, truthful precedence chain (highest first). */}
+        <SlotResolutionRibbon className="mb-4" />
 
         {domains.length === 0 ? (
           <p className="rounded-lg border border-border/60 bg-card px-4 py-6 text-center text-sm text-muted-foreground">
@@ -392,6 +404,10 @@ function SlotCard({
 
       {open && userId ? (
         <div className="border-t border-border/50 px-4 py-3.5">
+          {/* Which layer decides the agent for THIS user, in the one truthful
+              precedence chain. */}
+          <SlotResolutionRibbon provenance={view.provenance} className="mb-3" />
+
           {/* Org overrides the user can SEE but not edit (member, not admin).
               Every org and agent named here is a door (THE DOOR LAW). */}
           {Object.keys(view.orgBindings).length > 0 && !canEditAnyOrg ? (
