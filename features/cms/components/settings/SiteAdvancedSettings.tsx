@@ -24,6 +24,17 @@
  * Each section edits a local draft and saves through the ONE existing
  * `CmsSiteService.updateSite` path, sending only its own field. Unknown keys
  * on the stored objects are preserved (drafts spread over the original).
+ *
+ * AGENT WRITES: three of these sections also service a `matrx-user/cms-site`
+ * write target — `site_theme_config`, `site_navigation`, `site_footer_config`
+ * — each registered from the section that owns the draft, via
+ * `useSurfaceWriteHandlers`. A handler only sets the same local state the
+ * user's typing sets; the human still clicks that section's Save, and no
+ * handler ever calls `CmsSiteService` itself. The fourth target
+ * (`site_global_css`) belongs to the settings page, which owns that buffer.
+ * See the `writeTargets` doc comment in
+ * `features/surfaces/manifests/cms-site.manifest.ts` for what earns a target
+ * here and what deliberately does not.
  */
 
 import React, { useMemo, useState } from "react";
@@ -34,6 +45,10 @@ import { Loader2, Plus, Save, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import type { ClientSite } from "@/features/cms/types";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
+
+const SURFACE_NAME = CMS_SITE_CONTEXT_MENU_PROPS.surfaceName;
 
 interface SectionProps {
   site: ClientSite;
@@ -62,6 +77,57 @@ function toLinkRows(value: unknown): LinkRow[] {
   return value
     .filter((row): row is Record<string, unknown> => !!row && typeof row === "object")
     .map((row) => ({ label: str(row.label), href: str(row.href) }));
+}
+
+// ── agent-write validation ──────────────────────────────────────────────────
+//
+// The reader helpers above are deliberately forgiving because they parse a
+// STORED row: a malformed value should render as blank, not crash the tab.
+// These are the mirror image. They parse a value an AGENT just produced, and
+// every one of them THROWS on a bad shape — `applySurfaceWrite` turns the
+// throw into an error envelope the agent reads and can correct against, which
+// is worth far more than a silently coerced half-write the user then has to
+// spot. Never coerce here.
+
+function requireRecord(value: unknown, what: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${what} must be a JSON object.`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function requireNoExtraKeys(
+  record: Record<string, unknown>,
+  allowed: string[],
+  what: string,
+  note = "",
+): void {
+  const extra = Object.keys(record).filter((key) => !allowed.includes(key));
+  if (extra.length) {
+    throw new Error(
+      `${what} has unsupported key(s): ${extra.join(", ")}. Only ${allowed.join(", ")} can be written here.${note ? ` ${note}` : ""}`,
+    );
+  }
+}
+
+/** `[{label, href}]`, both required and non-empty. Used by nav + footer links. */
+function requireLinkRows(value: unknown, what: string): LinkRow[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`${what} must be an array of { label, href } objects.`);
+  }
+  return value.map((entry, i) => {
+    const row = requireRecord(entry, `${what}[${i}]`);
+    requireNoExtraKeys(row, ["label", "href"], `${what}[${i}]`);
+    if (typeof row.label !== "string" || !row.label.trim()) {
+      throw new Error(`${what}[${i}].label must be a non-empty string.`);
+    }
+    if (typeof row.href !== "string" || !row.href.trim()) {
+      throw new Error(
+        `${what}[${i}].href must be a non-empty string — a site-relative path like "/services" for this site's own pages, or a full URL.`,
+      );
+    }
+    return { label: row.label, href: row.href };
+  });
 }
 
 function SectionCard({
@@ -249,6 +315,36 @@ function ThemeSection({ site, onSaved }: SectionProps) {
   const [saving, setSaving] = useState(false);
   const dirty = JSON.stringify(rows) !== JSON.stringify(initial);
 
+  useSurfaceWriteHandlers(SURFACE_NAME, {
+    site_theme_config: (value) => {
+      const config = requireRecord(value, "site_theme_config");
+      // Validate BEFORE handing to themeToRows: that reader drops any leaf it
+      // cannot render as a token, which for an agent write would mean a
+      // silently truncated palette.
+      for (const [groupKey, groupValue] of Object.entries(config)) {
+        if (typeof groupValue === "string" || typeof groupValue === "number") {
+          continue;
+        }
+        const bucket = requireRecord(groupValue, `site_theme_config.${groupKey}`);
+        for (const [key, leaf] of Object.entries(bucket)) {
+          if (typeof leaf !== "string" && typeof leaf !== "number") {
+            throw new Error(
+              `site_theme_config.${groupKey}.${key} must be a string or number — a theme token is one CSS custom-property value, never a nested object.`,
+            );
+          }
+        }
+      }
+      const next = themeToRows(config);
+      if (next.length === 0) {
+        throw new Error(
+          "site_theme_config must contain at least one token. This REPLACES every row in the editor, so send the full set you want — read the site_theme_config value to see what is there now.",
+        );
+      }
+      // Same setter the token inputs call, so the human's Save is unchanged.
+      setRows(next);
+    },
+  });
+
   const save = async () => {
     setSaving(true);
     try {
@@ -346,6 +442,15 @@ function NavigationSection({ site, onSaved }: SectionProps) {
   const [saving, setSaving] = useState(false);
   const dirty = JSON.stringify(rows) !== JSON.stringify(initial);
 
+  useSurfaceWriteHandlers(SURFACE_NAME, {
+    // An EMPTY array is a legitimate write here, not a no-op: it clears the
+    // explicit menu and returns the site to deriving its nav from show_in_nav
+    // pages, which is exactly what the editor's own empty state means.
+    site_navigation: (value) => {
+      setRows(requireLinkRows(value, "site_navigation"));
+    },
+  });
+
   const save = async () => {
     setSaving(true);
     try {
@@ -429,6 +534,86 @@ function FooterSection({ site, onSaved }: SectionProps) {
   }, [config, columns, showContact, showSocial, contactHeading, socialHeading, copyright, legalLinks]);
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(config);
+
+  useSurfaceWriteHandlers(SURFACE_NAME, {
+    // ONE target for the whole footer object, because the section saves one
+    // object — splitting it into seven would make seven ask dialogs for a
+    // single edit. Omitted keys keep whatever the editor currently holds;
+    // unknown keys are refused rather than accepted and then dropped by
+    // `draft` above (which only re-assembles the keys it knows).
+    //
+    // That refusal has a live trap behind it: real rows carry keys this
+    // editor preserves but never edits (`order` on dev-website, for one), and
+    // they ARE in the `site_footer_config` value an agent reads. An agent that
+    // echoes the whole object back gets refused — so the message has to name
+    // the fix, not just the fault.
+    site_footer_config: (value) => {
+      const next = requireRecord(value, "site_footer_config");
+      requireNoExtraKeys(
+        next,
+        [
+          "columns",
+          "show_contact",
+          "contact_heading",
+          "show_social",
+          "social_heading",
+          "copyright",
+          "legal_links",
+        ],
+        "site_footer_config",
+        "Any other key on the saved footer_config (such as `order`) is preserved automatically when the human saves — send only the keys you are changing, not the whole object you read.",
+      );
+      const bool = (key: string, current: boolean): boolean => {
+        if (!(key in next)) return current;
+        if (typeof next[key] !== "boolean") {
+          throw new Error(`site_footer_config.${key} must be true or false.`);
+        }
+        return next[key] as boolean;
+      };
+      const text = (key: string, current: string): string => {
+        if (!(key in next)) return current;
+        if (typeof next[key] !== "string") {
+          throw new Error(`site_footer_config.${key} must be a string.`);
+        }
+        return next[key] as string;
+      };
+
+      let nextColumns = columns;
+      if ("columns" in next) {
+        if (!Array.isArray(next.columns)) {
+          throw new Error(
+            "site_footer_config.columns must be an array of { heading, links } objects.",
+          );
+        }
+        nextColumns = next.columns.map((entry, i) => {
+          const where = `site_footer_config.columns[${i}]`;
+          const column = requireRecord(entry, where);
+          requireNoExtraKeys(column, ["heading", "links"], where);
+          if (typeof column.heading !== "string") {
+            throw new Error(`${where}.heading must be a string.`);
+          }
+          return {
+            heading: column.heading,
+            links: requireLinkRows(column.links ?? [], `${where}.links`),
+          };
+        });
+      }
+      const nextLegal =
+        "legal_links" in next
+          ? requireLinkRows(next.legal_links, "site_footer_config.legal_links")
+          : legalLinks;
+
+      // Everything validated — only now touch state, so a bad key can never
+      // leave the footer half-written.
+      setColumns(nextColumns);
+      setShowContact(bool("show_contact", showContact));
+      setContactHeading(text("contact_heading", contactHeading));
+      setShowSocial(bool("show_social", showSocial));
+      setSocialHeading(text("social_heading", socialHeading));
+      setCopyright(text("copyright", copyright));
+      setLegalLinks(nextLegal);
+    },
+  });
 
   const save = async () => {
     setSaving(true);
