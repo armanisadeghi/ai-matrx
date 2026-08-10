@@ -140,5 +140,7 @@ export function useBriefWriter(args: {
     busy: agents.briefBusy,
     lastResult,
     disabledReason: agents.briefBusy ? "Drafting…" : null,
+    /** Live-render handle — mount `<LiveRunDisplay …/>` while drafting. */
+    live: agents.live,
   };
 }

@@ -10,10 +10,13 @@
  * existing hook consumers keep their try/catch flows. Soft consumers catch, or
  * call the core function themselves.
  *
- * Live streaming UI: pass `keepInstance: true` and read `conversationId` /
- * `activeRequestId` — both land BEFORE the stream finishes (the run promise
- * itself only resolves after extraction). The caller then owns cleanup via
- * `destroyInstanceIfAllowed`.
+ * Live streaming UI: prefer `useLiveAgentRun` (features/agents/hooks/
+ * useLiveAgentRun.ts) — it forces the live posture AND owns instance cleanup,
+ * pairing with `<LiveRunDisplay />`. The platform rule is no spinner while AI
+ * works (docs/handoffs/live-stream-everywhere.md). Manually: pass
+ * `keepInstance: true` and read `conversationId` / `activeRequestId` — both
+ * land BEFORE the stream finishes (the run promise itself only resolves after
+ * extraction). The caller then owns cleanup via `destroyInstanceIfAllowed`.
  */
 
 import { useCallback, useState } from "react";

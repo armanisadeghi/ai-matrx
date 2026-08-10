@@ -53,6 +53,7 @@ import {
 } from "../types";
 import { CategorySelect } from "@/features/scopes/components/CategorySelect";
 import { useBriefWriter } from "../hooks/useBriefWriter";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import { KeywordPicker } from "./KeywordPicker";
 import { NodeAssociations } from "./NodeAssociations";
@@ -350,6 +351,35 @@ export function NodePanel({
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
+
+      {/* Live AI output — the model's stream renders here while it works
+          (never a bare spinner). Draft brief is a client slot run; Deepen is
+          the server pipeline's adopted stream. */}
+      {briefWriter.live.hasLiveRun ? (
+        <div className="border-b border-border px-4 py-2">
+          <LiveRunDisplay
+            conversationId={briefWriter.live.conversationId}
+            label={briefWriter.live.label ?? "Drafting brief"}
+            pending={briefWriter.live.isRunning}
+            onDismiss={briefWriter.live.dismiss}
+          />
+        </div>
+      ) : null}
+      {deepen.nodeId === node.id &&
+      (deepeningThisNode || deepen.run.requestId) ? (
+        <div className="border-b border-border px-4 py-2">
+          <LiveRunDisplay
+            requestId={deepen.run.requestId ?? null}
+            label={
+              deepen.run.stage
+                ? `Deepening — ${deepen.run.stage}`
+                : "Deepening — brief + sources"
+            }
+            pending={deepeningThisNode && !deepen.run.requestId}
+            onDismiss={deepen.reset}
+          />
+        </div>
+      ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-4">

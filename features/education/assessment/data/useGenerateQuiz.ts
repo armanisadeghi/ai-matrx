@@ -14,7 +14,7 @@
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { NewAssessmentItemInput, QuestionType, Depth } from "./types";
 
@@ -65,6 +65,8 @@ export interface UseGenerateQuizResult {
   error: string | null;
   /** Live request id for the in-flight generation (null before the stream connects). */
   activeRequestId: string | null;
+  /** Live conversation id — feed to `<LiveRunDisplay conversationId={…} />`. */
+  conversationId: string | null;
 }
 
 const EXTRACTION_TIMEOUT_MS = 240_000;
@@ -186,7 +188,11 @@ export function coerceGeneratedQuiz(value: unknown): GeneratedQuiz {
 }
 
 export function useGenerateQuiz(): UseGenerateQuizResult {
-  const { run, isRunning, error, activeRequestId } = useHeadlessAgentJson();
+  // Live-by-default: keeps the instance for streaming UI AND owns its cleanup
+  // (the previous keepInstance wiring leaked the instance — nothing destroyed
+  // it on unmount or re-run).
+  const { run, isRunning, error, activeRequestId, conversationId } =
+    useLiveAgentRun();
 
   async function generate(
     agentId: string,
@@ -200,10 +206,6 @@ export function useGenerateQuiz(): UseGenerateQuizResult {
         : "assessment-generate-from-topic",
       sourceFeature: "education-assessment",
       surfaceName: "matrx-user/education-assessment",
-      // Live streaming preview owns the conversation — keep the instance so
-      // consumers of activeRequestId can render the stream + final envelope.
-      displayMode: "direct",
-      keepInstance: true,
       variables: fromSource
         ? {
             source_content: vars.source_content,
@@ -237,5 +239,11 @@ export function useGenerateQuiz(): UseGenerateQuizResult {
     });
   }
 
-  return { generate, isGenerating: isRunning, error, activeRequestId };
+  return {
+    generate,
+    isGenerating: isRunning,
+    error,
+    activeRequestId,
+    conversationId,
+  };
 }

@@ -38,6 +38,10 @@ plan CRUD through it.
 - AI actions (`hooks/useContentPlanAi.ts`) — Generate plan (`PlanGenerateBar`
   strip on tree/table/map, streams `/content-plan/sites/{id}/generate`) and
   Deepen (NodePanel header button, streams `/content-plan/nodes/{id}/deepen`).
+  Both streams are ADOPTED into the canonical execution slice
+  (`adoptForeignStream`) and render live via `<LiveRunDisplay requestId>` —
+  server phase/info milestones drive the stage line (aidream emits them since
+  2026-08-10; `initial_message` now actually arrives as an info event).
 - **Setup step agents (`setup/ai.ts`)** — every Setup step has a real AI,
   grounded in the RESEARCH system's final report (the "Document",
   `research.rs_document.content`, picked by topic in the `SetupAiBar` strip):
@@ -356,6 +360,15 @@ plan CRUD through it.
   www.pbw-law.com trap — an empty duplicate presented day-zero Setup while the
   26-page plan lived on the sibling record). Commit report gained a
   "View your plan" door that switches to the tree view.
+- 2026-08-10 — Claude: **Every AI action in this feature now renders LIVE — no
+  spinner-while-AI-works anywhere** (Arman's platform-wide ruling; campaign
+  doc `docs/handoffs/live-stream-everywhere.md`). Draft brief + all 7 setup
+  agents run through the new `useLiveAgentRun` primitive and stream into
+  `<LiveRunDisplay>` (NodePanel, SetupView strip under the AI bar,
+  EntityManager); Deepen / bulk deepen / Generate adopt their server streams
+  (`adoptForeignStream`) and render the model's tokens live in NodePanel and
+  PlanGenerateBar, with real server phase/info milestones (aidream change,
+  same date). Fixed the false "nodes appear as they land" copy.
 - 2026-08-09 — Claude: **Content-plan write targets are genuinely agent-writable.** The node surface uses ask-policy for nine draft fields and `save_node`; setup uses ask for family counts/names and auto for archetype; plan selection is auto; list navigation is ask. `node_primary_keyword_id` remains manual because no valid keyword UUID inventory is exposed.
 - 2026-08-09 — Claude: **Page-layer assist chips in the workspace.**
   `plan-assists-producer.ts` (deterministic missing-pages sweep: plan nodes ×
@@ -602,9 +615,12 @@ plan CRUD through it.
   redirects; site switch = push, view switch = replace). Headers split
   (ContentPlanListHeader vs ContentPlanHeader + back link; the header's
   auto-select effect died with the list page). Deliverable 3 wired:
-  `useContentPlanAi.ts` streams generate/deepen via `callApi` (phase line,
-  mid-stream tree refetch, errors via `describeBackendFailure`), surfaced as
-  the PlanGenerateBar strip and the NodePanel Deepen button. Fixed a dead
+  `useContentPlanAi.ts` streams generate/deepen via `callApi` (errors via
+  `describeBackendFailure`), surfaced as the PlanGenerateBar strip and the
+  NodePanel Deepen button. (Historical note: until 2026-08-10 the server
+  emitted no phase events for these endpoints and applied the tree once at
+  the end — the "phase line + mid-stream refetch" description here was
+  aspirational; both are real now.) Fixed a dead
   root-level `/content-plan` link in PlanNodePatchRenderer. Handoff docs for
   this feature merged into
   `common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md`.
