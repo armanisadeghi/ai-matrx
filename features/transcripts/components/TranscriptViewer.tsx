@@ -48,7 +48,10 @@ import {
   buildTranscriptsContextData,
 } from "@/features/transcripts/agent-context/buildTranscriptsContextData";
 import { createTranscriptsExtraSections } from "@/features/transcripts/agent-context/transcriptsExtraSections";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
 // lightweight shell (imported statically); MenuContent lazy-loads on first
@@ -56,6 +59,39 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 // presentational viewer uses the read-only wrapper (Copy/AI/Export/Convert).
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+
+// ── Surface write-target validation ─────────────────────────────────────────
+// Agent-supplied values arrive as `unknown`. Every handler validates its own
+// shape and THROWS on anything unexpected — the writeback runtime turns the
+// throw into a loud, readable envelope the agent gets back and can retry from.
+// Never coerce: a wrong value is the agent's error to hear about.
+
+function asWriteObject(value: unknown, target: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(
+      `${target} expects an object, received ${Array.isArray(value) ? "an array" : typeof value}.`,
+    );
+  }
+  return value as Record<string, unknown>;
+}
+
+/** A required, non-blank string field. */
+function requireText(
+  source: Record<string, unknown>,
+  field: string,
+  target: string,
+): string {
+  const raw = source[field];
+  if (typeof raw !== "string") {
+    throw new Error(
+      `${target} expects "${field}" to be a string, received ${raw === undefined ? "nothing" : typeof raw}.`,
+    );
+  }
+  if (!raw.trim()) {
+    throw new Error(`${target}: "${field}" cannot be empty or whitespace.`);
+  }
+  return raw.trim();
+}
 
 export function TranscriptViewer() {
   const { activeTranscript, updateTranscript } = useTranscripts();
@@ -353,6 +389,103 @@ export function TranscriptViewer() {
     }
   };
 
+  // ── Agent write handlers for the surface's declared writeTargets ──────────
+  // Every handler routes through the SAME path the user's own clicks use:
+  // `updateTranscript` (the canonical thunk → transcriptsService, which throws
+  // on a failed write so a failure surfaces as an error rather than a false
+  // success) for the entity targets, and the inline body editor's own
+  // `setEditContent` staging buffer for the draft one. No parallel writes, no
+  // raw supabase. Rebuilt each render; the provider holds it in a ref, so the
+  // registered handlers always see current state.
+  const buildWriteHandlers = (): SurfaceWriteHandlers => ({
+    transcript_title: async (value) => {
+      if (!activeTranscript) {
+        throw new Error(
+          "No transcript is open — select a transcript before renaming it.",
+        );
+      }
+      const patch = asWriteObject(value, "transcript_title");
+      const title = requireText(patch, "title", "transcript_title");
+      await updateTranscript(activeTranscript.id, { title });
+      toast.success("Transcript renamed");
+    },
+
+    transcript_description: async (value) => {
+      if (!activeTranscript) {
+        throw new Error(
+          "No transcript is open — select a transcript before editing its description.",
+        );
+      }
+      const patch = asWriteObject(value, "transcript_description");
+      const raw = patch.description;
+      // Unlike title, an empty description is a legitimate value (it clears
+      // the subtitle), so this one is checked for type only.
+      if (typeof raw !== "string") {
+        throw new Error(
+          `transcript_description expects "description" to be a string, received ${raw === undefined ? "nothing" : typeof raw}.`,
+        );
+      }
+      await updateTranscript(activeTranscript.id, { description: raw.trim() });
+      toast.success("Description updated");
+    },
+
+    transcript_body: (value) => {
+      if (!activeTranscript) {
+        throw new Error(
+          "No transcript is open — select a transcript before editing its text.",
+        );
+      }
+      const patch = asWriteObject(value, "transcript_body");
+      const text = requireText(patch, "text", "transcript_body");
+      const mode = patch.mode ?? "replace";
+      if (mode !== "replace" && mode !== "append") {
+        throw new Error(
+          `transcript_body "mode" must be "replace" or "append", received ${JSON.stringify(patch.mode)}.`,
+        );
+      }
+      // Stage into the inline editor's buffer — the same state the user's
+      // typing drives — and open the editor so the staged text is visible
+      // with its existing Save / Cancel bar. Nothing persists here.
+      const base = isEditingContent
+        ? (editContentRef.current?.value ?? editContent)
+        : plainTranscriptText;
+      setEditContent(mode === "append" ? `${base}\n\n${text}` : text);
+      setIsEditingContent(true);
+    },
+
+    transcript_speaker_label: async (value) => {
+      if (!activeTranscript) {
+        throw new Error(
+          "No transcript is open — select a transcript before relabelling speakers.",
+        );
+      }
+      const patch = asWriteObject(value, "transcript_speaker_label");
+      const from = requireText(patch, "from", "transcript_speaker_label");
+      const to = requireText(patch, "to", "transcript_speaker_label");
+      const known = Array.from(
+        new Set(
+          activeTranscript.segments
+            .map((s) => s.speaker?.trim())
+            .filter((s): s is string => Boolean(s)),
+        ),
+      );
+      if (!known.includes(from)) {
+        throw new Error(
+          `transcript_speaker_label: no speaker "${from}" in this transcript. Existing labels: ${
+            known.length ? known.map((s) => `"${s}"`).join(", ") : "(none)"
+          }.`,
+        );
+      }
+      const updatedSegments = activeTranscript.segments.map((segment) =>
+        segment.speaker?.trim() === from ? { ...segment, speaker: to } : segment,
+      );
+      await updateTranscript(activeTranscript.id, {
+        segments: updatedSegments,
+      });
+      toast.success(`Speaker "${from}" renamed to "${to}"`);
+    },
+  });
+
   // Construct the transcript content string for the viewer if segments exist
   const transcriptContent = React.useMemo(() => {
     if (!activeTranscript?.segments) return "";
@@ -387,6 +520,7 @@ export function TranscriptViewer() {
           : getViewerApplicationScope()
       }
       isEditable={isEditingContent}
+      getWriteHandlers={buildWriteHandlers}
     >
       <div className="flex-1 flex flex-col overflow-hidden bg-background">
         {/* Header */}
