@@ -17,6 +17,12 @@
  * SECURITY: emits authored agent-definition metadata only. No secrets, API
  * keys, tokens, connection strings, or credential material are read or placed
  * in the scope — see the manifest header for the standing rule.
+ *
+ * Write half: this mount also registers the surface's `writeTargets` handlers
+ * (`useSystemAgentWriteHandlers`) — the four authored identity fields (name,
+ * description, category, tags), each persisted through `saveAgentField`. The
+ * roster mount (`SystemAgentsGrid`) deliberately registers NONE; see the
+ * manifest's `writeTargets` block for the reasoning on both.
  */
 
 import type { ReactNode } from "react";
@@ -27,6 +33,7 @@ import {
   ADMIN_SYSTEM_AGENTS_SURFACE_NAME,
   createAdminSystemAgentsScope,
 } from "@/features/surfaces/manifests/admin-system-agents.manifest";
+import { useSystemAgentWriteHandlers } from "@/features/agents/hooks/useSystemAgentWriteHandlers";
 
 export function SystemAgentSurfaceEmitter({
   agentId,
@@ -36,6 +43,7 @@ export function SystemAgentSurfaceEmitter({
   children: ReactNode;
 }) {
   const agent = useAppSelector((s) => selectAgentById(s, agentId));
+  const getWriteHandlers = useSystemAgentWriteHandlers(agentId);
 
   // Built at trigger time (Run), not on mount — reads whatever the Redux
   // record holds at that instant.
@@ -95,7 +103,10 @@ export function SystemAgentSurfaceEmitter({
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_SYSTEM_AGENTS_SURFACE_NAME}
       getScope={getSurfaceScope}
+      // Not a text-editing route — `isEditable` only decides whether the
+      // editor default agents get bound, and gates nothing about writes.
       isEditable={false}
+      getWriteHandlers={getWriteHandlers}
     >
       {children}
     </SurfaceRuntimeProvider>
