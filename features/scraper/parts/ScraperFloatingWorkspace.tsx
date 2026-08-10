@@ -67,9 +67,13 @@ import { openImageViewer } from "@/features/window-panels/windows/image/openImag
 import {
   isScrapeMode,
   isValidPageLimit,
+  isValidResultLimit,
   PAGE_LIMIT_DEFAULT,
   PAGE_LIMIT_MAX,
   PAGE_LIMIT_MIN,
+  RESULT_LIMIT_DEFAULT,
+  RESULT_LIMIT_MAX,
+  RESULT_LIMIT_MIN,
   SCRAPE_MODE_BY_VALUE,
   SCRAPE_MODE_BY_WORKSPACE_MODE,
   SCRAPE_MODE_ENUM_TEXT,
@@ -170,9 +174,14 @@ export function ScraperFloatingWorkspace({
     searchKeyword: mode === "web" ? keywordForm.keywords : keyword,
     maxPages:
       mode === "batch" ? parseInt(maxPages, 10) || PAGE_LIMIT_DEFAULT : undefined,
+    maxResults:
+      mode === "web"
+        ? parseInt(keywordForm.maxResults, 10) || RESULT_LIMIT_DEFAULT
+        : undefined,
     results: scrapedResults,
     selectedIndex: safeScrapedIndex,
     searchHits: keywordForm.flatResults,
+    selectedHitIndex: keywordForm.selectedHitIndex,
     isScraping: isAnyLoading,
   });
 
@@ -598,6 +607,65 @@ export function ScraperFloatingWorkspace({
           `scrape_page_limit expects an integer from ${PAGE_LIMIT_MIN} to ${PAGE_LIMIT_MAX}.`,
         );
       setMaxPages(String(value));
+    },
+    scrape_result_limit: (value: unknown) => {
+      if (isAnyLoading)
+        throw new Error(
+          "scrape_result_limit is unavailable while a scrape or search is in flight (is_scraping is true). Wait for the run to finish.",
+        );
+      if (!isValidResultLimit(value))
+        throw new Error(
+          `scrape_result_limit expects an integer from ${RESULT_LIMIT_MIN} to ${RESULT_LIMIT_MAX}.`,
+        );
+      keywordForm.setMaxResults(String(value));
+    },
+
+    // ── Selection targets (mode: "ui") ──────────────────────────────────
+    // Neither fetches anything: they move the user's view onto something this
+    // session ALREADY has. Each one refuses in the modes that do not render
+    // its list, because a selection the user cannot see is not a selection.
+    selected_result_page: (value: unknown) => {
+      const spec = SCRAPE_MODE_BY_WORKSPACE_MODE[mode];
+      if (mode === "web")
+        throw new Error(
+          `selected_result_page does not apply in "${spec.value}" mode (${spec.summary}) — the scraped-pages sidebar and results pane are not rendered. Switch with scrape_command { mode: "quick" } or { mode: "full" } first.`,
+        );
+      if (typeof value !== "number" || !Number.isInteger(value))
+        throw new Error(
+          `selected_result_page expects a zero-based integer index into results_overview, got ${typeof value}.`,
+        );
+      if (scrapedResults.length === 0)
+        throw new Error(
+          "selected_result_page: no pages have been scraped in this session yet (result_count is 0).",
+        );
+      if (value < 0 || value >= scrapedResults.length)
+        throw new Error(
+          `selected_result_page: index ${value} is out of range — this session has ${scrapedResults.length} scraped page(s), so valid indexes are 0-${scrapedResults.length - 1}.`,
+        );
+      // The exact pair the sidebar's own onSelect fires.
+      setSelectedScrapedIndex(value);
+      setActiveTab("pretty");
+    },
+    selected_search_hit: (value: unknown) => {
+      const spec = SCRAPE_MODE_BY_WORKSPACE_MODE[mode];
+      if (mode !== "web")
+        throw new Error(
+          `selected_search_hit does not apply in "${spec.value}" mode (${spec.summary}) — the web-search hit list is only rendered in search mode. Switch with scrape_command { mode: "search" } first.`,
+        );
+      if (typeof value !== "number" || !Number.isInteger(value))
+        throw new Error(
+          `selected_search_hit expects a zero-based integer index into search_hits, got ${typeof value}.`,
+        );
+      const hits = keywordForm.flatResults.length;
+      if (hits === 0)
+        throw new Error(
+          "selected_search_hit: no web-search hits are loaded (search_hit_count is 0). The user has to run a search first.",
+        );
+      if (value < 0 || value >= hits)
+        throw new Error(
+          `selected_search_hit: index ${value} is out of range — there ${hits === 1 ? "is" : "are"} ${hits} hit(s), so valid indexes are 0-${hits - 1}.`,
+        );
+      keywordForm.setSelectedHitIndex(value);
     },
   });
 

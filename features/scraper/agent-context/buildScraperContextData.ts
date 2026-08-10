@@ -133,12 +133,16 @@ export interface BuildScraperContextDataArgs {
   searchKeyword?: string;
   /** Max pages configured for deep (search + scrape) mode. */
   maxPages?: number;
+  /** Max hits configured for web-search mode (the "Max" input). */
+  maxResults?: number;
   /** Every scraped page in this session's sidebar list. */
   results?: ScraperResult[];
   /** Zero-based index of `selected` within `results`. */
   selectedIndex?: number;
   /** Web-search hits from keyword mode (not yet scraped). */
   searchHits?: SearchResultItem[];
+  /** Zero-based index of the web-search hit the user has open, if any. */
+  selectedHitIndex?: number | null;
   /** True while any scrape/search request is in flight. */
   isScraping?: boolean;
 }
@@ -166,9 +170,11 @@ export function buildScraperContextData(
     targetUrl,
     searchKeyword,
     maxPages,
+    maxResults,
     results = [],
     selectedIndex,
     searchHits = [],
+    selectedHitIndex,
     isScraping = false,
   } = args;
 
@@ -187,7 +193,12 @@ export function buildScraperContextData(
     target_url: targetUrl?.trim() || undefined,
     search_keyword: searchKeyword?.trim() || undefined,
     max_pages: maxPages || undefined,
+    max_results: maxResults || undefined,
     search_hits: hitEntries.length > 0 ? hitEntries : undefined,
+    selected_hit_index:
+      hitEntries.length > 0 && typeof selectedHitIndex === "number"
+        ? selectedHitIndex
+        : undefined,
     selected_result_index:
       results.length > 0 && typeof selectedIndex === "number"
         ? selectedIndex

@@ -38,6 +38,8 @@ import type {
 import {
   PAGE_LIMIT_MAX,
   PAGE_LIMIT_MIN,
+  RESULT_LIMIT_MAX,
+  RESULT_LIMIT_MIN,
   SCRAPE_MODES,
   SCRAPE_MODE_ENUM_TEXT,
 } from "@/features/scraper/scrape-command";
@@ -126,6 +128,17 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 2,
     sortOrder: 308,
+    group: "target",
+  },
+  {
+    name: "max_results",
+    label: "Max results",
+    description:
+      "Maximum number of hits the web-search (\"search\") mode will request for the keyword — the budget beside the keyword field. These hits come back unscraped. Absent outside web-search mode.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 309,
     group: "target",
   },
   {
@@ -268,6 +281,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "results",
   },
   {
+    name: "selected_hit_index",
+    label: "Selected hit index",
+    description:
+      "Zero-based index of the web-search hit the user currently has open in the detail pane, within search_hits. Absent when no search has run or no hit is open.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 2,
+    sortOrder: 422,
+    group: "results",
+  },
+  {
     name: "search_hit_count",
     label: "Web search hit count",
     description:
@@ -337,46 +361,73 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
-// ── Write targets (read/write v1) ───────────────────────────────────────────
-//
-// WHAT EARNED A TARGET, AND WHY (the judgment bar, applied honestly).
-//
-// This surface has exactly one thing a user composes: the NEXT scrape request.
-// Everything from `scraped_url` onward is observed OUTPUT — read-only evidence
-// pulled off live pages — and is deliberately not writable: an agent that could
-// edit scraped content could launder invention into something the user reads as
-// fact. Result selection and the Scrape button are likewise excluded; running a
-// scrape is an outbound request against a third-party site, and that stays the
-// user's press.
-//
-// So the writable half is the request form's four fields, and they are declared
-// as ONE object target rather than four micro-targets because the user composes
-// them as one decision — the mode determines which input is even rendered, and
-// `max_pages` is meaningless outside deep mode. One target lets the handler
-// check that coherence; four could not.
-//
-// `search_keyword` and `max_pages` are the easy YES: drafting a good search
-// query from a fuzzy intent ("find me recent writeups on X") is exactly the
-// authored-content case, and the page count is the planning number that rides
-// with it. `scrape_mode` is a YES for the same reason — "search the web for X"
-// vs "read this page" vs "search and read the top 5" is a real routing decision
-// an agent makes from the user's own words.
-//
-// `target_url` was the close call, and it is IN — with its risk written into the
-// contract rather than waved off. The failure mode is real: an agent that
-// half-remembers a URL from training can produce a plausible, well-formed
-// address for a page that never existed, and a URL is closer to identity
-// ("which page do you mean") than to authored content. What tips it is that
-// this surface PRODUCES the URLs an agent would want to write: `search_hits`
-// carries the web-search results and `scraped_links` carries every link off the
-// page the user is reading, both declared read values. The honest use is
-// transcription from that evidence — "put hit #3 in the box" — not recall, so
-// the description forbids recall explicitly, the handler rejects anything that
-// isn't an absolute http(s) URL, and `ask` puts the full URL in front of the
-// user before it lands. Two human gates remain after that: the staged value is
-// visible in the input, and the scrape itself is still a button the user
-// presses. A well-formed but wrong URL is stopped by the person, which is the
-// right place to stop it.
+/**
+ * Write targets — the scrape COMMAND, staged for the user to run.
+ *
+ * What earns a target here is the planning half of this surface: which URL to
+ * scrape, which keyword to search, in which mode, and how many pages deep. All
+ * four are things an agent derives from the conversation ("check what their
+ * pricing page says", "pull the top 10 results for X") and all four have read
+ * twins, so the evidence loop closes: read `scrape_mode` / `target_url` /
+ * `search_keyword` / `max_pages`, write them back.
+ *
+ * RUNNING the scrape is deliberately NOT agent-drivable. It spends real
+ * wall-clock time and puts load on someone else's server, so it stays a human
+ * click — the agent stages the command, the user presses Scrape. Everything
+ * downstream of a run (the results, the extracted content, the metadata) is
+ * observed evidence and is read-only by nature.
+ *
+ * WHY ONE COMMAND OBJECT PLUS ONE SCALAR, and not four scalars or one blob:
+ *
+ *  - `scrape_command` bundles mode + url + keyword because they are ONE
+ *    decision that must resolve ATOMICALLY. The mode picks which config input
+ *    the workspace renders AND which of the two keyword stores is live (deep
+ *    mode's own keyword vs. the web-search form's). Split into separate
+ *    targets, an agent that sets the keyword and then the mode would have its
+ *    keyword land in whichever store the PREVIOUS mode pointed at — a real
+ *    race on staged React state, and one that fails silently because the user
+ *    just sees an empty field. One object means the handler sees the mode and
+ *    the field together and can refuse an incoherent pair outright.
+ *  - `scrape_page_limit` stays separate because it is a genuinely different
+ *    decision: not "what do we scrape" but "how much of someone else's server
+ *    do we spend". It is routinely adjusted without touching the target, it
+ *    carries its own bounds vocabulary, and it is the one field here a user
+ *    might want to accept or decline on its own — which is exactly what a
+ *    separate ask dialog gives them. It also has a clean 1:1 read twin
+ *    (`max_pages`), which the bundled command object cannot have.
+ *  - `scrape_result_limit` is `scrape_page_limit`'s twin for web-search mode,
+ *    and separate for the same reason. It exists because the "Max" input beside
+ *    the keyword field was not a declared read value at all until 2026-08-10,
+ *    so search mode's budget could be neither read nor set; `max_results`
+ *    closes that and gives this target its 1:1 twin. The ceiling is much
+ *    higher than the page budget on purpose — those hits arrive unscraped.
+ *
+ * WHY THE TWO SELECTION TARGETS: `selected_result_page` and
+ * `selected_search_hit` are not part of the command at all. They answer a
+ * different question, at a different time, against different evidence: "of the
+ * N things ALREADY fetched, which one is worth looking at?" That is a real
+ * judgement an agent makes well after reading `results_overview` /
+ * `search_hits`, and it is `mode: "ui"` — nothing is fetched, nothing is
+ * persisted, and a wrong pick costs one click to undo. `selected_search_hit`
+ * is deliberately the FURTHEST an agent goes toward a scrape: it can put the
+ * hit it judged best in front of the user, and the user presses Scrape.
+ *
+ * `active_result_tab` was considered and declined on the judgement bar: it is a
+ * pure mechanical view flip, and an agent already holds every representation of
+ * the page in its context, so it knows nothing the user doesn't about which tab
+ * they want.
+ *
+ * MOUNTS: `ScraperFloatingWorkspace` (the `scraperWindow` panel) is the only
+ * mount that registers a `SurfaceRuntimeProvider` for this surface, so it is
+ * the only mount that offers these targets. The `/scraper/*` route pages
+ * (`app/(core)/scraper/**`) have their own local URL and keyword inputs but
+ * mount no surface runtime at all — they emit none of this surface's read
+ * values either, so an agent there has neither the evidence to write from nor
+ * a handler to write through. Giving them targets would mean adopting the
+ * surface on those routes first (read side included); that is its own task,
+ * not a write-target one. Deepest-wins resolution means adding it later
+ * shadows nothing declared here.
+ */
 const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "scrape_request",
@@ -398,6 +449,57 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "target",
     sortOrder: 100,
   },
+  {
+    name: "scrape_page_limit",
+    label: "Max pages",
+    description:
+      `Stages how many pages the deep ("${SCRAPE_MODES.find((m) => m.usesPageLimit)!.value}") mode will scrape — the page budget, separate from the scrape target. Value: an integer from ${PAGE_LIMIT_MIN} to ${PAGE_LIMIT_MAX} (the same bounds the deep-mode page input enforces on the user); anything outside that, or a non-integer, is refused. Applies to deep mode only — web-search mode has its own budget, scrape_result_limit. Read back from max_pages, which the surface reports only while deep mode is active. Staged only: the user still presses Search + scrape. Refused while is_scraping is true — a run is in flight and the inputs are locked.`,
+    valueType: "number",
+    updatesValue: "max_pages",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "target",
+    sortOrder: 110,
+  },
+  {
+    name: "scrape_result_limit",
+    label: "Max results",
+    description:
+      `Stages how many hits the web-search ("${SCRAPE_MODES.find((m) => m.usesResultLimit)!.value}") mode will request — the twin of scrape_page_limit for the mode that searches without scraping. Value: an integer from ${RESULT_LIMIT_MIN} to ${RESULT_LIMIT_MAX} (the same bounds the "Max" input enforces on the user); anything outside that, or a non-integer, is refused. Applies to web-search mode only. These hits come back UNSCRAPED, which is why the ceiling is far higher than the page budget: 50 hits is one search request, where 50 pages is 50 fetches against other people's servers. Read back from max_results, which the surface reports only while web-search mode is active. Staged only: the user still presses Search. Refused while is_scraping is true — a run is in flight and the inputs are locked.`,
+    valueType: "number",
+    updatesValue: "max_results",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "target",
+    sortOrder: 120,
+  },
+  {
+    name: "selected_result_page",
+    label: "Selected scraped page",
+    description:
+      "Opens one ALREADY-SCRAPED page in the results pane — the same as the user clicking it in the Pages sidebar, and it resets the pane to the Pretty tab exactly as that click does. Value is the zero-based index into results_overview (read it first; the order matches). An out-of-range index is refused with the real count. Nothing is fetched and nothing is persisted: this only changes which of the pages already in this session is on screen, so use it to put the page you just analysed in front of the user. Only available in the URL (\"quick\") and Deep (\"full\") modes, where the scraped-pages sidebar and results pane are rendered.",
+    valueType: "number",
+    updatesValue: "selected_result_index",
+    mode: "ui",
+    // Moving what the user is reading mid-thought is cheap and instantly
+    // reversible, but it IS a change to their screen — same posture as
+    // keyword-intelligence's `open_keyword`. Decline is a normal outcome.
+    applyPolicy: "ask",
+    group: "results",
+    sortOrder: 410,
+  },
+  {
+    name: "selected_search_hit",
+    label: "Selected search hit",
+    description:
+      "Opens one web-search hit in the hit detail pane — the same as the user clicking it in the results list. Value is the zero-based index into search_hits (read it first; the order matches). An out-of-range index is refused with the real count. Nothing is fetched: this SELECTS a hit, it does not scrape it — the Scrape button beside the hit stays the user's to press. This is the useful stopping point once you have judged which hit is actually worth fetching: put it in front of the user and let them run it. Only available in the Web (\"search\") mode, where the hit list and detail pane are rendered.",
+    valueType: "number",
+    updatesValue: "selected_hit_index",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "results",
+    sortOrder: 422,
+  },
 ];
 
 export const scraperManifest: SurfaceManifest = {
@@ -410,6 +512,9 @@ You are on the Web scraper surface: the user scrapes live web pages (single URL,
 The primary payload is the SELECTED scraped page: scraped_url / scraped_title identify it, scraped_content_text (also the baseline content) and scraped_content_markdown carry its body, scraped_metadata and scraped_links carry its structure. results_overview lists every page scraped this session; search_hits lists web-search results not yet scraped.
 Everything here is OBSERVED evidence pulled from live pages — never invent content that isn't in the scraped body. Check scrape_success / scrape_failure_reason before treating the content as valid; an empty body means the page came back blank, not that the site has no content.
 target_url and search_keyword are the user's live inputs — what they intend to scrape next, distinct from what has already been scraped.
+You can STAGE the next run for the user but never start it: scrape_command sets the mode and its target, scrape_page_limit the deep-mode page budget, scrape_result_limit the web-search hit budget. Staging only fills the form — the user presses Scrape, because a run spends real time against someone else's server.
+selected_result_page and selected_search_hit put something ALREADY fetched on screen; neither fetches anything. When you have judged which search hit is worth scraping, select it and let the user press the button.
+The scraped_* values are fetched evidence and are NOT writable — a page's body, title, links and metadata are what a real server returned, and this pane feeds RAG ingestion directly, so never try to "correct" them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -451,6 +556,7 @@ export function createScraperScope(values: {
   target_url?: string;
   search_keyword?: string;
   max_pages?: number;
+  max_results?: number;
   scraped_url?: string;
   scraped_title?: string;
   scraped_content_text?: string;
@@ -460,6 +566,7 @@ export function createScraperScope(values: {
   scraped_links?: { internal?: string[]; external?: string[]; media?: string[] };
   selected_result_index?: number;
   search_hits?: ScraperSearchHitEntry[];
+  selected_hit_index?: number;
   scrape_failure_reason?: string;
   scrape_execution_time_ms?: number;
 }): SurfaceScopePayload {
