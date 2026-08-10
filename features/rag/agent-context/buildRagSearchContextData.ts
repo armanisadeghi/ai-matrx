@@ -145,7 +145,8 @@ export interface BuildRagSearchContextDataArgs {
   useHyde?: boolean;
   /** Knowledge-graph canonical cluster expansion toggle. */
   expandClusters?: boolean;
-  /** How many hits this mount requests per search (25 on the Search tab). */
+  /** How many hits this mount requests per search (the Search tab's sidebar
+   *  Limit control; the Agent Simulation tab pins its own). */
   resultLimit?: number;
   /** Working-context organization filter (`null` = every org the user is in). */
   activeOrganizationId?: string | null;
