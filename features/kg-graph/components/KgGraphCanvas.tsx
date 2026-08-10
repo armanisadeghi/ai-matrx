@@ -291,10 +291,81 @@ export function KgGraphCanvas({
     ],
   );
 
+  // Surface write targets (matrx-user/knowledge) — the GRAPH mount's four.
+  // Every one is `mode: "ui"`: it sets exactly the same state the toolbar
+  // control's own onChange sets, so an agent write and a user click are the
+  // same write. Nothing here is persisted and nothing here touches the graph
+  // data — see the manifest's writeTargets block for why accept/reject,
+  // org/scope selection, and the encoding knobs are deliberately absent.
+  //
+  // Three of the four mirror controls the toolbar DISABLES until the graph has
+  // drawn (`disabled={!showGraph}`), so their handlers refuse loudly while the
+  // canvas is loading, errored, or empty rather than writing state the user
+  // cannot see. `graph_detail_level` is the exception on purpose: its Select
+  // stays enabled during a load (it IS how you recover from an empty result),
+  // and the fetch effect's AbortController already cancels an in-flight
+  // request when it changes.
+  const getWriteHandlers = useCallback(
+    () => ({
+      graph_search: (value: unknown) => {
+        if (typeof value !== "string")
+          throw new Error(
+            'graph_search expects a string — the term to highlight, or "" to clear it.',
+          );
+        if (!showGraph)
+          throw new Error(
+            "graph_search is unavailable: the canvas has no drawn graph right now (loading, errored, or every node filtered out). The user's own search box is disabled for the same reason.",
+          );
+        setSearch(value);
+      },
+      graph_kind_filter: (value: unknown) => {
+        if (typeof value !== "string")
+          throw new Error(
+            'graph_kind_filter expects a string — one entity kind, or "" for all kinds.',
+          );
+        if (!showGraph)
+          throw new Error(
+            "graph_kind_filter is unavailable: the canvas has no drawn graph right now (loading, errored, or every node filtered out).",
+          );
+        // Validate against the kinds actually present in the loaded payload —
+        // the SAME list the filter Select renders — never a re-typed enum.
+        if (value !== "" && value !== ALL_KINDS && !kinds.includes(value))
+          throw new Error(
+            kinds.length > 0
+              ? `graph_kind_filter expects "" (all kinds) or one of the kinds in this graph: ${kinds.join(" | ")}.`
+              : 'graph_kind_filter expects "" — the loaded graph has no entity kinds to filter by.',
+          );
+        setKindFilter(value === "" ? ALL_KINDS : value);
+      },
+      graph_detail_level: (value: unknown) => {
+        const accepted = KG_DETAIL_LEVELS.map((d) => d.id);
+        if (typeof value !== "string" || !accepted.includes(value as KgDetailId))
+          throw new Error(
+            `graph_detail_level expects one of: ${KG_DETAIL_LEVELS.map((d) => `${d.id} (${d.limit} nodes)`).join(" | ")}.`,
+          );
+        setDetail(value as KgDetailId);
+      },
+      graph_layout: (value: unknown) => {
+        const accepted = KG_LAYOUTS.map((l) => l.id);
+        if (typeof value !== "string" || !accepted.includes(value as KgLayoutId))
+          throw new Error(
+            `graph_layout expects one of: ${KG_LAYOUTS.map((l) => `${l.id} (${l.label})`).join(" | ")}.`,
+          );
+        if (!showGraph)
+          throw new Error(
+            "graph_layout is unavailable: there is no drawn graph to lay out right now.",
+          );
+        setLayoutId(value as KgLayoutId);
+      },
+    }),
+    [showGraph, kinds],
+  );
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/knowledge"
       getScope={getSurfaceScope}
+      getWriteHandlers={getWriteHandlers}
       isEditable={false}
     >
       <div className="flex h-full w-full flex-col">

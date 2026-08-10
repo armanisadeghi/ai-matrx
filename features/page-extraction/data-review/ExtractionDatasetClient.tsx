@@ -486,11 +486,98 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     });
   }, [allPageSelected, paged]);
 
+  // ── Surface write targets (matrx-user/knowledge) ───────────────────────────
+  // The EXTRACTION mount's three. `extraction_dataset_name` is `mode:"entity"`
+  // and goes through the same `updateJob` service the inline rename commits
+  // through — it persists, which is why the manifest keeps it on `ask`. The
+  // other two are `mode:"ui"` and set exactly the state the toolbar's own
+  // search box and column headers set.
+  //
+  // All three refuse while the dataset is still loading (the grid is a
+  // skeleton then, so the write would land invisibly), and the rename also
+  // refuses while a destructive confirm (clear data / bulk delete / archive)
+  // is running. Deliberately NOT writable: the row selection (its only
+  // consumer is the bulk-DELETE confirm), clear / archive / delete, paging,
+  // merge-duplicates, and column order — see the manifest's writeTargets.
+  const getWriteHandlers = useCallback(
+    () => ({
+      extraction_dataset_name: async (value: unknown) => {
+        if (typeof value !== "string" || !value.trim())
+          throw new Error(
+            "extraction_dataset_name expects a non-empty string — the dataset's new name.",
+          );
+        const next = value.trim();
+        if (next.length > 120)
+          throw new Error(
+            `extraction_dataset_name expects at most 120 characters (got ${next.length}).`,
+          );
+        if (!job)
+          throw new Error(
+            "extraction_dataset_name is unavailable: the dataset has not loaded yet.",
+          );
+        if (busy)
+          throw new Error(
+            "extraction_dataset_name is unavailable right now: a clear / delete / archive action is running on this dataset.",
+          );
+        await updateJob(job.id, { name: next });
+        setJob({ ...job, name: next });
+        setNameDraft(next);
+      },
+      extraction_query: (value: unknown) => {
+        if (typeof value !== "string")
+          throw new Error(
+            'extraction_query expects a string — the text to filter rows by, or "" to clear the filter.',
+          );
+        if (loading)
+          throw new Error(
+            "extraction_query is unavailable: the dataset's rows are still loading.",
+          );
+        setQuery(value);
+      },
+      extraction_sort: (value: unknown) => {
+        if (value === null) {
+          setSortKey(null);
+          setSortDir("asc");
+          return;
+        }
+        if (loading)
+          throw new Error(
+            "extraction_sort is unavailable: the dataset's rows are still loading.",
+          );
+        if (typeof value !== "object" || Array.isArray(value))
+          throw new Error(
+            'extraction_sort expects `{ "key": "<column key>", "direction": "asc" | "desc" }`, or null to clear the sort.',
+          );
+        const { key, direction } = value as {
+          key?: unknown;
+          direction?: unknown;
+        };
+        // Validate against the columns the grid actually renders — the same
+        // list `extraction_columns` publishes — never a re-typed set.
+        const columnKeys = orderedColumns.map((c) => c.key);
+        if (typeof key !== "string" || !columnKeys.includes(key))
+          throw new Error(
+            columnKeys.length > 0
+              ? `extraction_sort.key expects one of this dataset's columns: ${columnKeys.join(" | ")}.`
+              : "extraction_sort is unavailable: this dataset has no columns to sort by.",
+          );
+        if (direction !== "asc" && direction !== "desc")
+          throw new Error(
+            'extraction_sort.direction expects "asc" or "desc".',
+          );
+        setSortKey(key);
+        setSortDir(direction);
+      },
+    }),
+    [job, busy, loading, orderedColumns],
+  );
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/knowledge"
       getScope={getSurfaceScope}
+      getWriteHandlers={getWriteHandlers}
       isEditable={false}
     >
       <PageHeader>

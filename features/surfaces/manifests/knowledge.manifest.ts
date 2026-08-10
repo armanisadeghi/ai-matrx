@@ -47,6 +47,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -538,6 +539,192 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the agent-writable half (read/write manifest v1).
+ *
+ * PER-MOUNT POSTURE. This surface is emitted by THREE disjoint route
+ * components, so the targets below are NOT all live at once. Each mount
+ * registers only the handlers for the state it owns, and
+ * `listAgentWritableTargets()` offers an agent exactly what the mount it is
+ * standing on registered — the `schedules` / `shapes` precedent:
+ *
+ *   ExtractionDatasetClient.tsx  → extraction_dataset_name, extraction_query,
+ *                                  extraction_sort
+ *   KgGraphCanvas.tsx            → graph_search, graph_kind_filter,
+ *                                  graph_detail_level, graph_layout
+ *   SuggestionsManager.tsx       → suggestions_filter, focused_suggestion_id
+ *
+ * All three mounts DO earn handlers: each clears the skill's ~2-YES-field bar
+ * on its own. The extraction mount earns it on the authored dataset NAME (a
+ * label an agent can write better than a human naming 40 datasets) plus the
+ * two grid-pointing controls; the graph mount on four real "point the canvas
+ * at what I asked about" controls; the suggestion mount on the triage filter
+ * plus row focus.
+ *
+ * ── ask vs auto (judgment call, stated so it can be argued with) ────────────
+ * The line drawn here: `auto` iff the write is (a) ephemeral client-only view
+ * state, (b) instantly visible, (c) undone by one obvious control the user can
+ * already see, and (d) spends no server request and loses no user position.
+ * `ask` the moment any of those fails.
+ *
+ *   auto  extraction_query, extraction_sort, graph_search, graph_kind_filter,
+ *         graph_layout, focused_suggestion_id
+ *   ask   graph_detail_level  — re-REQUESTS the graph from the service at up
+ *                               to a 1000-node budget. That is real backend
+ *                               work and a multi-second relayout; the user
+ *                               should get to say no.
+ *         suggestions_filter  — re-queries the server AND resets pagination to
+ *                               page 0, throwing away where the user was in a
+ *                               triage pass. Losing your place is exactly the
+ *                               "swapped the whole page body" objection that
+ *                               kept markdown-studio's `view_mode` on `ask`.
+ *         extraction_dataset_name — `entity` mode: it persists. Nothing that
+ *                               writes the database lands without a human.
+ *
+ * ── deliberately NOT writable (say it, don't imply it by omission) ──────────
+ *  - ACCEPTING / REJECTING / DEFERRING / STARRING a suggestion, in single or
+ *    bulk form, and `suggestions_selected_ids` (whose only purpose is to arm
+ *    that bulk bar). Accepting a suggestion tags a source to a scope, creates
+ *    a scope, or writes a value through `set_context_value` — it turns a
+ *    PROPOSAL into confirmed knowledge on a human's behalf. This is the
+ *    doctrine `marketing-brand` established and this surface is its purest
+ *    case: the whole point of the review queue is that a machine proposes and
+ *    a person decides. An agent that could accept its own pipeline's output
+ *    would close that loop on itself. Not now, not behind `ask`.
+ *  - `extraction_selected_row_ids` — same shape of objection: the selection's
+ *    only consumer is the bulk-DELETE confirm. Destructive stays human, and
+ *    so does loading the gun.
+ *  - Clear data / archive dataset / delete row / duplicate template — all
+ *    destructive or lifecycle.
+ *  - `graph_organization_id` / `graph_scope_id` / `graph_scope_type_id` —
+ *    these choose WHOSE knowledge you are looking at. Ownership/scoping
+ *    identity, not authored content.
+ *  - The canvas ENCODING knobs (colour-by, size-by, hide-noise) and
+ *    `extraction_page` / `extraction_merge_duplicates` / column order — pure
+ *    mechanical view toggles nobody would ask an agent to flip. colour-by and
+ *    size-by additionally have NO runtime vocabulary constant (`KgColorBy` /
+ *    `KgSizeBy` are types only), so a handler could only validate against
+ *    re-typed literals — the `node_primary_keyword_id` rule, twice over.
+ *  - Every count / payload / rows value (`graph_node_count`, `graph_payload`,
+ *    `suggestions_stats`, `extraction_rows`, …) — read projections with no
+ *    write path at all.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  // ---------------------------------------------------------------- extraction
+  {
+    name: "extraction_dataset_name",
+    label: "Extraction dataset name",
+    description:
+      "Renames the extraction dataset. Pass a non-empty string of at most 120 characters; it REPLACES the current name (see extraction_job_name) and is persisted immediately through the dataset's own updateJob service the moment the user approves — there is no separate Save step. Only available on /knowledge/extractions/[id] once the dataset has loaded and no destructive confirm is running.",
+    valueType: "string",
+    updatesValue: "extraction_job_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "extraction_run",
+    sortOrder: 100,
+  },
+  {
+    name: "extraction_query",
+    label: "Grid search query",
+    description:
+      "Sets the extraction grid's free-text filter — a case-insensitive substring matched across every VISIBLE column (see extraction_columns). Pass the search string, or \"\" to clear the filter and show all rows. Applies instantly to the visible grid and resets it to the first page; nothing is saved and nothing is deleted — the rows are only hidden.",
+    valueType: "string",
+    updatesValue: "extraction_query",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "extraction_view",
+    sortOrder: 300,
+  },
+  {
+    name: "extraction_sort",
+    label: "Grid sort",
+    description:
+      'Sorts the extraction grid. Pass `{ "key": "<column key>", "direction": "asc" | "desc" }` where key is one of the `key` fields in extraction_columns, or pass null to clear the sort and return to natural result order. Purely a view change — no row is modified.',
+    valueType: "object",
+    updatesValue: "extraction_sort",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "extraction_view",
+    sortOrder: 310,
+  },
+
+  // --------------------------------------------------------------------- graph
+  {
+    name: "graph_search",
+    label: "Graph search",
+    description:
+      'Sets the canvas search term, which highlights matching entity nodes and dims the rest. Pass the term, or "" to clear it. Instant and purely visual — no node is hidden, filtered, or changed. Only available once the graph has drawn at least one node (it is the same box the user types in, which is disabled while the graph is loading, errored, or empty).',
+    valueType: "string",
+    updatesValue: "graph_search",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "graph_view",
+    sortOrder: 610,
+  },
+  {
+    name: "graph_kind_filter",
+    label: "Entity kind filter",
+    description:
+      'Filters the canvas to a SINGLE entity kind. Pass one of the kinds present in the loaded payload — read graph_entity_kinds for the exact vocabulary, which is data-dependent (e.g. person, organization, concept, date, module, code_file) — or "" to show all kinds again. Any other value is refused. Filtering is client-side and reversible; nothing is deleted. Requires a drawn graph.',
+    valueType: "string",
+    updatesValue: "graph_kind_filter",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "graph_view",
+    sortOrder: 600,
+  },
+  {
+    name: "graph_detail_level",
+    label: "Graph detail level",
+    description:
+      'Sets how many top-ranked entities the canvas requests. Exactly one of: "overview" (75 nodes) | "standard" (150) | "detailed" (350) | "max" (1000). Changing it RE-REQUESTS the graph from the knowledge-graph service at the new budget and re-runs the layout, so raising it is real work and can take several seconds on a large corpus. Raise it when graph_truncated is true and the user needs the nodes that were cut.',
+    valueType: "string",
+    updatesValue: "graph_detail_level",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "graph_view",
+    sortOrder: 620,
+  },
+  {
+    name: "graph_layout",
+    label: "Graph layout",
+    description:
+      'Switches the canvas layout algorithm. Exactly one of: "fcose" (Force / organic — the balanced default for exploring clusters) | "cola" (Force / live — physics keeps running, drag resettles the graph) | "concentric" (By importance — rings by centrality, the most-connected hubs at the centre) | "grid" (plain deterministic grid, ignores structure). Re-runs the layout client-side; the underlying data is untouched. Requires a drawn graph.',
+    valueType: "string",
+    updatesValue: "graph_layout",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "graph_view",
+    sortOrder: 630,
+  },
+
+  // --------------------------------------------------------------- suggestions
+  {
+    name: "suggestions_filter",
+    label: "Queue filter",
+    description:
+      'Narrows the suggestion review queue. Pass an object with any subset of: `search` (string or null — ilike across proposed value / scope name / field label), `statuses` (array over "pending" | "accepted" | "rejected" | "deferred" | "expired"; REPLACES the current set, so include every status you want kept — read suggestions_query for what is set now; [] means every status), `stage` ("all" | "association" for scope links | "value" for field fills), `minConfidence` (number 0..1, or null for any), `starredOnly` (boolean), `unseenOnly` (boolean). Keys you omit are left alone. Re-queries the server and returns the user to page 1. It only changes WHICH suggestions are listed — it never decides one.',
+    valueType: "object",
+    updatesValue: "suggestions_query",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "suggestions_queue",
+    sortOrder: 750,
+  },
+  {
+    name: "focused_suggestion_id",
+    label: "Focused suggestion",
+    description:
+      'Expands ONE suggestion row in the queue so the user is looking at the evidence for it. Pass the `id` of a row currently listed in the main table (see suggestions_rows), or "" to collapse whatever is open. An id that is not on the current page is refused rather than silently doing nothing — filter or page to it first. Expanding a row reveals its decision card; it does NOT accept, reject, defer, or star it.',
+    valueType: "string",
+    updatesValue: "focused_suggestion_id",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "suggestion_focus",
+    sortOrder: 800,
+  },
+];
+
 export const knowledgeManifest: SurfaceManifest = {
   surfaceName: "matrx-user/knowledge",
   readiness: "partial",
@@ -560,6 +747,7 @@ When graph_truncated is true the drawn graph is a capped subset — say so rathe
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**

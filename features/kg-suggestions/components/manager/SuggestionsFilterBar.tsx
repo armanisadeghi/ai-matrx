@@ -23,14 +23,15 @@ import type {
   KgSuggestionStatus,
   KgSuggestionsQuery,
 } from "@/features/kg-suggestions/types";
+// Single source of truth for the two enum vocabularies — shared with the
+// `suggestions_filter` surface write handler in SuggestionsManager, so the
+// chips the user sees and the values an agent may send cannot drift apart.
+import {
+  KG_SUGGESTION_STAGE_FILTERS,
+  KG_SUGGESTION_STATUSES,
+} from "@/features/kg-suggestions/constants";
 
-const STATUSES: { value: KgSuggestionStatus; label: string }[] = [
-  { value: "pending", label: "Pending" },
-  { value: "accepted", label: "Accepted" },
-  { value: "rejected", label: "Rejected" },
-  { value: "deferred", label: "Deferred" },
-  { value: "expired", label: "Expired" },
-];
+const STATUSES = KG_SUGGESTION_STATUSES;
 
 const ALL = "__all__";
 
@@ -159,10 +160,9 @@ export function SuggestionsFilterBar({
               stage: v === ALL ? "all" : (v as "value" | "association"),
             })
           }
-          options={[
-            { id: "value", label: "Field value" },
-            { id: "association", label: "Scope link" },
-          ]}
+          options={KG_SUGGESTION_STAGE_FILTERS.filter(
+            (s) => s.value !== "all",
+          ).map((s) => ({ id: s.value, label: s.label }))}
           allLabel="Any stage"
         />
         <FilterSelect
