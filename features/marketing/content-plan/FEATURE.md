@@ -344,6 +344,32 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-10 — Claude: **The Entities view is agent-writable — the last member
+  of the content-plan family to get write targets.**
+  `matrx-user/content-plan-entities` declares 3: `create_entity`
+  (`entity`/ask) through the canonical `useCreatePlanEntity` →
+  `createPlanEntity` (the same service "Suggest from research" already
+  writes agent output with), `entity_draft` (`draft`/ask — one composite
+  `{label?, entity_type?, source_type_id?}` registered from
+  `EntityEditorDialog` via `useSurfaceWriteHandlers`, since that child owns
+  the three inputs), and `open_entity_editor` (`ui`/auto) because the dialog
+  is conditionally mounted and a draft has nowhere to land until it is open.
+  `EntityManager`'s provider registers an `entity_draft` stub that throws
+  "call open_entity_editor first", which the dialog's real handler shadows
+  while mounted. Validation is a pure, jest-covered core
+  (`lib/entity-write-targets.ts`, 21 tests) importing `PLAN_ENTITY_TYPES`, so
+  the vocabulary the model reads, the Select renders, and the handler
+  enforces cannot drift. New read values `source_type_options` (the
+  `plan_source_type` picker's real ids — the missing inventory that keeps
+  `node_primary_keyword_id` manual on the node surface) and `entity_editor`
+  (what is typed in the open dialog). **Fixed a live defect found in the
+  verification run:** applying a staged draft dismissed the editor dialog
+  itself, because Radix counted the confirm alertdialog's Apply click as an
+  interaction outside it — the value was discarded while the caller was told
+  it succeeded. Guarded with `onInteractOutside`, which now ignores
+  interactions originating inside a `[role="alertdialog"]`. Deleting an
+  entity, attaching entities to nodes, and editing an existing row's
+  `attributes` stay human by doctrine.
 - 2026-08-10 — Claude: **Setup "Make it real" clarity overhaul** (Arman's
   confused-buttons feedback). Every rung now carries an always-visible plain-
   language description AND a server-derived status on load — rungs 3/5 hydrate

@@ -5,7 +5,7 @@
  * plan references (E-E-A-T). Source type comes from the seeded
  * `plan_source_type` category dimension.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Lightbulb, Loader2, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -29,8 +29,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
+import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { createContentPlanEntitiesScope } from "@/features/surfaces/manifests/content-plan-entities.manifest";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  useSurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -53,7 +57,29 @@ import {
   type PlanEntityRow,
   type PlanEntityType,
 } from "../types";
+import {
+  parseCreateEntityWrite,
+  parseEntityDraftWrite,
+  parseOpenEntityEditorWrite,
+  type EntityWriteContext,
+} from "../lib/entity-write-targets";
 import { CategorySelect } from "@/features/scopes/components/CategorySelect";
+
+const SURFACE_NAME = "matrx-user/content-plan-entities";
+
+/**
+ * What the editor dialog currently holds — mirrored up for `entity_editor`.
+ * A `type` rather than an `interface` on purpose: only a type alias gets the
+ * implicit index signature that lets it satisfy the scope helper's
+ * `Record<string, unknown>`.
+ */
+type EntityEditorSnapshot = {
+  mode: "new" | "edit";
+  entity_id: string | null;
+  label: string;
+  entity_type: PlanEntityType;
+  source_type_id: string | null;
+};
 
 export function EntityManager({
   siteId,
@@ -65,14 +91,29 @@ export function EntityManager({
 }) {
   const entities = usePlanEntities(siteId);
   const remove = useDeletePlanEntity(siteId);
+  const create = useCreatePlanEntity(siteId);
   const queryClient = useQueryClient();
   const agents = useSetupAgents(siteId);
+  // The SAME dimension the editor's CategorySelect renders from — loaded here
+  // too so the surface can publish the picker's vocabulary (source_type_options)
+  // and the handlers can refuse an id that is not in it. The hook is
+  // idempotent per dimension, so this is the cached read, not a second fetch.
+  const sourceTypes = useCategories({
+    dimension: CATEGORY_DIMENSIONS.planSourceType,
+  });
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<PlanEntityRow | null>(null);
   const [deleting, setDeleting] = useState<PlanEntityRow | null>(null);
+  // Reported UP by the open dialog so `entity_editor` reflects what is TYPED,
+  // not just which row is open. Null whenever the dialog is closed.
+  const [editorSnapshot, setEditorSnapshot] =
+    useState<EntityEditorSnapshot | null>(null);
 
   const rows = entities.data ?? [];
+  const writeContext: EntityWriteContext = {
+    sourceTypeIds: sourceTypes.categories.map((category) => category.id),
+  };
 
   // The Entity Curator agent: read the site's linked research report and
   // propose real E-E-A-T entities; the user confirms before anything writes.
@@ -180,13 +221,58 @@ export function EntityManager({
           : undefined,
       entity_counts_by_type:
         entities.data !== undefined ? countsByType : undefined,
+      source_type_options:
+        sourceTypes.categories.length > 0
+          ? sourceTypes.categories.map((category) => ({
+              id: category.id,
+              name: category.name,
+            }))
+          : undefined,
+      entity_editor: editorSnapshot ?? undefined,
     });
   };
 
+  /**
+   * Roster-level write handlers. The THIRD target (`entity_draft`) belongs to
+   * the dialog, which owns the three inputs and registers it from down there
+   * via `useSurfaceWriteHandlers` — a registered handler shadows the one
+   * below. The stub here exists so that writing into a CLOSED editor gets the
+   * actionable "open it first" error instead of the seam's generic
+   * declared-but-unhandled defect report.
+   */
+  const buildWriteHandlers = () => ({
+    open_entity_editor: (value: unknown) => {
+      const id = parseOpenEntityEditorWrite(
+        value,
+        rows.map((entity) => entity.id),
+      );
+      setEditing(id ? (rows.find((entity) => entity.id === id) ?? null) : null);
+      setEditorOpen(true);
+    },
+    entity_draft: () => {
+      throw new Error(
+        "entity_draft: the entity editor dialog is not open, so there is nothing to stage into. Call open_entity_editor first (an entity id from entities_detail, or null for a new entity), or use create_entity to add a new entity outright.",
+      );
+    },
+    create_entity: async (value: unknown) => {
+      const input = parseCreateEntityWrite(value, writeContext);
+      await create.mutateAsync({
+        site_id: siteId,
+        organization_id: organizationId,
+        label: input.label,
+        entity_type: input.entity_type,
+        source_type_id: input.source_type_id,
+        ...(input.attributes ? { attributes: input.attributes } : {}),
+      });
+      toast.success(`Added "${input.label}" to the roster.`);
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
-      surfaceName="matrx-user/content-plan-entities"
+      surfaceName={SURFACE_NAME}
       getScope={getScope}
+      getWriteHandlers={buildWriteHandlers}
     >
     <div
       data-surface-value="entities_summary"
@@ -326,6 +412,8 @@ export function EntityManager({
           entity={editing}
           open={editorOpen}
           onOpenChange={setEditorOpen}
+          onSnapshotChange={setEditorSnapshot}
+          writeContext={writeContext}
         />
       ) : null}
       <ConfirmDialog
@@ -367,12 +455,17 @@ function EntityEditorDialog({
   entity,
   open,
   onOpenChange,
+  onSnapshotChange,
+  writeContext,
 }: {
   siteId: string;
   organizationId: string;
   entity: PlanEntityRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Mirrors the live draft up so the surface can emit `entity_editor`. */
+  onSnapshotChange: (snapshot: EntityEditorSnapshot | null) => void;
+  writeContext: EntityWriteContext;
 }) {
   const create = useCreatePlanEntity(siteId);
   const update = useUpdatePlanEntity(siteId);
@@ -388,6 +481,40 @@ function EntityEditorDialog({
   // keyed by the entity id, so useState initializers always seed fresh.
 
   const busy = create.isPending || update.isPending;
+
+  // `entity_draft` lives HERE, not on the provider: this component owns the
+  // three inputs, so the handler can call the exact setters the user's own
+  // typing calls. A registered handler shadows the provider's stub above.
+  useSurfaceWriteHandlers(SURFACE_NAME, {
+    entity_draft: (value: unknown) => {
+      if (busy) {
+        throw new Error(
+          "entity_draft: this entity is mid-save — wait for it to finish before staging more changes.",
+        );
+      }
+      const draft = parseEntityDraftWrite(value, writeContext);
+      if (draft.label !== undefined) setLabel(draft.label);
+      if (draft.entity_type !== undefined) setEntityType(draft.entity_type);
+      if (draft.source_type_id !== undefined) {
+        setSourceTypeId(draft.source_type_id);
+      }
+    },
+  });
+
+  // Publish the live draft up for the `entity_editor` read value…
+  useEffect(() => {
+    onSnapshotChange({
+      mode: entity ? "edit" : "new",
+      entity_id: entity?.id ?? null,
+      label,
+      entity_type: entityType,
+      source_type_id: sourceTypeId,
+    });
+  }, [entity, label, entityType, sourceTypeId, onSnapshotChange]);
+  // …and clear it on UNMOUNT only, so a closed dialog never reports stale
+  // state to an agent (a cleanup on the effect above would blank it between
+  // every keystroke).
+  useEffect(() => () => onSnapshotChange(null), [onSnapshotChange]);
 
   const submit = () => {
     const onError = (error: unknown) =>
@@ -432,7 +559,25 @@ function EntityEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent
+        className="max-w-sm"
+        onInteractOutside={(event) => {
+          // A confirm layered ABOVE this dialog is not an "outside click".
+          // The surface-write ask (`ConfirmDialogHost`) portals its
+          // alertdialog next to this one, so without this guard pressing
+          // Apply dismissed the very editor the value was being staged into
+          // — the draft was discarded while the agent was told it landed.
+          const originalEvent = (
+            event as unknown as { detail?: { originalEvent?: Event } }
+          ).detail?.originalEvent;
+          const node = (originalEvent?.target ?? event.target) as
+            | HTMLElement
+            | null;
+          if (typeof node?.closest === "function" && node.closest('[role="alertdialog"]')) {
+            event.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{entity ? "Edit entity" : "New entity"}</DialogTitle>
         </DialogHeader>
