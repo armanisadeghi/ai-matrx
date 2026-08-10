@@ -153,7 +153,18 @@ internal platform use — never a washed-down user variant beside a private one:
   `add_subtasks`/`save_task` entity actions, handlers in
   `TaskEditorBody.tsx`), `matrx-user/marketing-brand` (2 ask-policy entity
   targets through `updateBrand`; confirmed facts/assets/properties have no
-  write path by doctrine — human-owned, promoted via discovery review).
+  write path by doctrine — human-owned, promoted via discovery review) and
+  `matrx-user/agent-builder` (6 draft targets — an agent authoring ANOTHER
+  agent's prompt: `system_instruction` / `append_system_instruction` (replace
+  vs append, both through `withAgentSystemInstruction` + `setAgentMessages`,
+  the exact pair the System Prompt textarea dispatches, so non-text blocks
+  always round-trip), `agent_description`, `agent_name`, `agent_category`,
+  `agent_tags`; handlers in
+  `features/agents/hooks/useAgentBuilderWriteHandlers.ts`, registered on the
+  builder's own provider — desktop AND mobile — so they stay wired on every
+  panel. Model, tools, MCP servers, skills, variables, output schema and all
+  governance stay human-only: changing what an agent may REACH is a
+  capability change, not a copy edit).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -315,6 +326,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 
 ## Change Log
 
+- **2026-08-10 — Restored the Agent Builder write-target docs a merge dropped.** The 2026-08-09 entry below and the adopter-list clause landed in `68b1c007` and were lost in a later merge resolution while the CODE stayed intact — the docs claimed the campaign's highest-leverage surface was not agent-writable when it is. Nothing changed in the surface itself. **A merge that resolves a `FEATURE.md` conflict by taking one side wholesale silently reverts documentation for shipped code** — reconcile both sides.
+- **2026-08-09 — Agent Builder surface agent-writable (third adopter).** `matrx-user/agent-builder` declares 6 draft/`ask` targets — an agent authoring ANOTHER agent's system prompt. `system_instruction` (full replace) and `append_system_instruction` (adds a rule without re-sending the prompt) both go through the new `withAgentSystemInstruction` helper + `setAgentMessages` — the exact pair `SystemMessage.tsx`'s textarea dispatches, so a rewrite and the user's typing are indistinguishable and the system message's non-text blocks always round-trip; `SystemMessage.handleTextChange` was refactored onto the same helper so there is ONE rebuild rule. `agent_description` / `agent_name` / `agent_category` / `agent_tags` go through `setAgentField`. Handlers in `features/agents/hooks/useAgentBuilderWriteHandlers.ts`, registered on `AgentBuilderClient`'s provider (desktop + mobile) so they stay wired whichever panel is open; every handler validates and throws, and refuses on a version snapshot or a view-only agent rather than staging edits the user could never save. Deliberately NOT writable: model/tiers, tools, custom tools, MCP servers, skill config, Matrx actions, context slots, variable definitions, output schema, and all governance/visibility. Live-verified with a real Badass Agent run on the builder: ask dialog per target carrying the manifest description, Apply staged into the editor (header flipped "No unsaved changes" → "Save changes", read twins updated), "Keep as is" returned `{ok:false,declined:true}`, append landed at the end of an untouched prompt, and a model/visibility change was refused with an explanation. Zero `surface-writeback` captures. `check:surface-drift` + `type-check` clean.
 - **2026-08-09 — Marketing brand cockpit agent-writable (live-verified).** `matrx-user/marketing-brand` declares 2 ask-policy entity targets (`brand_profile` — merge-patch of the full editorial profile, `brand_identity` — industry/description copy), both through `updateBrand` with the version guard; handlers in `features/marketing/components/brands/MarketingBrandWriteTargets.tsx`, pure validation/merge core in `features/marketing/lib/brand-write-targets.ts` (unit-tested). Verified with a real agent run: per-target ask dialogs, applies persisted (v12→v16 on the test brand), decline path clean, undeclared brand-name write refused, zero writeback captures. Mirrored to `ui.ui_surface_write_target`. Confirmed business facts/assets/properties deliberately have NO write path — the surface doctrine keeps confirmed truth human-owned (candidates flow through the discovery review inbox).
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
