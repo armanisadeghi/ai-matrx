@@ -149,7 +149,9 @@ internal platform use — never a washed-down user variant beside a private one:
   agent-writable adopters: `matrx-user/marketing-page`,
   `matrx-user/tasks` (8 targets — draft fields via `patchTaskEdit` +
   `add_subtasks`/`save_task` entity actions, handlers in
-  `TaskEditorBody.tsx`).
+  `TaskEditorBody.tsx`), `matrx-user/cms-component` (2 draft targets —
+  `component_html` / `component_css` staged into the route's own editor
+  state, handlers in `app/(core)/cms/[siteId]/components/page.tsx`).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -310,6 +312,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **Code-only v1:** `writeTargets` are validated by `check:surface-drift` but NOT yet mirrored to the DB (the follow-up that lets server-side agents see what a surface accepts). First live consumer: the content-plan surface family (`content-plan-node` is the reference — field drafts + `save_node`).
 
 ## Change Log
+
+- **2026-08-10 — CMS shared-component editor agent-writable (`matrx-user/cms-component`).** Two ask-policy `draft` targets — `component_html` and `component_css`, each taking `{ html | css, mode?: "replace" | "append" }` — staged into the route's own `editHtml` / `editCss` `useState` through the SAME setters the textareas' `onChange` drives; the row's existing **Save** (`handleSaveEdit` → `CmsComponentService.updateComponent` → `POST /api/cms/components`) stays the only thing that persists. Both handlers THROW when no component is expanded for edit (the editing state is keyed by `editingId`, so a write with nothing open would land in nothing). Prerequisite fixed in the same change: `/cms/[siteId]/components` consumed `useCmsComponentSurfaceScope` and passed `CMS_COMPONENT_CONTEXT_MENU_PROPS` to its context menus but never mounted a `SurfaceRuntimeProvider`, so the only live runtime on the route was the layout's `matrx-user/cms-site` — the route now mounts its own nested provider (deepest wins) with the SAME scope builder plus `getWriteHandlers`. Judgment call recorded in the manifest: the HTML/CSS buffers earn targets here even though the same textareas already carry the v3 `EditableContextMenu` `onTextReplace` seam, because that seam is user-initiated and selection-scoped while a header-launched agent has no focused textarea, and a shared header/footer is a whole small artifact whose natural unit of change IS the buffer. `component_type`, the active flag (CMS migration 0035 allows ONE active header/footer per site), delete and the create-dialog fields are deliberately not declared. Live-verified on dev-website's footer component.
 
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 

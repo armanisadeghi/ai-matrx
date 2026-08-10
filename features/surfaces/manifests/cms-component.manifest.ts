@@ -21,6 +21,8 @@
  * Runtime emitter: `features/cms/agent-context/buildCmsComponentContextData.ts`
  * via `features/cms/hooks/useCmsComponentSurfaceScope.ts`, called at
  * right-click time from `app/(core)/cms/[siteId]/components/page.tsx`.
+ *
+ * Write half: see `writeTargets` below.
  */
 
 import type {
@@ -28,6 +30,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type { AgentWritePolicy } from "@/features/cms/types";
@@ -297,6 +300,81 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * What agents may WRITE into the component editor (the write half of the 360
+ * loop).
+ *
+ * TWO targets, both `mode: "draft"` and both `ask`: the HTML body and the CSS
+ * body of the component currently expanded for edit. They land in the route's
+ * own `editHtml` / `editCss` `useState` — the same setters the textareas'
+ * `onChange` drives — and nothing reaches the CMS database until the human
+ * clicks that row's **Save** (`handleSaveEdit` →
+ * `CmsComponentService.updateComponent` → `POST /api/cms/components`, the only
+ * authenticated write path this project has; see `features/cms/FEATURE.md`).
+ *
+ * WHY THESE TWO EARN A TARGET even though the same textareas already carry the
+ * v3 `EditableContextMenu` `onTextReplace` seam:
+ *
+ *  - The two seams have different DRIVERS and different granularity. The v3
+ *    seam is user-initiated from a right-click INSIDE a textarea: it carries a
+ *    live selection (`getApplicationScope` reads `selectionStart/End`) and is
+ *    built for "rewrite the bit I highlighted". An agent launched from the
+ *    header Agents popover has no focused textarea and no selection, so that
+ *    seam cannot serve it at all — without these targets the surface is
+ *    readable and not writable, which is exactly the gap this campaign closes.
+ *  - A shared component is a WHOLE SMALL ARTIFACT, not a document. A header or
+ *    footer is tens of lines of chrome that an agent rewrites end-to-end; the
+ *    natural unit of change here IS the buffer. That is the opposite of a long
+ *    page body, where selection-scoped editing is the point — so the "the
+ *    text-replace seam already owns body editing" argument that gates a page
+ *    body does not transfer to this surface.
+ *
+ * Both take `{ html | css, mode?: "replace" | "append" }` rather than a bare
+ * string so an agent can add a rule or a block without restating the buffer it
+ * just read.
+ *
+ * Both handlers REFUSE (throw) when no component is expanded for edit. The
+ * editing state is keyed by `editingId`, and with nothing open there is no
+ * buffer to stage into and no row a later Save would reach — a silent write
+ * into nothing is the failure mode this seam exists to make loud.
+ *
+ * Deliberately NOT declared:
+ *  - `component_type` — header/footer/sidebar/cta is the component's STRUCTURAL
+ *    slot on every page of the site, not authored content.
+ *  - `is_active` — CMS migration 0035 enforces ONE active header/footer per
+ *    site, so flipping it deactivates a sibling. That is a site-shape decision,
+ *    not a drafting one.
+ *  - delete, and the "New Component" dialog's name/type (`pending_component`).
+ *    Deletion stays human by doctrine; naming a new component is not work an
+ *    agent does better, and the dialog is closed in the normal case.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "component_html",
+    label: "Component HTML",
+    description:
+      "Stage the HTML body of the component currently open in the inline editor. Value: { html: string, mode?: 'replace' | 'append' } — 'replace' (the default) swaps the whole body, 'append' adds to the end of the current buffer. This is a FRAGMENT rendered into every page of the site as that component's slot (header/footer/sidebar/cta), so never emit doctype/html/head tags. Requires a component to be expanded for edit — it fails when the user is on the plain components list. Staging is not saving: the human still clicks Save on that row, and editing a shared component changes every page at once.",
+    valueType: "object",
+    updatesValue: "html_content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "component_content",
+    sortOrder: 300,
+  },
+  {
+    name: "component_css",
+    label: "Component CSS",
+    description:
+      "Stage the CSS body of the component currently open in the inline editor. Value: { css: string, mode?: 'replace' | 'append' } — 'replace' (the default) swaps the whole stylesheet, 'append' adds rules to the end (an empty string clears it). This CSS is scoped to the component but renders UNDER the site-wide stylesheet, so read site_global_css first when the styling has to match the rest of the site. Requires a component to be expanded for edit. Staging is not saving: the human still clicks Save on that row.",
+    valueType: "object",
+    updatesValue: "css_content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "component_content",
+    sortOrder: 310,
+  },
+];
+
 export const cmsComponentManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms-component",
   readiness: "verified",
@@ -307,6 +385,7 @@ You are on the CMS shared-component editor for one client website. Shared compon
 Read site_structure first: it is the whole site in compact XML (pages, routing, every component), with the component currently open marked current="true". agent_write_policy governs what you may do — "blocked" means propose only, "draft_only" means you may save a draft but a human must publish, "full" means you may publish.
 The route is a list plus an inline editor: when nothing is expanded for edit, component_id / component_name / html_content / css_content are all empty and only the site framing and components_list are meaningful. Draft-vs-live is a twin-column model: html_content and css_content already resolve to the draft when one exists, and has_draft tells you whether unpublished work is pending.
 Component CSS is scoped to the component, but the page renders it under site_global_css — bind that value when styling must match the rest of the site.
+You can also WRITE here, through apply_surface_write: component_html and component_css stage a new body into the editor the user is looking at, and the user is asked before each one lands. Both need a component expanded for edit (is_editing true) — with nothing open there is no buffer to write into and the attempt fails, so ask the user to open the component first. Staging is not saving: the human still clicks Save on that row, so this path is available even under a "blocked" or "draft_only" agent_write_policy. Read html_content / css_content first when you are revising rather than replacing.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -319,6 +398,7 @@ Component CSS is scoped to the component, but the page renders it under site_glo
     ),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "component_editor",

@@ -6,6 +6,7 @@ import { CmsComponentService } from "@/features/cms/services/cmsService";
 import type { ClientComponent } from "@/features/cms/types";
 import { useSiteContext } from "../SiteLayoutClient";
 import { useCmsComponentSurfaceScope } from "@/features/cms/hooks/useCmsComponentSurfaceScope";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CMS_COMPONENT_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsComponentContextMenuProps";
 import { createCmsComponentExtraSections } from "@/features/cms/agent-context/cmsComponentExtraSections";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
@@ -163,257 +164,307 @@ export default function ComponentsPage() {
   const getHtmlApplicationScope = makeApplicationScope(htmlTextareaRef);
   const getCssApplicationScope = makeApplicationScope(cssTextareaRef);
 
+  // ── Agent write targets (`component_html` / `component_css`) ─────────
+  // Both stage through the SAME setters the textareas' onChange drives, so an
+  // agent's draft is indistinguishable from typing: the Save button on the row
+  // is still what persists it (`handleSaveEdit`). Fresh closures per call —
+  // the `getWriteHandlers` contract.
+  const stageBody = (
+    target: "component_html" | "component_css",
+    key: "html" | "css",
+    value: unknown,
+    setBuffer: React.Dispatch<React.SetStateAction<string>>,
+  ) => {
+    // Nothing open for edit ⇒ there is no buffer to stage into and no row a
+    // later Save would reach. Refuse loudly rather than write into nothing.
+    if (!editingId)
+      throw new Error(
+        `${target}: no component is open for editing. Ask the user to click Edit on the component they want changed, then try again.`,
+      );
+    if (typeof value !== "object" || value === null || Array.isArray(value))
+      throw new Error(
+        `${target} expects an object like { ${key}: "…", mode?: "replace" | "append" }.`,
+      );
+    const obj = value as Record<string, unknown>;
+    const body = obj[key];
+    if (typeof body !== "string")
+      throw new Error(`${target}: ${key} must be a string.`);
+    const mode = obj.mode ?? "replace";
+    if (mode !== "replace" && mode !== "append")
+      throw new Error(`${target}: mode must be 'replace' or 'append'.`);
+    setBuffer((prev) => (mode === "append" ? prev + body : body));
+  };
+
+  const getSurfaceWriteHandlers = () => ({
+    component_html: (value: unknown) =>
+      stageBody("component_html", "html", value, setEditHtml),
+    component_css: (value: unknown) =>
+      stageBody("component_css", "css", value, setEditCss),
+  });
+
+  // Deepest provider wins: SiteLayoutClient mounts `matrx-user/cms-site`
+  // above this route, so this nested one owns the surface while it is mounted.
+  const surfaceRuntimeProps = {
+    surfaceName: CMS_COMPONENT_CONTEXT_MENU_PROPS.surfaceName,
+    getScope: buildSurfaceScope,
+    getWriteHandlers: getSurfaceWriteHandlers,
+  };
+
   if (componentsLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <p className="text-sm">Loading components…</p>
+      <SurfaceRuntimeProvider {...surfaceRuntimeProps}>
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="text-sm">Loading components…</p>
+          </div>
         </div>
-      </div>
+      </SurfaceRuntimeProvider>
     );
   }
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="px-4 sm:px-6 py-6 space-y-4">
-        <div className="flex items-center justify-end">
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-                <Plus className="h-3.5 w-3.5" />
-                New Component
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>New Component</DialogTitle>
-                <DialogDescription>
-                  Create a reusable component (header, footer, sidebar, etc.)
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div>
-                  <label className="text-sm font-medium block mb-1.5">
-                    Name
-                  </label>
-                  <Input
-                    value={createName}
-                    onChange={(e) => setCreateName(e.target.value)}
-                    placeholder="Main Header"
-                    className="text-sm"
-                  />
+    <SurfaceRuntimeProvider {...surfaceRuntimeProps}>
+      <div className="h-full overflow-auto">
+        <div className="px-4 sm:px-6 py-6 space-y-4">
+          <div className="flex items-center justify-end">
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                  <Plus className="h-3.5 w-3.5" />
+                  New Component
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>New Component</DialogTitle>
+                  <DialogDescription>
+                    Create a reusable component (header, footer, sidebar, etc.)
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">
+                      Name
+                    </label>
+                    <Input
+                      value={createName}
+                      onChange={(e) => setCreateName(e.target.value)}
+                      placeholder="Main Header"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">
+                      Type
+                    </label>
+                    <select
+                      value={createType}
+                      onChange={(e) => setCreateType(e.target.value)}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                      <option value="header">Header</option>
+                      <option value="footer">Footer</option>
+                      <option value="sidebar">Sidebar</option>
+                      <option value="cta">Call to Action</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1.5">
-                    Type
-                  </label>
-                  <select
-                    value={createType}
-                    onChange={(e) => setCreateType(e.target.value)}
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreate}
+                    disabled={isCreating || !createName}
                   >
-                    <option value="header">Header</option>
-                    <option value="footer">Footer</option>
-                    <option value="sidebar">Sidebar</option>
-                    <option value="cta">Call to Action</option>
-                    <option value="custom">Custom</option>
-                  </select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreate}
-                  disabled={isCreating || !createName}
-                >
-                  {isCreating && (
-                    <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-                  )}
-                  Create
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {error && (
-          <div className="text-sm text-destructive flex items-center gap-2 p-3 rounded-md bg-destructive/10">
-            <AlertCircle className="h-4 w-4" />
-            {error}
+                    {isCreating && (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                    )}
+                    Create
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
-        )}
 
-        {components.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 text-muted-foreground py-16">
-            <Puzzle className="h-10 w-10 opacity-30" />
-            <p className="text-sm">No components yet</p>
-            <p className="text-xs">
-              Components are reusable elements like headers and footers.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {components.map((comp) => {
-              const isEditingThis = editingId === comp.id;
-              const rowExtraSections = createCmsComponentExtraSections({
-                isEditing: isEditingThis,
-                onSave: () => void handleSaveEdit(),
-                onEdit: () => startEditing(comp),
-                onDelete: () => setDeleteTarget(comp),
-              });
-              const rowMenuProps = {
-                ...CMS_COMPONENT_CONTEXT_MENU_PROPS,
-                extraSections: rowExtraSections,
-                contextData: buildSurfaceScope() as Record<string, unknown>,
-              };
-              return (
-                <div
-                  key={comp.id}
-                  className="rounded-lg border border-border bg-card overflow-hidden"
-                >
-                  <NonEditableContextMenu {...rowMenuProps}>
-                    <div className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-md bg-muted/50 flex items-center justify-center">
-                          <Puzzle className="h-4 w-4 text-muted-foreground" />
+          {error && (
+            <div className="text-sm text-destructive flex items-center gap-2 p-3 rounded-md bg-destructive/10">
+              <AlertCircle className="h-4 w-4" />
+              {error}
+            </div>
+          )}
+
+          {components.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 text-muted-foreground py-16">
+              <Puzzle className="h-10 w-10 opacity-30" />
+              <p className="text-sm">No components yet</p>
+              <p className="text-xs">
+                Components are reusable elements like headers and footers.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {components.map((comp) => {
+                const isEditingThis = editingId === comp.id;
+                const rowExtraSections = createCmsComponentExtraSections({
+                  isEditing: isEditingThis,
+                  onSave: () => void handleSaveEdit(),
+                  onEdit: () => startEditing(comp),
+                  onDelete: () => setDeleteTarget(comp),
+                });
+                const rowMenuProps = {
+                  ...CMS_COMPONENT_CONTEXT_MENU_PROPS,
+                  extraSections: rowExtraSections,
+                  contextData: buildSurfaceScope() as Record<string, unknown>,
+                };
+                return (
+                  <div
+                    key={comp.id}
+                    className="rounded-lg border border-border bg-card overflow-hidden"
+                  >
+                    <NonEditableContextMenu {...rowMenuProps}>
+                      <div className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-md bg-muted/50 flex items-center justify-center">
+                            <Puzzle className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{comp.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {comp.component_type}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">{comp.name}</p>
-                          <p className="text-xs text-muted-foreground capitalize">
-                            {comp.component_type}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={comp.is_active ? "default" : "secondary"}
-                          className="text-[10px]"
-                        >
-                          {comp.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                        {editingId === comp.id ? (
-                          <Button
-                            size="sm"
-                            onClick={handleSaveEdit}
-                            disabled={isSavingEdit}
-                            className="gap-1.5 text-xs"
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={comp.is_active ? "default" : "secondary"}
+                            className="text-[10px]"
                           >
-                            {isSavingEdit ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Save className="h-3.5 w-3.5" />
-                            )}
-                            Save
-                          </Button>
-                        ) : (
+                            {comp.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                          {editingId === comp.id ? (
+                            <Button
+                              size="sm"
+                              onClick={handleSaveEdit}
+                              disabled={isSavingEdit}
+                              className="gap-1.5 text-xs"
+                            >
+                              {isSavingEdit ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Save className="h-3.5 w-3.5" />
+                              )}
+                              Save
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => startEditing(comp)}
+                              className="gap-1.5 text-xs"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              Edit
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => startEditing(comp)}
-                            className="gap-1.5 text-xs"
+                            onClick={() => setDeleteTarget(comp)}
+                            className="gap-1.5 text-xs text-destructive hover:text-destructive"
                           >
-                            <Pencil className="h-3.5 w-3.5" />
-                            Edit
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
                           </Button>
-                        )}
+                        </div>
+                      </div>
+                    </NonEditableContextMenu>
+                    {editingId === comp.id && (
+                      <div className="border-t border-border p-4 space-y-3 bg-muted/10">
+                        <div>
+                          <label className="text-xs font-medium block mb-1">
+                            HTML
+                          </label>
+                          <EditableContextMenu
+                            {...CMS_COMPONENT_CONTEXT_MENU_PROPS}
+                            extraSections={rowExtraSections}
+                            getTextarea={() => htmlTextareaRef.current}
+                            getApplicationScope={getHtmlApplicationScope}
+                            contextData={
+                              buildSurfaceScope() as Record<string, unknown>
+                            }
+                            onTextReplace={setEditHtml}
+                            onSave={() => void handleSaveEdit()}
+                          >
+                            <ProTextarea
+                              ref={htmlTextareaRef}
+                              value={editHtml}
+                              onChange={(e) => setEditHtml(e.target.value)}
+                              className="font-mono text-xs min-h-[120px]"
+                              surfaceName={
+                                CMS_COMPONENT_CONTEXT_MENU_PROPS.surfaceName
+                              }
+                              getApplicationScope={getHtmlApplicationScope}
+                            />
+                          </EditableContextMenu>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium block mb-1">
+                            CSS
+                          </label>
+                          <EditableContextMenu
+                            {...CMS_COMPONENT_CONTEXT_MENU_PROPS}
+                            extraSections={rowExtraSections}
+                            getTextarea={() => cssTextareaRef.current}
+                            getApplicationScope={getCssApplicationScope}
+                            contextData={
+                              buildSurfaceScope() as Record<string, unknown>
+                            }
+                            onTextReplace={setEditCss}
+                            onSave={() => void handleSaveEdit()}
+                          >
+                            <ProTextarea
+                              ref={cssTextareaRef}
+                              value={editCss}
+                              onChange={(e) => setEditCss(e.target.value)}
+                              className="font-mono text-xs min-h-[80px]"
+                              surfaceName={
+                                CMS_COMPONENT_CONTEXT_MENU_PROPS.surfaceName
+                              }
+                              getApplicationScope={getCssApplicationScope}
+                            />
+                          </EditableContextMenu>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setDeleteTarget(comp)}
-                          className="gap-1.5 text-xs text-destructive hover:text-destructive"
+                          onClick={() => setEditingId(null)}
+                          className="text-xs"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Delete
+                          Cancel
                         </Button>
                       </div>
-                    </div>
-                  </NonEditableContextMenu>
-                  {editingId === comp.id && (
-                    <div className="border-t border-border p-4 space-y-3 bg-muted/10">
-                      <div>
-                        <label className="text-xs font-medium block mb-1">
-                          HTML
-                        </label>
-                        <EditableContextMenu
-                          {...CMS_COMPONENT_CONTEXT_MENU_PROPS}
-                          extraSections={rowExtraSections}
-                          getTextarea={() => htmlTextareaRef.current}
-                          getApplicationScope={getHtmlApplicationScope}
-                          contextData={
-                            buildSurfaceScope() as Record<string, unknown>
-                          }
-                          onTextReplace={setEditHtml}
-                          onSave={() => void handleSaveEdit()}
-                        >
-                          <ProTextarea
-                            ref={htmlTextareaRef}
-                            value={editHtml}
-                            onChange={(e) => setEditHtml(e.target.value)}
-                            className="font-mono text-xs min-h-[120px]"
-                            surfaceName={
-                              CMS_COMPONENT_CONTEXT_MENU_PROPS.surfaceName
-                            }
-                            getApplicationScope={getHtmlApplicationScope}
-                          />
-                        </EditableContextMenu>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium block mb-1">
-                          CSS
-                        </label>
-                        <EditableContextMenu
-                          {...CMS_COMPONENT_CONTEXT_MENU_PROPS}
-                          extraSections={rowExtraSections}
-                          getTextarea={() => cssTextareaRef.current}
-                          getApplicationScope={getCssApplicationScope}
-                          contextData={
-                            buildSurfaceScope() as Record<string, unknown>
-                          }
-                          onTextReplace={setEditCss}
-                          onSave={() => void handleSaveEdit()}
-                        >
-                          <ProTextarea
-                            ref={cssTextareaRef}
-                            value={editCss}
-                            onChange={(e) => setEditCss(e.target.value)}
-                            className="font-mono text-xs min-h-[80px]"
-                            surfaceName={
-                              CMS_COMPONENT_CONTEXT_MENU_PROPS.surfaceName
-                            }
-                            getApplicationScope={getCssApplicationScope}
-                          />
-                        </EditableContextMenu>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingId(null)}
-                        className="text-xs"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => !isDeleting && !open && setDeleteTarget(null)}
-        title={`Delete "${deleteTarget?.name}"?`}
-        description="This removes the component from the site immediately. Any page still referencing it as a header/footer will render without it."
-        confirmLabel="Delete"
-        variant="destructive"
-        busy={isDeleting}
-        onConfirm={handleDelete}
-      />
-    </div>
+        <ConfirmDialog
+          open={!!deleteTarget}
+          onOpenChange={(open) => !isDeleting && !open && setDeleteTarget(null)}
+          title={`Delete "${deleteTarget?.name}"?`}
+          description="This removes the component from the site immediately. Any page still referencing it as a header/footer will render without it."
+          confirmLabel="Delete"
+          variant="destructive"
+          busy={isDeleting}
+          onConfirm={handleDelete}
+        />
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

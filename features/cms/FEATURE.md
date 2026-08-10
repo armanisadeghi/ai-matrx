@@ -79,7 +79,7 @@ for the general contract this section instantiates.
 | `matrx-user/cms`           | `/cms`                                          | `NonEditableContextMenu` (page + per-card)                                                                | List/entry hub — `owned_sites_summary`, no `site_structure`. **`readiness: verified`**                                                                                 |
 | `matrx-user/cms-site`      | `/cms/[siteId]` + all four tabs                 | `NonEditableContextMenu`                                                                                  | Site workspace; first surface to emit `site_structure`. **Inherits `matrx-user/cms`** (the layout genuinely loads the switcher's site list). **`readiness: verified`** |
 | `matrx-user/cms-page`      | `/cms/[siteId]/pages/[pageId]`, `.../pages/new` | `EditableContextMenu` + `ProTextarea` on HTML/CSS/JS tabs                                                 | **Primary editor** — `agentRoles`: `page_editor`, `seo_editor`, `publish_reviewer`                                                                                     |
-| `matrx-user/cms-component` | `/cms/[siteId]/components`                      | `EditableContextMenu` + `ProTextarea` (HTML/CSS) + `NonEditableContextMenu` (cards)                       | Shared header/footer editor                                                                                                                                            |
+| `matrx-user/cms-component` | `/cms/[siteId]/components`                      | `EditableContextMenu` + `ProTextarea` (HTML/CSS) + `NonEditableContextMenu` (cards)                       | Shared header/footer editor — **agent-writable**: `component_html` / `component_css` draft targets (`ask`), provider + handlers in the route                            |
 | `matrx-user/html-page`     | `/cms/html-pages`, `/cms/html-pages/[pageId]`   | `EditableContextMenu` (meta description `ProTextarea` + Monaco body) + `NonEditableContextMenu` (preview) | Standalone quick-publish — `html_pages_structure`, not `site_structure`; `agentRoles`: `html_page_editor`                                                              |
 
 **The framing idea:** every website surface (`cms-site`/`cms-page`/`cms-component`) emits the _same_
@@ -344,6 +344,31 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-10` — **The shared-component editor is agent-writable
+  (`matrx-user/cms-component` write targets).** `/cms/[siteId]/components` now
+  mounts its OWN `SurfaceRuntimeProvider` (it previously had none — the only
+  live runtime on the route was `SiteLayoutClient`'s `matrx-user/cms-site`, so
+  the component scope reached the right-click menus but never the header Agents
+  chrome), fed by the existing `useCmsComponentSurfaceScope` builder, and
+  registers handlers for two `ask`-policy draft targets: `component_html` and
+  `component_css`, each `{ html | css, mode?: "replace" | "append" }`. They
+  stage into the route's `editHtml` / `editCss` state through the same setters
+  the textareas use — **no new write path**: the row's Save still goes
+  `handleSaveEdit` → `CmsComponentService.updateComponent` →
+  `POST /api/cms/components`, and no browser Supabase client was added for this
+  project. Both handlers throw when nothing is expanded for edit (the editing
+  state is keyed by `editingId`). `component_type`, `is_active` (CMS migration
+  0035 permits ONE active header/footer per site — flipping it deactivates a
+  sibling), delete, and the New Component dialog fields are deliberately NOT
+  declared. Live-verified end-to-end on `dev-website` with a real Badass Agent
+  run against "Main Footer (token footer)": both per-target confirms showed the
+  declared contract prose, Apply staged into the editor with Save intact, Save
+  persisted (`client_components` version 1 → 2, html 121 → 498 chars, css 0 →
+  1519, the `<!--matrx:footer-->` render token preserved), "Keep as is" left the
+  buffers byte-identical with a graceful acknowledgement, and asking for
+  `component_type` / `is_active` was refused (never advertised). Zero new
+  `surface-writeback` error captures; `pnpm check:surface-drift` + `pnpm
+  type-check` clean.
 - `2026-08-07` (round 2) — **Starter kit for humans + theme un-bake + shell integrity
   (WF-1/2/4/7).** `/cms/[siteId]/settings` gained a "Site Shell" card — Install starter kit
   with dry-run preview, force behind a destructive confirm — over aidream's new direct route
