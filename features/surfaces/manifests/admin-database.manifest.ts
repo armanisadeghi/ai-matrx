@@ -5,16 +5,19 @@
  * database console. `/administration/database` itself is a HUB LANDING (a
  * card grid over `features/administration/database-hub/database-tools.ts`);
  * the data-bearing child is the SQL workbench at
- * `/administration/database/database-admin`, which runs arbitrary read
+ * `/administration/database/sql-queries`, which runs arbitrary read
  * queries against the live Supabase project through the
- * `execute_admin_query` RPC.
+ * `execute_admin_query` RPC. (The sibling `/administration/database/database-admin`
+ * dashboard has its own editor and mounts NO surface provider — it emits
+ * nothing and receives nothing.)
  *
  * What an agent bound here may safely do: read the admin's SQL text, the
  * shape of the result it got back, its recent query history, and the catalogue
  * of database tools available on the hub — and from that, WRITE and EXPLAIN
- * SQL, diagnose an error message, or propose a next query. It must NOT assume
- * a query it proposes has been executed: execution is the admin pressing Run.
- * Nothing on this surface is a write path.
+ * SQL, diagnose an error message, or propose a next query. It may STAGE that
+ * SQL into the editor through the `sql_query` write target. It must NOT assume
+ * a query it proposes has been executed: execution is the admin pressing
+ * Execute, and there is no write path to it.
  *
  * SECURITY: this manifest declares NO secrets, API keys, tokens, connection
  * strings, or credential material. Specifically, no Supabase URL, service-role
@@ -44,7 +47,9 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { SQL_QUERY_WRITE_MAX_CHARS } from "@/features/administration/lib/sql-editor-write-targets";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const ADMIN_DATABASE_SURFACE_NAME = "matrx-admin/database";
@@ -261,6 +266,75 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may put into the SQL workbench.
+ *
+ * THE LINE THIS SURFACE DRAWS: **drafting is not executing.** The workbench
+ * already separates the two — the admin types SQL, then presses Execute — and
+ * that seam is exactly where the write target sits. An agent turning "which
+ * users signed up last week and never came back?" into real SQL is the
+ * textbook authored-content YES case: it is the single highest-value thing an
+ * agent can do on a database console, and it is worth nothing if the admin has
+ * to copy it out of a chat panel by hand. Same "order vs fire" split as
+ * `image-generate` (agent fills the prompt, user presses Generate) and
+ * `podcast-studio` (agent fills the brief, user spends the money).
+ *
+ * WHAT `sql_query` ACTUALLY DOES, stated plainly because this is the database:
+ * it replaces the TEXT in a textarea. Nothing connects, nothing runs, nothing
+ * is invalidated. That is why staging DDL/DML text is fine here and the target
+ * description says so out loud — `DROP TABLE …` sitting in the editor is inert
+ * characters the admin reads and decides on, indistinguishable in risk from
+ * the same characters in a chat reply. The risk of a database console is
+ * EXECUTION, and execution has no write path.
+ *
+ * DELIBERATELY NOT WRITABLE:
+ *  - **Execute.** The hard line. An agent must never run SQL it wrote without
+ *    a human pressing the button — no target, no handler, not negotiable.
+ *    (Also no Cancel: stopping a run is the admin's call on their own query.)
+ *  - **`use_cache` and Clear Cache.** Cache behaviour decides whether the next
+ *    run touches the live database at all; an agent flipping it changes what
+ *    executing MEANS without changing anything the admin can see in the SQL.
+ *    Not authored content, and the one toggle where being wrong is invisible.
+ *  - **Connection / target database / credentials.** None exist as page state
+ *    and none ever will here — see the SECURITY note at the top of this file.
+ *  - `query_result*`, `query_history`, `query_execution_ms`, `query_error` —
+ *    the RECORD of what the database actually did. An agent writing those is
+ *    fabricating results, which on an admin console is the worst possible lie.
+ *  - `is_query_running` — status the page owns. (The handler REFUSES while it
+ *    is true rather than swapping the buffer under an in-flight run, so the
+ *    results that land always belong to the SQL the admin is looking at.)
+ *
+ * `replacement_pairs` — CONSIDERED AND REJECTED, on the judgment bar rather
+ * than on risk. The Template Variables panel holds find/replace pairs that do
+ * nothing until the admin presses "Apply Replacements to Query", which
+ * rewrites `sql_query`. So an agent writing pairs is staging a stage: a
+ * strictly worse path to an outcome `sql_query` already delivers in one step
+ * and shows in the textarea. An agent that understands the template well
+ * enough to fill its placeholders can simply write the finished SQL. It also
+ * has no read twin to declare `updatesValue` against, so the agent could not
+ * see the pairs it was extending. Padding the surface with it would buy a
+ * second confirm dialog and no new capability.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "sql_query",
+    label: "SQL query",
+    description:
+      "Stages SQL into the workbench editor the admin is looking at. NOTHING IS EXECUTED — no query runs, no connection is made, no cache is touched; the text simply appears in the editor and the admin reads it and presses Execute. " +
+      "Value: a STRING of raw SQL that REPLACES the entire editor buffer — read `sql_query` first and include anything you mean to keep. " +
+      "Send the query text on its own: no markdown ``` fences, no prose, no trailing semicolon commentary. Leading and trailing whitespace is trimmed; interior formatting is kept exactly as you send it. " +
+      `Must be non-empty (clearing the editor is the admin's own action) and at most ${SQL_QUERY_WRITE_MAX_CHARS} characters. ` +
+      "Statements that would MODIFY the database (INSERT/UPDATE/DELETE/ALTER/DROP/CREATE) may be staged like any other text — they are inert until the admin runs them — but say plainly in your message what the SQL would do, because the admin is the only thing standing between it and the live database. " +
+      "Refused while a query is already running.",
+    valueType: "string",
+    updatesValue: "sql_query",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "query_editor",
+    sortOrder: 200,
+  },
+];
+
 export const adminDatabaseManifest: SurfaceManifest = {
   surfaceName: ADMIN_DATABASE_SURFACE_NAME,
   readiness: "partial",
@@ -275,7 +349,7 @@ This is an ADMIN surface: the super-admin database console at /administration/da
 
 How to read the values: console_section tells you which one you are on — "hub" or "sql_workbench". On the hub, database_tool_pages is the catalogue and the query_* values are absent. In the workbench, sql_query is what the admin has written, and the query_* result values describe the LAST execution (they are all absent before the first run, and query_error replaces them when a run fails).
 
-What you may safely do: read the SQL and the result shape, then write, correct, explain, or optimise SQL and diagnose errors. You never execute anything — running a query is the admin pressing Run. Treat result rows as live production data: summarise them, do not republish them.
+What you may safely do: read the SQL and the result shape, then write, correct, explain, or optimise SQL and diagnose errors. Put the SQL you wrote straight into the editor with the sql_query write target instead of making the admin copy it out of chat — it REPLACES the whole editor buffer, so read sql_query first if you mean to extend rather than replace. Staging is not running: you never execute anything, and there is no write path to Execute, Cancel, or the cache. Running a query is the admin pressing Execute. When the SQL you stage would change data or schema, say so plainly in your message — the admin's review is the only gate. Treat result rows as live production data: summarise them, do not republish them.
 
 There are no credentials in this scope. No connection string, database password, service key, or API token is emitted here, and you should never ask for one.
 </surface_intro>`,
@@ -284,6 +358,7 @@ There are no credentials in this scope. No connection string, database password,
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One entry in the hub's database-tool catalogue. */
