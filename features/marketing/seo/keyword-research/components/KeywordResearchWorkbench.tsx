@@ -58,6 +58,16 @@ import {
   MOBILE_TABLE,
 } from "@/components/official/mobile-table/mobileTable";
 
+/** The surface this workbench mounts — and whose write targets it services. */
+const KEYWORD_RESEARCH_SURFACE = "matrx-user/keyword-research";
+
+/** Wire value for the `keyword_selection` write target. */
+export interface KeywordSelectionWrite {
+  keyword_ids: string[];
+  /** Omitted = "replace" — the selection becomes exactly `keyword_ids`. */
+  mode?: "replace" | "add";
+}
+
 const EDGE_TYPE_LABELS: Record<string, string> = {
   refines: "Refines",
   variant_of: "Variant of",
@@ -406,10 +416,62 @@ export default function KeywordResearchWorkbench() {
       volumeStage,
     });
 
+  // Surface write half — `keyword_selection` only. It moves the SAME selection
+  // the row checkboxes move (setSelectedIds), so the toolbar's bulk actions
+  // see it exactly as if the user had clicked; the user still presses them.
+  // The seed-keyword target is serviced by the launcher, which owns the input.
+  const getWriteHandlers = () => ({
+    keyword_selection: (value: unknown) => {
+      const write = value as Partial<KeywordSelectionWrite> | null;
+      if (
+        !write ||
+        !Array.isArray(write.keyword_ids) ||
+        write.keyword_ids.some((id) => typeof id !== "string")
+      ) {
+        // Loud by contract — the writeback seam turns throws into the error
+        // envelope the agent reads back, never a silent no-op.
+        throw new Error(
+          'keyword_selection expects { keyword_ids: string[], mode?: "replace" | "add" }',
+        );
+      }
+      const mode = write.mode ?? "replace";
+      if (mode !== "replace" && mode !== "add") {
+        throw new Error(
+          `keyword_selection mode must be "replace" or "add" (got "${String(write.mode)}")`,
+        );
+      }
+      if (run.status === "running") {
+        // A finishing run re-scopes the explorer to its cluster, and the
+        // visible-set effect below prunes the selection to what survives —
+        // so a selection staged now would be silently thrown away.
+        throw new Error(
+          "A research run is still in flight — the explorer is about to re-scope to its cluster, so a selection made now would be discarded. Wait for the run to finish.",
+        );
+      }
+      // Validate against what is ACTUALLY listed right now. All-or-nothing:
+      // one unknown id rejects the whole write rather than silently selecting
+      // a subset the user would have to audit.
+      const visible = new Map(sorted.map((row) => [row.id, row.phrase]));
+      const unknown = write.keyword_ids.filter((id) => !visible.has(id));
+      if (unknown.length > 0) {
+        throw new Error(
+          `keyword_selection got ${unknown.length} id(s) that are not among the ${sorted.length} keyword rows currently visible: ${unknown.join(", ")}. Only ids from visible_keywords can be selected — nothing was selected.`,
+        );
+      }
+      setSelectedIds((current) => {
+        const next =
+          mode === "add" ? new Set(current) : new Set<string>();
+        for (const id of write.keyword_ids as string[]) next.add(id);
+        return next;
+      });
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
-      surfaceName="matrx-user/keyword-research"
+      surfaceName={KEYWORD_RESEARCH_SURFACE}
       getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
     <div
       className="flex h-full flex-col overflow-hidden"
@@ -418,7 +480,11 @@ export default function KeywordResearchWorkbench() {
       {/* Research launcher — the canonical shared component (also hosted by
           KeywordResearchWindow, opened from anywhere). */}
       <div className="border-b border-border px-4 py-3">
-        <KeywordResearchLauncher run={run} runResearch={runResearch} />
+        <KeywordResearchLauncher
+          run={run}
+          runResearch={runResearch}
+          writeSurfaceName={KEYWORD_RESEARCH_SURFACE}
+        />
       </div>
 
       {/* Explorer toolbar */}

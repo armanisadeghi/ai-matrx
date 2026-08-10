@@ -28,6 +28,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -211,13 +212,69 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * What may be written INTO this workbench.
+ *
+ * The bar was applied narrowly, and most of this surface deliberately failed
+ * it. `runResearch` is NOT a target: the run is an outbound, billable
+ * third-party pipeline, so the Research button stays the user's to press —
+ * an agent stages the seed and stops there. The archive path is NOT a target
+ * either: destructive stays human. `library_search` (the explorer filter) was
+ * considered and REJECTED — it is a plain substring match on
+ * `normalized_phrase`, so an agent can do nothing with it a user could not
+ * type faster, and it is exactly the "pure-mechanical toggle nobody would ask
+ * an agent to flip" the bar excludes.
+ *
+ * What remains are the two writes an agent genuinely produces better: the
+ * primary keyword worth researching next (drafted from the cluster/library
+ * evidence in view), and which rows are worth acting on.
+ *
+ * Serviced by the component that owns each target's state —
+ * `research_seed_keyword` by `KeywordResearchLauncher` (which owns the input)
+ * via `useSurfaceWriteHandlers`, `keyword_selection` by
+ * `KeywordResearchWorkbench`'s own provider.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "research_seed_keyword",
+    label: "Research seed keyword",
+    description:
+      "Stages a primary keyword into the Research input at the top of the workbench — the SAME field the user types into. Value is { keyword: string }: one non-empty phrase that REPLACES whatever is currently in the input. This NEVER launches the research pipeline: a run is a paid third-party call, so the user still presses Research themselves. Rejected while a run is already in flight (run_status = \"running\"), because the input belongs to the running request. Use it to propose the next primary keyword worth researching, grounded in the cluster or library evidence you can actually see.",
+    valueType: "object",
+    // No 1:1 read twin: the input text is deliberately not emitted (only
+    // `run_primary_keyword`, which is the LAUNCHED keyword, not the draft).
+    mode: "draft",
+    // Staging a seed is cheap and reversible, but it retargets what the user
+    // is about to spend money researching — so it asks. Decline is normal.
+    applyPolicy: "ask",
+    group: "research_run",
+    sortOrder: 405,
+  },
+  {
+    name: "keyword_selection",
+    label: "Keyword selection",
+    description:
+      "Sets which library rows are check-selected in the explorer — the same checkboxes the user clicks, which drive the toolbar's bulk actions. Value is { keyword_ids: string[], mode?: \"replace\" | \"add\" }. mode \"replace\" (the DEFAULT when omitted) makes the selection EXACTLY keyword_ids, deselecting everything else; mode \"add\" unions them into the current selection. Every id must be the keyword_id of a row listed in visible_keywords RIGHT NOW — if any id is not currently visible the whole write is rejected and nothing is selected, so a selection can never act on rows the user cannot see. Pass an empty array with \"replace\" to clear the selection. Ephemeral: this moves the selection only and persists nothing; the user still presses the toolbar action themselves.",
+    valueType: "object",
+    updatesValue: "visible_keywords",
+    mode: "ui",
+    // `ui` mode would permit "auto", but NOT here: the one bulk action wired
+    // to this selection is Archive (destructive). Silently re-pointing the
+    // selection could tee up a destructive action on rows the user never
+    // chose, so the user is asked. Archive itself keeps its own confirm.
+    applyPolicy: "ask",
+    group: "keyword_library",
+    sortOrder: 325,
+  },
+];
+
 export const keywordResearchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/keyword-research",
   label: "Keyword Research Workbench",
   urlPattern: "/marketing/keyword-research",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter complete for the workbench's own state. Not yet registered in registry.ts / route-to-surface.ts / ui_surface (registration is the owner's call). The live agent token streams (relationship research + classification) are deliberately NOT emitted — they are transient render buffers; the persisted research_artifact/research_result are the durable truth.",
+    "Manifest + emitter + write targets complete for the workbench's own state. Registered in registry.ts and route-to-surface.ts; the ui_surface / ui_surface_write_target DB mirror is still pending (the client write tool works either way). The live agent token streams (relationship research + classification) are deliberately NOT emitted — they are transient render buffers; the persisted research_artifact/research_result are the durable truth.",
   intro: `<surface_intro>
 You are on the Keyword Research workbench — the universal, site-agnostic plane of keywords. There is no site, page, or brand here: the user researches and explores keyword demand itself.
 Two halves. The LIBRARY EXPLORER (library_search, visible_keywords, keywords_total) lists keyword rows with provider market evidence: search volume, CPC, competition, demand trajectory, and intent classification. These numbers come from a paid data provider — read them as evidence and never invent, extrapolate, or "estimate" a missing one; an absent market row means the keyword has simply never been fetched.
@@ -226,6 +283,7 @@ Useful work here is judgment over the rows actually provided: which phrases dese
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  writeTargets,
   agentRoles: [
     {
       name: "keyword_strategist",

@@ -24,6 +24,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, SearchCheck } from "lucide-react";
 
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { ResearchRunState } from "../useKeywordResearch";
 import {
   savedKeywordResearchQueryKey,
@@ -46,6 +47,19 @@ export interface KeywordResearchLauncherProps {
   /** Org owning the durable saved-research read. Defaults to the effective
    * organization (the same org callApi stamps on the run itself). */
   organizationId?: string | null;
+  /**
+   * Surface whose `research_seed_keyword` write target this launcher services.
+   * Opt-in and null by default: only a host that MOUNTS a surface declaring
+   * that target passes it (the workbench does; the floating
+   * `KeywordResearchWindow` does not), so a launcher can never register a
+   * handler for a surface it is not actually inside.
+   */
+  writeSurfaceName?: string | null;
+}
+
+/** Wire value for the `research_seed_keyword` target. */
+export interface ResearchSeedKeywordWrite {
+  keyword: string;
 }
 
 export default function KeywordResearchLauncher({
@@ -56,6 +70,7 @@ export default function KeywordResearchLauncher({
   feedMaxHeightClassName = "max-h-[26rem]",
   onKeywordChange,
   organizationId,
+  writeSurfaceName = null,
 }: KeywordResearchLauncherProps) {
   const [primaryInput, setPrimaryInput] = useState(initialKeyword ?? "");
   const autoRanRef = useRef(false);
@@ -92,6 +107,40 @@ export default function KeywordResearchLauncher({
     if (!primaryInput.trim() || run.status === "running") return;
     void runResearch(primaryInput);
   }, [primaryInput, run.status, runResearch]);
+
+  // ── Surface write half ───────────────────────────────────────────────────
+  // `research_seed_keyword` stages the input and NOTHING else — it lands
+  // through exactly the setters the user's own typing uses (setPrimaryInput +
+  // onKeywordChange, so a host that persists the input still sees it). The
+  // Research button is deliberately not driven from here: the run is a paid
+  // third-party pipeline and stays the user's to press.
+  useSurfaceWriteHandlers(writeSurfaceName, {
+    research_seed_keyword: (value: unknown) => {
+      const write = value as Partial<ResearchSeedKeywordWrite> | null;
+      if (!write || typeof write.keyword !== "string") {
+        // Loud by contract: the writeback seam turns a throw into the toast +
+        // captured error the agent reads back, never a silent no-op.
+        throw new Error(
+          "research_seed_keyword expects { keyword: string }",
+        );
+      }
+      const keyword = write.keyword.trim();
+      if (!keyword) {
+        throw new Error(
+          "research_seed_keyword requires a non-empty keyword phrase",
+        );
+      }
+      if (run.status === "running") {
+        // The input is locked to the in-flight request; re-seeding it would
+        // misrepresent the run the user is currently paying for.
+        throw new Error(
+          `A research run for “${run.primaryKeyword ?? ""}” is still in flight — the seed keyword cannot be changed until it finishes.`,
+        );
+      }
+      setPrimaryInput(keyword);
+      onKeywordChange?.(keyword);
+    },
+  });
 
   // autoRun: one shot, deferred so the launch's setState never fires inside
   // the effect body of a mounting tree.
