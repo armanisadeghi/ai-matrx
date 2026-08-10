@@ -24,6 +24,61 @@
  * The `run-a…f` / `run-dense` / `run-sharp` / `run-refine` / `run-reimagine`
  * route variants are UI-bakeoff weight and are NOT part of this contract —
  * `/podcast/studio/run/[id]` is the canonical route.
+ *
+ * ── THE WRITE HALF (2026-08-10) ───────────────────────────────────────────
+ * Three ask-policy `entity` targets, and they are the ONLY three things on
+ * this page an agent may change: `episode_title`, `episode_description`,
+ * `episode_chapters`. Everything else on a run page is either OUTPUT or a
+ * gate, and the reasoning is written down here rather than left to omission.
+ *
+ * 1. RE-RUNNING IS NOT A TARGET. Generating, resuming, re-running from
+ *    source, regenerating an image/video slot, and adding a new asset all
+ *    spend real money on models. The settled precedent is `podcast-studio`
+ *    (an agent fills the composer; the human presses Generate) and
+ *    `image-generate` ("**Generate is deliberately NOT a target**"), and this
+ *    surface is the far side of exactly that press. An agent that thinks the
+ *    episode should be remade says so; the human presses the button.
+ *
+ * 2. THE PRODUCED ARTEFACTS ARE OUTPUT AND HAVE NO WRITE PATH, EVER. The
+ *    rendered audio, the composed episode video, every image/video slot, the
+ *    full `script`/transcript and its previews, and the whole `run_progress`
+ *    + `diagnostics` half (status, stages, liveness, tallies, errors, the
+ *    original request, research activity) are the record of what the pipeline
+ *    ACTUALLY did. This is the `markdown-editor` `processed_data`/`ast` rule:
+ *    derived output moves by re-deriving it, never by an agent writing over
+ *    it. Writing a stage status or an error string would forge the run's own
+ *    honesty record, and the surface intro tells agents to diagnose from
+ *    those exact fields.
+ *
+ * 3. PUBLISHING AND SHARING STAY HUMAN. `is_published`, the episode slug and
+ *    its public `/podcast/[slug]` identity, `display_mode`, and the
+ *    blog/show-notes publish toggles are all undeclared — the `html-page`
+ *    precedent that going live is a human action, plus the plain fact that a
+ *    slug is identity, not copy. Deleting anything is human by doctrine.
+ *
+ * 4. THE COVER IS NOT A TARGET. `selectCover` writes `pc_episodes.image_url`,
+ *    but the surface deliberately emits durable file refs and never image
+ *    URLs (see MEDIA DOCTRINE above), so an agent has no legal value to name
+ *    — and choosing between rendered images is a visual judgment it cannot
+ *    make from this scope anyway.
+ *
+ * RELATIONSHIP TO THE EXISTING "AI TITLE OPTIONS" PANEL. The run page already
+ * has an AI title affordance: `EpisodeTitlePanel` runs the
+ * `podcast.title_optimizer` slot and lists ranked options, and clicking "Use"
+ * calls `useEpisodeTitleOptions.apply()` → `podcastService.updateEpisode(id,
+ * { title })`. `episode_title` is NOT a second way to set the title: it lands
+ * through that SAME canonical `podcastService.updateEpisode` call. The two
+ * differ only in who chooses — the panel is a modal one-shot the user opens,
+ * ranks, and picks from; the target is for the conversational agent in the
+ * header popover, which has already read the script and the run. This is the
+ * `mermaid-editor` shape (a surface that already had a bespoke agent path
+ * keeps ONE commit path and adds no duplication). Landing it also closed the
+ * panel's own staleness bug: both paths now reflect into the run state the
+ * hero renders, so the page no longer shows the old title after an apply.
+ *
+ * `entity` rather than the preferred `draft` because this page has no editor
+ * state and no Save bar to stage into — the `mermaid-editor` reasoning that
+ * `draft`'s "nothing is saved until you save" would simply be a lie here.
  */
 
 import type {
@@ -31,6 +86,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -289,6 +345,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "episode",
   },
   {
+    name: "episode_chapters",
+    label: "Chapter markers",
+    description:
+      "The episode's persisted chapter markers, in order: per chapter its start_hint (MM:SS or HH:MM:SS timestamp), title, and summary. Read from pc_episodes.metadata.chapters. Empty until the Chapter markers panel has generated and saved a set — which only happens on a finished episode.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 900,
+    sortOrder: 545,
+    group: "episode",
+  },
+  {
     name: "episode_id",
     label: "Episode ID",
     description:
@@ -450,6 +517,54 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The write half. All three are `entity` + `ask`: this page persists straight
+ * through `podcastService`, so the in-place confirm IS the review step.
+ * Every handler additionally REFUSES while the run is still working
+ * (streaming / background_working / run_status "running") or before the
+ * episode row exists — a run mid-flight is still writing these very columns
+ * from the pipeline, and a write that a later stage silently overwrites is
+ * worse than a refusal.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "episode_title",
+    label: "Episode title",
+    description:
+      "Replaces the finished episode's title (pc_episodes.title), through the same podcastService.updateEpisode call the Title options panel's 'Use' button makes. Value: { title: string } — one line, non-empty, 200 characters or fewer, no surrounding quotes. The episode SLUG and public URL are intentionally untouched, so the public link keeps working. Blog posts and show notes generated earlier keep the old title until they are regenerated. Refused while the run is still working and before the episode exists.",
+    valueType: "object",
+    updatesValue: "episode_title",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "episode",
+    sortOrder: 500,
+  },
+  {
+    name: "episode_description",
+    label: "Episode description",
+    description:
+      "Replaces the finished episode's description/summary (pc_episodes.description) — the paragraph shown under the title on this page and on the public episode page. Value: { description: string } — plain prose, non-empty, 2000 characters or fewer, no markdown headings. REPLACES the whole description; to extend the existing one, include it. Refused while the run is still working and before the episode exists.",
+    valueType: "object",
+    updatesValue: "episode_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "episode",
+    sortOrder: 510,
+  },
+  {
+    name: "episode_chapters",
+    label: "Chapter markers",
+    description:
+      "Replaces the episode's FULL ordered chapter list (pc_episodes.metadata.chapters), through the same podcastService.saveEpisodeChapters call the Chapter markers panel's Generate uses. Value: { chapters: [{ start_hint, title, summary }] } — 1 to 24 entries, each title non-empty and 120 characters or fewer, each summary 300 characters or fewer (empty string allowed), start_hint a MM:SS or HH:MM:SS timestamp. This REPLACES the whole list, so include every chapter you want to keep: read the current set from the episode_chapters value first and REUSE its start_hint timestamps verbatim — they are aligned to the rendered audio and you cannot re-derive them. Use this to rewrite chapter titles and summaries; use the panel's Regenerate button to re-segment the episode from scratch. Refused while the run is still working and before the episode exists.",
+    valueType: "object",
+    updatesValue: "episode_chapters",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "episode",
+    sortOrder: 545,
+  },
+];
+
 export const podcastRunManifest: SurfaceManifest = {
   surfaceName: "matrx-user/podcast-run",
   readiness: "partial",
@@ -469,6 +584,7 @@ script is the full transcript and is bindable-only; use script_preview when you 
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "run_diagnostician",
@@ -526,6 +642,7 @@ export function createPodcastRunScope(values: {
   script?: string;
   script_preview?: string;
   source_preview?: string;
+  episode_chapters?: Array<Record<string, unknown>>;
   episode_id?: string;
   episode_slug?: string;
   show_id?: string;

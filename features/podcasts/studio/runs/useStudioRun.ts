@@ -122,6 +122,27 @@ export interface UseStudioRun {
   recovery: RecoveryState;
   selectedCoverUrl: string | null;
   selectCover: (url: string) => void;
+  /**
+   * Persist authored episode metadata (title / description) through the
+   * CANONICAL `podcastService.updateEpisode`, then reflect it into the live
+   * run state so `MetadataHero` re-renders immediately — the `selectCover`
+   * pattern. Throws when there is no persisted episode yet or the write
+   * fails; the caller decides how loud to be. This is the single write path
+   * behind the `episode_title` / `episode_description` surface write targets.
+   */
+  applyEpisodeMetadata: (patch: {
+    title?: string;
+    description?: string;
+  }) => Promise<void>;
+  /**
+   * Reflect metadata that was ALREADY persisted elsewhere (the Title options
+   * panel writes through its own hook) into this run's state, so the hero
+   * stops showing the superseded title. Local only — persists nothing.
+   */
+  reflectEpisodeMetadata: (patch: {
+    title?: string;
+    description?: string;
+  }) => void;
   cancel: () => void;
   /** Live in-flight TTS audio (listen while it renders). Non-null only while a
    *  live stream is delivering audio chunks and the canonical file isn't ready. */
@@ -1023,6 +1044,32 @@ export function useStudioRun(runId: string): UseStudioRun {
     [persist, state.episodeId],
   );
 
+  const reflectEpisodeMetadata = useCallback(
+    (patch: { title?: string; description?: string }) => {
+      setState((s) => ({
+        ...s,
+        ...(patch.title !== undefined ? { title: patch.title } : {}),
+        ...(patch.description !== undefined
+          ? { description: patch.description }
+          : {}),
+      }));
+    },
+    [],
+  );
+
+  const applyEpisodeMetadata = useCallback(
+    async (patch: { title?: string; description?: string }) => {
+      if (!state.episodeId) {
+        throw new Error(
+          "This run has no persisted episode yet, so its metadata cannot be written.",
+        );
+      }
+      await podcastService.updateEpisode(state.episodeId, patch);
+      reflectEpisodeMetadata(patch);
+    },
+    [state.episodeId, reflectEpisodeMetadata],
+  );
+
   return {
     state,
     startedAt,
@@ -1045,6 +1092,8 @@ export function useStudioRun(runId: string): UseStudioRun {
     recovery,
     selectedCoverUrl,
     selectCover,
+    applyEpisodeMetadata,
+    reflectEpisodeMetadata,
     cancel,
     livePlayer,
   };

@@ -16,7 +16,17 @@ import { podcastService } from "@/features/podcasts/service";
 import { useEpisodeTitleOptions } from "@/features/podcasts/generator/useEpisodeTitleOptions";
 import type { PcEpisodeWithShow } from "@/features/podcasts/types";
 
-export function EpisodeTitlePanel({ episodeId }: { episodeId: string }) {
+export function EpisodeTitlePanel({
+  episodeId,
+  onTitleApplied,
+}: {
+  episodeId: string;
+  /** Reflect a title this panel just persisted into the run page's own state,
+   *  so the hero above stops showing the superseded one. The agent-driven
+   *  `episode_title` write target lands through the SAME
+   *  `podcastService.updateEpisode` call and reflects the same way. */
+  onTitleApplied?: (title: string) => void;
+}) {
   const [episode, setEpisode] = useState<PcEpisodeWithShow | null>(null);
   const { options, currentTitle, busy, applying, generate, apply } =
     useEpisodeTitleOptions(episode);
@@ -94,7 +104,11 @@ export function EpisodeTitlePanel({ episodeId }: { episodeId: string }) {
                   variant={isCurrent ? "ghost" : "outline"}
                   className="shrink-0 gap-1"
                   disabled={isCurrent || applying != null}
-                  onClick={() => void apply(opt.title)}
+                  onClick={() =>
+                    void apply(opt.title).then(() =>
+                      onTitleApplied?.(opt.title),
+                    )
+                  }
                 >
                   {applying === opt.title ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
