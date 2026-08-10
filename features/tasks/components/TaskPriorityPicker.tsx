@@ -21,12 +21,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/utils/cn";
+import type { TaskPriorityValue } from "@/features/tasks/constants/priority";
 
-export type TaskPriority = "low" | "medium" | "high" | null;
+export type TaskPriority = TaskPriorityValue | null;
 
 /** Shared priority styling vocab — colors are consistent app-wide (red/amber/sky). */
 export const TASK_PRIORITY_META: Record<
-  "low" | "medium" | "high",
+  TaskPriorityValue,
   {
     label: string;
     /** Abbreviated label for tight segmented controls. */

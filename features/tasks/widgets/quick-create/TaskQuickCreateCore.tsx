@@ -60,9 +60,22 @@ import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 import { ConversationHoverPreview } from "@/features/agents/components/previews/ConversationHoverPreview";
 import { MessageHoverPreview } from "@/features/agents/components/previews/MessageHoverPreview";
+import {
+  TASK_PRIORITIES,
+  type TaskPriorityValue,
+} from "@/features/tasks/constants/priority";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  TASK_CREATE_SURFACE_NAME,
+  type TaskCreateDraftScope,
+} from "@/features/surfaces/manifests/task-create.manifest";
 
 export type PostSaveAction = "newTab" | "navigate" | "openWindow" | "none";
-type Priority = "low" | "medium" | "high" | "";
+type Priority = TaskPriorityValue | "";
+
+/** Fields the `task_draft` write target accepts. Nothing else is writable. */
+const DRAFT_FIELDS = ["title", "description", "priority", "due_date"] as const;
+const DUE_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export interface TaskSourceInput {
   entity_type: string;
@@ -94,6 +107,16 @@ export interface TaskQuickCreateCoreProps {
    * Falls back to rendering inline at the bottom of the body when omitted.
    */
   footerHost?: HTMLElement | null;
+  /**
+   * Passed ONLY by the host that mounts the `matrx-user/task-create` surface
+   * (the quick-create window). Two jobs, one flag:
+   *   1. this core publishes its live draft into the ref, so the host's
+   *      `getScope` can emit `task_draft` — the read twin of the write target;
+   *   2. this core registers the surface's write handlers.
+   * Other hosts (the `/tasks/new` route) leave it unset, so exactly ONE mount
+   * ever services the surface even when the window opens on top of one.
+   */
+  surfaceDraftRef?: React.MutableRefObject<TaskCreateDraftScope | null>;
 }
 
 type LinkScope = "message" | "conversation" | "both";
@@ -125,6 +148,7 @@ export function TaskQuickCreateCore({
   onCancel,
   className,
   footerHost,
+  surfaceDraftRef,
 }: TaskQuickCreateCoreProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -227,6 +251,123 @@ export function TaskQuickCreateCore({
   };
 
   const canSave = !!title.trim() && !isBusy && !savedTaskId;
+
+  /* ── Surface read/write half (`matrx-user/task-create`) ───────────────
+     Only wired when the surface host handed us a ref — see the prop doc. */
+
+  // Bumped when a write lands so the description editor re-seeds from the new
+  // working content. Plain mode is a controlled textarea and updates on its
+  // own, but split mode keys its inner editor off resetKey; without this an
+  // agent's text would land in state the user cannot see until they switch
+  // views — the silent-skip failure the seam exists to prevent.
+  const [externalEdits, setExternalEdits] = useState(0);
+
+  const draft: TaskCreateDraftScope = {
+    title,
+    description: refine.workingContent,
+    priority,
+    due_date: dueDate,
+    project_id: projectId,
+    scope_ids: effectiveScopeIds,
+    link_scope: linkScope,
+    saved_task_id: savedTaskId,
+  };
+  // Published after commit — `getScope` is called at Run time and by the live
+  // sampler, never during render, so the ref is always the committed truth.
+  useEffect(() => {
+    if (surfaceDraftRef) surfaceDraftRef.current = draft;
+  });
+
+  // ONE composite target: this is a single act of drafting consumed by a
+  // single save (see the manifest's writeTargets comment). It validates the
+  // whole payload — the real TASK_PRIORITIES vocabulary, a date the form's
+  // `<input type="date">` will actually render — and THROWS on anything bad,
+  // which the writeback seam turns into an error envelope the agent reads.
+  // Accepted keys land through the SAME setters the user's typing uses.
+  // Creating the task is deliberately not a target: the human presses Create.
+  useSurfaceWriteHandlers(surfaceDraftRef ? TASK_CREATE_SURFACE_NAME : null, {
+    task_draft: (value: unknown) => {
+      if (savedTaskId)
+        throw new Error(
+          "This task has already been created — the capture form is finished and cannot be staged into. Open the task itself to change it.",
+        );
+
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          `task_draft expects an object with any of: ${DRAFT_FIELDS.join(" | ")}.`,
+        );
+
+      const next = value as Record<string, unknown>;
+      const keys = Object.keys(next);
+      if (keys.length === 0)
+        throw new Error("task_draft needs at least one field to stage.");
+
+      const unknown = keys.filter(
+        (key) => !(DRAFT_FIELDS as readonly string[]).includes(key),
+      );
+      if (unknown.length > 0)
+        throw new Error(
+          `task_draft does not accept: ${unknown.join(", ")}. Allowed fields: ${DRAFT_FIELDS.join(" | ")}. The project, scopes, and source link are not agent-writable on this form.`,
+        );
+
+      /** The raw string for a present key; `undefined` when the key is absent. */
+      const field = (key: string): string | undefined => {
+        if (!(key in next)) return undefined;
+        const raw = next[key];
+        if (typeof raw !== "string")
+          throw new Error(`task_draft.${key} expects a string.`);
+        return raw;
+      };
+
+      // Validate EVERYTHING before touching state, so a payload that is half
+      // wrong never lands half applied.
+      const nextTitle = field("title")?.trim();
+      if (nextTitle !== undefined && nextTitle.length === 0)
+        throw new Error(
+          "task_draft.title cannot be empty — the title is what makes the task saveable. Omit the key to leave the user's title alone.",
+        );
+
+      const nextDescription = field("description");
+
+      const nextPriority = field("priority")?.trim();
+      if (
+        nextPriority !== undefined &&
+        nextPriority !== "" &&
+        !(TASK_PRIORITIES as readonly string[]).includes(nextPriority)
+      )
+        throw new Error(
+          `task_draft.priority expects one of: ${TASK_PRIORITIES.join(" | ")}, or "" for none. Got "${nextPriority}".`,
+        );
+
+      const nextDueDate = field("due_date")?.trim();
+      if (nextDueDate !== undefined && nextDueDate !== "") {
+        // The form renders an `<input type="date">`, which shows nothing at
+        // all for a value it cannot parse — so a bad date must be refused,
+        // never coerced into an empty box the user reads as "no due date".
+        if (!DUE_DATE_RE.test(nextDueDate))
+          throw new Error(
+            `task_draft.due_date expects a date-only string "YYYY-MM-DD", or "" to clear. Got "${nextDueDate}".`,
+          );
+        const parsed = new Date(`${nextDueDate}T00:00:00Z`);
+        if (
+          Number.isNaN(parsed.getTime()) ||
+          parsed.toISOString().slice(0, 10) !== nextDueDate
+        )
+          throw new Error(
+            `task_draft.due_date "${nextDueDate}" is not a real calendar date.`,
+          );
+      }
+
+      if (nextTitle !== undefined) setTitle(nextTitle);
+      if (nextDescription !== undefined) {
+        // The same override the user's own typing creates in the editor.
+        refine.setEditedContent(nextDescription);
+        setExternalEdits((n) => n + 1);
+      }
+      if (nextPriority !== undefined) setPriority(nextPriority as Priority);
+      if (nextDueDate !== undefined) setDueDate(nextDueDate);
+    },
+  });
 
   // Derive which link(s) to write from the linkScope toggle
   const effectiveSources = useMemo((): {
@@ -439,6 +580,7 @@ export function TaskQuickCreateCore({
               initialEditorMode="plain"
               placeholder="Optional — more detail about this task"
               className="flex-1 min-h-0"
+              resetKeySuffix={`agent-${externalEdits}`}
             />
           </div>
 
