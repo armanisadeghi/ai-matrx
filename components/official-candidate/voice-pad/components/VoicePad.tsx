@@ -16,7 +16,11 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { createVoicePadScope } from "@/features/surfaces/manifests/voice-pad.manifest";
+import {
+  createVoicePadScope,
+  VOICE_PAD_TEXT_WRITE_MODES,
+  type VoicePadTextWrite,
+} from "@/features/surfaces/manifests/voice-pad.manifest";
 
 const VoicePadExpanded = lazy(() => import("./VoicePadExpanded"));
 
@@ -92,6 +96,40 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
   const currentText = draftText !== null ? draftText : allText;
   const hasContent = currentText.trim().length > 0;
 
+  // Write half of the voice-pad surface (manifest `writeTargets`). ONE target:
+  // the pad's editable draft. It stages through `handleDraftChange` — literally
+  // the function the textarea's onChange calls — so an agent's text is exactly
+  // as reversible as the user's own typing, and nothing persists until the user
+  // sends the pad onward. Bad shapes THROW; the writeback seam turns throws into
+  // error envelopes the agent reads, so never coerce. Entries and the live
+  // transcript are captured evidence and have no target by design.
+  // Fresh closures per call (getWriteHandlers contract) — `currentText` is read
+  // at apply time, not at mount.
+  const getSurfaceWriteHandlers = () => ({
+    pad_text: (raw: unknown) => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        throw new Error(
+          `pad_text expects { text: string, mode?: ${VOICE_PAD_TEXT_WRITE_MODES.join(" | ")} }.`,
+        );
+      }
+      const write = raw as Partial<VoicePadTextWrite>;
+      if (typeof write.text !== "string" || !write.text.trim()) {
+        throw new Error("pad_text: text must be a non-empty string.");
+      }
+      const mode = write.mode ?? "replace";
+      if (!(VOICE_PAD_TEXT_WRITE_MODES as readonly string[]).includes(mode)) {
+        throw new Error(
+          `pad_text: mode must be ${VOICE_PAD_TEXT_WRITE_MODES.join(" or ")}, got "${String(write.mode)}".`,
+        );
+      }
+      handleDraftChange(
+        mode === "append" && currentText.trim()
+          ? `${currentText.replace(/\s+$/, "")}\n\n${write.text}`
+          : write.text,
+      );
+    },
+  });
+
   return (
     <WindowPanel
       id={windowId}
@@ -141,6 +179,7 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
           })
         }
         isEditable
+        getWriteHandlers={getSurfaceWriteHandlers}
       >
       <Suspense fallback={<ExpandedLoadingFallback />}>
         <VoicePadExpanded

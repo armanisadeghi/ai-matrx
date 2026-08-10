@@ -12,6 +12,7 @@ import type {
   SurfaceManifest,
   SurfaceScopePayload,
   SurfaceValue,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -59,6 +60,54 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Write half — the pad's ONE editable buffer.
+// ---------------------------------------------------------------------------
+
+/**
+ * How a `pad_text` write combines with the pad's current working text. THE
+ * vocabulary — the manifest description below and the handler in
+ * `VoicePad.tsx` both read this constant, so they cannot drift.
+ */
+export const VOICE_PAD_TEXT_WRITE_MODES = ["replace", "append"] as const;
+
+export type VoicePadTextWriteMode = (typeof VOICE_PAD_TEXT_WRITE_MODES)[number];
+
+/** Wire value for the `pad_text` write target. */
+export interface VoicePadTextWrite {
+  /** The text to stage. Non-empty. */
+  text: string;
+  /** Defaults to `"replace"`. */
+  mode?: VoicePadTextWriteMode;
+}
+
+/**
+ * ONE target, deliberately. The pad holds exactly one piece of AUTHORED state
+ * — the editable draft the user types into (`voicePadSlice.draftText`, shown
+ * as `content`). Everything else it holds is CAPTURED EVIDENCE: `live_transcript`
+ * and `transcript_entries` are what the microphone actually heard, and an agent
+ * rewriting them would fabricate a record of something a human said. They get no
+ * target, and neither does anything that starts/stops the mic (a device action
+ * the human presses) or clears the pad (destructive — Clear stays human).
+ *
+ * The handler is registered by `VoicePad.tsx` on the SurfaceRuntimeProvider it
+ * already mounts, and dispatches the SAME `setDraftText` action the textarea's
+ * onChange dispatches.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "pad_text",
+    label: "Pad text",
+    description:
+      `Stages text into the Voice Pad's editable draft — the same buffer the user types into, so it appears in the pad's textarea immediately. Nothing is persisted: the user still sends or saves the pad onward. Value: { text: string (non-empty), mode?: ${VOICE_PAD_TEXT_WRITE_MODES.join(" | ")} } — "replace" (the default) swaps the pad's ENTIRE working text, "append" adds after the current text separated by a blank line. Read \`content\` first when rewriting so you keep what the user wants kept. This never alters the recorded dictation — \`transcript_entries\` and \`live_transcript\` are the captured microphone record and stay untouched.`,
+    valueType: "object",
+    updatesValue: "content",
+    mode: "draft",
+    applyPolicy: "ask",
+    sortOrder: 200,
+  },
+];
+
 export const voicePadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/voice-pad",
   readiness: "partial",
@@ -73,6 +122,7 @@ You are on the Voice Pad — a small floating dictation window. The user speaks;
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 export function createVoicePadScope(values: {
