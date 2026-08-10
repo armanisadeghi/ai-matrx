@@ -108,6 +108,12 @@ import type {
   CleanupCustomSlot,
   SessionContextItem,
 } from "@/features/transcript-studio/types";
+import { updateSessionThunk } from "@/features/transcript-studio/redux/thunks";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  CLEANUP_TEXT_WRITE_MODES,
+  CLEANUP_TEXT_WRITE_MODE_DEFAULT,
+} from "../constants";
 import { CleanupContextPanel } from "./CleanupContextPanel";
 import { DictionaryContextCard } from "@/features/dictionary/components/DictionaryContextCard";
 import {
@@ -419,6 +425,51 @@ function initialSlots(): CleanupCustomSlot[] {
       docKind: makeSlotDocKind("slot-2", false),
     },
   ];
+}
+
+/**
+ * Shape check + fold for the two text surface write targets
+ * (`cleaned_transcript_text`, `custom_output_text`). Returns the string the
+ * pane's normal edit handler should receive.
+ *
+ * THROWS on every bad shape rather than coercing: the writeback seam turns a
+ * throw into an error envelope the calling agent actually reads, whereas a
+ * silent coercion would hide the agent's mistake and land text nobody asked
+ * for. `mode` is validated against CLEANUP_TEXT_WRITE_MODES so the accepted
+ * vocabulary and the manifest prose advertising it cannot drift.
+ */
+function resolveCleanupTextWrite(
+  value: unknown,
+  targetName: string,
+  currentText: string,
+): string {
+  const modes = CLEANUP_TEXT_WRITE_MODES.join(" | ");
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error(
+      `${targetName} expects an object { text: string, mode?: ${modes} }.`,
+    );
+  }
+  const { text, mode } = value as { text?: unknown; mode?: unknown };
+  if (typeof text !== "string") {
+    throw new Error(`${targetName} expects "text" to be a string.`);
+  }
+  if (!text.trim()) {
+    throw new Error(
+      `${targetName} expects "text" to be non-empty — clearing a pane is a human action.`,
+    );
+  }
+  const resolvedMode = mode ?? CLEANUP_TEXT_WRITE_MODE_DEFAULT;
+  if (
+    typeof resolvedMode !== "string" ||
+    !(CLEANUP_TEXT_WRITE_MODES as readonly string[]).includes(resolvedMode)
+  ) {
+    throw new Error(`${targetName} expects "mode" to be one of: ${modes}.`);
+  }
+  if (resolvedMode === "append") {
+    const base = currentText.trimEnd();
+    return base ? `${base}\n\n${text}` : text;
+  }
+  return text;
 }
 
 /** Fill empty slot agentIds from the surface `custom_slot` role (per position). */
@@ -2579,6 +2630,62 @@ export default function CleanupPad({
     </PageHeader>
   );
 
+  /**
+   * Surface write handlers — registered ONLY by the standalone page mount
+   * below (see the `writeTargets` block in
+   * `features/surfaces/manifests/transcripts-cleanup.manifest.ts` for why the
+   * embedded War Room variant deliberately registers none).
+   *
+   * Read fresh every render through the provider's ref, so these closures
+   * always see the current slot/session state. Each one routes through the
+   * SAME path the user's own editing uses — `handleResponseChange` and
+   * `handleCustomChange` are the pane textareas' `onChange`, and the rename
+   * goes through the canonical `updateSessionThunk` the sidebar's Rename
+   * dispatches. No parallel write path, no raw supabase call.
+   */
+  const getSurfaceWriteHandlers = () => ({
+    cleaned_transcript_text: (value: unknown) => {
+      handleResponseChange(
+        resolveCleanupTextWrite(
+          value,
+          "cleaned_transcript_text",
+          responseRef.current,
+        ),
+      );
+    },
+    custom_output_text: (value: unknown) => {
+      if (!slotsRef.current[activeSlotIdx]) {
+        throw new Error(
+          "custom_output_text has no slot to write into: this session has no custom output slot configured.",
+        );
+      }
+      handleCustomChange(
+        resolveCleanupTextWrite(
+          value,
+          "custom_output_text",
+          customRef.current,
+        ),
+      );
+    },
+    session_title: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error("session_title expects a non-empty string.");
+      }
+      if (value.trim().length > 200) {
+        throw new Error("session_title expects at most 200 characters.");
+      }
+      const id = sessionRefs.current.activeSessionId;
+      if (!id) {
+        throw new Error(
+          "session_title has no session to rename yet — record or type something first.",
+        );
+      }
+      void dispatch(
+        updateSessionThunk({ id, patch: { title: value.trim() } }),
+      );
+    },
+  });
+
   const transcriptInsertDialog = (
     <TranscriptInsertDialog
       open={insertDialogTarget !== null}
@@ -2842,8 +2949,18 @@ export default function CleanupPad({
     </div>
   );
 
+  // The standalone page is the ONE mount that registers the surface runtime:
+  // it owns the whole route, so its scope is the page's scope and its write
+  // handlers are unambiguous. `getScope` is the same builder the context menu
+  // emits, so a header-launched agent run and a right-click run see one
+  // identical payload.
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={CLEANUP_SURFACE_NAME}
+      getScope={buildScope}
+      isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
+    >
       {shellHeader}
       {transcriptInsertDialog}
       <MobilePanelShell
@@ -2851,6 +2968,6 @@ export default function CleanupPad({
         main={mobileMain}
         panels={mobilePanels}
       />
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -21,3 +21,20 @@ export function cleanupVoicePadInstanceId(
 ): string {
   return sessionId ? `embedded:${sessionId}` : "main";
 }
+
+/**
+ * How a text write target folds a new value into a pane that already has
+ * text — the vocabulary for the `mode` field of the `cleaned_transcript_text`
+ * and `custom_output_text` surface write targets.
+ *
+ * Canonical here (not a bare local literal in the handler) so the pad's
+ * validation and the manifest prose that advertises it to agents can never
+ * drift apart. `transcripts-cleanup.manifest.ts` spells these out in its
+ * target descriptions; `CleanupPad` validates against THIS array.
+ */
+export const CLEANUP_TEXT_WRITE_MODES = ["replace", "append"] as const;
+
+export type CleanupTextWriteMode = (typeof CLEANUP_TEXT_WRITE_MODES)[number];
+
+/** Mode assumed when a write target omits `mode`. */
+export const CLEANUP_TEXT_WRITE_MODE_DEFAULT: CleanupTextWriteMode = "replace";
