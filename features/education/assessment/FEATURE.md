@@ -141,6 +141,38 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- **2026-08-10** — **The generator is agent-writable.**
+  `features/surfaces/manifests/education-assessment.manifest.ts` declares 8
+  `mode: "draft"`, `applyPolicy: "ask"` write targets covering the whole generation
+  config (`generation_topic` / `_difficulty` / `_depth` / `_question_types` /
+  `_question_count` / `_exam_type` / `_user_request` / `_time_limit_minutes`).
+  `AssessmentCreate` registers the handlers on its existing `SurfaceRuntimeProvider`
+  via `getWriteHandlers`; each stages through the SAME `useState` setter the user's
+  typing uses, so a staged value is just an un-generated form — no row is written and
+  no quota is spent until the USER presses Generate, where the COPPA gate, the
+  entitlement guard and `assessmentService.createWithItems` still run unchanged.
+  `generation_topic` also switches the Source selector to Topic (the field feeds only
+  topic-mode generation; a picked deck/document stays in state and returns on switch
+  back). Handlers validate and THROW: `generation_question_count` is bounded by
+  `config.countMax` per kind (30 quiz / 60 practice test) and rejected rather than
+  clamped, and `generation_time_limit_minutes` is refused outright on a quiz, which
+  has no such control. **`AssessmentDetail` deliberately registers NO handlers** —
+  it owns a loaded read snapshot, not editor state; its affordances (duplicate,
+  delete, convert) are the ownership/destructive class; saved-assessment editing has
+  its own component (`components/edit/AssessmentEdit.tsx`, which does not mount this
+  surface); and that same provider wraps the mid-attempt take flow, where `items`
+  are bindable-only precisely so answer keys never flow to an agent. Deepest-wins
+  resolution means both mounts coexist with targets offered only on create.
+  Supporting refactor: the generation vocabularies now live in `data/types.ts` as
+  exported `DEPTHS` / `QUESTION_TYPES` / `DIFFICULTIES` (+ `isDepth` /
+  `isQuestionType` / `isDifficulty`); the manifest interpolates them into the
+  model-facing descriptions, the handlers validate against them, and the create
+  form's option lists derive from them through `Record<Union, …>` copy maps — one
+  vocabulary, so adding a depth or question type cannot silently drift between the
+  form, the contract an agent reads, and the handler. Live-verified with a real
+  Badass Agent run on both `/education/quizzes/new` and
+  `/education/practice-tests/new`. Recipe + verification contract: the
+  `surface-write-targets` skill.
 - **2026-07-13** — **Handwritten / image / multi-step grading shipped** (VISION §6 AI Grading +
   §17 STEM; "Why We Win" #4). New vision grader `gradeHandwritten` `77db0f64…` (Gemini Flash Latest)
   authored + live-tested via `agent_run` (multi-step algebra: caught the distribution error, marked
