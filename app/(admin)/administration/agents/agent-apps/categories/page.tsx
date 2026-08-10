@@ -56,10 +56,42 @@ import {
 } from "@/lib/services/agent-apps-admin-service";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
+import { isRegisteredOrLucideIconName } from "@/components/official/icons/IconResolver";
+
+/**
+ * Surface-write input guards. These THROW rather than coercing — the writeback
+ * seam turns a throw into the error envelope the agent reads back, and a wrong
+ * value is the agent's mistake to hear about, not ours to paper over.
+ */
+function requireString(value: unknown, target: string): string {
+  if (typeof value !== "string") {
+    throw new Error(
+      `${target} must be a string; got ${value === null ? "null" : Array.isArray(value) ? "array" : typeof value}.`,
+    );
+  }
+  return value;
+}
+
+/**
+ * Every write target on this surface edits the category open in the right-hand
+ * pane. With nothing selected there is no edit buffer to write into — refuse
+ * loudly rather than staging text into a form that is not on screen.
+ */
+function requireSelectedCategory(
+  selectedId: string | null,
+  target: string,
+): void {
+  if (!selectedId) {
+    throw new Error(
+      `Cannot apply ${target}: no category is selected. Ask the admin to pick a category from the sidebar list first — the edit pane is empty, so there is nothing to write into.`,
+    );
+  }
+}
 
 function humanCategory(c: AgentAppCategoryRow): string {
   return [
@@ -270,6 +302,68 @@ export default function AgentAppsCategoriesAdminPage() {
     ? categories.find((c) => c.id === selectedId)
     : null;
 
+  /**
+   * What the edit pane is actually SHOWING for the selected category — the
+   * live `editData` buffer, which diverges from the saved row as soon as
+   * anything is typed. `editData` trails `selectedId` by one effect, so fall
+   * back to the saved row until the two agree.
+   */
+  const selectedCategoryView = selected
+    ? editData.id === selected.id
+      ? {
+          id: selected.id,
+          name: editData.name ?? "",
+          description: editData.description ?? null,
+          icon: editData.icon ?? null,
+          sort_order: editData.sort_order ?? selected.sort_order,
+        }
+      : {
+          id: selected.id,
+          name: selected.name,
+          description: selected.description ?? null,
+          icon: selected.icon ?? null,
+          sort_order: selected.sort_order,
+        }
+    : undefined;
+
+  /**
+   * Agent write targets (manifest `writeTargets`). Each one stages into the
+   * SAME `editData` buffer the admin's own typing writes, through the same
+   * `handleEditChange` setter — so the "Unsaved Changes" badge and the Save
+   * button behave identically whether a human or an agent produced the value,
+   * and `handleSave` (the admin's Save press → `updateAgentAppCategory`)
+   * stays the only path to the database. Nothing here writes supabase.
+   */
+  const buildWriteHandlers = (): SurfaceWriteHandlers => ({
+    category_name: (value) => {
+      requireSelectedCategory(selectedId, "category_name");
+      const next = requireString(value, "category_name");
+      if (!next.trim()) {
+        throw new Error(
+          "category_name must be a non-empty string — a category cannot be left unnamed.",
+        );
+      }
+      handleEditChange("name", next);
+    },
+    category_description: (value) => {
+      requireSelectedCategory(selectedId, "category_description");
+      handleEditChange(
+        "description",
+        requireString(value, "category_description"),
+      );
+    },
+    category_icon: async (value) => {
+      requireSelectedCategory(selectedId, "category_icon");
+      const next = requireString(value, "category_icon").trim();
+      if (next && !(await isRegisteredOrLucideIconName(next))) {
+        throw new Error(
+          `category_icon "${next}" is not a known icon. Use the exact PascalCase name of a lucide-react icon (e.g. "PenTool", "Lightbulb", "Zap"), or an empty string to clear it.`,
+        );
+      }
+      handleEditChange("icon", next);
+    },
+  });
+
   if (loading && categories.length === 0) {
     return (
       <div className="flex items-center justify-center h-full w-full">
@@ -293,18 +387,11 @@ export default function AgentAppsCategoriesAdminPage() {
           })),
           categories_count: categories.length,
           categories_search: searchTerm,
-          selected_category: selected
-            ? {
-                id: selected.id,
-                name: selected.name,
-                description: selected.description ?? null,
-                icon: selected.icon ?? null,
-                sort_order: selected.sort_order,
-              }
-            : undefined,
+          selected_category: selectedCategoryView,
           category_has_unsaved_changes: selected ? hasUnsaved : undefined,
         })
       }
+      getWriteHandlers={buildWriteHandlers}
     >
     <div className="flex h-full w-full bg-textured overflow-hidden">
       <div className="w-80 border-r border-border flex flex-col overflow-hidden">

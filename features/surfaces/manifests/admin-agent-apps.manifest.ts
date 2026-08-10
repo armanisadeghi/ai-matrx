@@ -38,6 +38,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -336,7 +337,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_category",
     label: "Selected category",
     description:
-      "The category open in the right-hand edit panel: id, name, description, icon, sort_order. Absent when no category is selected or outside the categories section.",
+      "The category open in the right-hand edit panel: id, name, description, icon, sort_order. These are the LIVE edit-form values, so they include changes the admin (or an agent write) has staged but not yet saved — category_has_unsaved_changes tells you whether they still match the saved row in categories_list. Absent when no category is selected or outside the categories section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 250,
@@ -532,6 +533,74 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the CATEGORIES editor only.
+ *
+ * This is a moderation console, and almost none of it earns a write path: the
+ * apps table's is_featured / is_verified / status are abuse and trust controls,
+ * rate limits and unblocks are enforcement, and executions/errors/analytics are
+ * read-only evidence. The one place an admin authors COPY is the category edit
+ * pane, whose name / description / icon are exactly the "an agent drafts this
+ * better and faster" case.
+ *
+ * All three are `mode: "draft"`: they set the same `editData` buffer the
+ * admin's own typing sets, the "Unsaved Changes" badge lights up, and the
+ * admin's own Save press is what calls `updateAgentAppCategory`. That is why
+ * `updatesValue` points at `selected_category` — that value is emitted FROM the
+ * same buffer, so an agent can read back what it staged before the save.
+ *
+ * Name, description and icon are three separate targets rather than one field
+ * object because they are independent decisions with different stakes: renaming
+ * a category re-labels it everywhere it is offered to users, while rewriting
+ * its description or swapping its icon does not. Separate targets mean the
+ * admin gets a separate confirm for each and can approve one and decline
+ * another.
+ *
+ * Deliberately NOT writable: the category `id` (identity — immutable after
+ * creation, and the disabled input says so), `sort_order` (mechanical ordering
+ * the admin does with the list's own up/down arrows, one row at a time),
+ * category creation and deletion (deletion orphans every app assigned to the
+ * category), and every other section of this console.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "category_name",
+    label: "Category name",
+    description:
+      "Stages a new display name into the Name field of the category open in the categories editor. Value: a non-empty plain string, which REPLACES the current name. Requires a category to be selected — with an empty edit pane this is refused. This is a draft: it lands in the input, the 'Unsaved Changes' badge appears, and the admin still presses Save before anything reaches the database. selected_category.name reflects the staged value immediately; categories_list keeps the saved name until they save.",
+    valueType: "string",
+    updatesValue: "selected_category",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "categories",
+    sortOrder: 440,
+  },
+  {
+    name: "category_description",
+    label: "Category description",
+    description:
+      "Stages the description of the category open in the categories editor — the sentence explaining what kind of agent app belongs in it. Value: a plain string (pass an empty string to clear it), which REPLACES the full description rather than appending — read selected_category.description first and include any existing text you want kept. Requires a category to be selected. This is a draft: the admin still presses Save. selected_category.description reflects the staged value immediately.",
+    valueType: "string",
+    updatesValue: "selected_category",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "categories",
+    sortOrder: 445,
+  },
+  {
+    name: "category_icon",
+    label: "Category icon",
+    description:
+      "Stages the icon of the category open in the categories editor. Value: the exact PascalCase name of a lucide-react icon, e.g. \"PenTool\", \"Lightbulb\", \"Zap\" — it is validated against the real icon registry and an unknown name is rejected rather than saved as a broken icon. Pass an empty string to clear it back to the default tag icon. Requires a category to be selected. This is a draft: the preview swatch beside the input updates at once and the admin still presses Save.",
+    valueType: "string",
+    updatesValue: "selected_category",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "categories",
+    sortOrder: 450,
+  },
+];
+
 export const adminAgentAppsManifest: SurfaceManifest = {
   surfaceName: ADMIN_AGENT_APPS_SURFACE_NAME,
   readiness: "verified",
@@ -545,12 +614,15 @@ admin_section tells you which sub-route is rendering: "dashboard" (overview stat
 How to read the values: each section's group (dashboard_*, apps_list_*, selected_app_*, categories_*, executions_*/errors_*, analytics_*, rate_limits_*) is only populated when admin_section matches — everything else on this surface is absent, not stale.
 
 What you may safely do: help the admin draft moderation notes, error resolutions, or category descriptions, summarize analytics or a suspicious rate-limit pattern, and explain what a row means. You never feature, verify, publish, delete, resolve, or unblock anything yourself — those are the admin's own actions, which call updateAgentAppAdmin / resolveAgentAppError / unblockAgentAppRateLimit.
+
+The ONE thing you can WRITE through apply_surface_write is the category open in the categories editor: its name, description and icon. All three stage into the edit form for the admin to Save — nothing reaches the database until they press it — and all three need a category selected first. Everything else on this console is read-only to you: featuring, verifying, publishing or suspending an app, editing rate limits, resolving errors, reordering categories, and creating or deleting a category are moderation controls, so propose those in words instead of trying to write them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 // ── Runtime row/summary shapes ────────────────────────────────────────────
