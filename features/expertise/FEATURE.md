@@ -9,11 +9,15 @@
 
 ## Status
 
-- **Live:** `/expertise` (entity-list shell), `/expertise/[id]` (rule editor), `/expertise/[id]/desks`
-  (compiled desks + version-drift flags), `/expertise/admin` (feature map).
-- **Next (work order: docs/handoffs/expertise-system-productization.md):** compile-a-desk button
-  (aidream `services/expertise_desks`), source→pack ingestion (chunked extraction → draft rules with
-  `source_ref`), interview agent, the Arman-SEO honest test.
+- **Live:** `/expertise` (entity-list shell), `/expertise/[id]` (rule editor + "Create a desk"
+  compile dialog + "From a source" ingest dialog), `/expertise/[id]/desks` (compiled desks +
+  version-drift flags), `/expertise/admin` (feature map).
+- **Server half:** aidream `services/expertise_desks` (compile, both shapes) + `services/expertise_ingest`
+  (text→draft rules with verbatim quote verification) — merged to aidream main; LIVE only after the
+  next aidream `release.sh` run. Until then both dialogs surface the server error cleanly.
+- **Next (work order: docs/handoffs/expertise-system-productization.md):** live interview agent,
+  file/PDF ingest via page_extraction, run-history on the desks page, pack version snapshots,
+  the Arman-SEO honest test (pack `arman-seo-method` scaffolded, draft, owned by Arman).
 
 ## Data
 
@@ -59,6 +63,8 @@
 
 ## Change log
 
-- 2026-08-10 — Feature created (Phase 1 of the expertise-system-productization work order): list, detail
-  rule editor (add/edit/retire, version bump, optimistic lock), desks page with drift flags, admin map,
-  sidebar + entity registry wiring.
+- 2026-08-10 — Feature created (Phase 1): list, detail rule editor (add/edit/retire, version bump,
+  optimistic lock), desks page with drift flags, admin map, sidebar + entity registry wiring.
+- 2026-08-10 — Phase 2 FE: CompileDeskDialog ("Create a desk", streams /api/expertise-desks/compile).
+- 2026-08-10 — Phase 3 FE: IngestSourceDialog ("From a source", streams /api/expertise-desks/ingest;
+  drafts + quote-verification summary).
