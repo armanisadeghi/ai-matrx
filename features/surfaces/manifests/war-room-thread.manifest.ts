@@ -27,7 +27,9 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { TASK_STATUSES } from "@/features/tasks/constants/status";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 // Seed mirror of the `war_room.thread` slot's system default (see the header).
@@ -427,6 +429,90 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * WRITE half — what a thread agent may author on the thread it is sitting in.
+ *
+ * A War Room thread bundles four different kinds of state, and only two of them
+ * are things a person AUTHORS. The split below is deliberate:
+ *
+ * 1. The anchored NOTE body and the anchored TASK's title/status are authored
+ *    work — prose the agent can draft better and faster than the user retyping
+ *    it, and a planning field derivable from what the thread has established.
+ *    Those earn targets. They stage through the SAME dispatches the user's own
+ *    controls fire (`updateNoteContent` from `ThreadNotesTab`'s editor
+ *    `onChange`; `updateTaskFieldThunk` from `ThreadTaskTab`), so an agent
+ *    write is indistinguishable from typing — autosaved, undoable, one path.
+ *
+ * 2. RECORDING is a NO. Starting or stopping a thread recording spends real
+ *    time and captures a live human conversation; the settled campaign
+ *    precedent for anything that spends time or budget (`podcast-studio`,
+ *    `image-generate`, `marketing-crawls`) is that the human press stays the
+ *    gate. Stated here explicitly rather than by omission.
+ *
+ * 3. TRANSCRIPTS and the CONVERSATION are evidence, not input. `audio_session_*`
+ *    and `conversation_id` describe what was already said; rewriting them would
+ *    edit the record of a meeting. Same rule as `processed_data`/`ast` on
+ *    `markdown-editor` — results are read-only to the thing that produced them.
+ *
+ * 4. Thread TITLE is deliberately absent. It is already agent-writable one
+ *    level up, as `active_thread_title` on `matrx-user/war-room` (the room
+ *    shell's `renameThread` handler). Declaring it again here would be a second
+ *    write path into the same row — exactly what the handler doctrine forbids.
+ *
+ * Also excluded as identity / mechanical: `thread_organization_id`, `room_id`,
+ * `project_id`, `thread_position`, `is_pinned`, `active_tab`, and the resource
+ * attachment sets (`attached_file_ids`, `pinned_resource_ids`).
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "thread_note_content",
+    label: "Thread note content",
+    description:
+      "REPLACES the entire body of the note anchored to THIS thread with the value — markdown text, exactly as it should read. Use for rewrites, cleanups, restructures, and for writing up what the thread has worked out; read the current body from `note_content` first so nothing the user wants kept is dropped. To add to the note instead of replacing it, use `append_to_thread_note`. Staged into the live note editor (undoable, autosaved exactly like the user's own typing). Refused when the thread has no note yet — ask the user to add one from the thread's Notes tab.",
+    valueType: "string",
+    updatesValue: "note_content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "thread_work",
+    sortOrder: 100,
+  },
+  {
+    name: "append_to_thread_note",
+    label: "Appended thread note content",
+    description:
+      "APPENDS the value to the end of this thread's note, separated by a blank line. Nothing already in the note is changed or removed — pass ONLY the new markdown to add (do not repeat the existing body). Use for adding a summary, a decision, or action items to what the user already wrote. Staged into the live note editor (undoable, autosaved like the user's own typing). Refused when the thread has no note yet.",
+    valueType: "string",
+    updatesValue: "note_content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "thread_work",
+    sortOrder: 110,
+  },
+  {
+    name: "thread_task_title",
+    label: "Thread task title",
+    description:
+      "Sets the title of the task anchored to THIS thread. A non-empty single-line plain string — no markdown, no surrounding quotes, no trailing punctuation. Use it to sharpen a vague task into what the thread has actually established the work is. Saved immediately through the canonical task update path. Refused when the thread is not anchored to a task.",
+    valueType: "string",
+    updatesValue: "task_title",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "thread_work",
+    sortOrder: 120,
+  },
+  {
+    name: "thread_task_status",
+    label: "Thread task status",
+    description: `Sets the lifecycle status of the task anchored to THIS thread. Exactly one of: ${TASK_STATUSES.join(" | ")}. Lifecycle runs inbox → planned → active → completed, with cancelled and dismissed as terminal side-exits. Only move it where the thread's own evidence supports it — do not mark work completed that the user has not said is done. Saved immediately through the canonical task update path. Refused when the thread is not anchored to a task.`,
+    valueType: "string",
+    updatesValue: "task_status",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "thread_work",
+    sortOrder: 130,
+  },
+];
+
 export const warRoomThreadManifest: SurfaceManifest = {
   surfaceName: "matrx-user/war-room-thread",
   readiness: "verified",
@@ -444,6 +530,7 @@ sibling_threads is the rest of the room for orientation only — work the thread
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "thread",
