@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   BookOpen,
   CheckCircle2,
+  Hammer,
   ChevronDown,
   ChevronRight,
   Pencil,
@@ -33,6 +34,7 @@ import {
   type PackPrinciple,
   type PrincipleSeverity,
 } from "../../types";
+import { CompileDeskDialog } from "./CompileDeskDialog";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 
 /**
@@ -179,6 +181,7 @@ export function PackDetailPage({ packId }: { packId: string }) {
   const [editing, setEditing] = useState<PackPrinciple | undefined>();
   const [editorSection, setEditorSection] = useState<string | undefined>();
   const [confirmActivate, setConfirmActivate] = useState(false);
+  const [compileOpen, setCompileOpen] = useState(false);
   const userId = useAppSelector(selectUserId);
 
   useEffect(() => {
@@ -370,6 +373,12 @@ export function PackDetailPage({ packId }: { packId: string }) {
                 Activate
               </Button>
             ) : null}
+            {liveRuleCount > 0 ? (
+              <Button size="sm" onClick={() => setCompileOpen(true)}>
+                <Hammer className="mr-1 h-4 w-4" />
+                Create a desk
+              </Button>
+            ) : null}
             <Button asChild size="sm" variant="outline">
               <Link href={`/expertise/${pack.id}/desks`}>
                 <Workflow className="mr-1 h-4 w-4" />
@@ -495,6 +504,16 @@ export function PackDetailPage({ packId }: { packId: string }) {
         description="Active packs can power desks — working AI checkers built from these rules. You can keep editing after activation; every save creates a new version."
         confirmLabel="Activate"
         onConfirm={() => void activate()}
+      />
+      <CompileDeskDialog
+        open={compileOpen}
+        onOpenChange={setCompileOpen}
+        pack={pack}
+        onCompiled={() => {
+          void listDesksForPack(pack.id)
+            .then(setDesks)
+            .catch(() => undefined);
+        }}
       />
     </div>
   );
