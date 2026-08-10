@@ -112,7 +112,7 @@ function StrategyResults({ sample }: { sample: PagePerformanceSample }) {
   ] as const;
 
   return (
-    <section className="min-w-0 rounded-lg border border-border bg-card p-3">
+    <section className="@container min-w-0 rounded-lg border border-border bg-card p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="flex items-center gap-1.5 text-sm font-semibold capitalize text-foreground">
@@ -139,7 +139,7 @@ function StrategyResults({ sample }: { sample: PagePerformanceSample }) {
         ) : null}
       </div>
 
-      <div className="mt-3 grid grid-cols-2 justify-items-center gap-3 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 justify-items-center gap-3 @sm:grid-cols-4">
         {scores.map(([label, score]) => (
           <ScoreRing
             key={label}
@@ -161,7 +161,7 @@ function StrategyResults({ sample }: { sample: PagePerformanceSample }) {
             One controlled Lighthouse test
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 @sm:grid-cols-5">
           {metricBox({
             label: "LCP",
             value: milliseconds(lcp),
