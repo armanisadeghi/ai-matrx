@@ -79,6 +79,7 @@ import {
   ORGANIZATIONS_SURFACE_NAME,
   createOrganizationsScope,
 } from "@/features/surfaces/manifests/organizations.manifest";
+import { OrgWorkspaceWriteTargets } from "@/features/organizations/components/OrgWorkspaceWriteTargets";
 
 export function OrgWorkspace() {
   const params = useParams();
@@ -285,6 +286,13 @@ export function OrgWorkspace() {
       getScope={getSurfaceScope}
       isEditable={false}
     >
+    {/* Write half of the surface — renders nothing, services the manifest's
+        org-profile targets through the canonical updateOrganization service. */}
+    <OrgWorkspaceWriteTargets
+      organization={organization}
+      canManage={isAdmin}
+      onOrganizationUpdated={setOrganization}
+    />
     <div className="h-dvh overflow-y-auto bg-textured">
       <div className="max-w-6xl mx-auto px-4 md:px-6 pt-[var(--shell-header-h)] pb-12 space-y-5">
         {/* ─── Hero ─────────────────────────────────────────────────── */}

@@ -29,6 +29,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -319,6 +320,90 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the org PROFILE, and only the profile.
+ *
+ * All four land through `updateOrganization` (`features/organizations/service`),
+ * the same service the Settings › General form's Save button calls, so an agent
+ * revision and a human edit are the same write. Handlers live in
+ * `features/organizations/components/OrgWorkspaceWriteTargets.tsx`, mounted
+ * inside the workspace-mode `SurfaceRuntimeProvider`; the list route has no org
+ * open and therefore registers nothing.
+ *
+ * `mode: "entity"` rather than "draft": the workspace home has no staging
+ * buffer at all (the edit form lives on a different route), so there is nowhere
+ * to stage a value the user could SEE. The `applyPolicy: "ask"` confirm IS the
+ * review step, and every read twin re-reads the freshly persisted row.
+ *
+ * Deliberately NOT writable:
+ * - `org_slug` — the org's permanent URL identity; the form itself marks it
+ *   read-only ("cannot be changed after creation") and inbound links depend on
+ *   it. Identity, not authored content.
+ * - `org_id` / `org_created_at` / `org_is_personal` — facts about the row.
+ * - Membership (`members_summary`, `viewer_role`, `can_manage`) — who belongs
+ *   to an organization and what they may do is a permissions decision; an
+ *   agent must never grant, remove, or re-role a person.
+ * - The logo — an image chosen through a crop modal, not a value an agent
+ *   produces.
+ * - Scopes and scope types (`scope_types_summary`) — the org's context model,
+ *   owned by the scope system and its own surfaces.
+ * - `search_query` / `current_view` — mechanical navigation state.
+ *
+ * Every handler additionally refuses when the viewer is not an owner or admin
+ * (`can_manage` false): an agent must not do through the seam what the page
+ * would not let the person do by hand.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "org_name",
+    label: "Organization name",
+    description:
+      "Renames the open organization. Value: a plain string of 3–50 characters that REPLACES the whole name — read the `org_name` value first if you mean to refine the existing one rather than start over. Persists immediately through the same service the Settings › General Save button uses, and the new name appears everywhere the org is listed. Fails when no organization is open or the viewer is not an owner/admin.",
+    valueType: "string",
+    updatesValue: "org_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "org_identity",
+    sortOrder: 100,
+  },
+  {
+    name: "org_description",
+    label: "Description",
+    description:
+      "Writes the open organization's free-text description — what this organization does. Value: { text: string, mode?: 'replace' | 'append' }. 'replace' (the default) swaps the FULL description — read the `org_description` value first if you mean to extend it; 'append' adds after the current text, separated by a blank line. `text` must be non-empty (clearing the description is a human action) and the result must be at most 500 characters. Persists immediately. Fails when no organization is open or the viewer is not an owner/admin.",
+    valueType: "object",
+    updatesValue: "org_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "org_identity",
+    sortOrder: 110,
+  },
+  {
+    name: "org_abbreviation",
+    label: "Abbreviation",
+    description:
+      "Sets the compact 2–3 letter label shown anywhere the full organization name will not fit. Value: a plain string of exactly 2 or 3 UPPERCASE A–Z letters — no digits, spaces, or punctuation. Persists immediately. Fails when no organization is open, the viewer is not an owner/admin, or the organization is a personal workspace (those are always ME).",
+    valueType: "string",
+    updatesValue: "org_abbreviation",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "org_identity",
+    sortOrder: 120,
+  },
+  {
+    name: "org_website",
+    label: "Website",
+    description:
+      "Sets the open organization's website URL. Value: a plain string that is an absolute http:// or https:// URL — never a bare domain, a path, or a guess. Only set this from a URL the user gave you or one that appears in the page's own context; do not infer it from the organization's name. Persists immediately. Fails when no organization is open or the viewer is not an owner/admin.",
+    valueType: "string",
+    updatesValue: "org_website",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "org_identity",
+    sortOrder: 130,
+  },
+];
+
 export const organizationsManifest: SurfaceManifest = {
   surfaceName: ORGANIZATIONS_SURFACE_NAME,
   readiness: "verified",
@@ -335,6 +420,7 @@ Respect viewer_role: only owners and admins (can_manage true) manage members, se
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One member entry as emitted in `members_summary`. */
