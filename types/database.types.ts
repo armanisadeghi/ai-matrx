@@ -4860,6 +4860,194 @@ export type Database = {
           },
         ]
       }
+      coding_session: {
+        Row: {
+          capabilities: Json
+          conversation_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          ended_at: string | null
+          error: Json | null
+          fidelity: string
+          id: string
+          last_seen_at: string
+          metadata: Json
+          organization_id: string
+          origin: string
+          provider: string
+          provider_project_key: string | null
+          provider_session_id: string
+          retention_expires_at: string | null
+          runtime_kind: string | null
+          runtime_ref: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workspace_fingerprint: string | null
+          writer_lease_expires_at: string | null
+          writer_runtime_id: string | null
+        }
+        Insert: {
+          capabilities?: Json
+          conversation_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          ended_at?: string | null
+          error?: Json | null
+          fidelity: string
+          id?: string
+          last_seen_at?: string
+          metadata?: Json
+          organization_id: string
+          origin: string
+          provider: string
+          provider_project_key?: string | null
+          provider_session_id: string
+          retention_expires_at?: string | null
+          runtime_kind?: string | null
+          runtime_ref?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workspace_fingerprint?: string | null
+          writer_lease_expires_at?: string | null
+          writer_runtime_id?: string | null
+        }
+        Update: {
+          capabilities?: Json
+          conversation_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          ended_at?: string | null
+          error?: Json | null
+          fidelity?: string
+          id?: string
+          last_seen_at?: string
+          metadata?: Json
+          organization_id?: string
+          origin?: string
+          provider?: string
+          provider_project_key?: string | null
+          provider_session_id?: string
+          retention_expires_at?: string | null
+          runtime_kind?: string | null
+          runtime_ref?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workspace_fingerprint?: string | null
+          writer_lease_expires_at?: string | null
+          writer_runtime_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coding_session_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coding_session_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coding_session_entry: {
+        Row: {
+          coding_session_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          entry_format: string
+          id: string
+          ingest_order: number
+          kind: string
+          occurred_at: string | null
+          organization_id: string
+          payload: Json
+          payload_sha256: string
+          projection_error: Json | null
+          projection_receipt: Json | null
+          projection_status: string
+          projector_version: string | null
+          provider_entry_id: string
+          source_cursor: Json | null
+          source_sequence: number | null
+          stream_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          coding_session_id: string
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          entry_format: string
+          id?: string
+          ingest_order?: never
+          kind: string
+          occurred_at?: string | null
+          organization_id: string
+          payload: Json
+          payload_sha256: string
+          projection_error?: Json | null
+          projection_receipt?: Json | null
+          projection_status?: string
+          projector_version?: string | null
+          provider_entry_id: string
+          source_cursor?: Json | null
+          source_sequence?: number | null
+          stream_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          coding_session_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          entry_format?: string
+          id?: string
+          ingest_order?: never
+          kind?: string
+          occurred_at?: string | null
+          organization_id?: string
+          payload?: Json
+          payload_sha256?: string
+          projection_error?: Json | null
+          projection_receipt?: Json | null
+          projection_status?: string
+          projector_version?: string | null
+          provider_entry_id?: string
+          source_cursor?: Json | null
+          source_sequence?: number | null
+          stream_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coding_session_entry_coding_session_id_fkey"
+            columns: ["coding_session_id"]
+            isOneToOne: false
+            referencedRelation: "coding_session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation: {
         Row: {
           app_instance_id: string | null

@@ -23,7 +23,6 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
-  Bot,
   Boxes,
   CalendarClock,
   Camera,
@@ -34,13 +33,17 @@ import {
   Hammer,
   Image,
   MessageSquare,
+  FileOutput,
   Mic,
   PanelTop,
   PencilRuler,
   Play,
   Puzzle,
+  MousePointer2,
+  PanelsTopLeft,
   ScanLine,
   Server,
+  TerminalSquare,
   StickyNote,
   Tag,
   Video,
@@ -91,6 +94,10 @@ export const APP_META: Record<string, SourceMeta> = {
   },
   // Workflow-engine node/run executions — programmatic.
   workflow: { label: "Workflows", icon: Server, system: true },
+  "claude-code": { label: "Claude Code", icon: TerminalSquare },
+  codex: { label: "Codex", icon: Code2 },
+  cursor: { label: "Cursor", icon: MousePointer2 },
+  vscode: { label: "VS Code", icon: PanelsTopLeft },
   [EMPTY_SOURCE_KEY]: { label: "Generic", icon: Boxes, system: true },
 };
 
@@ -133,7 +140,7 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   messages: { label: "Messages", icon: MessageSquare },
   canvas: { label: "Canvas", icon: PencilRuler },
   "mermaid-workbench": { label: "Diagram Workbench", icon: PencilRuler },
-  "ai-results": { label: "AI Results", icon: Bot },
+  "ai-results": { label: "AI Results", icon: FileOutput },
   "content-extractor": { label: "Content Extractor", icon: FileText },
   "rag-search": { label: "RAG Search", icon: Globe },
   udt: { label: "Data Tables", icon: Boxes },

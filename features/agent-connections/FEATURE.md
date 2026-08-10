@@ -1,6 +1,6 @@
 # FEATURE.md — `agent-connections`
 
-**Status:** `live` (route family + overlay window shipped; `redux/skl` is the canonical content-block/render-definition store consumed platform-wide; 5 of 14 sections read real data, the rest are declared placeholders)
+**Status:** `live` (route family + overlay window shipped; `redux/skl` is the canonical content-block/render-definition store consumed platform-wide; 6 of 14 sections read real data, the rest are declared placeholders)
 **Tier:** `1`
 **Last updated:** `2026-08-09` — verified against live code this date.
 
@@ -67,14 +67,16 @@ Agent Connections is the registry surface for what agents can reach — and the 
 | `AgentsSection` | `features/agents/redux/agent-definition/` (`fetchAgentsList` → `selectLiveAgents`) |
 | `McpServersSection` | `features/agents/redux/mcp/mcp.slice.ts` (`fetchCatalog`, `connectServer` / `disconnectServer` / `discoverServerTools`) |
 | `PreferencesSection` | `useSetting<T>("userPreferences.agentConnections.<key>")` — persistence via the user-preferences engine, no slice-binding needed |
+| `PluginsSection` (shown as **Coding Platforms**) | Owner-scoped `chat.coding_session` rows via direct Supabase; storage health, Claude-first connection status, four-provider filters, fidelity verdicts, and canonical conversation doors/actions |
 
-Placeholders (empty-state copy, no data source): `SubAgentsSection`, `ResourcesSection` (inert slice — see Resources above), `InstructionsSection`, `PromptsSection`, `CommandsSection`, `HooksSection`, `PluginsSection`, `RegistriesSection`. Prompts as a concept is superseded by agents + shortcuts + agent-apps; treat that tab as a slot to repurpose or remove.
+Placeholders (empty-state copy, no data source): `SubAgentsSection`, `ResourcesSection` (inert slice — see Resources above), `InstructionsSection`, `PromptsSection`, `CommandsSection`, `HooksSection`, `RegistriesSection`. Prompts as a concept is superseded by agents + shortcuts + agent-apps; treat that tab as a slot to repurpose or remove.
 
 **Hooks** (`hooks/`)
 - `useRenderBlocks` — fetches definitions + categories for the current view scope; returns tree + byCategoryId.
 - `useViewScope` — resolves the ui slice's `viewScope` selection to a concrete scopeId from `appContextSlice` (canonical scope source; nothing mirrored).
 - `useAgents`, `useMcpCatalog` — thin adapters over the agents-system slices (no data owned here).
 - `useResources` — inert, retired (above).
+- `coding-sessions/useCodingSessions.ts` — latest-request-guarded browser read of the signed-in owner's private session bindings. It keeps the last successful rows visible behind `StaleDataNotice` when a refresh fails.
 
 **Redux**
 - `redux/skl/` — the canonical store (above).
@@ -98,6 +100,11 @@ Placeholders (empty-state copy, no data source): `SubAgentsSection`, `ResourcesS
 ### (d) Runtime resolution at invocation
 The server resolves the full tool/skill/MCP set from the stored agent definition on `POST /ai/agents/{id}`. The client never sees the complete tool list; nothing in this hub changes that.
 
+### (e) Coding-platform bridge health and history
+`PluginsSection` is repurposed as **Coding Platforms** because the provider integrations are plugins/extensions. It reads `chat.coding_session` directly through browser Supabase (RLS owner-only), joins only the canonical conversation's title/provenance, and never reads `chat.coding_session_entry` raw payloads. A successful empty read says **Storage reachable**, not “plugin installed”; a binding is **Detected** only after an authenticated adapter has delivered a session. Every session names its conversation through `EntityRef` (open/new-tab/peek) and reuses `buildConversationMenu` for share, canonical fork/duplicate, archive, and deletion.
+
+Fidelity is a verdict, never an inference: `event_mirror` says native resume is unavailable and continuation is a seeded handoff; `native` says only that the exact ledger exists and lists the still-required credential/workspace/runtime/lease checks. The page never turns either state into a “Resume” button on its own. Canonical provider vocabulary is storage `claude_code|codex|cursor|vscode`, conversation `source_app` `claude-code|codex|cursor|vscode`, and `source_feature='code-editor'`; the conversation source tree provides the provenance filter.
+
 ---
 
 ## Invariants & gotchas
@@ -112,6 +119,8 @@ The server resolves the full tool/skill/MCP set from the stored agent definition
 - **Skill/category/resource code does not come back here** — `features/skills/` owns all three now.
 - **Cookie name is versioned** (`panels:agent-connections:v1`).
 - **No permission gating in this feature** — scope filtering is a view filter (RLS is the ceiling); nothing here enforces admin tiers.
+- **Raw coding state stays private.** The browser lists owner-scoped bindings and canonical conversation identity only. It never fetches raw session entries, commands, paths, file content, or system messages; sharing/forking acts on the canonical conversation.
+- **No false resume.** `event_mirror` is never labeled native, and `native` is never labeled resumable without the runtime prerequisites. Seeded handoff and native resume remain distinct product actions.
 
 ---
 
@@ -122,6 +131,7 @@ The server resolves the full tool/skill/MCP set from the stored agent definition
 - **`features/skills/`** — skill definitions, categories, and skill resources (all formerly here).
 - **`features/content-ir/`** — the Shape system; `render_kind` blocks bind to `content_ir.kind_component` (SHAPE_SYSTEM R1).
 - **`features/api-integrations/`** — external integrations + credential storage.
+- **Coding Session Bridge** — cross-repo contract: `/Users/armanisadeghi/code/common-docs/systems/coding-session-bridge/FEATURE.md`.
 - **`features/window-panels/` / `features/overlays/`** — the overlay surface (`agentConnectionsWindow`).
 - `skl-migration-guide.md` (this folder) — the 2026-04 `skl_` namespace migration rationale; historical context, superseded on table names by the live schema (`skill.render_definition`, `platform.categories`).
 
@@ -131,13 +141,15 @@ The server resolves the full tool/skill/MCP set from the stored agent definition
 
 1. **Render-block editor** — three-pane detail editor + live `BlockRenderer` preview (detail view is read-only today).
 2. **Per-agent view** — thread `agentId` so sections show one agent's attached set (flow c).
-3. **Placeholder sections** — each needs a real data source or removal; Prompts is a repurpose-or-remove candidate.
-4. **Retire `hooks/useResources.ts`** + the slice's `resources` branch once no import remains.
+3. **Coding platform installation** — publish the Claude marketplace package, then replace the honest “not published” distribution status with the verified install command; Codex/Cursor/VS Code adapters follow the shared contract.
+4. **Placeholder sections** — each needs a real data source or removal; Prompts is a repurpose-or-remove candidate.
+5. **Retire `hooks/useResources.ts`** + the slice's `resources` branch once no import remains.
 
 ---
 
 ## Change log
 
+- `2026-08-09` — Repurposed the Plugins placeholder as the live Coding Platforms bridge: direct owner-scoped `chat.coding_session` health/history, Claude-first detection/install truth, four-provider vocabulary, explicit event-mirror/native-ledger verdicts, retryable stale reads, and canonical conversation open/new-tab/peek/share/fork actions. Registered Claude Code, Codex, Cursor, and VS Code in conversation provenance filters; raw entry payloads remain owner-only and unread by the browser.
 - `2026-08-09` — Full FEATURE.md rewrite against live code (doc previously described a mock-data scaffold; `data.ts` deleted, routes live under `(core)`, skl documented as the canonical content-block store). Added `ClassificationBadges` to `RenderBlocksSection` — first UI consumer of the 2026-08-08 block_type/visibility fidelity (list rows badge non-baseline; detail always). Fixed the dead Prompts sidebar link by adding the missing `app/(core)/agent-connections/prompts/page.tsx`.
 - `2026-08-09` — Resources filter chips no longer wrap mid-word at 375px: the row is an `overflow-x-auto` rail and each chip carries `shrink-0 whitespace-nowrap`. The global unlayered mobile block in `app/globals.css` sets `word-break: break-word` on every `div`/`span`, so a flex chip that is allowed to shrink gets its label broken letter-by-letter — chips must always opt out of both shrinking and breaking.
 - `2026-08-08` — `agent.context_menu_view` now emits `block_type` / `skill_id` / `visibility` on content-block items (view applied live + ledger-recorded); `fetchUnifiedMenu` hydration consumes them, so `redux/skl` `renderDefinitionsMerged` no longer silently defaults unfetched personal `render_kind` blocks to public-markdown. Wire types optional to tolerate stale cached payloads.

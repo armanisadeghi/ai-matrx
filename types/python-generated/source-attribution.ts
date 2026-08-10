@@ -20,6 +20,9 @@ export const SOURCE_APPS = [
   "aidream-sweep-listener",
   "aidream-workflow-extract-sweep",
   "chat",
+  "claude-code",
+  "codex",
+  "cursor",
   "matrx-admin",
   "matrx-ai",
   "matrx-desktop",
@@ -30,6 +33,7 @@ export const SOURCE_APPS = [
   "mcp-agent-service",
   "workflow",
   "workflow-studio",
+  "vscode",
 ] as const;
 
 export type SourceApp = (typeof SOURCE_APPS)[number];

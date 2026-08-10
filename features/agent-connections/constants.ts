@@ -28,7 +28,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
   { value: "commands", label: "Commands", icon: TerminalSquare },
   { value: "hooks", label: "Hooks", icon: Zap },
   { value: "mcpServers", label: "MCP Servers", icon: Server, urlSegment: "mcp-servers" },
-  { value: "plugins", label: "Plugins", icon: Plug },
+  { value: "plugins", label: "Coding Platforms", icon: Plug },
   { value: "registries", label: "Registries", icon: Library },
   { value: "preferences", label: "Preferences", icon: Sliders },
 ];
@@ -108,10 +108,10 @@ export const OVERVIEW_CARDS: OverviewCard[] = [
   },
   {
     value: "plugins",
-    label: "Plugins",
+    label: "Coding Platforms",
     icon: Plug,
     description:
-      "Install and manage agent plugins that add additional tools, skills, and integrations.",
+      "Connect Claude Code, Codex, Cursor, and VS Code; inspect bridge health and open mirrored conversations.",
     action: "browse",
   },
   {
