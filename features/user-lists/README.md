@@ -109,3 +109,33 @@ RLS enforced server-side. UI hides edit controls based on `isOwner` prop.
 | `update_user_list(...)` | updateListAction |
 
 Direct table queries used for: listing accessible lists, item-level mutations (add/update/delete).
+
+## Agent-writable surface (`matrx-user/list-manager`)
+
+The floating List Manager window (`ListManagerFloatingWorkspace`) is a live
+write target for surface-bound agents. Three targets are declared on
+[`features/surfaces/manifests/list-manager.manifest.ts`](../surfaces/manifests/list-manager.manifest.ts):
+`add_list_items` (the decomposition action — an agent turns a goal into items),
+`active_list_name`, and `active_list_description`.
+
+**This feature has no draft layer** — every user edit is a server action that
+persists on submit. So all three targets are `mode: "entity"` and
+`applyPolicy: "ask"`: an applied agent write is a database commit with no Save
+bar to undo it. **Never set one of these to `auto`**, and do not declare
+targets for delete or visibility — destructive and permission-shaped changes
+stay human-only. Handlers live on the provider in
+`ListManagerFloatingWorkspace.tsx`; they validate and throw on a bad shape,
+call the same `addItemAction` / `updateListAction` the dialogs call, and
+refetch so the surface's read twins update in the same turn. Read
+[`features/surfaces/FEATURE.md`](../surfaces/FEATURE.md) § "The 360 loop"
+before changing them.
+
+## Change Log
+
+- `2026-08-10` — claude: **List Manager surface made agent-writable** (3 entity
+  targets, all `ask`). Verified with a live Badass Agent run on a throwaway
+  list: items added and persisted, description rewritten, a declined rename
+  handled as a normal outcome, a bad value returned
+  `add_list_items expects a non-empty array…` to the agent, an undeclared
+  target (visibility) refused, and zero `surface-writeback` captures in the
+  Error Inspector.

@@ -158,7 +158,7 @@ internal platform use — never a washed-down user variant beside a private one:
   `add_subtasks`/`save_task` entity actions, handlers in
   `TaskEditorBody.tsx`), `matrx-user/marketing-brand` (2 ask-policy entity
   targets through `updateBrand`; confirmed facts/assets/properties have no
-  write path by doctrine — human-owned, promoted via discovery review) and
+  write path by doctrine — human-owned, promoted via discovery review),
   `matrx-user/agent-builder` (6 draft targets — an agent authoring ANOTHER
   agent's prompt: `system_instruction` / `append_system_instruction` (replace
   vs append, both through `withAgentSystemInstruction` + `setAgentMessages`,
@@ -169,7 +169,13 @@ internal platform use — never a washed-down user variant beside a private one:
   builder's own provider — desktop AND mobile — so they stay wired on every
   panel. Model, tools, MCP servers, skills, variables, output schema and all
   governance stay human-only: changing what an agent may REACH is a
-  capability change, not a copy edit).
+  capability change, not a copy edit), and
+  `matrx-user/list-manager` (3 ask-policy entity targets — `add_list_items`
+  decomposition plus `active_list_name` / `active_list_description`, handlers
+  in `features/user-lists/components/ListManagerFloatingWorkspace.tsx` through
+  the canonical `addItemAction` / `updateListAction` server actions; that
+  surface has NO draft layer, so `auto` is barred on it and delete /
+  visibility stay undeclared).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
