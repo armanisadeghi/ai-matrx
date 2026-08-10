@@ -12,6 +12,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 - [ ] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` — **remaining baseline is STALE, needs a re-count** | The report's 32-files/44-calls figure predates the 2026-08-09 UI-hygiene batch (PR #79), which independently cleared 16 files across `features/` + `components/` plus `/administration/compute/sandbox-infra` (Tier R confirms included: converted to the async `confirm({...})` host). The two code-editor files were fixed by BOTH runs — deduped on merge. Surviving tail is concentrated in `app/(dev)/demos`, `app/(transitional)/_apps/app-builder`, and admin official-components display demos; app-builder unsaved-changes confirms may sit in sync router guards, so verify before making them async | 2026-08-09
 - [ ] P4 | 282 total `bg-white`/`text-black` files still need per-line triage (the no-`dark:` batch below is cleared) | 2026-08-08
+- [ ] P8 | see `.matrx/patrol-reports/real-loading-states.md` | first/full Tier R pass verified 95 files: 45 standard-loader candidates and 50 skeleton/design cases; 0 fixed until the P8 fix skill exists | 2026-08-10
 
 ## Cleared
 
