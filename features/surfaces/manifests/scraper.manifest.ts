@@ -16,6 +16,11 @@
  * State is local to the workspace component (no central Redux slice), so
  * `ScraperFloatingWorkspace` rebuilds `contextData` from live state via
  * `features/scraper/agent-context/buildScraperContextData.ts`.
+ *
+ * Agent-writable since 2026-08-10: one draft target (`scrape_request`) stages
+ * the next scrape's inputs into the same form state the user types into. The
+ * scrape itself is never agent-triggered. See the block above `writeTargets`
+ * for which fields earned a target and why `target_url` was the close call.
  */
 
 import type {
@@ -23,8 +28,26 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+/**
+ * THE scrape-mode vocabulary — the single source of truth for the three modes
+ * the workspace offers, in the wire spelling agents read on `scrape_mode` and
+ * write on `scrape_request`.
+ *
+ * Declared here (not in the feature) because `buildScraperContextData.ts`
+ * already imports this manifest; the reverse would be circular. That file maps
+ * the workspace's internal mode ids (`url` / `batch` / `web`) onto these, and
+ * the write handler maps back — both against this constant, so the enum can
+ * never drift from the prose in `scrape_request.description`, which is built
+ * from it.
+ */
+export const SCRAPE_MODES = ["quick", "full", "search"] as const;
+
+/** One of the three modes in {@link SCRAPE_MODES}. */
+export type ScrapeMode = (typeof SCRAPE_MODES)[number];
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -303,6 +326,69 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+// ── Write targets (read/write v1) ───────────────────────────────────────────
+//
+// WHAT EARNED A TARGET, AND WHY (the judgment bar, applied honestly).
+//
+// This surface has exactly one thing a user composes: the NEXT scrape request.
+// Everything from `scraped_url` onward is observed OUTPUT — read-only evidence
+// pulled off live pages — and is deliberately not writable: an agent that could
+// edit scraped content could launder invention into something the user reads as
+// fact. Result selection and the Scrape button are likewise excluded; running a
+// scrape is an outbound request against a third-party site, and that stays the
+// user's press.
+//
+// So the writable half is the request form's four fields, and they are declared
+// as ONE object target rather than four micro-targets because the user composes
+// them as one decision — the mode determines which input is even rendered, and
+// `max_pages` is meaningless outside deep mode. One target lets the handler
+// check that coherence; four could not.
+//
+// `search_keyword` and `max_pages` are the easy YES: drafting a good search
+// query from a fuzzy intent ("find me recent writeups on X") is exactly the
+// authored-content case, and the page count is the planning number that rides
+// with it. `scrape_mode` is a YES for the same reason — "search the web for X"
+// vs "read this page" vs "search and read the top 5" is a real routing decision
+// an agent makes from the user's own words.
+//
+// `target_url` was the close call, and it is IN — with its risk written into the
+// contract rather than waved off. The failure mode is real: an agent that
+// half-remembers a URL from training can produce a plausible, well-formed
+// address for a page that never existed, and a URL is closer to identity
+// ("which page do you mean") than to authored content. What tips it is that
+// this surface PRODUCES the URLs an agent would want to write: `search_hits`
+// carries the web-search results and `scraped_links` carries every link off the
+// page the user is reading, both declared read values. The honest use is
+// transcription from that evidence — "put hit #3 in the box" — not recall, so
+// the description forbids recall explicitly, the handler rejects anything that
+// isn't an absolute http(s) URL, and `ask` puts the full URL in front of the
+// user before it lands. Two human gates remain after that: the staged value is
+// visible in the input, and the scrape itself is still a button the user
+// presses. A well-formed but wrong URL is stopped by the person, which is the
+// right place to stop it.
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "scrape_request",
+    label: "Scrape request",
+    description:
+      "Stages the NEXT scrape request into the workspace's input form — the same fields the user types into. The user still presses Scrape; this never fetches anything. " +
+      `Value: an object with any of { scrape_mode?: ${SCRAPE_MODES.join(" | ")}, target_url?: string, search_keyword?: string, max_pages?: number }; ` +
+      "omitted fields keep what the user already typed, so send only what you are changing. " +
+      'Each mode uses a different input, so send the field that matches: "quick" scrapes one page and uses target_url; "search" runs a keyword web search and uses search_keyword; "full" searches then scrapes the top results and uses search_keyword plus max_pages (1-20). ' +
+      "Sending a field the resulting mode does not use is rejected rather than silently dropped. " +
+      "target_url must be an absolute http:// or https:// URL, and you must take it from what is in front of you — a url in search_hits or scraped_links, or one the user gave you. Never write a URL you are recalling rather than reading; a plausible-looking address for a page that does not exist wastes the user's request. " +
+      "Read target_url, search_keyword, max_pages and scrape_mode to see what is currently staged. Refused while is_scraping is true — a run is in flight and the inputs are locked.",
+    valueType: "object",
+    // No 1:1 read twin: this one target stages four declared values
+    // (target_url / search_keyword / max_pages / scrape_mode), which the
+    // description names for the evidence loop.
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "target",
+    sortOrder: 100,
+  },
+];
+
 export const scraperManifest: SurfaceManifest = {
   surfaceName: "matrx-user/scraper",
   readiness: "verified",
@@ -319,6 +405,7 @@ target_url and search_keyword are the user's live inputs — what they intend to
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One scraped page as emitted in the `results_overview` surface value. */
@@ -339,7 +426,7 @@ export interface ScraperSearchHitEntry {
 
 export function createScraperScope(values: {
   // alwaysAvailable: true → required
-  scrape_mode: "quick" | "full" | "search";
+  scrape_mode: ScrapeMode;
   results_overview: ScraperResultOverviewEntry[];
   result_count: number;
   search_hit_count: number;

@@ -36,8 +36,11 @@ import {
 } from "@/features/scraper/hooks/useScraperApi";
 import {
   buildScraperContextData,
+  MODE_TO_SCRAPE_MODE,
+  SCRAPE_MODE_TO_WORKSPACE_MODE,
   SCRAPER_CONTEXT_MENU_PROPS,
 } from "@/features/scraper/agent-context/buildScraperContextData";
+import { SCRAPE_MODES } from "@/features/surfaces/manifests/scraper.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createScraperExtraSections } from "@/features/scraper/agent-context/scraperExtraSections";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
@@ -179,6 +182,149 @@ export function ScraperFloatingWorkspace({
       contextData,
     });
   };
+
+  // ── Agent write target: scrape_request (matrx-user/scraper) ─────────────
+  // Stages the NEXT request into the SAME state the user's typing drives —
+  // setMode / setUrl / setKeyword / keywordForm.setKeywords / setMaxPages —
+  // so a staged value is indistinguishable from a typed one and the user
+  // edits or ignores it normally. Nothing here fetches: the Scrape button
+  // stays the user's press.
+  //
+  // Validate-then-apply: every field is checked before the first setter runs,
+  // so a rejected call leaves the form exactly as the user left it rather
+  // than half-written. Field/mode mismatches THROW instead of coercing — the
+  // seam turns the throw into an envelope the agent reads, and silently
+  // switching the user's mode (or dropping a field) would be a lie either way.
+  const getSurfaceWriteHandlers = () => ({
+    scrape_request: (value: unknown) => {
+      // The inputs are `disabled` while a run is in flight; an agent gets the
+      // same answer the user's keyboard does, but loudly.
+      if (isAnyLoading)
+        throw new Error(
+          "scrape_request is refused while a scrape is running (is_scraping is true). Wait for the run to finish, then stage the next request.",
+        );
+
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          `scrape_request expects an object with any of { scrape_mode?: ${SCRAPE_MODES.join(" | ")}, target_url?: string, search_keyword?: string, max_pages?: number }.`,
+        );
+
+      const patch = value as Record<string, unknown>;
+      const allowed = [
+        "scrape_mode",
+        "target_url",
+        "search_keyword",
+        "max_pages",
+      ];
+      const unknownKeys = Object.keys(patch).filter(
+        (k) => !allowed.includes(k),
+      );
+      if (unknownKeys.length > 0)
+        throw new Error(
+          `scrape_request got unsupported field(s): ${unknownKeys.join(", ")}. Supported fields are ${allowed.join(", ")}.`,
+        );
+
+      const present = (key: string) =>
+        patch[key] !== undefined && patch[key] !== null;
+      if (!allowed.some(present))
+        throw new Error(
+          "scrape_request needs at least one of scrape_mode, target_url, search_keyword, max_pages.",
+        );
+
+      // The mode AFTER this patch decides which inputs are legal — an agent
+      // that switches mode and fills its field in one call must be judged
+      // against the new mode, not the old one.
+      let nextMode = mode;
+      if (present("scrape_mode")) {
+        const requested = patch.scrape_mode;
+        if (
+          typeof requested !== "string" ||
+          !(requested in SCRAPE_MODE_TO_WORKSPACE_MODE)
+        )
+          throw new Error(
+            `scrape_request.scrape_mode must be one of ${SCRAPE_MODES.join(" | ")}.`,
+          );
+        nextMode =
+          SCRAPE_MODE_TO_WORKSPACE_MODE[
+            requested as (typeof SCRAPE_MODES)[number]
+          ];
+      }
+      const nextScrapeMode = MODE_TO_SCRAPE_MODE[nextMode];
+
+      let nextUrl: string | undefined;
+      if (present("target_url")) {
+        if (nextMode !== "url")
+          throw new Error(
+            `scrape_request.target_url only applies to the "quick" single-URL mode, but this request lands in "${nextScrapeMode}" mode. Send scrape_mode: "quick" alongside it, or use search_keyword instead.`,
+          );
+        if (typeof patch.target_url !== "string" || !patch.target_url.trim())
+          throw new Error(
+            "scrape_request.target_url must be a non-empty string.",
+          );
+        const candidate = patch.target_url.trim();
+        let parsed: URL;
+        try {
+          parsed = new URL(candidate);
+        } catch {
+          throw new Error(
+            `scrape_request.target_url must be an absolute URL including the scheme (got "${candidate}").`,
+          );
+        }
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:")
+          throw new Error(
+            `scrape_request.target_url must use http:// or https:// (got "${parsed.protocol}//").`,
+          );
+        nextUrl = candidate;
+      }
+
+      let nextKeyword: string | undefined;
+      if (present("search_keyword")) {
+        if (nextMode === "url")
+          throw new Error(
+            'scrape_request.search_keyword does not apply to the "quick" single-URL mode. Send scrape_mode: "search" or "full" alongside it, or use target_url instead.',
+          );
+        if (
+          typeof patch.search_keyword !== "string" ||
+          !patch.search_keyword.trim()
+        )
+          throw new Error(
+            "scrape_request.search_keyword must be a non-empty string.",
+          );
+        nextKeyword = patch.search_keyword.trim();
+      }
+
+      let nextMaxPages: number | undefined;
+      if (present("max_pages")) {
+        if (nextMode !== "batch")
+          throw new Error(
+            `scrape_request.max_pages only applies to the "full" search-and-scrape mode, but this request lands in "${nextScrapeMode}" mode.`,
+          );
+        if (
+          typeof patch.max_pages !== "number" ||
+          !Number.isInteger(patch.max_pages) ||
+          patch.max_pages < 1 ||
+          patch.max_pages > 20
+        )
+          throw new Error(
+            "scrape_request.max_pages must be a whole number between 1 and 20.",
+          );
+        nextMaxPages = patch.max_pages;
+      }
+
+      // Everything validated — stage it.
+      if (nextMode !== mode) setMode(nextMode);
+      if (nextUrl !== undefined) setUrl(nextUrl);
+      if (nextKeyword !== undefined) {
+        // The keyword lives in two places by design: web-search mode reads it
+        // off the keyword-search form hook, deep mode off local state (the
+        // same split `contextData` reports on `search_keyword`).
+        if (nextMode === "web") keywordForm.setKeywords(nextKeyword);
+        else setKeyword(nextKeyword);
+      }
+      // maxPages is the <input type="number"> string state, same as typing.
+      if (nextMaxPages !== undefined) setMaxPages(String(nextMaxPages));
+    },
+  });
 
   const handleQuickScrape = useCallback(async () => {
     const normalized = normalizeUrl(url);
@@ -704,6 +850,7 @@ export function ScraperFloatingWorkspace({
       surfaceName={SCRAPER_CONTEXT_MENU_PROPS.surfaceName}
       getScope={getConfigApplicationScope}
       isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       <WindowPanel
         title="Web Scraper"

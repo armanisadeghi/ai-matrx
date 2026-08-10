@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-07-24`
+**Last updated:** `2026-08-10`
 
 > This file lives in `features/scraper/` because scraper is the largest surface, but it is the **umbrella doc for four sibling ingestion pipelines**: `features/scraper/`, `features/pdf-extractor/`, `features/research/`, `features/transcripts/`. They share a single role: pull external data into Matrx and make it consumable by agents and other parts of the system.
 
@@ -196,6 +196,7 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 
 ## Change log
 
+- **2026-08-10 — Scraper surface is agent-writable: one `scrape_request` draft target; the scrape itself stays the user's press.** `matrx-user/scraper` declares ONE ask-policy `mode:"draft"` write target — `scrape_request`, the whole next-scrape form as a single object `{scrape_mode?: quick|full|search, target_url?, search_keyword?, max_pages?}`. The handler lives in `parts/ScraperFloatingWorkspace.tsx` on the `SurfaceRuntimeProvider` that was already mounted for reads (only `getWriteHandlers` was missing) and stages through the SAME setters the user's typing drives — `setMode`, `setUrl`, `setKeyword`, `keywordForm.setKeywords`, `setMaxPages` — so a staged request is indistinguishable from a typed one. **Nothing here fetches**: running a scrape is an outbound request against a third-party site, so it is not a write target at any policy, and `handleQuickScrape` / `handleSearchAndScrape` remain reachable only from the buttons. Scraped content, `results_overview` and result selection stay read-only — they are observed evidence, and an agent that could edit a scraped body could launder invention into something the user reads as fact. One composite target rather than four micro-targets because the user composes ONE request: the mode decides which input is rendered, so the handler resolves the post-patch mode first and then throws on any field that mode does not use (`target_url` outside quick, `search_keyword` in quick, `max_pages` outside deep), rather than dropping the field or silently switching the user's mode. `search_keyword` routes to whichever of the two keyword states the resulting mode reads — the same web-vs-deep split `buildScraperContextData` already reports. `target_url` must parse as an absolute http(s) URL, and its model-facing description requires it be taken from `search_hits` / `scraped_links` / the user, never recalled. `max_pages` is bounded 1–20 (the Input's own `min`/`max`). Validate-then-apply, so a rejected call leaves the form untouched; the handler also refuses outright while a scrape is in flight, matching the `disabled` inputs. The `quick|full|search` vocabulary moved to `SCRAPE_MODES` on the manifest — `MODE_TO_SCRAPE_MODE` is typed from it and `SCRAPE_MODE_TO_WORKSPACE_MODE` is derived by inverting that map, so the emitter, the validator and the enum printed in the target description cannot drift apart. Live-verified with real Badass Agent runs on the floating workspace (see the surfaces `FEATURE.md` entry for the full transcript evidence).
 - **2026-07-29 — Scraped metadata analysis canonicalized.** Title and
   description status now comes from `features/marketing/seo/serp/metrics.ts`,
   including pixel width and the shared character windows; no scraper-local

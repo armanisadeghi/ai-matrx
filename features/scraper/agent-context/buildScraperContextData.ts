@@ -1,6 +1,7 @@
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import {
   createScraperScope,
+  type ScrapeMode,
   type ScraperResultOverviewEntry,
   type ScraperSearchHitEntry,
 } from "@/features/surfaces/manifests/scraper.manifest";
@@ -45,10 +46,7 @@ export const SCRAPER_CONTEXT_MENU_PROPS = {
 /** The workspace's three input modes mapped onto the manifest's `scrape_mode`. */
 export type ScraperWorkspaceMode = "web" | "url" | "batch";
 
-const MODE_TO_SCRAPE_MODE: Record<
-  ScraperWorkspaceMode,
-  "quick" | "full" | "search"
-> = {
+export const MODE_TO_SCRAPE_MODE: Record<ScraperWorkspaceMode, ScrapeMode> = {
   // Single-URL quick scrape.
   url: "quick",
   // Keyword search → scrape N pages (the "deep" mode).
@@ -56,6 +54,20 @@ const MODE_TO_SCRAPE_MODE: Record<
   // Keyword web search (no scrape until a hit is opened).
   web: "search",
 };
+
+/**
+ * The inverse of {@link MODE_TO_SCRAPE_MODE} — the wire `scrape_mode` an agent
+ * reads and writes, back to the workspace's internal mode id.
+ *
+ * Derived by inverting the map rather than re-typed, so the `scrape_request`
+ * write handler can never accept a mode the context builder doesn't emit.
+ */
+export const SCRAPE_MODE_TO_WORKSPACE_MODE = Object.fromEntries(
+  Object.entries(MODE_TO_SCRAPE_MODE).map(([workspaceMode, scrapeMode]) => [
+    scrapeMode,
+    workspaceMode as ScraperWorkspaceMode,
+  ]),
+) as Record<ScrapeMode, ScraperWorkspaceMode>;
 
 /** Map the live `links` bag onto the manifest's `{ internal, external, media }`. */
 function buildLinkGroups(links: ScraperResult["links"] | undefined): {
