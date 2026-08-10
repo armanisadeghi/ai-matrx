@@ -54,11 +54,40 @@ import {
   saveAppField,
   deleteApp,
 } from "@/features/agents/redux/agent-apps/thunks";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { AGENT_APPS_SURFACE_NAME } from "@/features/surfaces/manifests/agent-apps.manifest";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import type { AppStatus } from "@/features/agent-apps/types";
 
 interface AgentAppSettingsContentProps {
   appId: string;
+}
+
+/**
+ * Surface-write input guards. Both THROW rather than coercing — the writeback
+ * seam converts a throw into the error envelope the agent reads, and a wrong
+ * value is the agent's mistake to hear about, not ours to paper over.
+ */
+function requireString(value: unknown, target: string): string {
+  if (typeof value !== "string") {
+    throw new Error(
+      `${target} must be a string; got ${value === null ? "null" : typeof value}.`,
+    );
+  }
+  return value;
+}
+
+/**
+ * Every write target on this surface edits the OPEN app. Until the Redux row
+ * has hydrated there is nothing to write into, and staging text into a form
+ * that is about to be re-initialised would silently lose it.
+ */
+function requireOpenApp(app: unknown, target: string): void {
+  if (!app) {
+    throw new Error(
+      `Cannot apply ${target}: no agent app is open yet on this page. Wait for the app to load, or open an app at /agent-apps/[id]/settings first.`,
+    );
+  }
 }
 
 const STATUS_OPTIONS: { value: AppStatus; label: string }[] = [
@@ -103,7 +132,14 @@ export function AgentAppSettingsContent({
   }, [app?.id]);
 
   const saveField = useCallback(
-    async (field: string, value: unknown) => {
+    async (
+      field: string,
+      value: unknown,
+      // A user click is fire-and-forget: it wants the toast and nothing else.
+      // The surface write handlers below need the failure to propagate so the
+      // writeback seam can hand the agent a real error instead of a silent OK.
+      options?: { rethrow?: boolean },
+    ) => {
       setSavingField(field);
       try {
         await dispatch(
@@ -118,12 +154,93 @@ export function AgentAppSettingsContent({
         toast.error(
           err instanceof Error ? `Save failed: ${err.message}` : "Save failed.",
         );
+        if (options?.rethrow) throw err;
       } finally {
         setSavingField(null);
       }
     },
     [appId, dispatch],
   );
+
+  // ── Surface write targets (matrx-user/agent-apps) ──────────────────────
+  // The five Identity fields the manifest declares agent-writable. The
+  // provider is mounted a level up in AgentAppSurfaceRuntime (the [id]
+  // layout); this component owns the local input state and the saveField
+  // wrapper, so the handlers register from here and route through exactly
+  // what the user's own typing and clicks use — never a parallel write.
+  //
+  // name / tagline / description are `draft`: they set the same local state
+  // the inputs are bound to, which lights up that field's dirty marker and
+  // Save button for the user to confirm. category / tags are `entity`: their
+  // pickers have no staging step, so these commit through saveAppField just
+  // as picking a value by hand does.
+  //
+  // Every handler throws on a bad shape or a missing app — the writeback
+  // runtime turns a throw into the loud, captured error envelope the agent
+  // reads back. Nothing is coerced into shape silently.
+  useSurfaceWriteHandlers(AGENT_APPS_SURFACE_NAME, {
+    app_name: (value) => {
+      requireOpenApp(app, "app_name");
+      const next = requireString(value, "app_name");
+      if (!next.trim()) {
+        throw new Error(
+          "app_name must be a non-empty string — an app cannot be left unnamed.",
+        );
+      }
+      setName(next);
+    },
+    app_tagline: (value) => {
+      requireOpenApp(app, "app_tagline");
+      setTagline(requireString(value, "app_tagline"));
+    },
+    app_description: (value) => {
+      requireOpenApp(app, "app_description");
+      setDescription(requireString(value, "app_description"));
+    },
+    app_category: async (value) => {
+      requireOpenApp(app, "app_category");
+      let next: string | null;
+      if (value === null) {
+        next = null;
+      } else {
+        const raw = requireString(value, "app_category");
+        if (!raw.trim()) {
+          throw new Error(
+            "app_category must be a non-empty string, or null to clear the category — an empty string is not a category.",
+          );
+        }
+        next = raw.trim();
+      }
+      await saveField("category", next, { rethrow: true });
+    },
+    app_tags: async (value) => {
+      requireOpenApp(app, "app_tags");
+      if (!Array.isArray(value)) {
+        throw new Error(
+          "app_tags must be an array of strings — it replaces the full tag set.",
+        );
+      }
+      const next = value.map((tag, i) => {
+        if (typeof tag !== "string" || !tag.trim()) {
+          throw new Error(
+            `app_tags[${i}] must be a non-empty string; got ${JSON.stringify(tag)}.`,
+          );
+        }
+        return tag.trim();
+      });
+      const seen = new Set<string>();
+      for (const tag of next) {
+        const key = tag.toLowerCase();
+        if (seen.has(key)) {
+          throw new Error(
+            `app_tags contains the duplicate tag "${tag}" — send each tag once.`,
+          );
+        }
+        seen.add(key);
+      }
+      await saveField("tags", next, { rethrow: true });
+    },
+  });
 
   const handleAgentChange = (nextAgentId: string) => {
     if (!app || nextAgentId === app.agent_id) return;
