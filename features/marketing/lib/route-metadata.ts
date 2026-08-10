@@ -146,6 +146,12 @@ const SITE_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
     description: "Review cost attribution for this site.",
     letter: "Sc",
   },
+  performance: {
+    titlePrefix: "Site Performance",
+    description:
+      "See PageSpeed coverage, site-wide score health, trends, and the slowest pages with real search traffic.",
+    letter: "Pf",
+  },
   audit: {
     titlePrefix: "Site Audit",
     description:

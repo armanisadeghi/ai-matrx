@@ -1,6 +1,7 @@
 -- WIDGET_TOOLS_SEED.sql
 -- ============================================================================
--- Seeds the 10 canonical widget_* tools into public.tools.
+-- Seeds the 10 canonical widget_* tools into tool.definition and binds them
+-- to the matrx-ai-core executor through tool.binding.
 --
 -- These tools power the Widget Handle system: when a widget registers a
 -- WidgetHandle via useWidgetHandle(), the launch-path derives the subset of
@@ -14,22 +15,21 @@
 -- patch a widget record. (Contrast with `note_patch` which patches a note row.)
 --
 -- Shared conventions across all 10 rows:
---   source_app   = 'matrx_ai'
 --   semver       = '1.0.0'
+--   source_kind  = 'native'
 --   is_active    = true
 --   annotations  = [{type:"destructiveHint",value:true},{type:"idempotentHint",value:false}]
 --   tags         include 'widget-capable' (always) + action-specific tags
---   function_path prefix = 'matrx_ai.tools.implementations.widgets.'
 --
--- Per-tool categories vary (text vs productivity). Python team implements the
--- server-side functions at the indicated `function_path`.
+-- Per-tool categories vary (text vs productivity). Runtime ownership is the
+-- matrx-ai-core binding; tool.definition has no code-location/source_app field.
 -- ============================================================================
 
 BEGIN;
 
-INSERT INTO public.tools (
+INSERT INTO tool.definition (
   name, category, description, parameters, output_schema,
-  annotations, tags, function_path, source_app, semver, is_active
+  annotations, tags, semver, source_kind, is_active
 ) VALUES
 -- 1. widget_text_replace
 ('widget_text_replace', 'text',
@@ -38,8 +38,7 @@ INSERT INTO public.tools (
  '{"type":"object","properties":{"ok":{"type":"boolean"},"applied":{"type":"string"},"reason":{"type":"string","enum":["unsupported","failed","not_found"]},"message":{"type":"string"}},"required":["ok"]}'::jsonb,
  '[{"type":"destructiveHint","value":true},{"type":"idempotentHint","value":false}]'::jsonb,
  ARRAY['widget-capable','text','replace','write'],
- 'matrx_ai.tools.implementations.widgets.widget_text_replace',
- 'matrx_ai', '1.0.0', true),
+ '1.0.0', 'native', true),
 
 -- 2. widget_text_insert_before
 ('widget_text_insert_before', 'text',
@@ -48,8 +47,7 @@ INSERT INTO public.tools (
  '{"type":"object","properties":{"ok":{"type":"boolean"},"applied":{"type":"string"},"reason":{"type":"string","enum":["unsupported","failed","not_found"]},"message":{"type":"string"}},"required":["ok"]}'::jsonb,
  '[{"type":"destructiveHint","value":true},{"type":"idempotentHint","value":false}]'::jsonb,
  ARRAY['widget-capable','text','insert','write'],
- 'matrx_ai.tools.implementations.widgets.widget_text_insert_before',
- 'matrx_ai', '1.0.0', true),
+ '1.0.0', 'native', true),
 
 -- 3. widget_text_insert_after
 ('widget_text_insert_after', 'text',
@@ -58,8 +56,7 @@ INSERT INTO public.tools (
  '{"type":"object","properties":{"ok":{"type":"boolean"},"applied":{"type":"string"},"reason":{"type":"string","enum":["unsupported","failed","not_found"]},"message":{"type":"string"}},"required":["ok"]}'::jsonb,
  '[{"type":"destructiveHint","value":true},{"type":"idempotentHint","value":false}]'::jsonb,
  ARRAY['widget-capable','text','insert','write'],
- 'matrx_ai.tools.implementations.widgets.widget_text_insert_after',
- 'matrx_ai', '1.0.0', true),
+ '1.0.0', 'native', true),
 
 -- 4. widget_text_prepend
 ('widget_text_prepend', 'text',
@@ -68,8 +65,7 @@ INSERT INTO public.tools (
  '{"type":"object","properties":{"ok":{"type":"boolean"},"applied":{"type":"string"},"reason":{"type":"string","enum":["unsupported","failed","not_found"]},"message":{"type":"string"}},"required":["ok"]}'::jsonb,
  '[{"type":"destructiveHint","value":true},{"type":"idempotentHint","value":false}]'::jsonb,
  ARRAY['widget-capable','text','prepend','write'],
- 'matrx_ai.tools.implementations.widgets.widget_text_prepend',
- 'matrx_ai', '1.0.0', true),
+ '1.0.0', 'native', true),
 
 -- 5. widget_text_append
 ('widget_text_append', 'text',
@@ -78,8 +74,7 @@ INSERT INTO public.tools (
  '{"type":"object","properties":{"ok":{"type":"boolean"},"applied":{"type":"string"},"reason":{"type":"string","enum":["unsupported","failed","not_found"]},"message":{"type":"string"}},"required":["ok"]}'::jsonb,
  '[{"type":"destructiveHint","value":true},{"type":"idempotentHint","value":false}]'::jsonb,
  ARRAY['widget-capable','text','append','write'],
- 'matrx_ai.tools.implementations.widgets.widget_text_append',
- 'matrx_ai', '1.0.0', true),
+ '1.0.0', 'native', true),
 
 -- 6. widget_text_patch (mirrors note_patch fuzzy-match semantics)
 ('widget_text_patch', 'text',
@@ -88,8 +83,7 @@ INSERT INTO public.tools (
  '{"type":"object","properties":{"ok":{"type":"boolean"},"applied":{"type":"string"},"reason":{"type":"string","enum":["unsupported","failed","not_found"]},"message":{"type":"string"},"matched_at_pass":{"type":"string","description":"Which fuzzy pass matched: exact, whitespace_normalized, blank_lines_stripped, or lenient."}},"required":["ok"]}'::jsonb,
  '[{"type":"destructiveHint","value":true},{"type":"idempotentHint","value":false}]'::jsonb,
  ARRAY['widget-capable','text','patch','write'],
- 'matrx_ai.tools.implementations.widgets.widget_text_patch',
- 'matrx_ai', '1.0.0', true),
+ '1.0.0', 'native', true),
 
 -- 7. widget_update_field
 ('widget_update_field', 'productivity',
@@ -98,8 +92,7 @@ INSERT INTO public.tools (
  '{"type":"object","properties":{"ok":{"type":"boolean"},"applied":{"type":"string"},"reason":{"type":"string","enum":["unsupported","failed","not_found"]},"message":{"type":"string"}},"required":["ok"]}'::jsonb,
  '[{"type":"destructiveHint","value":true},{"type":"idempotentHint","value":false}]'::jsonb,
  ARRAY['widget-capable','update','field','write'],
- 'matrx_ai.tools.implementations.widgets.widget_update_field',
- 'matrx_ai', '1.0.0', true),
+ '1.0.0', 'native', true),
 
 -- 8. widget_update_record
 ('widget_update_record', 'productivity',
@@ -108,8 +101,7 @@ INSERT INTO public.tools (
  '{"type":"object","properties":{"ok":{"type":"boolean"},"applied":{"type":"string"},"reason":{"type":"string","enum":["unsupported","failed","not_found"]},"message":{"type":"string"}},"required":["ok"]}'::jsonb,
  '[{"type":"destructiveHint","value":true},{"type":"idempotentHint","value":false}]'::jsonb,
  ARRAY['widget-capable','update','record','write'],
- 'matrx_ai.tools.implementations.widgets.widget_update_record',
- 'matrx_ai', '1.0.0', true),
+ '1.0.0', 'native', true),
 
 -- 9. widget_attach_media
 ('widget_attach_media', 'productivity',
@@ -118,8 +110,7 @@ INSERT INTO public.tools (
  '{"type":"object","properties":{"ok":{"type":"boolean"},"applied":{"type":"string"},"reason":{"type":"string","enum":["unsupported","failed","not_found"]},"message":{"type":"string"}},"required":["ok"]}'::jsonb,
  '[{"type":"destructiveHint","value":true},{"type":"idempotentHint","value":false}]'::jsonb,
  ARRAY['widget-capable','media','attach','write'],
- 'matrx_ai.tools.implementations.widgets.widget_attach_media',
- 'matrx_ai', '1.0.0', true),
+ '1.0.0', 'native', true),
 
 -- 10. widget_create_artifact
 ('widget_create_artifact', 'productivity',
@@ -128,11 +119,29 @@ INSERT INTO public.tools (
  '{"type":"object","properties":{"ok":{"type":"boolean"},"applied":{"type":"string"},"reason":{"type":"string","enum":["unsupported","failed","not_found"]},"message":{"type":"string"}},"required":["ok"]}'::jsonb,
  '[{"type":"destructiveHint","value":true},{"type":"idempotentHint","value":false}]'::jsonb,
  ARRAY['widget-capable','artifact','create','write'],
- 'matrx_ai.tools.implementations.widgets.widget_create_artifact',
- 'matrx_ai', '1.0.0', true);
+ '1.0.0', 'native', true);
+
+INSERT INTO tool.binding (tool_id, executor_name, is_active)
+SELECT id, 'matrx-ai-core', true
+FROM tool.definition
+WHERE name IN (
+  'widget_text_replace',
+  'widget_text_insert_before',
+  'widget_text_insert_after',
+  'widget_text_prepend',
+  'widget_text_append',
+  'widget_text_patch',
+  'widget_update_field',
+  'widget_update_record',
+  'widget_attach_media',
+  'widget_create_artifact'
+)
+ON CONFLICT (tool_id, executor_name) DO UPDATE
+SET is_active = EXCLUDED.is_active,
+    updated_at = now();
 
 COMMIT;
 
 -- Verification
--- SELECT name, category, tags, function_path FROM public.tools
+-- SELECT name, category, tags FROM tool.definition
 -- WHERE 'widget-capable' = ANY(tags) ORDER BY name;

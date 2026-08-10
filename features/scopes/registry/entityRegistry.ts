@@ -34,6 +34,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   AppWindow,
   AudioLines,
+  BookOpen,
   Boxes,
   Building2,
   Contact,
@@ -215,6 +216,11 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: AppWindow,
     labelPlural: "Agent Apps",
     hrefFor: (id) => `/agent-apps/${id}`,
+  },
+  expertise_pack: {
+    Icon: BookOpen,
+    labelPlural: "Expertise Packs",
+    hrefFor: (id) => `/expertise/${id}`,
   },
   // `skill` and `workflow` have peeks but NO detail route anywhere in `app/`
   // (`/agent-connections/skills` is a list; workflows only appear nested under

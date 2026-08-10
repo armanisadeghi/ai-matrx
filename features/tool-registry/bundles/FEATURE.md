@@ -7,7 +7,7 @@
 ## What this is
 
 A bundle is a labeled group of tools (`tool_bundle` + `tool_bundle_member`)
-behind a **lister tool** (`bundle:list_<name>` — a real `tool_def` row, bound to
+behind a **lister tool** (`bundle:list_<name>` — a real `tool.definition` row, bound to
 the `matrx-ai-core` bundle_lister executor, referenced by
 `tool_bundle.lister_tool_id`). Adding a bundle to an agent costs **one tool
 slot**: the model sees only the lister, calls it, and the backend swaps in the

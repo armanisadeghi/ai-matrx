@@ -18,7 +18,7 @@ Knowledge access reuses the **exact** precedence the tool system already impleme
 
 | Layer | Tools (today) | Knowledge access (this spec) |
 |---|---|---|
-| Capability/surface defaults | surface `tool_surface_defaults` | surface default knowledge grants |
+| Capability/surface defaults | `tool.surface_defaults` | surface default knowledge grants |
 | Surface amendments | `client.amendments` add/remove | surface add/remove of grants |
 | **Agent definition** | `config.tools` + `tool_config.excluded_tools` (forbidden floor) | agent's `knowledge_config.grants` + `knowledge_config.forbidden` |
 | Request | `tools` / `tools_replace` | per-request grant add / replace |
@@ -156,7 +156,7 @@ The **access grant rendered as a one-line preamble**: *"You can search: Case 123
 ## 9. DB modifications (proposed — verify against `agx_agent`)
 
 - **`agx_agent.knowledge_config` JSONB** (new) — mirrors `tool_config`: `{ grants: [...], forbidden: [...], focus_default: {...}, hints: {...}, knowledge_disabled: bool }`. Read with the same defensive `getattr(row, "knowledge_config", None) or {}` pattern as `tool_config` in [`agx_manager.py`](../../packages/matrx-ai/matrx_ai/db/agx_manager.py).
-- **Surface defaults** — a knowledge analogue of `tool_surface_defaults` on `ui_surface`.
+- **Surface defaults** — a knowledge analogue of `tool.surface_defaults` on `ui.ui_surface`.
 - **Request + user overrides** — extend the unified request shape with knowledge add/remove (parallel to `tools` / `user.add` / `user.remove`).
 - **Reuse** the existing `rag_awareness_mode` column + `compute_awareness_fragment` for §7 hints.
 - **`rag.scope_bindings`** (backlog #41) is effectively the *resolved* searchable-universe binding — fold it into this model rather than building separately.

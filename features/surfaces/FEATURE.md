@@ -32,7 +32,12 @@ The v2 page solves all four.
 ## One name, two systems — "surface manifest" is overloaded
 
 - **Value manifest (this feature, code-first).** The runtime VALUES a surface promises to supply — plus agent roles, config namespaces, evidence sources. Declared in `manifests/*.manifest.ts`; **code is truth, `ui.ui_surface_value` is the synced mirror.**
-- **Tool manifest (aidream, DB-first).** Which TOOLS a surface enables and their executor bindings — `tool.surface_defaults` + `tool.definition`/`tool.binding`/`tool.executor`; **the DB is truth, clients validate their code against it.** Rules: `aidream/docs/cx_chat/TOOL_ROUTING_RULES.md` + `docs/official/tool_system_rules.md`.
+- **Registered-tool defaults (aidream).** Which Registered tools a surface
+  offers and which Executors can run them — `tool.surface_defaults` +
+  `tool.definition` / `tool.binding` / `tool.executor`. The DB is authoritative
+  for Registered-tool contracts and defaults; Inline tools remain a permanent,
+  first-class request-time path for tools authored at runtime. Durability decides
+  which path applies. Rules: `docs/official/tool_system_rules.md`.
 
 Both hang off the same `ui.ui_surface` spine and resolve server-side in aidream `tool_merge.py` from the request's `client.surface`. When a doc says "surface manifest", identify which system before acting.
 
@@ -153,7 +158,18 @@ internal platform use — never a washed-down user variant beside a private one:
   `add_subtasks`/`save_task` entity actions, handlers in
   `TaskEditorBody.tsx`), `matrx-user/marketing-brand` (2 ask-policy entity
   targets through `updateBrand`; confirmed facts/assets/properties have no
-  write path by doctrine — human-owned, promoted via discovery review).
+  write path by doctrine — human-owned, promoted via discovery review) and
+  `matrx-user/agent-builder` (6 draft targets — an agent authoring ANOTHER
+  agent's prompt: `system_instruction` / `append_system_instruction` (replace
+  vs append, both through `withAgentSystemInstruction` + `setAgentMessages`,
+  the exact pair the System Prompt textarea dispatches, so non-text blocks
+  always round-trip), `agent_description`, `agent_name`, `agent_category`,
+  `agent_tags`; handlers in
+  `features/agents/hooks/useAgentBuilderWriteHandlers.ts`, registered on the
+  builder's own provider — desktop AND mobile — so they stay wired on every
+  panel. Model, tools, MCP servers, skills, variables, output schema and all
+  governance stay human-only: changing what an agent may REACH is a
+  capability change, not a copy edit).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -286,10 +302,10 @@ After the user-requested "go all in" pass, the page picks up:
 
 - **Per-surface detail drawer** ([SurfaceDetailDrawer.tsx](./components/SurfaceDetailDrawer.tsx)) opens on row name click or chevron. Shows:
   - Identity edit (active toggle, description edit, **rename**)
-  - "Tools on this surface" — joined `tl_def_surface ⋈ tl_def`, click-through to the tool admin
+  - "Tools on this surface" — resolves `tool.surface_defaults` names against `tool.definition`, click-through to the tool admin
   - "Agents visible here" — joined `agx_agent_surface ⋈ agx_agent`
   - "Custom tool UI components" — `tl_ui` rows scoped to this surface
-- **Rename support** with FK cascade. Backend migration `ui_surface_fk_cascade_on_update` adds `ON UPDATE CASCADE` to the three FKs (`tl_def_surface.surface_name`, `agx_agent_surface.surface_name`, `tl_ui.surface_name`), so renames are a single atomic UPDATE that auto-propagates to all dependent rows.
+- **Rename support** with cascade-aware writes across `tool.surface_defaults`, agent-surface associations, and `tool.ui`, so a rename propagates to every dependent row.
 - **Bulk delete** in the bulk action bar. The confirm aggregates tool/agent reference counts across all selected rows and warns explicitly that DELETE is non-cascading (FK behavior on delete is `NO ACTION`).
 - **"Add from candidates" dialog** ([SurfaceCandidatesDialog.tsx](./components/SurfaceCandidatesDialog.tsx)) — a curated catalog ([data/surface-candidates.ts](./data/surface-candidates.ts)) of ~70 plausible-but-unseeded surfaces (window-panel overlays, second-tier admin pages, agent embedding widgets, etc.) discovered via codebase inventory. Filter by client / kind / search, multi-select, optionally force-active on insert, bulk insert in a single round-trip.
 - **"New client" dialog** inline (NewClientDialog at the bottom of the page file). Avoids round-tripping to `/admin/lookups` to add a `ui_client`.
@@ -315,6 +331,8 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 
 ## Change Log
 
+- **2026-08-10 — Restored the Agent Builder write-target docs a merge dropped.** The 2026-08-09 entry below and the adopter-list clause landed in `68b1c007` and were lost in a later merge resolution while the CODE stayed intact — the docs claimed the campaign's highest-leverage surface was not agent-writable when it is. Nothing changed in the surface itself. **A merge that resolves a `FEATURE.md` conflict by taking one side wholesale silently reverts documentation for shipped code** — reconcile both sides.
+- **2026-08-09 — Agent Builder surface agent-writable (third adopter).** `matrx-user/agent-builder` declares 6 draft/`ask` targets — an agent authoring ANOTHER agent's system prompt. `system_instruction` (full replace) and `append_system_instruction` (adds a rule without re-sending the prompt) both go through the new `withAgentSystemInstruction` helper + `setAgentMessages` — the exact pair `SystemMessage.tsx`'s textarea dispatches, so a rewrite and the user's typing are indistinguishable and the system message's non-text blocks always round-trip; `SystemMessage.handleTextChange` was refactored onto the same helper so there is ONE rebuild rule. `agent_description` / `agent_name` / `agent_category` / `agent_tags` go through `setAgentField`. Handlers in `features/agents/hooks/useAgentBuilderWriteHandlers.ts`, registered on `AgentBuilderClient`'s provider (desktop + mobile) so they stay wired whichever panel is open; every handler validates and throws, and refuses on a version snapshot or a view-only agent rather than staging edits the user could never save. Deliberately NOT writable: model/tiers, tools, custom tools, MCP servers, skill config, Matrx actions, context slots, variable definitions, output schema, and all governance/visibility. Live-verified with a real Badass Agent run on the builder: ask dialog per target carrying the manifest description, Apply staged into the editor (header flipped "No unsaved changes" → "Save changes", read twins updated), "Keep as is" returned `{ok:false,declined:true}`, append landed at the end of an untouched prompt, and a model/visibility change was refused with an explanation. Zero `surface-writeback` captures. `check:surface-drift` + `type-check` clean.
 - **2026-08-09 — Marketing brand cockpit agent-writable (live-verified).** `matrx-user/marketing-brand` declares 2 ask-policy entity targets (`brand_profile` — merge-patch of the full editorial profile, `brand_identity` — industry/description copy), both through `updateBrand` with the version guard; handlers in `features/marketing/components/brands/MarketingBrandWriteTargets.tsx`, pure validation/merge core in `features/marketing/lib/brand-write-targets.ts` (unit-tested). Verified with a real agent run: per-target ask dialogs, applies persisted (v12→v16 on the test brand), decline path clean, undeclared brand-name write refused, zero writeback captures. Mirrored to `ui.ui_surface_write_target`. Confirmed business facts/assets/properties deliberately have NO write path — the surface doctrine keeps confirmed truth human-owned (candidates flow through the discovery review inbox).
 - **2026-08-08 — Tasks surface agent-writable (second adopter) + `surface-write-targets` skill.** `matrx-user/tasks` declares 8 ask-policy targets (title/description/status/priority/due date/labels drafts via `patchTaskEdit`; `add_subtasks`/`save_task` entity); handlers in `TaskEditorBody.tsx`; live-verified (4 targets in one run — drafts staged + subtasks persisted + save). New skill `.claude/skills/surface-write-targets/` is the campaign recipe.
 
@@ -339,6 +357,10 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 - **2026-07-24 — Surface readiness tracking board on `/administration/ui/surfaces`.** `ui.ui_surface.readiness` ('verified' | 'partial' | 'stub'; NULL = unregistered, no code manifest) + `readiness_note` now surface in the admin list: a four-tile rollup strip (Verified / Partial / Stub / Unregistered, counts scoped to the client filter, tile click = readiness filter composing with client/status/manifest/parent/search), a sortable Readiness column with per-row badge (`readiness_note` as tooltip), canonical `label` as row display name with the machine name kept in mono beneath, an `overlay` chip when `overlay_id` is set, and a read-only Readiness block in the peek panel stating "Readiness is code-owned — edit the manifest's `readiness` field and re-sync" (deliberately NO DB write path). Shared primitive: `components/SurfaceReadinessBadge.tsx` (+ `READINESS_META`); typed helpers `SURFACE_READINESS_LEVELS` / `readinessBucketOf` in `surfaces.service.ts`. Note: `SurfacesAdminPage.tsx` / `SurfaceDetailDrawer.tsx` are dead code (nothing imports them; the route renders `SurfacesContainer`) — they received the same treatment but should be deleted.
 
 - **2026-07-27** — Four surfaces to `verified`. **War Room**: `matrx-user/war-room` 2 → 24 values / 5 groups and `matrx-user/war-room-thread` 3 → 30 values / 6 groups, both with a `<surface_intro>`, `urlPattern`, and a NEW runtime emitter (`features/war-room/lib/war-room-scope.ts`; `SurfaceRuntimeProvider` in `WarRoomShell` for the room, nested deeper in `ThreadAgentPanel` for the thread). **Conversation documents**: the SHARED value set (`_conversation-document.manifest.ts`) gained canonical `groups` — inherited identically by `matrx-user/working-document` and `matrx-user/scratchpad`, which stay separate by design — plus 8 previously-undeclared editor states now emitted (`binding_id`, `binding_label`, `char_count`, `is_saving`, `is_materialized`, `document_version`, `has_conflict`, `editor_mode`); both surfaces got an intro. DB sync (manifest sync endpoint) still to run.
+- **2026-08-09 — Canonical tool vocabulary.** Replaced the false tool-registry
+  “DB-only source of truth” claim with the two permanent paths: Registered tool
+  and Inline tool. Registered contracts/defaults remain DB-backed; runtime-authored
+  Inline tools remain first-class, with durability deciding the path.
 - **2026-07-24 (fleet push)** — 53 → **60 manifests / 1,270 values**, all DB-synced. Upgraded to the canonical standard (groups + completeness + emitters): notes (15→30), chat (15→25) + assistant-message, tasks (13→23) + projects (8→22), transcripts family (12 new viewer values + truth fixes), code-editor (diagnostics/open_files/filesystem; dead `current_function_name` removed), scraper (config+results exposed; 2 never-emitted values removed). NEW registered surfaces with emitters: agents-hub, organizations, dashboard, settings, agent-apps, agent-connections, connections-skills (child, inherits). Route fixes activated 8 orphaned manifests (`/cms`, `/war-room`, `/data` prefixes) and corrected fictional prefixes + DB url_patterns (`/agent-apps`, `/agent-connections`, `/agent-connections/skills`, `/sandbox`, `/user-settings`). Remaining rollout: `docs/handoffs/surface-canonical-fleet.md`.
 
 - **2026-07-24 — THE NAMING LAW + canonical groups overhaul (see section above).** Required `SurfaceManifest.label` (unique per client); `surfaceLabel` override prop deleted + ESLint-banned; all chrome via `getSurfaceDisplayLabel` / `surfaceValueLabels` / `surfaceGroupLabels`; `SurfaceValueGroup` groups with registry-resolved provenance + groupKey and curated→inherited→baseline sort; DB columns `ui_surface.label` / `value_groups` / `ui_surface_value.group_key` mirrored by sync + emit script; drift report `surfaceLabelDrifts` / `valueGroupsDrifts` + drift-check enforcement; registry-as-hierarchy-source for chrome (`getRelatedSurfaces` synchronous, breadcrumb popover); locate-on-page `data-surface-value` convention; aidream agent-feed contract extended to `{name, group_key, sort_order, auto_context, always_available}` + groups (deploy pending); marketing-page becomes the reference implementation. THE COMPLETENESS LAW recorded. Both surface skills rewritten.

@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-07-01` (mobile asks drawer; batched asks → free-navigation `<BatchAskCard>` wizard; full-width header; mobile height guard)
+**Last updated:** `2026-08-09` (canonical tool vocabulary, live schema names, and `matrx-user` executor identity)
 
 > Universal client-delegated tool layer + ambient context envelope for the
 > Next.js surface. Mirrors the matrx-extend Chrome extension's UI-first
@@ -17,8 +17,15 @@ The agent calls a small set of "UI-first" tools (`user`, `update_plan`,
 have no server-side execution — the Next.js client validates the args,
 runs a handler (UI render or Supabase CRUD), and POSTs `tool_results`
 back so the model resumes. These tools come online via the request's
-**surface**: they're bound to `matrx-user/chat` in `public.tl_def_surface`
-and resolved server-side (most other surfaces carry none). Ambient context
+**surface**: the six frontend handlers have active Bindings to executor
+`matrx-user` in `tool.binding`; Surface defaults include them on
+`matrx-user/chat` and are resolved server-side. There are 132
+`ui.ui_surface` rows for client `matrx-user`; only two have their own
+`tool.surface_defaults` row, while the rest correctly inherit through
+`parent_surface_name` per S4. Browser reads of `tool.definition`,
+`tool.binding`, `tool.executor`, or `tool.surface_defaults` must use
+`.schema("tool")` (or PostgREST's `Accept-Profile: tool` header); unqualified
+names resolve against `public` and fail with `PGRST205`. Ambient context
 (user / route / scope) is seeded separately into the `context` payload.
 
 > **`tasks` moved server-side (2026-07-22).** It used to be in this set, but it
@@ -26,7 +33,9 @@ and resolved server-side (most other surfaces carry none). Ambient context
 > hard-suspended the loop on every task update — a stall that became
 > deterministic whenever a desktop companion (`matrx-local`) was attached. It now
 > runs in-loop in aidream (`aidream/tools/agent_tasks_tool.py`, executor
-> `aidream`) with its two client `tool.binding` rows removed. The client keeps
+> `matrx-ai-core`) with its `matrx-user` Binding removed. `tasks` and `memory`
+> remain advertised on `matrx-user/chat`, but execute on `matrx-ai-core`, so
+> they correctly have no `matrx-user` Binding. The client keeps
 > only the *read* side — `TaskPanel` / the `agent-lists` slice / `agent-task.service.ts`
 > — kept fresh by the Supabase Realtime subscription on `chat.agent_task`. Rule of
 > thumb: a UI-first tool must do genuine client-only work (await a human, render
@@ -117,9 +126,9 @@ This feature exists because:
   tasks + user todos per conversation. Hydrated on mount, kept fresh by
   Supabase Realtime subscriptions.
 
-**Surface binding (server-resolved)**
-- These tools are bound to the `matrx-user/chat` surface in
-  `public.tl_def_surface`. The request declares `client.surface` (route →
+**Surface inclusion (server-resolved)**
+- Surface defaults include these tools on `matrx-user/chat`. The request
+  declares `client.surface` (route →
   surface via `features/surfaces/utils/route-to-surface.ts`) and aidream
   resolves it to this tool set. There is no client capability for this —
   surfaces are data, not capabilities.
@@ -246,11 +255,14 @@ server-side; the same Realtime subscription updates the panel with no delegation
 1. `buildToolInjection` sets `client.surface` from the active route
    (`detectActiveSurface()`) — unless a Surface Simulator override or the
    disable-injection brake is in effect.
-2. aidream resolves `client.surface` → `public.tl_def_surface` and folds the
-   surface's default tools into the turn's tool set. The seven UI-first tools
-   are bound to `matrx-user/chat`, so chat agents get them; surfaces with no
-   bindings (the now-empty `matrx-default/default` base, `agent-builder`,
-   `agent-run`, …) get none.
+2. aidream resolves `client.surface` → `tool.surface_defaults` and folds the
+   surface's default tools into the turn's tool set. The six frontend handlers
+   have active `tool.binding` rows for executor `matrx-user`; `tasks` and `memory`
+   are also advertised on chat but execute on `matrx-ai-core`, so they correctly
+   have no `matrx-user` Binding. Surface defaults are sparse: only two of the
+   132 `matrx-user` surfaces own a defaults row; the rest inherit through
+   `parent_surface_name` per S4. A surface's toolset is resolved from that
+   inheritance chain, not from a supposed surface “binding.”
 3. The wire request to aidream carries just the surface — no per-client
    capability, because the server is surface-agnostic:
    ```jsonc
@@ -277,7 +289,7 @@ server-side; the same Realtime subscription updates the panel with no delegation
   declare the same names; aidream's tool discovery treats them
   identically. Tested via the shared canonical list in
   `tools/names.ts`. Adding a tool name = add it on BOTH sides + update
-  `tl_def`.
+  `tool.definition`.
 - **Resolver registry holds promises, not Redux state.** Cancelling /
   expiring / resolving all go through `ask-resolver-registry.ts`. Each
   ask resolves exactly once.
@@ -309,6 +321,12 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-08-09` — Adopted the canonical tool vocabulary and live schema names.
+  The frontend Executor is `matrx-user`; its six active Bindings are `user`,
+  `update_plan`, `request_user_takeover`, `user_todos`, `scratchpad`, and
+  `storage`. `tasks` and `memory` are offered on `matrx-user/chat` but execute
+  on `matrx-ai-core`. Surface defaults are sparse: 132 `matrx-user` surfaces,
+  two own defaults rows, and the rest inherit through `parent_surface_name`.
 - `2026-07-22` — **`tasks` moved from client-delegated to server-executed.** It
   was a pure `chat.agent_task` write with no client-only work; delegating it
   hard-suspended the loop on every task update, stalling deterministically when a
@@ -404,16 +422,16 @@ server-side; the same Realtime subscription updates the panel with no delegation
 - `2026-05-24` — Removed the `nextjs-surface` client capability — a
   frontend-specific name whose payload (route/scope/admin/permission/theme)
   nothing on the server consumed. The seven UI-first tools now come online
-  purely via the request's `client.surface` → `public.tl_def_surface`, bound
-  to `matrx-user/chat`. The base surface `matrx-default/default` was emptied,
+  purely via the request's `client.surface` → server-resolved Surface defaults
+  on `matrx-user/chat`. The base surface `matrx-default/default` was emptied,
   so tool-less agents and non-chat surfaces (agent-builder/agent-run) no
   longer get auto-attached tools. Provider file + Capability removed from
   both repos; surfaces are now data-only.
-- `2026-05-24` — Tool↔DB reconciliation with matrx-extend (cross-surface
-  `tl_def` drift work). Fixed stale `memory` references to `scratchpad`
+- `2026-05-24` — Registered-tool contract reconciliation with matrx-extend.
+  Fixed stale `memory` references to `scratchpad`
   (the ephemeral client tool was renamed; `memory` is reserved for the
   persistent server-side semantic tool). Tightened `scratchpadArgsSchema.value`
-  from `z.unknown()` to `z.string()` to match `tl_def` exactly (matrx-extend
+  from `z.unknown()` to `z.string()` to match `tool.definition` exactly (matrx-extend
   parity). `scripts/check-tool-db-drift.ts` now also diffs each parameter's
   `default` (the last piece of the shared "what match means" spec). Verified
   the `user` tool honors the always-append-"Other" escape, the

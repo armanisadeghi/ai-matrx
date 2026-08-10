@@ -262,6 +262,15 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/performance",
+      label: "Site performance",
+      description:
+        "PageSpeed testing coverage, mobile score distribution, mobile/desktop percentiles, traffic-qualified fix priorities, and change leaders.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/performance/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/brands/[brandId]/sites/[siteId]/backlinks",
       label: "Backlink intelligence",
       description:

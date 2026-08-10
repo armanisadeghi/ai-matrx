@@ -51,7 +51,7 @@ export function readinessBucketOf(
 export interface SurfaceWithStats extends UiSurfaceRow {
   /**
    * Tools force-included on this surface (length of
-   * `tool_surface_defaults.always_include_tools` for this surface, plus
+   * `tool.surface_defaults.always_include_tools` for this surface, plus
    * tools inside any bundle in `always_include_bundles`). When 0 the
    * surface has no opinions and inherits everything from its parent chain.
    */
@@ -310,7 +310,7 @@ export async function bulkDeleteSurfaces(names: string[]): Promise<void> {
 
 /**
  * Renames a surface in place. Backed by ON UPDATE CASCADE on the FK
- * targets (tool_ui, ui_surface_value, tool_surface_defaults,
+ * targets (tool.ui, ui.ui_surface_value, tool.surface_defaults,
  * and self-FK parent_surface_name), so any references follow automatically.
  * Single UPDATE statement.
  */
@@ -329,8 +329,8 @@ export async function renameSurface(
 export interface SurfaceUsage {
   /**
    * Tools force-included on this surface. After the 2026 refactor, this is
-   * the set of `tool_def` rows whose names appear in
-   * `tool_surface_defaults.always_include_tools` for this surface — plus
+   * the set of `tool.definition` rows whose names appear in
+   * `tool.surface_defaults.always_include_tools` for this surface — plus
    * tools resolved through `always_include_bundles`.
    */
   tools: {
@@ -578,9 +578,9 @@ export async function listAgentBindings(surfaceName: string) {
 /**
  * Tools force-included on a surface (admin overview).
  *
- * Reads `tool_surface_defaults.always_include_tools` and joins to `tool_def`
+ * Reads `tool.surface_defaults.always_include_tools` and joins to `tool.definition`
  * by name. `arg_defaults` carries the tool-specific literal-jsonb entry from
- * `tool_surface_defaults.arg_defaults`.
+ * `tool.surface_defaults.arg_defaults`.
  */
 export async function listToolBindings(surfaceName: string) {
   const defaultsRes = await sb()
@@ -617,7 +617,7 @@ export async function listToolBindings(surfaceName: string) {
 }
 
 /**
- * The full `tool_surface_defaults` row for a surface — null when the surface
+ * The full `tool.surface_defaults` row for a surface — null when the surface
  * has no opinions yet (no row exists until the first edit).
  */
 export async function getSurfaceToolDefaults(
@@ -634,7 +634,7 @@ export async function getSurfaceToolDefaults(
 }
 
 /**
- * Upsert the surface's `tool_surface_defaults` row (PK = surface_name).
+ * Upsert the surface's `tool.surface_defaults` row (PK = surface_name).
  * Creates the row on first edit, then patches columns in place. Returns the
  * row as persisted so editors can replace local state without a refetch.
  */

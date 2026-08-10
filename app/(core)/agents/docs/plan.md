@@ -222,7 +222,7 @@ Extract the inline mapping from `fetchAgentVersionSnapshot` in `thunks.ts` into 
 // This thunk runs client-side — never import createClient from server
 // Skip if already loaded — interaction-triggered, no TTL needed
 if (getState().tools.status === 'succeeded') return
-// Query: supabase.from('tools').select('*').eq('is_active', true).order('category').order('name')
+// Query: supabase.schema('tool').from('definition').select('*').eq('is_active', true).order('category').order('name')
 // Same query as ToolsService.fetchTools() — no service class needed
 ```
 

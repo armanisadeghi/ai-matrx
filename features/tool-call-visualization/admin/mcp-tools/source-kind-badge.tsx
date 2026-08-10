@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * SourceKindBadge — color-coded indicator for `tool_def.source_kind`.
+ * SourceKindBadge — color-coded indicator for `tool.definition.source_kind`.
  *
  * Post-2026 tool-system refactor, the old `source_app` derived-from-path
  * field is gone. Tools now declare provenance explicitly via the `source_kind`
- * enum on `tool_def`. Four values, each rendered with its own semantic color.
+ * enum on `tool.definition`. Four values, each rendered with its own semantic color.
  */
 
 import React from "react";

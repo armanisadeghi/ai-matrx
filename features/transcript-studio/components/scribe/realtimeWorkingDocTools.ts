@@ -24,7 +24,7 @@ import {
   type RealtimeClientToolContext,
 } from "@/features/voice-agent/runtime/client-tool-registry";
 
-/** JSON-Schema parameter shapes (advisory — these match what the backend tool_def stores). */
+/** JSON-Schema parameter shapes (advisory — these match what tool.definition stores). */
 export const WORKING_DOC_TOOL_NAMES = {
   append: "scribe_working_doc_append",
   heading: "scribe_working_doc_append_heading",

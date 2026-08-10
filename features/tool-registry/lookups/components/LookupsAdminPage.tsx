@@ -64,7 +64,7 @@ export function LookupsAdminPage() {
         <DbIcon className="h-4 w-4 text-muted-foreground" />
         <h1 className="text-sm font-medium">Tool Registry · Lookups</h1>
         <span className="text-xs text-muted-foreground">
-          ui_client · ui_surface · tool_executor
+          ui.ui_client · ui.ui_surface · tool.executor
         </span>
       </div>
       <Tabs
@@ -684,7 +684,7 @@ function UiSurfaceDialog({
 
 // ─── Tool Executors ──────────────────────────────────────────────────────────
 //
-// Post-2026 refactor: "executor kind" no longer exists. `tool_executor` rows
+// Post-2026 refactor: "executor kind" no longer exists. `tool.executor` rows
 // are first-class capability providers. Dropped from the old schema:
 // `is_client_side`, `client_name`, `payload_schema`, `payload_validator_path`.
 // Added: `parent_executor_name` (FK to self), `mcp_server_id` (FK to

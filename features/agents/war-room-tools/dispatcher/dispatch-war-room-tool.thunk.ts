@@ -1,11 +1,12 @@
 /**
  * dispatchWarRoomTool — parallels `dispatchUiFirstTool`, but routes
- * `tool_delegated` events for the War Room write tools to their registry-bound
+ * `tool_delegated` events for the War Room write tools to their targeted
  * handler, GATED behind explicit human approval (HITL).
  *
  * Flow on every `tool_delegated` event with a war-room tool_name:
- *   1. Resolve the bound tile from the conversation (binding-registry). No
- *      binding ⇒ submit a `no_thread_bound` error (never guess a tile to edit).
+ *   1. Resolve the target thread from the conversation
+ *      (`thread-target-registry`). No target ⇒ submit a `no_thread_target`
+ *      error (never guess a thread to edit).
  *   2. Look up the schema + handler from the registry.
  *   3. Validate args via Zod. On failure: submit a `schema` error result.
  *   4. Flip the instance to `paused` — the honest "waiting on the user" signal
@@ -40,7 +41,7 @@ import { selectIsThreadAutoApproved } from "@/features/war-room/redux/selectors"
 import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
 import { getWarRoomToolEntry } from "../tools/registry";
 import { isWarRoomToolName } from "../tools/names";
-import { getThreadForConversation } from "../binding-registry";
+import { getWarRoomThreadTarget } from "../thread-target-registry";
 import { requestWarRoomApproval, cascadeAutoApprove } from "./approval";
 import { buildApprovalChange } from "./summary";
 
@@ -132,13 +133,13 @@ export const dispatchWarRoomTool = createAsyncThunk<
       return;
     }
 
-    const threadId = getThreadForConversation(conversationId);
+    const threadId = getWarRoomThreadTarget(conversationId);
     if (!threadId) {
-      // No live War Room panel is bound to this conversation. Refuse rather
-      // than guess — editing the wrong tile is far worse than a no-op.
+      // No live War Room panel registered a target for this conversation.
+      // Refuse rather than guess — editing the wrong thread is far worse.
       fail(
-        "no_thread_bound",
-        "No War Room tile is bound to this conversation; open the tile's Agent panel to enable editing.",
+        "no_thread_target",
+        "No War Room thread target is registered for this conversation; open the thread's Agent panel to enable editing.",
       );
       return;
     }
@@ -171,7 +172,7 @@ export const dispatchWarRoomTool = createAsyncThunk<
     );
     const scope = change.autoApprove?.scope ?? null;
 
-    // Run the bound writer once approval is settled. Returns true on success so
+    // Run the targeted writer once approval is settled. Returns true on success so
     // the auto-approve path fires its toast only when the write actually landed.
     const runApprovedHandler = async (): Promise<boolean> => {
       const startedAt = performance.now();

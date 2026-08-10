@@ -4,7 +4,7 @@
  * conversation delete (CASCADE).
  *
  * This is DISTINCT from the persistent, semantic `memory` tool (server-side,
- * source_app=matrx_ai: recall/search/store/update/forget). They are NOT the same
+ * executor matrx-ai-core: recall/search/store/update/forget). They are NOT the same
  * thing and must never share a name — that collision is exactly what this rename
  * fixed.
  */

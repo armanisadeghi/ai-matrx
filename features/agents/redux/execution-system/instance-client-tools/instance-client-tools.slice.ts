@@ -1,8 +1,11 @@
 /**
  * Instance Client Tools Slice
  *
- * Manages which tools the client will handle (instead of the server)
- * for each instance. When the model calls one of these tools, the server
+ * Manages Arming: which tools are live for one conversation because the
+ * mounted component holds the UI state they need. The slice is serialized to
+ * wire field `client_tools` and consumed server-side in `tool_merge.py`.
+ * Arming is not a Binding and is unrelated to which Client is active.
+ * When the model calls one of these tools, the server
  * emits a tool_delegated event and HARD-SUSPENDS the loop (the stream ends);
  * it then waits durably for the client's POST /tool_results + /resume.
  *

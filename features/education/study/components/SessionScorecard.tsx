@@ -24,7 +24,7 @@ import {
   summarizeSessionAttempts,
   formatSessionDuration,
 } from "../utils/summarizeSessionAttempts";
-import { ScoreRing } from "./ScoreRing";
+import { ScoreRing } from "@/components/official/ScoreRing";
 
 function verdictFor(accuracyPct: number | null): {
   label: string;

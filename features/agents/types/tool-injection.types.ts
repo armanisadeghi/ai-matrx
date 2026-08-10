@@ -154,7 +154,7 @@ export interface ClientContext {
   /**
    * DB-registered surface name (one row in `ui.ui_surface`). The server
    * resolves it to a default tool set via `tool_resolve_for_request` +
-   * `tool_surface_defaults.always_include_tools/bundles` with inheritance
+   * `tool.surface_defaults.always_include_tools/bundles` with inheritance
    * from `matrx-default/default`, and to template-substitution
    * variables via `ui.ui_surface_value`. Unknown name → 422.
    *

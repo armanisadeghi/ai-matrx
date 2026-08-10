@@ -117,7 +117,7 @@ const ENABLED_CATEGORY = "__enabled__";
 const BUNDLES_CATEGORY = "__bundles__";
 
 /**
- * Bundle "lister" tools are real `tool_def` rows named `bundle:list_<name>`.
+ * Bundle "lister" tools are real `tool.definition` rows named `bundle:list_<name>`.
  * They represent a whole bundle, not a single capability, so they're surfaced
  * exclusively through the dedicated Bundles category — never mixed into normal
  * category browsing (where 38 of them masquerading as an "mcp" category is what

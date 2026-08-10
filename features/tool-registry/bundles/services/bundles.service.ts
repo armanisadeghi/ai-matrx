@@ -58,7 +58,7 @@ export async function getBundle(id: string): Promise<BundleRow> {
  * A bundle shaped for the agent / surface tool pickers.
  *
  * A bundle is "addable" to an agent (or a surface) by writing one or more
- * `tool_def` UUIDs into the agent's `tools` array. Which UUIDs depends on the
+ * `tool.definition` UUIDs into the agent's `tools` array. Which UUIDs depends on the
  * bundle's shape:
  *
  *  - **Lister bundle** (`listerToolId` set): adding the bundle = adding the
@@ -67,7 +67,7 @@ export async function getBundle(id: string): Promise<BundleRow> {
  *    and hot-swaps them in for the rest of the run. This is the context-saving
  *    path — N member tools cost one tool slot until actually needed.
  *  - **Static bundle** (`listerToolId` null, e.g. `agent-core`): adding the
- *    bundle = adding every member `tool_def` UUID directly (no lister).
+ *    bundle = adding every member `tool.definition` UUID directly (no lister).
  *
  * `contributedToolIds` is exactly the set to add/remove for the agent, so the
  * picker never has to branch on shape.
@@ -96,7 +96,7 @@ export interface AgentBundleOption {
   members: BundleMemberTool[];
   /** "lister" → one lister tool the model expands; "static" → members added directly. */
   loadMode: "lister" | "static";
-  /** The `tool_def` UUID(s) to toggle on the agent for this bundle. */
+  /** The `tool.definition` UUID(s) to toggle on the agent for this bundle. */
   contributedToolIds: string[];
 }
 

@@ -2,13 +2,14 @@
  * War Room INLINE tool definitions — the model-facing `{name, description,
  * input_schema}` for each war-room tool.
  *
- * These are emitted as `InlineToolSpec` (`kind:"inline"`) on the agent request
- * (see build-tool-injection.ts). Inline specs are "the caller supplies the
- * schema directly … always client-delegated" — which is exactly right here:
- * the `war_room_*` names are NOT in the server's tool registry, so declaring
- * them inline is what makes the agent able to call them WITHOUT any server-side
- * registration. The server adds them to the model's tool list with the supplied
- * JSON Schema and emits `tool_delegated` when one is called.
+ * These are currently emitted as Inline tools (`kind:"inline"`) on the agent
+ * request and armed per conversation via wire `client_tools` (see
+ * build-tool-injection.ts). Inline tools are permanent and first-class, but
+ * these definitions existed before the request and ship in this repo, so this
+ * is a known durability-rule violation: they SHOULD be Registered tools in
+ * `tool.definition`. Registration is deliberately deferred to a separate
+ * migration; this comment documents the current deviation instead of treating
+ * it as the intended design.
  *
  * The JSON Schemas are hand-written (small, dependency-free, full control over
  * the model-facing copy) and MUST stay in lockstep with the Zod validators in

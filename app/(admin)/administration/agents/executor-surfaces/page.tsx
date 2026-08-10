@@ -3,7 +3,7 @@ import { ExecutorSurfacesContainer } from "@/features/tool-registry/executor-sur
 export const metadata = {
   title: "Tool Runtimes | Tool Registry | Administration",
   description:
-    "Tools per runtime — for each runtime (matrx-extend.browser, mcp.*, server:*), see which tools are available and which auto-load on launch.",
+    "Tools per runtime — for each runtime (matrx-ai-core, aidream, matrx-local, chrome-extension, matrx-user), see which tools are available and which auto-load on launch.",
 };
 
 export default function Page() {

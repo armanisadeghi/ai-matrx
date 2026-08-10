@@ -1,6 +1,6 @@
 # Agent Creation — Model & Tool IDs
 
-When building an agent you need `model_id` (one UUID) and `tools` (array of UUIDs). Use the tables below directly — don't query `ai_model` or `tool_def` to discover them.
+When building an agent you need `model_id` (one UUID) and `tools` (array of UUIDs). Use the tables below directly — don't query `ai_model` or the full `tool.definition` catalog to discover them.
 
 ## Models — `agx_agent.model_id`
 
@@ -21,7 +21,7 @@ Need one not listed: `SELECT id, name, common_name FROM ai_model WHERE is_deprec
 
 ## Tools — `agx_agent.tools[]`
 
-Store these `tool_def.id` UUIDs (not names). The tool descriptions are already in your toolset — this is just the id lookup.
+Store these `tool.definition.id` UUIDs (not names). The tool descriptions are already in your toolset — this is just the id lookup.
 
 | Tool | id |
 |---|---|
@@ -44,4 +44,4 @@ Store these `tool_def.id` UUIDs (not names). The tool descriptions are already i
 | `skill_list` | `6035a413-45fa-4a08-ad7c-a5aa1ecac412` |
 | `skill_get` | `7fc5dbbd-8f43-4b14-9913-c378c850163b` |
 
-Need one not listed: `SELECT id, name FROM tool_def WHERE is_active AND name IN ('…')`. MCP integrations are `bundle:list_<vendor>` rows.
+Need one not listed: `SELECT id, name FROM tool.definition WHERE is_active AND name IN ('…')`. MCP integrations are `bundle:list_<vendor>` rows.

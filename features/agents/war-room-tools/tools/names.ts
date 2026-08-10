@@ -6,8 +6,8 @@
  *     `isUiFirstToolName` for the chat ui-first tools and `isWidgetActionName`
  *     for widget actions).
  *   - delegated dispatch of these tools when the war-room agent conversation
- *     has armed them (per-conversation registration in `instanceClientTools`,
- *     done by `ThreadAgentPanel` — see `binding-registry.ts`).
+ *     has armed them (per-conversation state in `instanceClientTools`,
+ *     owned by `ThreadAgentPanel` — see `thread-target-registry.ts`).
  *   - the dispatcher registry in `tools/registry.ts`.
  *
  * These names are NAMESPACED with the `war_room_` prefix so they never collide

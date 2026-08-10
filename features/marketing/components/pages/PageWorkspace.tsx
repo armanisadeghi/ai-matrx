@@ -119,7 +119,7 @@ import { normalizeRoutePath } from "@/features/marketing/lib/push-to-cms";
 import { LinksPlan } from "@/features/marketing/components/pages/cards/LinksPlanCard";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
-import { PagespeedCard } from "@/features/marketing/components/pages/cards/PagespeedCard";
+import { PagePerformanceCard } from "@/features/marketing/components/pages/cards/PagePerformanceCard";
 import { PageAnalyticsCard } from "@/features/marketing/components/pages/cards/PageAnalyticsCard";
 import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
 import { useResolvedKeyword } from "@/features/marketing/seo/keyword/hooks";
@@ -251,7 +251,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   // law) — these share react-query caches with the cards below.
   const screenshots = usePageScreenshots(site.id, pageId);
   const sitemapMemberships = usePageSitemapMemberships(site.id, pageId);
-  const pagespeedRows = usePagePerformance(site.id, pageId);
+  const pagePerformance = usePagePerformance(site.id, pageId);
   const analyticsRows = usePageWebAnalytics(site.id, pageId);
   // Lifted so the surface scope emits the same artifact the card renders.
   const analyzer = usePageAnalyzer(pageId, site.organization_id);
@@ -341,20 +341,16 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           source: "analyzer" as const,
           detail: "inferred primary",
         },
-        ...analyzerArtifact.supported_keywords.map(
-          (k): KeywordSuggestion => ({
-            phrase: k.phrase,
-            source: "analyzer",
-            detail: "supporting",
-          }),
-        ),
-        ...analyzerArtifact.discovered_keywords.map(
-          (k): KeywordSuggestion => ({
-            phrase: k.phrase,
-            source: "analyzer",
-            detail: "discovered",
-          }),
-        ),
+        ...analyzerArtifact.supported_keywords.map((k): KeywordSuggestion => ({
+          phrase: k.phrase,
+          source: "analyzer",
+          detail: "supporting",
+        })),
+        ...analyzerArtifact.discovered_keywords.map((k): KeywordSuggestion => ({
+          phrase: k.phrase,
+          source: "analyzer",
+          detail: "discovered",
+        })),
       ]
     : [];
   const searchPerformance = data.searchPerformance;
@@ -373,17 +369,24 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       snapshot,
       openFindings: data.openFindings,
       markdown: markdownText,
-      gscMetrics: searchPerformance.in_gsc
+      gscMetrics: pagePerformance.data?.gsc.has_data
         ? {
-            clicks: searchPerformance.gsc_clicks_28d ?? 0,
-            impressions: searchPerformance.gsc_impressions_28d ?? 0,
-            ctr: searchCtr,
-            position: searchPerformance.gsc_position_28d,
+            clicks: pagePerformance.data.gsc.clicks ?? 0,
+            impressions: pagePerformance.data.gsc.impressions ?? 0,
+            ctr: pagePerformance.data.gsc.ctr ?? null,
+            position: pagePerformance.data.gsc.position ?? null,
           }
-        : undefined,
+        : searchPerformance.in_gsc
+          ? {
+              clicks: searchPerformance.gsc_clicks_28d ?? 0,
+              impressions: searchPerformance.gsc_impressions_28d ?? 0,
+              ctr: searchCtr,
+              position: searchPerformance.gsc_position_28d,
+            }
+          : undefined,
       screenshots: screenshots.data ?? null,
       analyzerArtifact: analyzer.state.result?.artifact ?? null,
-      pagespeedRows: pagespeedRows.data ?? null,
+      pagePerformance: pagePerformance.data ?? null,
       analyticsRows: analyticsRows.data ?? null,
       sitemapMemberships: sitemapMemberships.data ?? null,
       pageScore: data.score,
@@ -858,10 +861,12 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     {
       key: "performance",
       current: (
-        <div className="grid gap-3 @3xl:grid-cols-2 @6xl:grid-cols-3">
-          <PageSearchConsoleCard page={page} />
-          <PagespeedCard page={page} />
-          <PageAnalyticsCard page={page} />
+        <div className="grid gap-3">
+          <PagePerformanceCard page={page} />
+          <div className="grid gap-3 @3xl:grid-cols-2">
+            <PageSearchConsoleCard page={page} />
+            <PageAnalyticsCard page={page} />
+          </div>
         </div>
       ),
       plan: (

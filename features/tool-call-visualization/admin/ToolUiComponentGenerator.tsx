@@ -72,7 +72,7 @@ interface GeneratorProps {
     tags?: string[] | null;
     icon?: string | null;
     is_active?: boolean | null;
-    /** Matches `tool_def.version` in the database (integer). */
+    /** Matches `tool.definition.version` in the database (integer). */
     version?: number;
   }>;
   onComplete?: () => void;

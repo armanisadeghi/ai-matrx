@@ -99,10 +99,15 @@
 
 ### 1.3 Database
 
-10 rows seeded in `public.tools` with `tag=widget-capable`, `source_app=matrx_ai`, `semver=1.0.0`. Verified:
+10 rows live in `tool.definition` with `tag=widget-capable` and `semver=1.0.0`,
+each actively bound to executor `matrx-ai-core` in `tool.binding`. Verified:
 
 ```sql
-SELECT name FROM public.tools WHERE 'widget-capable' = ANY(tags) ORDER BY name;
+SELECT d.name, b.executor_name
+FROM tool.definition d
+JOIN tool.binding b ON b.tool_id = d.id AND b.is_active
+WHERE 'widget-capable' = ANY(d.tags)
+ORDER BY d.name;
 -- Returns exactly the 10 widget_* names matching WIDGET_ACTION_NAMES
 ```
 
@@ -189,15 +194,21 @@ Trivial to add under the same contract once a use case emerges:
 - `widget_undo` / `widget_redo` — history stack integration
 - `widget_focus` — focus management
 
-Each: add a row in the SQL seed, add an action method to `WidgetHandle`, add an entry to `WIDGET_TOOL_NAME_TO_HANDLE_METHOD`, add to `WIDGET_ACTION_NAMES`. Python implementation at `matrx_ai.tools.implementations.widgets.<name>`.
+Each: add a `tool.definition` row plus its `matrx-ai-core` `tool.binding`, add an
+action method to `WidgetHandle`, add an entry to
+`WIDGET_TOOL_NAME_TO_HANDLE_METHOD`, and add it to `WIDGET_ACTION_NAMES`.
 
 ### 3.3 Python implementations
-The 10 `function_path`s point to `matrx_ai.tools.implementations.widgets.*` which the Python team needs to implement. Until then, widget tools work entirely client-delegated (the server never needs to execute them server-side because `client_tools` catches them). If a non-widget-capable caller ever invokes a `widget_*` tool (hypothetical — nothing does this today), the server would need the implementation.
+All ten tools have active `tool.binding` rows for `matrx-ai-core`. Implementation
+location is code-owned and deliberately absent from `tool.definition`; the DB
+stores the contract and executor identity only. Widget-capable requests still
+delegate them through `client_tools`, while other callers route them to
+`matrx-ai-core`.
 
 ### 3.4 Sub-agent handle inheritance
 A sub-agent (`origin: "sub-agent"`) spawned by a parent conversation does **not** inherit the parent's `widgetHandleId`. This is intentional: sub-agents run inside their own conversation, and the parent's widget isn't necessarily a sensible target for sub-agent actions. If we need explicit propagation later, add `shareWidgetHandleWithSubAgents?: boolean` to the invocation or a per-sub-agent override.
 
-### 3.5 `execution_side` column on `public.tools`
+### 3.5 `execution_side` column on `tool.definition`
 The CLIENT_SIDE_TOOLS.md open question ("mark DB tools as client-handled permanently?") is mostly obviated by the per-turn derivation — the frontend derives `client_tools` from the handle anyway. Still worth considering if we later want DB tools outside the `widget_*` family that should always delegate. Deferred.
 
 ### 3.6 Drift / conflict detection
@@ -225,8 +236,10 @@ NODE_OPTIONS="--max-old-space-size=8192" pnpm tsc --noEmit
 
 # DB verification
 # (via Supabase MCP against project txzxabzwovsujtloxrus)
-SELECT name, category, function_path FROM public.tools
-WHERE 'widget-capable' = ANY(tags) ORDER BY name;
+SELECT d.name, d.category, b.executor_name
+FROM tool.definition d
+JOIN tool.binding b ON b.tool_id = d.id AND b.is_active
+WHERE 'widget-capable' = ANY(d.tags) ORDER BY d.name;
 # Expected: 10 rows
 
 # Grep for any remaining old references (should be zero in code, only docs)

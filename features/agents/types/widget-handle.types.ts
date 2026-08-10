@@ -11,7 +11,7 @@
  * `tool_delegated`; the dispatcher routes each to the handle method whose
  * name is mapped in `WIDGET_TOOL_NAME_TO_HANDLE_METHOD`.
  *
- * Ten canonical tools live in `public.tools` (category: text or productivity,
+ * Ten canonical tools live in `tool.definition` (category: text or productivity,
  * tag: `widget-capable`). See `WIDGET_TOOLS_SEED.sql` for the authoritative
  * schemas and `CLIENT_SIDE_TOOLS.md` for the stream/POST contract.
  */
@@ -38,7 +38,7 @@ export type WidgetActionName = (typeof WIDGET_ACTION_NAMES)[number];
 // =============================================================================
 // Per-action payload types — AUTHOR-FACING
 //
-// These shapes mirror the `parameters` column of each tool in public.tools
+// These shapes mirror the `parameters` column of each tool in tool.definition
 // exactly. Handle methods receive one of these payloads; the discriminated
 // union below is internal to the dispatcher only.
 // =============================================================================

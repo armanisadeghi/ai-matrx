@@ -2,12 +2,14 @@
 /**
  * Tool-drift gate — the matrx-frontend half of the unified code↔DB system.
  *
- * The DATABASE (`public.tool_def`) is the single source of truth. This gate proves
- * the ACTUAL CODE matches it: it serializes the REAL Zod `argsSchema` of every
+ * `tool.definition` is the source of truth for REGISTERED tool contracts. This
+ * gate proves the ACTUAL CODE for this registered set matches it: it serializes
+ * the REAL Zod `argsSchema` of every
  * UI-first tool — the exact schema the dispatcher validates against at
  * features/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk.ts
- * (`entry.schema.safeParse`) — and diffs it against tool_def.parameters. There is
- * NO intermediate file: the schema we check is the schema that runs.
+ * (`entry.schema.safeParse`) — and diffs it against
+ * `tool.definition.parameters`. There is NO intermediate file: the schema we
+ * check is the schema that runs.
  *
  * What it checks per tool — the shared "what match means" spec across all three
  * surfaces (aidream, matrx-extend, matrx-frontend; see TOOL_SOURCE_OF_TRUTH.md):
@@ -19,6 +21,11 @@
  * diff them against (checking them would be the forbidden DB→DB compare, Rule 5).
  *
  * Descriptions are NOT checked — they are not code; they live only in the DB.
+ * Runtime ownership is separate: these six tools have active `tool.binding` rows
+ * for executor `matrx-user`, and `tool.surface_defaults` advertises them on
+ * `matrx-user/chat`. `tasks` and `memory` are also advertised there but execute on
+ * `matrx-ai-core`, so they correctly have no `matrx-user` binding and no frontend
+ * Zod schema in this gate.
  *
  *   pnpm gate:tools
  *
@@ -27,9 +34,14 @@
  *   1  drift found (code ≠ DB)
  *   2  unexpected error / DB fetch failed
  *
- * When it fires: the DB is the source of truth, so bring the handler's Zod
- * (features/agents/ui-first-tools/tools/schemas.ts) to match tool_def — or, if the
- * DB itself is wrong, change it (admin API / migration), then match code. Never
+ * Inline tools are the other permanent, first-class path and have no DB row;
+ * this registered-tool gate intentionally does not inspect them. Durability is
+ * the divider: a tool that existed before the request belongs in
+ * `tool.definition`; a tool authored at request time belongs inline.
+ *
+ * When it fires: reconcile the registered contract deliberately. Bring the
+ * handler's Zod schema to match `tool.definition`, or if the registered row is
+ * wrong, change it through the admin API / migration and then match code. Never
  * push code→DB silently.
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -99,8 +111,7 @@ function loadEnv(): { url: string; key: string } | null {
 
 async function fetchDbRows(url: string, key: string, names: string[]): Promise<DbToolRow[]> {
   const inList = names.map((n) => encodeURIComponent(n)).join(",");
-  // `tool_def` moved out of `public` into the `tool` schema (tool.definition) during the
-  // 2026 schema reorg; reach it via the tool profile, not the old public path.
+  // `tool.definition` lives in the `tool` schema; reach it via the tool profile.
   const endpoint = `${url.replace(/\/$/, "")}/rest/v1/definition?name=in.(${inList})&select=name,parameters`;
   const res = await fetch(endpoint, {
     headers: {
@@ -246,7 +257,7 @@ async function main(): Promise<void> {
   const DIM = isTTY ? "\x1b[2m" : "";
   const RESET = isTTY ? "\x1b[0m" : "";
 
-  console.log(`Tool-DB drift check — matrx-frontend UI-first Zod ↔ public.tool_def`);
+  console.log(`Tool-DB drift check — matrx-frontend UI-first Zod ↔ tool.definition`);
   console.log(`  code tools (real Zod): ${names.length}   DB rows matched: ${dbByName.size}`);
   console.log("");
 
@@ -262,7 +273,7 @@ async function main(): Promise<void> {
   console.log("");
 
   if (missingInDb.length) {
-    console.log(`${RED}✗ In code but MISSING in tool_def (${missingInDb.length}):${RESET}`);
+    console.log(`${RED}✗ In code but MISSING in tool.definition (${missingInDb.length}):${RESET}`);
     for (const n of missingInDb) console.log(`    ${DIM}-${RESET} ${n}`);
     console.log("");
   }
@@ -274,8 +285,8 @@ async function main(): Promise<void> {
     }
     console.log("");
   }
-  console.log(`${DIM}Fix path — the DATABASE (public.tool_def) is the source of truth:${RESET}`);
-  console.log(`${DIM}  - Bring the Zod in features/agents/ui-first-tools/tools/schemas.ts to match tool_def.${RESET}`);
+  console.log(`${DIM}Fix path — the DATABASE (tool.definition) is the source of truth:${RESET}`);
+  console.log(`${DIM}  - Bring the Zod in features/agents/ui-first-tools/tools/schemas.ts to match tool.definition.${RESET}`);
   console.log(`${DIM}  - If the DB itself is wrong, change it (admin API / migration), then match code.${RESET}`);
   process.exit(1);
 }

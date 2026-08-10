@@ -6,13 +6,13 @@
  * See `docs/official/tool_system_rules.md` for the authoritative model. The
  * two relevant tables:
  *
- *   `tool_executor` (PK = name)     — addressable capability provider, equal
+ *   `tool.executor` (PK = name)     — addressable capability provider, equal
  *                                     citizen. Names like `matrx-ai-core`,
  *                                     `aidream`, `matrx-local`,
  *                                     `chrome-extension`, `matrx-user`, or
  *                                     `mcp.<slug>`. Hierarchy via
  *                                     `parent_executor_name` self-FK.
- *   `tool_binding` (PK = tool_id, executor_name) — pure M2M. Columns are
+ *   `tool.binding` (PK = tool_id, executor_name) — pure M2M. Columns are
  *                  exactly: `tool_id`, `executor_name`, `is_active`,
  *                  `created_at`, `updated_at`. Doctrine R1: nothing else,
  *                  ever.
@@ -32,9 +32,9 @@ export type ToolExecutorRow = ToolTables["executor"]["Row"];
 export type ToolBindingRow = ToolTables["binding"]["Row"];
 export type ToolDefRow = ToolTables["definition"]["Row"];
 
-/** A `tool_executor` row plus aggregate counts used in the master list. */
+/** A `tool.executor` row plus aggregate counts used in the master list. */
 export interface ExecutorWithStats extends ToolExecutorRow {
-  /** Total `tool_binding` rows pointing at this executor (active and inactive). */
+  /** Total `tool.binding` rows pointing at this executor (active and inactive). */
   boundCount: number;
   /** Subset where binding.is_active = false. */
   inactiveBindingCount: number;
@@ -42,7 +42,7 @@ export interface ExecutorWithStats extends ToolExecutorRow {
   isMcp: boolean;
 }
 
-/** A `tool_binding` row joined to its `tool_def` parent. */
+/** A `tool.binding` row joined to its `tool.definition` parent. */
 export interface ExecutorBindingRow {
   tool_id: string;
   executor_name: string;
@@ -55,7 +55,7 @@ export interface ExecutorBindingRow {
   updated_at: string;
 }
 
-/** A `tool_def` row available to bind (not yet bound to this executor). */
+/** A `tool.definition` row available to bind (not yet bound to this executor). */
 export interface UnboundToolRow {
   id: string;
   name: string;
@@ -70,10 +70,10 @@ const sb = () => createClient();
 // ─── Master list: executors with binding counts ──────────────────────────────
 
 /**
- * List every `tool_executor` row plus aggregate counts of its bindings.
+ * List every `tool.executor` row plus aggregate counts of its bindings.
  *
  * Two parallel queries (executors + all-bindings), then group in-memory.
- * The `tool_binding` table is small (~300 rows) and this avoids needing an
+ * The `tool.binding` table is small (~300 rows) and this avoids needing an
  * RPC just for counts.
  */
 export async function listExecutorsWithStats(): Promise<ExecutorWithStats[]> {
@@ -105,7 +105,7 @@ export async function listExecutorsWithStats(): Promise<ExecutorWithStats[]> {
 
 // ─── Per-executor bindings ───────────────────────────────────────────────────
 
-/** All `tool_binding` rows for an executor, joined to their parent `tool_def`. */
+/** All `tool.binding` rows for an executor, joined to their parent `tool.definition`. */
 export async function listBindingsForExecutor(
   executorName: string,
 ): Promise<ExecutorBindingRow[]> {
@@ -148,9 +148,9 @@ export async function listBindingsForExecutor(
 // ─── Per-executor available (unbound) tools ──────────────────────────────────
 
 /**
- * `tool_def` rows that are NOT yet bound to this executor.
+ * `tool.definition` rows that are NOT yet bound to this executor.
  *
- * The catalog is ~245 rows and `tool_binding` is ~300, so we fetch both,
+ * The catalog is ~245 rows and `tool.binding` is ~300, so we fetch both,
  * build a Set of bound tool_ids, and filter client-side. Returns ALL tools
  * (active and inactive) so admins can intentionally bind inactive ones; the
  * caller can filter further if desired.

@@ -41,9 +41,10 @@ flowchart LR
 
 ## The 10 canonical widget_* tools
 
-Seeded in `public.tools` via
+Seeded in `tool.definition` via
 [`WIDGET_TOOLS_SEED.sql`](../components/tools-management/WIDGET_TOOLS_SEED.sql).
-All ten share: `source_app=matrx_ai`, `tag=widget-capable`,
+All ten are bound to executor `matrx-ai-core` through `tool.binding` and share
+`tag=widget-capable`,
 `annotations=[destructiveHint:true, idempotentHint:false]`, output schema
 `{ok, applied?, reason?, message?}`.
 
@@ -60,8 +61,8 @@ All ten share: `source_app=matrx_ai`, `tag=widget-capable`,
 | `widget_attach_media` | productivity | `url`, `mimeType`, `title?`, `alt?`, `position?` | `onAttachMedia` |
 | `widget_create_artifact` | productivity | `kind`, `data` | `onCreateArtifact` |
 
-Python implementations live at `matrx_ai.tools.implementations.widgets.*`
-(owned by the Python team; same schemas as the DB rows).
+The Python implementations execute through `matrx-ai-core` (same schemas as
+the `tool.definition` rows); code location is deliberately not stored in the DB.
 
 ## Writing a widget
 

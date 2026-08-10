@@ -356,6 +356,26 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
+    // Expertise Packs — the expert's rulebooks; desks compile from them.
+    label: "Expertise",
+    href: "/expertise",
+    iconName: "BookOpen",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description:
+      "Your expertise as a rulebook — rules the AI enforces exactly your way",
+    color: "violet",
+    children: [
+      {
+        label: "All Packs",
+        href: "/expertise",
+        iconName: "List",
+        exact: true,
+      },
+    ],
+  },
+  {
     // Group parent — notes & cloud documents.
     label: "Docs",
     href: "/notes",

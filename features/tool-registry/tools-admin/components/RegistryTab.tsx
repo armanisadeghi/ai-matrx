@@ -327,7 +327,7 @@ function BindingsSection({ toolId }: { toolId: string }) {
   );
 }
 
-// ─── Surfaces (now derived from tool_surface_defaults.always_include_*) ──────
+// ─── Surfaces (now derived from tool.surface_defaults.always_include_*) ─────
 
 function SurfacesSection({ toolId }: { toolId: string }) {
   const [rows, setRows] = useState<SurfaceInclusion[]>([]);

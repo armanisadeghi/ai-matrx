@@ -1,25 +1,24 @@
 # Tool Registry · Lookups
 
-**Status**: shipped (Phase 1 of the tool-registry redesign)
+**Status**: shipped
 **Owner**: tool-registry
-**Routes**: `/admin/lookups`
+**Routes**: `/administration/agents/lookups`
 
 ## What this is
 
-A single tabbed admin surface for the four lookup tables that the tool-registry
-schema (Migrations 0022–0023) is built on. These tables seed the vocabularies
+A single tabbed admin surface for the three live lookup tables that the tool
+system is built on. These tables seed the vocabularies
 that every other piece of the registry references via FK.
 
 | Tab | Table | PK | Edit frequency |
 |---|---|---|---|
-| UI Clients | `ui_client` | `name` text | rare |
-| UI Surfaces | `ui_surface` | `name` text (FK → `ui_client`) | occasional |
-| Executor Kinds | `tl_executor_kind` | `name` text | rare (most rows are auto-provisioned per MCP server) |
-| Gates | `tl_gate` | `name` text | very rare (read-mostly; gates are defined by matrx-ai code) |
+| UI Clients | `ui.ui_client` | `name` text | rare |
+| UI Surfaces | `ui.ui_surface` | `name` text (FK → `ui.ui_client`) | occasional |
+| Tool Executors | `tool.executor` | `name` text | rare |
 
 ## Entry points
 
-- Page: [app/(authenticated)/admin/lookups/page.tsx](../../../app/(authenticated)/admin/lookups/page.tsx)
+- Page: `app/(admin)/administration/agents/lookups/page.tsx`
 - Client component: [features/tool-registry/lookups/components/LookupsAdminPage.tsx](./components/LookupsAdminPage.tsx)
 - Service: [features/tool-registry/lookups/services/lookups.service.ts](./services/lookups.service.ts)
 
@@ -30,6 +29,12 @@ that every other piece of the registry references via FK.
 - **No barrel files**: imports go directly to source.
 - **No Redux**: the lookups are admin-only and infrequent. `useEffect` + `useState` + the Supabase browser client are enough.
 - **Confirms via `confirm()`** from `@/components/dialogs/confirm/ConfirmDialogHost` — never `window.confirm`.
+
+## Change Log
+
+- 2026-08-09 — Replaced the retired Executor Kind / Gate vocabulary with the
+  live `ui.ui_client`, `ui.ui_surface`, and `tool.executor` model and current
+  admin route.
 
 ## Seed (applied 2026-05-05 via migration `seed_matrx_frontend_clients_and_surfaces`)
 

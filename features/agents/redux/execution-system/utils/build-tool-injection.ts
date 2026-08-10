@@ -185,12 +185,14 @@ export async function buildToolInjection(
     state.instanceClientTools.byConversationId[conversationId] ?? []
   ).filter((name) => !isWidgetActionName(name));
 
-  // War Room write tools (per-tile) AND War Room MASTER tools (cross-room) are
-  // NOT in the server's tool registry, so they can't ride the `registered` path
-  // (the server would reject the unknown name). They're emitted as INLINE specs
-  // (name + description + JSON schema) below, which is the supported way to
-  // offer a client-delegated tool the server doesn't know about. Split them out
-  // here so the rest stay `registered`.
+  // War Room, War Room Master, and Scribe tools are currently emitted as
+  // Inline tools and armed per conversation through `instanceClientTools` →
+  // wire `client_tools`. Inline tools are a permanent, first-class path, but
+  // these particular definitions ship in the repo and therefore violate the
+  // durability rule: they SHOULD be Registered tools in `tool.definition`.
+  // Registration is a separate migration; keep the present wire behavior
+  // honest until that work lands. Split them out so known Registered tools use
+  // the registered path and the current inline deviation remains explicit.
   const warRoomClientTools = nonWidgetClientTools.filter(isWarRoomToolName);
   const warRoomMasterClientTools = nonWidgetClientTools.filter(
     isWarRoomMasterToolName,
@@ -201,9 +203,9 @@ export async function buildToolInjection(
       !isWarRoomToolName(name) &&
       !isWarRoomMasterToolName(name) &&
       !isScribeToolName(name) &&
-      // Surface client tools are never server-registered — they ride as
-      // inline specs from the mounted-surface walk below, so a name someone
-      // armed via the slice must not go out as `registered` (server reject).
+      // Surface client tools are composed from the mounted surface at request
+      // time, so Inline tool is the correct path. A name armed via the slice
+      // must not also go out as a Registered tool (the server would reject it).
       !isDeclaredSurfaceClientToolName(name),
   );
 
@@ -368,7 +370,7 @@ export async function buildToolInjection(
   }
 
   // The DB-registered surface name the server resolves to a tool set via
-  // tool_resolve_for_request + tool_surface_defaults.always_include_tools
+  // tool_resolve_for_request + tool.surface_defaults.always_include_tools
   // (e.g. matrx-user/chat carries the UI-first tools; most surfaces carry
   // none — matrx-default/default is intentionally empty).
   // Resolution order:

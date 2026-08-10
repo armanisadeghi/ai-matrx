@@ -404,7 +404,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
   const toolLifecycleMap = useAppSelector(toolLifecycleMapSelector);
 
   // Fold runs of consecutive tool calls into one expandable batch line so a
-  // back-to-back burst (e.g. ten `tool_def` updates) isn't a wall of rows.
+  // back-to-back burst (e.g. ten record updates) isn't a wall of rows.
   // Deliverable-card tools ("stay-open" display mode — knowledge_search,
   // document_search, …) are excluded: their card IS the content and renders
   // directly. Only the rendering is regrouped; the `hasUnifiedSpecial` /

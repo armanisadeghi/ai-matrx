@@ -56,6 +56,10 @@ todos:
 isProject: false
 ---
 
+> **Historical implementation plan.** This file is retained for provenance and
+> intentionally describes the pre–June 2026 schema. Live widget tools are in
+> `tool.definition` with runtime ownership in `tool.binding`.
+
 # Widget Handle + Client-Handled Tool System
 
 ## Architecture

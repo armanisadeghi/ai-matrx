@@ -65,7 +65,7 @@ import {
   buildSnapshotMediaAssets,
   bucketSnapshotAssets,
 } from "@/features/marketing/lib/snapshot-media";
-import type { PagePerformanceRow } from "@/features/marketing/pagespeed/data";
+import type { PagePerformanceResponse } from "@/features/marketing/pagespeed/data";
 import type { WebAnalyticsDailyRow } from "@/features/marketing/analytics/data";
 import {
   isJsonRecord,
@@ -145,17 +145,6 @@ export function captureAvailability(rows: readonly SiteScreenshot[]): {
   };
 }
 
-/** Latest persisted PageSpeed row per strategy (rows arrive newest-first). */
-export function latestPagespeedByStrategy(
-  rows: readonly PagePerformanceRow[] | null | undefined,
-): Map<string, PagePerformanceRow> {
-  const latest = new Map<string, PagePerformanceRow>();
-  for (const row of rows ?? []) {
-    if (!latest.has(row.strategy)) latest.set(row.strategy, row);
-  }
-  return latest;
-}
-
 /** GA4 landing-page totals over the stored window — one math, UI + scope. */
 export function webAnalyticsTotals(
   rows: readonly WebAnalyticsDailyRow[] | null | undefined,
@@ -205,8 +194,8 @@ export function buildMarketingPageScope(input: {
   screenshots?: readonly SiteScreenshot[] | null;
   /** Page Analyzer artifact from this session's run, when available. */
   analyzerArtifact?: PageAnalysisArtifact | null;
-  /** Persisted PageSpeed rows for this page, when loaded. */
-  pagespeedRows?: readonly PagePerformanceRow[] | null;
+  /** Canonical combined PSI history/regressions + GSC read, when loaded. */
+  pagePerformance?: PagePerformanceResponse | null;
   /** Stored GA4 landing-page rows for this page, when loaded. */
   analyticsRows?: readonly WebAnalyticsDailyRow[] | null;
   /** Sitemap membership rows for this page, when loaded. */
@@ -266,7 +255,7 @@ export function buildMarketingPageScope(input: {
     gscMetrics,
     screenshots,
     analyzerArtifact,
-    pagespeedRows,
+    pagePerformance,
     analyticsRows,
     sitemapMemberships,
     pageScore,
@@ -393,32 +382,14 @@ export function buildMarketingPageScope(input: {
     : undefined;
   const availability = captureRows ? captureAvailability(captureRows) : null;
 
-  const pagespeedLatest = latestPagespeedByStrategy(pagespeedRows);
-  const pagespeed =
-    pagespeedLatest.size > 0
-      ? Object.fromEntries(
-          [...pagespeedLatest.entries()].map(([strategy, row]) => {
-            const metrics = row.lighthouse?.metrics ?? {};
-            return [
-              strategy,
-              {
-                performance_score: row.performance_score,
-                accessibility_score: row.accessibility_score,
-                best_practices_score: row.best_practices_score,
-                seo_score: row.seo_score,
-                lcp_ms: metrics.lcp_ms?.numeric_value ?? null,
-                cls: metrics.cls?.numeric_value ?? null,
-                inp_ms: metrics.inp_ms?.numeric_value ?? null,
-                crux_field_category:
-                  row.crux?.page?.overall_category ??
-                  row.crux?.origin?.overall_category ??
-                  null,
-                observed_at: row.observed_at,
-              },
-            ];
-          }),
-        )
-      : undefined;
+  const pagespeed = pagePerformance?.has_psi_data
+    ? {
+        mobile: pagePerformance.psi_mobile ?? undefined,
+        desktop: pagePerformance.psi_desktop ?? undefined,
+        history: pagePerformance.psi_history ?? [],
+        regressions: pagePerformance.regressions ?? [],
+      }
+    : undefined;
 
   const ga4 =
     analyticsRows && analyticsRows.length > 0
