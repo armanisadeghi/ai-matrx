@@ -34,7 +34,17 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+// The generation vocabularies, from their canonical home — the write-target
+// descriptions below interpolate these rather than re-typing the enums, so the
+// prose an agent reads can never drift from what the handlers accept. This is
+// a types-only module (no React, no client); safe for the manifest registry.
+import {
+  DEPTHS,
+  DIFFICULTIES,
+  QUESTION_TYPES,
+} from "@/features/education/assessment/data/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -486,6 +496,135 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the assessment
+ * GENERATOR (`/education/{quizzes|practice-tests}/new` only).
+ *
+ * Every target is `mode: "draft"` + `applyPolicy: "ask"`: it stages into
+ * `AssessmentCreate`'s own React state through the same setters the user's
+ * typing uses, so the value appears in the form, is reversible, and reaches
+ * the DB only when the USER presses Generate (which still runs the COPPA gate,
+ * the entitlement guard, and the canonical `assessmentService.createWithItems`
+ * path). Nothing here spends quota or writes a row.
+ *
+ * Scope is deliberately the create mount ALONE. `AssessmentDetail` mounts this
+ * same surface and registers NO handlers, so `listAgentWritableTargets()`
+ * offers nothing on the detail/take routes. That is a decision, not an
+ * oversight:
+ *   • Detail owns no editor state — `assessment`/`items`/`results` are a loaded
+ *     read snapshot; its only local state is dialog flags. A draft write would
+ *     have nowhere to land, and editing a saved assessment has its own route
+ *     and component (`components/edit/AssessmentEdit.tsx`), which does not
+ *     mount this surface. Wiring entity writes from detail would be a parallel
+ *     write path around the real editor.
+ *   • Detail's own affordances are Take / Duplicate / Delete / Convert —
+ *     actions in the ownership-and-destructive class the judgment bar excludes.
+ *   • That same provider also wraps the TAKE flow (`is_taking`), where the
+ *     manifest already treats mid-attempt as a hard boundary (items are
+ *     bindable-only so answer keys never auto-flow). Offering writes to an
+ *     agent mid-attempt is exactly the wrong direction.
+ *
+ * Also deliberately NOT writable on the create view: the deck/document source
+ * pickers (choosing a specific source is an identity decision and the surface
+ * exposes no id options to choose from), and Generate itself (a metered,
+ * gated action — the user starts their own run).
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "generation_topic",
+    label: "Draft topic",
+    description:
+      "Stages the topic the assessment will be generated from into the create form, replacing whatever is there. Plain string, 1-500 characters — the subject itself (e.g. \"Cellular respiration\"), not an instruction. Because the topic only feeds ungrounded topic-mode generation, applying this also switches the Source selector to Topic; a deck/document already picked stays selected and returns if the user switches back. The user still presses Generate.",
+    valueType: "string",
+    updatesValue: "topic",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation",
+    sortOrder: 100,
+  },
+  {
+    name: "generation_difficulty",
+    label: "Draft difficulty",
+    description: `Stages the requested difficulty into the create form. Exactly one of: ${DIFFICULTIES.join(" | ")} (case-sensitive). The user still presses Generate.`,
+    valueType: "string",
+    updatesValue: "difficulty",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation",
+    sortOrder: 110,
+  },
+  {
+    name: "generation_depth",
+    label: "Draft depth",
+    description: `Stages the requested cognitive depth into the create form — how hard the questions think, independently of difficulty. Exactly one of: ${DEPTHS.join(" | ")} ("recall" = facts and definitions, "applied" = use the concept, "exam" = exam/clinical rigor). The user still presses Generate.`,
+    valueType: "string",
+    updatesValue: "depth",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation",
+    sortOrder: 120,
+  },
+  {
+    name: "generation_question_types",
+    label: "Draft question types",
+    description: `Stages the question-type mix into the create form. Array of strings drawn from: ${QUESTION_TYPES.join(" | ")}. REPLACES the full set — include every type you want kept, reading question_types first. An empty array means "let the generator pick a smart automatic mix", which is the default. The user still presses Generate.`,
+    valueType: "array",
+    updatesValue: "question_types",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation",
+    sortOrder: 130,
+  },
+  {
+    name: "generation_question_count",
+    label: "Draft question count",
+    description:
+      "Stages how many questions to generate into the create form. Whole number, at least 1, capped by the kind: 30 for a quiz, 60 for a practice test (read assessment_kind). A count above the cap is rejected rather than clamped. The user still presses Generate.",
+    valueType: "number",
+    updatesValue: "question_count",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation",
+    sortOrder: 140,
+  },
+  {
+    name: "generation_exam_type",
+    label: "Draft exam type",
+    description:
+      'Stages the exam the assessment is aimed at into the create form (e.g. "AP Biology", "SAT", "NCLEX"), which steers question style and phrasing. Plain string, max 100 characters; the empty string clears it back to no exam. The user still presses Generate.',
+    valueType: "string",
+    updatesValue: "exam_type",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation",
+    sortOrder: 150,
+  },
+  {
+    name: "generation_user_request",
+    label: "Draft extra instructions",
+    description:
+      'Stages free-form extra instructions for the generator into the create form — emphasis, coverage, style, things to avoid (e.g. "Emphasize mechanisms over vocabulary; include one case study"). Plain string, max 2000 characters; REPLACES the whole field, so read user_request first if you mean to extend it. The empty string clears it. The user still presses Generate.',
+    valueType: "string",
+    updatesValue: "user_request",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation",
+    sortOrder: 160,
+  },
+  {
+    name: "generation_time_limit_minutes",
+    label: "Draft time limit",
+    description:
+      "Stages the time limit, in whole minutes, into the create form. Timed kinds only — accepted when assessment_kind is \"practice_test\" and rejected for a quiz, which has no time-limit control on screen. Integer 0-600; 0 means untimed. The user still presses Generate.",
+    valueType: "number",
+    updatesValue: "time_limit_minutes",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "generation",
+    sortOrder: 170,
+  },
+];
+
 export const educationAssessmentManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-assessment",
   readiness: "partial",
@@ -500,6 +639,7 @@ When is_taking is true the learner is mid-attempt: never reveal correct answers,
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  writeTargets,
 };
 
 /** One entry in `assessments` / `visible_assessments`. */
