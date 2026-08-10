@@ -8,11 +8,13 @@
  * schema), output schema, annotations, and test samples.
  *
  * What an agent bound here may safely do: read the tool catalogue and the open
- * tool's definition, then write or critique tool descriptions and parameter
- * schemas, find undocumented or duplicated tools, audit tiering and gating,
- * and propose registry edits. It must NOT assume a proposal has been applied —
- * writes go through the admin's own editor and the `tool.definition` path, and
- * nothing here invokes a tool.
+ * tool's definition, critique descriptions and parameter schemas, find
+ * undocumented or duplicated tools, and audit tiering and gating. It may also
+ * APPLY three authored-metadata edits to the open tool — description,
+ * category, tags — via `writeTargets` below, each behind an in-place confirm.
+ * Everything else it can only propose: schemas, gating, activation and every
+ * capability field go through the admin's own editor, and nothing here invokes
+ * a tool.
  *
  * SECURITY: this manifest declares NO secrets, API keys, tokens, connection
  * strings, or credential material, and the emitters never place any in the
@@ -45,7 +47,14 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  TOOL_CATEGORY_MAX_CHARS,
+  TOOL_DESCRIPTION_MAX_CHARS,
+  TOOL_TAGS_MAX_COUNT,
+  TOOL_TAG_MAX_CHARS,
+} from "@/features/tool-call-visualization/admin/mcp-tools/tool-metadata";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const ADMIN_TOOL_REGISTRY_SURFACE_NAME = "matrx-admin/tool-registry";
@@ -489,6 +498,111 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into the tool registry.
+ *
+ * This is an ADMIN surface over the table that decides what every agent on the
+ * platform can call, so the bar is deliberately narrow: the three fields of
+ * AUTHORED metadata a model genuinely writes better than a human types
+ * (description, category, tags) and nothing else.
+ *
+ * PER-MOUNT: only `ToolViewPage` (the single open tool) registers handlers.
+ * `McpToolsManager` mounts this same surface for the catalogue and registers
+ * NONE, so `listAgentWritableTargets()` offers nothing on the list route. That
+ * is a decision, not an oversight:
+ *   • The catalogue's only local state is BROWSE state — search, category /
+ *     source / status / tag filters, column filters, sort. Driving someone's
+ *     filter chips is the "pure-mechanical view state" class the judgment bar
+ *     excludes; an agent that wants a subset can already read
+ *     `tools_summary` / `filtered_tool_ids` and answer directly.
+ *   • It holds no open record. A metadata write from the list would either
+ *     need a tool id invented from the model's side or would fan out across
+ *     rows — neither is something a single in-place confirm can make legible.
+ *   • The detail page is where the authored metadata is actually read and
+ *     reviewed, and it already owns the canonical write door, so wiring the
+ *     catalogue would be a parallel write path around it.
+ *
+ * MODE: every target is `mode: "entity"` + `applyPolicy: "ask"`. `draft` is the
+ * preferred mode elsewhere and is genuinely unavailable here — the detail page
+ * is server-rendered read-only props with no editor state for a value to stage
+ * into (editing has its own route, `/[toolId]/edit`, which does not mount this
+ * surface). Rather than invent a shadow draft the Save bar would not know
+ * about, each handler validates and then goes through
+ * `updateToolDefinition()` → `PUT /api/admin/tools/[id]` → `requireAdmin()`,
+ * the exact door the page's own Active toggle and the admin editor use, and
+ * then `router.refresh()` so the read twin reflects what landed. The ask
+ * dialog IS the review step: `auto` would be an agent silently writing the
+ * platform tool registry, which is never acceptable here.
+ *
+ * DELIBERATELY NOT WRITABLE, and this must stay that way:
+ *   • `tool_is_active`, `tool_admin_only`, `tool_gating`, `tool_exemptions`,
+ *     `tool_visibility`, `tool_tier` — changing what a tool may REACH, who may
+ *     reach it, or whether it dispatches at all is a CAPABILITY/permissions
+ *     change, not a copy edit. This is the same call `agent-builder` made when
+ *     it kept model / tools / MCP servers / skills / governance human-only,
+ *     and it matters more here: one flipped flag re-arms a tool for every
+ *     agent on the platform. The page keeps its human Active switch.
+ *   • `tool_id` and `tool_name` — identity. The name IS the key callers
+ *     dispatch by (there is no slug column), so renaming silently breaks every
+ *     existing call site and every stored transcript.
+ *   • `tool_parameters_schema`, `tool_output_schema`, `tool_annotations` — the
+ *     machine contract. A wrong parameter schema breaks every call of the
+ *     tool, and annotations are the read-only / destructive hints other agents
+ *     trust when deciding how carefully to treat it. Both have a dedicated
+ *     JSON editor with error reporting; an agent should propose a diff there.
+ *   • `tool_version`, `tool_semver` — version accounting, not authoring.
+ *   • Anything `mcp_server`-adjacent (`tool_managed_by_server_id`,
+ *     `tool_source_kind`) — provenance, and the neighbourhood the manifest's
+ *     SECURITY note keeps this surface out of. Repointing a tool at a
+ *     different MCP server is a capability change wearing a metadata costume.
+ *   • `tool_group` — a filing label like `category` and otherwise a fair
+ *     candidate, but NO human editor exposes it (it is absent from both
+ *     `ToolCreatePage` and `ToolEditPage`; the catalogue only renders it as a
+ *     column). An entity write to a field the admin cannot then correct in the
+ *     UI is a one-way door. If the editor ever gains the field, adding the
+ *     target here is a few lines.
+ *   • Deleting a tool. Destructive stays human, always.
+ *
+ * Handlers live in `ToolViewPage`'s `getWriteHandlers`; the bounds quoted in
+ * the descriptions below and the checks the handlers run are the SAME
+ * constants, from `admin/mcp-tools/tool-metadata.ts`.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "tool_description",
+    label: "Tool description",
+    description: `Replaces the open tool's description — the text an LLM reads when deciding whether to call this tool, so write it as a decision aid: what the tool does, when to reach for it, and when not to. This is a FULL replacement, not a merge: read \`tool_description\` first and include anything you mean to keep. Plain text, 1-${TOOL_DESCRIPTION_MAX_CHARS} characters after trimming; the empty string is REJECTED rather than treated as a way to clear the field, because the column is NOT NULL. PERSISTS IMMEDIATELY on apply, through the same admin tool API the human editor saves to — there is no draft step, so the confirm dialog is the review.`,
+    valueType: "string",
+    updatesValue: "tool_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_tool",
+    sortOrder: 100,
+  },
+  {
+    name: "tool_category",
+    label: "Category",
+    description: `Replaces the category the open tool is filed under — the short label the catalogue groups and filters by (e.g. "web", "data", "core"). A single-line free-text string, max ${TOOL_CATEGORY_MAX_CHARS} characters, no newlines or tabs; the empty string clears the category back to none. There is no fixed vocabulary, so reuse a category the registry already uses instead of inventing a near-duplicate — the catalogue view of this same surface publishes the live list as \`tool_categories\`. PERSISTS IMMEDIATELY on apply, through the same admin tool API the human editor saves to.`,
+    valueType: "string",
+    updatesValue: "tool_category",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_tool",
+    sortOrder: 110,
+  },
+  {
+    name: "tool_tags",
+    label: "Tags",
+    description: `Replaces the FULL tag set on the open tool — this does NOT append. Read \`tool_tags\` first and include every tag you want kept; pass an empty array to clear all tags. Value: an array of at most ${TOOL_TAGS_MAX_COUNT} short strings, each 1-${TOOL_TAG_MAX_CHARS} characters after trimming, with no duplicates and no commas inside a tag (the admin's tag editor is one comma-separated input, so an embedded comma would split the tag the next time a human edits it). A bad entry rejects the whole array rather than being dropped. PERSISTS IMMEDIATELY on apply, through the same admin tool API the human editor saves to.`,
+    valueType: "array",
+    updatesValue: "tool_tags",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_tool",
+    sortOrder: 120,
+  },
+];
+
 export const adminToolRegistryManifest: SurfaceManifest = {
   surfaceName: ADMIN_TOOL_REGISTRY_SURFACE_NAME,
   readiness: "partial",
@@ -503,7 +617,9 @@ The admin browses every registered tool definition (schema tool, table definitio
 
 How to read the values: registry_section tells you where you are — "catalogue" (the list) or "tool_detail" (one tool open). On the catalogue, tools_summary and the filter values apply and every tool_* detail value is absent; on the detail route the reverse. The tool's NAME is its identifier — there is no slug column. tool_is_active is the dispatchability signal; an inactive tool still exists in the registry.
 
-What you may safely do: read the catalogue and the open tool's definition, then write and sharpen tool descriptions and parameter schemas (the description is what an LLM reads when choosing a tool), audit gating and tiering, and find undocumented or duplicated entries. You never edit the registry yourself and you never invoke a tool from here — this is a documentation and audit surface.
+What you may safely do: read the catalogue and the open tool's definition, sharpen tool descriptions and parameter schemas (the description is what an LLM reads when choosing a tool), audit gating and tiering, and find undocumented or duplicated entries. You never invoke a tool from here.
+
+You can also WRITE, but only on the tool-detail route and only to the authored metadata: tool_description, tool_category, and tool_tags. Those three persist to the registry the moment the admin confirms, so read the current value first — description and tags are FULL replacements, not merges. Everything that decides what a tool may REACH or who may reach it — is_active, admin_only, gating, exemptions, visibility, tier — plus the tool's name, its parameter and output schemas, its annotations, its version, and its MCP provenance are human-only. Propose those in your answer; do not try to apply them.
 
 No credentials are present in this scope. MCP server endpoints, auth strategies, OAuth client ids, and vault-backed secrets live on adjacent tables this surface does not read; do not ask for them or infer them.
 </surface_intro>`,
@@ -512,6 +628,7 @@ No credentials are present in this scope. MCP server endpoints, auth strategies,
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** Compact catalogue row emitted by the admin tool list. */
