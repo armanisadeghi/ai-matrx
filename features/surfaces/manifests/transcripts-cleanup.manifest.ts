@@ -25,6 +25,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -439,6 +440,92 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — the outputs an agent can author, and nothing
+ * else.
+ *
+ * **Which mount registers these.** `CleanupPad` renders in two variants and
+ * only ONE of them registers a `SurfaceRuntimeProvider`:
+ *
+ * - **Standalone page** (`/transcripts/cleanup`, `variant="page"`) — the pad
+ *   owns the whole route, there is exactly one of it, and its panes ARE the
+ *   page. It registers the provider (scope + every handler below). This is
+ *   the mount agents drive.
+ * - **Embedded pads** (`variant="embedded"` — the War Room thread Audio tab)
+ *   register NOTHING, deliberately. A room renders tiles, so several embedded
+ *   pads can be mounted at once over DIFFERENT sessions; deepest-wins
+ *   resolution would hand an agent write to whichever tile mounted last, and
+ *   the user could not tell which transcript it landed in. The war room is
+ *   also its own surface (`matrx-user/war-room-thread`) with its own bespoke
+ *   HITL agent tools — injecting cleanup targets into a war-room run would
+ *   advertise writes that belong to a different page. An embedded pad stays
+ *   readable (the context menu still emits pane scope) and un-writable.
+ *
+ * **What earns a target.** The two AI-produced containers and the session
+ * label. Cleaning and reshaping a transcript is the thing an agent does
+ * better and faster than a human retyping it, and both texts already have
+ * read twins, so an agent can read what is there and write a revision.
+ * Both are `mode: "draft"`: they land through the SAME edit path as the user
+ * typing in that pane (`handleResponseChange` / `handleCustomChange`), so the
+ * value is visible, editable and reversible in place.
+ *
+ * **Deliberately NOT writable:**
+ * - `raw_transcript_text` — the SOURCE OF TRUTH. The raw capture is the one
+ *   artifact that cannot be regenerated; an agent overwriting it is data
+ *   loss wearing an authoring costume. Cleanup writes go to the Clean and
+ *   Custom containers, which exist precisely so the raw stays untouched.
+ * - `is_recording` / `is_transcribing` — live microphone actions, not data.
+ *   Starting or stopping a device is a human decision, and neither is a
+ *   value an agent can meaningfully "set".
+ * - The clean/custom RUNS themselves — those call metered backend agents.
+ *   An agent that wants different text writes the text.
+ * - `context_items` — the sidebar blocks are owned by `CleanupContextPanel`'s
+ *   own local block state (note linkage + per-block dirty tracking). A write
+ *   through `persistSettings` would bypass that state, so the user would not
+ *   SEE the staged value and a note-backed block could desync. No canonical
+ *   single-value path exists to route through today.
+ * - Agent wiring (`clean_agent_id`, slot agents/sources/auto-run) and slot
+ *   lifecycle — configuration and arming stay human choices.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "cleaned_transcript_text",
+    label: "Cleaned transcript",
+    description:
+      "Writes the Clean container's text — the cleaned-up version of the transcript. Value: { text: string, mode?: 'replace' | 'append' }. 'replace' (the default) swaps the FULL text — read the `cleaned_transcript_text` value first if you mean to extend rather than overwrite it; 'append' adds after the current text, separated by a blank line. `text` must be non-empty (clearing a pane is a human action). Lands through the same edit path as the user typing in the Clean pane, so it appears immediately and stays editable. Never touches the raw transcript.",
+    valueType: "object",
+    updatesValue: "cleaned_transcript_text",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "texts",
+    sortOrder: 100,
+  },
+  {
+    name: "custom_output_text",
+    label: "Active custom output",
+    description:
+      "Writes the ACTIVE custom slot's output text — the slot at `active_slot_index`; read `custom_slots_summary` to see which one that is. Value: { text: string, mode?: 'replace' | 'append' }. 'replace' (the default) swaps the FULL text — read the `custom_output_text` value first if you mean to extend rather than overwrite it; 'append' adds after the current text, separated by a blank line. `text` must be non-empty. Lands through the same edit path as the user typing in the Custom pane. Fails when the session has no custom slot configured.",
+    valueType: "object",
+    updatesValue: "custom_output_text",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "texts",
+    sortOrder: 110,
+  },
+  {
+    name: "session_title",
+    label: "Session title",
+    description:
+      "Renames the active cleanup session. Value: a plain non-empty string of at most 200 characters, which REPLACES the whole title — read the `session_title` value first if you mean to refine the existing one. Persists immediately through the canonical session-update thunk (the same path as the sidebar's Rename) and shows in the session list. Fails when no session exists yet — record or type something first.",
+    valueType: "string",
+    updatesValue: "session_title",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "session",
+    sortOrder: 120,
+  },
+];
+
 export const transcriptsCleanupManifest: SurfaceManifest = {
   surfaceName: "matrx-user/transcripts-cleanup",
   readiness: "verified",
@@ -457,6 +544,7 @@ export const transcriptsCleanupManifest: SurfaceManifest = {
     ),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "clean",
