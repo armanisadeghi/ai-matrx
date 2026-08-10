@@ -240,11 +240,82 @@ export function CodeWorkspaceContextMenu({
     hasSelection: selectedText.length > 0,
   });
 
+  // Surface write handlers — one per declared `writeTargets` entry on the
+  // code-editor manifest. Every one validates and THROWS on a bad shape or on
+  // a state it cannot honour (no editor, no selection, no open file); the
+  // writeback seam turns throws into safe error envelopes the agent reads.
+  // All three reuse the SAME `executeEdits` paths the right-click AI actions
+  // above use, so an agent edit joins Monaco's undo stack exactly like the
+  // user's own — nothing is written to disk, the tab just goes modified.
+  const getSurfaceWriteHandlers = () => ({
+    replace_selection: (value: unknown) => {
+      if (typeof value !== "string" || !value.length)
+        throw new Error("replace_selection expects a non-empty code string.");
+      const ed = editorRef.current;
+      if (!ed)
+        throw new Error(
+          "The code editor is not mounted, so there is nothing to write into.",
+        );
+      const sel = ed.getSelection();
+      if (!sel || sel.isEmpty())
+        throw new Error(
+          "replace_selection needs a selection, and nothing is selected. Ask the user to highlight the code to replace, or use insert_at_cursor / current_file_content instead.",
+        );
+      handleTextReplace(value);
+    },
+    insert_at_cursor: (value: unknown) => {
+      if (typeof value !== "string" || !value.length)
+        throw new Error("insert_at_cursor expects a non-empty code string.");
+      const ed = editorRef.current;
+      if (!ed)
+        throw new Error(
+          "The code editor is not mounted, so there is nothing to write into.",
+        );
+      const sel = ed.getSelection();
+      // With a selection, land AFTER it (never clobber what the user picked);
+      // with none, land at the caret.
+      if (sel && !sel.isEmpty()) handleTextInsertAfter(value);
+      else handleTextInsertBefore(value);
+    },
+    current_file_content: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error(
+          "current_file_content expects a non-empty file body. Emptying a file is a human action.",
+        );
+      const ed = editorRef.current;
+      const model = ed?.getModel();
+      if (!ed || !model)
+        throw new Error(
+          "No file is open in the code editor, so there is no buffer to replace.",
+        );
+      // One edit over the full range, NOT `model.setValue()` — setValue would
+      // discard the user's undo history, and the whole safety story here is
+      // that ⌘Z reverses an agent rewrite. The range is derived from the
+      // methods `MonacoModel` already declares rather than widening that
+      // narrowed type for one call.
+      const lastLine = model.getLineCount();
+      ed.executeEdits("agent-replace-file", [
+        {
+          range: {
+            startLineNumber: 1,
+            startColumn: 1,
+            endLineNumber: lastLine,
+            endColumn: model.getLineContent(lastLine).length + 1,
+          },
+          text: value,
+          forceMoveMarkers: true,
+        },
+      ]);
+      ed.focus();
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={CODE_WORKSPACE_CONTEXT_MENU_PROPS.surfaceName}
       getScope={getApplicationScope}
       isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
       <div className={className}>
         <EditableContextMenu

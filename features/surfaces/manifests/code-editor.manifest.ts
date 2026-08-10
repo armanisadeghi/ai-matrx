@@ -25,6 +25,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import {
   mergeBaselineValues,
@@ -256,6 +257,78 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the editable Monaco buffer (2026-08-10).
+ *
+ * All three land through `editor.executeEdits(...)` on the live Monaco
+ * instance, which is the SAME undoable edit stack the user's typing and the
+ * existing right-click AI actions (`onTextReplace` / `onTextInsertAfter` in
+ * `CodeWorkspaceContextMenu.tsx`) already use. That is what makes them
+ * `mode: "draft"` in the truest sense: nothing touches the filesystem, the tab
+ * simply goes modified, ⌘Z reverses the agent exactly like it reverses a
+ * paste, and the user still saves.
+ *
+ * The judgment bar is easy here — writing code into the file the user is
+ * looking at is the canonical thing to want from an agent, and the surface
+ * already advertises it (`intro`: "your text output can be applied directly
+ * back into the buffer"). What matters is the SHAPE of the write:
+ *
+ *  - `replace_selection` is the precise one — it edits only what the user
+ *    highlighted, so "rewrite this function" cannot damage the rest of the
+ *    file. It REFUSES when nothing is selected rather than guessing a range.
+ *  - `insert_at_cursor` adds without destroying anything — the right target
+ *    for "add a test below this", "import this at the top".
+ *  - `current_file_content` replaces the whole active file. It is the blunt
+ *    one, kept because whole-file rewrites (translate this module, apply a
+ *    codemod) are real, and doing it as one `executeEdits` over the full
+ *    range keeps it a SINGLE undo step — `model.setValue()` would silently
+ *    throw away the user's undo history.
+ *
+ * Deliberately NOT targets: saving, creating, renaming or deleting files;
+ * switching filesystem or workspace root; opening/closing tabs; and the
+ * diagnostics (a report, not an input). Persisting to disk stays a human
+ * gesture — the whole safety story here is that an agent edit is a buffer
+ * edit the user can undo and decline to save.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "replace_selection",
+    label: "Selected code",
+    description:
+      "REPLACES the user's current editor selection with the code you pass — nothing outside the highlighted range is touched. This is the precise target: prefer it whenever the user is asking about code they have selected. Pass raw code only, with no markdown fences and no commentary, indented to match where it lands. REFUSED when nothing is selected — select-aware requests need a selection, so ask the user to highlight the code instead of guessing a range. Applied as one undoable edit into the buffer; the tab goes modified and the user still saves.",
+    valueType: "string",
+    updatesValue: "selection",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "cursor_selection",
+    sortOrder: 100,
+  },
+  {
+    name: "insert_at_cursor",
+    label: "Inserted code",
+    description:
+      "INSERTS the code you pass at the caret, or immediately AFTER the selection when the user has one — nothing existing is removed or re-sent. Use this to add a function, a test, or an import rather than rewriting what is already there. Pass raw code only, with no markdown fences; include your own leading or trailing newlines when you need the insertion to land on its own line. Applied as one undoable edit into the buffer; the tab goes modified and the user still saves.",
+    valueType: "string",
+    updatesValue: "current_file_content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "cursor_selection",
+    sortOrder: 110,
+  },
+  {
+    name: "current_file_content",
+    label: "Active file content",
+    description:
+      "REPLACES THE ENTIRE CONTENTS of the focused file with the string you pass. This is a full replacement, not a merge: read `current_file_content` first and include every line that should survive, or use `replace_selection` / `insert_at_cursor` when you only mean to change part of it. Pass raw file content only, with no markdown fences. Must be non-empty — emptying a file is a human action. Applied as ONE undoable edit (⌘Z restores the previous file); nothing is written to disk, the tab goes modified and the user still saves.",
+    valueType: "string",
+    updatesValue: "current_file_content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "active_file",
+    sortOrder: 120,
+  },
+];
+
 export const codeEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/code-editor",
   readiness: "verified",
@@ -271,6 +344,7 @@ The baseline content value is the full text of the active file. When the surface
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One open editable tab as emitted in the `open_files` surface value. */
