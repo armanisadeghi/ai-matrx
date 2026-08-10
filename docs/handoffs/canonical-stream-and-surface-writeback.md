@@ -74,9 +74,12 @@ Badass Agent for these writes.
 7. Opportunistic: `listLiveWriteTargets()` runs in the Surface Context
    window's render body on a 400ms poll, re-invoking every provider's
    `getWriteHandlers()`.
-8. Observed (pre-existing, delegated-resume class): server stream warning
-   `request_context_changed` (`source_feature: 'ai-results' →
-   'conversation_resume'`) fires once per delegated-tool resume.
+8. ~~Observed (pre-existing, delegated-resume class): server stream warning
+   `request_context_changed` fires once per delegated-tool resume.~~
+   **FIXED 2026-08-10** — resume now sends `source_app`/`source_feature` via
+   the shared `utils/conversation-identity.ts` builder, and aidream stamps its
+   synthetic fallback only AFTER `restore_conversation_context` (plus a
+   reconcile layer in `request_context_track.py`).
 
 ## Done
 

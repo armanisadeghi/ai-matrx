@@ -106,11 +106,7 @@ import {
   selectEndpointOverrideConfig,
 } from "@/lib/redux/slices/apiConfigSlice";
 import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
-import {
-  selectEffectiveOrganizationId,
-  selectProjectId,
-  selectTaskId,
-} from "@/lib/redux/slices/appContextSlice";
+import { buildConversationIdentity } from "../utils/conversation-identity";
 import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
 import {
   createRequest,
@@ -442,22 +438,17 @@ export async function assembleManualRequest(
     request as { skill_config?: Record<string, unknown> },
   );
 
-  // Global active context scope — org / project / task. Mirrors what callApi
-  // and execute-instance already send so the Builder's manual path is not the
-  // odd one out (org-id enforcement is coming app-wide). Only fields that are
-  // actually set ride the wire; absent ones are omitted.
-  // Org: the conversation's own value wins on any turn after the first — it is
-  // decided at creation and never moves (same rule as assembleRequest /
-  // resume-instance). Ambient is the source only for a brand-new conversation.
-  const organization_id =
-    state.conversations.byConversationId[conversationId]?.organizationId ??
-    selectEffectiveOrganizationId(state) ??
-    undefined;
-  const project_id = selectProjectId(state) ?? undefined;
-  const task_id = selectTaskId(state) ?? undefined;
-  if (organization_id) request.organization_id = organization_id;
-  if (project_id) request.project_id = project_id;
-  if (task_id) request.task_id = task_id;
+  // Global active context scope — org / project / task, captured through the
+  // ONE identity builder (utils/conversation-identity.ts — same precedence as
+  // execute / resume: conversation-own org wins, ambient only for a brand-new
+  // conversation). scope_ids are deliberately NOT sent on the Builder's manual
+  // path — each manual send is its own ephemeral server-side conversation and
+  // does not engage the active scope selection.
+  const manualIdentity = buildConversationIdentity(state, conversationId);
+  if (manualIdentity.organization_id)
+    request.organization_id = manualIdentity.organization_id;
+  if (manualIdentity.project_id) request.project_id = manualIdentity.project_id;
+  if (manualIdentity.task_id) request.task_id = manualIdentity.task_id;
 
   if (selectIsBlockMode(state)) request.block_mode = true;
   if (selectIsSnapshot(state)) request.snapshot = true;

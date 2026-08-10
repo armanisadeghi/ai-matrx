@@ -60,12 +60,7 @@ import {
   buildAmbientContext,
   isFirstTurn,
 } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
-import {
-  selectEffectiveOrganizationId,
-  selectProjectId,
-  selectScopeSelectionsContext,
-  selectTaskId,
-} from "@/lib/redux/slices/appContextSlice";
+import { buildConversationIdentity } from "../utils/conversation-identity";
 import {
   resolveBackendForConversation,
   warmLocalEngineForConversation,
@@ -230,21 +225,12 @@ export function assembleRequest(
   // it out of this pure function lets capability providers stay async (e.g.
   // sandbox-fs mints a short-lived bearer token on demand).
 
-  // Scope — snapshot from appContextSlice at the moment of execution.
-  //
-  // ORG IS THE ONE FIELD AMBIENT STATE DOES NOT OWN. A conversation's org is
-  // decided when it is created and never moves; the server treats the saved
-  // value as authoritative and screams on drift. So once a conversation record
-  // carries an org (hydrated from `chat.conversation.organization_id` by
-  // load-conversation / fork), THAT is what every later turn re-sends — the
-  // sidebar's active org is only the source for a brand-new conversation.
-  //
-  // This makes the client independently correct: a continuation carries the
-  // right org even if appContextSlice hasn't bootstrapped yet (both
-  // organization_id and personal_organization_id are null during that window,
-  // so the ambient read would have silently omitted the field entirely).
-  const ambientOrganizationId = selectEffectiveOrganizationId(state) ?? undefined;
-  const organization_id = instance.organizationId ?? ambientOrganizationId;
+  // Identity — the ONE capture system shared by execute / manual / resume.
+  // Precedence rules (org never moves once the conversation exists; scope_ids
+  // are per-turn picker state; scopeIdsOverride comes from the chat↔scope
+  // mismatch gate) live in utils/conversation-identity.ts.
+  const identity = buildConversationIdentity(state, conversationId, opts);
+  const { organization_id, project_id, task_id, scope_ids } = identity;
   if (!organization_id && instance.messageCount) {
     // A continuation with NO org from either source is a defect, not a shrug:
     // it is how a request reaches the server with no identity at all.
@@ -254,24 +240,8 @@ export function assembleRequest(
         `recover it from the conversation row; fix the hydration path that dropped it.`,
     );
   }
-  const project_id = selectProjectId(state) ?? undefined;
-  const task_id = selectTaskId(state) ?? undefined;
-  // Active scope selections (multi-scope, keyed by scope id — any number of
-  // scopes per type). Shipped as a flat
-  // id list; the server unions them with the conversation's tags inside
-  // resolve_full_context so the selected scopes' context cells reach the
-  // agent. Pre-deploy backends ignore the field (pydantic extra='ignore').
-  // The mismatch gate (conversationScopeGate via smartExecute) may hand us
-  // a pre-resolved set instead — e.g. the chat's own tags when the sidebar
-  // is empty, or the user's switch/combine/keep choice.
-  const scope_ids =
-    opts?.scopeIdsOverride ??
-    Object.values(selectScopeSelectionsContext(state) ?? {}).filter(
-      (id): id is string => !!id,
-    );
-
-  // Source tracking
-  const { sourceApp, sourceFeature } = instance;
+  const sourceApp = identity.source_app;
+  const sourceFeature = identity.source_feature;
 
   // Admin-only global flags (read at execute time so the most recent toggle
   // value applies to every outbound turn). Defaults are false on the slice.

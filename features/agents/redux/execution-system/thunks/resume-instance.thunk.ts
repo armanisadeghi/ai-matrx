@@ -58,11 +58,9 @@ import { buildAmbientContext } from "@/features/agents/ui-first-tools/redux/buil
 import { setInstanceStatus } from "../conversations/conversations.slice";
 import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
-  selectEffectiveOrganizationId,
-  selectProjectId,
-  selectScopeSelectionsContext,
-  selectTaskId,
-} from "@/lib/redux/slices/appContextSlice";
+  buildConversationIdentity,
+  identityWireFields,
+} from "../utils/conversation-identity";
 import {
   createRequest,
   setRequestStatus,
@@ -195,21 +193,16 @@ export const resumeInstance = createAsyncThunk<
           : undefined;
       const desktopTargetInstanceId = selectDesktopTargetInstanceId(state);
 
-      // Conversation identity — same contract as continue turns. Resume used
-      // to send org only inside ambient `context.organization`, which the
-      // server did not lift onto AppContext → personal-org default + Titanium
-      // scope tools "not found".
-      // Resume is by definition a continuation, so the conversation's OWN org
-      // (hydrated from chat.conversation.organization_id) is the truth; ambient
-      // is only a fallback for a record that never hydrated. See the identical
-      // rule in assembleRequest — org never moves once a conversation exists.
-      const organization_id =
-        instance.organizationId ?? selectEffectiveOrganizationId(state) ?? undefined;
-      const project_id = selectProjectId(state) ?? undefined;
-      const task_id = selectTaskId(state) ?? undefined;
-      const scope_ids = Object.values(
-        selectScopeSelectionsContext(state) ?? {},
-      ).filter((id): id is string => typeof id === "string" && id.length > 0);
+      // Conversation identity — the SAME capture system as every other turn
+      // (utils/conversation-identity.ts). Resume is by definition a
+      // continuation, so the conversation's OWN org wins; ambient is only a
+      // fallback for a record that never hydrated. Crucially this also ships
+      // source_app / source_feature: a resume that omitted them made the
+      // server fabricate `source_feature="conversation_resume"`, and the
+      // `request_context_changed` warning fired on every delegated-tool
+      // resume + the following turn ('agent-runner' ↔ 'conversation_resume'
+      // ping-pong).
+      const identity = buildConversationIdentity(state, conversationId);
 
       const body: Record<string, unknown> = {
         user_request_id: userRequestId,
@@ -227,10 +220,7 @@ export const resumeInstance = createAsyncThunk<
           injection.client?.state?.["desktop-native"] && {
             target_instance_id: desktopTargetInstanceId,
           }),
-        ...(organization_id && { organization_id }),
-        ...(project_id && { project_id }),
-        ...(task_id && { task_id }),
-        ...(scope_ids.length > 0 && { scope_ids }),
+        ...identityWireFields(identity),
         ...(debug && { debug: true }),
       };
       // ResumeRequest does NOT declare a top-level `sandbox` (unlike the
