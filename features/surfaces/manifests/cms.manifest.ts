@@ -30,7 +30,12 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  CMS_SITE_DOMAIN_RULE,
+  CMS_SITE_SLUG_RULE,
+} from "@/features/cms/utils/siteSlug";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -135,7 +140,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "new_site_draft",
     label: "New site draft",
     description:
-      "What the user has typed into the Create New Site dialog so far: `{ name, slug, domain }` (slug is auto-derived from the name until edited). Empty when the dialog has never been opened or every field is blank. Bindable only — an agent helping name a site asks for this deliberately.",
+      "What the user has typed into the Create New Site dialog so far: `{ name, slug, domain }` (slug is auto-derived from the name until edited). Empty when the dialog has never been opened or every field is blank. Bindable only — an agent helping name a site asks for this deliberately. This is the read twin of the `new_site_draft` write target: read it to see what is already staged, write it to stage more.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 120,
@@ -156,6 +161,91 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — handlers in `app/(core)/cms/page.tsx`.
+ *
+ * JUDGMENT BAR, applied honestly, and the honest answer is ONE target.
+ *
+ * This is a LIST surface. Almost everything it emits is a record of sites that
+ * already exist, and the one place a user AUTHORS anything on the hub is the
+ * Create New Site dialog. That dialog is the textbook YES: turning "set me up
+ * a site for the dental practice, brightsmile.com" into a name, a URL slug and
+ * a domain is naming work an agent does well, and the fields are drafted in a
+ * single thought and consumed by ONE save — exactly the case
+ * `crm-create-party` reserves for a composite object target. One target also
+ * means ONE confirm dialog for one decision instead of three in a row. Every
+ * key is optional and partial, so the granularity of separate targets survives
+ * without the dialog spam; the cost, stated plainly, is that the user accepts
+ * or declines the draft as a whole.
+ *
+ * `mode: "draft"` in the literal sense: the handler calls the SAME
+ * `handleNameChange` / `setNewSlug` / `setNewDomain` the dialog's own inputs
+ * call, so a staged value and a typed one are indistinguishable and the user
+ * edits or cancels normally. Writing `name` alone re-derives `slug` from it
+ * precisely because that is what typing in the Name field does — pass `slug`
+ * explicitly to override, which is what editing the slug field does.
+ *
+ * The handler also OPENS the dialog when it is closed. That is deliberate, and
+ * it is the difference between this target being usable and being dead —
+ * verified in the browser, not assumed: the create dialog is a MODAL, so while
+ * it is open the header's "Agents for this page" button sits inside an
+ * `aria-hidden` subtree and cannot be clicked. A user therefore CANNOT launch
+ * an agent while the dialog is open, which means every agent-originated write
+ * to this target arrives with the dialog closed. A handler that refused when
+ * the dialog was shut would refuse always.
+ *
+ * The rule it has to honour instead is the `education-grade-work` one — never
+ * report "applied" for a value nobody can see. The two ways to honour it are
+ * refuse or make it visible; refusing is off the table above, and here the
+ * state is always mounted (only the dialog's RENDERING is gated), so showing
+ * the user the form they just consented to fill is the completion of the
+ * write, not a second unconsented effect. Opening it is also free to undo:
+ * Cancel and Escape both close it and nothing was ever persisted.
+ *
+ * WHAT IS NOT WRITABLE, on purpose:
+ *  - **Creating the site.** `CmsSiteService.createSite` mints a real
+ *    `client_sites` row the user owns, with a public slug and its own agent
+ *    write policy, and then navigates away from the hub. Following
+ *    `crm-create-party` and `image-generate`: an agent may fill the form, the
+ *    human presses Create Site.
+ *  - `is_active` — publishing. Flipping a site live or dark is not authoring.
+ *  - `agent_write_policy` — an agent editing the rule that governs what agents
+ *    may do to a site is the campaign's clearest NO, whichever direction it
+ *    moves.
+ *  - `has_data_api_key` and the key value — a credential. The manifest already
+ *    refuses to emit the key; minting or rotating it belongs to the deliberate
+ *    Collections tab UI.
+ *  - Name / slug / domain of an EXISTING site — identity of a live site, and
+ *    renaming a slug moves its public URL. That is `cms-site` settings, not a
+ *    hub draft.
+ *  - `selected_site_id` / `selected_site` — a hover pointer derived from the
+ *    user's mouse. Nobody asks an agent to move it.
+ *  - `sites_load_error` — status the page owns from a failed fetch. An agent
+ *    writing it would be fabricating the page's own account of itself.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "new_site_draft",
+    label: "New site draft",
+    description: [
+      "Stages a new site into the hub's Create New Site dialog — the same three fields the user would type, staged the same way. NOTHING is created: no site exists until the user presses Create Site, and until then nothing is saved and no URL is claimed.",
+      "Opens the dialog if it is closed, so the user can see, edit, or cancel what you staged.",
+      "Value: an object with AT LEAST ONE of `{ name, slug, domain }`, all strings. Each key REPLACES that one field; omit a key to leave the user's value exactly as they left it (read the `new_site_draft` value first if you mean to extend rather than replace).",
+      "`name` — the site's display name, a non-empty string.",
+      `\`slug\` — the URL identifier: ${CMS_SITE_SLUG_RULE}. A value that breaks that rule is REJECTED, not corrected.`,
+      "Sending `name` WITHOUT `slug` re-derives the slug from the name, exactly as typing in the Name field does; send `slug` as well when you want a specific one.",
+      `\`domain\` — the site's optional custom domain: ${CMS_SITE_DOMAIN_RULE}. Pass an empty string to clear it. A URL with a scheme or a path is rejected — send the bare host.`,
+      "Refused while a site is already being created.",
+    ].join(" "),
+    valueType: "object",
+    updatesValue: "new_site_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "hub_authoring",
+    sortOrder: 500,
+  },
+];
+
 export const cmsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/cms",
   readiness: "verified",
@@ -167,12 +257,14 @@ This is a LIST surface: you can see and compare sites, but you cannot see any pa
 owned_sites_summary is the working set: match the user's words ("the dentist site", "example.com") against name, slug, or domain to identify which site they mean, then drill in. selected_site / selected_site_id tell you which card they were pointing at when they invoked you — prefer it over guessing.
 agent_write_policy rides on every summary entry: "blocked" means agents may not write to that site at all, "draft_only" means you may save drafts but a human must publish, "full" means you may publish directly. Check it before promising any change.
 has_data_api_key only says whether the site has minted its public collections write key; the key value itself is never handed to you.
+The one thing you can CHANGE here is new_site_draft: it stages a name, a URL slug, and an optional domain into the Create New Site dialog (opening it if it is closed) so the user can review them. Filling that form is never the same as creating the site — pressing Create Site mints a real website the user owns, and that stays their move. Nothing else on this hub is writable: activating a site, its agent write policy, its data key, and the identity of any site that already exists are all human decisions, so propose those in words instead.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**

@@ -32,6 +32,13 @@ import { createCmsHubExtraSections } from "@/features/cms/agent-context/cmsHubEx
 import { useCmsHubSurfaceScope } from "@/features/cms/hooks/useCmsHubSurfaceScope";
 import { buildCmsHubContextData } from "@/features/cms/agent-context/buildCmsHubContextData";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  CMS_SITE_DOMAIN_RULE,
+  CMS_SITE_SLUG_RULE,
+  deriveCmsSiteSlug,
+  isValidCmsSiteDomain,
+  isValidCmsSiteSlug,
+} from "@/features/cms/utils/siteSlug";
 
 export default function SitesListPage() {
   const router = useRouter();
@@ -81,15 +88,99 @@ export default function SitesListPage() {
 
   const handleNameChange = (val: string) => {
     setNewName(val);
-    setNewSlug(
-      val
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-")
-        .replace(/^-|-$/g, ""),
-    );
+    setNewSlug(deriveCmsSiteSlug(val));
   };
+
+  /**
+   * Surface write handlers for `matrx-user/cms` (see the manifest's
+   * `writeTargets` block for the judgment call behind the single target).
+   *
+   * Fresh closures per call — the `getWriteHandlers` contract.
+   *
+   * Everything lands through the SAME setters the dialog's own inputs call, so
+   * a staged draft and a typed one are indistinguishable. Nothing here creates
+   * a site: `handleCreate` stays behind the user's press of Create Site.
+   */
+  const getSurfaceWriteHandlers = () => ({
+    new_site_draft: (value: unknown) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          "new_site_draft expects an object: { name?, slug?, domain? }.",
+        );
+      // Refuse rather than edit a form whose create is already on its way —
+      // the in-flight call captured the OLD values and clears the fields when
+      // it lands, so a mid-create write would vanish without explanation.
+      if (isCreating)
+        throw new Error(
+          "A site is already being created. new_site_draft cannot be written while that is in flight — wait for it to finish.",
+        );
+
+      const patch = value as Record<string, unknown>;
+      const allowedKeys = ["name", "slug", "domain"];
+      const unknownKeys = Object.keys(patch).filter(
+        (k) => !allowedKeys.includes(k),
+      );
+      if (unknownKeys.length > 0)
+        throw new Error(
+          `new_site_draft got unsupported key(s): ${unknownKeys.join(", ")}. Allowed keys: ${allowedKeys.join(" | ")}. Creating the site, activating it, its agent write policy and its data API key are not writable — ask the user.`,
+        );
+      if (Object.keys(patch).length === 0)
+        throw new Error(
+          `new_site_draft needs at least one of: ${allowedKeys.join(" | ")}.`,
+        );
+
+      // Validate EVERY key before applying any of them — a partial apply on a
+      // half-valid object would leave the dialog in a state nobody chose.
+      const apply: Array<() => void> = [];
+
+      if ("name" in patch) {
+        if (typeof patch.name !== "string" || !patch.name.trim())
+          throw new Error(
+            "new_site_draft.name expects a non-empty string — the site's display name.",
+          );
+        // A name with no slug-able characters would silently leave the slug
+        // blank and the Create Site button disabled, with nothing on screen
+        // saying why. Make the agent supply the slug instead.
+        if (!("slug" in patch) && !deriveCmsSiteSlug(patch.name))
+          throw new Error(
+            `new_site_draft.name "${patch.name}" yields no usable slug (${CMS_SITE_SLUG_RULE}). Send an explicit \`slug\` alongside the name.`,
+          );
+        const next = patch.name;
+        // The SAME handler the Name input's onChange calls, so the slug
+        // re-derives exactly as it does while the user types.
+        apply.push(() => handleNameChange(next));
+      }
+
+      if ("slug" in patch) {
+        if (typeof patch.slug !== "string" || !isValidCmsSiteSlug(patch.slug))
+          throw new Error(
+            `new_site_draft.slug expects a URL identifier: ${CMS_SITE_SLUG_RULE}. Got ${JSON.stringify(patch.slug)}.`,
+          );
+        const next = patch.slug;
+        // Pushed AFTER any name write so an explicit slug wins over the
+        // derived one — the same order as typing a name then editing the slug.
+        apply.push(() => setNewSlug(next));
+      }
+
+      if ("domain" in patch) {
+        if (typeof patch.domain !== "string")
+          throw new Error(
+            "new_site_draft.domain expects a string (empty string clears it).",
+          );
+        if (patch.domain !== "" && !isValidCmsSiteDomain(patch.domain))
+          throw new Error(
+            `new_site_draft.domain expects ${CMS_SITE_DOMAIN_RULE}. Got ${JSON.stringify(patch.domain)}.`,
+          );
+        const next = patch.domain;
+        apply.push(() => setNewDomain(next));
+      }
+
+      // Show the user what they just agreed to stage — a draft nobody can see
+      // is a write that reports success and does nothing visible.
+      setDialogOpen(true);
+      apply.forEach((fn) => fn());
+    },
+  });
 
   const handleCreate = async () => {
     if (!newName || !newSlug) return;
@@ -166,6 +257,7 @@ export default function SitesListPage() {
       <SurfaceRuntimeProvider
         surfaceName={CMS_HUB_CONTEXT_MENU_PROPS.surfaceName}
         getScope={buildSurfaceScope}
+        getWriteHandlers={getSurfaceWriteHandlers}
       >
       <NonEditableContextMenu
         {...CMS_HUB_CONTEXT_MENU_PROPS}
