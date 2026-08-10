@@ -321,85 +321,86 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 /**
- * Agent-writable targets — the organization's authored PROFILE COPY, nothing else.
+ * Write targets — the org PROFILE, and only the profile.
  *
- * All three land through `updateOrganization` (`features/organizations/service.ts`),
- * the exact service the user's own "Edit → Save" in `GeneralSettings` calls. The
- * org home (`OrgWorkspace`, where this surface is mounted) has NO draft buffer of
- * its own — it renders the loaded org row directly — so every target is
- * `mode: "entity"`: the save is immediate, and the read twin (`org_name`,
- * `org_description`, `org_abbreviation`) re-emits from the server row the service
- * returns. `applyPolicy: "ask"` on all three; nothing here writes unattended.
+ * All four land through `updateOrganization` (`features/organizations/service`),
+ * the same service the Settings › General form's Save button calls, so an agent
+ * revision and a human edit are the same write. Handlers live in
+ * `features/organizations/components/OrgWorkspaceWriteTargets.tsx`, mounted
+ * inside the workspace-mode `SurfaceRuntimeProvider`; the list route has no org
+ * open and therefore registers nothing.
  *
- * WHY THESE THREE. Name and description are plainly authored copy: the description
- * especially is the org's own statement of what it does, and a placeholder is the
- * normal state. The abbreviation is the third and it IS a judgment call — it looks
- * like an identifier, but it is not one: `org_slug` is the identifier (immutable,
- * routes resolve on it), while the abbreviation is a 2-3 letter DISPLAY label
- * chosen for the places the full name will not fit. Nothing keys off it, changing
- * it breaks no link, and "which three letters read as this org" is exactly the
- * naming judgment an agent can make. So it earns a target — with the same
- * `validateOrganizationAbbreviation` gate the form uses, and refused outright on a
- * personal workspace, which is pinned to ME.
+ * `mode: "entity"` rather than "draft": the workspace home has no staging
+ * buffer at all (the edit form lives on a different route), so there is nowhere
+ * to stage a value the user could SEE. The `applyPolicy: "ask"` confirm IS the
+ * review step, and every read twin re-reads the freshly persisted row.
  *
- * DELIBERATELY NOT WRITABLE:
- *   - `org_website` — a fact, not authored copy. The agent cannot verify a URL is
- *     the right one, and a wrong website on an org page reads as authoritative.
- *   - `org_slug`, `org_id`, `org_created_at`, `org_is_personal` — identity. The
- *     slug is immutable after creation (the form marks it read-only) and the rest
- *     are server-owned.
- *   - Members, roles, invitations, contribution review, `can_manage` — permissions
- *     are never an agent's call.
- *   - Deleting the org, and the logo (a file upload/crop flow, not a value).
+ * Deliberately NOT writable:
+ * - `org_slug` — the org's permanent URL identity; the form itself marks it
+ *   read-only ("cannot be changed after creation") and inbound links depend on
+ *   it. Identity, not authored content.
+ * - `org_id` / `org_created_at` / `org_is_personal` — facts about the row.
+ * - Membership (`members_summary`, `viewer_role`, `can_manage`) — who belongs
+ *   to an organization and what they may do is a permissions decision; an
+ *   agent must never grant, remove, or re-role a person.
+ * - The logo — an image chosen through a crop modal, not a value an agent
+ *   produces.
+ * - Scopes and scope types (`scope_types_summary`) — the org's context model,
+ *   owned by the scope system and its own surfaces.
+ * - `search_query` / `current_view` — mechanical navigation state.
  *
- * Every handler refuses loudly when the viewer is not an owner/admin (`can_manage`
- * false) — the same gate that hides the form's Edit button.
+ * Every handler additionally refuses when the viewer is not an owner or admin
+ * (`can_manage` false): an agent must not do through the seam what the page
+ * would not let the person do by hand.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "org_name",
     label: "Organization name",
-    description: [
-      "Renames the organization currently open in the workspace, saved immediately through the page's canonical update service (the same one the Settings → General form saves with).",
-      "Plain string, 3-50 characters. Replaces the whole name — read org_name first if you mean to adjust it rather than replace it.",
-      "This changes the display name everywhere the org appears; it does NOT change org_slug, which is fixed at creation and is what URLs resolve on. Refused unless the viewer is an owner or admin (can_manage true).",
-    ].join(" "),
+    description:
+      "Renames the open organization. Value: a plain string of 3–50 characters that REPLACES the whole name — read the `org_name` value first if you mean to refine the existing one rather than start over. Persists immediately through the same service the Settings › General Save button uses, and the new name appears everywhere the org is listed. Fails when no organization is open or the viewer is not an owner/admin.",
     valueType: "string",
     updatesValue: "org_name",
     mode: "entity",
     applyPolicy: "ask",
     group: "org_identity",
-    sortOrder: 500,
+    sortOrder: 100,
   },
   {
     name: "org_description",
-    label: "Organization description",
-    description: [
-      "Rewrites the open organization's description, saved immediately through the page's canonical update service (the same one the Settings → General form saves with).",
-      "Plain string, max 500 characters; pass an empty string to clear it. Replaces the whole field — read org_description first if you mean to extend it.",
-      "This is the org's own statement of what it does, shown under the name on the org home. Write it for someone deciding whether this workspace is the right place for their work. Refused unless the viewer is an owner or admin (can_manage true).",
-    ].join(" "),
-    valueType: "string",
+    label: "Description",
+    description:
+      "Writes the open organization's free-text description — what this organization does. Value: { text: string, mode?: 'replace' | 'append' }. 'replace' (the default) swaps the FULL description — read the `org_description` value first if you mean to extend it; 'append' adds after the current text, separated by a blank line. `text` must be non-empty (clearing the description is a human action) and the result must be at most 500 characters. Persists immediately. Fails when no organization is open or the viewer is not an owner/admin.",
+    valueType: "object",
     updatesValue: "org_description",
     mode: "entity",
     applyPolicy: "ask",
     group: "org_identity",
-    sortOrder: 510,
+    sortOrder: 110,
   },
   {
     name: "org_abbreviation",
-    label: "Organization abbreviation",
-    description: [
-      "Sets the open organization's compact 2-3 letter label, saved immediately through the page's canonical update service (the same one the Settings → General form saves with).",
-      "Exactly 2 or 3 UPPERCASE letters A-Z, no digits, spaces, or punctuation — anything else is rejected, never corrected. Derive it from org_name (Acme Robotics → AR or ACR).",
-      "This is a display label used where the full name will not fit; it is not an identifier and nothing resolves on it (org_slug does). Refused on a personal workspace, which is always ME, and unless the viewer is an owner or admin (can_manage true).",
-    ].join(" "),
+    label: "Abbreviation",
+    description:
+      "Sets the compact 2–3 letter label shown anywhere the full organization name will not fit. Value: a plain string of exactly 2 or 3 UPPERCASE A–Z letters — no digits, spaces, or punctuation. Persists immediately. Fails when no organization is open, the viewer is not an owner/admin, or the organization is a personal workspace (those are always ME).",
     valueType: "string",
     updatesValue: "org_abbreviation",
     mode: "entity",
     applyPolicy: "ask",
     group: "org_identity",
-    sortOrder: 520,
+    sortOrder: 120,
+  },
+  {
+    name: "org_website",
+    label: "Website",
+    description:
+      "Sets the open organization's website URL. Value: a plain string that is an absolute http:// or https:// URL — never a bare domain, a path, or a guess. Only set this from a URL the user gave you or one that appears in the page's own context; do not infer it from the organization's name. Persists immediately. Fails when no organization is open or the viewer is not an owner/admin.",
+    valueType: "string",
+    updatesValue: "org_website",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "org_identity",
+    sortOrder: 130,
   },
 ];
 
