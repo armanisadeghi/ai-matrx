@@ -12,6 +12,10 @@
  * The scope is assembled at TRIGGER time (the header Agents chrome only
  * calls `getScope` when the user hits Run), so it always reflects the live
  * session rather than a stale render copy.
+ *
+ * Same story for the WRITE half: `getWriteHandlers` is registered here so both
+ * skins get the surface's `writeTargets` from one place
+ * (`useScannerWriteHandlers`), for the same anti-fork reason.
  */
 
 import type { ReactNode } from "react";
@@ -21,6 +25,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 
 import type { UseScanSaveFlowResult } from "./useScanSaveFlow";
 import type { UseScanSessionResult } from "./useScanSession";
+import { useScannerWriteHandlers } from "./useScannerWriteHandlers";
 
 interface ScannerSurfaceRuntimeProps {
   session: UseScanSessionResult;
@@ -33,6 +38,8 @@ export function ScannerSurfaceRuntime({
   flow,
   children,
 }: ScannerSurfaceRuntimeProps) {
+  const getWriteHandlers = useScannerWriteHandlers(session);
+
   const getScope = () => {
     const items = session.items;
     const sourceCounts = items.reduce(
@@ -98,6 +105,7 @@ export function ScannerSurfaceRuntime({
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/scanner"
       getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
       isEditable={false}
     >
       {children}
