@@ -18,6 +18,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -149,19 +150,75 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the List Manager surface.
+ *
+ * There is NO draft layer here: every user-facing edit on this surface is a
+ * server action that persists on submit (`AddItemDialog` → `addItemAction`,
+ * `EditListDialog` → `updateListAction`). So every target is `mode: "entity"`
+ * — an applied write is a database commit, not a staged change — and every one
+ * is `applyPolicy: "ask"`. `auto` is deliberately absent and must stay absent:
+ * there is nothing to review after the fact and no Save bar to undo it.
+ *
+ * Handlers are registered by `ListManagerFloatingWorkspace` on its
+ * `SurfaceRuntimeProvider` — the component that owns `activeListId` and both
+ * refetch paths, so an applied write refreshes the read twins immediately.
+ * Deletes and visibility are NOT declared: destructive and permission-shaped
+ * changes stay human-only by doctrine.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "active_list_name",
+    label: "Active list name",
+    description:
+      "Renames the ACTIVE list. Saved to the database immediately — there is no draft to review. Value: a non-empty plain string, the list's display name; it replaces the current name entirely.",
+    valueType: "string",
+    updatesValue: "active_list_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "active_list",
+    sortOrder: 330,
+  },
+  {
+    name: "active_list_description",
+    label: "Active list description",
+    description:
+      "Replaces the ACTIVE list's description. Saved to the database immediately — there is no draft to review. Value: a plain string (pass an empty string to clear it). This REPLACES the full description rather than appending — read active_list_description first and include any existing text you want kept.",
+    valueType: "string",
+    updatesValue: "active_list_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "active_list",
+    sortOrder: 340,
+  },
+  {
+    name: "add_list_items",
+    label: "Add list items",
+    description:
+      'ADDS new items to the ACTIVE list, in order. Saved to the database immediately — there is no draft to review. Value: a non-empty array of objects { label, description?, help_text?, group? }. `label` is required and is the short name shown in the list; `description` is the longer detail; `help_text` is a one-line hint shown under the label; `group` is the heading it files under (omit or pass "" for Ungrouped — reuse an exact group name from items_grouped rather than inventing a near-duplicate). This APPENDS only: it never edits or removes existing items, so read all_items first and do not re-send items that are already there.',
+    valueType: "array",
+    updatesValue: "all_items",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "list_items",
+    sortOrder: 420,
+  },
+];
+
 export const listManagerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/list-manager",
   readiness: "verified",
   overlayId: "listManagerWindow",
   label: "List Manager",
   intro: `<surface_intro>
-You are on the List Manager — a floating window where the user manages custom lists: a sidebar of every accessible list (lists / list_count) and a detail pane for the one they opened (active_list_* / all_items). Agents here operate on the ACTIVE list: sort, dedupe, summarize, or draft new items. When no active_list_id is present, only the sidebar inventory is available — ask which list to work on rather than guessing.
+You are on the List Manager — a floating window where the user manages custom lists: a sidebar of every accessible list (lists / list_count) and a detail pane for the one they opened (active_list_* / all_items). Agents here operate on the ACTIVE list: sort, dedupe, summarize, or draft new items. You can also WRITE to the active list — rename it, rewrite its description, or add items — through apply_surface_write; each of those saves to the database as soon as the user approves, so propose the exact values you intend before applying. When no active_list_id is present, only the sidebar inventory is available and no write is possible — ask which list to work on rather than guessing.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One sidebar list entry as emitted in the `lists` surface value. */
