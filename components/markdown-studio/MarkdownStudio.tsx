@@ -30,12 +30,20 @@ import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
 import type { UserMarkdownSample } from "./user-samples-service";
 import type { StudioTemplate } from "./templates";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarkdownStudioScope } from "@/features/surfaces/manifests/markdown-studio.manifest";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderToggle from "@/features/shell/components/header/variants/variants/HeaderToggle";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 
-type StudioMode = "studio" | "analysis";
+/**
+ * The studio's two modes — the ONE vocabulary. `StudioMode` derives from it, so
+ * the header toggle (typed through `active`/`onChange`) and the `view_mode`
+ * surface write handler, which validates against this array rather than
+ * re-typed literals, can never drift apart.
+ */
+export const MARKDOWN_STUDIO_MODES = ["studio", "analysis"] as const;
+type StudioMode = (typeof MARKDOWN_STUDIO_MODES)[number];
 
 const EMPTY = "";
 
@@ -280,11 +288,66 @@ export function MarkdownStudio() {
     loadedSampleName,
   ]);
 
+  // Surface write handlers — the write half of the 360 loop (declared in
+  // `markdown-studio.manifest.ts`). Every content write goes through the SAME
+  // `setContent` the textarea's own `handleChange` calls, so the dirty flag
+  // re-derives itself, the header's Save/Update action stays honest, and
+  // nothing reaches the sample library until the user saves. No parallel write
+  // path, no direct service call.
+  const getWriteHandlers = useCallback((): SurfaceWriteHandlers => {
+    // A save/update/fork request sends the buffer captured when it started;
+    // moving the buffer underneath it would silently persist text the user
+    // never approved. Refuse loudly instead of racing it.
+    const assertNotSaving = (target: string) => {
+      if (saving)
+        throw new Error(
+          `${target} cannot be applied while a save to the sample library is in flight. Wait for the save to finish and try again.`,
+        );
+    };
+    return {
+      document_content: (value: unknown) => {
+        assertNotSaving("document_content");
+        if (typeof value !== "string")
+          throw new Error(
+            "document_content expects a string — the FULL markdown document, which replaces the buffer.",
+          );
+        if (!value.trim())
+          throw new Error(
+            "document_content expects non-empty markdown. Clearing the studio is a human action — use the editor's Clear button.",
+          );
+        setContent(value);
+      },
+      append_document_content: (value: unknown) => {
+        assertNotSaving("append_document_content");
+        if (typeof value !== "string")
+          throw new Error(
+            "append_document_content expects a string — only the new markdown to add to the end of the document.",
+          );
+        if (!value.trim())
+          throw new Error(
+            "append_document_content expects non-empty markdown to add.",
+          );
+        setContent((prev) => (prev.trim() ? `${prev}\n\n${value}` : value));
+      },
+      view_mode: (value: unknown) => {
+        if (
+          typeof value !== "string" ||
+          !(MARKDOWN_STUDIO_MODES as readonly string[]).includes(value)
+        )
+          throw new Error(
+            `view_mode expects one of: ${MARKDOWN_STUDIO_MODES.join(" | ")}.`,
+          );
+        setMode(value as StudioMode);
+      },
+    };
+  }, [saving]);
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/markdown-studio"
       getScope={getScope}
       isEditable
+      getWriteHandlers={getWriteHandlers}
     >
     <div className="flex h-full w-full flex-col bg-textured">
       <PageHeader>
