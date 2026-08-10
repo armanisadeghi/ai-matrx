@@ -29,7 +29,20 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+// The composer / title write vocabulary, from `chat.manifest.ts` — ONE
+// definition, deliberately shared rather than re-declared. This surface's
+// composer is not merely similar to chat's: it is the SAME `instanceUserInput`
+// entry, written by the SAME `setUserInputText` action (both routes render
+// `AgentConversationColumn`), and its title is the SAME `chat.conversation`
+// row renamed by the SAME `renameConversation` thunk. Two copies of these
+// bounds would be two advertised contracts over one enforced write path.
+import {
+  CHAT_CONVERSATION_TITLE_MAX,
+  CHAT_DRAFT_WRITE_MODES,
+  CHAT_INPUT_DRAFT_MAX,
+} from "./chat.manifest";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -381,6 +394,108 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 300,
     group: "run_live_state",
     sortOrder: 410,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Write targets (2026-08-10) — the judgment bar, written down.
+//
+// This surface is a MEASURING INSTRUMENT. The user came here to exercise an
+// agent and look at what it did, and almost everything declared above is
+// either the agent's contract or the evidence of one run against it. That
+// framing decides the list, and it rules out more than it lets in:
+//
+//   YES — `user_input_draft`: the next request, not yet sent. The textbook
+//   authored field ("turn my notes into a proper request", "add the edge case
+//   we just found"), and fully reversible because the user still presses send.
+//
+//   YES — `conversation_title`: an authored label over a run the agent can
+//   already read end-to-end, and the field a user most often leaves at its
+//   auto-generated default when a run history fills up.
+//
+//   YES — `variable_values`: the run's INPUTS. This is the one target this
+//   surface earns that `matrx-user/chat` deliberately did not, and the reason
+//   is declared right here: `agent_variable_definitions` is a first-class
+//   value on this surface, so an agent can READ the contract (names,
+//   requiredness, defaults) and then fill it — a real evidence loop rather
+//   than guesswork. Chat left the same field out precisely because its agents
+//   rarely declare variables and the happy path could not be exercised; on the
+//   run page, exercising an agent's variables is the whole point of the route.
+//
+//   NO — RUNNING the agent. Send/Execute spends a turn and bills a model, and
+//   on a page whose purpose is to judge an agent, an agent that could re-run
+//   it could also grade its own retry. The human press stays the gate, as it
+//   does for `podcast-studio`, `image-generate` and `matrx-user/chat`.
+//
+//   NO — the EVIDENCE. `user_request`, `agent_response`, `agent_reasoning`,
+//   `all_messages`, `tool_calls`, `completion_stats`, `error_message`,
+//   `is_streaming` / `is_executing` and `run_status` are the record of what
+//   this agent actually did. The entire value of a run viewer is that its
+//   readings were not written by the thing being measured; a write target on
+//   any of them would let an agent edit its own exam paper.
+//
+//   NO — the AGENT'S DEFINITION. `agent_system_instruction`, `agent_model_id`,
+//   `agent_tools`, `agent_variable_definitions`, `agent_version`,
+//   `agent_json`, `agent_description`, `agent_name`. These change what the
+//   agent IS and what it may reach, and this route is not their editor —
+//   `matrx-user/agent-builder` is, and it draws exactly this line. Editing the
+//   contract from inside the instrument that measures it is worse still: the
+//   run on screen would no longer be a run of the agent now described.
+//
+//   NO — `context_entries` (assembled grounding, not typed state; overwritten
+//   on the next assembly), and every identity value (`run_conversation_id`,
+//   `agent_id`, `run_origin`, `run_source_feature`).
+//
+// PER-MOUNT POSTURE. `AgentRunnerPage` is the only component that mounts this
+// surface, and it ALREADY refuses to claim it outside the standalone run route
+// (`isAgentRunSurface = sourceFeature === "agent-runner"`). The same component
+// backs the `/code` workspace under `sourceFeature: "code-editor"`, which
+// mounts no provider here and therefore offers an agent none of these targets
+// — the code workspace is its own surface with its own posture, and a draft
+// staged there would be staged against a different feature's conversation.
+// The gate is upstream of `getWriteHandlers`, so the handlers below inherit it
+// without restating it.
+//
+// Every target is `applyPolicy: "ask"`. The draft and the variables are
+// `draft` (nothing leaves the page until the user sends); the title is
+// `entity`, matching what the user's own rename control does, and reversible
+// by renaming again.
+// ---------------------------------------------------------------------------
+
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "user_input_draft",
+    label: "User input draft",
+    description: `Types text into THIS run's message box for the user to review and send. Value: { "text": string (1-${CHAT_INPUT_DRAFT_MAX} characters), "mode"?: ${CHAT_DRAFT_WRITE_MODES.map((m) => `"${m}"`).join(" | ")} } — \`text\` is required, \`mode\` is optional and defaults to "${CHAT_DRAFT_WRITE_MODES[0]}", which swaps the ENTIRE box. "${CHAT_DRAFT_WRITE_MODES[1]}" adds your text after whatever the user already typed, on a new line, leaving their words intact — read the \`user_input_draft\` value first and prefer append whenever it is non-empty. This ONLY stages text: nothing is sent, no turn is spent, no model is billed, and the user still presses send. It lands in the RUN PAGE's message box on screen — never in the message box of whatever agent run you are executing inside.`,
+    valueType: "object",
+    updatesValue: "user_input_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "run_request",
+    sortOrder: 500,
+  },
+  {
+    name: "conversation_title",
+    label: "Conversation title",
+    description: `Renames this run — the label it carries in the run history sidebar. Value: a plain non-empty string, trimmed, at most ${CHAT_CONVERSATION_TITLE_MAX} characters, REPLACING the current title outright (there is no append mode and no partial update — pass the complete new title). An empty or blank title is REFUSED: clearing a run's name back to Untitled is a human decision. Saves immediately through the canonical rename path, and is reversible by renaming again. Refused when this run has not been persisted yet — a fresh run holds a client-minted id and has no row until its first turn completes. This changes the label only and never touches a message.`,
+    valueType: "string",
+    updatesValue: "conversation_title",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "run_identity",
+    sortOrder: 510,
+  },
+  {
+    name: "variable_values",
+    label: "Variable values",
+    description:
+      'Fills in this agent\'s declared variables for the NEXT run. Value: an object of { "<variable name>": <value> } — a PARTIAL patch, so ONLY the keys you pass change and every variable you omit keeps whatever it currently has (pass an explicit empty string to blank one out). Read `agent_variable_definitions` FIRST: every key must be a variable that agent actually declares, and an unknown name is refused with the declared list while NOTHING is applied — no partial write. Values are staged into the run inputs the user can see and edit; nothing is sent and the user still presses send. Offered only when the agent declares variables. Note the read twin `variable_values` reports the RESOLVED result (user values layered over scope values and defaults) while this target writes the user-value layer, so a variable filled from scope will read back as yours only once you set it.',
+    valueType: "object",
+    updatesValue: "variable_values",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "run_request",
+    sortOrder: 520,
   },
 ];
 
