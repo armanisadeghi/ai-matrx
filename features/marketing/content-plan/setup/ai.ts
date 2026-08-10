@@ -19,7 +19,7 @@
  */
 import { useRef, useState } from "react";
 
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 
 import type { MarketingSite } from "@/features/marketing/types";
 
@@ -696,7 +696,17 @@ export function buildCurrentPlanSummary(
  * in-flight run at a time per kind — the busy flags drive the buttons.
  */
 export function useSetupAgents(siteId: string | null) {
-  const { run: runHeadless } = useHeadlessAgentJson();
+  // Live-by-default (Arman's standing rule — no spinner while AI works): every
+  // run keeps its instance alive so `<LiveRunDisplay conversationId={…}>` can
+  // render the stream as it arrives. The hook owns instance cleanup.
+  const {
+    run: runHeadless,
+    conversationId: liveConversationId,
+    activeRequestId,
+    dismiss: dismissLive,
+    isRunning: liveRunning,
+  } = useLiveAgentRun();
+  const [liveLabel, setLiveLabel] = useState<string | null>(null);
   const [shapeBusy, setShapeBusy] = useState(false);
   /** The family key currently being named, or null. */
   const [namingFamilyKey, setNamingFamilyKey] = useState<string | null>(null);
@@ -709,10 +719,12 @@ export function useSetupAgents(siteId: string | null) {
 
   async function run<T>(
     slotKey: string,
+    label: string,
     variables: Record<string, string>,
     coerce: (value: unknown) => T,
     timeoutMs?: number,
   ): Promise<T> {
+    setLiveLabel(label);
     // Which agent runs this step is a SLOT, never a hardcoded id: the system
     // default is managed in the admin console and any user may bind their own
     // agent at /agents/slots. Resolution is loud — an unresolvable slot throws
@@ -741,7 +753,12 @@ export function useSetupAgents(siteId: string | null) {
     inFlight.current = true;
     setShapeBusy(true);
     try {
-      return await run(SHAPE_PLANNER_SLOT, variables, coerceShapePlan);
+      return await run(
+        SHAPE_PLANNER_SLOT,
+        "Recommending shape & counts",
+        variables,
+        coerceShapePlan,
+      );
     } finally {
       inFlight.current = false;
       setShapeBusy(false);
@@ -756,7 +773,12 @@ export function useSetupAgents(siteId: string | null) {
     inFlight.current = true;
     setNamingFamilyKey(familyKey);
     try {
-      return await run(FAMILY_NAMER_SLOT, variables, coerceFamilyNames);
+      return await run(
+        FAMILY_NAMER_SLOT,
+        "Naming pages",
+        variables,
+        coerceFamilyNames,
+      );
     } finally {
       inFlight.current = false;
       setNamingFamilyKey(null);
@@ -772,6 +794,7 @@ export function useSetupAgents(siteId: string | null) {
     try {
       return await run(
         KEYWORD_STRATEGIST_SLOT,
+        "Planning keyword strategy",
         variables,
         coerceKeywordStrategy,
         STRATEGY_TIMEOUT_MS,
@@ -791,6 +814,7 @@ export function useSetupAgents(siteId: string | null) {
     try {
       return await run(
         ENTITY_ATTACHER_SLOT,
+        "Attaching entities",
         variables,
         coerceEntityAttachPlan,
         STRATEGY_TIMEOUT_MS,
@@ -809,7 +833,12 @@ export function useSetupAgents(siteId: string | null) {
     inFlight.current = true;
     setBriefBusy(true);
     try {
-      return await run(BRIEF_WRITER_SLOT, variables, coercePageBrief);
+      return await run(
+        BRIEF_WRITER_SLOT,
+        "Drafting brief",
+        variables,
+        coercePageBrief,
+      );
     } finally {
       inFlight.current = false;
       setBriefBusy(false);
@@ -823,7 +852,12 @@ export function useSetupAgents(siteId: string | null) {
     inFlight.current = true;
     setReviewBusy(true);
     try {
-      return await run(PLAN_REVIEWER_SLOT, variables, coercePlanReview);
+      return await run(
+        PLAN_REVIEWER_SLOT,
+        "Reviewing the plan",
+        variables,
+        coercePlanReview,
+      );
     } finally {
       inFlight.current = false;
       setReviewBusy(false);
@@ -837,14 +871,32 @@ export function useSetupAgents(siteId: string | null) {
     inFlight.current = true;
     setEntitiesBusy(true);
     try {
-      return await run(ENTITY_CURATOR_SLOT, variables, coerceEntityCuration);
+      return await run(
+        ENTITY_CURATOR_SLOT,
+        "Curating entities",
+        variables,
+        coerceEntityCuration,
+      );
     } finally {
       inFlight.current = false;
       setEntitiesBusy(false);
     }
   }
 
+  const dismissLiveRun = () => {
+    setLiveLabel(null);
+    dismissLive();
+  };
+
   return {
+    /** Live-render handle — mount `<LiveRunDisplay {...agents.live} />`. */
+    live: {
+      conversationId: liveConversationId,
+      activeRequestId,
+      label: liveLabel,
+      isRunning: liveRunning,
+      dismiss: dismissLiveRun,
+    },
     recommendShape,
     nameFamily,
     curateEntities,

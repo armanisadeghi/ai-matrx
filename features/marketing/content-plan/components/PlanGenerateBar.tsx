@@ -25,6 +25,7 @@ import type {
   PlanAiRunState,
 } from "../hooks/useContentPlanAi";
 import { ResearchTopicSelect } from "./ResearchTopicSelect";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 
 export function PlanGenerateBar({
   nodeCount,
@@ -59,24 +60,36 @@ export function PlanGenerateBar({
 
   if (bulkDeepen && bulkDeepen.status === "running") {
     return (
-      <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-foreground">
-        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
-        <span className="min-w-0 flex-1 truncate">
-          Deepening {bulkDeepen.done + 1}/{bulkDeepen.total}
-          {bulkDeepen.current ? ` — ${bulkDeepen.current}` : ""}
-          {bulkDeepen.stage ? ` · ${bulkDeepen.stage}` : ""}
-          {bulkDeepen.failures.length > 0
-            ? ` · ${bulkDeepen.failures.length} failed`
-            : ""}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 shrink-0 px-2 text-xs"
-          onClick={onBulkDeepenCancel}
-        >
-          Stop
-        </Button>
+      <div className="border-b border-border bg-muted/40">
+        <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-foreground">
+          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+          <span className="min-w-0 flex-1 truncate">
+            Deepening {bulkDeepen.done + 1}/{bulkDeepen.total}
+            {bulkDeepen.current ? ` — ${bulkDeepen.current}` : ""}
+            {bulkDeepen.stage ? ` · ${bulkDeepen.stage}` : ""}
+            {bulkDeepen.failures.length > 0
+              ? ` · ${bulkDeepen.failures.length} failed`
+              : ""}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 shrink-0 px-2 text-xs"
+            onClick={onBulkDeepenCancel}
+          >
+            Stop
+          </Button>
+        </div>
+        {/* The current node's brief streams live — never a bare progress bar. */}
+        {bulkDeepen.requestId ? (
+          <div className="px-3 pb-2">
+            <LiveRunDisplay
+              requestId={bulkDeepen.requestId}
+              label={bulkDeepen.current ?? "Deepening"}
+              bodyClassName="max-h-40 overflow-y-auto px-2.5 py-2 text-sm"
+            />
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -104,12 +117,23 @@ export function PlanGenerateBar({
 
   if (run.status === "running") {
     return (
-      <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-foreground">
-        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
-        <span className="truncate">
-          {run.stage ?? "Generating the plan…"} — nodes appear in the tree as
-          they land.
-        </span>
+      <div className="border-b border-border bg-muted/40">
+        <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-foreground">
+          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+          <span className="truncate">
+            {run.stage ?? "Generating the plan…"} — the agents&apos; work
+            streams below; the tree updates when the plan is applied.
+          </span>
+        </div>
+        {run.requestId ? (
+          <div className="px-3 pb-2">
+            <LiveRunDisplay
+              requestId={run.requestId}
+              label="Generating plan"
+              bodyClassName="max-h-40 overflow-y-auto px-2.5 py-2 text-sm"
+            />
+          </div>
+        ) : null}
       </div>
     );
   }

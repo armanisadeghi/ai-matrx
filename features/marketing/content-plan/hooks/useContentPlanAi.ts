@@ -20,6 +20,8 @@
 import { useCallback, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { callApi } from "@/lib/api/call-api";
 import {
   describeBackendFailure,
@@ -37,6 +39,12 @@ export interface PlanAiRunState {
   /** Live server phase line ("Wave 2/3: competitor coverage…"). */
   stage?: string;
   error?: string;
+  /**
+   * Canonical live-render handle: the server stream is ADOPTED into
+   * `activeRequests` (adoptForeignStream), so `<LiveRunDisplay requestId=…>`
+   * renders the model's tokens as they arrive — never a bare spinner.
+   */
+  requestId?: string;
 }
 
 const IDLE: PlanAiRunState = { status: "idle" };
@@ -61,6 +69,9 @@ export function usePlanGenerate(siteId: string | null) {
   // per node — one invalidation per ~750ms keeps the tree live without a
   // refetch storm (the post-stream invalidation below is the backstop).
   const lastInvalidate = useRef(0);
+  // Adopted rows have no owning instance — drop the previous run's row before
+  // starting a new one (the keyword-research adopter's proven pattern).
+  const adoptedRequestIdRef = useRef<string | null>(null);
 
   const start = useCallback(
     async (options?: {
@@ -75,19 +86,22 @@ export function usePlanGenerate(siteId: string | null) {
       setRun({ status: "running", stage: "Starting the generator…" });
       let streamFailure: string | null = null;
 
-      const result = await dispatch(
-        callApi({
-          path: "/content-plan/sites/{site_id}/generate",
-          method: "POST",
-          pathParams: { site_id: siteId },
-          body: {
-            max_nodes: options?.maxNodes ?? 40,
-            guidance: options?.guidance ?? null,
-            apply: true,
-            research_topic_id: options?.researchTopicId ?? null,
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+      const streamAbort = new AbortController();
+      // The stream is ADOPTED into the canonical execution slice so the
+      // model's own tokens render live (`<LiveRunDisplay requestId>`); this
+      // hook still sees every event for its typed progress + refetch logic.
+      const consumeStream = dispatch(
+        adoptForeignStream({
+          onAdopted: ({ requestId }) => {
+            adoptedRequestIdRef.current = requestId;
+            setRun((current) => ({ ...current, requestId }));
           },
-          stream: true,
-          onStreamEvent: (event) => {
+          abortController: streamAbort,
+          onEvent: (event) => {
             const stage = readPhaseMessage(event);
             if (stage) {
               setRun((current) => ({ ...current, stage }));
@@ -111,6 +125,23 @@ export function usePlanGenerate(siteId: string | null) {
         }),
       );
 
+      const result = await dispatch(
+        callApi({
+          path: "/content-plan/sites/{site_id}/generate",
+          method: "POST",
+          pathParams: { site_id: siteId },
+          body: {
+            max_nodes: options?.maxNodes ?? 40,
+            guidance: options?.guidance ?? null,
+            apply: true,
+            research_topic_id: options?.researchTopicId ?? null,
+          },
+          stream: true,
+          consumeStream,
+          signal: streamAbort.signal,
+        }),
+      );
+
       inFlight.current = false;
       // Whatever happened, the server may have written nodes — refetch.
       void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
@@ -120,16 +151,24 @@ export function usePlanGenerate(siteId: string | null) {
         const explanation = describeBackendFailure(
           parseCallApiError(result.error),
         );
-        setRun({ status: "error", error: explanation.headline });
+        setRun((current) => ({
+          ...current,
+          status: "error",
+          error: explanation.headline,
+        }));
         toast.error(`Plan generation failed: ${explanation.headline}`);
         return;
       }
       if (streamFailure) {
-        setRun({ status: "error", error: streamFailure });
+        setRun((current) => ({
+          ...current,
+          status: "error",
+          error: streamFailure ?? undefined,
+        }));
         toast.error(`Plan generation failed: ${streamFailure}`);
         return;
       }
-      setRun({ status: "done" });
+      setRun((current) => ({ ...current, status: "done" }));
       toast.success("Plan generation finished — the tree is up to date.");
     },
     [dispatch, queryClient, siteId],
@@ -148,6 +187,7 @@ export function usePlanDeepen(siteId: string | null) {
   const [run, setRun] = useState<PlanAiRunState>(IDLE);
   const [nodeId, setNodeId] = useState<string | null>(null);
   const inFlight = useRef(false);
+  const adoptedRequestIdRef = useRef<string | null>(null);
 
   const start = useCallback(
     async (targetNodeId: string) => {
@@ -157,13 +197,19 @@ export function usePlanDeepen(siteId: string | null) {
       setRun({ status: "running", stage: "Deepening (brief + sources)…" });
       let streamFailure: string | null = null;
 
-      const result = await dispatch(
-        callApi({
-          path: "/content-plan/nodes/{node_id}/deepen",
-          method: "POST",
-          pathParams: { node_id: targetNodeId },
-          stream: true,
-          onStreamEvent: (event) => {
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+      const streamAbort = new AbortController();
+      const consumeStream = dispatch(
+        adoptForeignStream({
+          onAdopted: ({ requestId }) => {
+            adoptedRequestIdRef.current = requestId;
+            setRun((current) => ({ ...current, requestId }));
+          },
+          abortController: streamAbort,
+          onEvent: (event) => {
             const stage = readPhaseMessage(event);
             if (stage) setRun((current) => ({ ...current, stage }));
             if (event.event === "error") {
@@ -172,6 +218,17 @@ export function usePlanDeepen(siteId: string | null) {
               ).headline;
             }
           },
+        }),
+      );
+
+      const result = await dispatch(
+        callApi({
+          path: "/content-plan/nodes/{node_id}/deepen",
+          method: "POST",
+          pathParams: { node_id: targetNodeId },
+          stream: true,
+          consumeStream,
+          signal: streamAbort.signal,
         }),
       );
 
@@ -185,16 +242,24 @@ export function usePlanDeepen(siteId: string | null) {
         const explanation = describeBackendFailure(
           parseCallApiError(result.error),
         );
-        setRun({ status: "error", error: explanation.headline });
+        setRun((current) => ({
+          ...current,
+          status: "error",
+          error: explanation.headline,
+        }));
         toast.error(`Deepen failed: ${explanation.headline}`);
         return;
       }
       if (streamFailure) {
-        setRun({ status: "error", error: streamFailure });
+        setRun((current) => ({
+          ...current,
+          status: "error",
+          error: streamFailure ?? undefined,
+        }));
         toast.error(`Deepen failed: ${streamFailure}`);
         return;
       }
-      setRun({ status: "done" });
+      setRun((current) => ({ ...current, status: "done" }));
       toast.success("Node deepened — brief and sources updated.");
     },
     [dispatch, queryClient, siteId],
@@ -219,6 +284,8 @@ export interface BulkDeepenState {
   current?: string;
   /** Live server phase line for the current node. */
   stage?: string;
+  /** Canonical live-render handle for the CURRENT node's adopted stream. */
+  requestId?: string;
   failures: BulkDeepenFailure[];
   cancelled: boolean;
 }
@@ -245,6 +312,7 @@ export function usePlanBulkDeepen(siteId: string | null) {
   const [run, setRun] = useState<BulkDeepenState>(BULK_IDLE);
   const inFlight = useRef(false);
   const cancelRef = useRef(false);
+  const adoptedRequestIdRef = useRef<string | null>(null);
 
   const start = useCallback(
     async (targets: Array<{ id: string; route: string }>) => {
@@ -271,13 +339,19 @@ export function usePlanBulkDeepen(siteId: string | null) {
           stage: undefined,
         }));
         let streamFailure: string | null = null;
-        const result = await dispatch(
-          callApi({
-            path: "/content-plan/nodes/{node_id}/deepen",
-            method: "POST",
-            pathParams: { node_id: target.id },
-            stream: true,
-            onStreamEvent: (event) => {
+        if (adoptedRequestIdRef.current) {
+          dispatch(removeRequest(adoptedRequestIdRef.current));
+          adoptedRequestIdRef.current = null;
+        }
+        const streamAbort = new AbortController();
+        const consumeStream = dispatch(
+          adoptForeignStream({
+            onAdopted: ({ requestId }) => {
+              adoptedRequestIdRef.current = requestId;
+              setRun((current) => ({ ...current, requestId }));
+            },
+            abortController: streamAbort,
+            onEvent: (event) => {
               const stage = readPhaseMessage(event);
               if (stage) setRun((current) => ({ ...current, stage }));
               if (event.event === "error") {
@@ -286,6 +360,16 @@ export function usePlanBulkDeepen(siteId: string | null) {
                 ).headline;
               }
             },
+          }),
+        );
+        const result = await dispatch(
+          callApi({
+            path: "/content-plan/nodes/{node_id}/deepen",
+            method: "POST",
+            pathParams: { node_id: target.id },
+            stream: true,
+            consumeStream,
+            signal: streamAbort.signal,
           }),
         );
         const error = result.error

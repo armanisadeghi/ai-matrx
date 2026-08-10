@@ -118,13 +118,13 @@ research linking: start with the final report (the "Document"), user picks the t
    namer agents with web search (server-side agent definition change via `agent_author`) —
    Arman explicitly wants "it does web search or just some basic web searches". See the open
    decision below before wiring.
-4. **Live progress everywhere — Arman's standing rule (2026-08-08).** "Focus on giving the
-   user live real time updates on what's going on… in some cases, if we can't give real live
-   updates, I would even prefer to just give fake updates… so that the user feels like
-   something is happening." Build-with-AI now has a real streaming feed (dialog +
-   `useCompanyQuickResearch.onProgress`); apply the same pattern to the remaining
-   single-agent setup actions (keyword strategy, entity attach, plan review run as silent
-   spinners for up to minutes) and any future AI surface here.
+4. **Live progress everywhere — DONE for this feature (2026-08-10), now a
+   platform campaign.** All 7 setup agents + Draft brief render their streams
+   live via `useLiveAgentRun` + `<LiveRunDisplay>`; Deepen/Generate adopt
+   their server streams. The platform-wide rollout (education, flashcards,
+   transcript-studio, podcasts, research outputs…) is
+   `docs/handoffs/live-stream-everywhere.md` — new AI surfaces here MUST use
+   those primitives, never a spinner.
 5. **Harden the quick-research chain.** `useCompanyQuickResearch` drains the run stream in the
    tab; if the user navigates away mid-run the server finishes the pipeline but Document
    assembly never fires. Options: resume detection on return (topic linked + syntheses > 0 +

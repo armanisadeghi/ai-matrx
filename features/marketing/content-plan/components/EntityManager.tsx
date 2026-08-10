@@ -46,6 +46,7 @@ import {
 } from "../data/hooks";
 import { createPlanEntity } from "../data/service";
 import { useSetupAgents } from "../setup/ai";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { fetchFreshSite, readSiteResearchTopicId } from "../setup/draft";
 import {
   PLAN_ENTITY_TYPES,
@@ -230,6 +231,18 @@ export function EntityManager({
             </Button>
           </div>
         </div>
+
+        {/* Live curator output — the agent's stream renders while it works. */}
+        {agents.live.conversationId || agents.live.isRunning ? (
+          <div className="mt-2">
+            <LiveRunDisplay
+              conversationId={agents.live.conversationId}
+              label={agents.live.label ?? "Curating entities"}
+              pending={agents.live.isRunning}
+              onDismiss={agents.live.dismiss}
+            />
+          </div>
+        ) : null}
 
         {entities.isLoading ? (
           <div className="space-y-2">

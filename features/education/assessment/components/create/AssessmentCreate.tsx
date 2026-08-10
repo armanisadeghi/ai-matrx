@@ -49,6 +49,7 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { attachSourceRefs } from "@/features/education/trust/grounding";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { createEducationAssessmentScope } from "@/features/surfaces/manifests/education-assessment.manifest";
 import { assessmentService } from "../../data/assessmentService";
 import { ASSESSMENT_AGENTS } from "../../data/agents";
@@ -85,7 +86,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
   const config: KindConfig = KIND_CONFIG[kind];
   const router = useRouter();
   const base = `/education/${config.base}`;
-  const { generate, isGenerating } = useGenerateQuiz();
+  const { generate, isGenerating, conversationId } = useGenerateQuiz();
   const entitlement = useEntitlementGuard(config.capability);
   // School-safe COPPA gate: an under-13 account with no active guardian link is
   // blocked from AI generation until a parent approves (never a silent failure).
@@ -356,17 +357,26 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
         </div>
 
         {isGenerating ? (
-          <div className="mt-6 flex flex-col items-center gap-3 rounded-xl border border-border bg-card py-12 text-center">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Generating your {config.noun}…
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Writing {Math.min(config.countMax, Math.max(1, count || 1))}{" "}
-                questions at {depth} depth. This can take a moment.
-              </p>
+          <div className="mt-6 flex flex-col gap-3">
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card py-6 text-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Generating your {config.noun}…
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Writing {Math.min(config.countMax, Math.max(1, count || 1))}{" "}
+                  questions at {depth} depth — watch them arrive below.
+                </p>
+              </div>
             </div>
+            {/* The generator's stream renders live — never a bare spinner. */}
+            <LiveRunDisplay
+              conversationId={conversationId}
+              label={`Writing your ${config.noun}`}
+              pending
+              bodyClassName="max-h-80 overflow-y-auto px-2.5 py-2 text-sm"
+            />
           </div>
         ) : (
           <div className="mt-6 flex flex-col gap-5 rounded-xl border border-border bg-card p-4 sm:p-6">

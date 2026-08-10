@@ -45,8 +45,17 @@ Recipe: React run site → `useSlotRunner`; React non-run site (a `defaultAgentI
 
 **Known gap:** `launchAgentExecution` consumers (content-plan) apply the slot's AGENT but not its `config_overrides` — that path carries model overrides through the instance-model-overrides slice, not a call arg. A settings-only binding is therefore inert there today.
 
+**Known gap — `useSlotRunner`/`useRunAgent` cannot live-render.** They produce
+no requestId (the stream drains into a local string), so a surface using them
+can only show a spinner — which violates the platform's no-spinner rule
+(`docs/handoffs/live-stream-everywhere.md`). A slot run the user WATCHES goes
+through `useLiveAgentRun` (`features/agents/hooks/useLiveAgentRun.ts`, takes
+`slotKey`) + `<LiveRunDisplay>`; keep `useSlotRunner` for genuinely invisible
+plumbing only.
+
 ## Change Log
 
+- 2026-08-10 — Documented the live-render gap above; content-plan's 7 setup slots + brief writer migrated onto `useLiveAgentRun` (slotKey-aware) with live output.
 - 2026-08-09 — The shared override editor now uses the canonical on-demand `AgentListDropdown`; it shows the chosen agent (or “Keep system agent”) without permanently rendering the full catalogue in every expanded slot.
 
 - 2026-08-09 — DOOR LAW pass on `/agents/slots`: resolved/default/override agents are `EntityRef` doors, organization narratives link to their organization, and slot-card headers permit legally nested door controls. Regression coverage lives in `components/__tests__/slot-overrides-doors.test.tsx`.
