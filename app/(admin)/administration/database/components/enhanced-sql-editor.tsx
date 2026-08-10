@@ -43,6 +43,7 @@ import { saveQuery } from "@/components/admin/query-history/query-storage";
 import { toast } from "@/lib/toast";
 import { CategoryNotesModal } from "@/features/notes/actions/CategoryNotesModal";
 import type { Note } from "@/features/notes/types";
+import { validateSqlQueryWrite } from "@/features/administration/lib/sql-editor-write-targets";
 import { DEFAULT_DATABASE_SCHEMA } from "../config";
 
 // Example queries — schema in snippets is illustrative; swap via the editor.
@@ -245,10 +246,37 @@ export const EnhancedSQLEditor = ({
     });
   };
 
+  // Surface write handlers — the write half of `matrx-admin/database`. ONE
+  // target: `sql_query` STAGES text into the editor. It is the same
+  // `setSqlQuery` the admin's own typing, the template cards, and the history
+  // rows call — never a parallel write path — so the staged query is visible
+  // and editable the instant it lands, and the admin still presses Execute.
+  //
+  // NOTHING here can run a query. `handleExecuteQuery`, `onCancelQuery`,
+  // `onClearCache` and `setUseCache` are deliberately absent: execution and
+  // cache behaviour stay human-only (see the write-target doctrine block in
+  // admin-database.manifest.ts).
+  //
+  // Validation happens in the PURE core before any setState, so a bad value
+  // throws synchronously inside `applySurfaceWrite`'s try/catch — where the
+  // seam turns it into the error envelope the agent reads — instead of inside
+  // a React updater, where it would escape the seam and break a render.
+  const getWriteHandlers = () => ({
+    sql_query: (value: unknown) => {
+      if (loading) {
+        throw new Error(
+          "A query is currently running. Wait for it to finish before staging new SQL — swapping the editor mid-run would leave the admin reading results that belong to different SQL.",
+        );
+      }
+      setSqlQuery(validateSqlQueryWrite(value));
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_DATABASE_SURFACE_NAME}
       getScope={getSurfaceScope}
+      getWriteHandlers={getWriteHandlers}
       isEditable={false}
     >
     <Card

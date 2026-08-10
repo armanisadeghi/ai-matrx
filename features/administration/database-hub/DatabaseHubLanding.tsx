@@ -108,6 +108,17 @@ export function DatabaseHubLanding() {
 
   // Surface emitter — hub half of `matrx-admin/database`. Built at trigger
   // time. No credentials of any kind enter this scope.
+  //
+  // NO WRITE HANDLERS, deliberately. This mount owns no editable state: the
+  // hub is a static link grid over `databaseToolPages` (a build-time config
+  // module), and `totalTools`/`dupCount` are derived counts, not settings —
+  // there is nothing here an agent could author. The surface's one write
+  // target (`sql_query`) belongs to the SQL workbench mount at
+  // `/administration/database/sql-queries`, which owns the editor buffer.
+  // Registering no handler is the correct outcome, not an omission:
+  // `listAgentWritableTargets()` only offers a target where the mount wired
+  // one, so an agent on the hub is offered nothing and cannot stage SQL into
+  // a page that has no editor.
   const getSurfaceScope = () =>
     createAdminDatabaseScope({
       console_section: "hub",
