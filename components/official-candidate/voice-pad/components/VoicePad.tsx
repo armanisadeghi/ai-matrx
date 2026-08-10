@@ -48,6 +48,12 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
     selectVoicePadDraftText(s, OVERLAY_ID, instanceId),
   );
   const [liveTranscript, setLiveTranscript] = useState("");
+  // Mic lifecycle, mirrored from the mic button. Emitted as scope and read by
+  // the `pad_text` write guard below. `liveTranscript` alone can't stand in for
+  // it: it is empty between pressing record and the first streamed chunk, and
+  // again while a stopped recording is still being transcribed.
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const windowId = `voice-pad-${instanceId}`;
   const micId = `voice-pad-mic-${instanceId}`;
@@ -71,6 +77,14 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
   const handleLiveTranscript = useCallback((text: string) => {
     setLiveTranscript(text);
   }, []);
+
+  const handleRecordingStateChange = useCallback(
+    (state: { isRecording: boolean; isTranscribing: boolean }) => {
+      setIsRecording(state.isRecording);
+      setIsTranscribing(state.isTranscribing);
+    },
+    [],
+  );
 
   const handleRemoveEntry = useCallback(
     (entryId: string) => {
@@ -107,6 +121,16 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
   // at apply time, not at mount.
   const getSurfaceWriteHandlers = () => ({
     pad_text: (raw: unknown) => {
+      // Refuse mid-dictation. A write sets `draftText`, and a non-null draft is
+      // what the textarea renders — but `handleTranscriptionComplete` only
+      // pushes finished speech into `entries`. Writing now would leave the user
+      // reading the agent's text with the words they just spoke missing from
+      // the box (recorded below in Session entries, but not where they look).
+      if (isRecording || isTranscribing) {
+        throw new Error(
+          `pad_text: the user is still ${isRecording ? "recording" : "transcribing"} — their finished speech is about to land in this same box. Wait for it, then write.`,
+        );
+      }
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
         throw new Error(
           `pad_text expects { text: string, mode?: ${VOICE_PAD_TEXT_WRITE_MODES.join(" | ")} }.`,
@@ -148,6 +172,7 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
           id={micId}
           onTranscriptionComplete={handleTranscriptionComplete}
           onLiveTranscript={handleLiveTranscript}
+          onRecordingStateChange={handleRecordingStateChange}
           variant="icon-only"
           size="xs"
         />
@@ -176,6 +201,8 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
             })),
             draft_text: draftText ?? undefined,
             live_transcript: liveTranscript || undefined,
+            is_recording: isRecording,
+            is_transcribing: isTranscribing,
           })
         }
         isEditable
