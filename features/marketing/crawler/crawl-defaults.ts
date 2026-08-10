@@ -4,6 +4,7 @@ import {
   defaultCrawlOptions,
   type CrawlStartOptions,
 } from "@/features/marketing/crawler/direct-client";
+import { isCrawlRenderMode } from "@/features/marketing/crawler/crawl-options";
 
 /**
  * THE one crawl_defaults round-trip. Site settings and the launch form both
@@ -12,12 +13,8 @@ import {
  * (docs/MARKETING_PROGRAM_BOARD.md "Crawl defaults are lossy").
  */
 
-const RENDER_MODES: readonly CrawlStartOptions["render_mode"][] = [
-  "http_only",
-  "http_first",
-  "browser_always",
-  "browser_with_screenshot",
-];
+// The render-mode vocabulary lives in `crawler/crawl-options.ts` — the one
+// list the launch form, the surface manifest, and its write handler share.
 
 function readNumber(raw: Json | undefined, fallback: number): number {
   return typeof raw === "number" && Number.isFinite(raw) && raw > 0
@@ -76,10 +73,8 @@ export function crawlOptionsFromSettings(settings: Json): CrawlStartOptions {
       raw.politeness_delay_ms >= 0
         ? raw.politeness_delay_ms
         : defaultCrawlOptions.politeness_delay_ms,
-    render_mode: RENDER_MODES.includes(
-      renderMode as CrawlStartOptions["render_mode"],
-    )
-      ? (renderMode as CrawlStartOptions["render_mode"])
+    render_mode: isCrawlRenderMode(renderMode)
+      ? renderMode
       : defaultCrawlOptions.render_mode,
     capture_screenshots: readBoolean(
       raw.capture_screenshots,
