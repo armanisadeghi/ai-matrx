@@ -58,85 +58,6 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 200,
     sortOrder: 320,
   },
-  {
-    name: "is_recording",
-    label: "Recording",
-    description:
-      "True while this pad's mic is actively recording. Always present. Check it before writing `pad_text` — a write is REFUSED while dictation is in flight, because the finished transcription is about to land in the same pad.",
-    valueType: "boolean",
-    alwaysAvailable: true,
-    typicalCharCount: 5,
-    sortOrder: 330,
-  },
-  {
-    name: "is_transcribing",
-    label: "Transcribing",
-    description:
-      "True while a finished recording is still being transcribed (post-stop, pre-commit) — the speech has not landed in the pad yet. Always present. Like `is_recording`, it blocks `pad_text` writes.",
-    valueType: "boolean",
-    alwaysAvailable: true,
-    typicalCharCount: 5,
-    sortOrder: 340,
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Write half — the pad's ONE editable buffer.
-// ---------------------------------------------------------------------------
-
-/**
- * How a `pad_text` write combines with the pad's current working text. THE
- * vocabulary — the manifest description below and the handler in
- * `VoicePad.tsx` both read this constant, so they cannot drift.
- */
-export const VOICE_PAD_TEXT_WRITE_MODES = ["replace", "append"] as const;
-
-export type VoicePadTextWriteMode = (typeof VOICE_PAD_TEXT_WRITE_MODES)[number];
-
-/** Wire value for the `pad_text` write target. */
-export interface VoicePadTextWrite {
-  /** The text to stage. Non-empty. */
-  text: string;
-  /** Defaults to `"replace"`. */
-  mode?: VoicePadTextWriteMode;
-}
-
-/**
- * ONE target, deliberately. The pad holds exactly one piece of AUTHORED state
- * — the editable draft the user types into (`voicePadSlice.draftText`, shown
- * as `content`). Everything else it holds is CAPTURED EVIDENCE: `live_transcript`
- * and `transcript_entries` are what the microphone actually heard, and an agent
- * rewriting them would fabricate a record of something a human said. They get no
- * target, and neither does anything that starts/stops the mic (a device action
- * the human presses) or clears the pad (destructive — Clear stays human).
- *
- * The handler is registered by `VoicePad.tsx` on the SurfaceRuntimeProvider it
- * already mounts, and dispatches the SAME `setDraftText` action the textarea's
- * onChange dispatches.
- *
- * IN-FLIGHT DICTATION IS REFUSED (`is_recording` / `is_transcribing`). This is
- * not caution for its own sake — it closes a real way to lose speech. A pad
- * write sets `draftText`, and a non-null draft is what the textarea renders;
- * but `handleTranscriptionComplete` only pushes finished speech into
- * `entries`. So a write landing mid-dictation leaves the user watching the
- * agent's text while the words they just said are nowhere on screen (recorded
- * in the entries list, but silently absent from the box they are reading).
- * The handler throws instead, and the two flags above are declared so an agent
- * can see the refusal coming rather than discover it. Same posture as
- * `matrx-user/image-generate`, which refuses to rewrite a request mid-run.
- */
-const writeTargets: SurfaceWriteTarget[] = [
-  {
-    name: "pad_text",
-    label: "Pad text",
-    description:
-      `Stages text into the Voice Pad's editable draft — the same buffer the user types into, so it appears in the pad's textarea immediately. Nothing is persisted: the user still sends or saves the pad onward. Value: { text: string (non-empty), mode?: ${VOICE_PAD_TEXT_WRITE_MODES.join(" | ")} } — "replace" (the default) swaps the pad's ENTIRE working text, "append" adds after the current text separated by a blank line. Read \`content\` first when rewriting so you keep what the user wants kept. This never alters the recorded dictation — \`transcript_entries\` and \`live_transcript\` are the captured microphone record and stay untouched. REFUSED while \`is_recording\` or \`is_transcribing\` is true: the user is mid-dictation and their finished speech is about to land in this same box, so wait for it to arrive and then write.`,
-    valueType: "object",
-    updatesValue: "content",
-    mode: "draft",
-    applyPolicy: "ask",
-    sortOrder: 200,
-  },
 ];
 
 /**
@@ -236,15 +157,7 @@ What you may not write is the RECORD of what was said: transcript_entries and li
   writeTargets,
 };
 
-/**
- * Type-safe payload helper. Required keys (no `?`) mirror every value declared
- * `alwaysAvailable: true`; optional keys mirror `alwaysAvailable: false`.
- */
 export function createVoicePadScope(values: {
-  // alwaysAvailable: true → required
-  is_recording: boolean;
-  is_transcribing: boolean;
-  // alwaysAvailable: false → optional
   content?: string;
   transcript_entries?: Array<{ id: string; text: string }>;
   draft_text?: string;

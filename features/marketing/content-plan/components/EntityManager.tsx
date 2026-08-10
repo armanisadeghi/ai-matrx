@@ -36,7 +36,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
-import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { createContentPlanEntitiesScope } from "@/features/surfaces/manifests/content-plan-entities.manifest";
 import {
   SurfaceRuntimeProvider,
@@ -65,12 +64,6 @@ import {
   type PlanEntityRow,
   type PlanEntityType,
 } from "../types";
-import {
-  parseCreateEntityWrite,
-  parseEntityDraftWrite,
-  parseOpenEntityEditorWrite,
-  type EntityWriteContext,
-} from "../lib/entity-write-targets";
 import { CategorySelect } from "@/features/scopes/components/CategorySelect";
 
 const SURFACE_NAME = "matrx-user/content-plan-entities";
@@ -129,26 +122,12 @@ export function EntityManager({
   const update = useUpdatePlanEntity(siteId);
   const queryClient = useQueryClient();
   const agents = useSetupAgents(siteId);
-  // The SAME dimension the editor's CategorySelect renders from — loaded here
-  // too so the surface can publish the picker's vocabulary (source_type_options)
-  // and the handlers can refuse an id that is not in it. The hook is
-  // idempotent per dimension, so this is the cached read, not a second fetch.
-  const sourceTypes = useCategories({
-    dimension: CATEGORY_DIMENSIONS.planSourceType,
-  });
 
   /** The open editor's staged draft; `null` means no editor is open. */
   const [draft, setDraft] = useState<EntityDraft | null>(null);
   const [deleting, setDeleting] = useState<PlanEntityRow | null>(null);
-  // Reported UP by the open dialog so `entity_editor` reflects what is TYPED,
-  // not just which row is open. Null whenever the dialog is closed.
-  const [editorSnapshot, setEditorSnapshot] =
-    useState<EntityEditorSnapshot | null>(null);
 
   const rows = entities.data ?? [];
-  const writeContext: EntityWriteContext = {
-    sourceTypeIds: sourceTypes.categories.map((category) => category.id),
-  };
 
   // The draft the write handlers read. Mirrored in a ref (and written
   // through it) so a `save_entity_draft` arriving in the same agent turn as
@@ -460,9 +439,8 @@ export function EntityManager({
 
   return (
     <SurfaceRuntimeProvider
-      surfaceName={SURFACE_NAME}
+      surfaceName="matrx-user/content-plan-entities"
       getScope={getScope}
-      getWriteHandlers={buildWriteHandlers}
     >
       <div
         data-surface-value="entities_summary"

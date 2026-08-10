@@ -94,20 +94,6 @@ import {
   pageCountFromRagHit,
 } from "@/features/rag/components/search/ragReviewPages";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
-import {
-  clampMultiQuery,
-  clampResultLimit,
-  isValidMultiQuery,
-  isValidResultLimit,
-  MULTI_QUERY_MAX,
-  MULTI_QUERY_MIN,
-  PIPELINE_FLAG_KEYS,
-  PIPELINE_PATCH_KEYS,
-  RESULT_LIMIT_DEFAULT,
-  RESULT_LIMIT_MAX,
-  RESULT_LIMIT_MIN,
-  SEARCH_QUERY_MAX_CHARS,
-} from "@/features/rag/constants/search-pipeline";
 import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
 import { ActiveScopeChips } from "@/features/scopes/components/active-context/ActiveScopeChips";
@@ -194,9 +180,6 @@ const RAG_AGENT_TOOL_IDS = [
  */
 const SEARCH_TAB_RESULT_LIMIT = 25;
 
-/** Max length the `search_query` write target accepts from an agent. */
-const SEARCH_QUERY_MAX_CHARS = 1000;
-
 function useScopeControls(initialStoreId: string | null = null) {
   const stores = useDataStores();
   // Seed from the deep-link `?store_id=` synchronously so a shared search URL
@@ -205,20 +188,13 @@ function useScopeControls(initialStoreId: string | null = null) {
   const [kindFilter, setKindFilter] = useState<SourceKindFilter>("all");
   const [adminBypass, setAdminBypass] = useState(false);
   const [rerank, setRerank] = useState(true);
-  const [multiQuery, setMultiQuery] = useState(MULTI_QUERY_MIN);
+  const [multiQuery, setMultiQuery] = useState(1);
   const [useHyde, setUseHyde] = useState(false);
   const [expandClusters, setExpandClusters] = useState(false);
-  // Hits requested per Search-tab search — a sidebar control (not a constant)
-  // so the surface's `result_limit` has a place the user can see and correct
-  // whatever writes it. Emitted as the surface's `result_limit`.
-  const [resultLimit, setResultLimit] = useState(RESULT_LIMIT_DEFAULT);
 
-  // Resolved wire value for the current filter — `undefined` for "all" (send
-  // no source_kinds at all). The mapping lives in the shared vocabulary so the
-  // toggle, this resolution, and the agent contract cannot drift apart.
   const sourceKinds = useMemo<string[] | undefined>(() => {
-    const kinds = SOURCE_KIND_FILTER_BY_VALUE[kindFilter].sourceKinds;
-    return kinds ? [...kinds] : undefined;
+    if (kindFilter === "all") return undefined;
+    return [kindFilter];
   }, [kindFilter]);
 
   return {
@@ -238,8 +214,6 @@ function useScopeControls(initialStoreId: string | null = null) {
     setUseHyde,
     expandClusters,
     setExpandClusters,
-    resultLimit,
-    setResultLimit,
   };
 }
 
@@ -589,23 +563,6 @@ function ScopeSidebar({
             className="w-14 px-1.5 py-1 text-base rounded border bg-background"
           />
         </label>
-        <label
-          className="flex items-center gap-2 text-xs"
-          title={`How many hits one search asks for (${RESULT_LIMIT_MIN}-${RESULT_LIMIT_MAX}). Applies to the Search tab; the Agent Simulation tab reproduces the registered tool's own limit.`}
-        >
-          <span className="text-muted-foreground">Limit</span>
-          <input
-            type="number"
-            min={RESULT_LIMIT_MIN}
-            max={RESULT_LIMIT_MAX}
-            value={scope.resultLimit}
-            onChange={(e) =>
-              scope.setResultLimit(clampResultLimit(Number(e.target.value)))
-            }
-            className="w-14 px-1.5 py-1 text-base rounded border bg-background"
-            data-surface-value="result_limit"
-          />
-        </label>
         <label className="flex items-center gap-2 text-xs cursor-pointer text-amber-700 dark:text-amber-400">
           <Checkbox
             checked={scope.adminBypass}
@@ -876,7 +833,7 @@ function SearchTab({
     try {
       const r = await ragSearch({
         query: trimmed,
-        limit: scope.resultLimit,
+        limit: SEARCH_TAB_RESULT_LIMIT,
         rerank: scope.rerank,
         // Honor the sidebar Pipeline controls in the plain Search tab too —
         // previously HyDE / multi-query / MMR were wired only into the Agent
@@ -958,7 +915,7 @@ function SearchTab({
     multiQuery: scope.multiQuery,
     useHyde: scope.useHyde,
     expandClusters: scope.expandClusters,
-    resultLimit: scope.resultLimit,
+    resultLimit: SEARCH_TAB_RESULT_LIMIT,
     activeOrganizationId: searchContext.filters?.organization_id,
     activeScopeIds:
       searchContext.scope_ids ?? searchContext.filters?.scope_ids ?? null,
@@ -1127,100 +1084,6 @@ function SearchTab({
     resultExpansionStates.length > 0 &&
     resultExpansionStates.every((expanded) => !expanded);
 
-  // Write handlers for the surface's declared `writeTargets` — the agent
-  // stages the next search request, the user still presses Search.
-  //
-  // Every handler dispatches the SAME setter the user's own typing/clicking
-  // dispatches (`setQuery`, `scope.setRerank`, …), so a staged value is
-  // visible and editable the instant it lands and there is no parallel write
-  // path to drift. Nothing here is persisted: this surface's editable state is
-  // all local `useState`, which is exactly what `mode: "draft"` means for it.
-  //
-  // Validation THROWS. `applySurfaceWrite` converts a throw into a safe error
-  // envelope the agent reads and can correct from, so a wrong value must be
-  // refused loudly rather than coerced — a silently clamped multi-query or a
-  // truthy-coerced "false" would leave the user with a search they did not ask
-  // for and the agent believing it succeeded.
-  const buildWriteHandlers = (): SurfaceWriteHandlers => {
-    // A search in flight has its inputs locked and its request already sent;
-    // staging into them would edit the next run while the user is reading the
-    // current one. Every target shares the guard.
-    const assertIdle = (label: string) => {
-      if (running) {
-        throw new Error(
-          `Cannot change ${label} while a search is running. Wait for the current search to finish, then try again.`,
-        );
-      }
-    };
-
-    const assertBoolean = (value: unknown, label: string): boolean => {
-      if (typeof value !== "boolean") {
-        throw new Error(
-          `${label} must be a boolean (true or false), not ${typeof value === "string" ? `the string "${value}"` : typeof value}.`,
-        );
-      }
-      return value;
-    };
-
-    return {
-      search_query: (value) => {
-        assertIdle("the search query");
-        if (typeof value !== "string") {
-          throw new Error(
-            `search_query must be a plain string, not ${Array.isArray(value) ? "an array" : typeof value}. Send the query text itself, not a JSON object wrapping it.`,
-          );
-        }
-        const trimmed = value.trim();
-        if (!trimmed) {
-          throw new Error(
-            "search_query must not be empty. Send the text to search for.",
-          );
-        }
-        if (trimmed.length > SEARCH_QUERY_MAX_CHARS) {
-          throw new Error(
-            `search_query must be at most ${SEARCH_QUERY_MAX_CHARS} characters (got ${trimmed.length}).`,
-          );
-        }
-        setQuery(trimmed);
-      },
-
-      source_kind_filter: (value) => {
-        assertIdle("the source-kind filter");
-        if (!isSourceKindFilter(value)) {
-          throw new Error(
-            `source_kind_filter must be exactly one of: ${SOURCE_KIND_FILTER_ENUM_TEXT}. Got ${JSON.stringify(value)}. It is a single choice, not an array — use "all" to clear the filter.`,
-          );
-        }
-        scope.setKindFilter(value);
-      },
-
-      rerank: (value) => {
-        assertIdle("the rerank setting");
-        scope.setRerank(assertBoolean(value, "rerank"));
-      },
-
-      multi_query: (value) => {
-        assertIdle("the multi-query count");
-        if (!isValidMultiQuery(value)) {
-          throw new Error(
-            `multi_query must be a whole number from ${MULTI_QUERY_MIN} to ${MULTI_QUERY_MAX}. Got ${JSON.stringify(value)}.`,
-          );
-        }
-        scope.setMultiQuery(value);
-      },
-
-      use_hyde: (value) => {
-        assertIdle("the HyDE setting");
-        scope.setUseHyde(assertBoolean(value, "use_hyde"));
-      },
-
-      expand_entity_clusters: (value) => {
-        assertIdle("the entity-cluster setting");
-        scope.setExpandClusters(assertBoolean(value, "expand_entity_clusters"));
-      },
-    };
-  };
-
   if (reviewHit) {
     const reviewView = hitViewFromSearchHit(reviewHit, {
       name: response
@@ -1280,7 +1143,6 @@ function SearchTab({
       getScope={getResultsApplicationScope}
       getWriteHandlers={getSurfaceWriteHandlers}
       isEditable={false}
-      getWriteHandlers={buildWriteHandlers}
     >
     <div className="flex flex-col h-full overflow-hidden">
       <header className="border-b p-3">

@@ -21,11 +21,6 @@
  * State is local to the workspace component (no central Redux slice), so
  * `ScraperFloatingWorkspace` rebuilds `contextData` from live state via
  * `features/scraper/agent-context/buildScraperContextData.ts`.
- *
- * Agent-writable since 2026-08-10: one draft target (`scrape_request`) stages
- * the next scrape's inputs into the same form state the user types into. The
- * scrape itself is never agent-triggered. See the block above `writeTargets`
- * for which fields earned a target and why `target_url` was the close call.
  */
 
 import type {
@@ -44,23 +39,6 @@ import {
   SCRAPE_MODE_ENUM_TEXT,
 } from "@/features/scraper/scrape-command";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
-
-/**
- * THE scrape-mode vocabulary — the single source of truth for the three modes
- * the workspace offers, in the wire spelling agents read on `scrape_mode` and
- * write on `scrape_request`.
- *
- * Declared here (not in the feature) because `buildScraperContextData.ts`
- * already imports this manifest; the reverse would be circular. That file maps
- * the workspace's internal mode ids (`url` / `batch` / `web`) onto these, and
- * the write handler maps back — both against this constant, so the enum can
- * never drift from the prose in `scrape_request.description`, which is built
- * from it.
- */
-export const SCRAPE_MODES = ["quick", "full", "search"] as const;
-
-/** One of the three modes in {@link SCRAPE_MODES}. */
-export type ScrapeMode = (typeof SCRAPE_MODES)[number];
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -430,20 +408,11 @@ const surfaceSpecific: SurfaceValue[] = [
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
-    name: "scrape_request",
-    label: "Scrape request",
+    name: "scrape_command",
+    label: "Scrape command",
     description:
-      "Stages the NEXT scrape request into the workspace's input form — the same fields the user types into. The user still presses Scrape; this never fetches anything. " +
-      `Value: an object with any of { scrape_mode?: ${SCRAPE_MODES.join(" | ")}, target_url?: string, search_keyword?: string, max_pages?: number }; ` +
-      "omitted fields keep what the user already typed, so send only what you are changing. " +
-      'Each mode uses a different input, so send the field that matches: "quick" scrapes one page and uses target_url; "search" runs a keyword web search and uses search_keyword; "full" searches then scrapes the top results and uses search_keyword plus max_pages (1-20). ' +
-      "Sending a field the resulting mode does not use is rejected rather than silently dropped. " +
-      "target_url must be an absolute http:// or https:// URL, and you must take it from what is in front of you — a url in search_hits or scraped_links, or one the user gave you. Never write a URL you are recalling rather than reading; a plausible-looking address for a page that does not exist wastes the user's request. " +
-      "Read target_url, search_keyword, max_pages and scrape_mode to see what is currently staged. Refused while is_scraping is true — a run is in flight and the inputs are locked.",
+      `Stages WHAT the workspace will scrape and in which mode. Value is a partial patch object: { mode?: ${SCRAPE_MODE_ENUM_TEXT}, url?: string, keyword?: string } — omitted keys keep their current value, and at least one key must be present. Modes: ${SCRAPE_MODES.map((m) => `"${m.value}" (${m.summary})`).join(", ")}. \`url\` applies only in "${SCRAPE_MODES.find((m) => m.input === "url")!.value}" mode and is stored normalized (https:// is added when the scheme is omitted); \`keyword\` applies only in ${SCRAPE_MODES.filter((m) => m.input === "keyword").map((m) => `"${m.value}"`).join(" and ")} mode. Sending a field the resolved mode does not use is REFUSED rather than staged into an input the user cannot see — send the mode in the SAME call as the field it enables. Take a URL from what is IN FRONT OF YOU — one in search_hits or scraped_links, or one the user gave you. Never write a URL you are recalling rather than reading: a plausible-looking address for a page that does not exist wastes the user's run against a real server. Read the current command back from scrape_mode / target_url / search_keyword. This only STAGES the command: the user still presses Scrape, and running the scrape is never an agent action. Refused while is_scraping is true — a run is in flight and the inputs are locked.`,
     valueType: "object",
-    // No 1:1 read twin: this one target stages four declared values
-    // (target_url / search_keyword / max_pages / scrape_mode), which the
-    // description names for the evidence loop.
     mode: "draft",
     applyPolicy: "ask",
     group: "target",
@@ -542,7 +511,7 @@ export interface ScraperSearchHitEntry {
 
 export function createScraperScope(values: {
   // alwaysAvailable: true → required
-  scrape_mode: ScrapeMode;
+  scrape_mode: "quick" | "full" | "search";
   results_overview: ScraperResultOverviewEntry[];
   result_count: number;
   search_hit_count: number;

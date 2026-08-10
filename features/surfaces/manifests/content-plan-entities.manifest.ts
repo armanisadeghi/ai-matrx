@@ -12,7 +12,6 @@
  * `SurfaceRuntimeProvider` (deepest wins while the view is active).
  */
 
-import { PLAN_ENTITY_TYPES } from "@/features/marketing/content-plan/types";
 import type {
   SurfaceManifest,
   SurfaceScopePayload,
@@ -21,14 +20,6 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
-
-/**
- * THE entity_type vocabulary, imported from the feature's canonical constant —
- * the same list the editor's Type select renders, the write handlers validate
- * against, and the target descriptions below interpolate. Re-typing it here as
- * literals is how a manifest starts lying about what the page accepts.
- */
-const ENTITY_TYPE_LIST = PLAN_ENTITY_TYPES.join(" | ");
 
 const groups: SurfaceValueGroup[] = [
   {

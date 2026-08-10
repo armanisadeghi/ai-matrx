@@ -24,7 +24,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, SearchCheck } from "lucide-react";
 
-import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { ResearchRunState } from "../useKeywordResearch";
 import {
   savedKeywordResearchQueryKey,
@@ -53,18 +52,13 @@ export interface KeywordResearchLauncherProps {
    * organization (the same org callApi stamps on the run itself). */
   organizationId?: string | null;
   /**
-   * Surface whose `research_seed_keyword` write target this launcher services.
-   * Opt-in and null by default: only a host that MOUNTS a surface declaring
-   * that target passes it (the workbench does; the floating
-   * `KeywordResearchWindow` does not), so a launcher can never register a
-   * handler for a surface it is not actually inside.
+   * Surface whose `research_input_keyword` write target this launcher should
+   * service. ONLY the host that actually mounts that surface passes it — the
+   * workbench does; `KeywordResearchWindow` (a floating overlay above whatever
+   * page the user is on) deliberately does not, so an agent run on the page
+   * underneath can never type into a window that page does not own.
    */
-  writeSurfaceName?: string | null;
-}
-
-/** Wire value for the `research_seed_keyword` target. */
-export interface ResearchSeedKeywordWrite {
-  keyword: string;
+  writeTargetSurfaceName?: string | null;
 }
 
 export default function KeywordResearchLauncher({
@@ -75,7 +69,7 @@ export default function KeywordResearchLauncher({
   feedMaxHeightClassName = "max-h-[26rem]",
   onKeywordChange,
   organizationId,
-  writeSurfaceName = null,
+  writeTargetSurfaceName = null,
 }: KeywordResearchLauncherProps) {
   const [primaryInput, setPrimaryInput] = useState(initialKeyword ?? "");
   const autoRanRef = useRef(false);
@@ -113,37 +107,44 @@ export default function KeywordResearchLauncher({
     void runResearch(primaryInput);
   }, [primaryInput, run.status, runResearch]);
 
-  // ── Surface write half ───────────────────────────────────────────────────
-  // `research_seed_keyword` stages the input and NOTHING else — it lands
-  // through exactly the setters the user's own typing uses (setPrimaryInput +
-  // onKeywordChange, so a host that persists the input still sees it). The
-  // Research button is deliberately not driven from here: the run is a paid
-  // third-party pipeline and stays the user's to press.
-  useSurfaceWriteHandlers(writeSurfaceName, {
-    research_seed_keyword: (value: unknown) => {
-      const write = value as Partial<ResearchSeedKeywordWrite> | null;
-      if (!write || typeof write.keyword !== "string") {
-        // Loud by contract: the writeback seam turns a throw into the toast +
-        // captured error the agent reads back, never a silent no-op.
+  /**
+   * `research_input_keyword` — the surface write target for this input. The
+   * launcher registers it itself because it OWNS `primaryInput`; the workbench
+   * only publishes the surface. Staging goes through exactly the path the
+   * user's typing goes through (`setPrimaryInput` + `onKeywordChange`), so the
+   * host's emitted value and the box can never disagree. Nothing here starts a
+   * run — `handleRun` stays behind the button.
+   */
+  useSurfaceWriteHandlers(writeTargetSurfaceName, {
+    research_input_keyword: (value: unknown) => {
+      if (typeof value !== "string") {
         throw new Error(
-          "research_seed_keyword expects { keyword: string }",
+          `research_input_keyword expects a string keyword phrase, got ${Array.isArray(value) ? "array" : typeof value}.`,
         );
       }
-      const keyword = write.keyword.trim();
-      if (!keyword) {
+      const phrase = value.trim();
+      if (!phrase) {
         throw new Error(
-          "research_seed_keyword requires a non-empty keyword phrase",
+          "research_input_keyword needs a keyword phrase — an empty string would leave the Research button disabled.",
+        );
+      }
+      if (phrase.length > MAX_STAGED_KEYWORD_LENGTH) {
+        throw new Error(
+          `research_input_keyword: "${phrase.slice(0, 40)}…" is ${phrase.length} characters — a primary keyword must be at most ${MAX_STAGED_KEYWORD_LENGTH}.`,
+        );
+      }
+      if (/[\r\n]/.test(phrase)) {
+        throw new Error(
+          "research_input_keyword takes ONE keyword phrase, not a list — the launcher researches a single primary keyword per run.",
         );
       }
       if (run.status === "running") {
-        // The input is locked to the in-flight request; re-seeding it would
-        // misrepresent the run the user is currently paying for.
         throw new Error(
-          `A research run for “${run.primaryKeyword ?? ""}” is still in flight — the seed keyword cannot be changed until it finishes.`,
+          "research_input_keyword: the research input is locked while a run is in flight, exactly as it is for the user. Wait for the run to finish.",
         );
       }
-      setPrimaryInput(keyword);
-      onKeywordChange?.(keyword);
+      setPrimaryInput(phrase);
+      onKeywordChange?.(phrase);
     },
   });
 

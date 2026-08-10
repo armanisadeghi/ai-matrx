@@ -22,18 +22,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import {
-  SCAN_PAGE_LABEL_MAX_LENGTH,
-  SCAN_TITLE_MAX_LENGTH,
-} from "@/features/pdf/scanner/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
-
-/**
- * `ui_surface.name` for the scanner. Exported because THREE places must agree
- * on it: this manifest, the provider mount (`ScannerSurfaceRuntime`), and the
- * review skin that registers the write handlers (`DesktopReview`).
- */
-export const SCANNER_SURFACE_NAME = "matrx-user/scanner";
 
 /**
  * The scanner's own sections. Parent group keys are NOT declared here —
@@ -406,7 +395,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 ];
 
 export const scannerManifest: SurfaceManifest = {
-  surfaceName: SCANNER_SURFACE_NAME,
+  surfaceName: "matrx-user/scanner",
   readiness: "verified",
   inheritsFrom: "matrx-user/pdf-extractor",
   label: "Scanner",
@@ -428,7 +417,6 @@ This surface never loads extracted document text; the inherited PDF Extractor
 text values are always empty here. \`scan_raw_preview\` is the only text it sees.
 </surface_intro>`,
   groups,
-  writeTargets,
   values: mergeBaselineValues(
     pickBaseline(
       "selection",

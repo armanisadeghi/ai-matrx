@@ -16,11 +16,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import {
-  createVoicePadScope,
-  VOICE_PAD_TEXT_WRITE_MODES,
-  type VoicePadTextWrite,
-} from "@/features/surfaces/manifests/voice-pad.manifest";
+import { createVoicePadScope } from "@/features/surfaces/manifests/voice-pad.manifest";
 
 const VoicePadExpanded = lazy(() => import("./VoicePadExpanded"));
 
@@ -48,12 +44,6 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
     selectVoicePadDraftText(s, OVERLAY_ID, instanceId),
   );
   const [liveTranscript, setLiveTranscript] = useState("");
-  // Mic lifecycle, mirrored from the mic button. Emitted as scope and read by
-  // the `pad_text` write guard below. `liveTranscript` alone can't stand in for
-  // it: it is empty between pressing record and the first streamed chunk, and
-  // again while a stopped recording is still being transcribed.
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const windowId = `voice-pad-${instanceId}`;
   const micId = `voice-pad-mic-${instanceId}`;
@@ -77,14 +67,6 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
   const handleLiveTranscript = useCallback((text: string) => {
     setLiveTranscript(text);
   }, []);
-
-  const handleRecordingStateChange = useCallback(
-    (state: { isRecording: boolean; isTranscribing: boolean }) => {
-      setIsRecording(state.isRecording);
-      setIsTranscribing(state.isTranscribing);
-    },
-    [],
-  );
 
   const handleRemoveEntry = useCallback(
     (entryId: string) => {
@@ -207,7 +189,6 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
           id={micId}
           onTranscriptionComplete={handleTranscriptionComplete}
           onLiveTranscript={handleLiveTranscript}
-          onRecordingStateChange={handleRecordingStateChange}
           variant="icon-only"
           size="xs"
         />
@@ -236,8 +217,6 @@ export default function VoicePad({ instanceId }: VoicePadProps) {
             })),
             draft_text: draftText ?? undefined,
             live_transcript: liveTranscript || undefined,
-            is_recording: isRecording,
-            is_transcribing: isTranscribing,
           })
         }
         isEditable

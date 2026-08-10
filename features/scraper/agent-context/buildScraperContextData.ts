@@ -1,7 +1,6 @@
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import {
   createScraperScope,
-  type ScrapeMode,
   type ScraperResultOverviewEntry,
   type ScraperSearchHitEntry,
 } from "@/features/surfaces/manifests/scraper.manifest";
@@ -11,6 +10,7 @@ import type { ScrapedDetailTabId } from "@/features/scraper/parts/ScrapedResultD
 import { contentLength } from "@/features/scraper/utils/scraper-floating-helpers";
 import {
   toScrapeMode,
+  type ScrapeMode,
   type WorkspaceMode,
 } from "@/features/scraper/scrape-command";
 

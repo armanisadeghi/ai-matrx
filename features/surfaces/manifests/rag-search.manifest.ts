@@ -206,7 +206,8 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "multi_query",
     label: "Multi-query count",
-    description: `Number of paraphrase variants the pipeline expands the search into (${MULTI_QUERY_MIN}-${MULTI_QUERY_MAX}), each embedded and fused via RRF. ${MULTI_QUERY_MIN} means no expansion.`,
+    description:
+      "Number of paraphrase variants the pipeline expands the search into (1-5), each embedded and fused via RRF. 1 means no expansion.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 2,
@@ -238,7 +239,8 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "result_limit",
     label: "Result limit",
-    description: `How many hits the surface requests per search. On the Search tab this is the sidebar's Limit control (${RESULT_LIMIT_MIN}-${RESULT_LIMIT_MAX}, default ${RESULT_LIMIT_DEFAULT}); the Agent Simulation tool run is pinned to 10 because it reproduces the registered knowledge_search tool. Empty on mounts that run no search.`,
+    description:
+      "How many hits the surface requests per search (25 on the Search tab, 10 for the Agent Simulation tool run). Empty on mounts that run no search.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 2,
@@ -500,7 +502,6 @@ You are on the RAG Search Lab: the user searches their own indexed content (PDFs
 Read the values in three layers. RETRIEVAL SCOPE (data_store_id, source_kinds, active_organization_id, active_scope_ids, admin_bypass_acl) is what the search is allowed and filtered to see — when you call a knowledge tool, match this scope rather than inventing your own, and remember that an EMPTY data store or organization means "everything the user can see", never "nothing". PIPELINE SETTINGS (rerank, multi_query, use_hyde, expand_entity_clusters, result_limit) change recall and ordering only; they never widen permissions. RESULTS are evidence of the last search.
 Scores are pipeline-relative — a rerank score or a fused RRF score — so they compare hits within one result set and mean nothing across searches. Never present a score as a confidence or a truth value. Check rerank_status before trusting the ordering: "low_confidence" means nothing matched the query strongly and the fusion order was kept, and "failed" means the reranker errored.
 query_term_coverage tells you which of the user's words appeared in zero results; when a key term is missing, say so rather than answering around it. Zero results is a real, reportable answer — never fabricate passages, and cite the source and page of anything you do use.
-You can also COMPOSE the next search rather than only describe it: the write targets stage the query text, the source-kind filter, and the retrieval knobs (rerank, multi_query, use_hyde, expand_entity_clusters) straight into the form. Staging is not running — the user presses Search, because every run costs an embedding call and HyDE and multi-query cost LLM calls on top. When a search comes back thin, the useful move is to rewrite the query in the vocabulary the documents would use and raise recall with ONE knob you can justify, then let the user run it. You cannot change which data store is searched or the admin ACL bypass; if the answer looks like it lives in a different store, say so and let the user pick it.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
