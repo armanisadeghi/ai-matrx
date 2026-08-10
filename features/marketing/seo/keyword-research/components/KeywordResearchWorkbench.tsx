@@ -62,6 +62,16 @@ import {
   MOBILE_TABLE,
 } from "@/components/official/mobile-table/mobileTable";
 
+/** The surface this workbench mounts — and whose write targets it services. */
+const KEYWORD_RESEARCH_SURFACE = "matrx-user/keyword-research";
+
+/** Wire value for the `keyword_selection` write target. */
+export interface KeywordSelectionWrite {
+  keyword_ids: string[];
+  /** Omitted = "replace" — the selection becomes exactly `keyword_ids`. */
+  mode?: "replace" | "add";
+}
+
 const EDGE_TYPE_LABELS: Record<string, string> = {
   refines: "Refines",
   variant_of: "Variant of",
@@ -418,85 +428,60 @@ export default function KeywordResearchWorkbench() {
       stagedKeyword: stagedKeywordRef.current,
     });
 
-  /**
-   * The write targets this component owns (`research_input_keyword` is
-   * registered by the launcher, which owns that input). Both land through the
-   * SAME setters the user's own filter box and cluster chip drive — there is
-   * no second write path into the explorer's scope.
-   */
+  // Surface write half — `keyword_selection` only. It moves the SAME selection
+  // the row checkboxes move (setSelectedIds), so the toolbar's bulk actions
+  // see it exactly as if the user had clicked; the user still presses them.
+  // The seed-keyword target is serviced by the launcher, which owns the input.
   const getWriteHandlers = () => ({
-    library_search: (value: unknown) => {
-      if (typeof value !== "string") {
-        throw new Error(
-          `library_search expects a string (empty string clears the filter), got ${Array.isArray(value) ? "array" : typeof value}.`,
-        );
-      }
-      if (/[\r\n]/.test(value)) {
-        throw new Error(
-          "library_search is a single-line filter box — newlines are not accepted.",
-        );
-      }
-      setSearch(value);
-    },
-    cluster_scope: (value: unknown) => {
-      if (typeof value !== "object" || value === null || Array.isArray(value)) {
-        throw new Error(
-          `cluster_scope expects an object { mode: ${KEYWORD_CLUSTER_WRITE_MODES.join(" | ")}, primary_keyword?: string, phrases: string[] }.`,
-        );
-      }
-      const patch = value as Record<string, unknown>;
-      const unknownKeys = Object.keys(patch).filter(
-        (key) => !["mode", "primary_keyword", "phrases"].includes(key),
-      );
-      if (unknownKeys.length > 0) {
-        throw new Error(
-          `cluster_scope does not accept: ${unknownKeys.join(", ")}. Allowed keys: mode | primary_keyword | phrases.`,
-        );
-      }
-      if (!isKeywordClusterWriteMode(patch.mode)) {
-        throw new Error(
-          `cluster_scope: mode must be one of ${KEYWORD_CLUSTER_WRITE_MODES.join(" | ")}.`,
-        );
-      }
-      if (!Array.isArray(patch.phrases) || patch.phrases.length === 0) {
-        throw new Error(
-          "cluster_scope: phrases must be a non-empty array of keyword strings. To show the whole library again, the user clears the cluster chip — there is no write that clears it.",
-        );
-      }
-      const phrases = patch.phrases.map((entry, index) => {
-        if (typeof entry !== "string" || !entry.trim()) {
-          throw new Error(
-            `cluster_scope: phrases[${index}] must be a non-empty string, got ${typeof entry}.`,
-          );
-        }
-        return entry;
-      });
+    keyword_selection: (value: unknown) => {
+      const write = value as Partial<KeywordSelectionWrite> | null;
       if (
-        patch.primary_keyword !== undefined &&
-        (typeof patch.primary_keyword !== "string" ||
-          !patch.primary_keyword.trim())
+        !write ||
+        !Array.isArray(write.keyword_ids) ||
+        write.keyword_ids.some((id) => typeof id !== "string")
       ) {
+        // Loud by contract — the writeback seam turns throws into the error
+        // envelope the agent reads back, never a silent no-op.
         throw new Error(
-          "cluster_scope: primary_keyword must be a non-empty string when provided — it names the cluster chip.",
+          'keyword_selection expects { keyword_ids: string[], mode?: "replace" | "add" }',
         );
       }
-      const label = (patch.primary_keyword as string | undefined)?.trim();
-      // Appending onto an existing cluster inherits its name; every other
-      // case is naming a NEW cluster, so the label is required.
-      const appendTo = patch.mode === "append" ? clusterPhrases : null;
-      const nextLabel = label ?? (appendTo ? clusterPrimaryKeyword : null);
-      if (!nextLabel) {
+      const mode = write.mode ?? "replace";
+      if (mode !== "replace" && mode !== "add") {
         throw new Error(
-          "cluster_scope: primary_keyword is required — there is no cluster on screen to append to, so this write names a new one.",
+          `keyword_selection mode must be "replace" or "add" (got "${String(write.mode)}")`,
         );
       }
-      setCluster(nextLabel, [...(appendTo ?? []), ...phrases]);
+      if (run.status === "running") {
+        // A finishing run re-scopes the explorer to its cluster, and the
+        // visible-set effect below prunes the selection to what survives —
+        // so a selection staged now would be silently thrown away.
+        throw new Error(
+          "A research run is still in flight — the explorer is about to re-scope to its cluster, so a selection made now would be discarded. Wait for the run to finish.",
+        );
+      }
+      // Validate against what is ACTUALLY listed right now. All-or-nothing:
+      // one unknown id rejects the whole write rather than silently selecting
+      // a subset the user would have to audit.
+      const visible = new Map(sorted.map((row) => [row.id, row.phrase]));
+      const unknown = write.keyword_ids.filter((id) => !visible.has(id));
+      if (unknown.length > 0) {
+        throw new Error(
+          `keyword_selection got ${unknown.length} id(s) that are not among the ${sorted.length} keyword rows currently visible: ${unknown.join(", ")}. Only ids from visible_keywords can be selected — nothing was selected.`,
+        );
+      }
+      setSelectedIds((current) => {
+        const next =
+          mode === "add" ? new Set(current) : new Set<string>();
+        for (const id of write.keyword_ids as string[]) next.add(id);
+        return next;
+      });
     },
   });
 
   return (
     <SurfaceRuntimeProvider
-      surfaceName="matrx-user/keyword-research"
+      surfaceName={KEYWORD_RESEARCH_SURFACE}
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
     >
@@ -510,12 +495,7 @@ export default function KeywordResearchWorkbench() {
         <KeywordResearchLauncher
           run={run}
           runResearch={runResearch}
-          // This page mounts the surface, so the launcher services its
-          // `research_input_keyword` target here (the window mount does not).
-          writeTargetSurfaceName="matrx-user/keyword-research"
-          onKeywordChange={(keyword) => {
-            stagedKeywordRef.current = keyword;
-          }}
+          writeSurfaceName={KEYWORD_RESEARCH_SURFACE}
         />
       </div>
 
