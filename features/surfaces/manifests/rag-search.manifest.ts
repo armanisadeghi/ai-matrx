@@ -19,6 +19,11 @@
  *   - The RESULTS of the last search — evidence. Scores are pipeline-relative
  *     (fusion or rerank), never an absolute truth score.
  *
+ * The write half (`writeTargets`, below) covers the other direction: an agent
+ * can STAGE the next retrieval query, its scope, and its pipeline knobs — but
+ * never run the search, and never touch a result. See the docblock above
+ * `writeTargets` for the split and the per-mount reasoning.
+ *
  * Runtime scope assembly lives in
  * `features/rag/agent-context/buildRagSearchContextData.ts` — the ONE pure
  * state→scope mapper, consumed by the Search tab's context menus and its
@@ -31,7 +36,13 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  FILTERABLE_SOURCE_KIND_ENUM_TEXT,
+  MULTI_QUERY_MAX,
+  MULTI_QUERY_MIN,
+} from "@/features/rag/search-controls";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -362,6 +373,125 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the RETRIEVAL QUERY and the knobs that shape it, staged for
+ * the user to run.
+ *
+ * What earns a target here is the PLANNING half of this surface: what to ask,
+ * where to look, and how hard to look. All four targets have read twins, so
+ * the evidence loop closes — the agent reads `query_term_coverage` showing a
+ * key word landed in zero results, or `rerank_status: "low_confidence"`
+ * meaning nothing matched strongly, and writes back a better query or a
+ * broader pipeline. That remediation loop is the whole reason this surface
+ * earns write targets rather than staying read-only.
+ *
+ * RUNNING the search is deliberately NOT agent-drivable, for two independent
+ * reasons. First, cost: one click spends an embedding call per paraphrase
+ * variant, a Cohere rerank pass, and (with HyDE on) an LLM generation — the
+ * `scraper` and `image-generate` precedents both leave the spending button to
+ * the human, and nothing here argues for differing. Second, redundancy: this
+ * surface already arms the `knowledge_search` tool family on every agent bound
+ * to it, so an agent that wants retrieval results runs its OWN search and
+ * reads them directly. A "run the search" target would spend the user's money
+ * to obtain something the agent can already get for free.
+ *
+ * NOTHING IN THE `results` GROUP IS WRITABLE, and this is not an oversight.
+ * `search_results`, `result_scores`, `result_count`, `total_candidates`,
+ * `top_score`, `executed_query`, and `query_term_coverage` are RETRIEVED
+ * EVIDENCE — the record of what the corpus actually returned. An agent that
+ * could overwrite them would be fabricating retrieval output that the user's
+ * own reading, and every downstream step, would treat as real. Same for the
+ * telemetry (`latency_ms`, `embedding_model`, `reranker_model`,
+ * `rerank_status`): they describe a run that happened.
+ *
+ * ALSO DELIBERATELY ABSENT:
+ *  - `admin_bypass_acl` — an ACL escape hatch. Permissions are never
+ *    agent-writable, full stop. The backend ignores the flag for non-admins,
+ *    but "the server would refuse it anyway" is not a reason to offer it.
+ *  - `active_organization_id` / `active_scope_ids` — ownership and tenancy.
+ *    They also belong to the Surface-A working context, not to this page; this
+ *    surface only REPORTS them.
+ *  - `result_limit` — the Search tab renders NO control for it (it is the
+ *    `SEARCH_TAB_RESULT_LIMIT` constant). A staged value the user cannot see
+ *    or correct is not a draft, so it gets no target.
+ *
+ * WHY THREE SCALARS PLUS ONE PATCH OBJECT:
+ *
+ *  - `search_query`, `retrieval_data_store`, and `retrieval_source_kinds` stay
+ *    SEPARATE because they are genuinely independent decisions a user would
+ *    accept or decline one at a time ("yes, search that phrasing — no, don't
+ *    restrict me to notes"), and — unlike the scraper's mode/target pair —
+ *    none of them gates which input the form renders, so there is no race
+ *    between them. Each keeps a clean 1:1 `updatesValue` read twin, which a
+ *    bundled object could not have.
+ *  - `retrieval_tuning` bundles rerank / HyDE / multi-query / entity-clusters
+ *    because they are ONE decision wearing four checkboxes: "how hard should
+ *    this search try". A recall-remediation recommendation typically moves two
+ *    or three of them together, and four consecutive ask dialogs for one
+ *    coherent suggestion is exactly the micro-target trap. One object means
+ *    one atomic accept/decline. It has no single `updatesValue`, so its
+ *    contract prose names the read twin for each key instead.
+ *
+ * MOUNTS: the Search tab (`SearchTab` in `RagSearchExperience`) is the ONLY
+ * mount that registers a `SurfaceRuntimeProvider` for this surface, so it is
+ * the only mount that offers these targets — correctly, because it is the only
+ * tab with a search box at all. The Agent Simulation and Diagnostics tabs have
+ * their own local query inputs and share this same `scope` object, but mount
+ * no runtime; the Agent Chat tab passes a scope-only payload at launch and has
+ * no query of its own. Giving those tabs targets would mean mounting the
+ * runtime there first (read side included) — a separate task. Deepest-wins
+ * resolution means adding one later shadows nothing declared here.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "search_query",
+    label: "Search query",
+    description:
+      "Stages the text of the RAG search box — what the next search will ask. Value: a non-empty string, which REPLACES the full contents of the box (there is no append mode; to extend the user's wording, read the current text from `query` and send the whole new string). Whitespace-only is refused. This only STAGES the query: the user still presses Search, and running the search is never an agent action. Use this to repair a query the evidence says failed — read `query_term_coverage` for words that landed in zero results, and `rerank_status` (\"low_confidence\" means nothing matched strongly) — rather than to ask the same question twice.",
+    valueType: "string",
+    updatesValue: "query",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "query",
+    sortOrder: 100,
+  },
+  {
+    name: "retrieval_data_store",
+    label: "Data store scope",
+    description:
+      "Stages WHICH data store the next search is scoped to — the sidebar's store selection. Value: the UUID of a store, which MUST be one of the ids listed in `available_data_stores` (that is exactly the set the user's sidebar offers; an id that is not in it is refused rather than staged into a selection that would render as nothing). Send null to select \"All accessible content\", which searches EVERYTHING the user can see — never send null meaning \"no access\". Replaces the current selection; only one store can be scoped at a time. Read back from `data_store_id` / `data_store_name`. This narrows or widens the haystack only — it never grants access to content the user could not already read; the backend enforces permissions regardless. Staged only: the user still presses Search.",
+    valueType: "string",
+    updatesValue: "data_store_id",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "retrieval_scope",
+    sortOrder: 110,
+  },
+  {
+    name: "retrieval_source_kinds",
+    label: "Source-kind filter",
+    description:
+      `Stages the source-kind filter — which KIND of indexed content the next search is limited to. Value: an array that REPLACES the full filter (this is not an append; read the current value from \`source_kinds\` and send the complete new set). The array may hold AT MOST ONE kind, because the toggle that renders this filter is single-select — a two-kind array is refused rather than staged into a control that could only show one of them. Allowed kinds: ${FILTERABLE_SOURCE_KIND_ENUM_TEXT}. Send an empty array to clear the filter back to "All", which searches every kind. Note that "processed_document" and "library_doc" content is reached through the data store selector (retrieval_data_store), not through this filter, so neither is accepted here. Staged only: the user still presses Search.`,
+    valueType: "array",
+    updatesValue: "source_kinds",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "retrieval_scope",
+    sortOrder: 120,
+  },
+  {
+    name: "retrieval_tuning",
+    label: "Pipeline tuning",
+    description:
+      `Stages HOW HARD the next search tries — the sidebar's pipeline knobs, as one coherent recall strategy. Value is a partial patch object: { rerank?: boolean, use_hyde?: boolean, multi_query?: integer ${MULTI_QUERY_MIN}-${MULTI_QUERY_MAX}, expand_entity_clusters?: boolean } — omitted keys keep their current value, and at least one key must be present. Read each key back from its twin: \`rerank\`, \`use_hyde\`, \`multi_query\`, \`expand_entity_clusters\`. What they do: \`rerank\` re-orders fused candidates with a cross-encoder (on by default; turn it off only to inspect raw fusion order); \`use_hyde\` expands the query into a hypothetical answer document before embedding; \`multi_query\` embeds N paraphrase variants and fuses them with RRF (${MULTI_QUERY_MIN} means no expansion, ${MULTI_QUERY_MAX} is the maximum the input accepts); \`expand_entity_clusters\` also surfaces chunks about entities sharing a knowledge-graph cluster with the query's matches. These change RECALL AND ORDERING ONLY — none of them widens permissions or reveals content the user could not already read. Raising multi_query or enabling HyDE makes the user's next search cost more (more embedding calls, and HyDE adds a generation), so propose them when the evidence justifies it — zero-coverage terms in \`query_term_coverage\`, or a "low_confidence" \`rerank_status\` — not as a default. Staged only: the user still presses Search.`,
+    valueType: "object",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "pipeline_settings",
+    sortOrder: 130,
+  },
+];
+
 export const ragSearchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/rag-search",
   readiness: "verified",
@@ -378,6 +508,7 @@ query_term_coverage tells you which of the user's words appeared in zero results
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One returned passage as emitted in `search_results`. */
