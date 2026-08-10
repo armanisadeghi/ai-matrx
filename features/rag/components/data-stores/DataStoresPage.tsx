@@ -74,7 +74,10 @@ import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { DataStorePublishPanel } from "@/features/rag/components/data-stores/DataStorePublishPanel";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
-import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  SurfaceRuntimeProvider,
+  useSurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MobilePanelShell, useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buildRagDataStoresContextData";
 
@@ -317,6 +320,80 @@ function CreateStoreInline({ onCreated }: { onCreated: (id: string) => void }) {
   const [description, setDescription] = useState("");
   const [pending, setPending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  /**
+   * Write half — `new_store_draft` (see the manifest). This component owns the
+   * create-form state, so it registers the handler itself rather than the page
+   * threading three setters up to the provider.
+   *
+   * A COLLAPSED form owns no visible state, so a write into it would land
+   * nowhere the user can see. Applying therefore OPENS the form first: staging
+   * into a visible draft is the whole contract of `mode: "draft"`, and opening
+   * a create form is reversible and creates nothing. Registered ABOVE the
+   * collapsed early-return so the handler exists in both states.
+   */
+  useSurfaceWriteHandlers(RAG_DATA_STORES_SURFACE, {
+    new_store_draft: (value: unknown) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(
+          "new_store_draft expects an object with any of name, kind, description.",
+        );
+      }
+      const patch = value as Record<string, unknown>;
+      const applied: Array<() => void> = [];
+
+      if (patch.name !== undefined) {
+        if (typeof patch.name !== "string") {
+          throw new Error("new_store_draft: name must be a string.");
+        }
+        const next = patch.name.trim();
+        if (next.length > 200) {
+          throw new Error(
+            "new_store_draft: name must be 200 characters or fewer.",
+          );
+        }
+        applied.push(() => setName(next));
+      }
+
+      if (patch.kind !== undefined) {
+        // Validated against the SAME constant the <select> renders — a kind
+        // outside it is rejected, never coerced to "general".
+        if (
+          typeof patch.kind !== "string" ||
+          !(DATA_STORE_KINDS as readonly string[]).includes(patch.kind)
+        ) {
+          throw new Error(
+            `new_store_draft: kind must be one of ${DATA_STORE_KINDS.join(", ")}.`,
+          );
+        }
+        const nextKind = patch.kind as (typeof DATA_STORE_KINDS)[number];
+        applied.push(() => setKind(nextKind));
+      }
+
+      if (patch.description !== undefined) {
+        if (typeof patch.description !== "string") {
+          throw new Error("new_store_draft: description must be a string.");
+        }
+        const next = patch.description.trim();
+        if (next.length > 2000) {
+          throw new Error(
+            "new_store_draft: description must be 2000 characters or fewer.",
+          );
+        }
+        applied.push(() => setDescription(next));
+      }
+
+      if (applied.length === 0) {
+        throw new Error(
+          "new_store_draft: provide at least one of name, kind, description.",
+        );
+      }
+
+      setOpen(true);
+      setErr(null);
+      for (const stage of applied) stage();
+    },
+  });
 
   if (!open) {
     return (
@@ -572,6 +649,76 @@ function StoreDetailPanel({
       ),
     [detail.members],
   );
+
+  /**
+   * Write half — the two entity targets on the SELECTED store (see the
+   * manifest). Both land through `detail.updateStore`, the same canonical
+   * update the Edit form calls; nothing here touches supabase directly.
+   *
+   * Registered above the loading/error early-returns (Rules of Hooks), so the
+   * guards below are the handler's own job: a store that has not loaded, and a
+   * granted shared library the caller may read but not curate, both throw —
+   * the writeback seam turns that into the error the agent reads back.
+   */
+  const requireWritableStore = () => {
+    const open = detail.store;
+    if (!open) {
+      throw new Error(
+        "No data store has finished loading in the right pane — there is nothing to write to yet.",
+      );
+    }
+    if (open.readOnly) {
+      throw new Error(
+        `"${open.name}" is a shared library published to you read-only. Its owning organization curates it; this change would be refused server-side.`,
+      );
+    }
+    return open;
+  };
+
+  useSurfaceWriteHandlers(RAG_DATA_STORES_SURFACE, {
+    store_name: async (value: unknown) => {
+      const open = requireWritableStore();
+      if (typeof value !== "string") {
+        throw new Error("store_name expects a plain string.");
+      }
+      const name = value.trim();
+      if (!name) {
+        throw new Error("store_name must not be empty.");
+      }
+      if (name.length > 200) {
+        throw new Error("store_name must be 200 characters or fewer.");
+      }
+      const saved = await detail.updateStore({ name });
+      if (!saved) {
+        throw new Error(
+          `Renaming "${open.name}" was refused. Only the store's creator or a member of its organization may change it.`,
+        );
+      }
+    },
+
+    store_description: async (value: unknown) => {
+      const open = requireWritableStore();
+      if (typeof value !== "string") {
+        throw new Error(
+          "store_description expects a plain string (pass an empty string to clear it).",
+        );
+      }
+      const description = value.trim();
+      if (description.length > 2000) {
+        throw new Error(
+          "store_description must be 2000 characters or fewer.",
+        );
+      }
+      const saved = await detail.updateStore({
+        description: description || null,
+      });
+      if (!saved) {
+        throw new Error(
+          `Updating the description of "${open.name}" was refused. Only the store's creator or a member of its organization may change it.`,
+        );
+      }
+    },
+  });
 
   if (detail.loading && !detail.store) {
     return (

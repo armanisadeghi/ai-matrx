@@ -35,7 +35,9 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { DATA_STORE_KINDS } from "@/features/rag/types/data-stores-ext";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -335,6 +337,80 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The write half of this surface. TWO mounts own editable state and each
+ * registers its own handlers (`useSurfaceWriteHandlers`), because the state
+ * lives in children — not in the component that mounts the provider:
+ *
+ *   - `CreateStoreInline` (left column) owns the NEW-store draft.
+ *   - `StoreDetailPanel`  (right pane)  owns the selected store's row.
+ *
+ * WHAT EARNED A TARGET. A store's name and description are authored content —
+ * "what is this bucket FOR" is the single most useful thing a curator writes,
+ * and the thing they most often leave blank. `kind` is a planning field with a
+ * real vocabulary an agent can pick from context. Those are the write set.
+ *
+ * WHAT DID NOT, deliberately: deleting a store, removing a member, adding or
+ * uploading a source (attaching documents is a curation act with real cost —
+ * it also queues RAG ingestion), publishing to an audience, and the read-only
+ * / access tier. Those stay human, and several are refused server-side anyway.
+ *
+ * WHY `kind` IS DRAFT-ONLY. `useDataStoreDetail.updateStore` deliberately does
+ * not patch `kind` ("matches previous backend behavior") — so on an EXISTING
+ * store there is no canonical write path for it, and declaring the target
+ * would mean wiring it to nothing. It is writable only where it is actually
+ * persisted: at creation, through `useDataStores.createStore`.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "new_store_draft",
+    label: "New data store draft",
+    description: [
+      "Stages a NEW data store into the create form in the left column — the same three inputs the user would type.",
+      `Object with any of: name (string, 1-200 chars), kind (one of ${DATA_STORE_KINDS.join(" | ")}), description (string, max 2000 chars).`,
+      "Only the keys you send are changed; omit a key to leave the user's value alone, or pass an empty string to clear name/description. An unrecognised kind is rejected, never corrected.",
+      'Pick kind from what the store is for: "case" for one matter or client, "project" for one initiative, "reference" for durable material consulted repeatedly, "inbox" for an unsorted landing bucket, "general" when nothing fits. Do NOT choose "library" — that is reserved for system-owned Shared Knowledge Resources published to tenants by audience.',
+      "If the create form is collapsed, applying this OPENS it and stages the values there — a visible, reversible act.",
+      "Nothing is created until the user presses Create. Choosing this does not add any documents; a new store starts empty and retrieves nothing until sources are bound to it by hand.",
+    ].join(" "),
+    valueType: "object",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "store_list",
+    sortOrder: 500,
+  },
+  {
+    name: "store_name",
+    label: "Store name",
+    description: [
+      "Renames the data store open in the right pane and saves it immediately through the page's canonical update path.",
+      "Plain string, 1-200 characters. Replaces the whole name — read store_name first if you mean to adjust rather than replace it.",
+      "Changes only the label. It does not move, add, or remove a single member, and it does not change who can reach the store. Refused on a shared library the caller only has read access to.",
+    ].join(" "),
+    valueType: "string",
+    updatesValue: "store_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "store_identity",
+    sortOrder: 510,
+  },
+  {
+    name: "store_description",
+    label: "Store description",
+    description: [
+      "Rewrites the description of the data store open in the right pane and saves it immediately through the page's canonical update path.",
+      "Plain string, max 2000 characters; pass an empty string to clear it. Replaces the whole field — read store_description first if you mean to extend it.",
+      "This is the curator's statement of what the store is FOR, so write it for the next person deciding whether to retrieve from here: what is inside, and what is not. Refused on a shared library the caller only has read access to.",
+    ].join(" "),
+    valueType: "string",
+    updatesValue: "store_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "store_identity",
+    sortOrder: 520,
+  },
+];
+
 export const ragDataStoresManifest: SurfaceManifest = {
   surfaceName: "matrx-user/rag-data-stores",
   readiness: "partial",
@@ -375,6 +451,7 @@ is inside a member, use its id on the document viewer surface.
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One accessible data store as this surface hands it to an agent. */
