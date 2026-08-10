@@ -1,6 +1,21 @@
 // Types for user feedback and bug reporting system
 
-export type FeedbackType = "bug" | "feature" | "suggestion" | "other";
+/**
+ * The feedback type vocabulary — the runtime constant, with `FeedbackType`
+ * DERIVED from it so the list and the union can never drift apart. The
+ * `matrx-user/feedback` surface manifest spells this array into the
+ * `feedback_draft` write-target description, and the feedback window's handler
+ * validates an agent's value against the same array — what the agent is told
+ * is legal and what the handler accepts read from ONE source, never a re-typed
+ * literal.
+ */
+export const FEEDBACK_TYPES = [
+  "bug",
+  "feature",
+  "suggestion",
+  "other",
+] as const;
+export type FeedbackType = (typeof FEEDBACK_TYPES)[number];
 export type FeedbackStatus =
   | "new"
   | "triaged"

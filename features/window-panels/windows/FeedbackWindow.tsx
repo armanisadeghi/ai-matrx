@@ -40,11 +40,18 @@ import {
   FileUploadWithStorage,
   type UploadedFileResult,
 } from "@/components/ui/file-upload/FileUploadWithStorage";
-import type {
-  FeedbackType,
-  FeedbackCategory,
-  FeedbackAssignableAdmin,
+import {
+  FEEDBACK_TYPES,
+  type FeedbackType,
+  type FeedbackCategory,
+  type FeedbackAssignableAdmin,
 } from "@/types/feedback.types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  FEEDBACK_SURFACE_NAME,
+  createFeedbackScope,
+} from "@/features/surfaces/manifests/feedback.manifest";
+import { parseFeedbackDraft } from "./feedbackDraftWrite";
 import {
   Select,
   SelectContent,
@@ -77,16 +84,21 @@ interface FeedbackStats {
   resolved: number;
 }
 
-const FEEDBACK_TYPES: {
-  value: FeedbackType;
-  label: string;
-  icon: typeof Bug;
-}[] = [
-  { value: "bug", label: "Bug", icon: Bug },
-  { value: "feature", label: "Feature", icon: Lightbulb },
-  { value: "suggestion", label: "Suggestion", icon: MessageSquare },
-  { value: "other", label: "Other", icon: HelpCircle },
-];
+/**
+ * Chip presentation per type. A `Record` keyed by `FeedbackType` (rather than
+ * a hand-ordered array) so it cannot drift from the `FEEDBACK_TYPES`
+ * vocabulary the manifest and the write handler both read — adding a type to
+ * that array is a compile error here until this gets an entry.
+ */
+const FEEDBACK_TYPE_CHIPS: Record<
+  FeedbackType,
+  { label: string; icon: typeof Bug }
+> = {
+  bug: { label: "Bug", icon: Bug },
+  feature: { label: "Feature", icon: Lightbulb },
+  suggestion: { label: "Suggestion", icon: MessageSquare },
+  other: { label: "Other", icon: HelpCircle },
+};
 
 /** Active-state chip colors (inactive chips stay neutral). */
 const FEEDBACK_TYPE_ACTIVE_CLASSES: Record<FeedbackType, string> = {
@@ -166,32 +178,42 @@ export function FeedbackWindow({
 
   const form = useFeedbackForm({ onClose });
 
+  // Surface provider wraps the panel so `matrx-user/feedback` is live for
+  // exactly as long as the window is open. Nested here, it out-depths the
+  // hosting page's surface while open (deepest wins) — an agent run started
+  // from the header while the feedback window is up is talking to the form.
   return (
-    <WindowPanel
-      id={id}
-      title={title}
-      onClose={onClose}
-      minWidth={380}
-      minHeight={320}
-      width={480}
-      height={580}
-      urlSyncKey="feedback"
-      urlSyncId="default"
-      className="feedback-window-panel"
-      overlayId="feedbackDialog"
-      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-      // Footer only exists for the form view — the success view replaces the
-      // whole body and carries its own action tiles.
-      footerLeft={
-        !form.submitted ? <FeedbackFooterLeft form={form} /> : undefined
-      }
-      footerRight={
-        !form.submitted ? <FeedbackFooterRight form={form} /> : undefined
-      }
-      {...windowProps}
+    <SurfaceRuntimeProvider
+      surfaceName={FEEDBACK_SURFACE_NAME}
+      getScope={form.getScope}
+      getWriteHandlers={form.getWriteHandlers}
     >
-      <FeedbackWindowBody form={form} />
-    </WindowPanel>
+      <WindowPanel
+        id={id}
+        title={title}
+        onClose={onClose}
+        minWidth={380}
+        minHeight={320}
+        width={480}
+        height={580}
+        urlSyncKey="feedback"
+        urlSyncId="default"
+        className="feedback-window-panel"
+        overlayId="feedbackDialog"
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+        // Footer only exists for the form view — the success view replaces the
+        // whole body and carries its own action tiles.
+        footerLeft={
+          !form.submitted ? <FeedbackFooterLeft form={form} /> : undefined
+        }
+        footerRight={
+          !form.submitted ? <FeedbackFooterRight form={form} /> : undefined
+        }
+        {...windowProps}
+      >
+        <FeedbackWindowBody form={form} />
+      </WindowPanel>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -664,6 +686,77 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
     assigneeId,
   ]);
 
+  // ── Surface seam (`matrx-user/feedback`) ─────────────────────────────────
+  // This window mounts the surface's FIRST provider: the manifest existed from
+  // a window-component audit with no emitter at all, so nothing registered and
+  // no write target could ever have resolved. Both halves live here in the
+  // hook because the hook owns the form state.
+  //
+  // Refs, not the render closure, for the two gates. The writeback seam
+  // resolves handlers BEFORE the user confirms the ask dialog, so a handler
+  // that judged "is this form still writable?" from its render snapshot could
+  // stage text into a form the user had already submitted in the meantime.
+  const submittedRef = useRef(submitted);
+  const isSubmittingRef = useRef(isSubmitting);
+  useEffect(() => {
+    submittedRef.current = submitted;
+    isSubmittingRef.current = isSubmitting;
+  });
+
+  const getScope = useCallback(
+    () =>
+      createFeedbackScope({
+        feedback_type: feedbackType,
+        content: description,
+        attachment_count: attachments.length,
+        submitted,
+        submitted_item_id: submittedItem?.id,
+        error_message: error ?? undefined,
+        // Mirrors the submit payload: the sentinel "none" means unset, and
+        // these only exist for admins in the first place.
+        category_id: isAdmin && categoryId !== "none" ? categoryId : undefined,
+        assignee_id: isAdmin && assigneeId !== "none" ? assigneeId : undefined,
+      }),
+    [
+      feedbackType,
+      description,
+      attachments.length,
+      submitted,
+      submittedItem,
+      error,
+      isAdmin,
+      categoryId,
+      assigneeId,
+    ],
+  );
+
+  // Write half: ONE composite draft target. Validation happens in the pure
+  // `parseFeedbackDraft` BEFORE any setter runs, so a bad shape throws
+  // synchronously inside `applySurfaceWrite` and comes back to the agent as a
+  // readable error instead of blowing up in a React updater. Accepted keys
+  // land through the very setters the textarea's onChange and the type chips'
+  // onClick call — no parallel write path — and the user still presses Submit.
+  const getWriteHandlers = useCallback(
+    () => ({
+      feedback_draft: (value: unknown) => {
+        if (submittedRef.current)
+          throw new Error(
+            "This feedback has already been submitted — the form is gone and there is nothing left to stage. Use Submit Another to start a fresh report.",
+          );
+        if (isSubmittingRef.current)
+          throw new Error(
+            "This feedback is being submitted right now — refused rather than editing a report that is already on its way.",
+          );
+
+        const patch = parseFeedbackDraft(value);
+        if (patch.feedbackType !== undefined)
+          setFeedbackType(patch.feedbackType);
+        if (patch.description !== undefined) setDescription(patch.description);
+      },
+    }),
+    [],
+  );
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -738,6 +831,9 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
     uploadedImages,
     textareaRef,
     isCapturing,
+    // surface seam
+    getScope,
+    getWriteHandlers,
     // handlers
     handlePasteButton,
     handleTabCapture,
@@ -896,23 +992,26 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
     <div className="flex-1 overflow-auto min-h-0 px-4 py-3 space-y-3">
       {/* Type selector */}
       <div className="flex gap-1.5 flex-wrap">
-        {FEEDBACK_TYPES.map(({ value, label, icon: Icon }) => (
-          <button
-            key={value}
-            type="button"
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg cursor-pointer transition-colors border",
-              "[&_svg]:w-3.5 [&_svg]:h-3.5",
-              feedbackType === value
-                ? FEEDBACK_TYPE_ACTIVE_CLASSES[value]
-                : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-            onClick={() => setFeedbackType(value)}
-          >
-            <Icon />
-            {label}
-          </button>
-        ))}
+        {FEEDBACK_TYPES.map((value) => {
+          const { label, icon: Icon } = FEEDBACK_TYPE_CHIPS[value];
+          return (
+            <button
+              key={value}
+              type="button"
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg cursor-pointer transition-colors border",
+                "[&_svg]:w-3.5 [&_svg]:h-3.5",
+                feedbackType === value
+                  ? FEEDBACK_TYPE_ACTIVE_CLASSES[value]
+                  : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+              onClick={() => setFeedbackType(value)}
+            >
+              <Icon />
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Route + User info */}

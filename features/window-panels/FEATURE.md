@@ -40,6 +40,27 @@ lib/redux/slices/
 
 ## Change Log
 
+- 2026-08-10 — **The Feedback window is agent-writable, and mounts the
+  `matrx-user/feedback` surface's FIRST provider.** `FeedbackWindow.tsx` now
+  wraps its `WindowPanel` in a `SurfaceRuntimeProvider`, so the surface is live
+  for exactly as long as the window is open and out-depths the hosting page's
+  surface while it is (deepest wins). The manifest previously said "emitter not
+  wired" and nothing referenced the surface at all, so an agent could neither
+  read the form nor write to it. `getScope` emits the live type, description,
+  attachment count, submission state and admin routing choices;
+  `getWriteHandlers` registers ONE `ask`-policy draft target,
+  `feedback_draft`, taking a partial `{description?, feedback_type?}` — the
+  report body and the chip that classifies it, staged through the same
+  `setDescription` / `setFeedbackType` the textarea's `onChange` and the type
+  chips' `onClick` call. The user still presses Submit: submitting, the
+  attachments, and the admin category/assignee are deliberately not writable.
+  Validation lives in a pure `windows/feedbackDraftWrite.ts` and throws outside
+  any `setState` updater so the writeback seam catches it; the two "is this
+  form still writable?" gates read through refs, because the seam resolves
+  handlers before the user confirms. `FEEDBACK_TYPES` became a runtime `as
+  const` in `types/feedback.types.ts` (with `FeedbackType` derived from it) and
+  the window's chip config a `Record<FeedbackType, …>`, so the vocabulary the
+  manifest advertises and the one the handler validates against cannot drift.
 - 2026-08-08 — Fixed the "window opens invisible" class (watchdog `zero-size`):
   geometry derived from a degenerate 0×0 viewport measurement now falls back to
   sane dims (`safeViewportDims` in `utils/rectClamp.ts`), `registerWindow`
