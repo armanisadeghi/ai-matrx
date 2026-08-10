@@ -19,6 +19,11 @@
  *   - The RESULTS of the last search — evidence. Scores are pipeline-relative
  *     (fusion or rerank), never an absolute truth score.
  *
+ * That three-way split decides the write half too: only the query and the
+ * pipeline settings are agent-writable (see the docblock above `writeTargets`),
+ * scope is refused as the permissions decision it is, and results are evidence
+ * nobody may author.
+ *
  * Runtime scope assembly lives in
  * `features/rag/agent-context/buildRagSearchContextData.ts` — the ONE pure
  * state→scope mapper, consumed by the Search tab's context menus and its
@@ -31,7 +36,18 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  MULTI_QUERY_MAX,
+  MULTI_QUERY_MIN,
+  PIPELINE_FLAGS,
+  PIPELINE_PATCH_KEYS,
+  RESULT_LIMIT_DEFAULT,
+  RESULT_LIMIT_MAX,
+  RESULT_LIMIT_MIN,
+  SEARCH_QUERY_MAX_CHARS,
+} from "@/features/rag/constants/search-pipeline";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -195,8 +211,7 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "multi_query",
     label: "Multi-query count",
-    description:
-      "Number of paraphrase variants the pipeline expands the search into (1-5), each embedded and fused via RRF. 1 means no expansion.",
+    description: `Number of paraphrase variants the pipeline expands the search into (${MULTI_QUERY_MIN}-${MULTI_QUERY_MAX}), each embedded and fused via RRF. ${MULTI_QUERY_MIN} means no expansion.`,
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 2,
@@ -228,8 +243,7 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "result_limit",
     label: "Result limit",
-    description:
-      "How many hits the surface requests per search (25 on the Search tab, 10 for the Agent Simulation tool run). Empty on mounts that run no search.",
+    description: `How many hits the surface requests per search. On the Search tab this is the sidebar's Limit control (${RESULT_LIMIT_MIN}-${RESULT_LIMIT_MAX}, default ${RESULT_LIMIT_DEFAULT}); the Agent Simulation tool run is pinned to 10 because it reproduces the registered knowledge_search tool. Empty on mounts that run no search.`,
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 2,
@@ -362,6 +376,116 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the SEARCH, staged for the user to run.
+ *
+ * The three layers this surface separates in its header docblock decide this
+ * completely, and the split is the whole judgment call:
+ *
+ *  - RETRIEVAL SCOPE (`data_store_id`, `source_kinds`,
+ *    `active_organization_id`, `active_scope_ids`, `admin_bypass_acl`) gets NO
+ *    write target, and never will. That layer is what the search is ALLOWED to
+ *    see: which curated store, whose organization, which ACL. An agent moving
+ *    `data_store_id` or flipping `admin_bypass_acl` would be widening what a
+ *    retrieval may reach — a permissions change wearing a settings costume,
+ *    and exactly the class of write this seam exists to refuse. Even the
+ *    narrowing direction stays out: the user picks their scope in the sidebar
+ *    and reads it back off the "Searching …" line, and an agent silently
+ *    re-pointing that line is how a user comes to trust results drawn from
+ *    somewhere they never chose. Agents that need a different scope have the
+ *    honest path already: say so, or call a knowledge tool with their own
+ *    `data_store_id` and show their work.
+ *  - RESULTS (`search_results`, `result_scores`, `result_count`, the models,
+ *    the telemetry) get no target either. They are observed evidence of a run
+ *    that happened; an agent writing them is fabricating retrieval output.
+ *  - PIPELINE SETTINGS and the QUERY are what is left, and both are genuinely
+ *    authored input an agent produces well. Composing a retrieval query that
+ *    actually returns the right passages is a skill; so is knowing that "be
+ *    thorough about this" means rerank on, paraphrase fan-out up, and a wider
+ *    limit. Both have read twins, so the evidence loop closes.
+ *
+ * WHY THE PIPELINE IS ONE OBJECT AND THE QUERY IS SEPARATE:
+ *
+ *  - `retrieval_pipeline` bundles rerank + multi_query + use_hyde +
+ *    expand_entity_clusters + result_limit because they are ONE decision
+ *    expressed five ways: how hard to look. A user asked to approve "search
+ *    more thoroughly" wants one dialog describing that, not five consecutive
+ *    dialogs about individually meaningless dials. It also resolves
+ *    ATOMICALLY: the writeback seam resolves every staged handler before the
+ *    user answers the first confirm, so five sibling targets applied in one
+ *    turn are five chances to half-apply a setting combination the user only
+ *    ever saw described as a whole. This is the `image-generate` precedent
+ *    (`generation_request`: one request composed in one thought), not the
+ *    `marketing-crawls` one — there the pattern lists stayed separate from
+ *    `crawl_options` because they are the crawl's SCOPE and a user wants to
+ *    approve scope on its own. Scope is precisely what is NOT writable here,
+ *    so the reason to split does not arise.
+ *  - `result_limit` rides INSIDE that object rather than standing alone the
+ *    way the scraper's `scrape_page_limit` does. That target is separate
+ *    because a page budget is a spend against someone else's server — a
+ *    different kind of decision from "what do we scrape". Here the limit
+ *    spends nothing: it asks the user's own index for more of its own rows.
+ *    It is a recall dial like the other four, and it belongs with them.
+ *  - `search_query` stays its own target because it is a different kind of
+ *    value with a different failure mode. The pipeline settings are cheap and
+ *    reversible; the query is the authored content, the thing a user most
+ *    wants to read before accepting, and the one field they may well want to
+ *    take while declining everything else.
+ *
+ * RUNNING THE SEARCH IS NOT A TARGET — and this is a real decision, not the
+ * scraper's "never run it" line copied across. A retrieval query is cheap,
+ * local, idempotent, and reads only content the user is already permitted to
+ * see, so the cost argument that keeps a scrape or an image generation behind
+ * a human click genuinely does not apply. It stays out for two other reasons.
+ * First, it would buy the agent nothing: the surface payload is assembled when
+ * the run starts, so an agent that fired a search mid-turn could not read the
+ * hits it produced — while `knowledge_search`, already armed on this surface,
+ * returns those passages straight to the agent. Second, pressing Search
+ * REPLACES the results the user is currently reading and rewrites the page
+ * URL. Staging a query the user can read and run is additive; running it for
+ * them takes the screen. If an action target is ever wanted here, the platform
+ * has an action half (`SurfaceManifest.clientTools`) — running a search is not
+ * a value to write, and should not be smuggled through the data seam.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "search_query",
+    label: "Search query",
+    description: [
+      "Stages the text of the search box on the Search tab — the same words the user would type.",
+      `Value: a plain non-empty string, sent as TEXT and not as JSON (max ${SEARCH_QUERY_MAX_CHARS} characters, trimmed). It REPLACES the whole box; read \`query\` first if you mean to refine rather than replace it.`,
+      "This is the highest-value thing you can write here: turning what the user said into a query that actually retrieves the right passages is authored work. Write the words that will appear IN the documents, not a question about them — the pipeline embeds this text and also matches it lexically, so `query_term_coverage` on the last run tells you which of the previous words landed in zero results and are worth dropping.",
+      "It does NOT change what the search may see: the data store, source kinds, working-context organization and scopes, and the ACL setting are the user's, and stay exactly as they are.",
+      "Staged only — nothing is retrieved until the user presses Search, which also replaces the results they are currently reading. If YOU need the passages rather than the user, call the knowledge search tool instead: it returns them to you directly and leaves their screen alone.",
+    ].join(" "),
+    valueType: "string",
+    updatesValue: "query",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "query",
+    sortOrder: 500,
+  },
+  {
+    name: "retrieval_pipeline",
+    label: "Retrieval pipeline settings",
+    description: [
+      "Stages HOW HARD the next search looks — the sidebar's Pipeline controls, which change recall and ordering and never change permissions.",
+      `Value: a partial patch OBJECT (send it as structured data, not as a JSON string) with at least one of: ${PIPELINE_PATCH_KEYS.join(", ")}. Omitted keys keep the user's current value; an unsupported key is refused rather than ignored.`,
+      `Booleans: ${PIPELINE_FLAGS.map((flag) => `\`${flag.key}\` — ${flag.summary}`).join("; ")}.`,
+      `\`multi_query\` — a whole number from ${MULTI_QUERY_MIN} to ${MULTI_QUERY_MAX}; ${MULTI_QUERY_MIN} is no expansion, and each extra variant costs another embedding pass.`,
+      `\`result_limit\` — how many hits one search asks for, a whole number from ${RESULT_LIMIT_MIN} to ${RESULT_LIMIT_MAX} (default ${RESULT_LIMIT_DEFAULT}). Anything outside a bound, or a non-integer, is refused rather than clamped.`,
+      "Read the current settings back from `rerank`, `multi_query`, `use_hyde`, `expand_entity_clusters` and `result_limit`. \"Be thorough\" is typically rerank on with a higher multi_query and limit; a precise lookup of a known phrase wants the opposite, since expansion adds neighbours the user did not ask for.",
+      "These dials cannot widen access. They re-rank and broaden recall WITHIN what the user's data store, source-kind filter, organization, scopes and ACL already allow — none of which is writable from here.",
+      "Staged only — the settings apply to the next search the user runs.",
+    ].join(" "),
+    valueType: "object",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "pipeline_settings",
+    sortOrder: 510,
+  },
+];
+
 export const ragSearchManifest: SurfaceManifest = {
   surfaceName: "matrx-user/rag-search",
   readiness: "verified",
@@ -372,12 +496,14 @@ You are on the RAG Search Lab: the user searches their own indexed content (PDFs
 Read the values in three layers. RETRIEVAL SCOPE (data_store_id, source_kinds, active_organization_id, active_scope_ids, admin_bypass_acl) is what the search is allowed and filtered to see — when you call a knowledge tool, match this scope rather than inventing your own, and remember that an EMPTY data store or organization means "everything the user can see", never "nothing". PIPELINE SETTINGS (rerank, multi_query, use_hyde, expand_entity_clusters, result_limit) change recall and ordering only; they never widen permissions. RESULTS are evidence of the last search.
 Scores are pipeline-relative — a rerank score or a fused RRF score — so they compare hits within one result set and mean nothing across searches. Never present a score as a confidence or a truth value. Check rerank_status before trusting the ordering: "low_confidence" means nothing matched the query strongly and the fusion order was kept, and "failed" means the reranker errored.
 query_term_coverage tells you which of the user's words appeared in zero results; when a key term is missing, say so rather than answering around it. Zero results is a real, reportable answer — never fabricate passages, and cite the source and page of anything you do use.
+On the Search tab you can also SET UP the next search for the user: search_query stages the words in the search box, and retrieval_pipeline stages how hard the search looks (rerank, paraphrase fan-out, HyDE, entity-cluster expansion, result limit). Staging only fills the form — the user presses Search, because running one replaces the results they are reading. Nothing about the retrieval SCOPE is writable: the data store, source kinds, organization, scopes and the ACL bypass are the user's alone, and asking to change them is refused. If you need passages for yourself rather than for their screen, call the knowledge search tool, which hands them to you directly.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One returned passage as emitted in `search_results`. */

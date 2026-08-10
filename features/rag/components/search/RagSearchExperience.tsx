@@ -94,6 +94,20 @@ import {
   pageCountFromRagHit,
 } from "@/features/rag/components/search/ragReviewPages";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import {
+  clampMultiQuery,
+  clampResultLimit,
+  isValidMultiQuery,
+  isValidResultLimit,
+  MULTI_QUERY_MAX,
+  MULTI_QUERY_MIN,
+  PIPELINE_FLAG_KEYS,
+  PIPELINE_PATCH_KEYS,
+  RESULT_LIMIT_DEFAULT,
+  RESULT_LIMIT_MAX,
+  RESULT_LIMIT_MIN,
+  SEARCH_QUERY_MAX_CHARS,
+} from "@/features/rag/constants/search-pipeline";
 import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
 import { ActiveScopeChips } from "@/features/scopes/components/active-context/ActiveScopeChips";
@@ -165,9 +179,6 @@ const RAG_AGENT_TOOL_IDS = [
 
 type SourceKindFilter = "all" | "cld_file" | "note" | "code_file";
 
-/** Hits requested per Search-tab search. Emitted as the surface's `result_limit`. */
-const SEARCH_TAB_RESULT_LIMIT = 25;
-
 function useScopeControls(initialStoreId: string | null = null) {
   const stores = useDataStores();
   // Seed from the deep-link `?store_id=` synchronously so a shared search URL
@@ -176,9 +187,13 @@ function useScopeControls(initialStoreId: string | null = null) {
   const [kindFilter, setKindFilter] = useState<SourceKindFilter>("all");
   const [adminBypass, setAdminBypass] = useState(false);
   const [rerank, setRerank] = useState(true);
-  const [multiQuery, setMultiQuery] = useState(1);
+  const [multiQuery, setMultiQuery] = useState(MULTI_QUERY_MIN);
   const [useHyde, setUseHyde] = useState(false);
   const [expandClusters, setExpandClusters] = useState(false);
+  // Hits requested per Search-tab search — a sidebar control (not a constant)
+  // so the surface's `result_limit` has a place the user can see and correct
+  // whatever writes it. Emitted as the surface's `result_limit`.
+  const [resultLimit, setResultLimit] = useState(RESULT_LIMIT_DEFAULT);
 
   const sourceKinds = useMemo<string[] | undefined>(() => {
     if (kindFilter === "all") return undefined;
@@ -202,6 +217,8 @@ function useScopeControls(initialStoreId: string | null = null) {
     setUseHyde,
     expandClusters,
     setExpandClusters,
+    resultLimit,
+    setResultLimit,
   };
 }
 
@@ -534,15 +551,30 @@ function ScopeSidebar({
           <span className="text-muted-foreground">Multi-query</span>
           <input
             type="number"
-            min={1}
-            max={5}
+            min={MULTI_QUERY_MIN}
+            max={MULTI_QUERY_MAX}
             value={scope.multiQuery}
             onChange={(e) =>
-              scope.setMultiQuery(
-                Math.max(1, Math.min(5, Number(e.target.value) || 1)),
-              )
+              scope.setMultiQuery(clampMultiQuery(Number(e.target.value)))
             }
             className="w-14 px-1.5 py-1 text-base rounded border bg-background"
+          />
+        </label>
+        <label
+          className="flex items-center gap-2 text-xs"
+          title={`How many hits one search asks for (${RESULT_LIMIT_MIN}-${RESULT_LIMIT_MAX}). Applies to the Search tab; the Agent Simulation tab reproduces the registered tool's own limit.`}
+        >
+          <span className="text-muted-foreground">Limit</span>
+          <input
+            type="number"
+            min={RESULT_LIMIT_MIN}
+            max={RESULT_LIMIT_MAX}
+            value={scope.resultLimit}
+            onChange={(e) =>
+              scope.setResultLimit(clampResultLimit(Number(e.target.value)))
+            }
+            className="w-14 px-1.5 py-1 text-base rounded border bg-background"
+            data-surface-value="result_limit"
           />
         </label>
         <label className="flex items-center gap-2 text-xs cursor-pointer text-amber-700 dark:text-amber-400">
@@ -819,7 +851,7 @@ function SearchTab({
     try {
       const r = await ragSearch({
         query: trimmed,
-        limit: SEARCH_TAB_RESULT_LIMIT,
+        limit: scope.resultLimit,
         rerank: scope.rerank,
         // Honor the sidebar Pipeline controls in the plain Search tab too —
         // previously HyDE / multi-query / MMR were wired only into the Agent
@@ -901,7 +933,7 @@ function SearchTab({
     multiQuery: scope.multiQuery,
     useHyde: scope.useHyde,
     expandClusters: scope.expandClusters,
-    resultLimit: SEARCH_TAB_RESULT_LIMIT,
+    resultLimit: scope.resultLimit,
     activeOrganizationId: searchContext.filters?.organization_id,
     activeScopeIds:
       searchContext.scope_ids ?? searchContext.filters?.scope_ids ?? null,
@@ -935,6 +967,80 @@ function SearchTab({
       selectionRange: null,
       contextData,
     });
+  // ── Write half of the RAG Search surface (manifest `writeTargets`) ───────
+  // An agent may STAGE the next search — the query text and how hard the
+  // pipeline looks for it. It may never touch the retrieval SCOPE (data store,
+  // source kinds, working-context org/scopes, ACL bypass): that is what the
+  // search is ALLOWED to see, and nothing here declares a target for it, so
+  // the seam refuses those by name. Running the search stays the user's press.
+  //
+  // Both handlers validate against the SAME `search-pipeline` constants the
+  // manifest's contract prose is interpolated from, and THROW on a bad shape
+  // (the writeback seam turns a throw into a safe error envelope the agent
+  // reads). Every setter below is a stable useState setter and nothing is read
+  // off this closure, so a turn that stages both targets cannot half-apply one
+  // against a stale snapshot — and the five interdependent pipeline dials are
+  // ONE object target, resolved in a single call.
+  const getSurfaceWriteHandlers = () => ({
+    search_query: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          `search_query expects a plain text string, got ${Array.isArray(value) ? "an array" : typeof value}. Send the query words themselves as text — not JSON, and not an object.`,
+        );
+      const next = value.trim();
+      if (!next) throw new Error("search_query expects a non-empty string.");
+      if (next.length > SEARCH_QUERY_MAX_CHARS)
+        throw new Error(
+          `search_query is limited to ${SEARCH_QUERY_MAX_CHARS} characters (got ${next.length}). Send the query, not the document.`,
+        );
+      setQuery(next);
+    },
+    retrieval_pipeline: (value: unknown) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          `retrieval_pipeline expects an object with any of: ${PIPELINE_PATCH_KEYS.join(", ")}. Send it as structured data, not as a JSON string.`,
+        );
+      const patch = value as Record<string, unknown>;
+      const unsupported = Object.keys(patch).filter(
+        (key) => !PIPELINE_PATCH_KEYS.includes(key),
+      );
+      if (unsupported.length > 0)
+        throw new Error(
+          `retrieval_pipeline got unsupported key(s): ${unsupported.join(", ")}. Accepted keys: ${PIPELINE_PATCH_KEYS.join(" | ")}. The retrieval scope (data store, source kinds, organization, scopes, ACL bypass) is not writable on this surface — it decides what the search is permitted to see.`,
+        );
+      if (!PIPELINE_PATCH_KEYS.some((key) => key in patch))
+        throw new Error(
+          `retrieval_pipeline needs at least one of: ${PIPELINE_PATCH_KEYS.join(" | ")}.`,
+        );
+
+      // Validate EVERY key before any state moves — a rejected key must never
+      // leave half a settings change staged in the sidebar.
+      for (const key of PIPELINE_FLAG_KEYS) {
+        if (key in patch && typeof patch[key] !== "boolean")
+          throw new Error(
+            `retrieval_pipeline.${key} expects a boolean (true or false).`,
+          );
+      }
+      if ("multi_query" in patch && !isValidMultiQuery(patch.multi_query))
+        throw new Error(
+          `retrieval_pipeline.multi_query expects a whole number from ${MULTI_QUERY_MIN} to ${MULTI_QUERY_MAX} (${MULTI_QUERY_MIN} = no expansion).`,
+        );
+      if ("result_limit" in patch && !isValidResultLimit(patch.result_limit))
+        throw new Error(
+          `retrieval_pipeline.result_limit expects a whole number from ${RESULT_LIMIT_MIN} to ${RESULT_LIMIT_MAX} (default ${RESULT_LIMIT_DEFAULT}).`,
+        );
+
+      if ("rerank" in patch) scope.setRerank(patch.rerank as boolean);
+      if ("use_hyde" in patch) scope.setUseHyde(patch.use_hyde as boolean);
+      if ("expand_entity_clusters" in patch)
+        scope.setExpandClusters(patch.expand_entity_clusters as boolean);
+      if ("multi_query" in patch)
+        scope.setMultiQuery(patch.multi_query as number);
+      if ("result_limit" in patch)
+        scope.setResultLimit(patch.result_limit as number);
+    },
+  });
+
   const setAllResultsExpanded = (expanded: boolean) => {
     if (!response) return;
     setExpandedHits(
@@ -1007,6 +1113,7 @@ function SearchTab({
       surfaceName={RAG_SEARCH_SURFACE}
       getScope={getResultsApplicationScope}
       isEditable={false}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     <div className="flex flex-col h-full overflow-hidden">
       <header className="border-b p-3">
