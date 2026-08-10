@@ -340,6 +340,22 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-10 — Claude: **Setup "Make it real" clarity overhaul** (Arman's
+  confused-buttons feedback). Every rung now carries an always-visible plain-
+  language description AND a server-derived status on load — rungs 3/5 hydrate
+  from the existing `useCmsPageMap` read (plan-linked page count, published
+  count) so returning to Setup never looks like day zero; done-state no longer
+  depends on what was clicked this session. Disabled buttons show their reason
+  as visible inline text (preview-first gates), re-runnable actions relabel
+  ("Re-run starter kit" with a replaces-shell warning, "Compare again"),
+  doors added (open the CMS site, open the live site), rungs renamed to user
+  language ("Create the pages in the CMS", "Write the page content", "See what
+  would go live"). NEW duplicate-site banner in SetupView: sibling `web.site`
+  rows matching on a punctuation-insensitive domain key that carry a plan are
+  called out with an "Open that plan instead" door (the real pbwlaw.com /
+  www.pbw-law.com trap — an empty duplicate presented day-zero Setup while the
+  26-page plan lived on the sibling record). Commit report gained a
+  "View your plan" door that switches to the tree view.
 - 2026-08-09 — Claude: **Content-plan write targets are genuinely agent-writable.** The node surface uses ask-policy for nine draft fields and `save_node`; setup uses ask for family counts/names and auto for archetype; plan selection is auto; list navigation is ask. `node_primary_keyword_id` remains manual because no valid keyword UUID inventory is exposed.
 - 2026-08-09 — Claude: **Page-layer assist chips in the workspace.**
   `plan-assists-producer.ts` (deterministic missing-pages sweep: plan nodes ×

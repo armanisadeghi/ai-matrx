@@ -53,6 +53,7 @@ export function SetupPreviewColumn({
   progress,
   result,
   onCommit,
+  onOpenPlan,
 }: {
   expanded: ExpandedArchetype;
   preview: PreviewSummary;
@@ -62,6 +63,8 @@ export function SetupPreviewColumn({
   progress: { done: number; total: number } | null;
   result: CommitResult | null;
   onCommit: () => void;
+  /** Door to the created pages — switches the workspace to the tree view. */
+  onOpenPlan?: () => void;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -205,7 +208,7 @@ export function SetupPreviewColumn({
         ) : null}
       </div>
 
-      {result ? <CommitReport result={result} /> : null}
+      {result ? <CommitReport result={result} onOpenPlan={onOpenPlan} /> : null}
 
       <div className="border-t border-border bg-card p-3">
         {disabledReason ? (
@@ -242,7 +245,13 @@ export function SetupPreviewColumn({
 }
 
 /** The result of the last run — created / left alone / failed, verbatim. */
-function CommitReport({ result }: { result: CommitResult }) {
+function CommitReport({
+  result,
+  onOpenPlan,
+}: {
+  result: CommitResult;
+  onOpenPlan?: () => void;
+}) {
   const failures = result.rows.filter((row) => row.state === "failed");
   return (
     <div
@@ -261,6 +270,15 @@ function CommitReport({ result }: { result: CommitResult }) {
         )}
         Created {result.created} · left alone {result.existing}
         {result.failed > 0 ? ` · failed ${result.failed}` : ""}
+        {result.created > 0 && onOpenPlan ? (
+          <button
+            type="button"
+            className="ml-auto shrink-0 font-medium text-primary hover:underline"
+            onClick={onOpenPlan}
+          >
+            View your plan →
+          </button>
+        ) : null}
       </p>
       {result.routeMismatches.length > 0 ? (
         <p className="mt-1.5 text-destructive">

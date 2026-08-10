@@ -41,7 +41,12 @@ import {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
-import { planKeys, usePlanEntities, usePlanNodes } from "../../data/hooks";
+import {
+  planKeys,
+  usePlanEntities,
+  usePlanNodes,
+  usePlanSiteStats,
+} from "../../data/hooks";
 import {
   createPlanNode,
   listKeywordLabels,
@@ -90,7 +95,7 @@ import {
 } from "../draft";
 import { useArchetypeLibrary, useCmsFacts } from "../hooks";
 import { buildPreview } from "../preview";
-import { buildReadiness } from "../readiness";
+import { buildReadiness, normalizeDomain } from "../readiness";
 import {
   applyFamilyTopics,
   commitArchetype,
@@ -195,7 +200,7 @@ function namesFromPlan(
 }
 
 export function SetupView() {
-  const { siteId } = usePlanWorkspaceParams();
+  const { siteId, setSiteId, setView } = usePlanWorkspaceParams();
   const queryClient = useQueryClient();
 
   const { sites, orgSites } = useContentPlanSites();
@@ -213,6 +218,31 @@ export function SetupView() {
   const statuses = useCategories({ dimension: CATEGORY_DIMENSIONS.planStatus });
 
   const committed = readCommittedArchetype(site?.settings);
+
+  // ── duplicate-site guard ──────────────────────────────────────────────────
+  // The real-world trap: the same company exists as TWO site records (e.g.
+  // "pbwlaw.com" and "www.pbw-law.com"), the user opens the one with no plan,
+  // and Setup honestly reports day zero — while their finished plan sits on
+  // the sibling. Detect siblings by a punctuation-insensitive domain key and
+  // SAY so, with a door to the other record's plan.
+  const siteStats = usePlanSiteStats();
+  const looseDomainKey = (domain: string | null) =>
+    normalizeDomain(domain).replace(/[^a-z0-9]/g, "");
+  const siblingSites = (() => {
+    if (!site) return [];
+    const key = looseDomainKey(site.domain);
+    if (!key) return [];
+    return (sites.data ?? []).filter(
+      (row) => row.id !== site.id && looseDomainKey(row.domain) === key,
+    );
+  })();
+  const siblingWithPlan = siblingSites
+    .map((row) => ({
+      site: row,
+      planNodes: siteStats.data?.get(row.id)?.totalNodes ?? 0,
+    }))
+    .filter((entry) => entry.planNodes > 0)
+    .sort((a, b) => b.planNodes - a.planNodes)[0];
 
   // Overrides are keyed by archetype so switching shapes and back never
   // silently carries numbers across.
@@ -1726,6 +1756,30 @@ export function SetupView() {
         </div>
       ) : null}
 
+      {siblingWithPlan ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-foreground">
+          <span>
+            <span className="font-medium">
+              This company may already have a plan elsewhere:
+            </span>{" "}
+            &quot;{siblingWithPlan.site.name}&quot; (
+            {siblingWithPlan.site.domain ?? "no domain"}) is a separate site
+            record with {siblingWithPlan.planNodes} planned page
+            {siblingWithPlan.planNodes === 1 ? "" : "s"}
+            {nodeRows.length === 0 ? " — this one has none" : ""}
+            .
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={() => setSiteId(siblingWithPlan.site.id)}
+          >
+            Open that plan instead
+          </Button>
+        </div>
+      ) : null}
+
       <SetupAiBar
         selectedTopicId={researchTopicId}
         onSelectTopic={selectTopic}
@@ -1884,7 +1938,11 @@ export function SetupView() {
               }
               bridgeSlot={
                 site ? (
-                  <SetupBridgeSection site={site} cms={cms.data ?? null} />
+                  <SetupBridgeSection
+                    site={site}
+                    cms={cms.data ?? null}
+                    planNodeIds={nodeRows.map((node) => node.id)}
+                  />
                 ) : null
               }
             />
@@ -1908,6 +1966,7 @@ export function SetupView() {
               progress={progress}
               result={result}
               onCommit={() => void handleCommit()}
+              onOpenPlan={() => setView("tree")}
             />
           ) : (
             <EmptyState

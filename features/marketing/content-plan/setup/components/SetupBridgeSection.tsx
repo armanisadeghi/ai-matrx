@@ -37,12 +37,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   Check,
+  ExternalLink,
   Globe,
   Hammer,
   Link2,
   Loader2,
   RefreshCw,
-  Sparkles,
+  PenLine,
   Square,
 } from "lucide-react";
 
@@ -83,6 +84,7 @@ import {
   type FillStatus,
 } from "../bridge";
 import { setupKeys } from "../hooks";
+import { useCmsPageMap } from "../../hooks/useCmsPageMap";
 import { normalizeDomain, type CmsFacts } from "../readiness";
 import { SetupSection } from "./SetupSection";
 
@@ -99,14 +101,39 @@ function useLinkCandidates(enabled: boolean) {
 export function SetupBridgeSection({
   site,
   cms,
+  planNodeIds,
 }: {
   site: MarketingSite;
   cms: CmsFacts | null;
+  /** Live plan node ids — compared against the CMS page map for real status. */
+  planNodeIds: string[];
 }) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
 
   const linked = Boolean(cms?.link.linked && cms.link.cmsSiteId);
+
+  // The server's own answer to "what already happened here" — the paired CMS
+  // site's pages, read on mount. Every rung shows its REAL state from this on
+  // load, so returning to Setup after work was done never looks like day zero.
+  const pageMap = useCmsPageMap(linked ? site.id : null);
+  const planLinkedPages = (pageMap.map?.pages ?? []).filter((page) =>
+    page.planNodeId !== null && planNodeIds.includes(page.planNodeId),
+  );
+  const realizedCount = planLinkedPages.length;
+  const publishedPages = (pageMap.map?.pages ?? []).filter(
+    (page) => page.isPublished,
+  );
+  const liveUrl =
+    publishedPages.find((page) => page.isHomePage)?.liveUrl ??
+    publishedPages.find((page) => page.liveUrl)?.liveUrl ??
+    null;
+  const allRealized = planNodeIds.length > 0 && realizedCount === planNodeIds.length;
+  // "Everything is live" requires everything to EXIST first — pages that were
+  // never realized can't be counted as published by omission.
+  const allPublished =
+    allRealized &&
+    planLinkedPages.every((page) => page.isPublished && !page.hasDraft);
   const candidates = useLinkCandidates(Boolean(cms) && !linked);
   // Always name the CMS side explicitly when we know it: the bridge then
   // proves (and on first contact, records) the client_sites.web_site_id
@@ -158,7 +185,6 @@ export function SetupBridgeSection({
       stop = true;
       clearInterval(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linked, fillRunning, site.id]);
 
   const invalidateCms = () =>
@@ -188,7 +214,6 @@ export function SetupBridgeSection({
     } else if (current === "completed") {
       toast.success(`Content generation finished: ${fillStatus?.succeeded ?? 0} page(s) written.`);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fillStatus?.status]);
 
   // ── rung 1: create (or pick) the CMS counterpart and link both sides ──────
@@ -448,12 +473,28 @@ export function SetupBridgeSection({
   const ghostCount = report?.ghosts.length ?? null;
   const publishPending = publishResult?.dryRun ? publishResult.wouldPublish : null;
 
+  const activeHeaderFooter = Boolean(
+    linked &&
+      cms &&
+      cms.components.some((c) => c.component_type === "header" && c.is_active) &&
+      cms.components.some((c) => c.component_type === "footer" && c.is_active),
+  );
+
+  // "What exists right now", straight from the server reads — never from what
+  // was clicked this session.
+  const cmsStatus = pageMap.isLoading
+    ? "Checking what already exists in the CMS…"
+    : pageMap.map
+      ? `${realizedCount} of ${planNodeIds.length} planned page(s) exist in the CMS · ${publishedPages.length} live`
+      : null;
+
   return (
     <SetupSection title="Make it real">
       <p className="mb-2 text-xs leading-relaxed text-muted-foreground">
-        The checklist above measures; these steps act. Steps 1–4 are safe to
-        re-run and never publish anything; step 5 is the deliberate one — it
-        takes the drafted site live, behind a preview and a confirm.
+        Five steps take this plan from a list of URLs to a live website. Each
+        step shows what already exists before you run anything, and every step
+        is safe to re-run — only step 5 changes the public site, behind a
+        preview and a confirm.
       </p>
       <ol className="divide-y divide-border overflow-hidden rounded-md border border-border">
         {/* ── 1 · CMS site ── */}
@@ -461,7 +502,16 @@ export function SetupBridgeSection({
           index={1}
           done={linked}
           label="CMS site"
+          description="Where the pages will live. Creates (or links) this plan's website in the CMS."
           doneDetail={linked ? `Linked to "${cms?.link.cmsSlug}"` : null}
+          doors={
+            linked && cms?.link.cmsSiteId ? (
+              <DoorLink
+                href={`/cms/${cms.link.cmsSiteId}`}
+                label="Open the CMS site"
+              />
+            ) : null
+          }
         >
           {linked ? null : cmsUnknown ? (
             <span className="text-[11px] text-muted-foreground">
@@ -502,47 +552,74 @@ export function SetupBridgeSection({
         {/* ── 2 · Site shell ── */}
         <Rung
           index={2}
-          done={Boolean(
-            linked &&
-              cms &&
-              cms.components.some((c) => c.component_type === "header" && c.is_active) &&
-              cms.components.some((c) => c.component_type === "footer" && c.is_active),
-          )}
-          label="Site shell (starter kit)"
+          done={activeHeaderFooter}
+          label="Site shell"
+          description="The site's design: global styles, header, footer, and menu. The starter kit generates a first version of all four."
           doneDetail={
-            linked && cms
-              ? "Header + footer components are in place"
+            activeHeaderFooter && cms
+              ? `In place — ${cms.components.filter((c) => c.is_active).length} active component(s)`
               : null
           }
-          blockedReason={linked ? null : "Link a CMS site first."}
+          doors={
+            activeHeaderFooter && cms?.link.cmsSiteId ? (
+              <DoorLink
+                href={`/cms/${cms.link.cmsSiteId}`}
+                label="See it in the CMS"
+              />
+            ) : null
+          }
+          blockedReason={linked ? null : "Link a CMS site first (step 1)."}
         >
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 gap-1.5 px-2.5 text-xs"
-            disabled={!linked || busy !== null}
-            onClick={() => void runKit(false)}
-          >
-            {busy === "kit" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2.5 text-xs"
+              disabled={!linked || busy !== null}
+              onClick={() => void runKit(false)}
+            >
+              {busy === "kit" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Hammer className="h-3.5 w-3.5" />
+              )}
+              {activeHeaderFooter ? "Re-run starter kit" : "Run starter kit"}
+            </Button>
+            {activeHeaderFooter ? (
+              <span className="text-[11px] text-muted-foreground">
+                Re-running replaces the current styles, header, and footer — it
+                will ask before it does.
+              </span>
             ) : (
-              <Hammer className="h-3.5 w-3.5" />
+              <span className="text-[11px] text-muted-foreground">
+                Prefer to design it yourself? Skip this and build the shell in
+                the CMS instead.
+              </span>
             )}
-            Run starter kit
-          </Button>
+          </div>
         </Rung>
 
         {/* ── 3 · Realize pages ── */}
         <Rung
           index={3}
-          done={Boolean(report && report.ghosts.length === 0 && report.matched > 0)}
-          label="Realize planned pages"
+          done={
+            // Either source of truth may mark this done: the freshest signal
+            // wins, so a stale compare report can't hide completion the live
+            // page map already proves (and vice versa).
+            (report !== null && report.ghosts.length === 0 && report.matched > 0) ||
+            allRealized
+          }
+          label="Create the pages in the CMS"
+          description="Every planned page becomes a real (empty, unpublished) draft page in the CMS, linked to its plan row."
+          status={cmsStatus}
           doneDetail={
             report && report.ghosts.length === 0 && report.matched > 0
               ? `All ${report.matched} planned page(s) exist in the CMS`
-              : null
+              : allRealized
+                ? `All ${planNodeIds.length} planned page(s) exist in the CMS`
+                : null
           }
-          blockedReason={linked ? null : "Link a CMS site first."}
+          blockedReason={linked ? null : "Link a CMS site first (step 1)."}
         >
           <div className="flex flex-wrap items-center gap-1.5">
             <Button
@@ -557,8 +634,12 @@ export function SetupBridgeSection({
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              Check alignment
+              {report ? "Compare again" : "Compare plan to CMS"}
             </Button>
+            <span className="text-[11px] text-muted-foreground">
+              Reads both sides page-by-page and shows the exact differences
+              below — it creates nothing.
+            </span>
             {ghostCount !== null && ghostCount > 0 ? (
               <>
                 <Button
@@ -577,11 +658,6 @@ export function SetupBridgeSection({
                   size="sm"
                   className="h-7 gap-1.5 px-2.5 text-xs"
                   disabled={busy !== null || alignResult === null || !alignResult.dryRun}
-                  title={
-                    alignResult === null || !alignResult.dryRun
-                      ? "Preview first — nothing is written the user has not seen."
-                      : undefined
-                  }
                   onClick={() => void handleRealize(false)}
                 >
                   {busy === "apply" ? (
@@ -591,6 +667,11 @@ export function SetupBridgeSection({
                   )}
                   Create {ghostCount} draft{ghostCount === 1 ? "" : "s"}
                 </Button>
+                {alignResult === null || !alignResult.dryRun ? (
+                  <span className="text-[11px] text-muted-foreground">
+                    Run Preview first — nothing is created sight-unseen.
+                  </span>
+                ) : null}
               </>
             ) : null}
           </div>
@@ -606,13 +687,14 @@ export function SetupBridgeSection({
               fillStatus.deadLetter === 0 &&
               fillStatus.succeeded > 0,
           )}
-          label="Generate content from briefs"
+          label="Write the page content"
+          description="An AI writes each drafted page's actual content from its brief and keyword. Pages that already have content are skipped; nothing is published."
           doneDetail={
             fillStatus && fillStatus.status === "completed"
               ? `${fillStatus.succeeded} page(s) written`
               : null
           }
-          blockedReason={linked ? null : "Link a CMS site first."}
+          blockedReason={linked ? null : "Link a CMS site first (step 1)."}
         >
           <div className="flex flex-wrap items-center gap-1.5">
             {fillRunning ? (
@@ -658,20 +740,21 @@ export function SetupBridgeSection({
                   size="sm"
                   className="h-7 gap-1.5 px-2.5 text-xs"
                   disabled={!linked || busy !== null || fillPreview === null}
-                  title={
-                    fillPreview === null
-                      ? "Preview one authored page first — nothing fans out sight-unseen."
-                      : undefined
-                  }
                   onClick={() => void handleFillStart()}
                 >
                   {busy === "fillStart" ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <PenLine className="h-3.5 w-3.5" />
                   )}
-                  Generate content
+                  Write all pages
                 </Button>
+                {fillPreview === null ? (
+                  <span className="text-[11px] text-muted-foreground">
+                    Preview one page first so you see the writing style before
+                    it runs on every page.
+                  </span>
+                ) : null}
               </>
             )}
           </div>
@@ -681,16 +764,30 @@ export function SetupBridgeSection({
         <Rung
           index={5}
           done={Boolean(
-            publishResult && !publishResult.dryRun && publishResult.failed === 0 &&
-              publishResult.remainingCandidates === 0,
+            (publishResult &&
+              !publishResult.dryRun &&
+              publishResult.failed === 0 &&
+              publishResult.remainingCandidates === 0) ||
+              allPublished,
           )}
           label="Publish the site"
+          description="The only step that changes the public site: every finished draft goes live."
+          status={
+            pageMap.map && publishedPages.length > 0
+              ? `${publishedPages.length} page(s) are live right now`
+              : null
+          }
           doneDetail={
             publishResult && !publishResult.dryRun && publishResult.failed === 0
               ? `${publishResult.published} page(s) published`
-              : null
+              : allPublished
+                ? "Every page is live with no pending changes"
+                : null
           }
-          blockedReason={linked ? null : "Link a CMS site first."}
+          doors={
+            liveUrl ? <DoorLink href={liveUrl} label="Open the live site" /> : null
+          }
+          blockedReason={linked ? null : "Link a CMS site first (step 1)."}
         >
           <div className="flex flex-wrap items-center gap-1.5">
             <Button
@@ -705,7 +802,7 @@ export function SetupBridgeSection({
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              Preview publish
+              See what would go live
             </Button>
             <Button
               size="sm"
@@ -715,13 +812,6 @@ export function SetupBridgeSection({
                 busy !== null ||
                 publishPending === null ||
                 publishPending === 0
-              }
-              title={
-                publishPending === null
-                  ? "Preview first — nothing goes live the user has not seen."
-                  : publishPending === 0
-                    ? "Nothing has pending changes."
-                    : undefined
               }
               onClick={() => void handlePublish(false)}
             >
@@ -734,6 +824,16 @@ export function SetupBridgeSection({
                 ? `Publish ${publishPending} page${publishPending === 1 ? "" : "s"}`
                 : "Publish"}
             </Button>
+            {publishPending === null ? (
+              <span className="text-[11px] text-muted-foreground">
+                Run &quot;See what would go live&quot; first — nothing publishes
+                sight-unseen.
+              </span>
+            ) : publishPending === 0 ? (
+              <span className="text-[11px] text-muted-foreground">
+                Nothing has pending changes — the live site is already current.
+              </span>
+            ) : null}
           </div>
         </Rung>
       </ol>
@@ -753,14 +853,23 @@ function Rung({
   index,
   done,
   label,
+  description,
+  status,
   doneDetail,
+  doors,
   blockedReason,
   children,
 }: {
   index: number;
   done: boolean;
   label: string;
+  /** What this step actually does, in the user's language — always visible. */
+  description: string;
+  /** Server-measured current state ("14 of 26 pages exist…") — always visible. */
+  status?: string | null;
   doneDetail: string | null;
+  /** Doors to the results (open the CMS site, open the live site, …). */
+  doors?: React.ReactNode;
   blockedReason?: string | null;
   children: React.ReactNode;
 }) {
@@ -781,13 +890,37 @@ function Rung({
         {done && doneDetail ? (
           <span className="truncate text-[11px] text-success">{doneDetail}</span>
         ) : null}
+        {doors}
       </div>
+      <p className="pl-7 text-[11px] leading-relaxed text-muted-foreground">
+        {description}
+      </p>
+      {status ? (
+        <p className="pl-7 text-[11px] font-medium tabular-nums text-foreground">
+          {status}
+        </p>
+      ) : null}
       {blockedReason ? (
         <p className="pl-7 text-[11px] text-muted-foreground">{blockedReason}</p>
       ) : (
         <div className="pl-7">{children}</div>
       )}
     </li>
+  );
+}
+
+/** A small always-new-tab door to a result the step produced. */
+function DoorLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+    >
+      <ExternalLink className="h-3 w-3" />
+      {label}
+    </a>
   );
 }
 
