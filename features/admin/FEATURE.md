@@ -160,6 +160,23 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-08-10` — Claude: made the Email Users compose tool
+  (`/administration/users/email`) agent-writable through the surfaces seam.
+  `matrx-admin/email` declares ONE `mode:"draft"` / `applyPolicy:"ask"` write
+  target, `email_draft`, taking a partial `{subject?, message_body?}` and
+  staging it through the same `setSubject` / `setMessage` the admin's own
+  typing calls; `AdminEmailPage` also mounts the surface's FIRST
+  `SurfaceRuntimeProvider` — the manifest previously had no emitter at all, so
+  it published nothing and could service nothing. Validation lives in the pure
+  `features/admin/shared/email-compose-draft.ts`: non-empty plain-text strings,
+  a single-line subject (a CR/LF in an email header is injection-shaped and
+  impossible to type into the real `<input>`), and length ceilings the manifest
+  description interpolates so the contract and the enforcement cannot drift.
+  Staging only — the admin still presses Send Email, and `POST
+  /api/admin/email` is never reached by an agent. The recipients (mode, typed
+  address list, selected users) and the custom From address deliberately have
+  NO write path: they are identity and blast radius, not authored copy. There
+  is no send target by design.
 - `2026-08-10` — Claude: made the Applications Configuration editor
   agent-writable through the surfaces seam. `matrx-admin/applications` declares
   ONE `mode:"draft"` / `applyPolicy:"ask"` write target, `app_notice`, staging

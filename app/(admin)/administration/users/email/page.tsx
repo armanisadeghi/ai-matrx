@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Mail,
   Send,
@@ -15,6 +15,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_EMAIL_SURFACE_NAME,
+  createAdminEmailScope,
+} from "@/features/surfaces/manifests/admin-email.manifest";
+import { parseEmailDraftPatch } from "@/features/admin/shared/email-compose-draft";
 
 interface EmailTemplate {
   id: string;
@@ -181,7 +187,59 @@ export default function AdminEmailPage() {
     );
   };
 
+  // ── Surface runtime (`matrx-admin/email`) ────────────────────────────────
+  // This page is the surface's ONLY mount: the manifest existed with no
+  // provider, so nothing registered and no write target could ever resolve.
+
+  // The in-flight guard below is read through a ref on purpose. When an agent
+  // stages work in one turn the writeback seam resolves handler closures
+  // BEFORE the first confirm dialog is answered, so a `loading` read off the
+  // render closure can be a stale snapshot — and staging copy into a form
+  // whose send is already away is exactly what the guard exists to prevent.
+  const isSendingRef = useRef(loading);
+  isSendingRef.current = loading;
+
+  // Built at Run time from the live form, never on mount.
+  const getAdminEmailScope = () =>
+    createAdminEmailScope({
+      recipient_mode: recipientMode,
+      available_templates: templates,
+      is_sending: loading,
+      ...(customEmails ? { custom_emails_raw: customEmails } : {}),
+      ...(selectedUserIds.length ? { selected_user_ids: selectedUserIds } : {}),
+      ...(subject ? { subject } : {}),
+      ...(message ? { message_body: message } : {}),
+      ...(customFrom ? { custom_from: customFrom } : {}),
+      ...(result ? { last_send_result: result } : {}),
+    });
+
+  // The ONE declared write target, `email_draft`. Both fields land through the
+  // SAME `useState` setters the admin's own typing calls, so staged copy and
+  // typed copy are indistinguishable and the admin can edit or clear either.
+  // Sending is deliberately NOT a target and neither are the recipients or the
+  // From address (see the manifest docblock) — nothing here can address or
+  // dispatch mail. Validation lives in `parseEmailDraftPatch` so the throw is
+  // synchronous and the seam turns it into an error envelope the agent reads.
+  const getSurfaceWriteHandlers = () => ({
+    email_draft: (value: unknown) => {
+      if (isSendingRef.current)
+        throw new Error(
+          "email_draft is unavailable while a send is in flight (is_sending is true). The request already carries the current subject and message — wait for it to finish, then write the next draft.",
+        );
+      const patch = parseEmailDraftPatch(value);
+      // Validate everything first (parse throws), then apply — a half-applied
+      // object would leave the admin looking at copy nobody wrote.
+      if (patch.subject !== undefined) setSubject(patch.subject);
+      if (patch.message_body !== undefined) setMessage(patch.message_body);
+    },
+  });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_EMAIL_SURFACE_NAME}
+      getScope={getAdminEmailScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
+    >
     <div className="h-full overflow-y-auto space-y-6 p-6">
       {/* Header */}
       <div className="space-y-2">
@@ -488,5 +546,6 @@ export default function AdminEmailPage() {
         </div>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
