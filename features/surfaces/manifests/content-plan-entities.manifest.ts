@@ -38,11 +38,11 @@ const groups: SurfaceValueGroup[] = [
     description: "The site's registered E-E-A-T entities in full detail.",
   },
   {
-    key: "editor_state",
+    key: "entity_editor",
     label: "Entity editor",
     sortOrder: 200,
     description:
-      "The New/Edit entity dialog — whether it is open and what is currently typed in it.",
+      "The open New/Edit entity dialog — its staged draft, and saving it.",
   },
 ];
 
@@ -70,90 +70,74 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "entity_roster",
   },
   {
-    name: "source_type_options",
-    label: "Source type options",
+    name: "entity_editor_draft",
+    label: "Entity editor draft",
     description:
-      "The `plan_source_type` categories the editor's Source type picker offers, as {id, name}. THE vocabulary for any source_type_id write — an id absent from this list is refused. Empty while the category dimension loads.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 400,
-    sortOrder: 120,
-    group: "entity_roster",
-    autoContext: false,
-  },
-  {
-    name: "entity_editor",
-    label: "Entity editor state",
-    description:
-      "The New/Edit entity dialog when it is open: {mode: 'new' | 'edit', entity_id (null for a new entity), label, entity_type, source_type_id} reflecting what is TYPED right now, saved or not. Empty when the dialog is closed — the read twin for open_entity_editor and entity_draft.",
+      'The open New/Edit entity dialog\'s staged draft — `{ mode: "new" | "edit", entity_id, label, entity_type, source_type_id }`. `entity_id` is null while creating. Nothing in it is written until the user presses Save/Create. Empty when no editor is open.',
     valueType: "object",
     alwaysAvailable: false,
-    typicalCharCount: 200,
+    typicalCharCount: 180,
     sortOrder: 200,
-    group: "editor_state",
+    group: "entity_editor",
   },
 ];
 
 /**
- * Write targets — the roster is authored content, so this surface earns them.
+ * Write half of the 360 loop — what an agent may write into the entity
+ * manager. The roster IS this surface's job (the intro tells agents to reason
+ * about who is missing and whose credentials matter), so the two things worth
+ * opening are the EDITOR DRAFT and ROSTER ADDITIONS.
  *
- * The judgment call, recorded: an entity's `label` and `entity_type` are
- * exactly the "authored content an agent drafts better/faster" case — naming
- * the cardiologist who should review the site's medical articles, or the
- * standards body worth citing, is the `entity_curator` role's whole job, and
- * the view's existing "Suggest from research" button already performs this
- * write from agent output. `source_type_id` joins them only because
- * `source_type_options` is now declared: an agent that can READ the picker's
- * vocabulary can legitimately choose from it (the reason `content-plan-node`
- * left `node_primary_keyword_id` manual was the absence of exactly that).
+ * `entity_draft` is `mode: "draft"`: the dialog holds a real staging buffer
+ * (the same state the user's typing fills, read back as `entity_editor_draft`)
+ * and nothing reaches the DB until Save/Create. `save_entity_draft` and
+ * `add_entities` are `mode: "entity"` — they run the dialog's own
+ * create/update mutations and persist immediately.
  *
- * Deliberately NOT targets:
- *  - DELETING an entity. Destructive and unrecoverable from this UI; the
- *    trash button and its confirm stay human, by doctrine.
- *  - Attaching an entity to a node (author / reviewer / citation edges).
- *    Those are association writes owned by the node surfaces, and claiming
- *    who reviewed a page is an authority claim, not a drafting task.
- *  - Editing an EXISTING entity's `attributes`. The dialog renders no
- *    attributes editor, so a write there would be a one-way door the user
- *    cannot inspect or correct — the `tool_group` lesson. `create_entity`
- *    accepts them only because they are the agent's own provenance note on a
- *    row it is creating, and `entities_detail` reads them straight back.
- *  - Saving the open dialog. Unlike `content-plan-node`'s `save_node`, the
- *    Save button sits directly under the three fields the draft just staged,
- *    in a small modal the user is already looking at — a second confirm to
- *    press it would be ceremony, not consent.
+ * Deliberately NOT declared, and not to be added later without re-reading the
+ * surface intro:
+ *  - `id` / `site_id` / `organization_id` — identity, never agent-set.
+ *  - DELETION (the row's trash button) — destructive stays human.
+ *  - node↔entity ATTACHMENT (author / reviewer / citation edges) — those live
+ *    on the NODE surfaces by design; this surface maintains the roster only.
+ *  - `source_type_id` — a `plan_source_type` category UUID with no options
+ *    exposed to agents as a read value (same reason `content-plan-node` keeps
+ *    `node_primary_keyword_id` manual). The user picks it in the dialog.
+ *
+ * All targets are `applyPolicy: "ask"`. Handlers are registered by
+ * `EntityManager.tsx` via `useSurfaceWriteHandlers`.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
-    name: "open_entity_editor",
-    label: "Open entity editor",
+    name: "entity_draft",
+    label: "Entity editor draft",
     description:
-      "Opens the entity editor dialog — same as the user clicking a row's pencil, or New entity. Value is an entity UUID from entities_detail to edit that entity, or null to open a blank New entity dialog. UI state only; nothing is written to the plan. Call this before entity_draft, which needs the dialog open.",
-    valueType: "string",
-    updatesValue: "entity_editor",
-    mode: "ui",
-    applyPolicy: "auto",
-    group: "editor_state",
+      "Stages values into the OPEN entity editor dialog — the same staging buffer the user's own typing fills. NOTHING is saved: the user reviews the dialog and presses Save/Create (or `save_entity_draft`). Object with optional keys `label` (non-empty string — the entity's display name, e.g. \"Dr. Jane Smith, MD, FACC\") and `entity_type` (exactly one of: person | source | media | org); provide at least one. Read `entity_editor_draft` for what is staged now. Fails when no entity editor is open — the user has to open New/Edit first. Source type is not settable here.",
+    valueType: "object",
+    updatesValue: "entity_editor_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "entity_editor",
     sortOrder: 100,
   },
   {
-    name: "entity_draft",
-    label: "Entity draft",
+    name: "save_entity_draft",
+    label: "Save entity draft",
     description:
-      `Stages values into the OPEN entity editor dialog; the user still presses Save/Create and can edit or cancel first. Value is an object with any of: label (the display name, e.g. "Dr. Jane Smith" — a name, not a description), entity_type (one of ${ENTITY_TYPE_LIST}), source_type_id (a category UUID from source_type_options, or null to clear). Keys you omit are left alone; an unrecognised key is refused. Fails if the dialog is closed — open it with open_entity_editor first.`,
-    valueType: "object",
-    updatesValue: "entity_editor",
-    mode: "draft",
+      "Saves the open entity editor's staged draft through the dialog's own create/update path — equivalent to the user pressing Save/Create, so this IS written to the database immediately. Value is ignored (pass true). Fails when no editor is open or the staged label is empty.",
+    valueType: "boolean",
+    updatesValue: "entities_detail",
+    mode: "entity",
     applyPolicy: "ask",
-    group: "editor_state",
+    group: "entity_editor",
     sortOrder: 110,
   },
   {
-    name: "create_entity",
-    label: "Create entity",
+    name: "add_entities",
+    label: "Add entities",
     description:
-      `Creates ONE new E-E-A-T entity on this site immediately, through the same canonical service the "Suggest from research" button uses — this is saved, not staged, though the user can delete it afterwards. Value is an object: label (required), entity_type (required, one of ${ENTITY_TYPE_LIST}), source_type_id (optional UUID from source_type_options), attributes (optional JSON object — put your reasoning under a "research" key, as {research: {description, reason}}, which is the convention the roster already stores). site and organization come from the open workspace and must not be sent. Use this to build the roster; use entity_draft to change an entity the user already has open.`,
-    valueType: "object",
+      "Creates NEW roster entities on this site through the same canonical create path as the dialog's Create button — written to the database immediately. Value: a non-empty array of objects `{ label, entity_type, description?, reason? }`, where `label` is a non-empty string and `entity_type` is exactly one of: person | source | media | org. Optional `description`/`reason` are stored as the entity's research attributes. APPENDS only — existing entities are never modified or removed; read `entities_detail` first and do not repeat a label already on the roster.",
+    valueType: "array",
     updatesValue: "entities_detail",
     mode: "entity",
     applyPolicy: "ask",
@@ -167,14 +151,14 @@ export const contentPlanEntitiesManifest: SurfaceManifest = {
   label: "Content Plan Entities",
   readiness: "partial",
   readinessNote:
-    "Emitter wired in EntityManager; per-entity attributes not audited field-by-field; entity_curator bound to the Content Plan Entity Curator (manifest + ui.ui_surface_agent_role synced 2026-07-30). Agent-writable since 2026-08-10 (open_entity_editor / entity_draft / create_entity) — write targets code-only, not yet mirrored to ui.ui_surface_write_target.",
+    "Emitter wired in EntityManager; per-entity attributes not audited field-by-field; entity_curator bound to the Content Plan Entity Curator (manifest + ui.ui_surface_agent_role synced 2026-07-30). Write half live-verified with a real agent run 2026-08-10 (entity_draft / save_entity_draft / add_entities); writeTargets are not yet mirrored to ui.ui_surface_write_target.",
   urlPattern: "/marketing/content-plan/[siteId]?view=entities",
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
 You are on the E-E-A-T entity manager of the content plan: the people, sources, media, and organizations behind the site's content (plan.entity rows). The user maintains the roster here; nodes elsewhere attach these entities as author/reviewer/citation via association edges.
 Read entities_detail for the full roster and entity_counts_by_type for the shape of it. The inherited plan_tree tells you what content exists — useful for spotting coverage gaps (e.g. medical articles with no reviewer-qualified person registered).
 Suggestions belong to the roster: who is missing, whose credentials matter for this vertical, which sources are weak. Node-to-entity attachment happens on the node surfaces, not here.
-You can also ACT on the roster. To add a missing entity, call create_entity — it saves one row immediately through the same path the "Suggest from research" button uses. To revise an entity the user already has open, stage into the dialog with entity_draft and let them press Save; open_entity_editor opens that dialog for a given entity (or a blank one) first. source_type_id values must come from source_type_options — never invent a category id. Deleting an entity and attaching entities to nodes are not yours: the first is destructive and stays with the user, the second lives on the node surfaces.
+You can also ACT on the roster: add_entities creates the missing people/sources outright, and entity_draft stages a label/type into the entity dialog the user has open (save_entity_draft saves it). You cannot delete an entity, change its source type, or attach one to a node — those stay with the user or with the node surfaces.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -203,8 +187,7 @@ export function createContentPlanEntitiesScope(values: {
   view: "tree" | "table" | "map" | "entities" | "setup";
   entities_detail?: Array<Record<string, unknown>>;
   entity_counts_by_type?: Record<string, number>;
-  source_type_options?: Array<Record<string, unknown>>;
-  entity_editor?: Record<string, unknown>;
+  entity_editor_draft?: Record<string, unknown>;
   site_id?: string;
   site_domain?: string;
   selection?: string;

@@ -4,8 +4,15 @@
  * plan.entity CRUD for one site — the people / sources / media / orgs the
  * plan references (E-E-A-T). Source type comes from the seeded
  * `plan_source_type` category dimension.
+ *
+ * Also the WRITE end of `matrx-user/content-plan-entities` (see that
+ * manifest's `writeTargets`). The editor dialog's draft is held HERE rather
+ * than inside the dialog so one staging buffer serves all three readers: the
+ * user's typing, the `entity_editor_draft` surface value, and the
+ * `entity_draft` / `save_entity_draft` handlers. Every handler runs the same
+ * mutation the dialog's own buttons run.
  */
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { Lightbulb, Loader2, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -54,6 +61,7 @@ import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDis
 import { fetchFreshSite, readSiteResearchTopicId } from "../setup/draft";
 import {
   PLAN_ENTITY_TYPES,
+  type PlanEntityInsert,
   type PlanEntityRow,
   type PlanEntityType,
 } from "../types";
@@ -68,18 +76,44 @@ import { CategorySelect } from "@/features/scopes/components/CategorySelect";
 const SURFACE_NAME = "matrx-user/content-plan-entities";
 
 /**
- * What the editor dialog currently holds — mirrored up for `entity_editor`.
- * A `type` rather than an `interface` on purpose: only a type alias gets the
- * implicit index signature that lets it satisfy the scope helper's
- * `Record<string, unknown>`.
+ * The entity dialog's staged draft — local until the user (or
+ * `save_entity_draft`) commits it. `entityId === null` means "creating".
  */
-type EntityEditorSnapshot = {
-  mode: "new" | "edit";
-  entity_id: string | null;
+interface EntityDraft {
+  entityId: string | null;
   label: string;
-  entity_type: PlanEntityType;
-  source_type_id: string | null;
-};
+  entityType: PlanEntityType;
+  sourceTypeId: string | null;
+}
+
+function asRecord(value: unknown, target: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${target} expects an object value.`);
+  }
+  return value as Record<string, unknown>;
+}
+
+/** Validate against the REAL vocabulary constant, never a re-typed literal. */
+function requireEntityType(raw: unknown, target: string): PlanEntityType {
+  if (
+    typeof raw !== "string" ||
+    !PLAN_ENTITY_TYPES.includes(raw as PlanEntityType)
+  ) {
+    throw new Error(
+      `${target}: entity_type must be exactly one of ${PLAN_ENTITY_TYPES.join(
+        " | ",
+      )}.`,
+    );
+  }
+  return raw as PlanEntityType;
+}
+
+function requireLabel(raw: unknown, target: string): string {
+  if (typeof raw !== "string" || !raw.trim()) {
+    throw new Error(`${target}: label must be a non-empty string.`);
+  }
+  return raw.trim();
+}
 
 export function EntityManager({
   siteId,
@@ -92,6 +126,7 @@ export function EntityManager({
   const entities = usePlanEntities(siteId);
   const remove = useDeletePlanEntity(siteId);
   const create = useCreatePlanEntity(siteId);
+  const update = useUpdatePlanEntity(siteId);
   const queryClient = useQueryClient();
   const agents = useSetupAgents(siteId);
   // The SAME dimension the editor's CategorySelect renders from — loaded here
@@ -102,8 +137,8 @@ export function EntityManager({
     dimension: CATEGORY_DIMENSIONS.planSourceType,
   });
 
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editing, setEditing] = useState<PlanEntityRow | null>(null);
+  /** The open editor's staged draft; `null` means no editor is open. */
+  const [draft, setDraft] = useState<EntityDraft | null>(null);
   const [deleting, setDeleting] = useState<PlanEntityRow | null>(null);
   // Reported UP by the open dialog so `entity_editor` reflects what is TYPED,
   // not just which row is open. Null whenever the dialog is closed.
@@ -113,6 +148,73 @@ export function EntityManager({
   const rows = entities.data ?? [];
   const writeContext: EntityWriteContext = {
     sourceTypeIds: sourceTypes.categories.map((category) => category.id),
+  };
+
+  // The draft the write handlers read. Mirrored in a ref (and written
+  // through it) so a `save_entity_draft` arriving in the same agent turn as
+  // an `entity_draft` stage saves what was just staged, not the render-old
+  // value — the agent's two tool calls are not separated by a React commit.
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+
+  const setDraftState = (next: EntityDraft | null) => {
+    draftRef.current = next;
+    setDraft(next);
+  };
+
+  const openEditor = (entity: PlanEntityRow | null) =>
+    setDraftState({
+      entityId: entity?.id ?? null,
+      label: entity?.label ?? "",
+      entityType: (entity?.entity_type as PlanEntityType) ?? "person",
+      sourceTypeId: entity?.source_type_id ?? null,
+    });
+
+  const patchDraft = (patch: Partial<EntityDraft>) => {
+    const current = draftRef.current;
+    if (!current) return;
+    setDraftState({ ...current, ...patch });
+  };
+
+  const busy = create.isPending || update.isPending;
+
+  /**
+   * THE one save path — the dialog's Save/Create button and the
+   * `save_entity_draft` target both land here. It THROWS on anything short
+   * of a landed write: the button turns that into a toast, the write handler
+   * lets it reach the writeback seam so an agent is never told a rejected
+   * write succeeded.
+   */
+  const saveDraft = async (): Promise<PlanEntityRow> => {
+    const current = draftRef.current;
+    if (!current)
+      throw new Error("No entity editor is open — nothing to save.");
+    const label = current.label.trim();
+    if (!label)
+      throw new Error("An entity needs a label before it can be saved.");
+    const patch = {
+      label,
+      entity_type: current.entityType,
+      source_type_id: current.sourceTypeId,
+    };
+    const saved = current.entityId
+      ? await update.mutateAsync({ id: current.entityId, patch })
+      : await create.mutateAsync({
+          site_id: siteId,
+          organization_id: organizationId,
+          ...patch,
+        });
+    // The service throws when the DB rejects the write, but a row that comes
+    // back carrying different values means it did not take what we sent.
+    if (saved.label !== label || saved.entity_type !== current.entityType) {
+      throw new Error(
+        `The saved entity came back as "${saved.label}" (${saved.entity_type}) — the write did not land as sent.`,
+      );
+    }
+    const wasCreating = current.entityId === null;
+    setDraftState(null);
+    toast.success(wasCreating ? "Entity created." : "Entity saved.");
+    return saved;
   };
 
   // The Entity Curator agent: read the site's linked research report and
@@ -191,7 +293,9 @@ export function EntityManager({
           `Added ${created}; ${failures.length} failed — ${failures[0]}`,
         );
       } else {
-        toast.success(`Added ${created} entit${created === 1 ? "y" : "ies"} from the research report.`);
+        toast.success(
+          `Added ${created} entit${created === 1 ? "y" : "ies"} from the research report.`,
+        );
       }
     } catch (error) {
       toast.error(`Entity suggestion failed: ${extractErrorMessage(error)}`);
@@ -221,50 +325,136 @@ export function EntityManager({
           : undefined,
       entity_counts_by_type:
         entities.data !== undefined ? countsByType : undefined,
-      source_type_options:
-        sourceTypes.categories.length > 0
-          ? sourceTypes.categories.map((category) => ({
-              id: category.id,
-              name: category.name,
-            }))
-          : undefined,
-      entity_editor: editorSnapshot ?? undefined,
+      entity_editor_draft: draft
+        ? {
+            mode: draft.entityId ? "edit" : "new",
+            entity_id: draft.entityId,
+            label: draft.label,
+            entity_type: draft.entityType,
+            source_type_id: draft.sourceTypeId,
+          }
+        : undefined,
     });
   };
 
-  /**
-   * Roster-level write handlers. The THIRD target (`entity_draft`) belongs to
-   * the dialog, which owns the three inputs and registers it from down there
-   * via `useSurfaceWriteHandlers` — a registered handler shadows the one
-   * below. The stub here exists so that writing into a CLOSED editor gets the
-   * actionable "open it first" error instead of the seam's generic
-   * declared-but-unhandled defect report.
-   */
-  const buildWriteHandlers = () => ({
-    open_entity_editor: (value: unknown) => {
-      const id = parseOpenEntityEditorWrite(
-        value,
-        rows.map((entity) => entity.id),
-      );
-      setEditing(id ? (rows.find((entity) => entity.id === id) ?? null) : null);
-      setEditorOpen(true);
+  // Write half of the surface. Registered by name (not through the
+  // provider prop) so the handlers below always close over THIS render's
+  // draft and roster — see useSurfaceWriteHandlers' ref indirection.
+  useSurfaceWriteHandlers(SURFACE_NAME, {
+    entity_draft: (value: unknown) => {
+      const obj = asRecord(value, "entity_draft");
+      // The entities view can be mounted with no editor open — and an agent
+      // launched on the inherited content-plan surface may not even be
+      // looking at this view. Refuse loudly rather than stage into nothing.
+      if (!draftRef.current) {
+        throw new Error(
+          "entity_draft: no entity editor is open — the user has to open New entity (or Edit on a row) before a draft can be staged.",
+        );
+      }
+      const patch: Partial<EntityDraft> = {};
+      if (obj.label !== undefined) {
+        patch.label = requireLabel(obj.label, "entity_draft");
+      }
+      if (obj.entity_type !== undefined) {
+        patch.entityType = requireEntityType(obj.entity_type, "entity_draft");
+      }
+      if (Object.keys(patch).length === 0) {
+        throw new Error(
+          "entity_draft: provide label and/or entity_type — source type and identity fields are not agent-writable.",
+        );
+      }
+      patchDraft(patch);
     },
-    entity_draft: () => {
-      throw new Error(
-        "entity_draft: the entity editor dialog is not open, so there is nothing to stage into. Call open_entity_editor first (an entity id from entities_detail, or null for a new entity), or use create_entity to add a new entity outright.",
-      );
+
+    save_entity_draft: async () => {
+      if (!draftRef.current) {
+        throw new Error(
+          "save_entity_draft: no entity editor is open — there is nothing staged to save.",
+        );
+      }
+      await saveDraft();
     },
-    create_entity: async (value: unknown) => {
-      const input = parseCreateEntityWrite(value, writeContext);
-      await create.mutateAsync({
-        site_id: siteId,
-        organization_id: organizationId,
-        label: input.label,
-        entity_type: input.entity_type,
-        source_type_id: input.source_type_id,
-        ...(input.attributes ? { attributes: input.attributes } : {}),
+
+    add_entities: async (value: unknown) => {
+      if (!siteId || !organizationId) {
+        throw new Error(
+          "add_entities: no site is loaded on the entities view — nothing can receive new entities.",
+        );
+      }
+      if (!Array.isArray(value) || value.length === 0) {
+        throw new Error(
+          "add_entities: expects a non-empty array of { label, entity_type, description?, reason? }.",
+        );
+      }
+      const existing = new Set(
+        rows.map((entity) => entity.label.trim().toLowerCase()),
+      );
+      const inserts = value.map((entry, index): PlanEntityInsert => {
+        const where = `add_entities: [${index}]`;
+        const record = asRecord(entry, where);
+        const label = requireLabel(record.label, where);
+        const entityType = requireEntityType(record.entity_type, where);
+        const key = label.toLowerCase();
+        if (existing.has(key)) {
+          throw new Error(
+            `${where}: "${label}" is already on this site's roster — add_entities only appends. Read entities_detail first.`,
+          );
+        }
+        existing.add(key);
+        // Same attributes shape the "Suggest from research" flow writes.
+        const description = record.description;
+        const reason = record.reason;
+        for (const [key2, raw] of [
+          ["description", description],
+          ["reason", reason],
+        ] as const) {
+          if (raw !== undefined && typeof raw !== "string") {
+            throw new Error(
+              `${where}: ${key2} must be a string when provided.`,
+            );
+          }
+        }
+        const research: Record<string, string> = {};
+        if (typeof description === "string" && description.trim()) {
+          research.description = description.trim();
+        }
+        if (typeof reason === "string" && reason.trim()) {
+          research.reason = reason.trim();
+        }
+        return {
+          site_id: siteId,
+          organization_id: organizationId,
+          label,
+          entity_type: entityType,
+          ...(Object.keys(research).length > 0
+            ? { attributes: { research } }
+            : {}),
+        };
       });
-      toast.success(`Added "${input.label}" to the roster.`);
+      // The SAME mutation the dialog's Create button runs. Each call returns
+      // the inserted row and throws when the DB rejects it; a partial run is
+      // reported as the partial run it was, never as success.
+      const created: PlanEntityRow[] = [];
+      for (const insert of inserts) {
+        try {
+          created.push(await create.mutateAsync(insert));
+        } catch (error) {
+          throw new Error(
+            `add_entities: created ${created.length} of ${inserts.length}; "${insert.label}" failed — ${extractErrorMessage(error)}`,
+          );
+        }
+      }
+      const mismatched = created.filter(
+        (row, index) => row.label !== inserts[index].label,
+      );
+      if (mismatched.length > 0) {
+        throw new Error(
+          `add_entities: ${mismatched.length} row(s) came back with a different label than sent — the write did not land as sent.`,
+        );
+      }
+      toast.success(
+        `Added ${created.length} entit${created.length === 1 ? "y" : "ies"}.`,
+      );
     },
   });
 
@@ -274,320 +464,220 @@ export function EntityManager({
       getScope={getScope}
       getWriteHandlers={buildWriteHandlers}
     >
-    <div
-      data-surface-value="entities_summary"
-      className="flex h-full flex-col overflow-y-auto"
-    >
-      <div className="mx-auto w-full max-w-3xl px-4 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">
-              People &amp; sources
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              The authors, reviewers, sources, and organizations behind this
-              site's content (E-E-A-T).
+      <div
+        data-surface-value="entities_summary"
+        className="flex h-full flex-col overflow-y-auto"
+      >
+        <div className="mx-auto w-full max-w-3xl px-4 py-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                People &amp; sources
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                The authors, reviewers, sources, and organizations behind this
+                site's content (E-E-A-T).
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                disabled={agents.entitiesBusy}
+                title="Read the site's linked research report and propose the real people, standards, and sources this content should cite."
+                onClick={() => void handleSuggestFromResearch()}
+              >
+                {agents.entitiesBusy ? (
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                ) : (
+                  <Lightbulb className="mr-1 h-3 w-3" />
+                )}
+                Suggest from research
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  openEditor(null);
+                }}
+              >
+                <Plus className="mr-1 h-3 w-3" /> New entity
+              </Button>
+            </div>
+          </div>
+
+          {/* Live curator output — the agent's stream renders while it works. */}
+          {agents.live.hasLiveRun ? (
+            <div className="mt-2">
+              <LiveRunDisplay
+                conversationId={agents.live.conversationId}
+                label={agents.live.label ?? "Curating entities"}
+                pending={agents.live.isRunning}
+                onDismiss={agents.live.dismiss}
+              />
+            </div>
+          ) : null}
+
+          {entities.isLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }, (_, index) => (
+                <div key={index} className="flex items-center gap-3 py-1">
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : entities.isError ? (
+            <p className="py-4 text-sm text-destructive">
+              {extractErrorMessage(entities.error)}
             </p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              disabled={agents.entitiesBusy}
-              title="Read the site's linked research report and propose the real people, standards, and sources this content should cite."
-              onClick={() => void handleSuggestFromResearch()}
-            >
-              {agents.entitiesBusy ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              ) : (
-                <Lightbulb className="mr-1 h-3 w-3" />
-              )}
-              Suggest from research
-            </Button>
-            <Button
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => {
-                setEditing(null);
-                setEditorOpen(true);
-              }}
-            >
-              <Plus className="mr-1 h-3 w-3" /> New entity
-            </Button>
-          </div>
+          ) : rows.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border px-6 py-10 text-center">
+              <Users className="mx-auto h-8 w-8 text-muted-foreground" />
+              <p className="mt-3 text-sm font-medium text-foreground">
+                No entities yet
+              </p>
+              <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
+                Add the authors, reviewers, and sources this site's content will
+                cite — nodes attach to them from the tree.
+              </p>
+              <Button
+                size="sm"
+                className="mt-4 h-7 text-xs"
+                onClick={() => {
+                  openEditor(null);
+                }}
+              >
+                <Plus className="mr-1 h-3 w-3" /> New entity
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
+              {rows.map((entity) => (
+                <div
+                  key={entity.id}
+                  className="group flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0 hover:bg-accent/50"
+                >
+                  <span className="w-16 shrink-0 rounded bg-muted px-1.5 py-0.5 text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {entity.entity_type}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                    {entity.label}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                    aria-label="Edit entity"
+                    onClick={() => {
+                      openEditor(entity);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-muted-foreground opacity-0 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                    aria-label="Delete entity"
+                    onClick={() => setDeleting(entity)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Live curator output — the agent's stream renders while it works. */}
-        {agents.live.hasLiveRun ? (
-          <div className="mt-2">
-            <LiveRunDisplay
-              conversationId={agents.live.conversationId}
-              label={agents.live.label ?? "Curating entities"}
-              pending={agents.live.isRunning}
-              onDismiss={agents.live.dismiss}
-            />
-          </div>
+        {draft ? (
+          <EntityEditorDialog
+            draft={draft}
+            busy={busy}
+            onPatch={patchDraft}
+            onClose={() => setDraftState(null)}
+            onSave={() => {
+              void saveDraft().catch((error) =>
+                toast.error(
+                  `Could not save the entity: ${extractErrorMessage(error)}`,
+                ),
+              );
+            }}
+          />
         ) : null}
-
-        {entities.isLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }, (_, index) => (
-              <div key={index} className="flex items-center gap-3 py-1">
-                <Skeleton className="h-5 w-16" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            ))}
-          </div>
-        ) : entities.isError ? (
-          <p className="py-4 text-sm text-destructive">
-            {extractErrorMessage(entities.error)}
-          </p>
-        ) : rows.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border px-6 py-10 text-center">
-            <Users className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium text-foreground">
-              No entities yet
-            </p>
-            <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-              Add the authors, reviewers, and sources this site's content will
-              cite — nodes attach to them from the tree.
-            </p>
-            <Button
-              size="sm"
-              className="mt-4 h-7 text-xs"
-              onClick={() => {
-                setEditing(null);
-                setEditorOpen(true);
-              }}
-            >
-              <Plus className="mr-1 h-3 w-3" /> New entity
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-border bg-card">
-            {rows.map((entity) => (
-              <div
-                key={entity.id}
-                className="group flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0 hover:bg-accent/50"
-              >
-                <span className="w-16 shrink-0 rounded bg-muted px-1.5 py-0.5 text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {entity.entity_type}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                  {entity.label}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
-                  aria-label="Edit entity"
-                  onClick={() => {
-                    setEditing(entity);
-                    setEditorOpen(true);
-                  }}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-muted-foreground opacity-0 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
-                  aria-label="Delete entity"
-                  onClick={() => setDeleting(entity)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {editorOpen ? (
-        <EntityEditorDialog
-          key={editing?.id ?? "new"}
-          siteId={siteId}
-          organizationId={organizationId}
-          entity={editing}
-          open={editorOpen}
-          onOpenChange={setEditorOpen}
-          onSnapshotChange={setEditorSnapshot}
-          writeContext={writeContext}
+        <ConfirmDialog
+          open={deleting !== null}
+          onOpenChange={(open) => {
+            if (!open) setDeleting(null);
+          }}
+          title="Delete this entity?"
+          description={
+            deleting
+              ? `"${deleting.label}" will be soft-deleted; its node attachments are swept by the platform GC.`
+              : undefined
+          }
+          confirmLabel="Delete"
+          variant="destructive"
+          busy={remove.isPending}
+          onConfirm={() => {
+            if (!deleting) return;
+            remove.mutate(deleting.id, {
+              onSuccess: () => {
+                setDeleting(null);
+                toast.success("Entity deleted.");
+              },
+              onError: (error) => {
+                setDeleting(null);
+                toast.error(extractErrorMessage(error));
+              },
+            });
+          }}
         />
-      ) : null}
-      <ConfirmDialog
-        open={deleting !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleting(null);
-        }}
-        title="Delete this entity?"
-        description={
-          deleting
-            ? `"${deleting.label}" will be soft-deleted; its node attachments are swept by the platform GC.`
-            : undefined
-        }
-        confirmLabel="Delete"
-        variant="destructive"
-        busy={remove.isPending}
-        onConfirm={() => {
-          if (!deleting) return;
-          remove.mutate(deleting.id, {
-            onSuccess: () => {
-              setDeleting(null);
-              toast.success("Entity deleted.");
-            },
-            onError: (error) => {
-              setDeleting(null);
-              toast.error(extractErrorMessage(error));
-            },
-          });
-        }}
-      />
-    </div>
+      </div>
     </SurfaceRuntimeProvider>
   );
 }
 
+/**
+ * Controlled editor. It owns NO draft state — `EntityManager` holds the
+ * staging buffer so the surface's `entity_editor_draft` value and the
+ * `entity_draft` / `save_entity_draft` handlers see (and fill) exactly what
+ * the user is looking at.
+ */
 function EntityEditorDialog({
-  siteId,
-  organizationId,
-  entity,
-  open,
-  onOpenChange,
-  onSnapshotChange,
-  writeContext,
+  draft,
+  busy,
+  onPatch,
+  onClose,
+  onSave,
 }: {
-  siteId: string;
-  organizationId: string;
-  entity: PlanEntityRow | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** Mirrors the live draft up so the surface can emit `entity_editor`. */
-  onSnapshotChange: (snapshot: EntityEditorSnapshot | null) => void;
-  writeContext: EntityWriteContext;
+  draft: EntityDraft;
+  busy: boolean;
+  onPatch: (patch: Partial<EntityDraft>) => void;
+  onClose: () => void;
+  onSave: () => void;
 }) {
-  const create = useCreatePlanEntity(siteId);
-  const update = useUpdatePlanEntity(siteId);
-
-  const [label, setLabel] = useState(entity?.label ?? "");
-  const [entityType, setEntityType] = useState<PlanEntityType>(
-    (entity?.entity_type as PlanEntityType) ?? "person",
-  );
-  const [sourceTypeId, setSourceTypeId] = useState<string | null>(
-    entity?.source_type_id ?? null,
-  );
-  // No re-seed logic needed: the dialog is mounted only while open and
-  // keyed by the entity id, so useState initializers always seed fresh.
-
-  const busy = create.isPending || update.isPending;
-
-  // `entity_draft` lives HERE, not on the provider: this component owns the
-  // three inputs, so the handler can call the exact setters the user's own
-  // typing calls. A registered handler shadows the provider's stub above.
-  useSurfaceWriteHandlers(SURFACE_NAME, {
-    entity_draft: (value: unknown) => {
-      if (busy) {
-        throw new Error(
-          "entity_draft: this entity is mid-save — wait for it to finish before staging more changes.",
-        );
-      }
-      const draft = parseEntityDraftWrite(value, writeContext);
-      if (draft.label !== undefined) setLabel(draft.label);
-      if (draft.entity_type !== undefined) setEntityType(draft.entity_type);
-      if (draft.source_type_id !== undefined) {
-        setSourceTypeId(draft.source_type_id);
-      }
-    },
-  });
-
-  // Publish the live draft up for the `entity_editor` read value…
-  useEffect(() => {
-    onSnapshotChange({
-      mode: entity ? "edit" : "new",
-      entity_id: entity?.id ?? null,
-      label,
-      entity_type: entityType,
-      source_type_id: sourceTypeId,
-    });
-  }, [entity, label, entityType, sourceTypeId, onSnapshotChange]);
-  // …and clear it on UNMOUNT only, so a closed dialog never reports stale
-  // state to an agent (a cleanup on the effect above would blank it between
-  // every keystroke).
-  useEffect(() => () => onSnapshotChange(null), [onSnapshotChange]);
-
-  const submit = () => {
-    const onError = (error: unknown) =>
-      toast.error(`Could not save the entity: ${extractErrorMessage(error)}`);
-    if (entity) {
-      update.mutate(
-        {
-          id: entity.id,
-          patch: {
-            label: label.trim(),
-            entity_type: entityType,
-            source_type_id: sourceTypeId,
-          },
-        },
-        {
-          onSuccess: () => {
-            onOpenChange(false);
-            toast.success("Entity saved.");
-          },
-          onError,
-        },
-      );
-    } else {
-      create.mutate(
-        {
-          site_id: siteId,
-          organization_id: organizationId,
-          label: label.trim(),
-          entity_type: entityType,
-          source_type_id: sourceTypeId,
-        },
-        {
-          onSuccess: () => {
-            onOpenChange(false);
-            toast.success("Entity created.");
-          },
-          onError,
-        },
-      );
-    }
-  };
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-w-sm"
-        onInteractOutside={(event) => {
-          // A confirm layered ABOVE this dialog is not an "outside click".
-          // The surface-write ask (`ConfirmDialogHost`) portals its
-          // alertdialog next to this one, so without this guard pressing
-          // Apply dismissed the very editor the value was being staged into
-          // — the draft was discarded while the agent was told it landed.
-          const originalEvent = (
-            event as unknown as { detail?: { originalEvent?: Event } }
-          ).detail?.originalEvent;
-          const node = (originalEvent?.target ?? event.target) as
-            | HTMLElement
-            | null;
-          if (typeof node?.closest === "function" && node.closest('[role="alertdialog"]')) {
-            event.preventDefault();
-          }
-        }}
-      >
+    <Dialog
+      open
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>{entity ? "Edit entity" : "New entity"}</DialogTitle>
+          <DialogTitle>
+            {draft.entityId ? "Edit entity" : "New entity"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
             <Label className="mb-1 block text-xs font-medium">Label</Label>
             <Input
               autoFocus
-              value={label}
-              onChange={(event) => setLabel(event.target.value)}
+              value={draft.label}
+              onChange={(event) => onPatch({ label: event.target.value })}
               placeholder="Dr. Jane Smith"
               className="h-8"
             />
@@ -595,8 +685,10 @@ function EntityEditorDialog({
           <div>
             <Label className="mb-1 block text-xs font-medium">Type</Label>
             <Select
-              value={entityType}
-              onValueChange={(next) => setEntityType(next as PlanEntityType)}
+              value={draft.entityType}
+              onValueChange={(next) =>
+                onPatch({ entityType: next as PlanEntityType })
+              }
             >
               <SelectTrigger className="h-8 text-sm">
                 <SelectValue />
@@ -611,21 +703,27 @@ function EntityEditorDialog({
             </Select>
           </div>
           <div>
-            <Label className="mb-1 block text-xs font-medium">Source type</Label>
+            <Label className="mb-1 block text-xs font-medium">
+              Source type
+            </Label>
             <CategorySelect
               dimension={CATEGORY_DIMENSIONS.planSourceType}
-              value={sourceTypeId}
-              onChange={setSourceTypeId}
+              value={draft.sourceTypeId}
+              onChange={(next) => onPatch({ sourceTypeId: next })}
               placeholder="Source type"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button size="sm" disabled={!label.trim() || busy} onClick={submit}>
-            {busy ? "Saving…" : entity ? "Save" : "Create"}
+          <Button
+            size="sm"
+            disabled={!draft.label.trim() || busy}
+            onClick={onSave}
+          >
+            {busy ? "Saving\u2026" : draft.entityId ? "Save" : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>
