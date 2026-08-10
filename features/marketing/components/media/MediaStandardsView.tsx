@@ -14,8 +14,14 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useSaveSiteMediaStandards } from "@/features/marketing/data/hooks";
+import { MARKETING_SITE_MEDIA_SURFACE_NAME } from "@/features/marketing/lib/scopes/site-media-scope";
+import {
+  validateMediaStandardsNotesWrite,
+  validateMediaStandardsSlotsWrite,
+} from "@/features/marketing/lib/site-media-write-targets";
 import {
   DEFAULT_STANDARD_SLOTS,
   type MediaStandardSlot,
@@ -37,10 +43,37 @@ export function MediaStandardsView({
   const [draft, setDraft] = useState<SiteMediaStandards>(standards);
   const [dirty, setDirty] = useState(false);
 
-  const update = (next: SiteMediaStandards) => {
-    setDraft(next);
+  /** The ONE path every edit takes — user typing and agent writes alike. */
+  const patchDraft = (
+    updater: (current: SiteMediaStandards) => SiteMediaStandards,
+  ) => {
+    setDraft(updater);
     setDirty(true);
   };
+
+  const update = (next: SiteMediaStandards) => patchDraft(() => next);
+
+  /**
+   * Write targets for the site's media standards. Registered HERE, not on the
+   * workspace, because this view owns the standards draft — so they are
+   * offered only while the Standards view is open, which the manifest
+   * descriptions say outright. Both stage into the same unsaved draft the
+   * inputs above drive; the USER still presses "Save standards", which is the
+   * only thing that touches `web.site.settings.media_standards`.
+   *
+   * Validation runs synchronously (throwing into the writeback seam) BEFORE
+   * the functional state update, never inside it.
+   */
+  useSurfaceWriteHandlers(MARKETING_SITE_MEDIA_SURFACE_NAME, {
+    media_standards_slots: (value: unknown) => {
+      const slots = validateMediaStandardsSlotsWrite(value);
+      patchDraft((current) => ({ ...current, slots }));
+    },
+    media_standards_notes: (value: unknown) => {
+      const notes = validateMediaStandardsNotesWrite(value);
+      patchDraft((current) => ({ ...current, notes }));
+    },
+  });
 
   const updateSlot = (id: string, patch: Partial<MediaStandardSlot>) => {
     update({

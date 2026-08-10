@@ -21,6 +21,11 @@ import type {
   ResearchImageRow,
   SiteMediaStandards,
 } from "@/features/marketing/data/media-library";
+import {
+  MEDIA_ORDER_PRESETS,
+  resolveOrderDimensions,
+} from "@/features/marketing/lib/media-order-presets";
+import type { MediaOrderDraft } from "@/features/marketing/lib/site-media-write-targets";
 import type { BrandAsset } from "@/features/marketing/types";
 
 export const MARKETING_SITE_MEDIA_SURFACE_NAME =
@@ -123,6 +128,39 @@ export function summarizeResearchImages(
   };
 }
 
+/**
+ * Project the staged image order, resolving what the order WOULD use so the
+ * agent can see the effective size without re-deriving the standards match.
+ */
+export function projectMediaOrderDraft(
+  order: MediaOrderDraft,
+  standards: SiteMediaStandards,
+): Record<string, unknown> {
+  const preset =
+    MEDIA_ORDER_PRESETS.find((item) => item.id === order.type) ??
+    MEDIA_ORDER_PRESETS[0];
+  const resolved = resolveOrderDimensions(preset, standards);
+  const overrideWidth = Number(order.width);
+  const overrideHeight = Number(order.height);
+  return {
+    type: order.type,
+    brief: order.brief,
+    style: order.style,
+    width: order.width,
+    height: order.height,
+    resolved_width:
+      order.width && Number.isFinite(overrideWidth) && overrideWidth > 0
+        ? overrideWidth
+        : resolved.width,
+    resolved_height:
+      order.height && Number.isFinite(overrideHeight) && overrideHeight > 0
+        ? overrideHeight
+        : resolved.height,
+    resolved_from: resolved.source,
+    resolved_slot_name: resolved.slotName,
+  };
+}
+
 export interface SiteMediaScopeInput {
   /** Inherited brand + site context, built by `useMarketingSiteSurfaceBase`. */
   base: MarketingSiteBaseValues;
@@ -130,6 +168,8 @@ export interface SiteMediaScopeInput {
   view: string;
   /** Parsed `site.settings.media_standards` — always available, may be empty. */
   standards: SiteMediaStandards;
+  /** The workspace-owned image order draft — always present, may be empty. */
+  order: MediaOrderDraft;
   /** Cached crawled-inventory rows (`useSiteMedia`), when loaded. */
   mediaRows?: SiteMediaPageRow[];
   /** Cached brand assets (`useBrandAssets`), when loaded. */
@@ -144,6 +184,7 @@ export function buildSiteMediaScope({
   base,
   view,
   standards,
+  order,
   mediaRows,
   brandAssets,
   researchImages,
@@ -156,6 +197,7 @@ export function buildSiteMediaScope({
       slots: standards.slots,
       notes: standards.notes,
     },
+    media_order_draft: projectMediaOrderDraft(order, standards),
     media_inventory_summary: mediaRows
       ? summarizeMediaInventory(mediaRows)
       : undefined,
