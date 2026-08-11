@@ -54,6 +54,7 @@ import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import { PlanAssistStrip } from "./PlanAssistStrip";
 import { PlanGenerateBar } from "./PlanGenerateBar";
 import { PlanRealityBar } from "./PlanRealityBar";
+import { PlanWebsiteBar } from "./PlanWebsiteBar";
 import type { PlanNodeRow } from "../types";
 import { useContentPlanSites } from "./ContentPlanHeader";
 import { EntityManager } from "./EntityManager";
@@ -89,7 +90,7 @@ export function ContentPlanWorkbench({
   defaultLayout?: Layout;
   layoutCookieName: string;
 }) {
-  const { siteId, view } = usePlanWorkspaceParams();
+  const { siteId, view, setView } = usePlanWorkspaceParams();
   const { sites, orgSites } = useContentPlanSites();
   const isMobile = useIsMobile();
 
@@ -362,6 +363,21 @@ export function ContentPlanWorkbench({
             onBulkDeepen={() => setBulkDeepenConfirm(true)}
             onBulkDeepenCancel={bulkDeepen.cancel}
             onBulkDeepenDismiss={bulkDeepen.reset}
+          />
+        ) : null}
+
+        {/* Is there a real website behind this plan, and how much of the plan
+            exists on it? The workspace answered this NOWHERE before — a user
+            could study a whole plan without learning it had no website. */}
+        {usesCmsOverlay && siteId ? (
+          <PlanWebsiteBar
+            cmsLink={cmsLink.data ?? null}
+            cmsSiteId={resolvedCmsSiteId}
+            pagesByNodeId={cmsPages.pagesByNodeId}
+            allPages={cmsPages.map?.pages ?? []}
+            plannedCount={nodeRows.length}
+            siteDomain={site?.domain ?? null}
+            onOpenSetup={() => setView("setup")}
           />
         ) : null}
 
