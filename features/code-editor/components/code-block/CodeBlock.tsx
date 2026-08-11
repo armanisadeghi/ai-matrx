@@ -337,7 +337,12 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
       <div
         ref={containerRef}
         className={cn(
-          "w-full my-4 rounded-t-xl rounded-b-lg overflow-hidden border border-neutral-200 dark:border-neutral-700",
+          "w-full my-4 rounded-t-xl rounded-b-lg border border-neutral-200 dark:border-neutral-700",
+          // `overflow-clip` (NOT `overflow-hidden`) so this box still clips to
+          // its rounded corners without becoming a scroll container — an
+          // overflow-hidden ancestor would trap StickyButtons' `position:
+          // sticky` and disable it (D153).
+          !isFullScreen && "overflow-clip",
           isFullScreen &&
             "fixed w-[95vw] h-[90dvh] z-[9999] bg-textured flex flex-col shadow-2xl rounded-xl overflow-hidden",
           className,
@@ -390,7 +395,6 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
             isCopied={isCopied}
             handleCopy={handleCopy}
             toggleCollapse={toggleCollapse}
-            isMobile={isMobile}
           />
         )}
         <div
