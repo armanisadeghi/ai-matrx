@@ -501,6 +501,18 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 400,
   },
   {
+    name: "accept_brief_draft",
+    label: "Use this brief",
+    description:
+      "Promotes the AI's proposed brief onto this page's live brief and marks the proposal accepted. Server-side and immediate — unlike node_brief, this does NOT stage into the draft for review. Refuses when there is no pending proposal. This is the same action as the 'Use this brief' button on the rendered brief.",
+    valueType: "boolean",
+    updatesValue: "node_brief",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "node_content",
+    sortOrder: 405,
+  },
+  {
     name: "node_attributes",
     label: "Vertical attributes",
     description:

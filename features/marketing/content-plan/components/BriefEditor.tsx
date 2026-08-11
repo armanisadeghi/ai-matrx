@@ -81,18 +81,11 @@ export function BriefEditor({
       {draft ? (
         <PageBriefBlock
           serverData={draftAsPageBrief(draft)}
-          actions={
-            draftPending ? (
-              <Button
-                size="sm"
-                className="h-7 shrink-0"
-                disabled={accepting}
-                onClick={onAccept}
-              >
-                {accepting ? "Applying…" : "Use this brief"}
-              </Button>
-            ) : null
-          }
+          // ONE path. The button the component renders runs the same
+          // `accept_brief_draft` write target an agent applies — a human click
+          // and an agent write are literally the same operation.
+          acceptTarget="accept_brief_draft"
+          canAccept={draftPending}
         />
       ) : null}
 

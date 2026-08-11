@@ -302,6 +302,16 @@ export function NodePanel({
           "node_primary_keyword_id",
         ),
       }),
+    // The SAME operation the "Use this brief" button on the rendered brief
+    // runs — one path, whether a human clicks it or an agent applies it.
+    accept_brief_draft: async () => {
+      if (!draftPending) {
+        throw new Error(
+          "There is no pending brief proposal on this page to accept.",
+        );
+      }
+      await briefWriter.accept();
+    },
     node_brief: (value) => {
       if (
         !Array.isArray(value) ||
