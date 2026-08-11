@@ -293,7 +293,9 @@ export function ChatRoomClient({
         // (streams run detach_on_disconnect — a refresh never stops them).
         // Ask the canonical /runtime surface, show the server-truth "still
         // working" banner, follow its event stream to terminal, and refetch
-        // the finished message automatically. Self-gating + fire-and-forget.
+        // the finished message automatically. One owner-scoped status GET per
+        // cold open (no reliable client-side pre-gate exists — a just-started
+        // turn may have no committed observability rows yet). Fire-and-forget.
         void dispatch(
           reconnectServerOperation({
             conversationId: conversationIdProp,

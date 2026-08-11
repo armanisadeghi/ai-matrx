@@ -38,10 +38,7 @@ import {
   patchConversation,
   setInstanceStatus,
 } from "../redux/execution-system/conversations/conversations.slice";
-import {
-  selectLatestRequestId,
-  selectLatestRequestStatus,
-} from "../redux/execution-system/selectors/aggregate.selectors";
+import { selectLatestRequestId } from "../redux/execution-system/selectors/aggregate.selectors";
 import { hasAbortController } from "../redux/execution-system/thunks/abort-registry";
 import { loadConversation } from "../redux/execution-system/thunks/load-conversation.thunk";
 import { recoverDroppedStream } from "../redux/execution-system/thunks/recover-dropped-stream.thunk";
@@ -57,8 +54,7 @@ import type {
 export interface ReconnectServerOperationArgs {
   conversationId: string;
   /**
-   * "cold-load"  — page load / conversation open; gated on a non-terminal
-   *                hydrated request so healthy opens cost zero extra calls.
+   * "cold-load"  — page load / conversation open (one by-link status fetch).
    * "stream-loss" — the live stream's heartbeat died mid-turn.
    */
   source: "cold-load" | "stream-loss";
@@ -70,14 +66,6 @@ export interface ReconnectServerOperationResult {
   followed: boolean;
   finalStatus: RuntimeExecutionStatus | null;
 }
-
-/** Client request statuses that mean "this turn already settled". */
-const TERMINAL_REQUEST_STATUSES = new Set([
-  "complete",
-  "error",
-  "timeout",
-  "cancelled",
-]);
 
 /** Spine event kinds that move the banner between running and waiting. */
 const RUNNING_KINDS = new Set(["started", "resumed"]);
@@ -127,14 +115,12 @@ export const reconnectServerOperation = createAsyncThunk<
     // A live stream owns the wire and the display.
     if (hasAbortController(conversationId)) return noFollow;
 
-    if (source === "cold-load") {
-      // Zero-cost gate: only ask the server when the hydrated observability
-      // rows say the latest turn never reached a terminal status.
-      const latestStatus = selectLatestRequestStatus(conversationId)(state);
-      if (!latestStatus || TERMINAL_REQUEST_STATUSES.has(latestStatus)) {
-        return noFollow;
-      }
-    }
+    // No client-side "is a turn in flight?" pre-gate on cold load — it cannot
+    // be answered reliably. The hydrated observability rows reach the client
+    // only through committed `chat.request` rows, and a just-started turn may
+    // have none yet (its user_request row is then invisible), which is exactly
+    // the refresh-mid-generation case this feature exists for. The by-link
+    // call below IS the gate: one cheap owner-scoped GET per cold open.
 
     const backend = resolveBackendForConversation(state, conversationId);
     if (!backend) {
