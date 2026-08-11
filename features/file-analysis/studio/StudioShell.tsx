@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Edit3, MousePointer2, Eye } from "lucide-react";
@@ -22,10 +22,12 @@ import { AnnotatablePdfCanvas } from "@/features/file-analysis/components/Annota
 import { PdfRegionContextMenu } from "@/features/file-analysis/components/RegionContextMenu";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
+import { useLabelCatalog } from "@/features/file-analysis/hooks/useLabelCatalog";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
 import { useFile } from "@/features/files/handler/hooks/useFile";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createAnalysisStudioScope } from "@/features/surfaces/manifests/analysis-studio.manifest";
+import { buildAnalysisStudioWriteHandlers } from "./analysis-studio-write-handlers";
 import { ThumbnailStrip } from "./ThumbnailStrip";
 import { InspectorRail, type StudioInspectorTab } from "./InspectorRail";
 import type { PdfRegion } from "@/features/pdf/components/viewer/annotation-layer/types";
@@ -47,7 +49,17 @@ export function StudioShell({ fileId }: StudioShellProps) {
     remove: removeAnnotation,
   } = useAnnotations(fileId);
   const { pages, active: activePages } = usePages(fileId);
+  // The label/category vocabulary the write handlers validate against — the
+  // same module-cached catalog the label picker and annotations panel read,
+  // so an agent can only file a region under a label a human could pick.
+  const { labels: catalogLabels, categories: catalogCategories } =
+    useLabelCatalog();
   useFileAnalysis(fileId); // warm the cache for the inspector panels
+
+  // One annotation write at a time. `useAnnotations.update` patches the shared
+  // cache optimistically, so a second agent write launched while the first is
+  // still settling would validate against a row in flux.
+  const annotationWriteInFlight = useRef(false);
 
   // ── URL-driven state ─────────────────────────────────────────────────
   const initialPage = useMemo(() => {
@@ -214,10 +226,28 @@ export function StudioShell({ fileId }: StudioShellProps) {
     });
   };
 
+  // ── Surface write handlers — `matrx-user/analysis-studio` ────────────────
+  // Built at APPLY time (the provider holds this in a ref), so every handler
+  // closes over live annotations, the live selection, and the loaded catalog.
+  // Every content write goes through `updateAnnotation` — the SAME function
+  // the region context menu and the canvas drag use.
+  const getAnalysisStudioWriteHandlers = () =>
+    buildAnalysisStudioWriteHandlers({
+      annotations,
+      selectedAnnotationId,
+      labels: catalogLabels,
+      categories: catalogCategories,
+      updateAnnotation,
+      selectAnnotation: handleSelectAnnotation,
+      goToPage: handlePageChange,
+      writeInFlight: annotationWriteInFlight,
+    });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/analysis-studio"
       getScope={getAnalysisStudioScope}
+      getWriteHandlers={getAnalysisStudioWriteHandlers}
       isEditable={false}
     >
       <div className="flex h-full w-full flex-col bg-background pt-[var(--shell-header-h)]">
