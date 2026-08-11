@@ -8,6 +8,12 @@
 // pc_episodes.title. Post-episode only by design — the agent always sees the
 // final script, so a chosen title can never drift from the content. Sibling
 // of EpisodeChaptersPanel (same self-contained fetch + slot-hook shape).
+//
+// The run itself is watched in the floating LiveRunWindow the hook opens (the
+// agent emits the `episode_title_options` kind, so the option cards stream in
+// and each carries its own "Use this title"). This panel is the settled list
+// once the run finishes — it never shows a spinner as the whole story, and it
+// never grows mid-run, so the episode content below it does not shift.
 
 import { useEffect, useState } from "react";
 import { Check, Loader2, RefreshCw, Sparkles, Type } from "lucide-react";
