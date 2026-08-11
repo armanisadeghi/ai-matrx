@@ -114,22 +114,34 @@ is easy to fill in.
   **1 ms**, no post-terminal hold — and the client captured **zero** errors on
   that close. A fast-failing run behaved identically (`end` t=890ms, close
   t=891ms). So `68605dd6`'s stream never reached a terminal event at all: it was
-  severed mid-flight, which is exactly why nothing wrote the run's terminal
-  status (see the entry below). The deliverables already existed, so the user
+  severed mid-flight. The deliverables already existed, so the user
   saw success — but "the connection to the AI response was lost" was an honest
   report of a real transport failure and **must never be downgraded or filtered**.
-  Circumstantially it lines up with an aidream redeploy: the drop
-  (19:06:46Z) sits inside the deploy window for the aidream releases committed
-  at 18:58–19:07Z, and a Coolify container swap severs every in-flight stream. **Fixed here:** `parseNdjsonStream` captured the failure as
+  **The server was fine.** `detach_on_disconnect=True` did exactly its job:
+  `chat.agent_run e505424c` (this studio run's backend row) kept working
+  **18½ minutes** past the client drop — `compose_official_video` finished
+  19:25:11Z, `status='completed'` and episode `58c01476` written 19:25:17Z.
+  The drop was the browser↔Cloudflare leg, not a dead worker.
+  **Fixed here:** `parseNdjsonStream` captured the failure as
   `agent-stream-transport` and re-threw, and `callApi`'s catch captured the same
   object again as `api-network` — one failure, two red rows, the second one
   poorer (no requestId/conversationId). `captureStreamTransportError` now marks
   the thrown value (WeakSet, nothing added to the error's shape) and
   `wasStreamErrorCaptured` stands the API chokepoint down. Pinned by
-  `lib/diagnostics/captureStreamError.test.ts`. **Still open, aidream-owned:** a
-  severed stream leaves `agent_run.status` at `processing` forever — the run
-  needs a terminal write that does not depend on the client still being
-  connected (the detach supervisor already runs the work to completion).
+  `lib/diagnostics/captureStreamError.test.ts`. **Corrects the entry below:**
+  "the run row never reaches a terminal status when the stream drops" is FALSE
+  — it reaches it late (whenever the detached pipeline finishes), and a client
+  that reads the row mid-flight sees `processing` for minutes. That window is
+  what `run-truth.ts` covers; there is no missing terminal write.
+  **The one aidream defect that IS real (verified live, 2026-08-11):**
+  `chat.agent_run_stage.cost` is NULL on **all 980 rows** while 172 of them
+  carry a real `output.usage.cost_usd` — **$13.59 of spend recorded nowhere
+  queryable**, and every `agent_run.total_cost` is `0`. Cause found: the
+  per-stage cost write (`_checkpoint.py`), the reconciliation sweep
+  (`aidream/services/podcast/reconcile.py`) and `scripts/backfill_agent_run_cost.py`
+  are **written but UNCOMMITTED** in the aidream checkout — production has
+  never had them. Not fixable from this repo; needs an aidream session that
+  owns those files.
 
 - 2026-08-11 — **A finished episode is never shown as "interrupted": run status
   is DERIVED from the deliverable, not read from a column somebody forgot to
@@ -147,10 +159,13 @@ is easy to fill in.
   page (`mapping.detailToRunState`), the recovery banner (`recovery.ts`), the
   history card and the manage list all read it, so they cannot disagree about
   whether an episode exists. Pinned by `runs/__tests__/run-truth.test.ts` (11
-  cases). **Still open, server-side (aidream owns both):** the run row never
-  reaches a terminal status when the stream drops, and `total_cost` stays `0`
-  with `usage_settled: false` on every stage — real spend across Gemini, GPT,
-  FLUX, Kling and TTS reported as free. Neither is fixable from this repo.
+  cases). **Correction (same day, verified live — see the entry above):** the
+  run row DOES reach a terminal status after a stream drop; the detached
+  pipeline writes it whenever it finishes (here, 18½ min later). What this
+  feature actually needs `run-truth.ts` for is that MID-FLIGHT window, not a
+  missing write. The `total_cost` half stands and is real: `0` on every run,
+  `cost` NULL on every stage row, $13.59 of Gemini/GPT/FLUX/Kling/TTS spend
+  reported as free — the writer exists in aidream but is uncommitted.
 
 - 2026-08-11 — **Early runs keep a stable composition canvas and activity
   reflects real tool lifecycle.** `PodcastCompositionPlaceholder` mirrors the
