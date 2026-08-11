@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-10
+updated: 2026-08-11
 repos: [matrx-frontend, aidream]
 ---
 
@@ -86,33 +86,19 @@ client-launched run. The gap is 100% client consumption posture:
 - aidream: dead `initial_message` param now emits; content-plan generate /
   deepen emit real phase+info milestones (commit `126a150`).
 
-## Remaining work — the await-only worklist (from the 2026-08-10 audit)
+## Remaining work
 
-Each row is one bounded chip. Priority order:
+**The offender worklist lives in
+[`live-run-streaming-sweep.md`](./live-run-streaming-sweep.md)** — a verified,
+ranked inventory (file + line + route + class A–E + fix + effort, 2026-08-11
+sweep against THE FLOATING LAW). Take work from there; this doc stays the
+vision + primitives + recipe.
 
-1. **Education fleet (~15 sites)** — mindmap (`MindMapNew`), planner,
-   analytics narrative, verify-against-source, tutor lanes ×3, memory hint,
-   spoken-practice ×2, grading ×3, convert extraction. All
-   `runHeadlessAgentJson`/`useHeadlessAgentJson` spinners.
-2. **Flashcards** — `enhanceCard` ×2, `makeQuizItems`, fast-fire graders ×2,
-   spoken-front TTS batch (progress counter only).
-3. **Transcript-studio** — cleaning / concept / module passes +
-   `cleanRecording` (background launches; segments appear only at the end).
-4. **Research Outputs Studio** — slides + SEO cards (JSON agents; use the
-   progressive-kind pattern, not raw text). Blog already streams.
-   Also `AnalysisList.tsx:703` truncates its live stream to 200 chars — unfix.
-5. **Podcasts** — `useEpisodeArticles` / `useEpisodeTitleOptions` /
-   `useEpisodeChapters` (deliberately silent because raw JSON is ugly — the
-   progressive-kind pattern is the right upgrade).
-6. **Marketing** — `generate-page-image` (background image run; show live
-   status via LiveRunDisplay), agent-sets role describer.
-7. **Server JSON-only slot paths** (aidream) — slot test bench endpoints
-   return one blob after N paid runs; cms-fill is poll-based. Candidates for
-   streaming/progress upgrades.
-8. **Guard**: nominate "spinner-while-AI-works" as a pattern patrol (logged in
-   `.matrx/PATROL_SIGHTINGS.md`); consider an ESLint heuristic (a call to
-   `useHeadlessAgentJson().run` in a component that renders no
-   `LiveRunDisplay`/requestId consumer is a smell, probably patrol-only).
+One item that sweep does not own, because it is server-side:
+
+- **Server JSON-only slot paths** (aidream) — slot test bench endpoints return
+  one blob after N paid runs; cms-fill is poll-based. Candidates for
+  streaming/progress upgrades.
 
 ## Traps
 
