@@ -1,10 +1,5 @@
 export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+  string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 export interface DataForSeoEndpointExample {
   endpoint: string;
@@ -102,6 +97,7 @@ export interface CollectionCreateBody {
   site_id?: string;
   page_id?: string;
   source_crawl_session_id?: string;
+  enrichment_limit?: number;
   observation_period: string;
   settings: {
     tasks: Array<Record<string, JsonValue>>;
@@ -121,6 +117,7 @@ export interface BacklinkRefreshBody {
   force_refresh: boolean;
   request_id?: string;
   source_crawl_session_id?: string;
+  enrichment_limit?: number;
 }
 
 export interface BacklinkDatasetReceipt {
@@ -135,4 +132,15 @@ export interface BacklinkRefreshReceipt {
   target: string;
   profile: BacklinkRefreshProfile;
   datasets: BacklinkDatasetReceipt[];
+}
+
+export interface BacklinkEnrichmentResult {
+  result_kind: "backlinks.enrich";
+  site_id: string;
+  requested: number;
+  claimed: number;
+  completed: number;
+  failed: number;
+  skipped: number;
+  queue: Record<string, number>;
 }

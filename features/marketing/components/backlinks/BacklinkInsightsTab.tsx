@@ -16,6 +16,9 @@ import { useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Anchor,
+  CircleDot,
+  ListTodo,
+  PencilLine,
   ShieldAlert,
   TrendingUp,
   Trophy,
@@ -46,6 +49,9 @@ const LENS_ICONS: Record<BacklinkLensKey, LucideIcon> = {
   lost: Unlink,
   broken: Unlink2,
   toxic: ShieldAlert,
+  actionable: ListTodo,
+  relevant: CircleDot,
+  controllable: PencilLine,
 };
 
 export function BacklinkInsightsTab({ siteId }: { siteId: string }) {
@@ -111,7 +117,11 @@ export function BacklinkInsightsTab({ siteId }: { siteId: string }) {
         {active === ANCHOR_PROFILE_KEY ? (
           <BacklinkAnchorProfile siteId={siteId} />
         ) : (
-          <BacklinkObservationTable siteId={siteId} lens={active} key={active} />
+          <BacklinkObservationTable
+            siteId={siteId}
+            lens={active}
+            key={active}
+          />
         )}
       </div>
     </div>

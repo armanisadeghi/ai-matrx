@@ -17,12 +17,13 @@ export const BACKLINK_TABS = [
     key: "links",
     label: "Backlinks",
     description:
-      "Every stored backlink with authority, placement, and link attributes.",
+      "Every stable backlink with provider facts, source-page judgment, and a next action.",
   },
   {
     key: "domains",
     label: "Referring domains",
-    description: "Which domains link here, and how much they are worth.",
+    description:
+      "The known-site directory: what links here, what its pages are like, and our opinion.",
   },
   {
     key: "anchors",
@@ -45,13 +46,15 @@ export const BACKLINK_TABS = [
     key: "insights",
     label: "Insights",
     description:
-      "Curated lenses: strongest links, losses, breakage, and toxic risk.",
+      "Curated lenses: strongest links, losses, breakage, relevance, control, actions, and risk review.",
   },
 ] as const;
 
 export type BacklinkTabKey = (typeof BACKLINK_TABS)[number]["key"];
 
-export function isBacklinkTabKey(value: string | null): value is BacklinkTabKey {
+export function isBacklinkTabKey(
+  value: string | null,
+): value is BacklinkTabKey {
   return BACKLINK_TABS.some((tab) => tab.key === value);
 }
 
@@ -87,9 +90,27 @@ export const BACKLINK_LENSES = [
   },
   {
     key: "toxic",
-    label: "Toxic risk",
+    label: "Risk review",
     description:
-      "Links with an elevated spam score (16+), worst first — review for outreach removal or disavow.",
+      "Captured links whose content evidence warrants review — never an automatic disavow list.",
+  },
+  {
+    key: "actionable",
+    label: "Act now",
+    description:
+      "High-priority fixes, reclamation, listing updates, and edit requests identified from the source page.",
+  },
+  {
+    key: "relevant",
+    label: "Highly relevant",
+    description:
+      "Source pages whose captured topics strongly align with the page they link to.",
+  },
+  {
+    key: "controllable",
+    label: "You may control",
+    description:
+      "Listings, profiles, and placements with a plausible direct or likely edit path.",
   },
 ] as const;
 
@@ -101,7 +122,7 @@ export function isBacklinkLensKey(
   return BACKLINK_LENSES.some((lens) => lens.key === value);
 }
 
-/** DataForSEO backlink_spam_score is 0–100. These cut points drive tones + the toxic lens. */
+/** DataForSEO backlink_spam_score is 0–100. These cut points drive provider-signal tones only. */
 export const SPAM_SCORE_WARN_MIN = 16;
 export const SPAM_SCORE_TOXIC_MIN = 46;
 

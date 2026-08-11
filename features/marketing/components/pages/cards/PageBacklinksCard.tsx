@@ -2,7 +2,7 @@
 
 /**
  * PageBacklinksCard — external backlinks resolved to this canonical page
- * (`seo.backlink_observation` rows stamped with page_id, plus the latest
+ * (`seo.backlink` stable rows stamped with page_id, plus the latest
  * page-level `seo.backlink_snapshot` summary when one exists). Bounded read,
  * client-side rollup by referring domain with rank/spam and anchor samples.
  */
@@ -23,6 +23,7 @@ import {
 } from "@/features/marketing/data/page-links";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { MarketingPage } from "@/features/marketing/types";
+import { humanizeAssessmentValue } from "@/features/marketing/components/backlinks/lib/enrichment";
 
 function ratioLabel(part: number, whole: number): string {
   if (whole === 0) return "—";
@@ -52,7 +53,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
   const snapshot = backlinks.data?.snapshot ?? null;
   const observations = backlinks.data?.observations ?? [];
   const domains = rollupReferringDomains(observations);
-  const liveCount = observations.filter((row) => row.state === "live").length;
+  const liveCount = observations.filter((row) => row.state !== "lost").length;
   const dofollowKnown = observations.filter(
     (row) => row.is_dofollow !== null,
   ).length;
@@ -84,9 +85,11 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
       ["First seen", firstSeen ? formatDate(firstSeen) : null],
       ["Last seen", lastSeen ? formatDate(lastSeen) : null],
       [
-        "Provider total (latest snapshot)",
-        snapshot?.total_backlinks ?? null,
+        "Source pages analyzed",
+        observations.filter((row) => row.enrichment_status === "completed")
+          .length,
       ],
+      ["Provider total (latest snapshot)", snapshot?.total_backlinks ?? null],
     ],
     attributes: {
       page_id: page.id,
@@ -131,7 +134,9 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
               label: "Backlinks observed",
               value:
                 observations.length +
-                (backlinks.data?.truncated ? ` (first ${BACKLINK_ROW_CAP})` : ""),
+                (backlinks.data?.truncated
+                  ? ` (first ${BACKLINK_ROW_CAP})`
+                  : ""),
             },
             { label: "Live", value: liveCount, tone: "good" },
             { label: "Referring domains", value: domains.length },
@@ -141,6 +146,10 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
             },
             { label: "First seen", value: formatDate(firstSeen) },
             { label: "Last seen", value: formatDate(lastSeen) },
+            {
+              label: "Source pages analyzed",
+              value: `${observations.filter((row) => row.enrichment_status === "completed").length}/${observations.length}`,
+            },
             ...(snapshot
               ? [
                   {
@@ -192,10 +201,25 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                         dofollow {domain.dofollowBacklinks}
                       </Badge>
                     ) : null}
+                    {domain.ourScore !== null ? (
+                      <Badge variant="outline" className="text-[10px]">
+                        our score {domain.ourScore}
+                      </Badge>
+                    ) : null}
                   </div>
                   {domain.anchors.length > 0 ? (
                     <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                      {domain.anchors.map((anchor) => `“${anchor}”`).join(" · ")}
+                      {domain.anchors
+                        .map((anchor) => `“${anchor}”`)
+                        .join(" · ")}
+                    </p>
+                  ) : null}
+                  {domain.action ? (
+                    <p className="mt-0.5 text-[11px] text-primary">
+                      {humanizeAssessmentValue(domain.action)}
+                      {domain.relevance
+                        ? ` · ${humanizeAssessmentValue(domain.relevance)} relevance`
+                        : ""}
                     </p>
                   ) : null}
                 </li>
@@ -210,8 +234,8 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
         ) : (
           <p className="text-xs text-muted-foreground">
             A page-level provider summary exists, but no individual link
-            observations are resolved to this page yet — collect link details
-            in the{" "}
+            observations are resolved to this page yet — collect link details in
+            the{" "}
             <Link
               href={`${sitePath}/backlinks`}
               className="font-medium text-primary hover:underline"

@@ -41233,6 +41233,140 @@ export type Database = {
   }
   seo: {
     Tables: {
+      backlink: {
+        Row: {
+          ai_assessment: Json
+          analyzed_at: string | null
+          anchor_text: string | null
+          assessment_version: string | null
+          captured_at: string | null
+          claim_expires_at: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          created_by: string
+          deterministic_assessment: Json
+          domain_rank: number | null
+          enrichment_attempt_count: number
+          enrichment_status: string
+          first_seen_at: string | null
+          human_reviewed_at: string | null
+          human_ruling: Json
+          id: string
+          identity_key: string
+          is_dofollow: boolean | null
+          last_error: Json | null
+          last_seen_at: string | null
+          link_type: string | null
+          lost_at: string | null
+          next_enrichment_at: string | null
+          organization_id: string
+          page_id: string | null
+          provider_evidence: Json
+          referring_domain_profile_id: string | null
+          resolved_assessment: Json
+          site_id: string
+          source_capture: Json
+          source_domain: string | null
+          source_rank: number | null
+          source_url: string
+          spam_score: number | null
+          state: string
+          target_url: string
+          updated_at: string
+        }
+        Insert: {
+          ai_assessment?: Json
+          analyzed_at?: string | null
+          anchor_text?: string | null
+          assessment_version?: string | null
+          captured_at?: string | null
+          claim_expires_at?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          created_by: string
+          deterministic_assessment?: Json
+          domain_rank?: number | null
+          enrichment_attempt_count?: number
+          enrichment_status?: string
+          first_seen_at?: string | null
+          human_reviewed_at?: string | null
+          human_ruling?: Json
+          id?: string
+          identity_key: string
+          is_dofollow?: boolean | null
+          last_error?: Json | null
+          last_seen_at?: string | null
+          link_type?: string | null
+          lost_at?: string | null
+          next_enrichment_at?: string | null
+          organization_id: string
+          page_id?: string | null
+          provider_evidence?: Json
+          referring_domain_profile_id?: string | null
+          resolved_assessment?: Json
+          site_id: string
+          source_capture?: Json
+          source_domain?: string | null
+          source_rank?: number | null
+          source_url: string
+          spam_score?: number | null
+          state?: string
+          target_url: string
+          updated_at?: string
+        }
+        Update: {
+          ai_assessment?: Json
+          analyzed_at?: string | null
+          anchor_text?: string | null
+          assessment_version?: string | null
+          captured_at?: string | null
+          claim_expires_at?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          created_by?: string
+          deterministic_assessment?: Json
+          domain_rank?: number | null
+          enrichment_attempt_count?: number
+          enrichment_status?: string
+          first_seen_at?: string | null
+          human_reviewed_at?: string | null
+          human_ruling?: Json
+          id?: string
+          identity_key?: string
+          is_dofollow?: boolean | null
+          last_error?: Json | null
+          last_seen_at?: string | null
+          link_type?: string | null
+          lost_at?: string | null
+          next_enrichment_at?: string | null
+          organization_id?: string
+          page_id?: string | null
+          provider_evidence?: Json
+          referring_domain_profile_id?: string | null
+          resolved_assessment?: Json
+          site_id?: string
+          source_capture?: Json
+          source_domain?: string | null
+          source_rank?: number | null
+          source_url?: string
+          spam_score?: number | null
+          state?: string
+          target_url?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backlink_referring_domain_profile_id_fkey"
+            columns: ["referring_domain_profile_id"]
+            isOneToOne: false
+            referencedRelation: "referring_domain_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       backlink_dimension_snapshot: {
         Row: {
           backlinks: number | null
@@ -41330,6 +41464,7 @@ export type Database = {
       backlink_observation: {
         Row: {
           anchor_text: string | null
+          backlink_id: string | null
           created_at: string
           created_by: string
           dedup_key: string
@@ -41357,6 +41492,7 @@ export type Database = {
         }
         Insert: {
           anchor_text?: string | null
+          backlink_id?: string | null
           created_at?: string
           created_by: string
           dedup_key: string
@@ -41384,6 +41520,7 @@ export type Database = {
         }
         Update: {
           anchor_text?: string | null
+          backlink_id?: string | null
           created_at?: string
           created_by?: string
           dedup_key?: string
@@ -41410,6 +41547,13 @@ export type Database = {
           target_url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "backlink_observation_backlink_id_fkey"
+            columns: ["backlink_id"]
+            isOneToOne: false
+            referencedRelation: "backlink"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "backlink_observation_raw_payload_id_fkey"
             columns: ["raw_payload_id"]
@@ -42720,6 +42864,84 @@ export type Database = {
           },
         ]
       }
+      referring_domain_profile: {
+        Row: {
+          ai_assessment: Json
+          analyzed_at: string | null
+          created_at: string
+          created_by: string
+          current_backlinks: number
+          current_referring_pages: number
+          display_domain: string
+          domain_type: string | null
+          first_seen_at: string | null
+          human_reviewed_at: string | null
+          human_ruling: Json
+          id: string
+          last_seen_at: string | null
+          normalized_domain: string
+          opinion_score: number | null
+          opinion_summary: string | null
+          opinion_verdict: string
+          organization_id: string
+          provider_metrics: Json
+          quality_vector: Json
+          resolved_opinion: Json
+          site_id: string
+          updated_at: string
+        }
+        Insert: {
+          ai_assessment?: Json
+          analyzed_at?: string | null
+          created_at?: string
+          created_by: string
+          current_backlinks?: number
+          current_referring_pages?: number
+          display_domain: string
+          domain_type?: string | null
+          first_seen_at?: string | null
+          human_reviewed_at?: string | null
+          human_ruling?: Json
+          id?: string
+          last_seen_at?: string | null
+          normalized_domain: string
+          opinion_score?: number | null
+          opinion_summary?: string | null
+          opinion_verdict?: string
+          organization_id: string
+          provider_metrics?: Json
+          quality_vector?: Json
+          resolved_opinion?: Json
+          site_id: string
+          updated_at?: string
+        }
+        Update: {
+          ai_assessment?: Json
+          analyzed_at?: string | null
+          created_at?: string
+          created_by?: string
+          current_backlinks?: number
+          current_referring_pages?: number
+          display_domain?: string
+          domain_type?: string | null
+          first_seen_at?: string | null
+          human_reviewed_at?: string | null
+          human_ruling?: Json
+          id?: string
+          last_seen_at?: string | null
+          normalized_domain?: string
+          opinion_score?: number | null
+          opinion_summary?: string | null
+          opinion_verdict?: string
+          organization_id?: string
+          provider_metrics?: Json
+          quality_vector?: Json
+          resolved_opinion?: Json
+          site_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       search_performance_daily: {
         Row: {
           average_position: number | null
@@ -43894,6 +44116,90 @@ export type Database = {
           keyword_id: string
           traffic_class: string
         }[]
+      }
+      update_backlink_human_ruling: {
+        Args: { p_backlink_id: string; p_ruling: Json }
+        Returns: {
+          ai_assessment: Json
+          analyzed_at: string | null
+          anchor_text: string | null
+          assessment_version: string | null
+          captured_at: string | null
+          claim_expires_at: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          created_by: string
+          deterministic_assessment: Json
+          domain_rank: number | null
+          enrichment_attempt_count: number
+          enrichment_status: string
+          first_seen_at: string | null
+          human_reviewed_at: string | null
+          human_ruling: Json
+          id: string
+          identity_key: string
+          is_dofollow: boolean | null
+          last_error: Json | null
+          last_seen_at: string | null
+          link_type: string | null
+          lost_at: string | null
+          next_enrichment_at: string | null
+          organization_id: string
+          page_id: string | null
+          provider_evidence: Json
+          referring_domain_profile_id: string | null
+          resolved_assessment: Json
+          site_id: string
+          source_capture: Json
+          source_domain: string | null
+          source_rank: number | null
+          source_url: string
+          spam_score: number | null
+          state: string
+          target_url: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "backlink"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_referring_domain_human_ruling: {
+        Args: { p_profile_id: string; p_ruling: Json }
+        Returns: {
+          ai_assessment: Json
+          analyzed_at: string | null
+          created_at: string
+          created_by: string
+          current_backlinks: number
+          current_referring_pages: number
+          display_domain: string
+          domain_type: string | null
+          first_seen_at: string | null
+          human_reviewed_at: string | null
+          human_ruling: Json
+          id: string
+          last_seen_at: string | null
+          normalized_domain: string
+          opinion_score: number | null
+          opinion_summary: string | null
+          opinion_verdict: string
+          organization_id: string
+          provider_metrics: Json
+          quality_vector: Json
+          resolved_opinion: Json
+          site_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "referring_domain_profile"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
@@ -52790,6 +53096,74 @@ export type Database = {
             columns: ["trigger_id"]
             isOneToOne: false
             referencedRelation: "trigger"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_item: {
+        Row: {
+          attempts: number
+          canonical_key: string
+          claim_holder: string | null
+          claimed_at: string | null
+          completed_at: string | null
+          created_at: string
+          discovered_by: string
+          error: Json | null
+          id: string
+          lease_expires_at: string | null
+          max_attempts: number
+          payload: Json
+          run_id: string
+          seq: number
+          set_name: string
+          state: string
+          wave: number
+        }
+        Insert: {
+          attempts?: number
+          canonical_key: string
+          claim_holder?: string | null
+          claimed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          discovered_by?: string
+          error?: Json | null
+          id?: string
+          lease_expires_at?: string | null
+          max_attempts?: number
+          payload?: Json
+          run_id: string
+          seq?: number
+          set_name?: string
+          state?: string
+          wave?: number
+        }
+        Update: {
+          attempts?: number
+          canonical_key?: string
+          claim_holder?: string | null
+          claimed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          discovered_by?: string
+          error?: Json | null
+          id?: string
+          lease_expires_at?: string | null
+          max_attempts?: number
+          payload?: Json
+          run_id?: string
+          seq?: number
+          set_name?: string
+          state?: string
+          wave?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_item_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
             referencedColumns: ["id"]
           },
         ]

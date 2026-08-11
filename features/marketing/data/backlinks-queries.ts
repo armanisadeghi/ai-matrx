@@ -6,11 +6,9 @@ import type {
   BacklinkSnapshotRow,
   BacklinkTrendPoint,
   BacklinkWorkspaceData,
+  ReferringDomainProfileRow,
 } from "@/features/marketing/data/backlinks-types";
-import {
-  SPAM_SCORE_WARN_MIN,
-  type BacklinkLensKey,
-} from "@/features/marketing/components/backlinks/lib/vocab";
+import type { BacklinkLensKey } from "@/features/marketing/components/backlinks/lib/vocab";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 
@@ -33,6 +31,11 @@ function assertData<T>(data: T | null, error: unknown): T {
   }
   if (data === null) throw new Error("Backlink query returned no data.");
   return data;
+}
+
+function assertCount(count: number | null, error: unknown): number {
+  if (error) throw error instanceof Error ? error : new Error(String(error));
+  return count ?? 0;
 }
 
 function rangeFor(state: MatrxDataTableQueryState) {
@@ -97,6 +100,7 @@ export async function getBacklinkWorkspace(
   signal?: AbortSignal,
 ): Promise<BacklinkWorkspaceData> {
   const db = await seoDb();
+  const abortSignal = signal ?? new AbortController().signal;
   const response = await db
     .from("backlink_snapshot")
     .select("*")
@@ -104,26 +108,105 @@ export async function getBacklinkWorkspace(
     .in("dataset", [...SUMMARY_DATASETS])
     .order("created_at", { ascending: false })
     .limit(500)
-    .abortSignal(signal ?? new AbortController().signal);
+    .abortSignal(abortSignal);
   const snapshots = assertData(response.data, response.error);
   const latestByDataset: Partial<Record<string, BacklinkSnapshotRow>> = {};
   for (const snapshot of snapshots) {
     latestByDataset[snapshot.dataset] ??= snapshot;
   }
 
-  const [referringDomains, anchors, targetPages, competitors] =
-    await Promise.all([
-      latestDimensions(siteId, "referring_domains", "referring_domain", signal),
-      latestDimensions(siteId, "anchors", "anchor", signal),
-      latestDimensions(siteId, "domain_pages_summary", "target_page", signal),
-      latestDimensions(siteId, "competitors", "competitor_domain", signal),
-    ]);
+  const [
+    referringDomains,
+    anchors,
+    targetPages,
+    competitors,
+    profilesResponse,
+    totalResponse,
+    completedResponse,
+    awaitingResponse,
+    failedResponse,
+    highPriorityResponse,
+    controllableResponse,
+  ] = await Promise.all([
+    latestDimensions(siteId, "referring_domains", "referring_domain", signal),
+    latestDimensions(siteId, "anchors", "anchor", signal),
+    latestDimensions(siteId, "domain_pages_summary", "target_page", signal),
+    latestDimensions(siteId, "competitors", "competitor_domain", signal),
+    db
+      .from("referring_domain_profile")
+      .select("*")
+      .eq("site_id", siteId)
+      .order("opinion_score", { ascending: false, nullsFirst: false })
+      .order("current_backlinks", { ascending: false })
+      .limit(50)
+      .abortSignal(signal ?? new AbortController().signal),
+    db
+      .from("backlink")
+      .select("*", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .abortSignal(abortSignal),
+    db
+      .from("backlink")
+      .select("*", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("enrichment_status", "completed")
+      .abortSignal(abortSignal),
+    db
+      .from("backlink")
+      .select("*", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .in("enrichment_status", ["pending", "capturing", "analyzing"])
+      .abortSignal(abortSignal),
+    db
+      .from("backlink")
+      .select("*", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .in("enrichment_status", ["failed", "dead_letter"])
+      .abortSignal(abortSignal),
+    db
+      .from("backlink")
+      .select("*", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("resolved_assessment->>priority", "high")
+      .abortSignal(abortSignal),
+    db
+      .from("backlink")
+      .select("*", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .in("resolved_assessment->controllability->>level", ["direct", "likely"])
+      .abortSignal(abortSignal),
+  ]);
+  const domainProfiles = assertData(
+    profilesResponse.data,
+    profilesResponse.error,
+  );
+  const total = assertCount(totalResponse.count, totalResponse.error);
+  const completed = assertCount(completedResponse.count, completedResponse.error);
+  const awaiting = assertCount(awaitingResponse.count, awaitingResponse.error);
+  const failed = assertCount(failedResponse.count, failedResponse.error);
+  const highPriority = assertCount(
+    highPriorityResponse.count,
+    highPriorityResponse.error,
+  );
+  const controllable = assertCount(
+    controllableResponse.count,
+    controllableResponse.error,
+  );
   return {
     latestByDataset,
     referringDomains,
     anchors,
     targetPages,
     competitors,
+    domainProfiles,
+    enrichment: {
+      total,
+      completed,
+      awaiting,
+      failed,
+      highPriority,
+      controllable,
+    },
   };
 }
 
@@ -163,9 +246,7 @@ export async function getBacklinkTrend(
   ]);
   const newLostRows = assertData(newLostResponse.data, newLostResponse.error);
   const totalsRows = assertData(totalsResponse.data, totalsResponse.error);
-  const totalsByDate = new Map(
-    totalsRows.map((row) => [row.observed_at, row]),
-  );
+  const totalsByDate = new Map(totalsRows.map((row) => [row.observed_at, row]));
 
   return newLostRows.map((row) => {
     const totals = totalsByDate.get(row.observed_at);
@@ -215,6 +296,9 @@ export const LENS_DEFAULT_SORT: Record<
   lost: { column: "last_seen_at", ascending: false },
   broken: { column: "domain_rank", ascending: false },
   toxic: { column: "spam_score", ascending: false },
+  actionable: { column: "domain_rank", ascending: false },
+  relevant: { column: "domain_rank", ascending: false },
+  controllable: { column: "domain_rank", ascending: false },
 };
 
 export async function listLatestBacklinks(
@@ -223,15 +307,12 @@ export async function listLatestBacklinks(
   options?: { lens?: BacklinkLensKey },
   signal?: AbortSignal,
 ): Promise<BacklinkPagedResult<BacklinkObservationRow>> {
-  const snapshot = await latestSnapshot(siteId, "backlinks", signal);
-  if (!snapshot) return { rows: [], total: 0 };
   const { from, to } = rangeFor(state);
   const db = await seoDb();
   let query = db
-    .from("backlink_observation")
+    .from("backlink")
     .select("*", { count: "exact" })
-    .eq("site_id", siteId)
-    .eq("snapshot_id", snapshot.id);
+    .eq("site_id", siteId);
   const search = cleanSearch(state.search);
   if (search) {
     query = query.or(
@@ -250,10 +331,24 @@ export async function listLatestBacklinks(
     // failing target status. `->` (jsonb) compares 400 numerically; `->>`
     // would compare text lexicographically.
     query = query.or(
-      "extras->>is_broken.eq.true,extras->url_to_status_code.gte.400",
+      "provider_evidence->extras->>is_broken.eq.true,provider_evidence->extras->url_to_status_code.gte.400",
     );
   } else if (lens === "toxic") {
-    query = query.gte("spam_score", SPAM_SCORE_WARN_MIN);
+    query = query.or(
+      "resolved_assessment->risk->>verdict.eq.high_risk,resolved_assessment->risk->>verdict.eq.review",
+    );
+  } else if (lens === "actionable") {
+    query = query.eq("resolved_assessment->>priority", "high");
+  } else if (lens === "relevant") {
+    query = query.eq(
+      "resolved_assessment->source_target_relevance->>verdict",
+      "strong",
+    );
+  } else if (lens === "controllable") {
+    query = query.in("resolved_assessment->controllability->>level", [
+      "direct",
+      "likely",
+    ]);
   }
   const stateFilter = state.columnFilters.state;
   if (stateFilter?.kind === "select" && stateFilter.value) {
@@ -269,7 +364,10 @@ export async function listLatestBacklinks(
   }
   const placement = state.columnFilters.placement;
   if (placement?.kind === "select" && placement.value) {
-    query = query.eq("extras->>semantic_location", placement.value);
+    query = query.eq(
+      "provider_evidence->extras->>semantic_location",
+      placement.value,
+    );
   }
   const fallbackSort = lens ? LENS_DEFAULT_SORT[lens] : null;
   const sortColumn =
@@ -282,6 +380,52 @@ export async function listLatestBacklinks(
   const response = await query
     .order(sortColumn, { ascending, nullsFirst: false })
     .order("id", { ascending: true })
+    .range(from, to)
+    .abortSignal(signal ?? new AbortController().signal);
+  return {
+    rows: assertData(response.data, response.error),
+    total: response.count ?? 0,
+  };
+}
+
+const DOMAIN_PROFILE_SORT_COLUMNS = new Set([
+  "display_domain",
+  "current_backlinks",
+  "current_referring_pages",
+  "opinion_score",
+  "opinion_verdict",
+  "last_seen_at",
+]);
+
+export async function listReferringDomainProfiles(
+  siteId: string,
+  state: MatrxDataTableQueryState,
+  signal?: AbortSignal,
+): Promise<BacklinkPagedResult<ReferringDomainProfileRow>> {
+  const { from, to } = rangeFor(state);
+  const db = await seoDb();
+  let query = db
+    .from("referring_domain_profile")
+    .select("*", { count: "exact" })
+    .eq("site_id", siteId);
+  const search = cleanSearch(state.search);
+  if (search) {
+    query = query.or(
+      `display_domain.ilike.%${search}%,opinion_summary.ilike.%${search}%,domain_type.ilike.%${search}%`,
+    );
+  }
+  const verdict = state.columnFilters.opinion_verdict;
+  if (verdict?.kind === "select" && verdict.value) {
+    query = query.eq("opinion_verdict", verdict.value);
+  }
+  const sortColumn =
+    state.sort && DOMAIN_PROFILE_SORT_COLUMNS.has(state.sort.id)
+      ? state.sort.id
+      : "opinion_score";
+  const ascending = state.sort ? state.sort.direction === "asc" : false;
+  const response = await query
+    .order(sortColumn, { ascending, nullsFirst: false })
+    .order("display_domain", { ascending: true })
     .range(from, to)
     .abortSignal(signal ?? new AbortController().signal);
   return {

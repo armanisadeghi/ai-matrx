@@ -15,6 +15,10 @@ import {
   parseDimensionExtras,
   parseObservationExtras,
 } from "@/features/marketing/components/backlinks/lib/extras";
+import {
+  parseBacklinkAssessment,
+  providerExtras,
+} from "@/features/marketing/components/backlinks/lib/enrichment";
 
 export function formatCount(value: number | null | undefined): string {
   return value === null || value === undefined
@@ -32,7 +36,8 @@ export function humanBacklinkRow(row: BacklinkObservationRow): string {
   const lastSeen = row.last_seen_at
     ? ` — last seen ${row.last_seen_at.slice(0, 10)}`
     : "";
-  const extras = parseObservationExtras(row.extras);
+  const extras = parseObservationExtras(providerExtras(row.provider_evidence));
+  const assessment = parseBacklinkAssessment(row.resolved_assessment);
   const facts = [
     extras.semanticLocation ? `placement ${extras.semanticLocation}` : "",
     row.spam_score !== null && row.spam_score !== undefined
@@ -41,7 +46,10 @@ export function humanBacklinkRow(row: BacklinkObservationRow): string {
     extras.isBroken ? "BROKEN target" : "",
   ].filter(Boolean);
   const factLine = facts.length ? `\n  ${facts.join(" · ")}` : "";
-  return `${row.source_domain ?? row.source_url}${rank}: ${row.state} ${follow} link${anchor}\n  ${row.source_url}\n  → ${row.target_url}${lastSeen}${factLine}`;
+  const verdictLine = assessment.action
+    ? `\n  Our score ${assessment.overallScore ?? "—"} · relevance ${assessment.relevanceVerdict ?? "unknown"} · action ${assessment.action}`
+    : "\n  Source-page enrichment is awaiting analysis";
+  return `${row.source_domain ?? row.source_url}${rank}: ${row.state} ${follow} link${anchor}\n  ${row.source_url}\n  → ${row.target_url}${lastSeen}${factLine}${verdictLine}`;
 }
 
 export function humanDimensionRow(row: BacklinkDimensionRow): string {
@@ -76,7 +84,9 @@ export function humanMetric(
   detail?: string,
 ): string {
   const rendered =
-    value === null || value === undefined ? (detail ?? "—") : formatCount(value);
+    value === null || value === undefined
+      ? (detail ?? "—")
+      : formatCount(value);
   return `${label}: ${rendered} (${siteDomain})`;
 }
 
@@ -114,7 +124,8 @@ export function humanTrend(points: BacklinkTrendPoint[]): string {
 
 /** Compact projection of an observation row for agent payloads at scale. */
 export function projectBacklinkRow(row: BacklinkObservationRow) {
-  const extras = parseObservationExtras(row.extras);
+  const extras = parseObservationExtras(providerExtras(row.provider_evidence));
+  const assessment = parseBacklinkAssessment(row.resolved_assessment);
   return {
     source_domain: row.source_domain,
     source_url: row.source_url,
@@ -133,6 +144,15 @@ export function projectBacklinkRow(row: BacklinkObservationRow) {
     first_seen_at: row.first_seen_at,
     last_seen_at: row.last_seen_at,
     lost_at: row.lost_at,
+    enrichment_status: row.enrichment_status,
+    our_score: assessment.overallScore,
+    page_type: assessment.pageType,
+    relevance: assessment.relevanceVerdict,
+    relevance_score: assessment.relevanceScore,
+    controllability: assessment.controlLevel,
+    recommended_action: assessment.action,
+    priority: assessment.priority,
+    risk: assessment.riskVerdict,
   };
 }
 

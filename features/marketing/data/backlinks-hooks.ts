@@ -9,6 +9,7 @@ import {
   listAllAnchors,
   listDimensionRows,
   listLatestBacklinks,
+  listReferringDomainProfiles,
   type BacklinkDimensionKind,
 } from "@/features/marketing/data/backlinks-queries";
 import { marketingKeys } from "@/features/marketing/data/hooks";
@@ -44,6 +45,13 @@ export const backlinkKeys = {
     [...marketingKeys.site(siteId), "backlinks", "anchors-full"] as const,
   trend: (siteId: string) =>
     [...marketingKeys.site(siteId), "backlinks", "trend"] as const,
+  domainProfiles: (siteId: string, state: MatrxDataTableQueryState) =>
+    [
+      ...marketingKeys.site(siteId),
+      "backlinks",
+      "domain-profiles",
+      state,
+    ] as const,
 };
 
 export function useBacklinkWorkspace(siteId: string) {
@@ -51,6 +59,18 @@ export function useBacklinkWorkspace(siteId: string) {
     queryKey: backlinkKeys.workspace(siteId),
     queryFn: ({ signal }) => getBacklinkWorkspace(siteId, signal),
     enabled: Boolean(siteId),
+  });
+}
+
+export function useReferringDomainProfiles(
+  siteId: string,
+  state: MatrxDataTableQueryState,
+) {
+  return useQuery({
+    queryKey: backlinkKeys.domainProfiles(siteId, state),
+    queryFn: ({ signal }) => listReferringDomainProfiles(siteId, state, signal),
+    enabled: Boolean(siteId),
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -3,7 +3,7 @@
 /**
  * page-links — bounded reads + client-side rollups for one canonical page's
  * link picture: internal link edges (`web.link_edge`, inbound + outbound) and
- * external backlink observations (`seo.backlink_observation` +
+ * external stable backlinks (`seo.backlink` +
  * `seo.backlink_snapshot` page-level summary).
  *
  * Reads are deliberately capped (LINK_ROW_CAP / BACKLINK_ROW_CAP) and ordered
@@ -26,6 +26,7 @@ import {
 } from "@/utils/supabase/webDb";
 import { isJsonRecord, type PlannedLinkEntry } from "@/features/marketing/types";
 import type { Json } from "@/types/database.types";
+import { parseBacklinkAssessment } from "@/features/marketing/components/backlinks/lib/enrichment";
 
 export const LINK_ROW_CAP = 500;
 export const BACKLINK_ROW_CAP = 300;
@@ -512,7 +513,7 @@ export function sanitizePlannedLinks(
     const url = value.url.trim();
     if (!url) continue;
     const anchor = value.anchor_text?.trim().replace(/\s+/g, " ") || undefined;
-    const key = `${normalizePlanUrl(url)} ${normalizeAnchorText(anchor)}`;
+    const key = `${normalizePlanUrl(url)}\u0000${normalizeAnchorText(anchor)}`;
     if (seen.has(key)) continue;
     seen.add(key);
     result.push({ id: value.id, url, ...(anchor ? { anchor_text: anchor } : {}) });
@@ -790,7 +791,7 @@ export function rollupInboundLinks(
 export interface PageBacklinksData {
   /** Latest page-level provider summary, when one has been collected. */
   snapshot: BacklinkSnapshotRow | null;
-  /** Newest observations first, deduped by provider dedup_key. Bounded. */
+  /** Stable source-page → target-page links, newest evidence first. Bounded. */
   observations: BacklinkObservationRow[];
   truncated: boolean;
 }
@@ -820,7 +821,7 @@ export async function getPageBacklinks(
       .abortSignal(abortSignal)
       .maybeSingle(),
     db
-      .from("backlink_observation")
+      .from("backlink")
       .select("*")
       .eq("site_id", siteId)
       .eq("page_id", pageId)
@@ -830,20 +831,14 @@ export async function getPageBacklinks(
       .abortSignal(abortSignal),
   ]);
   if (snapshotResponse.error) throw snapshotResponse.error;
-  const raw = assertData(observationResponse.data, observationResponse.error);
-  // Repeat collection runs re-observe the same link — keep the newest row per
-  // provider dedup_key so counts describe links, not runs.
-  const seen = new Set<string>();
-  const observations: BacklinkObservationRow[] = [];
-  for (const row of raw) {
-    if (seen.has(row.dedup_key)) continue;
-    seen.add(row.dedup_key);
-    observations.push(row);
-  }
+  const observations = assertData(
+    observationResponse.data,
+    observationResponse.error,
+  );
   return {
     snapshot: snapshotResponse.data,
     observations,
-    truncated: raw.length >= BACKLINK_ROW_CAP,
+    truncated: observations.length >= BACKLINK_ROW_CAP,
   };
 }
 
@@ -855,6 +850,9 @@ export interface ReferringDomainRollup {
   dofollowBacklinks: number;
   domainRank: number | null;
   spamScore: number | null;
+  ourScore: number | null;
+  relevance: string | null;
+  action: string | null;
   /** Unique anchor texts, most recent first, capped at 3. */
   anchors: string[];
 }
@@ -865,24 +863,31 @@ export function rollupReferringDomains(
   const byDomain = new Map<string, ReferringDomainRollup>();
   for (const row of observations) {
     const domain = row.source_domain ?? hostnameOf(row.source_url);
+    const assessment = parseBacklinkAssessment(row.resolved_assessment);
     const existing = byDomain.get(domain);
     if (!existing) {
       byDomain.set(domain, {
         domain,
         backlinks: 1,
-        liveBacklinks: row.state === "live" ? 1 : 0,
+        liveBacklinks: row.state !== "lost" ? 1 : 0,
         dofollowBacklinks: row.is_dofollow === true ? 1 : 0,
         domainRank: row.domain_rank,
         spamScore: row.spam_score,
+        ourScore: assessment.overallScore,
+        relevance: assessment.relevanceVerdict,
+        action: assessment.action,
         anchors: row.anchor_text ? [row.anchor_text] : [],
       });
       continue;
     }
     existing.backlinks += 1;
-    if (row.state === "live") existing.liveBacklinks += 1;
+    if (row.state !== "lost") existing.liveBacklinks += 1;
     if (row.is_dofollow === true) existing.dofollowBacklinks += 1;
     existing.domainRank = maxNullable(existing.domainRank, row.domain_rank);
     existing.spamScore = maxNullable(existing.spamScore, row.spam_score);
+    existing.ourScore = maxNullable(existing.ourScore, assessment.overallScore);
+    existing.relevance ??= assessment.relevanceVerdict;
+    existing.action ??= assessment.action;
     if (
       row.anchor_text &&
       existing.anchors.length < 3 &&

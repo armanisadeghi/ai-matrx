@@ -14,7 +14,14 @@
 import { useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Loader2, RefreshCw, Save, Settings2 } from "lucide-react";
+import {
+  BrainCircuit,
+  ExternalLink,
+  Loader2,
+  RefreshCw,
+  Save,
+  Settings2,
+} from "lucide-react";
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -69,6 +76,7 @@ import { BacklinkTrendChart } from "@/features/marketing/components/backlinks/Ba
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
 import { BacklinkDimensionTable } from "@/features/marketing/components/backlinks/BacklinkDimensionTable";
 import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/BacklinkInsightsTab";
+import { ReferringDomainIntelligenceTable } from "@/features/marketing/components/backlinks/ReferringDomainIntelligenceTable";
 import {
   BACKLINK_TABS,
   isBacklinkTabKey,
@@ -86,6 +94,7 @@ import {
 import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
 import {
   refreshSiteBacklinks,
+  enrichSiteBacklinks,
   SeoApiError,
 } from "@/features/marketing/seo/dataforseo/client";
 import type {
@@ -272,7 +281,12 @@ export function BacklinksWorkspace() {
   const searchParams = useSearchParams();
   const [isNavigating, startNavigation] = useTransition();
   const serviceTargets = useAppSelector(selectApiServiceTargets);
-  const seoTarget = serviceTargets.find((target) => target.service === "seo");
+  // Backlink discovery + enrichment are work commands. The browser reads
+  // persisted rows directly from Supabase, but actual work belongs on aidream
+  // (the standalone SEO package service is not an AI/crawler host).
+  const seoTarget = serviceTargets.find(
+    (target) => target.service === "aidream",
+  );
 
   const workspace = useBacklinkWorkspace(site.id);
   const trend = useBacklinkTrend(site.id);
@@ -280,6 +294,7 @@ export function BacklinksWorkspace() {
 
   const [profile, setProfile] = useState<BacklinkRefreshProfile>("bootstrap");
   const [refreshing, setRefreshing] = useState(false);
+  const [enriching, setEnriching] = useState(false);
   const [receipt, setReceipt] = useState<BacklinkRefreshReceipt | null>(null);
   // Remount key for the receipt card so each completed refresh re-opens it.
   const [receiptRun, setReceiptRun] = useState(0);
@@ -346,7 +361,7 @@ export function BacklinksWorkspace() {
 
   const refresh = async () => {
     if (!seoTarget?.url) {
-      toast.error("No SEO server is configured for the selected environment.");
+      toast.error("No AI Dream server is configured for the selected environment.");
       return;
     }
     setRefreshing(true);
@@ -365,6 +380,7 @@ export function BacklinksWorkspace() {
           detail_limit: schedule.detailLimit,
           force_refresh: true,
           request_id: crypto.randomUUID(),
+          enrichment_limit: 25,
         },
       );
       setReceipt(nextReceipt);
@@ -379,6 +395,37 @@ export function BacklinksWorkspace() {
       toast.error(errorMessage(error));
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const enrich = async () => {
+    if (!seoTarget?.url) {
+      toast.error("No AI Dream server is configured for the selected environment.");
+      return;
+    }
+    setEnriching(true);
+    try {
+      const session = await supabase.auth.getSession();
+      if (session.error) throw session.error;
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error("Sign in before enriching backlink data.");
+      const result = await enrichSiteBacklinks(seoTarget.url, token, site.id, {
+        organization_id: site.organization_id,
+        limit: 25,
+        force: false,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.site(site.id), "backlinks"],
+      });
+      toast.success(
+        result.completed > 0
+          ? `Analyzed ${result.completed} source page${result.completed === 1 ? "" : "s"}.`
+          : "No due source pages remained to analyze.",
+      );
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setEnriching(false);
     }
   };
 
@@ -506,25 +553,23 @@ export function BacklinksWorkspace() {
               ? trendPoints.slice(-12)
               : { summary: humanTrend(trendPoints) },
       },
-      ...dimensionGroups.map(
-        (group): AgentCopyGroomerSection => ({
-          id: group.id,
-          title: group.title,
-          description: `${group.rows.length} stored dimension rows.`,
-          cuttable: true,
-          levelLabels: {
-            full: `All ${group.rows.length} (raw)`,
-            compact: "Top 8",
-            brief: "Top 3",
-          },
-          build: (level) =>
-            level === "full"
-              ? group.rows
-              : group.rows
-                  .slice(0, level === "compact" ? 8 : 3)
-                  .map(projectDimensionRow),
-        }),
-      ),
+      ...dimensionGroups.map((group): AgentCopyGroomerSection => ({
+        id: group.id,
+        title: group.title,
+        description: `${group.rows.length} stored dimension rows.`,
+        cuttable: true,
+        levelLabels: {
+          full: `All ${group.rows.length} (raw)`,
+          compact: "Top 8",
+          brief: "Top 3",
+        },
+        build: (level) =>
+          level === "full"
+            ? group.rows
+            : group.rows
+                .slice(0, level === "compact" ? 8 : 3)
+                .map(projectDimensionRow),
+      })),
       {
         id: "backlink_rows",
         title: "Backlink rows",
@@ -696,6 +741,17 @@ export function BacklinksWorkspace() {
           backlink_rows: backlinks.data?.rows.map((row) =>
             projectBacklinkRow(row),
           ) as Array<Record<string, unknown>> | undefined,
+          backlink_enrichment_summary: data?.enrichment,
+          referring_domain_opinions: data?.domainProfiles.map((row) => ({
+            domain: row.display_domain,
+            domain_type: row.domain_type,
+            backlinks: row.current_backlinks,
+            our_score: row.opinion_score,
+            our_verdict: row.opinion_verdict,
+            our_summary: row.opinion_summary,
+            provider_metrics: row.provider_metrics,
+            human_ruling: row.human_ruling,
+          })),
           backlinks_collected_at: detailSnapshot?.created_at ?? undefined,
           refresh_schedule: {
             enabled: savedSchedule.enabled,
@@ -809,6 +865,20 @@ export function BacklinksWorkspace() {
               Refresh
             </Button>
             <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              disabled={enriching || refreshing}
+              onClick={() => void enrich()}
+            >
+              {enriching ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <BrainCircuit className="h-3.5 w-3.5" />
+              )}
+              Analyze source pages
+            </Button>
+            <Button
               size="icon"
               variant="outline"
               className="h-8 w-8"
@@ -818,10 +888,7 @@ export function BacklinksWorkspace() {
               onClick={() => setSettingsOpen((open) => !open)}
             >
               <Settings2
-                className={cn(
-                  "h-3.5 w-3.5",
-                  settingsOpen && "text-primary",
-                )}
+                className={cn("h-3.5 w-3.5", settingsOpen && "text-primary")}
               />
             </Button>
           </div>
@@ -846,7 +913,7 @@ export function BacklinksWorkspace() {
                       <span data-surface-value="seo_environment">
                         {seoTarget?.environment ?? "selected"}
                       </span>{" "}
-                      SEO server target.
+                      AI Dream work target.
                     </p>
                   </div>
                 </div>
@@ -927,6 +994,36 @@ export function BacklinksWorkspace() {
                 location={pageLocation}
               />
               <SectionCard
+                title="Source-page enrichment"
+                anchor="backlink_enrichment"
+              >
+                <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-6">
+                  {[
+                    ["Known links", data?.enrichment.total ?? 0],
+                    ["Analyzed", data?.enrichment.completed ?? 0],
+                    ["Awaiting", data?.enrichment.awaiting ?? 0],
+                    ["Needs retry", data?.enrichment.failed ?? 0],
+                    [
+                      "High-priority actions",
+                      data?.enrichment.highPriority ?? 0,
+                    ],
+                    ["Likely controllable", data?.enrichment.controllable ?? 0],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="rounded-md border border-border/60 bg-card p-2"
+                    >
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {label}
+                      </p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums text-foreground">
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+              <SectionCard
                 title="Link growth — new vs lost, with running totals"
                 anchor="backlink_trend"
               >
@@ -1004,6 +1101,10 @@ export function BacklinksWorkspace() {
           ) : tab === "insights" ? (
             <div className="flex min-h-0 flex-1 flex-col">
               <BacklinkInsightsTab siteId={site.id} />
+            </div>
+          ) : tab === "domains" ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <ReferringDomainIntelligenceTable siteId={site.id} />
             </div>
           ) : isDimensionTab(tab) ? (
             <div className="flex min-h-0 flex-1 flex-col">

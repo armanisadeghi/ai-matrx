@@ -3,7 +3,10 @@ import type { Database } from "@/types/database.types";
 export type BacklinkSnapshotRow =
   Database["seo"]["Tables"]["backlink_snapshot"]["Row"];
 export type BacklinkObservationRow =
-  Database["seo"]["Tables"]["backlink_observation"]["Row"];
+  Database["seo"]["Tables"]["backlink"]["Row"];
+export type BacklinkRow = BacklinkObservationRow;
+export type ReferringDomainProfileRow =
+  Database["seo"]["Tables"]["referring_domain_profile"]["Row"];
 export type BacklinkDimensionRow =
   Database["seo"]["Tables"]["backlink_dimension_snapshot"]["Row"];
 
@@ -18,6 +21,15 @@ export interface BacklinkWorkspaceData {
   anchors: BacklinkDimensionRow[];
   targetPages: BacklinkDimensionRow[];
   competitors: BacklinkDimensionRow[];
+  domainProfiles: ReferringDomainProfileRow[];
+  enrichment: {
+    total: number;
+    completed: number;
+    awaiting: number;
+    failed: number;
+    highPriority: number;
+    controllable: number;
+  };
 }
 
 /**

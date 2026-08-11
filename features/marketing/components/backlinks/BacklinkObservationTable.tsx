@@ -24,6 +24,12 @@ import {
 } from "@/features/marketing/components/backlinks/lib/columns";
 import { parseObservationExtras } from "@/features/marketing/components/backlinks/lib/extras";
 import {
+  humanizeAssessmentValue,
+  parseBacklinkAssessment,
+  providerExtras,
+} from "@/features/marketing/components/backlinks/lib/enrichment";
+import { BacklinkEnrichmentDetail } from "@/features/marketing/components/backlinks/BacklinkEnrichmentDetail";
+import {
   BACKLINK_LENSES,
   BACKLINK_STATES,
   DOMAIN_RANK_EXPLAINER,
@@ -46,6 +52,7 @@ import { LENS_DEFAULT_SORT } from "@/features/marketing/data/backlinks-queries";
 import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 
 /**
  * One honest empty line per lens — a lens finding nothing is usually GOOD
@@ -56,8 +63,10 @@ const LENS_EMPTY_LINE: Record<BacklinkLensKey, string> = {
   new: "No new links found — nothing gained since the previous snapshot.",
   lost: "No lost links found — nothing to reclaim right now.",
   broken: "No broken links found — nothing to fix or 301 right now.",
-  toxic:
-    "No high spam-score links found — no removal or disavow candidates right now.",
+  toxic: "No captured links currently require a risk review.",
+  actionable: "No captured links have a high-priority action right now.",
+  relevant: "No captured source pages have been rated strongly relevant yet.",
+  controllable: "No captured links have a direct or likely edit path yet.",
 };
 
 export function BacklinkObservationTable({
@@ -67,6 +76,7 @@ export function BacklinkObservationTable({
   siteId: string;
   lens?: BacklinkLensKey | null;
 }) {
+  const { sitePath } = useMarketingSite();
   const lensFallback = lens ? LENS_DEFAULT_SORT[lens] : null;
   const table = useMarketingTableState({
     defaultSort: lensFallback
@@ -92,7 +102,9 @@ export function BacklinkObservationTable({
       filter: false,
       cellKind: "text",
       cell: (row) => {
-        const extras = parseObservationExtras(row.extras);
+        const extras = parseObservationExtras(
+          providerExtras(row.provider_evidence),
+        );
         return (
           <a
             href={row.source_url}
@@ -124,7 +136,9 @@ export function BacklinkObservationTable({
       filter: false,
       cellKind: "text",
       cell: (row) => {
-        const extras = parseObservationExtras(row.extras);
+        const extras = parseObservationExtras(
+          providerExtras(row.provider_evidence),
+        );
         if (extras.imageUrl) {
           return (
             <span
@@ -161,18 +175,23 @@ export function BacklinkObservationTable({
       header: "Target",
       filter: false,
       cellKind: "text",
-      cell: (row) => (
-        <a
-          href={row.target_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={row.target_url}
-          onClick={(event) => event.stopPropagation()}
-          className="block min-w-40 max-w-72 truncate font-mono text-[11px] text-primary hover:underline"
-        >
-          {urlPath(row.target_url)}
-        </a>
-      ),
+      cell: (row) => {
+        const href = row.page_id
+          ? `${sitePath}/pages/${row.page_id}`
+          : row.target_url;
+        return (
+          <a
+            href={href}
+            target={row.page_id ? undefined : "_blank"}
+            rel={row.page_id ? undefined : "noopener noreferrer"}
+            title={row.target_url}
+            onClick={(event) => event.stopPropagation()}
+            className="block min-w-40 max-w-72 truncate font-mono text-[11px] text-primary hover:underline"
+          >
+            {urlPath(row.target_url)}
+          </a>
+        );
+      },
     },
     {
       id: "placement",
@@ -184,9 +203,12 @@ export function BacklinkObservationTable({
         label: placement.label,
       })),
       accessorFn: (row) =>
-        parseObservationExtras(row.extras).semanticLocation ?? "",
+        parseObservationExtras(providerExtras(row.provider_evidence))
+          .semanticLocation ?? "",
       cell: (row) => {
-        const placement = parseObservationExtras(row.extras).semanticLocation;
+        const placement = parseObservationExtras(
+          providerExtras(row.provider_evidence),
+        ).semanticLocation;
         const label = placement
           ? (LINK_PLACEMENTS.find((entry) => entry.key === placement)?.label ??
             placement)
@@ -225,7 +247,9 @@ export function BacklinkObservationTable({
       header: "Rel",
       filter: "boolean",
       cell: (row) => {
-        const extras = parseObservationExtras(row.extras);
+        const extras = parseObservationExtras(
+          providerExtras(row.provider_evidence),
+        );
         const special = (extras.attributes ?? []).filter(
           (attribute) => attribute === "sponsored" || attribute === "ugc",
         );
@@ -241,6 +265,98 @@ export function BacklinkObservationTable({
             {special.map((attribute) => (
               <MutedChip key={attribute}>{attribute}</MutedChip>
             ))}
+          </span>
+        );
+      },
+    },
+    {
+      id: "our_score",
+      header: "Our score",
+      sortable: false,
+      filter: false,
+      align: "right",
+      accessorFn: (row) =>
+        parseBacklinkAssessment(row.resolved_assessment).overallScore ?? -1,
+      cell: (row) => {
+        const value = parseBacklinkAssessment(
+          row.resolved_assessment,
+        ).overallScore;
+        return value === null ? (
+          <span className="text-xs text-muted-foreground">Awaiting</span>
+        ) : (
+          <span className="font-medium tabular-nums text-foreground">
+            {value}
+          </span>
+        );
+      },
+    },
+    {
+      id: "relevance",
+      header: "Relevance",
+      sortable: false,
+      filter: false,
+      accessorFn: (row) =>
+        parseBacklinkAssessment(row.resolved_assessment).relevanceVerdict ?? "",
+      cell: (row) => {
+        const value = parseBacklinkAssessment(row.resolved_assessment);
+        return (
+          <span className="whitespace-nowrap text-xs text-foreground">
+            {humanizeAssessmentValue(value.relevanceVerdict)}
+            {value.relevanceScore !== null ? ` · ${value.relevanceScore}` : ""}
+          </span>
+        );
+      },
+    },
+    {
+      id: "page_type",
+      header: "Source type",
+      sortable: false,
+      filter: false,
+      accessorFn: (row) =>
+        parseBacklinkAssessment(row.resolved_assessment).pageType ?? "",
+      cell: (row) => (
+        <span className="text-xs text-foreground">
+          {humanizeAssessmentValue(
+            parseBacklinkAssessment(row.resolved_assessment).pageType,
+          )}
+        </span>
+      ),
+    },
+    {
+      id: "control",
+      header: "Can change?",
+      sortable: false,
+      filter: false,
+      accessorFn: (row) =>
+        parseBacklinkAssessment(row.resolved_assessment).controlLevel ?? "",
+      cell: (row) => (
+        <span className="text-xs text-foreground">
+          {humanizeAssessmentValue(
+            parseBacklinkAssessment(row.resolved_assessment).controlLevel,
+          )}
+        </span>
+      ),
+    },
+    {
+      id: "action",
+      header: "Recommended action",
+      sortable: false,
+      filter: false,
+      accessorFn: (row) =>
+        parseBacklinkAssessment(row.resolved_assessment).action ?? "",
+      cell: (row) => {
+        const value = parseBacklinkAssessment(row.resolved_assessment);
+        return (
+          <span
+            className="block max-w-52 text-xs text-foreground"
+            title={value.actionReason ?? undefined}
+          >
+            {humanizeAssessmentValue(value.action)}
+            {value.priority ? (
+              <span className="ml-1 text-[10px] uppercase text-muted-foreground">
+                {value.priority}
+              </span>
+            ) : null}
           </span>
         );
       },
@@ -279,7 +395,9 @@ export function BacklinkObservationTable({
         label: state.label,
       })),
       cell: (row) => {
-        const extras = parseObservationExtras(row.extras);
+        const extras = parseObservationExtras(
+          providerExtras(row.provider_evidence),
+        );
         const broken =
           extras.isBroken === true ||
           (extras.urlToStatusCode !== null && extras.urlToStatusCode >= 400);
@@ -386,6 +504,13 @@ export function BacklinkObservationTable({
           detail={{
             title: (row) => row.source_domain ?? row.source_url,
             description: (row) => `${row.state} link to ${row.target_url}`,
+            render: (row) => (
+              <BacklinkEnrichmentDetail
+                row={row}
+                sitePath={sitePath}
+                onSaved={() => void backlinks.refetch()}
+              />
+            ),
           }}
           window={{
             title: (row) => row.source_domain ?? row.source_url,
@@ -394,7 +519,9 @@ export function BacklinkObservationTable({
           pageSizeOptions={[25, 50, 100, 250]}
           emptyState={{
             icon: <Link2 className="h-8 w-8 text-muted-foreground" />,
-            title: lensLabel ? `${lensLabel}: nothing found` : "No detailed backlinks stored",
+            title: lensLabel
+              ? `${lensLabel}: nothing found`
+              : "No detailed backlinks stored",
             description:
               backlinks.isSuccess && (lens || table.queryState.search)
                 ? lens

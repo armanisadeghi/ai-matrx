@@ -2,7 +2,7 @@
  * Surface manifest — Marketing backlinks workspace (`matrx-user/marketing-backlinks`).
  *
  * Drives `/marketing/brands/[brandId]/sites/[siteId]/backlinks` — the
- * persisted DataForSEO backlink intelligence workspace
+ * provider discovery + first-party backlink intelligence workspace
  * (`BacklinksWorkspace`): current summary KPIs (total backlinks, referring
  * domains, dofollow/nofollow, rank), referring-domain / anchor / target-page
  * / competitor rollups, and a controlled latest-backlink table. Data is
@@ -50,7 +50,14 @@ const groups: SurfaceValueGroup[] = [
     label: "Backlink rows",
     sortOrder: 400,
     description:
-      "The individual stored backlinks the user is paging through, and the state of that table.",
+      "The individual stable backlinks the user is paging through, their source-page judgments, and the state of that table.",
+  },
+  {
+    key: "enrichment",
+    label: "Source-page enrichment",
+    sortOrder: 450,
+    description:
+      "Captured referring-page content, first-party judgments, concrete actions, and the known-domain directory.",
   },
   {
     key: "collection",
@@ -160,11 +167,34 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 460,
   },
   {
+    group: "enrichment",
+    name: "backlink_enrichment_summary",
+    label: "Enrichment progress and actions",
+    description:
+      "Counts across stable backlinks: total, analyzed, awaiting, failed/dead-letter, high-priority actions, and likely-controllable links. This is platform judgment over captured source pages, not a provider metric.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 250,
+    sortOrder: 475,
+  },
+  {
+    group: "enrichment",
+    name: "referring_domain_opinions",
+    label: "First-party referring-domain opinions",
+    description:
+      "Known referring sites with our evidence-backed score, verdict, site type, summary, and provider metrics kept separately. Human rulings override interpretation without erasing evidence.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 3500,
+    autoContext: false,
+    sortOrder: 480,
+  },
+  {
     group: "backlink_rows",
     name: "backlink_rows",
     label: "Loaded backlink rows",
     description:
-      "The individual stored backlinks on the table page the user is currently viewing (server-paged, respecting search and sort): per row the source domain and URL, target URL, anchor text, state (active/new/lost), dofollow flag, domain rank, and last-seen date. Empty array when no detailed rows have been collected or the current filter matches nothing.",
+      "The stable backlinks on the table page the user is currently viewing (server-paged, respecting search and sort): source/target identity, anchor and provider facts, capture state, our relevance/page-type/controllability/risk judgments, and concrete recommended action. Empty array when no detailed rows have been collected or the current filter matches nothing.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 6000,
@@ -209,9 +239,9 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     group: "collection",
     name: "seo_environment",
-    label: "SEO server environment",
+    label: "AI Dream work environment",
     description:
-      "The environment name of the SEO server target the shell is pointed at, which manual refreshes are sent to. Empty when no SEO service target is configured for the selected environment — refreshes are impossible in that state.",
+      "The environment name of the AI Dream server target that runs provider refresh and source-page enrichment work. Empty when no AI Dream target is configured for the selected environment — work commands are impossible in that state.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 12,
@@ -238,9 +268,9 @@ export const marketingBacklinksManifest: SurfaceManifest = {
   urlPattern: "/marketing/brands/[brandId]/sites/[siteId]/backlinks",
   inheritsFrom: "matrx-user/marketing-site",
   intro: `<surface_intro>
-You are on the backlink intelligence workspace of a managed website: third-party evidence (DataForSEO) of who links to this site, stored as server-owned history — summary KPIs, referring-domain and anchor rollups, and individual backlink rows. The brand_context and site_context values give you the client and website framing; read them first.
-Backlink data is COLLECTED EVIDENCE from an external provider: it reflects the provider's last collection run (backlink_summary carries the timestamp), it can be stale or empty when collection has never run, and it is read-only here — refreshes happen through the canonical server command, never by fabricating numbers.
-The user works here on off-site authority: understanding the link profile, spotting lost or toxic links, and planning outreach for new ones. Reason from the stored rollups; never invent a referring domain, anchor, or metric the data does not contain.
+You are on the backlink intelligence workspace of a managed website: provider discovery PLUS first-party source-page capture and analysis. The brand_context and site_context values give you the client and website framing; read them first.
+Keep evidence layers separate. Provider rank/spam values are third-party signals; backlink_rows and referring_domain_opinions carry our page-content judgments, relevance, controllability, risk, and recommended actions; human rulings are explicit ground truth. Never call a link paid, controlled, toxic, or disavow-worthy from a provider score alone.
+The user works here to protect valuable links, reclaim losses, improve controllable listings/placements, and request specific edits. Recommend the stored action and explain its evidence; never invent a relationship, owner, referring domain, anchor, or metric.
 Freshness has two clocks: backlink_summary carries when the KPI snapshot was collected, backlinks_collected_at when the individual rows were. The collection values (refresh_schedule, refresh_profile, seo_environment, refresh_receipt) tell you how this evidence is kept current — when data is stale or missing, the right recommendation names the profile to run, not a fabricated number.
 </surface_intro>`,
   groups,
@@ -253,7 +283,7 @@ Freshness has two clocks: backlink_summary carries when the KPI snapshot was col
       name: "backlink_analyst",
       label: "Backlink analyst",
       description:
-        "Interprets the stored backlink profile: authority distribution, dofollow share, anchor patterns, and gains/losses over snapshots.",
+        "Interprets provider signals alongside captured referring-page content: relevance, context, editorial nature, controllability, risk, and the first-party domain opinion.",
       kind: "single",
       defaultAgentId: null,
       sortOrder: 100,
@@ -262,7 +292,7 @@ Freshness has two clocks: backlink_summary carries when the KPI snapshot was col
       name: "outreach_strategist",
       label: "Outreach strategist",
       description:
-        "Plans link-building outreach from the referring-domain and competitor rollups: targets, angles, and anchor strategy.",
+        "Turns stored recommended actions and controllability evidence into precise listing edits, publisher requests, reclamation, protection, and outreach plans.",
       kind: "single",
       defaultAgentId: null,
       sortOrder: 110,
@@ -290,6 +320,8 @@ export function createMarketingBacklinksScope(values: {
   backlinks_table_state?: Record<string, unknown>;
   backlink_rows?: Array<Record<string, unknown>>;
   backlinks_collected_at?: string;
+  backlink_enrichment_summary?: Record<string, unknown>;
+  referring_domain_opinions?: Array<Record<string, unknown>>;
   refresh_schedule?: Record<string, unknown>;
   refresh_profile?: string;
   seo_environment?: string;

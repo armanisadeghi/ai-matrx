@@ -1,6 +1,7 @@
 import type {
   BacklinkRefreshBody,
   BacklinkRefreshReceipt,
+  BacklinkEnrichmentResult,
   CollectionCreateBody,
   CollectionReceipt,
   DataForSeoOperationsResponse,
@@ -52,6 +53,67 @@ async function seoRequest<T>(
   return payload as T;
 }
 
+async function seoStreamTerminal<T>(
+  serverUrl: string,
+  accessToken: string,
+  path: string,
+  body: Record<string, unknown>,
+  terminalKind: string,
+  project: (data: Record<string, unknown>) => T | null,
+): Promise<T> {
+  const response = await fetch(`${normalizedBaseUrl(serverUrl)}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null);
+    const detail =
+      payload && typeof payload === "object" && "detail" in payload
+        ? (payload.detail as JsonValue)
+        : (payload as JsonValue);
+    throw new SeoApiError(response.status, detail);
+  }
+  if (!response.body) throw new Error("SEO server returned no command stream.");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let result: T | null = null;
+  let streamError: string | null = null;
+  const consumeLine = (line: string) => {
+    if (!line.trim()) return;
+    const envelope = JSON.parse(line) as Record<string, unknown>;
+    const data =
+      envelope.data && typeof envelope.data === "object"
+        ? (envelope.data as Record<string, unknown>)
+        : envelope;
+    if (data.kind === terminalKind) result = project(data);
+    if (data.kind === "seo.command_failed" || envelope.event === "error") {
+      streamError = JSON.stringify(data.error ?? data);
+    }
+  };
+  while (true) {
+    const chunk = await reader.read();
+    buffer += decoder.decode(chunk.value ?? new Uint8Array(), {
+      stream: !chunk.done,
+    });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      consumeLine(line);
+    }
+    if (chunk.done) break;
+  }
+  consumeLine(buffer);
+  if (streamError) throw new Error(streamError);
+  if (result === null)
+    throw new Error(`SEO command ended without ${terminalKind}.`);
+  return result;
+}
+
 export async function checkSeoHealth(serverUrl: string): Promise<JsonValue> {
   const response = await fetch(`${normalizedBaseUrl(serverUrl)}/health/ready`);
   const payload: unknown = await response.json().catch(() => null);
@@ -98,13 +160,28 @@ export function refreshSiteBacklinks(
   siteId: string,
   body: BacklinkRefreshBody,
 ): Promise<BacklinkRefreshReceipt> {
-  return seoRequest(
+  return seoStreamTerminal(
     serverUrl,
     accessToken,
-    `/sites/${encodeURIComponent(siteId)}/backlinks/refresh`,
-    {
-      method: "POST",
-      body: JSON.stringify(body),
-    },
+    `/seo/sites/${encodeURIComponent(siteId)}/backlinks/refresh`,
+    { ...body },
+    "seo.backlink_refresh_completed",
+    (data) => (data.receipt as BacklinkRefreshReceipt | undefined) ?? null,
+  );
+}
+
+export function enrichSiteBacklinks(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: { organization_id: string; limit: number; force: boolean },
+): Promise<BacklinkEnrichmentResult> {
+  return seoStreamTerminal(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/backlinks/enrich`,
+    { ...body },
+    "seo.backlink_enrichment_completed",
+    (data) => (data.result as BacklinkEnrichmentResult | undefined) ?? null,
   );
 }

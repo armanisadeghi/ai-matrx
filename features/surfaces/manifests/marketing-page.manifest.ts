@@ -726,7 +726,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "backlinks",
     label: "Backlinks",
     description:
-      "External backlink evidence for this page as loaded on the workspace: the latest snapshot totals and top referring rows. Empty when no backlink collection has run.",
+      "External backlink evidence for this page as loaded on the workspace: latest snapshot totals plus stable source-page rows and domain rollups carrying first-party score, relevance, controllability, and recommended action. Empty when no backlink collection has run.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 1000,

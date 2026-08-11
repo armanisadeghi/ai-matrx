@@ -274,7 +274,7 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/brands/[brandId]/sites/[siteId]/backlinks",
       label: "Backlink intelligence",
       description:
-        "Persisted authority, referring-domain, anchor, linked-page, competitor, and backlink evidence.",
+        "Provider evidence enriched with referring-page content, relevance, controllability, actions, and first-party domain opinions.",
       filePath:
         "app/(core)/marketing/brands/[brandId]/sites/[siteId]/backlinks/page.tsx",
       status: "Live",
