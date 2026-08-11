@@ -4,16 +4,17 @@
  * PlusAttachMenu — the `+` quick menu on the Smart Input (desktop).
  *
  * Layout (top → bottom):
- *   1. ResourcePickerMenu (attach sources + **This run** at bottom) — flex-1 scroll
- *   2. ONE combined row: Model override + Settings (window @ settings tab) +
- *      all-options icon (window @ Quickset) — never separate full-width rows
+ *   1. ResourcePickerMenu (attach sources) — flex-1 scroll
+ *   2. ONE combined row: Model + Overrides (inline drill-in) + Advanced Settings
+ *      (full window @ settings tab — RunSettingsEditor)
  *   3. Working doc / Scratchpad switches
  *   4. ContextLensBar
  *   5. ComputeLensBar
  *   6. [compact only] auto-clear toggle (Enter-submits lives ONLY in
  *      Chat Options → Quickset; every version of this menu stays identical)
  *
- * **This run** (Tools, Skills) drills in-place like Files.
+ * Overrides drills in-place like Files / Tools — same panel, not a second
+ * window. Advanced Settings opens the run-controls WindowPanel (RunSettingsEditor).
  *
  * Shell height is fixed at open (`PLUS_ATTACH_MENU_HEIGHT_CLASS`); only the
  * attach-list zone scrolls. Footer chrome is shrink-0 so capability filtering
@@ -21,7 +22,7 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { RefreshCcw, Settings2, SlidersHorizontal } from "lucide-react";
+import { AppWindow, Cpu, RefreshCcw } from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
@@ -30,7 +31,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
+import { ResourcePickerSubViewHeader } from "@/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import { QuickRunModelSelect } from "@/features/agents/components/run-controls/RunModelPicker";
+import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { selectAttachmentCapabilities } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
@@ -70,7 +73,9 @@ interface PlusAttachMenuProps {
 }
 
 /** Fixed shell height — never use max-h alone; inner sections flex within this box. */
-const PLUS_ATTACH_MENU_HEIGHT_CLASS = "h-[min(80vh,640px)]";
+const PLUS_ATTACH_MENU_HEIGHT_CLASS = "h-[min(68vh,480px)]";
+
+type PlusMenuView = "menu" | "overrides";
 
 function DocumentSwitchesRow({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();
@@ -182,6 +187,7 @@ export function PlusAttachMenu({
 
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<PlusMenuView>("menu");
 
   const attachmentCapabilities = useAppSelector(
     selectAttachmentCapabilities(conversationId),
@@ -200,8 +206,18 @@ export function PlusAttachMenu({
     return attachResource(resource);
   };
 
+  const closeMenu = () => {
+    setOpen(false);
+    setView("menu");
+  };
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) setView("menu");
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover open={open} onOpenChange={handleOpenChange} modal={false}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         align={align}
@@ -211,24 +227,35 @@ export function PlusAttachMenu({
         className={`flex ${PLUS_ATTACH_MENU_HEIGHT_CLASS} w-96 max-w-[calc(100vw-1rem)] flex-col overflow-hidden border-border p-0`}
       >
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="min-h-full">
-            <ResourcePickerMenu
-              conversationId={conversationId}
-              onResourceSelected={handleResourceSelected}
-              onClose={() => setOpen(false)}
-              attachmentCapabilities={attachmentCapabilities}
-              onDebugClick={onDebugClick}
-              showDebugActive={showDebugActive}
-            />
-          </div>
+          {view === "overrides" ? (
+            <div className="flex min-h-full flex-col">
+              <ResourcePickerSubViewHeader
+                title="Overrides"
+                icon={<Cpu className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                onBack={() => setView("menu")}
+              />
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <RunConfigOverrides conversationId={conversationId} />
+              </div>
+            </div>
+          ) : (
+            <div className="min-h-full">
+              <ResourcePickerMenu
+                conversationId={conversationId}
+                onResourceSelected={handleResourceSelected}
+                onClose={closeMenu}
+                attachmentCapabilities={attachmentCapabilities}
+                onDebugClick={onDebugClick}
+                showDebugActive={showDebugActive}
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex shrink-0 flex-col">
-          {/* ONE row: model override + per-run Settings + full-window opener.
-              Arman's ruling (2026-08-08): Settings sits NEXT TO Model on the
-              same row — never its own full-width row, and no separate
-              "Advanced Settings Window" row eating a second one. */}
-          <div className="flex items-center gap-1.5 border-t border-border px-2 py-1.5">
+          {/* Model + Overrides (inline) + Advanced Settings (window).
+              Overrides ≠ Advanced Settings — terminology restored 2026-08-11. */}
+          <div className="flex items-center gap-1 border-t border-border px-2 py-1.5">
             <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
               Model
             </span>
@@ -240,12 +267,40 @@ export function PlusAttachMenu({
               type="button"
               disabled={isManualMode}
               title={
-                isManualMode ? MANUAL_MODE_SETTINGS_HINT : "Run settings"
+                isManualMode
+                  ? MANUAL_MODE_SETTINGS_HINT
+                  : "Per-run model overrides"
+              }
+              aria-pressed={view === "overrides"}
+              onClick={() => {
+                if (isManualMode) return;
+                setView((v) => (v === "overrides" ? "menu" : "overrides"));
+              }}
+              className={cn(
+                "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium transition-colors",
+                view === "overrides"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                isManualMode &&
+                  "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
+              )}
+            >
+              <Cpu className="h-3.5 w-3.5 shrink-0" />
+              Overrides
+            </button>
+            <button
+              type="button"
+              disabled={isManualMode}
+              title={
+                isManualMode ? MANUAL_MODE_SETTINGS_HINT : "Advanced Settings"
               }
               onClick={() => {
                 if (isManualMode) return;
-                setOpen(false);
-                openRunControlsWindow({ conversationId, initialTab: "settings" });
+                closeMenu();
+                openRunControlsWindow({
+                  conversationId,
+                  initialTab: "settings",
+                });
               }}
               className={cn(
                 "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground",
@@ -253,68 +308,51 @@ export function PlusAttachMenu({
                   "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
               )}
             >
-              <Settings2 className="h-3.5 w-3.5 shrink-0" />
-              Settings
-            </button>
-            <button
-              type="button"
-              disabled={isManualMode}
-              title={
-                isManualMode
-                  ? MANUAL_MODE_SETTINGS_HINT
-                  : "All chat options (full window)"
-              }
-              aria-label="Open all chat options"
-              onClick={() => {
-                if (isManualMode) return;
-                setOpen(false);
-                // No initialTab — the window's default (Quickset) is the
-                // canonical landing tab for every caller.
-                openRunControlsWindow({ conversationId });
-              }}
-              className={cn(
-                "inline-flex h-6 shrink-0 items-center rounded-md px-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground",
-                isManualMode &&
-                  "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
-              )}
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+              <AppWindow className="h-3.5 w-3.5 shrink-0" />
+              Advanced Settings
             </button>
           </div>
 
-          <DocumentSwitchesRow conversationId={conversationId} />
+          {view === "menu" ? (
+            <>
+              <DocumentSwitchesRow conversationId={conversationId} />
 
-          <ContextLensMenuRow conversationId={conversationId} />
+              <ContextLensMenuRow conversationId={conversationId} />
 
-          <ComputeLensMenuRow
-            conversationId={conversationId}
-            onOpenPanel={() => {
-              setOpen(false);
-              openRunControlsWindow({ conversationId, initialTab: "sandbox" });
-            }}
-          />
+              <ComputeLensMenuRow
+                conversationId={conversationId}
+                onOpenPanel={() => {
+                  closeMenu();
+                  openRunControlsWindow({
+                    conversationId,
+                    initialTab: "sandbox",
+                  });
+                }}
+              />
 
-          {/* "Enter submits" deliberately does NOT render here — it lives in
-              Chat Options → Quickset, and per Arman (2026-08-08) every version
-              of this menu must be identical (the new-chat variant had an extra
-              full-width row the normal chat lacked). */}
-          {foldToolbarExtras && shouldShowAutoClearToggle && (
-            <div className="flex flex-col gap-0.5 border-t border-border px-2 py-1.5">
-              <label className="flex cursor-pointer items-center justify-between gap-2 rounded-md px-1 py-1 hover:bg-muted/50">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                  <RefreshCcw className="h-3.5 w-3.5" />
-                  Auto-clear
-                </span>
-                <Switch
-                  checked={autoClear}
-                  onCheckedChange={(value) =>
-                    dispatch(setAutoClearMode({ conversationId, value }))
-                  }
-                  aria-label="Toggle auto-clear conversation"
-                />
-              </label>
-            </div>
-          )}
+              {/* "Enter submits" deliberately does NOT render here — it lives in
+                  Chat Options → Quickset, and per Arman (2026-08-08) every version
+                  of this menu must be identical (the new-chat variant had an extra
+                  full-width row the normal chat lacked). */}
+              {foldToolbarExtras && shouldShowAutoClearToggle && (
+                <div className="flex flex-col gap-0.5 border-t border-border px-2 py-1.5">
+                  <label className="flex cursor-pointer items-center justify-between gap-2 rounded-md px-1 py-1 hover:bg-muted/50">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                      <RefreshCcw className="h-3.5 w-3.5" />
+                      Auto-clear
+                    </span>
+                    <Switch
+                      checked={autoClear}
+                      onCheckedChange={(value) =>
+                        dispatch(setAutoClearMode({ conversationId, value }))
+                      }
+                      aria-label="Toggle auto-clear conversation"
+                    />
+                  </label>
+                </div>
+              )}
+            </>
+          ) : null}
         </div>
       </PopoverContent>
     </Popover>

@@ -169,7 +169,10 @@ export default function RunControlsWindow({
   if (!isOpen || !conversationId) return null;
   return (
     <RunControlsWindowInner
-      key={conversationId}
+      // Remount when the caller asks for a different landing tab so
+      // Advanced Settings / Sandbox / etc. actually switch (overlay update
+      // alone leaves the prior useState tab stuck).
+      key={`${conversationId}:${initialTab ?? "default"}`}
       conversationId={conversationId}
       includeAttach={includeAttach}
       initialTab={initialTab}

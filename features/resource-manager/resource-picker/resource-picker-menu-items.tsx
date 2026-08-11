@@ -52,18 +52,23 @@ export type ResourcePickerMenuItem = {
 };
 
 export type ResourcePickerMenuCategory = {
+  /**
+   * Section label above the rows. Empty string = no header (flat top items:
+   * Files, Voice Pad, Webpage, Tools, Skills).
+   */
   category: string;
   items: ResourcePickerMenuItem[];
 };
 
 /**
- * Canonical attach-menu order — Files first (ONE unified upload + stored-file
- * entry, Arman's 2026-08-08 ruling), then MATRX records, URL ingress, and
- * this-run controls.
+ * Canonical attach-menu order (Arman 2026-08-11):
+ *   1. Flat primary rows (no section header): Files → Voice Pad → Webpage →
+ *      Tools → Skills
+ *   2. Attach/Associate: MATRX records + URL ingress (image/file/YouTube)
  */
 export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
   {
-    category: "Files",
+    category: "",
     items: [
       {
         id: "files",
@@ -80,10 +85,33 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         requiresCapability: "supportsAudio",
         requiresConversation: true,
       },
+      {
+        id: "webpage",
+        label: "Webpage",
+        icon: Globe,
+        iconClassName: "text-teal-600 dark:text-teal-400",
+        requiresCapability: null,
+      },
+      {
+        id: "tools",
+        label: "Tools",
+        icon: Wrench,
+        iconClassName: "text-amber-600 dark:text-amber-400",
+        requiresCapability: null,
+        requiresConversation: true,
+      },
+      {
+        id: "skills",
+        label: "Skills",
+        icon: Lightbulb,
+        iconClassName: "text-yellow-600 dark:text-yellow-400",
+        requiresCapability: null,
+        requiresConversation: true,
+      },
     ],
   },
   {
-    category: "MATRX",
+    category: "Attach/Associate",
     items: [
       {
         // Inserts a readable reference ("my conversation …") into the draft —
@@ -140,18 +168,6 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         iconClassName: "text-secondary dark:text-secondary",
         requiresCapability: null,
       },
-    ],
-  },
-  {
-    category: "From a URL",
-    items: [
-      {
-        id: "webpage",
-        label: "Webpage",
-        icon: Globe,
-        iconClassName: "text-teal-600 dark:text-teal-400",
-        requiresCapability: null,
-      },
       {
         id: "image_url",
         label: "Image URL",
@@ -172,27 +188,6 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         icon: Youtube,
         iconClassName: "text-red-600 dark:text-red-400",
         requiresCapability: "supportsYoutubeVideos",
-      },
-    ],
-  },
-  {
-    category: "This run",
-    items: [
-      {
-        id: "tools",
-        label: "Tools",
-        icon: Wrench,
-        iconClassName: "text-amber-600 dark:text-amber-400",
-        requiresCapability: null,
-        requiresConversation: true,
-      },
-      {
-        id: "skills",
-        label: "Skills",
-        icon: Lightbulb,
-        iconClassName: "text-yellow-600 dark:text-yellow-400",
-        requiresCapability: null,
-        requiresConversation: true,
       },
     ],
   },

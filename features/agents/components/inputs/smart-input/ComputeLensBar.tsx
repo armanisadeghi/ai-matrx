@@ -160,19 +160,22 @@ export function ComputeLensBar({
         </TooltipContent>
       </Tooltip>
 
-      {/* Explicit bound-state word — Arman's ruling (2026-08-08): it must be
-          instantly clear when NOTHING is attached, in words, not icon code. */}
-      {!loading && !hasBinding ? (
-        <span className="ml-1 shrink-0 text-[11px] text-muted-foreground/80">
-          Not attached
-        </span>
-      ) : null}
-
-      {visibleTargets.length > 0 ? (
+      {visibleTargets.length > 0 || (!loading && !hasBinding) ? (
         <span className="mx-0.5 h-4 w-px shrink-0 bg-border/80" aria-hidden />
       ) : null}
 
-      <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden group-hover:bg-secondary/[0.04] rounded-full transition-colors">
+      <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden rounded-full transition-colors group-hover:bg-secondary/[0.04]">
+        {/* Compact empty-state — "None" keeps the pill one row; tooltip carries
+            the full meaning (Arman 2026-08-11: kill the padded "Not attached"). */}
+        {!loading && !hasBinding && visibleTargets.length > 0 ? (
+          <span
+            className="shrink-0 px-1 text-[11px] tabular-nums text-muted-foreground/70"
+            title="No compute attached"
+          >
+            None
+          </span>
+        ) : null}
+
         {visibleTargets.map((target) => (
           <TargetChip
             key={target.id}
@@ -187,8 +190,9 @@ export function ComputeLensBar({
             type="button"
             onClick={onOpenPanel}
             className="inline-flex h-5 items-center rounded-full px-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            title="No sandbox or local computer available"
           >
-            None available
+            None
           </button>
         ) : null}
       </div>

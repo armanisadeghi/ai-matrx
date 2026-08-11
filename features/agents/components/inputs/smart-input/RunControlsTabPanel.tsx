@@ -20,7 +20,7 @@ import {
   Wrench,
   Lightbulb,
   Box,
-  Settings2,
+  AppWindow,
   Cpu,
   Layers,
   Crown,
@@ -124,7 +124,7 @@ const BASE_TABS: RunControlsTabDef[] = [
   { id: "skills", label: "Skills", icon: Lightbulb },
   { id: "sandbox", label: "Sandbox", icon: Box },
   { id: "memory", label: "Memory", icon: Brain },
-  { id: "settings", label: "Settings", icon: Settings2 },
+  { id: "settings", label: "Advanced Settings", icon: AppWindow },
 ];
 
 export function TabStatusDot({ label }: { label?: string }) {
@@ -403,56 +403,56 @@ export function RunControlsTabPanel({
       {activeTab === "creator" &&
         menuWrap(
           <div className={cn(scrollClass, "px-3 py-2")}>
-          <div className="space-y-0.5">
-            {isCreator && (
-              <button
-                type="button"
-                onClick={onToggleCreatorPanel}
-                aria-pressed={showCreatorPanel}
-                className={cn(
-                  "flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs transition-colors",
-                  showCreatorPanel
-                    ? "bg-amber-500/10 text-foreground"
-                    : "text-foreground hover:bg-muted/60",
-                )}
-              >
-                <Crown className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                <span className="min-w-0 flex-1 truncate">Creator panel</span>
-                {showCreatorPanel && (
-                  <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-                    on
-                  </span>
-                )}
-              </button>
-            )}
+            <div className="space-y-0.5">
+              {isCreator && (
+                <button
+                  type="button"
+                  onClick={onToggleCreatorPanel}
+                  aria-pressed={showCreatorPanel}
+                  className={cn(
+                    "flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs transition-colors",
+                    showCreatorPanel
+                      ? "bg-amber-500/10 text-foreground"
+                      : "text-foreground hover:bg-muted/60",
+                  )}
+                >
+                  <Crown className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                  <span className="min-w-0 flex-1 truncate">Creator panel</span>
+                  {showCreatorPanel && (
+                    <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                      on
+                    </span>
+                  )}
+                </button>
+              )}
 
-            {showDebugAction && (
+              {showDebugAction && (
+                <button
+                  type="button"
+                  onClick={onOpenDebug}
+                  className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs text-foreground transition-colors hover:bg-muted/60"
+                >
+                  <Bug className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+                  <span className="min-w-0 flex-1 truncate">
+                    Debug instance state
+                  </span>
+                </button>
+              )}
+
               <button
                 type="button"
-                onClick={onOpenDebug}
+                onClick={() => {
+                  openPromptPreview({ conversationId });
+                }}
                 className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs text-foreground transition-colors hover:bg-muted/60"
               >
-                <Bug className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+                <ScrollText className="h-3.5 w-3.5 shrink-0 text-sky-500" />
                 <span className="min-w-0 flex-1 truncate">
-                  Debug instance state
+                  Preview full prompt
                 </span>
               </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                openPromptPreview({ conversationId });
-              }}
-              className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs text-foreground transition-colors hover:bg-muted/60"
-            >
-              <ScrollText className="h-3.5 w-3.5 shrink-0 text-sky-500" />
-              <span className="min-w-0 flex-1 truncate">
-                Preview full prompt
-              </span>
-            </button>
-          </div>
-        </div>,
+            </div>
+          </div>,
         )}
     </div>
   );

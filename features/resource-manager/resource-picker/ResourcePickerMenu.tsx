@@ -335,10 +335,12 @@ export function ResourcePickerMenu({
   return (
     <div className="py-1">
       {visibleCategories.map((category) => (
-        <div key={category.category}>
-          <div className="mt-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {category.category}
-          </div>
+        <div key={category.category || "primary"}>
+          {category.category ? (
+            <div className="mt-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {category.category}
+            </div>
+          ) : null}
           {category.items.map((resource) => {
             const Icon = resource.icon;
             const count = counts[resource.id];
@@ -387,9 +389,7 @@ export function ResourcePickerMenu({
               }}
             >
               <Settings2 className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-muted-foreground" />
-              <span className="text-foreground font-normal">
-                Settings
-              </span>
+              <span className="text-foreground font-normal">Settings</span>
             </Button>
           )}
           {onDebugClick && (
