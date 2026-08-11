@@ -55,17 +55,17 @@ describe("backlink enrichment narrowers", () => {
   it("uses one controlled single-link action contract everywhere", () => {
     expect(backlinkAnalysisActionState("pending", false, false)).toMatchObject({
       disabled: false,
-      label: "Analyze",
+      label: "Review",
     });
     expect(
       backlinkAnalysisActionState("completed", false, false),
-    ).toMatchObject({ disabled: false, label: "Re-analyze" });
+    ).toMatchObject({ disabled: false, label: "Review again" });
     expect(backlinkAnalysisActionState("capturing", true, false)).toMatchObject(
-      { disabled: true, inProgress: true, label: "Analyzing" },
+      { disabled: true, inProgress: true, label: "Reviewing" },
     );
     expect(backlinkAnalysisActionState("pending", true, false)).toMatchObject({
       disabled: true,
-      label: "Analyzing",
+      label: "Reviewing",
     });
   });
 });

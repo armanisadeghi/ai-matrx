@@ -31,7 +31,7 @@ export function hasBacklinkAssessment(value: Json | null): boolean {
 export interface BacklinkAnalysisActionState {
   disabled: boolean;
   inProgress: boolean;
-  label: "Analyze" | "Analyzing" | "Re-analyze";
+  label: "Review" | "Reviewing" | "Review again";
   title: string;
 }
 
@@ -53,12 +53,12 @@ export function backlinkAnalysisActionState(
     disabled: globallyDisabled || running || inProgress,
     inProgress,
     label:
-      running || inProgress ? "Analyzing" : rerun ? "Re-analyze" : "Analyze",
+      running || inProgress ? "Reviewing" : rerun ? "Review again" : "Review",
     title: running || inProgress
-      ? "This source page is already being analyzed"
+      ? "We are already reading this page"
       : rerun
-        ? "Capture and analyze this source page again"
-        : "Capture and analyze this source page now",
+        ? "Read this page again and review the link"
+        : "Read this page and tell me about the link",
   };
 }
 

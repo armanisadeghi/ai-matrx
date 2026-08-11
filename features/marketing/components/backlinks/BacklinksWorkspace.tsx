@@ -215,7 +215,7 @@ function TopTenCard({
         agent: (): AgentPayloadInput => ({
           kind: `${kind}-list`,
           location,
-          description: `The stored "${title}" backlink dimension rows for ${siteDomain}.`,
+          description: `The stored "${title}" rows for ${siteDomain}.`,
           data: rows,
           summary: humanDimensionList(title, rows),
           attributes: { fetched: rows.length, shown: visible.length },
@@ -507,7 +507,7 @@ export function BacklinksWorkspace() {
   const data = workspace.data;
   const summary = data?.latestByDataset.summary;
   const detailSnapshot = data?.latestByDataset.backlinks;
-  const pageLocation = `Marketing — Backlink intelligence for ${site.domain}`;
+  const pageLocation = `Marketing — Backlinks for ${site.domain}`;
 
   const dimensionGroups = [
     {
@@ -597,15 +597,15 @@ export function BacklinksWorkspace() {
 
   const pageHuman = () =>
     [
-      `Backlink intelligence — ${site.domain}`,
+      `Backlinks — ${site.domain}`,
       humanSummarySnapshot(summary, site.domain),
       humanTrend(trend.data ?? []),
       ...dimensionGroups.map((group) =>
         humanDimensionList(group.title, group.rows),
       ),
-      `Stored backlink rows: ${(backlinks.data?.total ?? 0).toLocaleString()} total recorded${
+      `Links stored: ${(backlinks.data?.total ?? 0).toLocaleString()}${
         detailSnapshot
-          ? `, collected until ${formatCompactDate(detailSnapshot.created_at)}`
+          ? `, as of ${formatCompactDate(detailSnapshot.created_at)}`
           : ""
       }.`,
     ].join("\n\n");
@@ -616,8 +616,8 @@ export function BacklinksWorkspace() {
     const sections: AgentCopyGroomerSection[] = [
       {
         id: "summary",
-        title: "KPI summary",
-        description: "Latest backlink summary snapshot (totals, rank).",
+        title: "Headline numbers",
+        description: "Totals and site authority as of our last check.",
         build: (level) =>
           !summary
             ? null
@@ -637,12 +637,17 @@ export function BacklinksWorkspace() {
                     referring_domains: summary.referring_domains,
                     collected_at: summary.created_at,
                   },
-        levelLabels: { full: "Raw snapshot", compact: "KPIs", brief: "Core" },
+        levelLabels: {
+          full: "Everything we stored",
+          compact: "Headline numbers",
+          brief: "Just the totals",
+        },
       },
       {
         id: "refresh_schedule",
-        title: "Refresh schedule",
-        description: "Automatic refresh config + selected manual profile.",
+        title: "How often we check",
+        description:
+          "Your automatic schedule, and the depth currently selected.",
         cuttable: true,
         build: () => ({
           automatic_refresh: schedule,
@@ -652,8 +657,8 @@ export function BacklinksWorkspace() {
       },
       {
         id: "trend",
-        title: "New vs. lost trend",
-        description: `${trendPoints.length} stored timeseries periods.`,
+        title: "Links gained and lost over time",
+        description: `${trendPoints.length} periods of history.`,
         cuttable: true,
         levelLabels: {
           full: `All ${trendPoints.length}`,
@@ -670,7 +675,7 @@ export function BacklinksWorkspace() {
       ...dimensionGroups.map((group): AgentCopyGroomerSection => ({
         id: group.id,
         title: group.title,
-        description: `${group.rows.length} stored dimension rows.`,
+        description: `${group.rows.length} rows.`,
         cuttable: true,
         levelLabels: {
           full: `All ${group.rows.length} (raw)`,
@@ -686,8 +691,8 @@ export function BacklinksWorkspace() {
       })),
       {
         id: "backlink_rows",
-        title: "Backlink rows",
-        description: `${tableRows.length} loaded of ${(backlinks.data?.total ?? 0).toLocaleString()} recorded (top rows by domain rank).`,
+        title: "The links themselves",
+        description: `${tableRows.length} loaded of ${(backlinks.data?.total ?? 0).toLocaleString()} stored (strongest sites first).`,
         cuttable: true,
         levelLabels: {
           full: `Loaded ${tableRows.length} (raw)`,
@@ -721,7 +726,7 @@ export function BacklinksWorkspace() {
         build: (level) =>
           level === "full"
             ? receipt
-            : { note: "Receipt trimmed — switch to Full for the raw payload." },
+            : { note: "Trimmed — switch to Full for everything." },
       });
     }
     return sections;
@@ -731,7 +736,7 @@ export function BacklinksWorkspace() {
     label: `Backlinks — ${site.domain}`,
     kind: "marketing-backlinks-page",
     location: pageLocation,
-    description: `The full backlink intelligence workspace for ${site.domain}.`,
+    description: `Everything on the backlinks page for ${site.domain}.`,
     attributes: { site_id: site.id, domain: site.domain },
     context: { seo_environment: seoTarget?.environment ?? undefined },
     summary: humanSummarySnapshot(summary, site.domain),
@@ -767,7 +772,7 @@ export function BacklinksWorkspace() {
     return {
       kind: "marketing-backlinks-page",
       location: pageLocation,
-      description: `The backlink intelligence workspace for ${site.domain} (${preset} detail).`,
+      description: `The backlinks page for ${site.domain} (${preset} detail).`,
       data,
       summary: humanSummarySnapshot(summary, site.domain),
       // Same envelope context as the Groomer window — a preset must never
@@ -785,7 +790,7 @@ export function BacklinksWorkspace() {
   const pageAgentPayload = (): AgentPayloadInput => ({
     kind: "marketing-backlinks-page",
     location: pageLocation,
-    description: `The full backlink intelligence workspace for ${site.domain}.`,
+    description: `Everything on the backlinks page for ${site.domain}.`,
     data: pageFullData(),
     summary: humanSummarySnapshot(summary, site.domain),
     context: { seo_environment: seoTarget?.environment ?? undefined },
@@ -1000,7 +1005,7 @@ export function BacklinksWorkspace() {
               <SelectTrigger
                 size="sm"
                 className="w-20"
-                aria-label="Source pages per analysis run"
+                aria-label="How many pages to review at a time"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -1024,7 +1029,7 @@ export function BacklinksWorkspace() {
               ) : (
                 <BrainCircuit className="h-3.5 w-3.5" />
               )}
-              Analyze next {enrichmentBatchSize}
+              Review next {enrichmentBatchSize}
             </Button>
             <Button
               size="icon"
@@ -1042,7 +1047,7 @@ export function BacklinksWorkspace() {
           </div>
         </div>
 
-        {/* "Analyze next N" runs on every tab — its aggregate progress belongs
+        {/* "Review next N" runs on every tab — its aggregate progress belongs
             under the toolbar, not only inside an opened record. */}
         {batchRun ? (
           <BacklinkEnrichmentRunPanel
@@ -1249,7 +1254,7 @@ export function BacklinksWorkspace() {
                       agentCopy={() => ({
                         kind: "backlink-refresh-receipt",
                         location: pageLocation,
-                        description: `The raw receipt from the last manual backlink refresh for ${site.domain}.`,
+                        description: `Exactly what the last refresh collected for ${site.domain}.`,
                         data: receipt,
                         attributes: { profile },
                       })}

@@ -13,6 +13,11 @@ import {
   jsonRecord,
 } from "@/features/marketing/components/backlinks/lib/enrichment";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
+import {
+  backlinkEmptyHint,
+  DOMAIN_RANK_EXPLAINER,
+} from "@/features/marketing/components/backlinks/lib/vocab";
+import { headerWithTooltip } from "@/features/marketing/components/backlinks/lib/columns";
 import { useReferringDomainProfiles } from "@/features/marketing/data/backlinks-hooks";
 import type { ReferringDomainProfileRow } from "@/features/marketing/data/backlinks-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
@@ -66,7 +71,7 @@ function DomainDetail({
           p_ruling: { verdict, note: note.trim() } as Json,
         });
       if (response.error) throw response.error;
-      toast.success("Referring-domain opinion updated.");
+      toast.success("Saved — thanks.");
       onSaved();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -89,38 +94,38 @@ function DomainDetail({
           href={`${sitePath}/reputation?tab=publications`}
           className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
         >
-          Review PR opportunities <Newspaper className="h-3.5 w-3.5" />
+          See press opportunities <Newspaper className="h-3.5 w-3.5" />
         </Link>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
         <div className="rounded border border-border p-2">
           Our score
           <br />
-          <b>{row.opinion_score ?? "Awaiting"}</b>
+          <b>{row.opinion_score ?? "Not reviewed yet"}</b>
         </div>
         <div className="rounded border border-border p-2">
-          Verdict
+          Our verdict
           <br />
           <b>{humanizeAssessmentValue(row.opinion_verdict)}</b>
         </div>
         <div className="rounded border border-border p-2">
-          Site type
+          Kind of site
           <br />
           <b>{humanizeAssessmentValue(row.domain_type)}</b>
         </div>
         <div className="rounded border border-border p-2">
-          Known links
+          Links from this site
           <br />
           <b>{row.current_backlinks}</b>
         </div>
       </div>
       <p className="mt-3 rounded-md border border-border/60 bg-muted/20 p-3 text-sm text-foreground">
         {row.opinion_summary ||
-          "Source pages from this domain have not been analyzed yet."}
+          "We have not read any pages from this site yet."}
       </p>
       <section className="mt-3 rounded-md border border-border p-3">
         <p className="text-xs font-semibold text-foreground">
-          Your domain opinion
+          What do you think of this site?
         </p>
         <select
           value={verdict}
@@ -136,7 +141,7 @@ function DomainDetail({
         <Textarea
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          placeholder="Relationship, payment, ownership, or quality context only your team knows…"
+          placeholder="Anything only you know — who they are to you, whether you paid, who owns it…"
           className="mt-2 min-h-24 text-xs"
         />
         <Button
@@ -150,7 +155,7 @@ function DomainDetail({
           ) : (
             <Save className="h-3.5 w-3.5" />
           )}
-          Save opinion
+          Save
         </Button>
       </section>
     </div>
@@ -190,7 +195,7 @@ export function ReferringDomainIntelligenceTable({
     {
       id: "domain_type",
       accessorKey: "domain_type",
-      header: "Site type",
+      header: "Kind of site",
       filter: false,
       cell: (row) => (
         <span className="text-xs">
@@ -201,7 +206,7 @@ export function ReferringDomainIntelligenceTable({
     {
       id: "current_backlinks",
       accessorKey: "current_backlinks",
-      header: "Links",
+      header: "Links from here",
       filter: false,
       align: "right",
       // A count is a door — the Links tab searched by this domain (its server
@@ -225,7 +230,7 @@ export function ReferringDomainIntelligenceTable({
       align: "right",
       cell: (row) => (
         <span className="font-medium tabular-nums">
-          {row.opinion_score ?? "Awaiting"}
+          {row.opinion_score ?? "Not reviewed"}
         </span>
       ),
     },
@@ -247,18 +252,18 @@ export function ReferringDomainIntelligenceTable({
     {
       id: "opinion_summary",
       accessorKey: "opinion_summary",
-      header: "Why",
+      header: "Why we say that",
       sortable: false,
       filter: false,
       cell: (row) => (
         <span className="block max-w-96 text-xs text-muted-foreground">
-          {row.opinion_summary || "Awaiting source-page analysis"}
+          {row.opinion_summary || "Not reviewed yet"}
         </span>
       ),
     },
     {
       id: "provider_rank",
-      header: "Provider rank",
+      header: headerWithTooltip("Site authority", DOMAIN_RANK_EXPLAINER),
       sortable: false,
       filter: false,
       align: "right",
@@ -270,7 +275,7 @@ export function ReferringDomainIntelligenceTable({
   if (profiles.isError) {
     return (
       <InlineQueryError
-        what="referring-domain intelligence"
+        what="the websites that link to you"
         error={profiles.error}
         onRetry={() => void profiles.refetch()}
       />
@@ -289,11 +294,10 @@ export function ReferringDomainIntelligenceTable({
         state: table.state,
         onStateChange: table.onStateChange,
       }}
-      toolbar={{ searchPlaceholder: "Search domains, types, or opinions…" }}
+      toolbar={{ searchPlaceholder: "Search sites, kinds, or what we said…" }}
       detail={{
         title: (row) => row.display_domain,
-        description: (row) =>
-          row.opinion_summary || "First-party domain intelligence",
+        description: (row) => row.opinion_summary || "What we know about this site",
         render: (row) => (
           <DomainDetail row={row} onSaved={() => void profiles.refetch()} />
         ),
@@ -302,9 +306,8 @@ export function ReferringDomainIntelligenceTable({
       pageSizeOptions={[25, 50, 100]}
       emptyState={{
         icon: <Globe2 className="h-8 w-8 text-muted-foreground" />,
-        title: "No referring domains stored",
-        description:
-          "Run a backlink refresh to build this first-party source directory.",
+        title: "No referring domains yet",
+        description: backlinkEmptyHint("the websites that link to you"),
       }}
       className="min-h-0 flex-1"
     />

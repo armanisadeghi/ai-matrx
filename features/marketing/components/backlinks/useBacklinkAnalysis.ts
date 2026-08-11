@@ -9,6 +9,7 @@ import {
   SeoApiError,
 } from "@/features/marketing/seo/dataforseo/client";
 import type { SeoStreamEvent } from "@/features/marketing/seo/dataforseo/types";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
 import { toast } from "@/lib/toast";
@@ -19,6 +20,25 @@ import {
   startBacklinkEnrichmentRun,
   type BacklinkEnrichmentRunState,
 } from "./lib/enrichment-run";
+
+/**
+ * The owner is told plainly that reviewing is unavailable — but a missing SEO
+ * target is a MISCONFIGURATION, not a passing hiccup, and the friendly
+ * sentence would otherwise bury it forever. It screams into the Error
+ * Inspector so the defect is findable while the user is spared the plumbing.
+ */
+function reportMissingSeoTarget(callSite: string): void {
+  toast.error(
+    "Reviewing pages is unavailable right now. Please try again shortly.",
+  );
+  captureError({
+    source: "runtime-exception",
+    message:
+      "Backlink page review blocked: no AI Dream server target is configured for the selected environment (selectApiServiceTargets returned no seo target).",
+    userMessage: "Reviewing pages is unavailable right now.",
+    callSite,
+  });
+}
 
 function errorMessage(error: unknown): string {
   if (error instanceof SeoApiError) {
@@ -121,7 +141,7 @@ export function useBacklinkAnalysis({
             const initialRun =
               next[backlinkId] ??
               startBacklinkEnrichmentRun(
-                sourceUrl ? `Analyze ${sourceUrl}` : "Analyze backlink",
+                sourceUrl ? `Reading ${sourceUrl}` : "Reading the linking page",
               );
             const initial =
               options.commandRunId && !initialRun.runId
@@ -167,15 +187,13 @@ export function useBacklinkAnalysis({
     async (row: BacklinkObservationRow) => {
       if (runningIds.current.has(row.id)) return;
       if (!seoTargetUrl) {
-        toast.error(
-          "No AI Dream server is configured for the selected environment.",
-        );
+        reportMissingSeoTarget("useBacklinkAnalysis.analyzeRow");
         return;
       }
       runningIds.current.add(row.id);
       beginAnalysisRuns(
         [row.id],
-        () => `Analyze ${row.source_domain ?? row.source_url}`,
+        () => `Reading ${row.source_domain ?? row.source_url}`,
       );
 
       let commandRunId: string | null = null;
@@ -193,7 +211,9 @@ export function useBacklinkAnalysis({
         const session = await supabase.auth.getSession();
         if (session.error) throw session.error;
         const token = session.data.session?.access_token;
-        if (!token) throw new Error("Sign in before analyzing backlink data.");
+        if (!token) {
+          throw new Error("Please sign in again before reviewing pages.");
+        }
         const result = await enrichSiteBacklinks(
           seoTargetUrl,
           token,
@@ -208,9 +228,9 @@ export function useBacklinkAnalysis({
         );
         await refreshBacklinkReads();
         if (result.failed > 0) {
-          toast.warning("Backlink analysis finished with a failure.");
+          toast.warning("We could not finish reviewing that page.");
         } else {
-          toast.success("Backlink source-page analysis completed.");
+          toast.success("Done — that page has been reviewed.");
         }
       } catch (error) {
         const message = errorMessage(error);
@@ -235,16 +255,14 @@ export function useBacklinkAnalysis({
     async (limit: number) => {
       if (batchRunningRef.current) return;
       if (!seoTargetUrl) {
-        toast.error(
-          "No AI Dream server is configured for the selected environment.",
-        );
+        reportMissingSeoTarget("useBacklinkAnalysis.analyzeBatch");
         return;
       }
       batchRunningRef.current = true;
       setBatchAnalyzing(true);
       setBatchRun(
         startBacklinkEnrichmentRun(
-          `Analyze next ${limit} source page${limit === 1 ? "" : "s"}`,
+          `Reading the next ${limit} linking page${limit === 1 ? "" : "s"}`,
           "batch",
         ),
       );
@@ -280,13 +298,13 @@ export function useBacklinkAnalysis({
         await refreshBacklinkReads();
         if (result.failed > 0) {
           toast.warning(
-            `Backlink analysis finished with ${result.completed} completed and ${result.failed} failed.`,
+            `Reviewed ${result.completed} page${result.completed === 1 ? "" : "s"}; ${result.failed} could not be finished.`,
           );
         } else {
           toast.success(
             result.completed > 0
-              ? `Analyzed ${result.completed} source page${result.completed === 1 ? "" : "s"}.`
-              : "No due source pages remained to analyze.",
+              ? `Reviewed ${result.completed} page${result.completed === 1 ? "" : "s"}.`
+              : "Nothing new to review right now.",
           );
         }
       } catch (error) {
