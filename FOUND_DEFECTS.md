@@ -59,7 +59,7 @@ server-side and reports its verdict. Note the `/shapes/[kind]` owner control is
 NOT a fallback for platform kinds: `ShapeOwnerEditor` renders only for kinds the
 viewer owns, and system-org shapes are read-only there.
 
-### D165 — the Redux execution system cannot carry a `context_anchor` (2026-08-11)
+### D165 — the Redux execution system cannot carry a `context_anchor` (2026-08-11) — FIXED 2026-08-11
 
 `useRunAgent` (the one-shot `callApi` path) accepts `contextAnchor` +
 `organizationId` and puts them on the wire (`useRunAgent.ts:59`, `:103`); the
@@ -80,6 +80,18 @@ class-A migration in `docs/handoffs/live-run-streaming-sweep.md`.
 
 Fix: thread `contextAnchor` through `AgentExecutionRuntime` → instance state →
 `assembleRequest`, the same way `surfaceName` already travels.
+
+**FIXED** (with the slide-deck shape migration, same day). `contextAnchor` +
+`organizationId` are top-level `ManagedAgentOptions` — NOT inside `runtime`,
+because they are durable identity, not per-invocation UI data — and they travel
+`launchAgentExecution` → `createManualInstance` / `createInstanceFromShortcut` →
+`createInstance` → `ExecutionInstance.contextAnchor` → `assembleRequest`, which
+emits `request.context_anchor` BESIDE (never instead of) the ambient scope,
+exactly as the server's `bind_request_scope` expects. `runHeadlessAgentJson` and
+`useLiveAgentRun` pass both through, so a class-A migration keeps its anchor by
+adding two arguments. Both are optional everywhere: omit them and scope
+resolution is byte-identical to before. Both Research Outputs cards (slides +
+SEO) now pass them again.
 
 ### D164 — `keyword_set` and `keyword_variant_set` are byte-identical kinds (2026-08-11)
 

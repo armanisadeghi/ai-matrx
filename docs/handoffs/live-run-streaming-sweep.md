@@ -218,13 +218,13 @@ them.
 Still open on this file: `AnalysisList.tsx:703` truncates its live stream to 200
 characters.
 
-### 5. Podcasts — three generators, silent by design — B (+E for two), S–M each
+### 5. Podcasts — one generator left — B, S
 
-`useEpisodeArticles.ts:67` and `useEpisodeChapters.ts:49` still use
-`useRunAgent`, which **produces no `requestId` at all** — live rendering is
-structurally impossible from it, so this is class B: migrate to
-`useLiveAgentRun` first.
-Hosts: `features/podcasts/studio/components/{EpisodeContentStudio,EpisodeChaptersPanel}.tsx`.
+`useEpisodeArticles.ts:67` still uses `useRunAgent`, which **produces no
+`requestId` at all** — live rendering is structurally impossible from it, so
+this is class B: migrate to `useLiveAgentRun` first.
+Host: `features/podcasts/studio/components/EpisodeContentStudio.tsx`.
+(The other two are done — see below.)
 
 They split three ways once the payloads were actually read:
 
@@ -237,10 +237,21 @@ They split three ways once the payloads were actually read:
   floating `LiveRunWindow`, and each streamed card applies itself through the
   `episode_title` surface write target. Live-verified: `pc_episodes.title`
   changed on a real run. See `features/podcasts/FEATURE.md`.
-- **Chapters** — timestamped segments persisted to `pc_episodes.chapters`,
-  used to seek the player. Kind required (check `timeline.ts` for reuse).
-  **Chipped.** (A `media_chapters` kind has since appeared in
-  `system-kinds.ts` — check whether that chip already landed before starting.)
+- ~~**Chapters**~~ — **DONE 2026-08-11.** `timeline` was checked for reuse and
+  rejected (two-level roadmap with completion status vs a flat playback index),
+  so `media_chapters` + `media_chapter` were authored, applied, ledgered, and
+  activated through the real dual gate. `MediaChaptersBlock` is the one
+  component and the panel's hand-rolled `<ol>` is gone; the agent
+  (`podcast.chapter_marker` v6) emits the envelope; `useEpisodeChapters` runs
+  through `useLiveAgentRun` into the floating `LiveRunWindow`.
+  **Carry this forward to every remaining kind item here:** a real production
+  run proved the model emits keys in the schema's **declared property order**,
+  so a bound `output_schema` must put `__kind` FIRST — the canonical emitter
+  puts it last, and a discriminator that arrives last means the window cannot
+  route until the run is over. The prompt asking for it first does not fix it.
+  Remaining on this item: the browser leg (watching the window render live) was
+  blocked by dev-server contention and has not been run.
+  See `features/podcasts/FEATURE.md`.
 
 ### 6. Page-shifting live blocks — C, S each
 
@@ -327,7 +338,7 @@ Each of the six was read in code. Verdicts:
 | Flashcard quiz items — `makeQuizItems.ts` | **Not applicable — removed from the sweep.** It is the optional FALLBACK distractor source for sets too small to have sibling cards; the result feeds `buildQuizQuestions` and is never rendered. Genuinely headless plumbing. |
 | Research slide deck — `OutputsStudio.tsx` | **DONE 2026-08-11.** The kind already existed, so this was a MIGRATION: agent v3 emits the `presentation_deck` / `presentation_slide` envelope (schema-bounded — `theme.preset`, string-valued `extra`, no `stat` layouts, because `extra` is `record<string>`), the slot declares `output_kind` and is `use_latest` so no repin was needed, and the card runs live into the floating window. Verified on a real run: 12 slides, `Minimal` preset, no page shift. |
 | Research SEO package — `OutputsStudio.tsx:1215` | **DONE 2026-08-11.** Kind `seo_package` (+ child `faq_item`) authored, activated through `content_ir.set_kind_activation`, and consumed. The character-limit UX moved onto the kind component and gained a VERDICT (too long / too short / inside the window) instead of a bare count. |
-| Podcast chapters — `useEpisodeChapters.ts:49` | **Kind.** Timestamped segments persisted to `pc_episodes.chapters`, used to seek the player. Check `timeline.ts` for reuse first. → chip |
+| Podcast chapters — `useEpisodeChapters.ts:49` | **DONE 2026-08-11** — `media_chapters` kind, `timeline` rejected as a near-duplicate. See §5. |
 | Podcast title options — `useEpisodeTitleOptions.ts:70` | **DONE 2026-08-11.** Kind `episode_title_options` shipped end to end (schema + component + dual gate, agent v4, live posture, real-run verification). It went further than the precedent: the apply is a surface WRITE, not an agent launch, and the target is a component constant rather than payload data — see `features/content-ir/FEATURE.md`. |
 
 One focused session remains as a chip (podcast chapters); **title options, the

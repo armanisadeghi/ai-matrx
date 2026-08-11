@@ -288,6 +288,35 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-11 — **Outputs Studio: the slide deck streams as its content-IR kind —
+  and D165 is closed, so both live cards keep their topic anchor.** The deck
+  generator awaited its whole run behind `GeneratingNote`, `parseJsonLoose`d the
+  result, and hand-rendered `<Slideshow>` — the same double violation the SEO card
+  had. The shape already existed: the agent's `{title, slides[]}` IS
+  `presentation_deck` (`features/content-ir/kinds/presentation-deck.ts` → the
+  presentation artifact renderer), so **no new kind was created** — the gap was
+  that the agent emitted no `__kind` envelope and the surface bypassed the
+  pipeline. Agent instructions rewritten via `agent_author` (v3): a canonical
+  `{__kind:"presentation_deck", …, slides:[{__kind:"presentation_slide", …}]}`
+  object, held to the registered schema exactly — `theme.preset` (one of the ten
+  curated templates) instead of hand-picked hex colors, string-valued `extra`
+  only (`eyebrow` / `imagePrompt`), and no `stat`/`metrics` layouts, because those
+  need `extra.stats` **arrays** the kind's `record<string>` cannot carry. The slot
+  is `use_latest`, so every consumer picked up v3 with no repin; it declares
+  `output_kind="presentation_deck"` in aidream `client_slots.py` and on the live
+  row. The card runs `useLiveAgentRun({slotKey})` into the floating
+  `LiveRunWindow` — verified live on a real topic: the presentation renderer's
+  own loading state appeared as the envelope opened, then a 12-slide deck in the
+  "Minimal" preset, page never shifting. The persisted `meta.presentation` keeps
+  the envelope verbatim and replays through `KindInstanceRender`, so a reload
+  shows the identical component.
+  **D165 (the execution system could not carry a `context_anchor`) is FIXED in the
+  same change** — `contextAnchor` + `organizationId` are now top-level
+  `ManagedAgentOptions`, threaded to `assembleRequest`, and both research cards
+  pass them again. Also replaced this file's two `e instanceof Error` error
+  branches with `extractErrorMessage`: a failing `rs_topic_append_output` was
+  surfacing as the literal string "unknown error" instead of the RPC's real
+  message.
 - 2026-08-11 — **Outputs Studio: the SEO package streams live instead of sitting
   behind a spinner.** The card ran `useSlotRunner` (the one-shot `callApi` path,
   which yields no `requestId`), awaited the whole run showing only

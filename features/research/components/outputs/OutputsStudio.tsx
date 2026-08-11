@@ -21,6 +21,7 @@ import {
   ListTree,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1139,7 +1140,7 @@ function SlidesOutputCard({
       setViewing(asset);
       toast.success("Slide deck saved to outputs");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "unknown error");
+      setError(extractErrorMessage(e));
     }
   };
 
@@ -1269,6 +1270,7 @@ function SlidesOutputCard({
 
 function SeoOutputCard({
   topicId,
+  organizationId,
   reportMarkdown,
   hasReport,
   toneProfile,
@@ -1276,6 +1278,7 @@ function SeoOutputCard({
   onPersisted,
 }: {
   topicId: string;
+  organizationId?: string;
   reportMarkdown: string;
   hasReport: boolean;
   toneProfile: string;
@@ -1326,7 +1329,7 @@ function SeoOutputCard({
       seoRun.dismiss();
       toast.success("SEO package saved to outputs");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "unknown error");
+      setError(extractErrorMessage(e));
     }
   };
 
