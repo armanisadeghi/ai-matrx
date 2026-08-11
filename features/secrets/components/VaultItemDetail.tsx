@@ -1210,7 +1210,7 @@ function AddFieldPanel({
           />
           {fieldName && (
             <p className="whitespace-normal break-all text-[11px] text-muted-foreground">
-              {VAULT_LABELS.internalFieldId}:{" "}
+              {VAULT_LABELS.internalFieldKey}:{" "}
               <code className="font-mono">{fieldKey || "invalid"}</code>
             </p>
           )}

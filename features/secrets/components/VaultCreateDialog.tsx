@@ -1589,7 +1589,7 @@ function CustomBuilder({
                 />
                 {field.fieldName && (
                   <p className="whitespace-normal break-all text-[11px] text-muted-foreground">
-                    {VAULT_LABELS.internalFieldId}:{" "}
+                    {VAULT_LABELS.internalFieldKey}:{" "}
                     <code className="font-mono">
                       {customFieldKey(field) || "invalid"}
                     </code>

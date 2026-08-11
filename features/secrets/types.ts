@@ -244,7 +244,7 @@ export const VAULT_LABELS = {
   credentialType: "Credential type",
   description: "Description",
   fieldName: "Field name",
-  internalFieldId: "Internal field ID",
+  internalFieldKey: "Internal field key",
   runtimeKey: "Runtime key",
   value: "Value",
   valueAccess: "Who can reveal this value",
