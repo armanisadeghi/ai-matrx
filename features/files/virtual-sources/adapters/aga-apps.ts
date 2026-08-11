@@ -24,6 +24,7 @@ import type {
   VirtualSourceAdapter,
 } from "@/features/files/virtual-sources/types";
 import type { Database } from "@/types/database.types";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 const TAB_ID_PREFIX = "aga-app:";
 
@@ -114,7 +115,20 @@ const agaAppsAdapter: VirtualSourceAdapter = {
       .is("deleted_at", null)
       .eq("id", id)
       .maybeSingle();
-    if (error || !data) throw new Error(`Agent App not found: ${id}`);
+    if (error) {
+      throw new Error("We couldn't open this agent app. Please try again.");
+    }
+    // Zero rows is denied / deleted / stale-id and this adapter cannot tell
+    // which — the canonical honest throw says both and screams into the
+    // Error Inspector.
+    if (!data) {
+      throw recordUnavailable({
+        entity: "agent app",
+        reason: "unknown",
+        recordId: id,
+        relation: "app.definition",
+      });
+    }
     const row = data as AgaAppRow;
     const language = mapLanguage(row.component_language);
     return {
@@ -138,7 +152,9 @@ const agaAppsAdapter: VirtualSourceAdapter = {
     }
     const { data, error } = await query.select("updated_at").maybeSingle();
     if (error || !data) {
-      throw new Error(error?.message ?? "Agent App save failed (conflict?)");
+      throw new Error(
+        "We couldn't save this agent app. It may have been changed somewhere else — reload it and reapply your edit.",
+      );
     }
     return { updatedAt: (data as { updated_at: string }).updated_at };
   },
@@ -156,7 +172,11 @@ const agaAppsAdapter: VirtualSourceAdapter = {
       query = query.eq("updated_at", args.expectedUpdatedAt);
     }
     const { data, error } = await query.select("updated_at").maybeSingle();
-    if (error || !data) throw new Error(error?.message ?? "Rename failed");
+    if (error || !data) {
+      throw new Error(
+        "We couldn't rename this agent app. You may not be allowed to change it.",
+      );
+    }
     return { updatedAt: (data as { updated_at: string }).updated_at };
   },
 

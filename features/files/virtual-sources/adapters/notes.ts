@@ -25,6 +25,7 @@ import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { registerVirtualSource } from "@/features/files/virtual-sources/registry";
 import { NotesInlinePreview } from "./NotesInlinePreview";
 import type { Database } from "@/types/database.types";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   ListArgs,
   RenameArgs,
@@ -171,8 +172,16 @@ const notesAdapter: VirtualSourceAdapter = {
       .eq("id", id)
       .eq("created_by", userId)
       .maybeSingle();
-    if (error || !data) {
-      throw new Error(`Note not found: ${id}`);
+    if (error) {
+      throw new Error("We couldn't open this note. Please try again.");
+    }
+    if (!data) {
+      throw recordUnavailable({
+        entity: "note",
+        reason: "unknown",
+        recordId: id,
+        relation: "workbench.notes",
+      });
     }
     const name = data.label ?? "Untitled note";
     return {
@@ -203,7 +212,9 @@ const notesAdapter: VirtualSourceAdapter = {
       .select("updated_at")
       .maybeSingle();
     if (error || !data) {
-      throw new Error(error?.message ?? "Note write failed");
+      throw new Error(
+        "We couldn't save this note. It may have been edited somewhere else — reload it and reapply your change.",
+      );
     }
     return { updatedAt: data.updated_at ?? update.updated_at };
   },
@@ -225,7 +236,7 @@ const notesAdapter: VirtualSourceAdapter = {
       .select("updated_at")
       .maybeSingle();
     if (error || !data) {
-      throw new Error(error?.message ?? "Note rename failed");
+      throw new Error("We couldn't rename this note. Please try again.");
     }
     return { updatedAt: data.updated_at ?? update.updated_at };
   },
@@ -251,7 +262,7 @@ const notesAdapter: VirtualSourceAdapter = {
       .select("updated_at")
       .maybeSingle();
     if (error || !data) {
-      throw new Error(error?.message ?? "Note move failed");
+      throw new Error("We couldn't move this note. Please try again.");
     }
     return { updatedAt: data.updated_at ?? update.updated_at };
   },
@@ -289,7 +300,7 @@ const notesAdapter: VirtualSourceAdapter = {
         .select("id, name")
         .maybeSingle();
       if (error || !data) {
-        throw new Error(error?.message ?? "Folder create failed");
+        throw new Error("We couldn't create that folder. Please try again.");
       }
       return {
         id: folderVidFromName(data.name ?? args.name),
@@ -320,7 +331,7 @@ const notesAdapter: VirtualSourceAdapter = {
       .select("id, label, updated_at")
       .maybeSingle();
     if (error || !data) {
-      throw new Error(error?.message ?? "Note create failed");
+      throw new Error("We couldn't create that note. Please try again.");
     }
     return {
       id: data.id,

@@ -80,6 +80,7 @@ import {
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MobilePanelShell, useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { buildRagDataStoresContextData } from "@/features/rag/agent-context/buildRagDataStoresContextData";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 /** Canonical `ui_surface.name` this page emits. */
 const RAG_DATA_STORES_SURFACE = "matrx-user/rag-data-stores";
@@ -738,11 +739,19 @@ function StoreDetailPanel({
     );
   }
   if (detail.error || !detail.store) {
+    // A zero-row read is denied / deleted / never existed / signed out, and
+    // this page cannot tell them apart — it used to assert the last one. The
+    // gate asks the platform, names the owner when it may, and offers
+    // Request access or a door back.
     return (
-      <div className="m-6 flex items-center gap-2 text-sm text-destructive">
-        <AlertCircle className="h-4 w-4" />{" "}
-        {detail.error ?? "Data store not found"}
-      </div>
+      <AccessGate
+        token="data_store"
+        id={storeId}
+        error={detail.readError}
+        onRetry={detail.refresh}
+        fallbackHref="/rag/data-stores"
+        fallbackLabel="All data stores"
+      />
     );
   }
   const s = detail.store;

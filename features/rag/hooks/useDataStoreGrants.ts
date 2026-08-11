@@ -63,7 +63,13 @@ export async function fetchDataStoreGrants(
     "fn_list_data_store_grants",
     { p_store_id: storeId },
   );
-  if (error) throw new Error(error.message);
+  // The RPC answers only the store's owner or a super-admin; anyone else gets
+  // a refusal that must not be shown verbatim.
+  if (error) {
+    throw new Error(
+      "We couldn't load who this data store is shared with. You may not be allowed to manage its sharing.",
+    );
+  }
   return ((data ?? []) as RpcGrantRow[]).map(toGrant);
 }
 

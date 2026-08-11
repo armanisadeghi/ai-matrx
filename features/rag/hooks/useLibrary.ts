@@ -255,7 +255,7 @@ export function useLibrary(opts: UseLibraryOptions = {}) {
           },
         );
         if (cancelled) return;
-        if (rpcError) throw new Error(rpcError.message);
+        if (rpcError) throw new Error("We couldn't load your library.");
         const resp = (data ?? null) as ApiListResponse | null;
         const list = Array.isArray(resp?.documents) ? resp.documents : [];
         setDocs(list.map(mapSummary));
@@ -342,7 +342,7 @@ export function useLibrarySummary(
           "rag_library_summary_totals",
           { p_organization_id: orgId ?? undefined },
         );
-        if (rpcError) throw new Error(rpcError.message);
+        if (rpcError) throw new Error("We couldn't load your library totals.");
         const totals = (data ?? null) as ApiSummaryTotals | null;
         if (!cancelled && totals) setSummary(mapSummaryTotals(totals));
       } catch (err) {
@@ -393,6 +393,8 @@ export function useLibraryDoc(processedDocumentId: string | null) {
   const [doc, setDoc] = useState<LibraryDocDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The raw read failure, for `<AccessGate error={…}/>`. */
+  const [readError, setReadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const prevIdRef = useRef<string | null>(null);
   const requestSeqRef = useRef(0);
@@ -402,6 +404,7 @@ export function useLibraryDoc(processedDocumentId: string | null) {
       setDoc(null);
       setLoading(false);
       setError(null);
+      setReadError(null);
       prevIdRef.current = null;
       return undefined;
     }
@@ -414,6 +417,7 @@ export function useLibraryDoc(processedDocumentId: string | null) {
     const requestSeq = ++requestSeqRef.current;
     setLoading(true);
     setError(null);
+    setReadError(null);
     if (switchingDoc) setDoc(null);
 
     (async () => {
@@ -426,10 +430,15 @@ export function useLibraryDoc(processedDocumentId: string | null) {
           })
           .abortSignal(ctrl.signal);
         if (cancelled || requestSeq !== requestSeqRef.current) return;
-        if (rpcError) throw new Error(rpcError.message);
+        // The raw PostgREST text is captured by the client-wide proxy; the
+        // user never reads it.
+        if (rpcError) throw new Error("We couldn't load this document.");
         if (!data) {
+          // Zero rows: denied / deleted / stale id / signed out. Reported as
+          // absent with no error so the surface can render
+          // <AccessGate token="processed_document"/> instead of guessing.
           setDoc(null);
-          setError("Document not found");
+          setReadError(null);
           return;
         }
         try {
@@ -444,8 +453,9 @@ export function useLibraryDoc(processedDocumentId: string | null) {
         if (cancelled) return;
         if (requestSeq !== requestSeqRef.current) return;
         setDoc(null);
+        setReadError(err);
         setError(
-          (err as { message?: string })?.message ?? "Failed to load document",
+          (err as { message?: string })?.message ?? "We couldn't load this document.",
         );
       } finally {
         if (!cancelled && requestSeq === requestSeqRef.current) {
@@ -461,5 +471,5 @@ export function useLibraryDoc(processedDocumentId: string | null) {
   }, [processedDocumentId, reloadKey]);
 
   const reload = useCallback(() => setReloadKey((n) => n + 1), []);
-  return { doc, loading, error, reload };
+  return { doc, loading, error, readError, reload };
 }

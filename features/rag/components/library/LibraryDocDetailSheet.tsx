@@ -67,6 +67,7 @@ import type { StageName } from "@/features/rag/api/stages";
 import type { ProcessingJob } from "@/features/rag/hooks/useProcessingRunner";
 import { ProcessingJobView } from "./ProcessingJobView";
 import { KnowledgeAssetPanel } from "./KnowledgeAssetPanel";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 function sourceHref(sourceKind: string, sourceId: string): string {
   const id = encodeURIComponent(sourceId);
@@ -139,7 +140,8 @@ export function LibraryDocDetailSheet({
   onCancelJob,
   onDismissJob,
 }: LibraryDocDetailSheetProps) {
-  const { doc, loading, error, reload } = useLibraryDoc(processedDocumentId);
+  const { doc, loading, error, readError, reload } =
+    useLibraryDoc(processedDocumentId);
   const openFilePreview = useOpenFilePreviewWindow();
   const openCitation = useOpenCitation();
   const lastExternalReloadKeyRef = useRef(externalReloadKey);
@@ -175,7 +177,11 @@ export function LibraryDocDetailSheet({
         .from("processed_documents")
         .update({ name: renameValue.trim() })
         .eq("id", doc.id);
-      if (updateError) throw new Error(updateError.message);
+      if (updateError) {
+        throw new Error(
+          "We couldn't rename this document. Only its owner or a curator can change it.",
+        );
+      }
       toast.success("Document renamed");
       setRenameOpen(false);
       reload();
@@ -198,7 +204,11 @@ export function LibraryDocDetailSheet({
           "fn_delete_library_document_and_source",
           { p_id: doc.id },
         );
-        if (rpcError) throw new Error(rpcError.message);
+        if (rpcError) {
+          throw new Error(
+            "We couldn't delete this file and its documents. You may not be allowed to delete them.",
+          );
+        }
         const result = data as unknown as {
           deleted_documents?: number;
           deleted_chunks?: number;
@@ -215,7 +225,11 @@ export function LibraryDocDetailSheet({
           "fn_delete_library_document",
           { p_id: doc.id },
         );
-        if (rpcError) throw new Error(rpcError.message);
+        if (rpcError) {
+          throw new Error(
+            "We couldn't delete this document. You may not be allowed to delete it.",
+          );
+        }
         const result = data as unknown as {
           deleted_chunks?: number;
         } | null;
@@ -366,15 +380,21 @@ export function LibraryDocDetailSheet({
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-32 w-full" />
           </div>
-        ) : error && !doc ? (
-          <div className="flex flex-col items-center justify-center gap-3 p-8 text-center">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button size="sm" variant="outline" onClick={reload}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1" />
-              Retry
-            </Button>
+        ) : !doc ? (
+          /* Nothing loaded. A zero-row read is denied / deleted / never
+           * existed / signed out — the gate resolves which and offers the way
+           * forward, instead of this panel asserting one. */
+          <div className="min-h-0 flex-1 overflow-auto">
+            <AccessGate
+              token="processed_document"
+              id={processedDocumentId ?? ""}
+              error={readError}
+              onRetry={reload}
+              fallbackHref="/rag/library"
+              fallbackLabel="Library"
+            />
           </div>
-        ) : doc ? (
+        ) : (
           <>
             {error ? (
               <div className="mx-6 mt-3 flex items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
@@ -902,7 +922,7 @@ export function LibraryDocDetailSheet({
               </TabsContent>
             </Tabs>
           </>
-        ) : null}
+        )}
       </MatrxDynamicPanelHost>
 
       {/* Rename dialog */}
@@ -1113,7 +1133,7 @@ function SheetFullPagePreviews({
           { p_id: documentId, p_page_index: pageIndex },
         );
         if (cancelled) return;
-        if (rpcError) throw new Error(rpcError.message);
+        if (rpcError) throw new Error("We couldn't load this page's text.");
         const page = data as unknown as {
           cleaned_text: string;
           raw_text: string;
@@ -1258,7 +1278,11 @@ function SheetChunksPanel({
           { p_id: documentId, p_limit: limit, p_offset: 0 },
         );
         if (cancelled) return;
-        if (rpcError) throw new Error(rpcError.message);
+        if (rpcError) {
+          throw new Error(
+            `We couldn't load this document's ${RAG_VOCAB.segmentsShort.toLowerCase()}.`,
+          );
+        }
         const resp = data as unknown as { chunks: ApiChunkRow[] } | null;
         setRows(Array.isArray(resp?.chunks) ? resp.chunks : []);
       } catch (err) {

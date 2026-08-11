@@ -31,6 +31,7 @@ import type {
   VirtualSourceAdapter,
 } from "@/features/files/virtual-sources/types";
 import type { Database } from "@/types/database.types";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 const TAB_ID_PREFIX = "code-file:";
 
@@ -202,8 +203,16 @@ const codeFilesAdapter: VirtualSourceAdapter = {
       .is("deleted_at", null)
       .eq("id", id)
       .maybeSingle();
-    if (error || !data) {
-      throw new Error(`Code file not found: ${id}`);
+    if (error) {
+      throw new Error("We couldn't open this code file. Please try again.");
+    }
+    if (!data) {
+      throw recordUnavailable({
+        entity: "code file",
+        reason: "unknown",
+        recordId: id,
+        relation: "code.code_files",
+      });
     }
     const row = data as CodeFileRow;
     let content = row.content;
@@ -242,7 +251,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     }
     const { data, error } = await query.select("updated_at").maybeSingle();
     if (error) {
-      throw new Error(error.message || "Code file save failed");
+      throw new Error("We couldn't save this code file. Please try again.");
     }
     if (!data) {
       throw new Error(
@@ -339,7 +348,9 @@ const codeFilesAdapter: VirtualSourceAdapter = {
         .select(FOLDER_LIST_COLUMNS)
         .maybeSingle();
       if (error || !data) {
-        throw new Error(error?.message ?? "Folder create failed");
+        throw new Error(
+          "We couldn't create that folder. Please try again.",
+        );
       }
       const row = data as CodeFolderRow;
       return {
@@ -361,7 +372,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
       .select(FILE_LIST_COLUMNS)
       .maybeSingle();
     if (error || !data) {
-      throw new Error(error?.message ?? "Code file create failed");
+      throw new Error("We couldn't create that code file. Please try again.");
     }
     const row = data as CodeFileRow;
     return {

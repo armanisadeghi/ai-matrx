@@ -22,7 +22,18 @@ export async function forkProcessedDocument(sourceId: string): Promise<string> {
   const { data, error } = await supabase.rpc("fork_processed_document", {
     p_source_id: sourceId,
   });
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("fork returned no document id");
+  // The definer RPC refuses when the caller's grant doesn't reach the source.
+  // The raw PostgREST text is captured by the client-wide proxy; the user gets
+  // a sentence we wrote.
+  if (error) {
+    throw new Error(
+      "We couldn't make your own copy of this document. You may not have access to it any more.",
+    );
+  }
+  if (!data) {
+    throw new Error(
+      "We couldn't make your own copy of this document. Please try again.",
+    );
+  }
   return data as string;
 }

@@ -11,11 +11,13 @@
  * Dropbox-style sidebar + table + preview-pane layout). Those routes are
  * for browsing; this route is for working on one file.
  *
- * Server-side: verify the file exists + is visible to the user. If not,
- * throw `notFound()` so the route's `not-found.tsx` boundary handles it.
+ * Server-side: verify the file is readable by this user. When it isn't, the
+ * route names the record and calls `forbidden()`, so the access gate explains
+ * WHY (denied / deleted / missing / signed out) instead of guessing.
  */
 
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { createClient } from "@/utils/supabase/server";
 import { filesDb } from "@/features/files/filesDb";
 import { SingleFileShell } from "@/features/files/components/surfaces/single-file/SingleFileShell";
@@ -56,5 +58,20 @@ export default async function CloudFileDetailPage({ params }: PageProps) {
     }
   }
 
-  notFound();
+  // Zero rows is denied / deleted / never existed / signed out. This page used
+  // to send every one of them to `not-found.tsx`, which asserted "This file may
+  // have been deleted or you no longer have access" — a guess, with no way
+  // forward and no way to ask. The gate resolves the TRUE state against the
+  // platform and offers Request access (or an honest "deleted" / "sign in")
+  // plus a door back.
+  return (
+    <div className="h-full overflow-hidden">
+      <AccessGate
+        token="file"
+        id={fileId}
+        fallbackHref="/files/all"
+        fallbackLabel="All files"
+      />
+    </div>
+  );
 }

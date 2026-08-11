@@ -544,8 +544,11 @@ export const createFolder = createAsyncThunk<
   if (arg.parentId !== null) {
     const parent = getState().cloudFiles.foldersById[arg.parentId];
     if (!parent) {
+      // The parent isn't in this view's slice — a stale tree, not a missing
+      // folder. Say what the user can do; the id stays out of the sentence
+      // and in the rejected-thunk capture.
       throw new Error(
-        `Cannot create folder: parent folder ${arg.parentId} not found in local state.`,
+        "We couldn't create the folder here — this view is out of date. Refresh and try again.",
       );
     }
     folderPath = `${parent.folderPath}/${folderName}`;
@@ -607,7 +610,10 @@ export const updateFolder = createAsyncThunk<
 >("cloudFiles/updateFolder", async (arg, { dispatch, getState }) => {
   const state = getState();
   const folder = state.cloudFiles.foldersById[arg.folderId];
-  if (!folder) throw new Error(`Folder not found: ${arg.folderId}`);
+  if (!folder)
+    throw new Error(
+      "We couldn't update that folder — this view is out of date. Refresh and try again.",
+    );
 
   const requestId = newRequestId();
   registerRequest({
@@ -661,7 +667,7 @@ export const updateFolder = createAsyncThunk<
       const newParent = state.cloudFiles.foldersById[newParentId];
       if (!newParent) {
         throw new Error(
-          `Cannot move folder: new parent ${newParentId} not found in local state.`,
+          "We couldn't move the folder there — this view is out of date. Refresh and try again.",
         );
       }
       targetFolderPath = `${newParent.folderPath}/${newName}`;
@@ -1085,7 +1091,10 @@ export const renameFile = createAsyncThunk<void, RenameFileArg, ThunkApi>(
   "cloudFiles/rename",
   async ({ fileId, newName }, { dispatch, getState }) => {
     const record = getFileFromState(getState(), fileId);
-    if (!record) throw new Error(`File not found: ${fileId}`);
+    if (!record)
+      throw new Error(
+        "We couldn't find that file in this view. Refresh and try again.",
+      );
 
     const requestId = newRequestId();
     // Per-resource op sequence — guards against an older response clobbering a
@@ -1145,7 +1154,10 @@ export const moveFile = createAsyncThunk<void, MoveFileArg, ThunkApi>(
   "cloudFiles/move",
   async ({ fileId, newParentFolderId }, { dispatch, getState }) => {
     const record = getFileFromState(getState(), fileId);
-    if (!record) throw new Error(`File not found: ${fileId}`);
+    if (!record)
+      throw new Error(
+        "We couldn't find that file in this view. Refresh and try again.",
+      );
     const oldParentId = record.parentFolderId;
     const requestId = newRequestId();
     const seq = beginResourceOp(fileId);
@@ -1240,7 +1252,10 @@ export const updateFileMetadata = createAsyncThunk<
   "cloudFiles/updateMetadata",
   async ({ fileId, patch }, { dispatch, getState }) => {
     const record = getFileFromState(getState(), fileId);
-    if (!record) throw new Error(`File not found: ${fileId}`);
+    if (!record)
+      throw new Error(
+        "We couldn't find that file in this view. Refresh and try again.",
+      );
 
     const requestId = newRequestId();
     const seq = beginResourceOp(fileId);

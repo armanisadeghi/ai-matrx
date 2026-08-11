@@ -31,6 +31,7 @@ import type { Note } from "@/features/notes/types";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
 import type { InlinePreviewProps } from "@/features/files/virtual-sources/types";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 // Lazy-load the editor — it pulls in MarkdownStream + TuiEditor which are
 // heavy. Cloud-files preview pane stays light until the user actually clicks
@@ -72,7 +73,11 @@ const DEFAULT_MODE: EditorMode = "split";
 export function NotesInlinePreview({ id }: InlinePreviewProps) {
   const [note, setNote] = useState<Note | null>(null);
   const [content, setContent] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+  // A load failure is never explained here: a zero-row read is denied /
+  // deleted / stale-id / signed-out, and this panel cannot tell them apart.
+  // It hands the raw outcome to <AccessGate>, which asks the platform.
+  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>(DEFAULT_MODE);
   const lastSavedContent = useRef<string>("");
@@ -83,31 +88,28 @@ export function NotesInlinePreview({ id }: InlinePreviewProps) {
     let cancelled = false;
     setNote(null);
     setContent("");
-    setError(null);
+    setFailure(null);
     void (async () => {
       try {
         const fetched = await fetchNoteById(id);
         if (cancelled) return;
         if (!fetched) {
-          setError("Note not found.");
+          // Zero rows, no error — the silent-RLS case the gate resolves.
+          setFailure({ error: null });
           return;
         }
         setNote(fetched);
         setContent(fetched.content ?? "");
         lastSavedContent.current = fetched.content ?? "";
       } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Failed to load note.",
-          );
-        }
+        if (!cancelled) setFailure({ error: err });
       }
     })();
     return () => {
       cancelled = true;
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [id]);
+  }, [id, attempt]);
 
   // Debounced save. The cloud-files preview pane shouldn't fight notes-v2's
   // own auto-save (this writes through the same `notesService.updateNote`
@@ -153,10 +155,17 @@ export function NotesInlinePreview({ id }: InlinePreviewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note?.id]);
 
-  if (error) {
+  if (failure) {
     return (
-      <div className="flex h-full w-full items-center justify-center p-6 text-sm text-destructive">
-        {error}
+      <div className="h-full w-full overflow-auto">
+        <AccessGate
+          token="note"
+          id={id}
+          error={failure.error}
+          onRetry={() => setAttempt((n) => n + 1)}
+          fallbackHref="/notes"
+          fallbackLabel="All notes"
+        />
       </div>
     );
   }

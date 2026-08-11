@@ -199,7 +199,11 @@ export function LibraryPage() {
         "fn_bulk_delete_library_documents",
         { p_status: status },
       );
-      if (rpcError) throw new Error(rpcError.message);
+      if (rpcError) {
+        throw new Error(
+          "We couldn't delete those documents. Some of them may not be yours to delete.",
+        );
+      }
       const result = data as unknown as {
         deleted_documents?: number;
         deleted_chunks?: number;
@@ -327,14 +331,22 @@ export function LibraryPage() {
           "fn_delete_library_document_and_source",
           { p_id: doc.id },
         );
-        if (rpcError) throw new Error(rpcError.message);
+        if (rpcError) {
+          throw new Error(
+            "We couldn't delete this file and its documents. You may not be allowed to delete them.",
+          );
+        }
         toast.success(`Moved "${doc.name}" and its documents to trash`);
       } else {
         const { error: rpcError } = await ragDb(supabase).rpc(
           "fn_delete_library_document",
           { p_id: doc.id },
         );
-        if (rpcError) throw new Error(rpcError.message);
+        if (rpcError) {
+          throw new Error(
+            "We couldn't delete this document. You may not be allowed to delete it.",
+          );
+        }
         toast.success(`Moved "${doc.name}" to trash`);
       }
       setRefreshKey((n) => n + 1);

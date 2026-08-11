@@ -97,7 +97,7 @@ export async function printImage(
       const img = doc.querySelector("img");
       if (!img) {
         window.clearTimeout(timeoutId);
-        fail(new Error("print-image: image element not found"));
+        fail(new Error("print-image: the print document rendered no <img>"));
         return;
       }
 

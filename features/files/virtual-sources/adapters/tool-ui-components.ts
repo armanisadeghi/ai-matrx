@@ -24,6 +24,7 @@ import type {
 } from "@/features/files/virtual-sources/types";
 import { VirtualSourceError } from "@/features/files/virtual-sources/errors";
 import type { Database } from "@/types/database.types";
+import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 
 const TAB_ID_PREFIX = "tool-ui:";
 
@@ -183,7 +184,15 @@ const toolUiAdapter: VirtualSourceAdapter = {
       .eq("id", id)
       .maybeSingle();
     if (error || !data) {
-      throw new VirtualSourceError("not_found", "read", `Tool UI not found: ${id}`);
+      throw new VirtualSourceError(
+        "not_found",
+        "read",
+        // Zero rows is denied / deleted / stale-id; the canonical sentence
+        // says both possibilities rather than asserting one.
+        error
+          ? "We couldn't open this tool UI. Please try again."
+          : recordUnavailableMessage("tool UI", "unknown"),
+      );
     }
     const row: ToolUiRow = data;
     const language = mapLanguage(row.language);
@@ -220,7 +229,9 @@ const toolUiAdapter: VirtualSourceAdapter = {
     }
     const { data, error } = await query.select("updated_at").maybeSingle();
     if (error || !data) {
-      throw new Error(error?.message ?? "Tool UI save failed (conflict?)");
+      throw new Error(
+        "We couldn't save this tool UI. It may have been changed somewhere else — reload it and reapply your edit.",
+      );
     }
     return { updatedAt: (data as { updated_at: string }).updated_at };
   },

@@ -106,7 +106,11 @@ export function LibraryTrashSheet({
           "fn_restore_library_document",
           { p_id: row.id },
         );
-        if (error) throw new Error(error.message);
+        if (error) {
+          throw new Error(
+            "We couldn't restore this document. You may not be allowed to restore it.",
+          );
+        }
         toast.success(`Restored "${row.name ?? "document"}"`);
       }
       await finishMutation();
@@ -130,7 +134,11 @@ export function LibraryTrashSheet({
       const { error } = await ragDb(supabase).rpc("fn_purge_library_document", {
         p_id: row.id,
       });
-      if (error) throw new Error(error.message);
+      if (error) {
+        throw new Error(
+          "We couldn't permanently delete this document. You may not be allowed to delete it.",
+        );
+      }
       toast.success(`Permanently deleted "${row.name ?? "document"}"`);
       await finishMutation();
     } catch (err) {

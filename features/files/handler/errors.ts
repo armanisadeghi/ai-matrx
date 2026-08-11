@@ -55,7 +55,13 @@ export class FileExpiredError extends FileHandlerError {
 
 export class FileAccessDeniedError extends FileHandlerError {
   constructor(
-    message = "You do not have access to this file",
+    // Thrown ONLY on a real 403 from our own file server (resolver.ts,
+    // intelligence/refresh.ts) — a proven refusal, not a guess. The sentence
+    // stays plain so a surface that renders it verbatim never implies more
+    // than the server actually said; a surface that can do better should
+    // render `<AccessGate token="file" id={fileId}/>`, which names the owner
+    // and offers a request.
+    message = "This file isn't available to you.",
     opts?: { fileId?: string },
   ) {
     super("access_denied", message, opts);
@@ -64,7 +70,10 @@ export class FileAccessDeniedError extends FileHandlerError {
 }
 
 export class FileNotFoundError extends FileHandlerError {
-  constructor(message = "File not found", opts?: { fileId?: string }) {
+  // A 404 from the file server. It proves the server could not retrieve the
+  // file — NOT that the file was deleted (that is `FileDeletedError`, which
+  // has a `deleted_at` to point at) and not that it never existed.
+  constructor(message = "We couldn't retrieve this file.", opts?: { fileId?: string }) {
     super("not_found", message, opts);
     this.name = "FileNotFoundError";
   }

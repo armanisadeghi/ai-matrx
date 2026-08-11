@@ -21,6 +21,7 @@ import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
 import { requestRename } from "@/features/files/components/core/RenameDialog/RenameHost";
@@ -229,20 +230,32 @@ export function FilePreview({
   }, [file, capability, actions, router, fileId, dispatch]);
 
   if (!file) {
-    const message =
-      ensure.status === "loading" || ensure.status === "idle"
-        ? "Loading…"
-        : ensure.status === "error"
-          ? "Couldn't load this file."
-          : "File not found.";
+    if (ensure.status === "loading" || ensure.status === "idle") {
+      return (
+        <div
+          className={cn(
+            "flex h-full w-full items-center justify-center text-sm text-muted-foreground",
+            className,
+          )}
+        >
+          Loading…
+        </div>
+      );
+    }
+    // The row didn't hydrate. That is one of four things — denied, deleted,
+    // never existed, or a signed-out session — and this surface cannot tell
+    // them apart, so it must not pick one. The gate asks the platform, names
+    // the owner when it may, and offers Request access or a door back.
     return (
-      <div
-        className={cn(
-          "flex h-full w-full items-center justify-center text-sm text-muted-foreground",
-          className,
-        )}
-      >
-        {message}
+      <div className={cn("h-full w-full overflow-auto", className)}>
+        <AccessGate
+          token="file"
+          id={fileId}
+          error={ensure.readError}
+          onRetry={ensure.retry}
+          fallbackHref="/files/all"
+          fallbackLabel="All files"
+        />
       </div>
     );
   }

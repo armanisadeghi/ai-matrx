@@ -215,12 +215,14 @@ export function PreviewPane({
               className="truncate text-sm font-medium"
               title={file?.fileName ?? ""}
             >
+              {/* The header only names the file. When the row didn't hydrate
+               * it says so plainly and leaves the WHY to the access gate the
+               * body renders (FileTabsBody → FilePreview) — two surfaces
+               * guessing separately is how the wrong reason gets asserted. */}
               {file?.fileName ??
-                (ensure.status === "error"
-                  ? "Couldn't load file"
-                  : ensure.status === "missing"
-                    ? "File not found"
-                    : "Loading…")}
+                (ensure.status === "error" || ensure.status === "missing"
+                  ? "Unavailable"
+                  : "Loading…")}
             </p>
             {/*
              * Lineage chips — silent when the file has no parent and no

@@ -16,6 +16,28 @@ import type {
   IamResourcePermissionRpcRow,
 } from "@/features/files/types";
 
+/**
+ * What the user reads when one of the three RPCs fails. The driver's own text
+ * ("permission denied for schema iam", "PGRST202 …") is never shown: the RPC
+ * refuses unless the caller has 'admin' on the resource, so the only honest
+ * thing to say is that the sharing settings didn't load or the change didn't
+ * stick. The raw PostgREST error is still captured in full by the client-wide
+ * proxy in `lib/diagnostics/supabaseErrorCapture.ts`, so nothing is lost — it
+ * just lands in the Error Inspector instead of in front of a person.
+ */
+const SHARING_UNAVAILABLE = {
+  file: {
+    list: "We couldn't load who this file is shared with. You may not be allowed to manage its sharing.",
+    grant: "We couldn't share this file. You may not be allowed to manage its sharing.",
+    revoke: "We couldn't remove that person's access to this file. You may not be allowed to manage its sharing.",
+  },
+  folder: {
+    list: "We couldn't load who this folder is shared with. You may not be allowed to manage its sharing.",
+    grant: "We couldn't share this folder. You may not be allowed to manage its sharing.",
+    revoke: "We couldn't remove that person's access to this folder. You may not be allowed to manage its sharing.",
+  },
+} as const;
+
 function parsePermissionRpcRows(data: unknown): IamResourcePermissionRpcRow[] {
   if (!Array.isArray(data)) return [];
   return data as unknown as IamResourcePermissionRpcRow[];
@@ -40,7 +62,7 @@ async function listPermissions(
       p_resource_id: resourceId,
     },
   );
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(SHARING_UNAVAILABLE[resourceType].list);
   return parsePermissionRpcRows(data);
 }
 
@@ -61,7 +83,7 @@ async function grantPermission(
       p_expires_at: body.expires_at ?? undefined,
     },
   );
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(SHARING_UNAVAILABLE[resourceType].grant);
   return parsePermissionRpcRow(data);
 }
 
@@ -83,7 +105,7 @@ async function revokePermission(
       p_grantee_type: granteeType === "group" ? "user" : granteeType,
     },
   );
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(SHARING_UNAVAILABLE[resourceType].revoke);
   return { deleted: Boolean(data) };
 }
 

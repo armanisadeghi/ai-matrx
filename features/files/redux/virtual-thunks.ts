@@ -398,7 +398,10 @@ export const writeAny = createAsyncThunk<void, WriteAnyArg, ThunkApi>(
       // version. Mirrors the existing CloudFileEditor save flow.
       const state = getState().cloudFiles;
       const record = state.filesById[id];
-      if (!record) throw new Error(`File not found: ${id}`);
+      if (!record)
+        throw new Error(
+          "We couldn't save — that file isn't loaded in this view. Refresh and try again.",
+        );
       const reUploaded = new File(
         [new Blob([content], { type: record.mimeType ?? "text/plain" })],
         record.fileName,

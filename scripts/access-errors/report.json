@@ -1,16 +1,15 @@
 {
   "generatedAt": "2026-08-11",
-  "total": 430,
+  "total": 410,
   "byKind": {
     "raw-supabase-message": 97,
-    "claims-deleted": 301,
-    "claims-denied": 32
+    "claims-deleted": 282,
+    "claims-denied": 31
   },
   "byFeature": {
     "lib": 65,
-    "features/marketing": 39,
+    "features/marketing": 41,
     "features/agents": 34,
-    "app/(core)": 21,
     "features/scope-system": 16,
     "features/administration": 14,
     "app/(dev)": 13,
@@ -54,7 +53,6 @@
     "features/podcasts": 2,
     "features/transcript-studio": 2,
     "features/war-room": 2,
-    "app/auth": 1,
     "features/agent-comparison": 1,
     "features/agent-shortcuts": 1,
     "features/context-menu-v3": 1,
@@ -84,132 +82,6 @@
       "line": 548,
       "kind": "claims-deleted",
       "snippet": "const propertyPattern = /Property '(.+?)' does not exist on type '(.+?)'/;"
-    },
-    {
-      "file": "app/(core)/agent-apps/templates/[mode]/page.tsx",
-      "line": 29,
-      "kind": "claims-deleted",
-      "snippet": "if (!option) return { title: \"Template Not Found\" };"
-    },
-    {
-      "file": "app/(core)/agents/[id]/v/[version]/page.tsx",
-      "line": 14,
-      "kind": "claims-deleted",
-      "snippet": "if (isNaN(versionNum)) return { title: \"Not Found\" };"
-    },
-    {
-      "file": "app/(core)/agents/shortcuts/edit/[id]/page.tsx",
-      "line": 93,
-      "kind": "claims-deleted",
-      "snippet": "entityLabel=\"Not found\""
-    },
-    {
-      "file": "app/(core)/data/[id]/not-found.tsx",
-      "line": 16,
-      "kind": "claims-deleted",
-      "snippet": "The table you're looking for doesn't exist or you don't have"
-    },
-    {
-      "file": "app/(core)/education/subjects/quick-math/[id]/page.tsx",
-      "line": 16,
-      "kind": "claims-deleted",
-      "snippet": "title: \"Math Problem Not Found - AI Matrx Education\","
-    },
-    {
-      "file": "app/(core)/invitations/organization/accept/[token]/page.tsx",
-      "line": 78,
-      "kind": "claims-deleted",
-      "snippet": "setError(\"Invitation not found or has already been used\");"
-    },
-    {
-      "file": "app/(core)/invitations/organization/accept/[token]/page.tsx",
-      "line": 84,
-      "kind": "claims-deleted",
-      "snippet": "setError(\"Invitation not found or has already been used\");"
-    },
-    {
-      "file": "app/(core)/invitations/organization/accept/[token]/page.tsx",
-      "line": 241,
-      "kind": "claims-deleted",
-      "snippet": "{error || \"Invitation not found\"}"
-    },
-    {
-      "file": "app/(core)/invitations/project/accept/[token]/page.tsx",
-      "line": 60,
-      "kind": "claims-deleted",
-      "snippet": "setError('Invitation not found or has already been used');"
-    },
-    {
-      "file": "app/(core)/invitations/project/accept/[token]/page.tsx",
-      "line": 66,
-      "kind": "claims-deleted",
-      "snippet": "setError('Invitation not found or has already been used');"
-    },
-    {
-      "file": "app/(core)/invitations/project/accept/[token]/page.tsx",
-      "line": 84,
-      "kind": "claims-deleted",
-      "snippet": "setError('Project not found');"
-    },
-    {
-      "file": "app/(core)/lists/[id]/page.tsx",
-      "line": 65,
-      "kind": "claims-deleted",
-      "snippet": "if (!list) return { title: \"List Not Found\" };"
-    },
-    {
-      "file": "app/(core)/marketing/sites/[siteId]/[...rest]/page.tsx",
-      "line": 44,
-      "kind": "claims-deleted",
-      "snippet": "error={site.error ?? new Error(\"Site not found\")}"
-    },
-    {
-      "file": "app/(core)/marketing/sites/[siteId]/page.tsx",
-      "line": 37,
-      "kind": "claims-deleted",
-      "snippet": "error={site.error ?? new Error(\"Site not found\")}"
-    },
-    {
-      "file": "app/(core)/podcast/[slug]/blog/page.tsx",
-      "line": 59,
-      "kind": "claims-deleted",
-      "snippet": "if (!result) return { title: \"Article Not Found\" };"
-    },
-    {
-      "file": "app/(core)/podcast/[slug]/feed.xml/route.ts",
-      "line": 91,
-      "kind": "claims-deleted",
-      "snippet": "return new Response('Podcast not found', {"
-    },
-    {
-      "file": "app/(core)/podcast/[slug]/page.tsx",
-      "line": 80,
-      "kind": "claims-deleted",
-      "snippet": "return { title: \"Episode Not Found\" };"
-    },
-    {
-      "file": "app/(core)/research/topics/[topicId]/layout.tsx",
-      "line": 25,
-      "kind": "claims-deleted",
-      "snippet": "title: \"Topic Not Found\","
-    },
-    {
-      "file": "app/(core)/research/topics/[topicId]/layout.tsx",
-      "line": 34,
-      "kind": "claims-deleted",
-      "snippet": "title: \"Topic Not Found\","
-    },
-    {
-      "file": "app/(core)/sandbox/[id]/page.tsx",
-      "line": 102,
-      "kind": "claims-deleted",
-      "snippet": "setError(\"Sandbox instance not found\");"
-    },
-    {
-      "file": "app/(core)/sandbox/[id]/page.tsx",
-      "line": 349,
-      "kind": "claims-deleted",
-      "snippet": "{error || \"This sandbox does not exist.\"}"
     },
     {
       "file": "app/(dev)/demos/api-tests/tool-testing/hooks/useSaveSample.ts",
@@ -360,12 +232,6 @@
       "line": 324,
       "kind": "claims-deleted",
       "snippet": "throw new Error(`Data with name '${dataName}' does not exist.`);"
-    },
-    {
-      "file": "app/auth/callback/admin/route.ts",
-      "line": 176,
-      "kind": "claims-denied",
-      "snippet": "\"Access denied. This login is restricted to administrators only.\","
     },
     {
       "file": "app/oauth/consent/ConsentClient.tsx",
@@ -1422,6 +1288,18 @@
       "line": 133,
       "kind": "claims-deleted",
       "snippet": "error={sitemap.error ?? new Error(\"Sitemap not found\")}"
+    },
+    {
+      "file": "features/marketing/components/sites/NewSiteForm.tsx",
+      "line": 162,
+      "kind": "claims-deleted",
+      "snippet": ": \"Register a site that doesn’t exist yet. You’ll land in Content Plan Setup to design its structure — crawl and search data can come later, once it’s live.\"}"
+    },
+    {
+      "file": "features/marketing/components/sites/NewSiteForm.tsx",
+      "line": 179,
+      "kind": "claims-deleted",
+      "snippet": "body: \"It doesn’t exist yet — start from a content plan.\","
     },
     {
       "file": "features/marketing/content-plan/components/NodePanel.tsx",

@@ -229,6 +229,8 @@ export function useDataStoreDetail(storeId: string | null) {
   const [members, setMembers] = useState<EnrichedMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The raw read failure, for `<AccessGate error={…}/>`. */
+  const [readError, setReadError] = useState<unknown>(null);
   const [bumper, setBumper] = useState(0);
 
   const refresh = useCallback(() => setBumper((b) => b + 1), []);
@@ -242,6 +244,7 @@ export function useDataStoreDetail(storeId: string | null) {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setReadError(null);
 
     (async () => {
       try {
@@ -253,7 +256,14 @@ export function useDataStoreDetail(storeId: string | null) {
         if (rpcError) throw rpcError;
         if (cancelled) return;
         if (!raw) {
-          throw new Error("data_store not found");
+          // Zero rows: denied / deleted / stale id / signed out. This hook
+          // cannot tell them apart and must not pick one — it reports the
+          // store as absent with no error, and the surface renders
+          // <AccessGate token="data_store"/>, which asks the platform.
+          setStore(null);
+          setMembers([]);
+          setReadError(null);
+          return;
         }
         const detail = raw as unknown as ApiDataStoreDetail;
         setStore(detailToStore(detail));
@@ -270,7 +280,8 @@ export function useDataStoreDetail(storeId: string | null) {
         );
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Could not load data store");
+        setReadError(e);
+        setError("We couldn't load this data store.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -391,6 +402,7 @@ export function useDataStoreDetail(storeId: string | null) {
     members,
     loading,
     error,
+    readError,
     refresh,
     addMember,
     removeMember,
