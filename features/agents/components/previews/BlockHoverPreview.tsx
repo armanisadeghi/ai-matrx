@@ -74,7 +74,9 @@ export function BlockHoverPreview({
 
   return (
     <HoverCard openDelay={openDelay} closeDelay={closeDelay}>
-      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
+      <HoverCardTrigger asChild>
+        <div className="inline-flex min-w-0">{children}</div>
+      </HoverCardTrigger>
       <HoverCardContent
         side={side}
         align={align}
