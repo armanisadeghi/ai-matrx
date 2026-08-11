@@ -269,7 +269,42 @@ internal platform use — never a washed-down user variant beside a private one:
   the guard reads `store.getState()` at call time rather than a render
   snapshot. The transcript, the mic, the connection, and the realtime tool set
   all stay unwritable — the record of what was said, device state, and what the
-  voice agent may reach, respectively).
+  voice agent may reach, respectively), and
+  `matrx-user/quick-tasks` (8 ask-policy targets across the overlay's TWO
+  owners — `quick_add_title` (draft) and `quick_create_task` (entity, a
+  `{title, description?, priority?, due_date?}` object) registered by
+  `QuickTasksMain`, plus `panel_task_title` / `_description` / `_priority` /
+  `_due_date` / `_labels` as DRAFTS and `panel_add_subtasks` as an ENTITY
+  action registered by `TaskDetailsPanel`. **THE reference for why an overlay
+  must not reuse a route surface's target NAMES.** This window floats over
+  whatever page the user is on, and `OverlayController` mounts it from
+  `DeferredSingletonCore` — an app-level singleton — so its provider registers
+  shallow and a ROUTE's provider can out-depth it. `applySurfaceWrite` resolves
+  a name against the deepest surface that DECLARES it, so had these been
+  spelled `task_title` / `task_description` like `matrx-user/tasks`, a write
+  meant for the window would land in `/tasks`'s `TaskEditorBody` behind it —
+  where the user who just confirmed the dialog cannot see it. Distinct
+  `panel_*` names make the owner unambiguous and each description names its
+  pane. `TaskDetailsPanel` is shared with `/tasks` and the Quick Tasks sheet,
+  so it registers only when a mount passes the new nullable `writeSurfaceName`
+  prop — the `quick-note-save` gating pattern, and the reason the other two
+  mounts of the same component offer an agent nothing. **Saving the panel is
+  deliberately NOT a target, and the reason generalizes:** `tasks` can offer
+  `save_task` because its draft lives in Redux and the save thunk re-reads the
+  store, but this panel's draft is local React state, so a save handler would
+  close over the render that registered it — stage a description and save in
+  one agent turn and the save can run against the PRE-staged values. Deleting
+  a task and toggling complete stay human; the hierarchy cascade
+  (organization / scope / project) and `selected_task_id` are navigation and
+  ownership context, not authored content, and the window emits the selected
+  ids without the lists to pick from; `search_query` / `show_all_projects` are
+  mechanical view state. `quick_add_title` closes the details pane before
+  staging, because the quick-add input only renders in the empty state and
+  staging into a box the user cannot see is worse than not staging at all. The
+  surface also gained flat `selected_task_*` read twins for the evidence loop,
+  emitted from the SAVED record — a staged panel edit does not echo back
+  through them, and both the manifest and the intro say so out loud rather
+  than letting an agent read a stale value as confirmation).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
