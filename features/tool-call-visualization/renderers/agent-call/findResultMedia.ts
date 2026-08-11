@@ -14,6 +14,27 @@ import type { MediaRef } from "@/features/files/types";
 const IMAGE_RESULT_KEYS = ["result", "image", "images", "output"] as const;
 
 /**
+ * The canonical media channel on an `agent_call` result: aidream's
+ * `AgentRunResult.media` → `[{file_id, mime_type, kind}]`. Identity only, by
+ * design — a signed URL is minted at handoff and never travels between parts of
+ * the platform. Read this BEFORE guessing at url-ish keys.
+ */
+function mediaFromChannel(result: Record<string, unknown>): MediaRef | null {
+  const media = result.media;
+  if (!Array.isArray(media)) return null;
+  for (const item of media) {
+    if (!item || typeof item !== "object") continue;
+    const entry = item as Record<string, unknown>;
+    const fileId = entry.file_id;
+    if (typeof fileId !== "string" || fileId.length === 0) continue;
+    const ref: MediaRef = { file_id: fileId };
+    if (typeof entry.mime_type === "string") ref.mime_type = entry.mime_type;
+    return ref;
+  }
+  return null;
+}
+
+/**
  * Returns the media the child agent produced, or null when the result carries
  * no image — the caller then falls back to the honest generic rendering rather
  * than inventing one.
@@ -23,6 +44,10 @@ export function findResultMedia(result: unknown): MediaRef | null {
   if (direct.kind === "media") return direct.ref;
 
   if (!isPlainObject(result)) return null;
+
+  // The declared channel beats every heuristic below it.
+  const declared = mediaFromChannel(result);
+  if (declared) return declared;
 
   for (const key of IMAGE_RESULT_KEYS) {
     if (!(key in result)) continue;

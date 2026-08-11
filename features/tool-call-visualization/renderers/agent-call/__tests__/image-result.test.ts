@@ -48,3 +48,36 @@ test("no image → null, so the caller falls back to the honest generic view", (
   expect(findResultMedia(null)).toBeNull();
   expect(findResultMedia({})).toBeNull();
 });
+
+// ── The canonical server shapes (aidream, 2026-08-11) ──────────────────────
+// A media agent hands back an IDENTITY, never a link: signed URLs are minted at
+// the moment of handoff to a third party and never travel between parts of the
+// platform. These two shapes are what agent_call now emits.
+
+test("the canonical image_ref envelope agent_call emits resolves", () => {
+  expect(
+    findResultMedia({
+      agent_id: "bcc69216-d4fa-4e28-a090-8a7749123bc5",
+      agent_name: "Matrx Image Ultra",
+      model_id: "0386fcae-1cf5-4d31-9a05-3b8ba61b2f3a",
+      kind: "image_ref",
+      media_ref: { file_id: FILE_ID, vision_class: null },
+      file_id: FILE_ID,
+      media_type: "image/png",
+    })?.file_id,
+  ).toBe(FILE_ID);
+});
+
+test("the AgentRunResult.media channel resolves and beats url guessing", () => {
+  const ref = findResultMedia({
+    agent_name: "Matrx Voice",
+    result: FILE_ID,
+    media: [{ file_id: FILE_ID, mime_type: "audio/mpeg", kind: "audio" }],
+  });
+  expect(ref?.file_id).toBe(FILE_ID);
+  expect(ref?.mime_type).toBe("audio/mpeg");
+});
+
+test("a media channel with no file_id is ignored, never faked", () => {
+  expect(findResultMedia({ media: [{ kind: "image", mime_type: "image/png" }] })).toBeNull();
+});
