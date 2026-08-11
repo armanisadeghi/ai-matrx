@@ -100,6 +100,17 @@ export const marketingRoutes = {
     brandId
       ? `/marketing/brands/${brandId}/sites/${siteId}/pages/${pageId}`
       : `/marketing/sites/${siteId}/pages/${pageId}`,
+  /** Theory-backed intervention ledger for one site. */
+  siteChanges: (
+    brandId: string | null | undefined,
+    siteId: string,
+    changeId?: string,
+  ) => {
+    const base = brandId
+      ? `/marketing/brands/${brandId}/sites/${siteId}/changes`
+      : `/marketing/sites/${siteId}/changes`;
+    return changeId ? `${base}?change=${encodeURIComponent(changeId)}` : base;
+  },
   crawlReports: (
     brandId: string | null | undefined,
     siteId: string,

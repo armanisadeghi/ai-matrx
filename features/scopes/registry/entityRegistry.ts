@@ -42,6 +42,7 @@ import {
   FileCode2,
   FilePen,
   FileText,
+  FlaskConical,
   Folder,
   FolderGit2,
   FolderKanban,
@@ -405,6 +406,11 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   seo_keyword: {
     Icon: Tag,
     labelPlural: "Keywords",
+  },
+  seo_change_set: {
+    Icon: FlaskConical,
+    labelPlural: "SEO Changes",
+    hrefFor: (id) => `/marketing/changes/${id}`,
   },
 
   // ─── Container display metadata ───────────────────────────────────────────
