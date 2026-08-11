@@ -3,7 +3,7 @@
 **Status:** Live (2026-08-11) · **Scoreboard:** `/administration/reporting/lint-debt`
 **Campaign handoff:** [`docs/handoffs/eslint-debt-campaign.md`](../../docs/handoffs/eslint-debt-campaign.md)
 
-`npx eslint . --quiet` reports **2,358 errors** in this repo (2,483 at first inventory). That number was
+`npx eslint . --quiet` reports **2,344 errors** in this repo (2,483 at first inventory). That number was
 doing active harm as a single number:
 
 - Feature branches "failed their lint gate" for debt that predated them by
@@ -48,9 +48,9 @@ that ships inside every repair brief:
 
 | Class | Meaning | Baseline (2026-08-11) |
 |---|---|---|
-| `bug` | Wrong at runtime today. Fix on sight. | 27 |
-| `correctness` | A real hazard class (crashes, cascading renders, torn refs, remounted subtrees) that is usually but not always live. | 2,230 |
-| `doctrine` | This repo's own architectural bans. Never silenced — the import or the shape changes. | 97 |
+| `bug` | Wrong at runtime today. Fix on sight. | **0** |
+| `correctness` | A real hazard class (crashes, cascading renders, torn refs, remounted subtrees) that is usually but not always live. | 2,234 |
+| `doctrine` | This repo's own architectural bans. Never silenced — the import or the shape changes. | 106 |
 | `style` | True idiom. Lowest priority; never worth a risky edit. | 4 |
 
 **A rule with no `RULE_CLASS` entry defaults to `style` AND is shouted about** —
@@ -62,26 +62,59 @@ Baseline by rule:
 
 | Rule | Class | Count |
 |---|---|---|
-| `react-hooks/rules-of-hooks` | bug | 27 |
 | `react-hooks/set-state-in-effect` | correctness | 1,105 |
-| `react-hooks/refs` | correctness | 589 |
+| `react-hooks/refs` | correctness | 591 |
 | `react-hooks/static-components` | correctness | 209 |
 | `react-hooks/immutability` | correctness | 122 |
 | `react-hooks/purity` | correctness | 97 |
+| `matrx/no-raw-agent-list-query` | doctrine | 1 |
 | `react-hooks/error-boundaries` | correctness | 42 |
 | `react-hooks/preserve-manual-memoization` | correctness | 38 |
 | `react-hooks/use-memo` | correctness | 25 |
 | `react/no-children-prop` | correctness | 2 |
 | `react-hooks/globals` | correctness | 1 |
-| `no-restricted-imports` | doctrine | 82 |
-| `no-restricted-syntax` | doctrine | 15 |
+| `no-restricted-imports` | doctrine | 86 |
+| `no-restricted-syntax` | doctrine | 19 |
 | `react/display-name` | style | 2 |
 | `react/jsx-no-comment-textnodes` | style | 2 |
 
-`react/jsx-key`, `@next/next/no-assign-module-variable` and
-`@next/next/no-html-link-for-pages` were cleared to zero on 2026-08-11 and no
-longer appear. They stay in `RULE_CLASS` — a rule at zero is one regression away
+`react/jsx-key`, `@next/next/no-assign-module-variable`,
+`@next/next/no-html-link-for-pages` and `react-hooks/rules-of-hooks` were all
+cleared to zero on 2026-08-11 and no longer appear — **the `bug` class is
+empty**. They stay in `RULE_CLASS` — a rule at zero is one regression away
 from being back, and an unclassified rule is a rule at the bottom of the list.
+
+## How much of `correctness` is actually broken today
+
+The count is big; the live damage is not. Measured 2026-08-11 by classifying
+every finding, not by reading the number:
+
+- **`set-state-in-effect` (1,107).** Only **61** are self-feeding — the effect
+  writes a value that is in its own dependency array, which is the shape that
+  can actually loop. **All 61 converge behind a guard or early return.** There
+  is currently no unguarded self-feeding effect in the tree. The freeze-loop
+  class this rule exists to catch is, today, already defended. The remaining
+  ~1,046 are the "derive it instead of storing it" idiom: real quality debt,
+  an extra render each, not a hang.
+- **`refs` (591).** Split by what the flagged line does: ~151 write a ref
+  during render (unsafe under concurrent rendering, benign in practice today),
+  ~26 read a ref into a value used for rendering — and of those only **~5
+  genuinely derive user-visible output** (an Undo button's `disabled`, a dirty
+  indicator, a progress readout). Those five are correct *by coincidence*: the
+  ref mutation happens to sit next to a state update that re-renders. Only 3
+  put a ref inside a dependency array (a dep that can never fire).
+- **`static-components` (209).** Mechanical and genuinely user-visible —
+  remounting a subtree loses focus, scroll and child state. **152 are in
+  product code**, not demos.
+
+**The findings are NOT mostly demo code.** By zone: 965 of the
+`set-state-in-effect` and 572 of the `refs` findings are in product paths;
+admin and `(dev)` demos together hold a small minority. Do not dismiss this
+backlog as "just the demos".
+
+Redo this analysis rather than trusting these numbers after a big sweep — the
+method is a one-off script over `report.json`, not a committed tool, precisely
+because the interesting question changes each time.
 
 ## The two bans every repair brief carries
 
@@ -167,3 +200,8 @@ doing it.
 - **2026-08-11** — First sweep: 2,483 → 2,358, real bugs 146 → 27. `jsx-key`,
   `no-assign-module-variable` and `no-html-link-for-pages` cleared entirely;
   `rules-of-hooks` 132 → 27. No `eslint-disable` added, no rule config changed.
+- **2026-08-11** — **`bug` class reaches 0.** `rules-of-hooks` 27 → 0
+  (2,358 → 2,344). Added the severity analysis above: of 2,234 `correctness`
+  findings, none is a live freeze loop and ~5 are confirmed user-visible bugs.
+  `doctrine` rose 97 → 106 from other work landing on main — the scoreboard
+  catching new debt is it working, not a regression in this campaign.
