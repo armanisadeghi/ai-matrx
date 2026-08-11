@@ -449,6 +449,22 @@ export interface OperationEntry {
    * how the FE resolves which agent is running (agent-set live highlight).
    */
   metadata?: Record<string, unknown> | null;
+  /**
+   * `sub_agent` only: `renderBlockOrder.length` at INIT. Blocks streamed from
+   * this ordinal until `blockEnd` (stamped at COMPLETION) came from the CHILD
+   * agent's wire (collaboration `agent_call` — the child streams tokens on the
+   * parent's stream with no per-chunk attribution). The transcript walker
+   * hides that range and the owning tool card renders it instead; the child's
+   * text never persists to the parent conversation, so hiding it also makes
+   * the live view match what a reload shows.
+   */
+  blockAnchor?: number;
+  /**
+   * `sub_agent` only: the owning `agent_call` tool call id, stamped at INIT by
+   * matching the request's most recent non-terminal `agent_call` lifecycle
+   * entry. Lets the tool card find "its" child stream.
+   */
+  toolCallId?: string | null;
 }
 
 export interface CompletedOperationEntry extends OperationEntry {
@@ -456,6 +472,8 @@ export interface CompletedOperationEntry extends OperationEntry {
   result: Record<string, unknown>;
   completedAt: number;
   durationMs: number;
+  /** `sub_agent` only: `renderBlockOrder.length` at COMPLETION (pairs with `blockAnchor`). */
+  blockEnd?: number;
 }
 
 // =============================================================================

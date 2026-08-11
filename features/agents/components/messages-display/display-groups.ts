@@ -4,6 +4,7 @@ import type { MessageRecord } from "@/features/agents/redux/execution-system/mes
 import type { MessageRole } from "@/features/agents/types/agent-message-types";
 import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
 import {
+  extractFlatText,
   isFailedRecord,
   selectConversationMessages,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -16,10 +17,37 @@ export interface DisplayEntry {
   isStreamActive: boolean;
   isFailed: boolean;
   canRetry: boolean;
+  /** True for a delivered agent-collaboration note (see isCollabNoteRecord). */
+  isCollabNote?: boolean;
+}
+
+/**
+ * A delivered collaboration note: a user-role cx_message row written by the
+ * turn-boundary inbox drain from an `agent_call` `remember=true` write-back
+ * (source='agent_collab'). Detected by the server's canonical text prefix
+ * (agent_call.py stamps `[Collaboration note] Agent '<name>' …`) or by the
+ * drained injection's provenance under metadata.agent_collab. These must
+ * NEVER render as a plain user bubble — the user didn't type them.
+ * (Hidden notes never reach this code: every message read path filters
+ * `is_visible_to_user = true`.)
+ */
+export function isCollabNoteRecord(rec: MessageRecord): boolean {
+  if (rec.role !== "user") return false;
+  const meta = rec.metadata;
+  if (
+    meta &&
+    typeof meta === "object" &&
+    !Array.isArray(meta) &&
+    "agent_collab" in meta
+  ) {
+    return true;
+  }
+  return extractFlatText(rec).startsWith("[Collaboration note]");
 }
 
 export type DisplayGroup =
   | { kind: "user"; key: string; messageId: string }
+  | { kind: "collab-note"; key: string; messageId: string }
   | {
       kind: "assistant";
       key: string;
@@ -87,6 +115,7 @@ export function buildDisplayEntries({
       isStreamActive: isStreamingMessage,
       isFailed: recFailed,
       canRetry: false,
+      isCollabNote: rec.role === "user" ? isCollabNoteRecord(rec) : false,
     });
   }
 
@@ -154,7 +183,7 @@ export function groupDisplayEntries(
     flush();
     if (entry.role === "user" && entry.messageId) {
       groups.push({
-        kind: "user",
+        kind: entry.isCollabNote ? "collab-note" : "user",
         key: entry.key,
         messageId: entry.messageId,
       });

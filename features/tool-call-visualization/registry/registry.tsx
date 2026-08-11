@@ -99,6 +99,10 @@ import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
 import { summarizeSql } from "../renderers/sql/summarizeSql";
 import { AgentCallInline } from "../renderers/agent-call/AgentCallInline";
 import { isImageGenerationAgentCall } from "../renderers/agent-call/agentCallKind";
+import {
+  getCollabCallInfo,
+  isCollaborationAgentCall,
+} from "../renderers/agent-call/collab";
 
 import {
   resultAsObject,
@@ -264,14 +268,36 @@ export const toolRendererRegistry: ToolRegistry = {
       complete: "Agent finished",
       errorPrefix: "Agent call failed",
     },
-    getPhaseLabels: (entry) =>
-      isImageGenerationAgentCall(entry)
-        ? {
-            running: "Creating image",
-            complete: "Created image",
-            errorPrefix: "Image generation failed",
-          }
-        : null,
+    getPhaseLabels: (entry) => {
+      if (isImageGenerationAgentCall(entry)) {
+        return {
+          running: "Creating image",
+          complete: "Created image",
+          errorPrefix: "Image generation failed",
+        };
+      }
+      if (isCollaborationAgentCall(entry)) {
+        return {
+          running: "Collaborating with agent",
+          complete: "Agent collaborated",
+          errorPrefix: "Collaboration failed",
+        };
+      }
+      return null;
+    },
+    // Collapsed-line summary for collaboration calls: the specialist + a
+    // snippet of its answer, so the folded card still says what came back.
+    getHeaderSubtitle: (entry) => {
+      const collab = getCollabCallInfo(entry);
+      if (!collab) return null;
+      const agent = collab.agentName;
+      if (entry.status === "completed" && collab.resultText) {
+        const snippet = collab.resultText.replace(/\s+/g, " ").trim();
+        const short = snippet.length > 90 ? `${snippet.slice(0, 90)}…` : snippet;
+        return agent ? `${agent} — ${short}` : short;
+      }
+      return agent ?? "reviewing a conversation";
+    },
     resultsLabel: "Agent Result",
     InlineComponent: AgentCallInline,
     keepExpandedOnStream: true,

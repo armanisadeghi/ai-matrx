@@ -51,6 +51,13 @@ export interface ConversationInboxItem {
   queuedAt: string;
   /** Terminal failure message (status === "failed" only). */
   error?: string | null;
+  /**
+   * Producer of the row (server `chat.pending_injection.source`). Client
+   * sends have none; `"agent_collab"` marks a write-back note from a
+   * collaboration `agent_call` (`remember=true`) — rendered as a
+   * "collaboration note waiting" card, not an editable queued message.
+   */
+  source?: string | null;
 }
 
 interface ConversationInboxState {

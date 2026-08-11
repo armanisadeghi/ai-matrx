@@ -495,15 +495,16 @@ export const loadConversation = createAsyncThunk<
     // Rebuild the "waiting its turn" cards for messages queued into a run that
     // was live when this panel closed / another device queued them. Pending
     // items survive server-side (chat.pending_injection) and deliver on the
-    // next run, so the cards must survive a reload too. Gated on the latest
-    // turn being non-completed: a COMPLETED run cannot strand inbox items
-    // (the server's no-stranding drain guarantees it answered them), so the
-    // common reload of a settled conversation costs zero extra requests —
-    // only live / cancelled / failed tails warrant the GET. Quiet on failure.
-    const latestUserRequest = userRequestRecords[userRequestRecords.length - 1];
-    if (latestUserRequest && latestUserRequest.status !== "completed") {
-      void dispatch(hydrateInbox({ conversationId }));
-    }
+    // next run, so the cards must survive a reload too. UNCONDITIONAL since
+    // 2026-08-10: the old "skip when the latest turn completed" gate assumed
+    // only clients enqueue — the no-stranding drain does guarantee a completed
+    // run answered every CLIENT-queued item, but server-side producers
+    // (`source='agent_collab'`, a collaboration agent_call's remember=true
+    // write-back) enqueue `turn_end` notes into an IDLE conversation, and the
+    // self-drain exclusion holds them for the NEXT run — exactly the state the
+    // gate skipped, hiding every "collaboration note waiting" card. One quiet
+    // best-effort GET per load is the cost of never lying about the inbox.
+    void dispatch(hydrateInbox({ conversationId }));
 
     // ── 7. Focus (if a surface was given AND we weren't superseded) ──────────
     // If the calling surface navigated away mid-load (signal aborted), skip the

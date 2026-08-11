@@ -869,6 +869,10 @@ export const selectUnifiedSlots = (requestId: string) =>
       state.activeRequests.byRequestId[requestId]?.isReasoningStreaming,
     (state: RootState) =>
       state.activeRequests.byRequestId[requestId]?.reasoningRunChunkStart,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.activeOperations,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.completedOperations,
     (
       timeline,
       renderBlockOrder,
@@ -876,18 +880,46 @@ export const selectUnifiedSlots = (requestId: string) =>
       isTextStreaming,
       isReasoningStreaming,
       reasoningRunChunkStart,
+      activeOperations,
+      completedOperations,
     ): UnifiedSlot[] => {
       const blockOrder = renderBlockOrder ?? [];
       const blocksMap = renderBlocks ?? {};
 
+      // Blocks streamed by a collaboration agent_call CHILD (sub_agent op
+      // block ranges — see OperationEntry.blockAnchor) are hidden from the
+      // main transcript: the owning agent_call card renders them, and they
+      // never persist to the parent conversation, so hiding them live keeps
+      // the transcript identical before and after a reload.
+      const childOwnedBlockIds = new Set<string>();
+      for (const op of [
+        ...Object.values(activeOperations ?? {}),
+        ...Object.values(completedOperations ?? {}),
+      ]) {
+        if (op.operation !== "sub_agent" || op.blockAnchor === undefined) {
+          continue;
+        }
+        const end = Math.min(
+          "blockEnd" in op && op.blockEnd !== undefined
+            ? op.blockEnd
+            : blockOrder.length,
+          blockOrder.length,
+        );
+        for (let i = op.blockAnchor; i < end; i++) {
+          childOwnedBlockIds.add(blockOrder[i]);
+        }
+      }
+
       if (!timeline || timeline.length === 0) {
         if (blockOrder.length === 0) return [];
-        return blockOrder.map((blockId, i) => ({
-          kind: "render_block" as const,
-          blockId,
-          blockType: blocksMap[blockId]?.type,
-          seq: i,
-        }));
+        return blockOrder
+          .filter((blockId) => !childOwnedBlockIds.has(blockId))
+          .map((blockId, i) => ({
+            kind: "render_block" as const,
+            blockId,
+            blockType: blocksMap[blockId]?.type,
+            seq: i,
+          }));
       }
 
       const slots: UnifiedSlot[] = [];
@@ -921,6 +953,12 @@ export const selectUnifiedSlots = (requestId: string) =>
 
       const pushBlock = (blockId: string) => {
         if (emittedBlockIds.has(blockId)) return;
+        if (childOwnedBlockIds.has(blockId)) {
+          // Mark it consumed so the legacy media forward-scan and the
+          // trailing sweeps never re-consider it — but emit no slot.
+          emittedBlockIds.add(blockId);
+          return;
+        }
         // Content follows the error → pin the error to its chronological spot,
         // just before this block.
         flushPendingError();
@@ -1277,6 +1315,79 @@ export const selectSubAgentResults = (requestId: string) =>
     (state: RootState) =>
       state.activeRequests.byRequestId[requestId]?.completedOperations,
     (ops): SubAgentResult[] | undefined => getAllTypedResults(ops, "sub_agent"),
+  );
+
+/**
+ * The live child stream of a collaboration `agent_call` — the render blocks
+ * the CHILD agent streamed on the parent's wire between its `sub_agent` INIT
+ * and COMPLETION (see `OperationEntry.blockAnchor`). The transcript walker
+ * hides these blocks; the owning agent_call card renders this text instead.
+ * Returns null when no sub_agent operation is bound to the call (e.g. a
+ * persisted turn — the child text lives in the child conversation only).
+ */
+export interface AgentCallChildStream {
+  status: "running" | "done" | "failed";
+  /** The server's sub_agent label (usually the child agent's name). */
+  label: string | null;
+  childConversationId: string | null;
+  text: string;
+}
+
+export const selectAgentCallChildStream = (requestId: string, callId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.activeOperations,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.completedOperations,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlocks,
+    (active, completed, order, blocks): AgentCallChildStream | null => {
+      const findOp = (
+        ops: Record<string, OperationEntry> | undefined,
+      ): OperationEntry | undefined =>
+        Object.values(ops ?? {}).find(
+          (op) =>
+            op.operation === "sub_agent" &&
+            op.toolCallId === callId &&
+            op.blockAnchor !== undefined,
+        );
+      const completedOp = findOp(completed) as
+        | CompletedOperationEntry
+        | undefined;
+      const activeOp = completedOp ? undefined : findOp(active);
+      const op = completedOp ?? activeOp;
+      if (!op) return null;
+
+      const blockOrder = order ?? [];
+      const end = Math.min(
+        completedOp?.blockEnd ?? blockOrder.length,
+        blockOrder.length,
+      );
+      let text = "";
+      for (let i = op.blockAnchor!; i < end; i++) {
+        const block = (blocks ?? {})[blockOrder[i]];
+        if (block && typeof block.content === "string") text += block.content;
+      }
+      const meta = (op.metadata ?? {}) as {
+        label?: unknown;
+        conversation_id?: unknown;
+      };
+      return {
+        status: completedOp
+          ? completedOp.status === "failed"
+            ? "failed"
+            : "done"
+          : "running",
+        label: typeof meta.label === "string" ? meta.label : null,
+        childConversationId:
+          typeof meta.conversation_id === "string"
+            ? meta.conversation_id
+            : null,
+        text,
+      };
+    },
   );
 
 /** All persistence results. */

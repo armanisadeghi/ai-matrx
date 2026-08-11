@@ -35,6 +35,7 @@ import {
   selectLatestRequestId,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { AgentUserMessage } from "./user/AgentUserMessage";
+import { CollabNoteMessage } from "./user/CollabNoteMessage";
 // Universal v3 context menu — the SAME menu everywhere. ONE read-only instance
 // serves the whole transcript: `resolveContextOnOpen` resolves the per-message /
 // per-block context from cheap DOM tags (`data-message-id`, `data-mtx-ctx`) on
@@ -321,6 +322,19 @@ export function AgentConversationDisplay({
                   compact={compact}
                 />
               </div>
+            );
+          }
+
+          if (group.kind === "collab-note") {
+            // A delivered agent-collaboration note (inbox drain, user-role
+            // row the user did NOT type) — info-styled, never a user bubble.
+            return (
+              <CollabNoteMessage
+                key={group.key}
+                conversationId={conversationId}
+                messageId={group.messageId}
+                compact={compact}
+              />
             );
           }
 

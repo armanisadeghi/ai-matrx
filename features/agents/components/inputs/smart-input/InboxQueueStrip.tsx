@@ -20,7 +20,7 @@
  */
 
 import React, { useState } from "react";
-import { Clock, Pencil, RotateCcw, X, Zap } from "lucide-react";
+import { Clock, Handshake, Pencil, RotateCcw, X, Zap } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { selectInboxItems } from "@/features/agents/redux/execution-system/inbox/inbox.selectors";
@@ -42,9 +42,32 @@ interface InboxQueueStripProps {
 function statusLabel(item: ConversationInboxItem): string {
   if (item.status === "failed") return item.error ?? "Failed to send";
   if (item.status === "sending") return "Handing to the agent…";
+  if (isCollabNoteItem(item)) {
+    return "Collaboration note — this agent sees it next turn";
+  }
   return item.mode === "queue"
     ? "Queued — sends when the agent finishes"
     : "Steering — delivered at the agent's next pause";
+}
+
+/**
+ * A write-back note from a collaboration `agent_call` in ANOTHER conversation
+ * (server producer `source='agent_collab'` — see inbox.slice.ts). Not a user
+ * message: no edit / "Deliver now" (it belongs to the agent, and turn_end
+ * delivery is the contract), but withdraw stays — the user owns their inbox.
+ */
+function isCollabNoteItem(item: ConversationInboxItem): boolean {
+  return item.source === "agent_collab";
+}
+
+/**
+ * Delivered collab notes are prefixed "[Collaboration note] Agent '<name>' …"
+ * server-side; the queued text carries the same prefix. Pull the agent name
+ * for the card label so the user sees WHO left the note, not raw plumbing.
+ */
+export function parseCollabNoteAgent(text: string): string | null {
+  const match = /^\[Collaboration note\]\s+Agent\s+'([^']+)'/.exec(text);
+  return match?.[1] ?? null;
 }
 
 export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
@@ -57,7 +80,11 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
   } | null>(null);
   const [editBusy, setEditBusy] = useState(false);
 
-  const visible = items.filter((i) => i.isVisibleToUser);
+  // Collab notes render even when is_visible_to_user=false: the NOTE stays
+  // out of the transcript after delivery (the flag's contract), but the fact
+  // that one is waiting is the user's to see — a silent steering channel into
+  // their own conversation would be worse than the plumbing it hides.
+  const visible = items.filter((i) => i.isVisibleToUser || isCollabNoteItem(i));
   if (visible.length === 0) return null;
 
   return (
@@ -65,27 +92,36 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
       {visible.map((item) => {
         const failed = item.status === "failed";
         const busy = item.status === "sending";
-        const editable = item.status === "pending";
+        const collabNote = isCollabNoteItem(item);
+        const editable = item.status === "pending" && !collabNote;
+        const collabAgent = collabNote ? parseCollabNoteAgent(item.text) : null;
+        const Icon = collabNote ? Handshake : Clock;
         return (
           <div
             key={item.injectionId}
             className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs ${
               failed
                 ? "border-destructive/40 bg-destructive/5"
-                : "border-border bg-muted/40"
+                : collabNote
+                  ? "border-violet-500/30 bg-violet-500/[0.06]"
+                  : "border-border bg-muted/40"
             }`}
           >
-            <Clock
+            <Icon
               className={`h-3.5 w-3.5 shrink-0 ${
                 failed
                   ? "text-destructive"
-                  : busy
-                    ? "text-muted-foreground animate-pulse"
-                    : "text-muted-foreground"
+                  : collabNote
+                    ? "text-violet-600 dark:text-violet-400"
+                    : busy
+                      ? "text-muted-foreground animate-pulse"
+                      : "text-muted-foreground"
               }`}
             />
             <span className="min-w-0 flex-1 truncate text-foreground">
-              {item.text}
+              {collabNote && collabAgent
+                ? `Note from ${collabAgent}`
+                : item.text}
             </span>
             <span
               className={`shrink-0 ${
@@ -118,7 +154,7 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                 <RotateCcw className="h-3.5 w-3.5" />
               </button>
             )}
-            {item.mode === "queue" && item.status === "pending" && (
+            {item.mode === "queue" && item.status === "pending" && !collabNote && (
               <button
                 type="button"
                 title="Deliver now — don't wait for the run to end; the agent picks it up at its next pause"

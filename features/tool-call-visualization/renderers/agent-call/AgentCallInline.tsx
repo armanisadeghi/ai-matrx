@@ -5,6 +5,8 @@ import { Aperture, ImageIcon } from "lucide-react";
 import type { ToolRendererProps } from "../../types";
 import { GenericRenderer } from "../../registry/GenericRenderer";
 import { isImageGenerationAgentCall } from "./agentCallKind";
+import { isCollaborationAgentCall } from "./collab";
+import { CollabCallCard } from "./CollabCallCard";
 
 function ImageGenerationLoading() {
   return (
@@ -70,8 +72,10 @@ function ImageGenerationLoading() {
 /**
  * Dispatches `agent_call` by declared child-agent contract.
  *
- * Only the live image-generation path is specialized. Completed, failed, and
- * unknown agent calls retain the canonical generic result/error rendering.
+ * Specialized paths: live image generation, and conversation-aware
+ * collaboration calls (`history_mode` "snapshot"/"fork" → `CollabCallCard`,
+ * all statuses except error). Failed and unknown agent calls retain the
+ * canonical generic result/error rendering.
  */
 export function AgentCallInline(props: ToolRendererProps) {
   const { entry } = props;
@@ -82,6 +86,10 @@ export function AgentCallInline(props: ToolRendererProps) {
 
   if (isActive && isImageGenerationAgentCall(entry)) {
     return <ImageGenerationLoading />;
+  }
+
+  if (entry.status !== "error" && isCollaborationAgentCall(entry)) {
+    return <CollabCallCard {...props} />;
   }
 
   return <GenericRenderer {...props} />;

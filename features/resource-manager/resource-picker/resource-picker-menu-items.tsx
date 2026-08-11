@@ -8,6 +8,7 @@ import {
   Image,
   Layers,
   Lightbulb,
+  MessagesSquare,
   Mic,
   Notebook,
   StickyNote,
@@ -18,6 +19,7 @@ import { Youtube } from "@/components/icons/brand-icons";
 
 export type ResourcePickerViewId =
   | "files"
+  | "conversations"
   | "notes"
   | "tasks"
   | "workbooks"
@@ -83,6 +85,16 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
   {
     category: "MATRX",
     items: [
+      {
+        // Inserts a readable reference ("my conversation …") into the draft —
+        // not a resource chip; the agent reads the id from the message text
+        // (agent_call history_conversation_id). See ConversationReferencePicker.
+        id: "conversations",
+        label: "Chats",
+        icon: MessagesSquare,
+        iconClassName: "text-emerald-600 dark:text-emerald-400",
+        requiresCapability: null,
+      },
       {
         id: "tables",
         label: "Tables",

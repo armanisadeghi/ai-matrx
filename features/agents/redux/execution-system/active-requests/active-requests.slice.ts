@@ -34,6 +34,8 @@ import type {
   ClientMetrics,
   ToolLifecycleEntry,
   ToolLifecycleStatus,
+  OperationEntry,
+  CompletedOperationEntry,
   TimelineEntry,
   RawStreamEvent,
   ReservationRecord,
@@ -472,13 +474,28 @@ const activeRequestsSlice = createSlice({
       const request = state.byRequestId[action.payload.requestId];
       if (!request) return;
 
-      request.activeOperations[action.payload.operationId] = {
+      const opEntry: OperationEntry = {
         operationId: action.payload.operationId,
         operation: action.payload.operation,
         parentOperationId: action.payload.parentOperationId ?? null,
         metadata: action.payload.metadata ?? null,
         startedAt: action.payload.timestamp,
       };
+      if (action.payload.operation === "sub_agent") {
+        // Collaboration agent_call children stream their tokens on the
+        // parent's wire with no per-chunk attribution. Anchor the block
+        // ordinal here so the walker can hide the child's range and the
+        // owning agent_call card can render it (see OperationEntry docs).
+        opEntry.blockAnchor = request.renderBlockOrder.length;
+        let owner: ToolLifecycleEntry | null = null;
+        for (const t of Object.values(request.toolLifecycle)) {
+          if (t.toolName !== "agent_call") continue;
+          if (t.status === "completed" || t.status === "error") continue;
+          if (!owner || t.startedAt > owner.startedAt) owner = t;
+        }
+        opEntry.toolCallId = owner?.callId ?? null;
+      }
+      request.activeOperations[action.payload.operationId] = opEntry;
     },
 
     trackOperationCompletion(
@@ -498,7 +515,7 @@ const activeRequestsSlice = createSlice({
       const active = request.activeOperations[action.payload.operationId];
       const startedAt = active?.startedAt ?? action.payload.timestamp;
 
-      request.completedOperations[action.payload.operationId] = {
+      const completedEntry: CompletedOperationEntry = {
         operationId: action.payload.operationId,
         operation: action.payload.operation,
         parentOperationId: active?.parentOperationId ?? null,
@@ -511,6 +528,12 @@ const activeRequestsSlice = createSlice({
         completedAt: action.payload.timestamp,
         durationMs: action.payload.timestamp - startedAt,
       };
+      if (active?.blockAnchor !== undefined) {
+        completedEntry.blockAnchor = active.blockAnchor;
+        completedEntry.toolCallId = active.toolCallId ?? null;
+        completedEntry.blockEnd = request.renderBlockOrder.length;
+      }
+      request.completedOperations[action.payload.operationId] = completedEntry;
 
       delete request.activeOperations[action.payload.operationId];
     },

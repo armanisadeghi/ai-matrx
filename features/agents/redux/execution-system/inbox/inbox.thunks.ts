@@ -32,7 +32,12 @@ import {
 } from "./inbox.slice";
 
 type InboxEnqueueResponse = components["schemas"]["InboxEnqueueResponse"];
-type InboxItemWire = components["schemas"]["InboxItem"];
+// `source` shipped server-side 2026-08-10 (agent_collab write-back notes) but
+// postdates the generated schema — drop the intersection when
+// `pnpm update-api-types` picks it up.
+type InboxItemWire = components["schemas"]["InboxItem"] & {
+  source?: string | null;
+};
 
 const localInjectionId = (): string => `inbox_local_${crypto.randomUUID()}`;
 
@@ -300,6 +305,7 @@ export const hydrateInbox = createAsyncThunk<
     status: "pending",
     isVisibleToUser: w.is_visible_to_user ?? true,
     queuedAt: w.queued_at ?? new Date().toISOString(),
+    source: w.source ?? null,
   }));
   dispatch(hydrateInboxItems({ conversationId, items }));
 });
