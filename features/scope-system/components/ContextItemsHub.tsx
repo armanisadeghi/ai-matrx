@@ -40,7 +40,9 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import {
   createContextItemsScope,
   CONTEXT_ITEMS_SURFACE_NAME,
+  type ContextItemAuthoringEntry,
 } from "@/features/surfaces/manifests/context-items.manifest";
+import { ContextItemsWriteTargets } from "./ContextItemsWriteTargets";
 import type {
   ScopesContextItemEntry,
   ScopesOrganizationEntry,
@@ -162,10 +164,24 @@ export function AllContextItemsHub() {
     const typeOrgId = new Map(scopeTypes.map((t) => [t.id, t.organization_id]));
     const knownTypeIds = new Set(scopeTypes.map((t) => t.id));
     const items: ScopesContextItemEntry[] = [];
+    // The read TWIN of this surface's write targets — the authored copy the
+    // agent reads before it proposes a replacement, and reads back after.
+    const authoring: ContextItemAuthoringEntry[] = [];
     const categories = new Set<string>();
     const valueTypeCounts: Record<string, number> = {};
     for (const item of selectAllContextItems(state)) {
       if (!knownTypeIds.has(item.scope_type_id)) continue;
+      authoring.push({
+        id: item.id,
+        organization_id: typeOrgId.get(item.scope_type_id) ?? "",
+        scope_type_id: item.scope_type_id,
+        key: item.key,
+        display_name: item.display_name,
+        description: item.description ?? "",
+        category: item.category,
+        tags: item.tags ?? [],
+        status_note: item.status_note ?? null,
+      });
       items.push({
         id: item.id,
         scope_type_id: item.scope_type_id,
@@ -196,6 +212,7 @@ export function AllContextItemsHub() {
             context_item_count: items.length,
             context_items_summary: items,
             context_item_value_type_counts: valueTypeCounts,
+            context_item_authoring: authoring,
           }
         : {}),
       context_item_categories: [...categories],
@@ -212,6 +229,7 @@ export function AllContextItemsHub() {
       getScope={getScope}
       isEditable={false}
     >
+    <ContextItemsWriteTargets />
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
         Every field across all your organizations, grouped by org and scope
