@@ -294,6 +294,24 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
   advertised two fit modes (`cover`/`contain`) while the UI rendered three, so
   `inside` was invisible to every agent that read this surface.
 
+- **2026-08-11** — The **Edit** mode was assessed for agent write targets and
+  DECLINED; `matrx-user/image-edit` keeps its read-only manifest, and the full
+  reasoning now lives in that manifest's docblock under `WRITE DOCTRINE`. Short
+  version: the one candidate worth having — the **AI edit prompt** — is real
+  component state in `EditAiToolbar` (`promptText` / `setPromptText`) but its
+  popover only renders behind `IMAGE_STUDIO_BACKEND_CAPABILITIES.promptEdit`,
+  which is `false` in this build (as is `editSuggestions`, hiding "Suggest").
+  A write target there would stage a value into a control the user cannot see,
+  edit, or run — an approved confirm dialog with no visible effect. The
+  remaining rendered controls are numeric pixel knobs (Adjust) or destructive /
+  user-gesture surfaces (mask, version restore, Reset, Save, the Filerobot
+  canvas), and executing any AI op spends real money on image models, so it was
+  never a target. **When `promptEdit` flips to `true`, this mode earns exactly
+  one composite `edit_request` target (`{prompt}`, `mode: "draft"`,
+  `applyPolicy: "ask"`) registered from `EditAiToolbar` via
+  `useSurfaceWriteHandlers`** — that child owns the state, not `EditModeShell`
+  — with Apply staying the user's press. Recorded so the next campaign pass
+  does not re-derive it.
 - **2026-08-10** — The Convert studio is agent-writable. `ImageStudioShell`
   now passes `getWriteHandlers` to the `SurfaceRuntimeProvider` it already
   mounted, registering the two targets `matrx-user/image-studio` declares:
