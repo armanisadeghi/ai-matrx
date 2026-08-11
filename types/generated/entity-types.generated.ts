@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 321 active entity tokens. A token here is FK-valid for
+// 320 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -83,8 +83,9 @@ export type EntityTypeToken =
   | "assessment_item"
   | "assessment_result"
   | "assist"
-  | "auto_ingest_batch"
-  | "auto_ingest_cost_event"
+  | "batch_cost_event"
+  | "batch_provider_batch"
+  | "batch_work_item"
   | "canvas_comment"
   | "canvas_comment_like"
   | "canvas_item"
@@ -321,8 +322,6 @@ export type EntityTypeToken =
   | "wc_injury"
   | "wc_report"
   | "web_analysis_item"
-  | "web_batch_item"
-  | "web_batch_job"
   | "web_brand"
   | "web_brand_asset"
   | "web_business_fact"
@@ -555,8 +554,6 @@ export type ComponentEntityToken =
   | "wc_impairment_definition"
   | "wc_injury"
   | "wc_report"
-  | "web_batch_item"
-  | "web_batch_job"
   | "web_brand_asset"
   | "web_business_fact"
   | "web_crawl_event"
@@ -629,8 +626,9 @@ export type ScopeableEntityToken =
   | "assessment_item"
   | "assessment_result"
   | "assist"
-  | "auto_ingest_batch"
-  | "auto_ingest_cost_event"
+  | "batch_cost_event"
+  | "batch_provider_batch"
+  | "batch_work_item"
   | "canvas_comment"
   | "canvas_comment_like"
   | "canvas_item"
@@ -849,8 +847,6 @@ export type ScopeableEntityToken =
   | "wc_injury"
   | "wc_report"
   | "web_analysis_item"
-  | "web_batch_item"
-  | "web_batch_job"
   | "web_brand"
   | "web_brand_asset"
   | "web_business_fact"
@@ -970,8 +966,9 @@ export const ENTITY_TYPE_METADATA = {
   "assessment_item": { token: "assessment_item", schema: "education", table: "assessment_item", label: "Assessment Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "assessment_result": { token: "assessment_result", schema: "education", table: "assessment_result", label: "Assessment Result", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "assist": { token: "assist", schema: "platform", table: "assists", label: "Assist", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: "platform", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
-  "auto_ingest_batch": { token: "auto_ingest_batch", schema: "public", table: "auto_ingest_batch", label: "Auto Ingest Batch", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "auto_ingest_cost_event": { token: "auto_ingest_cost_event", schema: "public", table: "auto_ingest_cost_event", label: "Auto Ingest Cost Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "batch_cost_event": { token: "batch_cost_event", schema: "batch", table: "cost_event", label: "Batch Cost Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "batch_provider_batch": { token: "batch_provider_batch", schema: "batch", table: "provider_batch", label: "Provider Batch", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "batch_work_item": { token: "batch_work_item", schema: "batch", table: "work_item", label: "Batch Work Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "canvas_comment": { token: "canvas_comment", schema: "canvas", table: "canvas_comments", label: "Canvas Comment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "canvas_comment_like": { token: "canvas_comment_like", schema: "canvas", table: "canvas_comment_likes", label: "Canvas Comment Like", baseTier: 3, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "canvas_item": { token: "canvas_item", schema: "canvas", table: "canvas_items", label: "Canvas Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
@@ -1208,8 +1205,6 @@ export const ENTITY_TYPE_METADATA = {
   "wc_injury": { token: "wc_injury", schema: "legal", table: "wc_injury", label: "WC Injury", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "wc_report": { token: "wc_report", schema: "legal", table: "wc_report", label: "WC Report", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_analysis_item": { token: "web_analysis_item", schema: "web", table: "analysis_item", label: "Analysis Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
-  "web_batch_item": { token: "web_batch_item", schema: "web", table: "batch_item", label: "Batch Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "web_batch_job": { token: "web_batch_job", schema: "web", table: "batch_job", label: "Batch Job", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_brand": { token: "web_brand", schema: "web", table: "brand", label: "Brand", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "web_brand_asset": { token: "web_brand_asset", schema: "web", table: "brand_asset", label: "Brand Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "web_business_fact": { token: "web_business_fact", schema: "web", table: "business_fact", label: "Business Fact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
@@ -1295,8 +1290,9 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "assessment_item",
   "assessment_result",
   "assist",
-  "auto_ingest_batch",
-  "auto_ingest_cost_event",
+  "batch_cost_event",
+  "batch_provider_batch",
+  "batch_work_item",
   "canvas_comment",
   "canvas_comment_like",
   "canvas_item",
@@ -1533,8 +1529,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "wc_injury",
   "wc_report",
   "web_analysis_item",
-  "web_batch_item",
-  "web_batch_job",
   "web_brand",
   "web_brand_asset",
   "web_business_fact",
