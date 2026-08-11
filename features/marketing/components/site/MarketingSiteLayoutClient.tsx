@@ -11,6 +11,7 @@ import {
   Compass,
   ExternalLink,
   FileText,
+  FlaskConical,
   Gauge,
   Grid3x3,
   Images,
@@ -86,6 +87,7 @@ function sectionSuffix(
     "findings",
     "links",
     "backlinks",
+    "changes",
     "keywords",
     "ranks",
     "integrations",
@@ -255,6 +257,11 @@ export function MarketingSiteLayoutClient({
             name: "Backlinks",
             href: `${base}/backlinks`,
             icon: BadgeCheck,
+          },
+          {
+            name: "Changes",
+            href: marketingRoutes.siteChanges(brandId, siteId),
+            icon: FlaskConical,
           },
           {
             name: "Keywords",

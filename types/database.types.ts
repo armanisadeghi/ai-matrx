@@ -23609,6 +23609,15 @@ export type Database = {
         Args: { p_is_personal?: boolean; p_name: string }
         Returns: string
       }
+      discoverable_ids: {
+        Args: {
+          p_depth?: number
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string[]
+      }
       fn_grant_resource_permission: {
         Args: {
           p_expires_at?: string
@@ -25220,7 +25229,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      status_flow: {
+        Args: never
+        Returns: {
+          allowed_next: string[]
+          band: string
+          status: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -39909,6 +39925,7 @@ export type Database = {
           agent_config: Json
           analyses_per_keyword: number
           autonomy_level: string
+          consecutive_refresh_failures: number
           created_at: string | null
           created_by: string | null
           default_search_params: Json
@@ -39919,6 +39936,10 @@ export type Database = {
           id: string
           intent_brief: string | null
           intent_key: string | null
+          last_refresh_at: string | null
+          last_refresh_error: string | null
+          last_refresh_outcome: string | null
+          last_refresh_trigger: string | null
           max_auto_tag_calls: number
           max_documents: number
           max_keyword_syntheses: number
@@ -39927,8 +39948,12 @@ export type Database = {
           max_topic_syntheses: number
           metadata: Json
           name: string
+          next_refresh_at: string | null
           organization_id: string
           outputs: Json
+          refresh_claim_expires_at: string | null
+          refresh_claim_token: string | null
+          refresh_interval_hours: number | null
           scrapes_per_keyword: number
           status: string
           tag_suggestions: Json | null
@@ -39944,6 +39969,7 @@ export type Database = {
           agent_config?: Json
           analyses_per_keyword?: number
           autonomy_level?: string
+          consecutive_refresh_failures?: number
           created_at?: string | null
           created_by?: string | null
           default_search_params?: Json
@@ -39954,6 +39980,10 @@ export type Database = {
           id?: string
           intent_brief?: string | null
           intent_key?: string | null
+          last_refresh_at?: string | null
+          last_refresh_error?: string | null
+          last_refresh_outcome?: string | null
+          last_refresh_trigger?: string | null
           max_auto_tag_calls?: number
           max_documents?: number
           max_keyword_syntheses?: number
@@ -39962,8 +39992,12 @@ export type Database = {
           max_topic_syntheses?: number
           metadata?: Json
           name?: string
+          next_refresh_at?: string | null
           organization_id: string
           outputs?: Json
+          refresh_claim_expires_at?: string | null
+          refresh_claim_token?: string | null
+          refresh_interval_hours?: number | null
           scrapes_per_keyword?: number
           status?: string
           tag_suggestions?: Json | null
@@ -39979,6 +40013,7 @@ export type Database = {
           agent_config?: Json
           analyses_per_keyword?: number
           autonomy_level?: string
+          consecutive_refresh_failures?: number
           created_at?: string | null
           created_by?: string | null
           default_search_params?: Json
@@ -39989,6 +40024,10 @@ export type Database = {
           id?: string
           intent_brief?: string | null
           intent_key?: string | null
+          last_refresh_at?: string | null
+          last_refresh_error?: string | null
+          last_refresh_outcome?: string | null
+          last_refresh_trigger?: string | null
           max_auto_tag_calls?: number
           max_documents?: number
           max_keyword_syntheses?: number
@@ -39997,8 +40036,12 @@ export type Database = {
           max_topic_syntheses?: number
           metadata?: Json
           name?: string
+          next_refresh_at?: string | null
           organization_id?: string
           outputs?: Json
+          refresh_claim_expires_at?: string | null
+          refresh_claim_token?: string | null
+          refresh_interval_hours?: number | null
           scrapes_per_keyword?: number
           status?: string
           tag_suggestions?: Json | null
@@ -40960,6 +41003,329 @@ export type Database = {
   }
   seo: {
     Tables: {
+      ai_visibility_citation: {
+        Row: {
+          capture_cache_key: string | null
+          capture_status: string
+          captured_at: string | null
+          cited_for: string | null
+          cited_for_claim_keys: Json
+          created_at: string
+          domain: string | null
+          endorsement_signal: string | null
+          evidence_quality: number | null
+          id: string
+          normalized_url: string
+          ordinal: number
+          organization_id: string
+          referring_domain_profile_id: string | null
+          response_id: string
+          site_id: string
+          source_capture: Json
+          target_is_managed_site: boolean
+          title: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          capture_cache_key?: string | null
+          capture_status?: string
+          captured_at?: string | null
+          cited_for?: string | null
+          cited_for_claim_keys?: Json
+          created_at?: string
+          domain?: string | null
+          endorsement_signal?: string | null
+          evidence_quality?: number | null
+          id?: string
+          normalized_url: string
+          ordinal: number
+          organization_id: string
+          referring_domain_profile_id?: string | null
+          response_id: string
+          site_id: string
+          source_capture?: Json
+          target_is_managed_site?: boolean
+          title?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          capture_cache_key?: string | null
+          capture_status?: string
+          captured_at?: string | null
+          cited_for?: string | null
+          cited_for_claim_keys?: Json
+          created_at?: string
+          domain?: string | null
+          endorsement_signal?: string | null
+          evidence_quality?: number | null
+          id?: string
+          normalized_url?: string
+          ordinal?: number
+          organization_id?: string
+          referring_domain_profile_id?: string | null
+          response_id?: string
+          site_id?: string
+          source_capture?: Json
+          target_is_managed_site?: boolean
+          title?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_visibility_citation_referring_domain_profile_id_fkey"
+            columns: ["referring_domain_profile_id"]
+            isOneToOne: false
+            referencedRelation: "referring_domain_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_visibility_citation_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "ai_visibility_response"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_visibility_claim: {
+        Row: {
+          claim_key: string
+          claim_text: string
+          confidence: number
+          created_at: string
+          evidence_text: string
+          id: string
+          influence_role: string
+          influential_unverified: boolean
+          organization_id: string
+          response_id: string
+          significance: number
+          site_id: string
+          source_urls: Json
+          stance: string
+          subject: string
+          verification_status: string
+        }
+        Insert: {
+          claim_key: string
+          claim_text: string
+          confidence: number
+          created_at?: string
+          evidence_text: string
+          id?: string
+          influence_role: string
+          influential_unverified?: boolean
+          organization_id: string
+          response_id: string
+          significance: number
+          site_id: string
+          source_urls?: Json
+          stance: string
+          subject: string
+          verification_status: string
+        }
+        Update: {
+          claim_key?: string
+          claim_text?: string
+          confidence?: number
+          created_at?: string
+          evidence_text?: string
+          id?: string
+          influence_role?: string
+          influential_unverified?: boolean
+          organization_id?: string
+          response_id?: string
+          significance?: number
+          site_id?: string
+          source_urls?: Json
+          stance?: string
+          subject?: string
+          verification_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_visibility_claim_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "ai_visibility_response"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_visibility_response: {
+        Row: {
+          analysis: Json
+          answer_pattern: string | null
+          answer_text: string
+          citation_count: number
+          claim_count: number
+          command_run_id: string
+          confidence: number | null
+          created_at: string
+          created_by: string
+          decision_signal_count: number
+          engine: string
+          error: Json | null
+          id: string
+          keyword_id: string
+          model_name: string | null
+          observed_at: string
+          organization_id: string
+          provider_metadata: Json
+          provider_run_id: string | null
+          query: string
+          recommendation_count: number
+          recommendation_strength: number | null
+          site_id: string
+          status: string
+          target_citation_ordinal: number | null
+          target_cited: boolean
+          target_mentioned: boolean
+          unverified_influential_count: number
+          updated_at: string
+        }
+        Insert: {
+          analysis?: Json
+          answer_pattern?: string | null
+          answer_text?: string
+          citation_count?: number
+          claim_count?: number
+          command_run_id: string
+          confidence?: number | null
+          created_at?: string
+          created_by: string
+          decision_signal_count?: number
+          engine: string
+          error?: Json | null
+          id?: string
+          keyword_id: string
+          model_name?: string | null
+          observed_at: string
+          organization_id: string
+          provider_metadata?: Json
+          provider_run_id?: string | null
+          query: string
+          recommendation_count?: number
+          recommendation_strength?: number | null
+          site_id: string
+          status?: string
+          target_citation_ordinal?: number | null
+          target_cited?: boolean
+          target_mentioned?: boolean
+          unverified_influential_count?: number
+          updated_at?: string
+        }
+        Update: {
+          analysis?: Json
+          answer_pattern?: string | null
+          answer_text?: string
+          citation_count?: number
+          claim_count?: number
+          command_run_id?: string
+          confidence?: number | null
+          created_at?: string
+          created_by?: string
+          decision_signal_count?: number
+          engine?: string
+          error?: Json | null
+          id?: string
+          keyword_id?: string
+          model_name?: string | null
+          observed_at?: string
+          organization_id?: string
+          provider_metadata?: Json
+          provider_run_id?: string | null
+          query?: string
+          recommendation_count?: number
+          recommendation_strength?: number | null
+          site_id?: string
+          status?: string
+          target_citation_ordinal?: number | null
+          target_cited?: boolean
+          target_mentioned?: boolean
+          unverified_influential_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_visibility_response_command_run_id_fkey"
+            columns: ["command_run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_visibility_response_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_visibility_response_provider_run_id_fkey"
+            columns: ["provider_run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_visibility_signal: {
+        Row: {
+          category: string
+          created_at: string
+          evidence_text: string
+          id: string
+          influence: number
+          ordinal: number
+          organization_id: string
+          response_id: string
+          signal: string
+          site_id: string
+          source_url: string | null
+          target_subject: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          evidence_text: string
+          id?: string
+          influence: number
+          ordinal: number
+          organization_id: string
+          response_id: string
+          signal: string
+          site_id: string
+          source_url?: string | null
+          target_subject?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          evidence_text?: string
+          id?: string
+          influence?: number
+          ordinal?: number
+          organization_id?: string
+          response_id?: string
+          signal?: string
+          site_id?: string
+          source_url?: string | null
+          target_subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_visibility_signal_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "ai_visibility_response"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       backlink: {
         Row: {
           ai_assessment: Json
@@ -41430,6 +41796,605 @@ export type Database = {
           },
         ]
       }
+      change_assessment: {
+        Row: {
+          assessed_at: string
+          assessed_by: string | null
+          baseline_end: string
+          baseline_start: string
+          baseline_value: number | null
+          change_set_id: string
+          created_at: string
+          created_by: string | null
+          delta: number | null
+          delta_pct: number | null
+          evidence_note: string
+          id: string
+          metadata: Json
+          metric_id: string | null
+          observation_end: string
+          observation_start: string
+          observed_value: number | null
+          organization_id: string
+          site_id: string
+          source: string
+          theory_id: string
+          verdict: string
+        }
+        Insert: {
+          assessed_at?: string
+          assessed_by?: string | null
+          baseline_end: string
+          baseline_start: string
+          baseline_value?: number | null
+          change_set_id: string
+          created_at?: string
+          created_by?: string | null
+          delta?: number | null
+          delta_pct?: number | null
+          evidence_note?: string
+          id?: string
+          metadata?: Json
+          metric_id?: string | null
+          observation_end: string
+          observation_start: string
+          observed_value?: number | null
+          organization_id: string
+          site_id: string
+          source?: string
+          theory_id: string
+          verdict: string
+        }
+        Update: {
+          assessed_at?: string
+          assessed_by?: string | null
+          baseline_end?: string
+          baseline_start?: string
+          baseline_value?: number | null
+          change_set_id?: string
+          created_at?: string
+          created_by?: string | null
+          delta?: number | null
+          delta_pct?: number | null
+          evidence_note?: string
+          id?: string
+          metadata?: Json
+          metric_id?: string | null
+          observation_end?: string
+          observation_start?: string
+          observed_value?: number | null
+          organization_id?: string
+          site_id?: string
+          source?: string
+          theory_id?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_assessment_change_set_id_fkey"
+            columns: ["change_set_id"]
+            isOneToOne: false
+            referencedRelation: "change_set"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_assessment_change_set_id_fkey"
+            columns: ["change_set_id"]
+            isOneToOne: false
+            referencedRelation: "v_change_set_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_assessment_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "change_metric"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_assessment_theory_id_fkey"
+            columns: ["theory_id"]
+            isOneToOne: false
+            referencedRelation: "change_theory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      change_event: {
+        Row: {
+          actor_id: string | null
+          change_item_id: string | null
+          change_set_id: string
+          created_at: string
+          created_by: string | null
+          detail: string
+          details: Json
+          event_type: string
+          id: string
+          occurred_at: string
+          organization_id: string
+          site_id: string
+          source: string
+          source_crawl_session_id: string | null
+          source_snapshot_id: string | null
+          theory_id: string | null
+          title: string
+        }
+        Insert: {
+          actor_id?: string | null
+          change_item_id?: string | null
+          change_set_id: string
+          created_at?: string
+          created_by?: string | null
+          detail?: string
+          details?: Json
+          event_type: string
+          id?: string
+          occurred_at?: string
+          organization_id: string
+          site_id: string
+          source?: string
+          source_crawl_session_id?: string | null
+          source_snapshot_id?: string | null
+          theory_id?: string | null
+          title: string
+        }
+        Update: {
+          actor_id?: string | null
+          change_item_id?: string | null
+          change_set_id?: string
+          created_at?: string
+          created_by?: string | null
+          detail?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          organization_id?: string
+          site_id?: string
+          source?: string
+          source_crawl_session_id?: string | null
+          source_snapshot_id?: string | null
+          theory_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_event_change_item_id_fkey"
+            columns: ["change_item_id"]
+            isOneToOne: false
+            referencedRelation: "change_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_event_change_set_id_fkey"
+            columns: ["change_set_id"]
+            isOneToOne: false
+            referencedRelation: "change_set"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_event_change_set_id_fkey"
+            columns: ["change_set_id"]
+            isOneToOne: false
+            referencedRelation: "v_change_set_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_event_source_snapshot_id_fkey"
+            columns: ["source_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "v_untracked_snapshot_change"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_event_source_snapshot_id_fkey"
+            columns: ["source_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "v_untracked_snapshot_change"
+            referencedColumns: ["snapshot_id"]
+          },
+          {
+            foreignKeyName: "change_event_theory_id_fkey"
+            columns: ["theory_id"]
+            isOneToOne: false
+            referencedRelation: "change_theory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      change_item: {
+        Row: {
+          change_set_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expected_after: string | null
+          expected_before: string | null
+          field_kind: string
+          id: string
+          label: string
+          metadata: Json
+          notes: string | null
+          observed_after: string | null
+          organization_id: string
+          page_id: string
+          site_id: string
+          sort_order: number
+          source_snapshot_id: string | null
+          updated_at: string
+          updated_by: string | null
+          verification_method: string
+          verification_status: string
+          verified_at: string | null
+          version: number
+        }
+        Insert: {
+          change_set_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expected_after?: string | null
+          expected_before?: string | null
+          field_kind: string
+          id?: string
+          label: string
+          metadata?: Json
+          notes?: string | null
+          observed_after?: string | null
+          organization_id: string
+          page_id: string
+          site_id: string
+          sort_order?: number
+          source_snapshot_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_method?: string
+          verification_status?: string
+          verified_at?: string | null
+          version?: number
+        }
+        Update: {
+          change_set_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expected_after?: string | null
+          expected_before?: string | null
+          field_kind?: string
+          id?: string
+          label?: string
+          metadata?: Json
+          notes?: string | null
+          observed_after?: string | null
+          organization_id?: string
+          page_id?: string
+          site_id?: string
+          sort_order?: number
+          source_snapshot_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verification_method?: string
+          verification_status?: string
+          verified_at?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_item_change_set_id_fkey"
+            columns: ["change_set_id"]
+            isOneToOne: false
+            referencedRelation: "change_set"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_item_change_set_id_fkey"
+            columns: ["change_set_id"]
+            isOneToOne: false
+            referencedRelation: "v_change_set_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_item_source_snapshot_id_fkey"
+            columns: ["source_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "v_untracked_snapshot_change"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_item_source_snapshot_id_fkey"
+            columns: ["source_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "v_untracked_snapshot_change"
+            referencedColumns: ["snapshot_id"]
+          },
+        ]
+      }
+      change_metric: {
+        Row: {
+          baseline_days: number
+          change_set_id: string
+          created_at: string
+          created_by: string | null
+          data_source: string
+          deleted_at: string | null
+          direction: string
+          id: string
+          is_primary: boolean
+          label: string
+          metadata: Json
+          metric_key: string
+          minimum_data_days: number
+          observation_days: number
+          organization_id: string
+          site_id: string
+          sort_order: number
+          target_change_pct: number | null
+          target_value: number | null
+          theory_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          baseline_days?: number
+          change_set_id: string
+          created_at?: string
+          created_by?: string | null
+          data_source: string
+          deleted_at?: string | null
+          direction: string
+          id?: string
+          is_primary?: boolean
+          label: string
+          metadata?: Json
+          metric_key: string
+          minimum_data_days?: number
+          observation_days?: number
+          organization_id: string
+          site_id: string
+          sort_order?: number
+          target_change_pct?: number | null
+          target_value?: number | null
+          theory_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          baseline_days?: number
+          change_set_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_source?: string
+          deleted_at?: string | null
+          direction?: string
+          id?: string
+          is_primary?: boolean
+          label?: string
+          metadata?: Json
+          metric_key?: string
+          minimum_data_days?: number
+          observation_days?: number
+          organization_id?: string
+          site_id?: string
+          sort_order?: number
+          target_change_pct?: number | null
+          target_value?: number | null
+          theory_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_metric_change_set_id_fkey"
+            columns: ["change_set_id"]
+            isOneToOne: false
+            referencedRelation: "change_set"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_metric_change_set_id_fkey"
+            columns: ["change_set_id"]
+            isOneToOne: false
+            referencedRelation: "v_change_set_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_metric_theory_id_fkey"
+            columns: ["theory_id"]
+            isOneToOne: false
+            referencedRelation: "change_theory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      change_set: {
+        Row: {
+          business_outcome: string
+          change_kind: string
+          completed_at: string | null
+          confidence: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deployed_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          planned_for: string | null
+          primary_page_id: string | null
+          rationale: string
+          site_id: string
+          source: string
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          verification_due_at: string | null
+          version: number
+        }
+        Insert: {
+          business_outcome: string
+          change_kind: string
+          completed_at?: string | null
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deployed_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          planned_for?: string | null
+          primary_page_id?: string | null
+          rationale: string
+          site_id: string
+          source?: string
+          status?: string
+          summary?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          verification_due_at?: string | null
+          version?: number
+        }
+        Update: {
+          business_outcome?: string
+          change_kind?: string
+          completed_at?: string | null
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deployed_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          planned_for?: string | null
+          primary_page_id?: string | null
+          rationale?: string
+          site_id?: string
+          source?: string
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          verification_due_at?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      change_theory: {
+        Row: {
+          business_link: string
+          change_set_id: string
+          confidence: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          evaluation_end: string | null
+          evaluation_start: string | null
+          hypothesis: string
+          id: string
+          keyword_id: string | null
+          mechanism: string
+          metadata: Json
+          organization_id: string
+          page_id: string | null
+          parent_theory_id: string | null
+          site_id: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          business_link: string
+          change_set_id: string
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          evaluation_end?: string | null
+          evaluation_start?: string | null
+          hypothesis: string
+          id?: string
+          keyword_id?: string | null
+          mechanism: string
+          metadata?: Json
+          organization_id: string
+          page_id?: string | null
+          parent_theory_id?: string | null
+          site_id: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          business_link?: string
+          change_set_id?: string
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          evaluation_end?: string | null
+          evaluation_start?: string | null
+          hypothesis?: string
+          id?: string
+          keyword_id?: string | null
+          mechanism?: string
+          metadata?: Json
+          organization_id?: string
+          page_id?: string | null
+          parent_theory_id?: string | null
+          site_id?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_theory_change_set_id_fkey"
+            columns: ["change_set_id"]
+            isOneToOne: false
+            referencedRelation: "change_set"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_theory_change_set_id_fkey"
+            columns: ["change_set_id"]
+            isOneToOne: false
+            referencedRelation: "v_change_set_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_theory_keyword_id_fkey"
+            columns: ["keyword_id"]
+            isOneToOne: false
+            referencedRelation: "keyword"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_theory_parent_theory_id_fkey"
+            columns: ["parent_theory_id"]
+            isOneToOne: false
+            referencedRelation: "change_theory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_run: {
         Row: {
           attempt_count: number
@@ -41540,6 +42505,318 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      competitor: {
+        Row: {
+          analyzed_at: string | null
+          average_position: number | null
+          created_at: string
+          created_by: string
+          discovery_source: string
+          display_domain: string
+          display_name: string | null
+          estimated_traffic: number | null
+          first_observed_at: string | null
+          human_reviewed_at: string | null
+          human_ruling: Json
+          id: string
+          keyword_intersections: number | null
+          last_observed_at: string | null
+          latest_autopsy: Json
+          latest_run_id: string | null
+          normalized_domain: string
+          organic_keywords: number | null
+          organization_id: string
+          provider_evidence: Json
+          relevance_score: number | null
+          resolved_assessment: Json
+          site_id: string
+          threat_level: string | null
+          tracking_status: string
+          updated_at: string
+          visibility: number | null
+        }
+        Insert: {
+          analyzed_at?: string | null
+          average_position?: number | null
+          created_at?: string
+          created_by: string
+          discovery_source?: string
+          display_domain: string
+          display_name?: string | null
+          estimated_traffic?: number | null
+          first_observed_at?: string | null
+          human_reviewed_at?: string | null
+          human_ruling?: Json
+          id?: string
+          keyword_intersections?: number | null
+          last_observed_at?: string | null
+          latest_autopsy?: Json
+          latest_run_id?: string | null
+          normalized_domain: string
+          organic_keywords?: number | null
+          organization_id: string
+          provider_evidence?: Json
+          relevance_score?: number | null
+          resolved_assessment?: Json
+          site_id: string
+          threat_level?: string | null
+          tracking_status?: string
+          updated_at?: string
+          visibility?: number | null
+        }
+        Update: {
+          analyzed_at?: string | null
+          average_position?: number | null
+          created_at?: string
+          created_by?: string
+          discovery_source?: string
+          display_domain?: string
+          display_name?: string | null
+          estimated_traffic?: number | null
+          first_observed_at?: string | null
+          human_reviewed_at?: string | null
+          human_ruling?: Json
+          id?: string
+          keyword_intersections?: number | null
+          last_observed_at?: string | null
+          latest_autopsy?: Json
+          latest_run_id?: string | null
+          normalized_domain?: string
+          organic_keywords?: number | null
+          organization_id?: string
+          provider_evidence?: Json
+          relevance_score?: number | null
+          resolved_assessment?: Json
+          site_id?: string
+          threat_level?: string | null
+          tracking_status?: string
+          updated_at?: string
+          visibility?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_latest_run_id_fkey"
+            columns: ["latest_run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitor_observation: {
+        Row: {
+          average_position: number | null
+          competitor_id: string
+          created_at: string
+          created_by: string
+          dedup_key: string
+          estimated_traffic: number | null
+          id: string
+          keyword_intersections: number | null
+          language_code: string | null
+          location_code: number | null
+          median_position: number | null
+          metrics: Json
+          observed_at: string
+          organic_keywords: number | null
+          organization_id: string
+          paid_keywords: number | null
+          provider: string
+          rank_score: number | null
+          raw_payload_id: string | null
+          run_id: string
+          visibility: number | null
+        }
+        Insert: {
+          average_position?: number | null
+          competitor_id: string
+          created_at?: string
+          created_by: string
+          dedup_key: string
+          estimated_traffic?: number | null
+          id?: string
+          keyword_intersections?: number | null
+          language_code?: string | null
+          location_code?: number | null
+          median_position?: number | null
+          metrics?: Json
+          observed_at: string
+          organic_keywords?: number | null
+          organization_id: string
+          paid_keywords?: number | null
+          provider: string
+          rank_score?: number | null
+          raw_payload_id?: string | null
+          run_id: string
+          visibility?: number | null
+        }
+        Update: {
+          average_position?: number | null
+          competitor_id?: string
+          created_at?: string
+          created_by?: string
+          dedup_key?: string
+          estimated_traffic?: number | null
+          id?: string
+          keyword_intersections?: number | null
+          language_code?: string | null
+          location_code?: number | null
+          median_position?: number | null
+          metrics?: Json
+          observed_at?: string
+          organic_keywords?: number | null
+          organization_id?: string
+          paid_keywords?: number | null
+          provider?: string
+          rank_score?: number | null
+          raw_payload_id?: string | null
+          run_id?: string
+          visibility?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_observation_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_observation_raw_payload_id_fkey"
+            columns: ["raw_payload_id"]
+            isOneToOne: false
+            referencedRelation: "raw_payload"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_observation_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitor_opportunity: {
+        Row: {
+          accepted_at: string | null
+          competitor_domain: string
+          competitor_id: string | null
+          competitor_url: string | null
+          completed_at: string | null
+          confidence: number
+          created_at: string
+          created_by: string
+          current_advantage: string
+          dependencies: Json
+          dismissed_at: string | null
+          effort: string
+          evidence: Json
+          human_notes: string | null
+          id: string
+          impact: string
+          opportunity_key: string
+          opportunity_type: string
+          organization_id: string
+          primary_keyword: string | null
+          priority: number
+          recommended_action: string
+          run_id: string
+          site_id: string
+          status: string
+          supporting_keywords: Json
+          target_page_id: string | null
+          target_page_url: string | null
+          title: string
+          updated_at: string
+          verdict: string
+          why_competitor_wins: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          competitor_domain: string
+          competitor_id?: string | null
+          competitor_url?: string | null
+          completed_at?: string | null
+          confidence: number
+          created_at?: string
+          created_by: string
+          current_advantage: string
+          dependencies?: Json
+          dismissed_at?: string | null
+          effort: string
+          evidence?: Json
+          human_notes?: string | null
+          id?: string
+          impact: string
+          opportunity_key: string
+          opportunity_type: string
+          organization_id: string
+          primary_keyword?: string | null
+          priority: number
+          recommended_action: string
+          run_id: string
+          site_id: string
+          status?: string
+          supporting_keywords?: Json
+          target_page_id?: string | null
+          target_page_url?: string | null
+          title: string
+          updated_at?: string
+          verdict: string
+          why_competitor_wins: string
+        }
+        Update: {
+          accepted_at?: string | null
+          competitor_domain?: string
+          competitor_id?: string | null
+          competitor_url?: string | null
+          completed_at?: string | null
+          confidence?: number
+          created_at?: string
+          created_by?: string
+          current_advantage?: string
+          dependencies?: Json
+          dismissed_at?: string | null
+          effort?: string
+          evidence?: Json
+          human_notes?: string | null
+          id?: string
+          impact?: string
+          opportunity_key?: string
+          opportunity_type?: string
+          organization_id?: string
+          primary_keyword?: string | null
+          priority?: number
+          recommended_action?: string
+          run_id?: string
+          site_id?: string
+          status?: string
+          supporting_keywords?: Json
+          target_page_id?: string | null
+          target_page_url?: string | null
+          title?: string
+          updated_at?: string
+          verdict?: string
+          why_competitor_wins?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_opportunity_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_opportunity_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gsc_dig_rule: {
         Row: {
@@ -42693,6 +43970,184 @@ export type Database = {
         }
         Relationships: []
       }
+      reputation_case: {
+        Row: {
+          accepted_at: string | null
+          action_reason: string
+          analysis: Json
+          analysis_version: string
+          analyzed_at: string
+          backlink_id: string | null
+          case_key: string
+          case_type: string
+          completed_at: string | null
+          confidence: number
+          contradictions: Json
+          controllability: string
+          created_at: string
+          created_by: string
+          dismissed_at: string | null
+          evidence_fingerprint: string
+          evidence_quality: number
+          evidence_refs: Json
+          facts: Json
+          first_observed_at: string | null
+          headline: string
+          human_reviewed_at: string | null
+          human_ruling: Json
+          id: string
+          inferences: Json
+          last_observed_at: string | null
+          missing_evidence: Json
+          opportunity_score: number
+          organization_id: string
+          page_id: string | null
+          pitch_angle: string | null
+          primary_source_id: string | null
+          primary_source_kind: string
+          priority: number
+          recommended_action: string
+          referring_domain_profile_id: string | null
+          requires_human_review: boolean
+          resolved_assessment: Json
+          risk_score: number
+          run_id: string | null
+          sentiment: string
+          site_id: string
+          source_domain: string | null
+          source_title: string | null
+          source_url: string | null
+          status: string
+          summary: string
+          updated_at: string
+          verdict: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          action_reason: string
+          analysis?: Json
+          analysis_version: string
+          analyzed_at: string
+          backlink_id?: string | null
+          case_key: string
+          case_type: string
+          completed_at?: string | null
+          confidence: number
+          contradictions?: Json
+          controllability: string
+          created_at?: string
+          created_by: string
+          dismissed_at?: string | null
+          evidence_fingerprint: string
+          evidence_quality: number
+          evidence_refs?: Json
+          facts?: Json
+          first_observed_at?: string | null
+          headline: string
+          human_reviewed_at?: string | null
+          human_ruling?: Json
+          id?: string
+          inferences?: Json
+          last_observed_at?: string | null
+          missing_evidence?: Json
+          opportunity_score: number
+          organization_id: string
+          page_id?: string | null
+          pitch_angle?: string | null
+          primary_source_id?: string | null
+          primary_source_kind: string
+          priority: number
+          recommended_action: string
+          referring_domain_profile_id?: string | null
+          requires_human_review?: boolean
+          resolved_assessment?: Json
+          risk_score: number
+          run_id?: string | null
+          sentiment: string
+          site_id: string
+          source_domain?: string | null
+          source_title?: string | null
+          source_url?: string | null
+          status?: string
+          summary: string
+          updated_at?: string
+          verdict: string
+        }
+        Update: {
+          accepted_at?: string | null
+          action_reason?: string
+          analysis?: Json
+          analysis_version?: string
+          analyzed_at?: string
+          backlink_id?: string | null
+          case_key?: string
+          case_type?: string
+          completed_at?: string | null
+          confidence?: number
+          contradictions?: Json
+          controllability?: string
+          created_at?: string
+          created_by?: string
+          dismissed_at?: string | null
+          evidence_fingerprint?: string
+          evidence_quality?: number
+          evidence_refs?: Json
+          facts?: Json
+          first_observed_at?: string | null
+          headline?: string
+          human_reviewed_at?: string | null
+          human_ruling?: Json
+          id?: string
+          inferences?: Json
+          last_observed_at?: string | null
+          missing_evidence?: Json
+          opportunity_score?: number
+          organization_id?: string
+          page_id?: string | null
+          pitch_angle?: string | null
+          primary_source_id?: string | null
+          primary_source_kind?: string
+          priority?: number
+          recommended_action?: string
+          referring_domain_profile_id?: string | null
+          requires_human_review?: boolean
+          resolved_assessment?: Json
+          risk_score?: number
+          run_id?: string | null
+          sentiment?: string
+          site_id?: string
+          source_domain?: string | null
+          source_title?: string | null
+          source_url?: string | null
+          status?: string
+          summary?: string
+          updated_at?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reputation_case_backlink_id_fkey"
+            columns: ["backlink_id"]
+            isOneToOne: false
+            referencedRelation: "backlink"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reputation_case_referring_domain_profile_id_fkey"
+            columns: ["referring_domain_profile_id"]
+            isOneToOne: false
+            referencedRelation: "referring_domain_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reputation_case_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       search_performance_daily: {
         Row: {
           average_position: number | null
@@ -43277,6 +44732,41 @@ export type Database = {
       }
     }
     Views: {
+      v_change_set_summary: {
+        Row: {
+          business_outcome: string | null
+          change_kind: string | null
+          completed_at: string | null
+          confidence: number | null
+          created_at: string | null
+          created_by: string | null
+          deployed_at: string | null
+          id: string | null
+          item_count: number | null
+          last_assessed_at: string | null
+          mismatched_item_count: number | null
+          organization_id: string | null
+          planned_for: string | null
+          primary_page_id: string | null
+          primary_page_path: string | null
+          primary_page_url: string | null
+          rationale: string | null
+          refuted_theory_count: number | null
+          site_id: string | null
+          source: string | null
+          status: string | null
+          summary: string | null
+          supported_theory_count: number | null
+          theory_count: number | null
+          title: string | null
+          updated_at: string | null
+          updated_by: string | null
+          verification_due_at: string | null
+          verified_item_count: number | null
+          version: number | null
+        }
+        Relationships: []
+      }
       v_site_keyword_performance: {
         Row: {
           average_position: number | null
@@ -43315,6 +44805,22 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_untracked_snapshot_change: {
+        Row: {
+          captured_at: string | null
+          changed_fields: string[] | null
+          crawl_session_id: string | null
+          id: string | null
+          organization_id: string | null
+          page_id: string | null
+          page_path: string | null
+          page_url: string | null
+          previous_snapshot_id: string | null
+          site_id: string | null
+          snapshot_id: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -43874,6 +45380,14 @@ export type Database = {
           ai_assessment: Json
           analyzed_at: string | null
           anchor_text: string | null
+          assessment_action: string | null
+          assessment_control_level: string | null
+          assessment_page_type: string | null
+          assessment_priority: string | null
+          assessment_relevance_score: number | null
+          assessment_relevance_verdict: string | null
+          assessment_risk_verdict: string | null
+          assessment_score: number | null
           assessment_version: string | null
           captured_at: string | null
           claim_expires_at: string | null
@@ -43918,6 +45432,95 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_competitor_opportunity_status: {
+        Args: {
+          p_human_notes?: string
+          p_opportunity_id: string
+          p_status: string
+        }
+        Returns: {
+          accepted_at: string | null
+          competitor_domain: string
+          competitor_id: string | null
+          competitor_url: string | null
+          completed_at: string | null
+          confidence: number
+          created_at: string
+          created_by: string
+          current_advantage: string
+          dependencies: Json
+          dismissed_at: string | null
+          effort: string
+          evidence: Json
+          human_notes: string | null
+          id: string
+          impact: string
+          opportunity_key: string
+          opportunity_type: string
+          organization_id: string
+          primary_keyword: string | null
+          priority: number
+          recommended_action: string
+          run_id: string
+          site_id: string
+          status: string
+          supporting_keywords: Json
+          target_page_id: string | null
+          target_page_url: string | null
+          title: string
+          updated_at: string
+          verdict: string
+          why_competitor_wins: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "competitor_opportunity"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_competitor_tracking: {
+        Args: {
+          p_competitor_id: string
+          p_human_ruling?: Json
+          p_tracking_status: string
+        }
+        Returns: {
+          analyzed_at: string | null
+          average_position: number | null
+          created_at: string
+          created_by: string
+          discovery_source: string
+          display_domain: string
+          display_name: string | null
+          estimated_traffic: number | null
+          first_observed_at: string | null
+          human_reviewed_at: string | null
+          human_ruling: Json
+          id: string
+          keyword_intersections: number | null
+          last_observed_at: string | null
+          latest_autopsy: Json
+          latest_run_id: string | null
+          normalized_domain: string
+          organic_keywords: number | null
+          organization_id: string
+          provider_evidence: Json
+          relevance_score: number | null
+          resolved_assessment: Json
+          site_id: string
+          threat_level: string | null
+          tracking_status: string
+          updated_at: string
+          visibility: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "competitor"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_referring_domain_human_ruling: {
         Args: { p_profile_id: string; p_ruling: Json }
         Returns: {
@@ -43948,6 +45551,66 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "referring_domain_profile"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_reputation_case: {
+        Args: { p_case_id: string; p_human_ruling?: Json; p_status: string }
+        Returns: {
+          accepted_at: string | null
+          action_reason: string
+          analysis: Json
+          analysis_version: string
+          analyzed_at: string
+          backlink_id: string | null
+          case_key: string
+          case_type: string
+          completed_at: string | null
+          confidence: number
+          contradictions: Json
+          controllability: string
+          created_at: string
+          created_by: string
+          dismissed_at: string | null
+          evidence_fingerprint: string
+          evidence_quality: number
+          evidence_refs: Json
+          facts: Json
+          first_observed_at: string | null
+          headline: string
+          human_reviewed_at: string | null
+          human_ruling: Json
+          id: string
+          inferences: Json
+          last_observed_at: string | null
+          missing_evidence: Json
+          opportunity_score: number
+          organization_id: string
+          page_id: string | null
+          pitch_angle: string | null
+          primary_source_id: string | null
+          primary_source_kind: string
+          priority: number
+          recommended_action: string
+          referring_domain_profile_id: string | null
+          requires_human_review: boolean
+          resolved_assessment: Json
+          risk_score: number
+          run_id: string | null
+          sentiment: string
+          site_id: string
+          source_domain: string | null
+          source_title: string | null
+          source_url: string | null
+          status: string
+          summary: string
+          updated_at: string
+          verdict: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reputation_case"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -48006,207 +49669,6 @@ export type Database = {
           },
         ]
       }
-      batch_item: {
-        Row: {
-          batch_id: string
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          error: string | null
-          external_ref: string | null
-          id: string
-          item_id: string
-          metadata: Json
-          organization_id: string
-          provider_id: string
-          result_id: string | null
-          site_id: string
-          status: string
-          subject_id: string
-          subject_type: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          batch_id: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          error?: string | null
-          external_ref?: string | null
-          id?: string
-          item_id: string
-          metadata?: Json
-          organization_id: string
-          provider_id: string
-          result_id?: string | null
-          site_id: string
-          status?: string
-          subject_id: string
-          subject_type: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          batch_id?: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          error?: string | null
-          external_ref?: string | null
-          id?: string
-          item_id?: string
-          metadata?: Json
-          organization_id?: string
-          provider_id?: string
-          result_id?: string | null
-          site_id?: string
-          status?: string
-          subject_id?: string
-          subject_type?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "batch_item_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "batch_job"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "analysis_item"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_provider_id_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "provider"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_result_id_fkey"
-            columns: ["result_id"]
-            isOneToOne: false
-            referencedRelation: "analysis_result"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_result_id_fkey"
-            columns: ["result_id"]
-            isOneToOne: false
-            referencedRelation: "v_latest_result"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "site"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "v_site_kpis"
-            referencedColumns: ["site_id"]
-          },
-        ]
-      }
-      batch_job: {
-        Row: {
-          completed_at: string | null
-          counts: Json
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          error: string | null
-          external_ref: string | null
-          id: string
-          kind: string
-          metadata: Json
-          organization_id: string
-          provider_id: string
-          site_id: string
-          status: string
-          submitted_at: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          completed_at?: string | null
-          counts?: Json
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          error?: string | null
-          external_ref?: string | null
-          id?: string
-          kind: string
-          metadata?: Json
-          organization_id: string
-          provider_id: string
-          site_id: string
-          status?: string
-          submitted_at?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          completed_at?: string | null
-          counts?: Json
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          error?: string | null
-          external_ref?: string | null
-          id?: string
-          kind?: string
-          metadata?: Json
-          organization_id?: string
-          provider_id?: string
-          site_id?: string
-          status?: string
-          submitted_at?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "batch_job_provider_id_fkey"
-            columns: ["provider_id"]
-            isOneToOne: false
-            referencedRelation: "provider"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_job_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "site"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_job_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "v_site_kpis"
-            referencedColumns: ["site_id"]
-          },
-        ]
-      }
       brand: {
         Row: {
           created_at: string
@@ -50465,143 +51927,6 @@ export type Database = {
       }
     }
     Views: {
-      v_cost_by_client: {
-        Row: {
-          client_org_id: string | null
-          cost: number | null
-        }
-        Relationships: []
-      }
-      v_cost_by_item: {
-        Row: {
-          batch_id: string | null
-          batch_item_id: string | null
-          cost: number | null
-          organization_id: string | null
-          page_id: string | null
-          run_id: string | null
-          site_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "analysis_result_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "page"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "analysis_result_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "v_page_list"
-            referencedColumns: ["page_id"]
-          },
-          {
-            foreignKeyName: "batch_item_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "batch_job"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "site"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "v_site_kpis"
-            referencedColumns: ["site_id"]
-          },
-        ]
-      }
-      v_cost_by_page: {
-        Row: {
-          cost: number | null
-          page_id: string | null
-          site_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "analysis_result_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "page"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "analysis_result_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "v_page_list"
-            referencedColumns: ["page_id"]
-          },
-          {
-            foreignKeyName: "batch_item_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "site"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "v_site_kpis"
-            referencedColumns: ["site_id"]
-          },
-        ]
-      }
-      v_cost_by_run: {
-        Row: {
-          cost: number | null
-          run_id: string | null
-          site_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "batch_item_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "site"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "v_site_kpis"
-            referencedColumns: ["site_id"]
-          },
-        ]
-      }
-      v_cost_by_site: {
-        Row: {
-          cost: number | null
-          site_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "batch_item_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "site"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "batch_item_site_id_fkey"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "v_site_kpis"
-            referencedColumns: ["site_id"]
-          },
-        ]
-      }
       v_latest_result: {
         Row: {
           batch_id: string | null
@@ -50892,10 +52217,6 @@ export type Database = {
           p_versioned?: boolean
         }
         Returns: undefined
-      }
-      cost_for_batch_item: {
-        Args: { p_batch_item_id: string; p_site_id: string }
-        Returns: number
       }
       count_link_edges: {
         Args: {
@@ -52418,6 +53739,204 @@ export type Database = {
             columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan: {
+        Row: {
+          allow_stand_in_in_production: boolean
+          alternatives: Json
+          conversation_id: string | null
+          created_at: string
+          definition_id: string
+          deleted_at: string | null
+          id: string
+          input_shape: Json | null
+          intent: string
+          internal_definition: Json | null
+          merged_into_plan_id: string | null
+          name: string
+          node_id: string | null
+          notes: string
+          organization_id: string
+          origin: string
+          output_shape: Json | null
+          parent_plan_id: string | null
+          phase: string
+          promoted_definition_id: string | null
+          resolution: Json | null
+          resolved_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          verification: Json | null
+          version: number
+        }
+        Insert: {
+          allow_stand_in_in_production?: boolean
+          alternatives?: Json
+          conversation_id?: string | null
+          created_at?: string
+          definition_id: string
+          deleted_at?: string | null
+          id?: string
+          input_shape?: Json | null
+          intent?: string
+          internal_definition?: Json | null
+          merged_into_plan_id?: string | null
+          name?: string
+          node_id?: string | null
+          notes?: string
+          organization_id: string
+          origin?: string
+          output_shape?: Json | null
+          parent_plan_id?: string | null
+          phase?: string
+          promoted_definition_id?: string | null
+          resolution?: Json | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          verification?: Json | null
+          version?: number
+        }
+        Update: {
+          allow_stand_in_in_production?: boolean
+          alternatives?: Json
+          conversation_id?: string | null
+          created_at?: string
+          definition_id?: string
+          deleted_at?: string | null
+          id?: string
+          input_shape?: Json | null
+          intent?: string
+          internal_definition?: Json | null
+          merged_into_plan_id?: string | null
+          name?: string
+          node_id?: string | null
+          notes?: string
+          organization_id?: string
+          origin?: string
+          output_shape?: Json | null
+          parent_plan_id?: string | null
+          phase?: string
+          promoted_definition_id?: string | null
+          resolution?: Json | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verification?: Json | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_merged_into_plan_id_fkey"
+            columns: ["merged_into_plan_id"]
+            isOneToOne: false
+            referencedRelation: "plan"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_parent_plan_id_fkey"
+            columns: ["parent_plan_id"]
+            isOneToOne: false
+            referencedRelation: "plan"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_promoted_definition_id_fkey"
+            columns: ["promoted_definition_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_event: {
+        Row: {
+          actor: string
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          plan_id: string
+        }
+        Insert: {
+          actor?: string
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          plan_id: string
+        }
+        Update: {
+          actor?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_event_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_sample: {
+        Row: {
+          created_at: string
+          data: Json
+          direction: string
+          id: string
+          is_stand_in: boolean
+          plan_id: string
+          scenario: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          direction: string
+          id?: string
+          is_stand_in?: boolean
+          plan_id: string
+          scenario?: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          direction?: string
+          id?: string
+          is_stand_in?: boolean
+          plan_id?: string
+          scenario?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_sample_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plan"
             referencedColumns: ["id"]
           },
         ]
