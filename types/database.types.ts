@@ -35127,6 +35127,14 @@ export type Database = {
         Returns: undefined
       }
       mtx_is_durable_media_url: { Args: { url: string }; Returns: boolean }
+      mtx_media_durability_health: {
+        Args: never
+        Returns: {
+          check_name: string
+          detail: string
+          ok: boolean
+        }[]
+      }
       mtx_media_durability_scan: {
         Args: { p_full?: boolean; p_schema?: string }
         Returns: {

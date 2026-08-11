@@ -38,9 +38,20 @@ renders it with no session, so an anonymous recipient cannot re-mint. **Zero of 
 notes are currently shared**, so there is no live exposure; the mismatch is latent. It
 was NOT auto-healed because the only durable ref for a private embedded image is a
 permanently public URL, and publishing a user's private asset to make a scan pass is a
-data-exposure incident. Two legitimate resolutions: publish those specific assets, or
-add token-scoped minting to the share lane. Detection is live and repeatable:
-`pnpm check:media-durability` (`scripts/media-durability/FEATURE.md`).
+data-exposure incident. **These URLs are already dead, not merely expiring** — all 4 distinct own-signed URLs
+return HTTP 403 today (flipping a file public MOVES the S3 object, invalidating every
+signed URL already handed out for it). The owner still sees the images because
+`useRemintableSrc` re-mints on load failure; an anonymous share recipient would see them
+broken immediately. Of the three recoverable file_ids, two are live `files.files` rows at
+`visibility='internal'`; the third (`da5868b9-0925-47af-b6e5-f150628b8bf6`) has no
+`files.files` row at all and is **unhealable by any decision**.
+
+Three resolutions, best first — **mint the durable URL AT SHARE TIME** (on publish, flip
+only the images that note actually references, so the default stays private and nothing
+becomes public until the user chooses to share); or publish those specific assets outright
+(simplest, but permanently world-readable even after the share is revoked); or add
+token-scoped minting to the share lane (most correct, most work). Detection is live and
+repeatable: `pnpm check:media-durability` (`scripts/media-durability/FEATURE.md`).
 
 ### D155 — Google's grounded stream DROPS a span of the answer (proven at the SSE chunk level) (2026-08-11)
 

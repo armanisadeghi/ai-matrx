@@ -315,7 +315,13 @@
       "healable_pending_decision": [
         "69f5ae74-560d-4bf5-b42e-47593076396f (files.files, visibility=internal)",
         "54582f60-d21d-4b5a-8b5e-3621ad969e84 (files.files, visibility=internal)"
-      ]
+      ],
+      "resolution_options": [
+        "PREFERRED (proposed by the podcast/aidream session): mint the durable URL AT SHARE TIME \u2014 on publish, flip only the images that note actually references. The default stays private, nothing becomes public until the user chooses to share, and the anonymous viewer is still fixed. Put this in front of Arman first.",
+        "Publish those specific assets outright \u2014 simplest, but makes currently-internal images world-readable forever, including after the share is revoked.",
+        "Add token-scoped media minting to the share lane \u2014 most correct, most work: the share token authorizes a short-lived mint for the images that note references, so nothing is ever permanently public."
+      ],
+      "decision_owner": "Arman \u2014 a product decision about a user's private content, not a cleanup an agent may perform."
     }
   ]
 }
