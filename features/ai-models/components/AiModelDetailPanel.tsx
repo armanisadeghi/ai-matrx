@@ -35,6 +35,12 @@ import {
   PanelRight,
 } from "lucide-react";
 import AiModelForm from "./AiModelForm";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_AI_MODELS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-ai-models.manifest";
+import {
+  normalizeModelCommonName,
+  normalizeModelDescription,
+} from "../model-metadata";
 import JsonFieldEditor from "./JsonFieldEditor";
 import ModelRulesEditor from "./ModelRulesEditor";
 import ModelControlsEditor from "./controls/ModelControlsEditor";
@@ -62,6 +68,7 @@ function rowToFormData(row: AiModel): AiModelFormData {
   return {
     name: row.name ?? "",
     common_name: row.common_name ?? "",
+    description: row.description ?? "",
     context_window:
       row.context_window != null ? String(row.context_window) : "",
     max_tokens: row.max_tokens != null ? String(row.max_tokens) : "",
@@ -82,6 +89,7 @@ function rowToFormData(row: AiModel): AiModelFormData {
 const EMPTY_FORM: AiModelFormData = {
   name: "",
   common_name: "",
+  description: "",
   context_window: "",
   max_tokens: "",
   provider_id: "",
@@ -528,6 +536,11 @@ const AI_MODEL_COLUMNS = new Set([
   "id",
   "name",
   "common_name",
+  // Registry prose. Was missing from this whitelist, which silently STRIPPED a
+  // pasted `description` — the column existed, was rendered to users in the
+  // model pickers, and had no editor anywhere. It now has one (AiModelForm)
+  // and is a declared surface write target; both need it to survive a save.
+  "description",
   "context_window",
   "max_tokens",
   "provider_id",
@@ -1047,6 +1060,7 @@ export default function AiModelDetailPanel({
         const payload = {
           name: formData.name.trim(),
           common_name: formData.common_name.trim() || null,
+          description: formData.description.trim() || null,
           context_window: formData.context_window
             ? parseInt(formData.context_window)
             : null,
@@ -1138,6 +1152,81 @@ export default function AiModelDetailPanel({
       const updated = await aiModelService.update(model.id, { [field]: data });
       onSaved(updated);
     };
+
+  // ─── Surface write targets — `matrx-admin/ai-models` ────────────────────
+  //
+  // Registered from the DETAIL PANEL, not from AiModelsContainer: the
+  // container mounts the provider and owns the catalogue, but this component
+  // owns the form state, the canonical save path and the `saving` flag a write
+  // has to respect. Both live inside the same provider, so this is one surface
+  // with one set of targets — the list itself registers none, because the only
+  // state it owns is browse state, which is not writable here.
+  //
+  // Only the two AUTHORED-COPY columns are writable. Capabilities, limits,
+  // ratings, standing flags and fallback routing all change what the platform
+  // DOES with this model for every caller on it and stay human — the manifest's
+  // writeTargets doc comment argues that line field by field.
+  //
+  // Each handler validates first and THROWS on a bad shape or a bad moment; the
+  // writeback seam turns a throw into an error envelope the agent reads. On
+  // success it writes the ONE column through `aiModelService.update` (the exact
+  // call handleSave makes) and then patches the saved value into BOTH formData
+  // and baseline, so the panel shows what landed and the field does not read as
+  // an unsaved edit that a later Save would clobber with a stale value.
+  const assertWritable = (target: string): AiModel => {
+    if (isNew || !model) {
+      throw new Error(
+        `${target} needs a saved model open in the detail panel. The panel is currently creating a new model — creating a model is the admin's own flow, so open an existing model first.`,
+      );
+    }
+    if (saving) {
+      throw new Error(
+        `${target} was refused because a save is already in flight on this model. Wait for it to finish, re-read the value, and try again — writing mid-save would race the panel's own write.`,
+      );
+    }
+    if (rawJsonDirty) {
+      throw new Error(
+        `${target} was refused because the Raw JSON tab has unsaved edits. That tab saves the WHOLE model row, so it would overwrite this write the next time the admin saves. Ask the admin to save or reset the Raw JSON tab first.`,
+      );
+    }
+    return model;
+  };
+
+  const applyModelCopyWrite = async (
+    target: "description" | "common_name",
+    validated: string | null,
+  ) => {
+    const target_name =
+      target === "description" ? "model_description" : "model_common_name";
+    const open = assertWritable(target_name);
+    const saved = await aiModelService.update(open.id, {
+      [target]: validated,
+    } as Partial<AiModel>);
+    const landed = (saved[target] ?? "") as string;
+    setFormData((prev) => ({ ...prev, [target]: landed }));
+    setBaseline((prev) => ({ ...prev, [target]: landed }));
+    setRawJsonText(JSON.stringify(saved, null, 2));
+    setSaveError(null);
+    setSavedFlash(true);
+    if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    savedTimerRef.current = setTimeout(() => setSavedFlash(false), 2500);
+    onSaved(saved);
+  };
+
+  useSurfaceWriteHandlers(ADMIN_AI_MODELS_SURFACE_NAME, {
+    model_description: async (value) => {
+      // Validate BEFORE the writability checks would matter either way, but
+      // after nothing: a bad shape and a bad moment are both refusals, and the
+      // agent should hear whichever it hit. Shape first — it is the one the
+      // agent can fix without waiting.
+      const description = normalizeModelDescription(value);
+      await applyModelCopyWrite("description", description);
+    },
+    model_common_name: async (value) => {
+      const common_name = normalizeModelCommonName(value);
+      await applyModelCopyWrite("common_name", common_name);
+    },
+  });
 
   const usingRawJsonForNew =
     isNew &&

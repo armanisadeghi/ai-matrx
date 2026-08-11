@@ -2,12 +2,14 @@
 
 import React from 'react';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Trash2 } from 'lucide-react';
+import { MODEL_DESCRIPTION_MAX_CHARS } from '../model-metadata';
 import type { AiModelFormData, AiProvider, AiModel } from '../types';
 
 interface AiModelFormProps {
@@ -55,7 +57,7 @@ export default function AiModelForm({
     onDelete,
 }: AiModelFormProps) {
     const set = (key: keyof AiModelFormData) => (
-        e: React.ChangeEvent<HTMLInputElement>
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => onChange({ ...data, [key]: e.target.value });
 
     const toggle = (key: keyof AiModelFormData) => (checked: boolean) =>
@@ -108,6 +110,25 @@ export default function AiModelForm({
                     />
                 </FormField>
             </div>
+
+            {/* Registry description. Users read this under the model's name in
+                every model picker, so it is the one field on this form that is
+                pure copy. It is also the human correction path for the
+                `model_description` surface write target — an agent may write
+                this column, and an admin has to be able to fix what it wrote. */}
+            <FormField
+                label="Description"
+                description={`Shown to users under the model name in pickers. Say what it is good at and when to pick something else — not the numbers already displayed. Max ${MODEL_DESCRIPTION_MAX_CHARS} characters; blank clears it.`}
+            >
+                <Textarea
+                    value={data.description}
+                    onChange={set('description')}
+                    maxLength={MODEL_DESCRIPTION_MAX_CHARS}
+                    rows={3}
+                    placeholder="e.g. Balanced everyday model — fast enough for chat, strong at code and long documents."
+                    className="text-sm min-h-[68px] resize-y"
+                />
+            </FormField>
 
             <FormField label="Provider" description="ai.provider record (provider_id FK) — the model's maker. The old free-text provider column is dropped and derived, never edited.">
                 <Select
