@@ -48,7 +48,7 @@ export function humanBacklinkRow(row: BacklinkObservationRow): string {
   const factLine = facts.length ? `\n  ${facts.join(" · ")}` : "";
   const verdictLine = assessment.action
     ? `\n  Our score ${assessment.overallScore ?? "—"} · relevance ${assessment.relevanceVerdict ?? "unknown"} · action ${assessment.action}`
-    : "\n  Source-page enrichment is awaiting analysis";
+    : "\n  The page this link sits on has not been reviewed yet";
   return `${row.source_domain ?? row.source_url}${rank}: ${row.state} ${follow} link${anchor}\n  ${row.source_url}\n  → ${row.target_url}${lastSeen}${factLine}${verdictLine}`;
 }
 
@@ -70,9 +70,9 @@ export function humanDimensionList(
   title: string,
   rows: BacklinkDimensionRow[],
 ): string {
-  if (!rows.length) return `${title}: no stored rows yet.`;
+  if (!rows.length) return `${title}: nothing collected yet.`;
   return [
-    `${title} (${rows.length} stored):`,
+    `${title} (${rows.length}):`,
     ...rows.map((row) => `- ${humanDimensionRow(row)}`),
   ].join("\n");
 }
@@ -94,25 +94,28 @@ export function humanSummarySnapshot(
   summary: BacklinkSnapshotRow | undefined,
   siteDomain: string,
 ): string {
-  if (!summary) return `No backlink summary snapshot stored for ${siteDomain}.`;
+  if (!summary) return `We have not checked ${siteDomain}'s links yet.`;
   return [
-    `Backlink summary for ${siteDomain} (collected ${summary.created_at?.slice(0, 10) ?? "unknown"}):`,
+    // `observed_at` is WHEN the check happened; `created_at` is when we wrote
+    // the row. The KPI strip's "Last checked" reads observed_at, so this must
+    // too — the same phrase must never name two different days.
+    `Backlinks for ${siteDomain} (last checked ${summary.observed_at.slice(0, 10)}):`,
     `- Backlinks: ${formatCount(summary.total_backlinks)}`,
     `- Referring domains: ${formatCount(summary.referring_domains)}`,
-    `- Dofollow: ${formatCount(summary.dofollow_backlinks)}`,
-    `- Nofollow: ${formatCount(summary.nofollow_backlinks)}`,
-    `- Rank score: ${formatCount(summary.rank_score)}`,
+    `- Pass SEO credit (dofollow): ${formatCount(summary.dofollow_backlinks)}`,
+    `- Do not pass credit (nofollow): ${formatCount(summary.nofollow_backlinks)}`,
+    `- Site authority (0–1000): ${formatCount(summary.rank_score)}`,
   ].join("\n");
 }
 
 export function humanTrend(points: BacklinkTrendPoint[]): string {
-  if (!points.length) return "No backlink trend points stored yet.";
+  if (!points.length) return "No history of links gained and lost yet.";
   const first = points[0];
   const last = points[points.length - 1];
   const totalNew = points.reduce((n, p) => n + (p.new_backlinks ?? 0), 0);
   const totalLost = points.reduce((n, p) => n + (p.lost_backlinks ?? 0), 0);
   return [
-    `Backlink trend: ${points.length} periods, ${first.observed_at.slice(0, 10)} → ${last.observed_at.slice(0, 10)}.`,
+    `Links gained and lost over ${points.length} periods, ${first.observed_at.slice(0, 10)} → ${last.observed_at.slice(0, 10)}.`,
     `- New: ${formatCount(totalNew)} · Lost: ${formatCount(totalLost)} · Net: ${formatCount(totalNew - totalLost)}`,
     last.total_backlinks !== null
       ? `- Latest totals: ${formatCount(last.total_backlinks)} backlinks, ${formatCount(last.referring_domains)} referring domains`

@@ -450,6 +450,7 @@ export async function getFindingDetail(
     response.data,
     response.error,
     "finding",
+    findingId,
   );
 
   const [pages, item, results] = await Promise.all([

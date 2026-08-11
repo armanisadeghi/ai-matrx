@@ -559,12 +559,22 @@ reviewing login) is a member of none of the orgs holding the brands —
 (aimatrx.com, allgreenrecycling.com, titaniumsuccess.com, datadestruction.com).
 `arman@armansadeghi.com` sees only the three client sites it created. Per the security
 philosophy this is the over-tightening defect class: the owner blocked from his own data.
-**Decision needed (Arman):** which of your accounts should be members of which orgs —
-memberships are one INSERT each once ruled. Also: the "deleted or no longer accessible"
-message conflates deleted with RLS-invisible; consider splitting the wording so an access
-gap stops masquerading as data loss (this one cost two review round-trips). Review items
-2ecba5c0/b60b6c75 were repointed at datadestruction.com (visible to admin@admin.com) and
-resubmitted.
+**Decision needed (Arman) — STILL OPEN:** which of your accounts should be members of which
+orgs — memberships are one INSERT each once ruled. Review items 2ecba5c0/b60b6c75 were
+repointed at datadestruction.com (visible to admin@admin.com) and resubmitted.
+
+**The wording half is DONE (2026-08-11).** `lib/records/recordUnavailable.ts` +
+`RecordUnavailableNotice` are the one shape for a zero-row single-record read: `deleted` is
+claimed ONLY when a probe read the row and saw `deleted_at`; otherwise the copy states both
+possibilities and the surface offers real doors instead of a dead sentence. Reads that can
+cheaply re-ask without the `deleted_at` filter use `assertFoundOrProbeDeleted`
+(`features/marketing/data/service.ts`) and get the truth. Every construction reports into
+the Error Inspector — an access gap masquerading as data loss is a defect to find, not a
+friendly sentence to render. The last read still hard-claiming deletion
+(`integrations-service.ts#getCurrentSite`) was migrated the same day; the exact sentence
+"This site was deleted or is no longer accessible." no longer exists in the tree.
+**This does not close the defect** — the membership question above is the actual cause, and
+honest ambiguity is a better error message, not access.
 
 ### D134 — agx_list_scoped org-grant branch: nondeterministic access_level (2026-08-08)
 

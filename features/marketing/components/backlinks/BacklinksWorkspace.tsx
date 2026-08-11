@@ -57,12 +57,13 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  formatCompactDate,
   InlineQueryError,
   LoadingSurface,
+  MetricCell,
   QueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { formatGscDate } from "@/features/marketing/search-console/lib/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingBacklinksScope } from "@/features/surfaces/manifests/marketing-backlinks.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -79,9 +80,14 @@ import { BacklinkTrendChart } from "@/features/marketing/components/backlinks/Ba
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
 import { BacklinkDimensionTable } from "@/features/marketing/components/backlinks/BacklinkDimensionTable";
 import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/BacklinkInsightsTab";
+import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
 import { ReferringDomainIntelligenceTable } from "@/features/marketing/components/backlinks/ReferringDomainIntelligenceTable";
 import {
+  BACKLINK_REFRESH_PROFILES,
   BACKLINK_TABS,
+  backlinkEmptyHint,
+  backlinkRefreshProfileLabel,
+  DOMAIN_RANK_EXPLAINER,
   isBacklinkTabKey,
   spamTone,
   type BacklinkTabKey,
@@ -141,6 +147,28 @@ const DIMENSION_KIND_BY_TAB = {
 
 type DimensionTabKey = keyof typeof DIMENSION_KIND_BY_TAB;
 
+/**
+ * The Referring domains tab holds TWO datasets over the same subject, and the
+ * user picks which one explicitly. "Our view" is the first-party
+ * `referring_domain_profile` directory (our score, verdict, ruling); "What the
+ * data service reported" is the provider's referring-domain aggregate snapshot
+ * (referring pages, platform/country mix, broken count, first/last seen).
+ * Before this toggle the provider table was unreachable — the `domains` branch
+ * returned first — so those columns were collected, stored, and invisible.
+ */
+const DOMAIN_VIEW_PARAM = "domainView";
+
+const DOMAIN_VIEWS = [
+  { key: "ours", label: "Our view" },
+  { key: "provider", label: "What the data service reported" },
+] as const;
+
+type DomainViewKey = (typeof DOMAIN_VIEWS)[number]["key"];
+
+function isDomainViewKey(value: string | null): value is DomainViewKey {
+  return DOMAIN_VIEWS.some((view) => view.key === value);
+}
+
 function isDimensionTab(tab: BacklinkTabKey): tab is DimensionTabKey {
   return tab in DIMENSION_KIND_BY_TAB;
 }
@@ -155,6 +183,7 @@ function TopTenCard({
   location,
   siteDomain,
   showIntersections = false,
+  ourPagesPath = null,
 }: {
   title: string;
   anchor: string;
@@ -165,6 +194,13 @@ function TopTenCard({
   location: string;
   siteDomain: string;
   showIntersections?: boolean;
+  /**
+   * Set for the "Top pages" card only: these rows are OUR pages, so the name
+   * opens the page inside AI Matrx (`{sitePath}/pages` searched by URL —
+   * dimension snapshot rows carry no `page_id`), with the live URL kept as a
+   * separate new-tab affordance.
+   */
+  ourPagesPath?: string | null;
 }) {
   const visible = rows.slice(0, 10);
   return (
@@ -179,7 +215,7 @@ function TopTenCard({
         agent: (): AgentPayloadInput => ({
           kind: `${kind}-list`,
           location,
-          description: `The stored "${title}" backlink dimension rows for ${siteDomain}.`,
+          description: `The stored "${title}" rows for ${siteDomain}.`,
           data: rows,
           summary: humanDimensionList(title, rows),
           attributes: { fetched: rows.length, shown: visible.length },
@@ -193,6 +229,11 @@ function TopTenCard({
           const extras = showIntersections
             ? parseDimensionExtras(row.extras)
             : null;
+          const ourPageUrl = row.url ?? row.dimension_key;
+          const internalHref =
+            ourPagesPath && ourPageUrl
+              ? `${ourPagesPath}/pages?q=${encodeURIComponent(ourPageUrl)}`
+              : null;
           return (
             <div
               key={row.id}
@@ -203,12 +244,33 @@ function TopTenCard({
                   <span
                     className={cn(
                       "h-1.5 w-1.5 shrink-0 rounded-full",
-                      tone === "toxic" ? "bg-destructive" : "bg-amber-500",
+                      tone === "toxic" ? "bg-destructive" : "bg-warning",
                     )}
                     title={`Spam score ${row.spam_score}`}
                   />
                 ) : null}
-                {row.url ? (
+                {internalHref ? (
+                  <>
+                    <Link
+                      href={internalHref}
+                      className="min-w-0 truncate text-foreground hover:text-primary hover:underline"
+                      title={`Open ${label} in AI Matrx`}
+                    >
+                      {label}
+                    </Link>
+                    {row.url ? (
+                      <a
+                        href={row.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`Open ${row.url} live`}
+                        aria-label={`Open ${label} live in a new tab`}
+                      >
+                        <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground hover:text-primary" />
+                      </a>
+                    ) : null}
+                  </>
+                ) : row.url ? (
                   <a
                     href={row.url}
                     target="_blank"
@@ -238,9 +300,9 @@ function TopTenCard({
                 {row.rank_score !== null ? (
                   <span
                     className="text-[11px] text-muted-foreground"
-                    title="DataForSEO rank (0–1000)"
+                    title={DOMAIN_RANK_EXPLAINER}
                   >
-                    r{row.rank_score}
+                    Authority {row.rank_score}
                   </span>
                 ) : null}
                 <span className="font-medium text-foreground">
@@ -252,8 +314,7 @@ function TopTenCard({
         })}
         {visible.length === 0 ? (
           <p className="py-1 text-xs text-muted-foreground">
-            No stored rows yet — run a Weekly core or Full bootstrap refresh to
-            collect this rollup.
+            {backlinkEmptyHint(title.toLowerCase())}
           </p>
         ) : rows.length > visible.length ? (
           <p className="pt-0.5 text-[11px] text-muted-foreground">
@@ -287,6 +348,8 @@ export function BacklinksWorkspace() {
     analysisDisabled,
     analysisRuns,
     batchAnalyzing,
+    batchRun,
+    dismissBatchRun,
     analyzeBacklink,
     analyzeNext,
     dismissAnalysisRun,
@@ -312,10 +375,21 @@ export function BacklinksWorkspace() {
   const tab: BacklinkTabKey = isBacklinkTabKey(tabParam)
     ? tabParam
     : "overview";
-  const tabHref = (next: BacklinkTabKey): string => {
+  const domainViewParam = searchParams.get(DOMAIN_VIEW_PARAM);
+  const domainView: DomainViewKey = isDomainViewKey(domainViewParam)
+    ? domainViewParam
+    : "ours";
+  const tabHref = (
+    next: BacklinkTabKey,
+    extra?: Record<string, string>,
+  ): string => {
     const params = new URLSearchParams(searchParams.toString());
     if (next === "overview") params.delete("tab");
     else params.set("tab", next);
+    params.delete(DOMAIN_VIEW_PARAM);
+    for (const [key, value] of Object.entries(extra ?? {})) {
+      params.set(key, value);
+    }
     // Every tab's table persists state through the same URL params
     // (useMarketingTableState). Drop them on tab switch so one tab's
     // paging/filters never leak into another's query.
@@ -326,6 +400,18 @@ export function BacklinksWorkspace() {
   const setTab = (next: BacklinkTabKey) => {
     startNavigation(() => {
       router.replace(tabHref(next), { scroll: false });
+    });
+  };
+
+  const setDomainView = (next: DomainViewKey) => {
+    if (next === domainView) return;
+    startNavigation(() => {
+      // The two views are different tables with different columns — one's
+      // paging/sort/search must never carry into the other's query.
+      router.replace(
+        tabHref("domains", next === "ours" ? {} : { [DOMAIN_VIEW_PARAM]: next }),
+        { scroll: false },
+      );
     });
   };
 
@@ -348,8 +434,8 @@ export function BacklinksWorkspace() {
       void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
       toast.success(
         schedule.enabled
-          ? `Automatic ${schedule.cadence} backlink refresh enabled.`
-          : "Automatic backlink refresh disabled.",
+          ? `We will now check for new links ${schedule.cadence}.`
+          : "Automatic link checks turned off.",
       );
     } catch (error) {
       toast.error(backlinkAnalysisErrorMessage(error));
@@ -361,7 +447,7 @@ export function BacklinksWorkspace() {
   const refresh = async () => {
     if (!seoTarget?.url) {
       toast.error(
-        "No AI Dream server is configured for the selected environment.",
+        "Refreshing link data is unavailable right now. Please try again shortly.",
       );
       return;
     }
@@ -370,7 +456,9 @@ export function BacklinksWorkspace() {
       const session = await supabase.auth.getSession();
       if (session.error) throw session.error;
       const token = session.data.session?.access_token;
-      if (!token) throw new Error("Sign in before refreshing backlink data.");
+      if (!token) {
+        throw new Error("Please sign in again before refreshing link data.");
+      }
       const nextReceipt = await refreshSiteBacklinks(
         seoTarget.url,
         token,
@@ -394,7 +482,9 @@ export function BacklinksWorkspace() {
       await queryClient.invalidateQueries({
         queryKey: [...marketingKeys.site(site.id), "backlinks"],
       });
-      toast.success(`Backlink ${profile} refresh completed.`);
+      toast.success(
+        `Refresh finished — ${backlinkRefreshProfileLabel(profile)}.`,
+      );
     } catch (error) {
       toast.error(backlinkAnalysisErrorMessage(error));
     } finally {
@@ -403,7 +493,7 @@ export function BacklinksWorkspace() {
   };
 
   if (workspace.isLoading) {
-    return <LoadingSurface label="Loading backlink intelligence…" />;
+    return <LoadingSurface label="Loading your backlinks…" />;
   }
   if (workspace.isError) {
     return (
@@ -417,7 +507,7 @@ export function BacklinksWorkspace() {
   const data = workspace.data;
   const summary = data?.latestByDataset.summary;
   const detailSnapshot = data?.latestByDataset.backlinks;
-  const pageLocation = `Marketing — Backlink intelligence for ${site.domain}`;
+  const pageLocation = `Marketing — Backlinks for ${site.domain}`;
 
   const dimensionGroups = [
     {
@@ -454,17 +544,68 @@ export function BacklinksWorkspace() {
     },
   ] as const;
 
+  /**
+   * Every count is a door. The status sets below are the SAME sets
+   * `getBacklinkWorkspace` counts, so each link lands on exactly the rows it
+   * promises (the Links tab honors `f_enrichment_status` server-side).
+   */
+  const linksStatusHref = (statuses?: string[]) =>
+    `${sitePath}/backlinks?tab=links${
+      statuses
+        ? `&f_enrichment_status=${encodeURIComponent(`select:${statuses.join("|")}`)}`
+        : ""
+    }`;
+  const enrichmentTiles: Array<{
+    label: string;
+    value: number;
+    href: string;
+    tone?: "default" | "good" | "warning" | "bad";
+  }> = [
+    {
+      label: "Links found",
+      value: data?.enrichment.total ?? 0,
+      href: linksStatusHref(),
+    },
+    {
+      label: "Reviewed",
+      value: data?.enrichment.completed ?? 0,
+      href: linksStatusHref(["completed"]),
+      tone: "good",
+    },
+    {
+      label: "Waiting to be reviewed",
+      value: data?.enrichment.awaiting ?? 0,
+      href: linksStatusHref(["pending", "capturing", "analyzing"]),
+    },
+    {
+      label: "Needs another try",
+      value: data?.enrichment.failed ?? 0,
+      href: linksStatusHref(["failed", "dead_letter"]),
+      tone: (data?.enrichment.failed ?? 0) > 0 ? "warning" : "default",
+    },
+    {
+      label: "Needs your attention",
+      value: data?.enrichment.highPriority ?? 0,
+      href: `${sitePath}/backlinks?tab=insights&insight=actionable`,
+    },
+    {
+      label: "You can probably edit",
+      value: data?.enrichment.controllable ?? 0,
+      href: `${sitePath}/backlinks?tab=insights&insight=controllable`,
+    },
+  ];
+
   const pageHuman = () =>
     [
-      `Backlink intelligence — ${site.domain}`,
+      `Backlinks — ${site.domain}`,
       humanSummarySnapshot(summary, site.domain),
       humanTrend(trend.data ?? []),
       ...dimensionGroups.map((group) =>
         humanDimensionList(group.title, group.rows),
       ),
-      `Stored backlink rows: ${(backlinks.data?.total ?? 0).toLocaleString()} total recorded${
+      `Links stored: ${(backlinks.data?.total ?? 0).toLocaleString()}${
         detailSnapshot
-          ? `, collected until ${formatCompactDate(detailSnapshot.created_at)}`
+          ? `, as of ${formatGscDate(detailSnapshot.observed_at)}`
           : ""
       }.`,
     ].join("\n\n");
@@ -475,8 +616,8 @@ export function BacklinksWorkspace() {
     const sections: AgentCopyGroomerSection[] = [
       {
         id: "summary",
-        title: "KPI summary",
-        description: "Latest backlink summary snapshot (totals, rank).",
+        title: "Headline numbers",
+        description: "Totals and site authority as of our last check.",
         build: (level) =>
           !summary
             ? null
@@ -489,19 +630,24 @@ export function BacklinksWorkspace() {
                     dofollow_backlinks: summary.dofollow_backlinks,
                     nofollow_backlinks: summary.nofollow_backlinks,
                     rank_score: summary.rank_score,
-                    collected_at: summary.created_at,
+                    collected_at: summary.observed_at,
                   }
                 : {
                     total_backlinks: summary.total_backlinks,
                     referring_domains: summary.referring_domains,
-                    collected_at: summary.created_at,
+                    collected_at: summary.observed_at,
                   },
-        levelLabels: { full: "Raw snapshot", compact: "KPIs", brief: "Core" },
+        levelLabels: {
+          full: "Everything we stored",
+          compact: "Headline numbers",
+          brief: "Just the totals",
+        },
       },
       {
         id: "refresh_schedule",
-        title: "Refresh schedule",
-        description: "Automatic refresh config + selected manual profile.",
+        title: "How often we check",
+        description:
+          "Your automatic schedule, and the depth currently selected.",
         cuttable: true,
         build: () => ({
           automatic_refresh: schedule,
@@ -511,8 +657,8 @@ export function BacklinksWorkspace() {
       },
       {
         id: "trend",
-        title: "New vs. lost trend",
-        description: `${trendPoints.length} stored timeseries periods.`,
+        title: "Links gained and lost over time",
+        description: `${trendPoints.length} periods of history.`,
         cuttable: true,
         levelLabels: {
           full: `All ${trendPoints.length}`,
@@ -529,7 +675,7 @@ export function BacklinksWorkspace() {
       ...dimensionGroups.map((group): AgentCopyGroomerSection => ({
         id: group.id,
         title: group.title,
-        description: `${group.rows.length} stored dimension rows.`,
+        description: `${group.rows.length} rows.`,
         cuttable: true,
         levelLabels: {
           full: `All ${group.rows.length} (raw)`,
@@ -545,8 +691,8 @@ export function BacklinksWorkspace() {
       })),
       {
         id: "backlink_rows",
-        title: "Backlink rows",
-        description: `${tableRows.length} loaded of ${(backlinks.data?.total ?? 0).toLocaleString()} recorded (top rows by domain rank).`,
+        title: "The links themselves",
+        description: `${tableRows.length} loaded of ${(backlinks.data?.total ?? 0).toLocaleString()} stored (strongest sites first).`,
         cuttable: true,
         levelLabels: {
           full: `Loaded ${tableRows.length} (raw)`,
@@ -573,14 +719,14 @@ export function BacklinksWorkspace() {
     if (receipt) {
       sections.push({
         id: "refresh_receipt",
-        title: "Refresh receipt",
-        description: "Raw receipt from the last manual refresh in this tab.",
+        title: "Last refresh details",
+        description: "Exactly what the last refresh you ran collected.",
         cuttable: true,
         defaultSelection: "off",
         build: (level) =>
           level === "full"
             ? receipt
-            : { note: "Receipt trimmed — switch to Full for the raw payload." },
+            : { note: "Trimmed — switch to Full for everything." },
       });
     }
     return sections;
@@ -590,7 +736,7 @@ export function BacklinksWorkspace() {
     label: `Backlinks — ${site.domain}`,
     kind: "marketing-backlinks-page",
     location: pageLocation,
-    description: `The full backlink intelligence workspace for ${site.domain}.`,
+    description: `Everything on the backlinks page for ${site.domain}.`,
     attributes: { site_id: site.id, domain: site.domain },
     context: { seo_environment: seoTarget?.environment ?? undefined },
     summary: humanSummarySnapshot(summary, site.domain),
@@ -626,7 +772,7 @@ export function BacklinksWorkspace() {
     return {
       kind: "marketing-backlinks-page",
       location: pageLocation,
-      description: `The backlink intelligence workspace for ${site.domain} (${preset} detail).`,
+      description: `The backlinks page for ${site.domain} (${preset} detail).`,
       data,
       summary: humanSummarySnapshot(summary, site.domain),
       // Same envelope context as the Groomer window — a preset must never
@@ -644,7 +790,7 @@ export function BacklinksWorkspace() {
   const pageAgentPayload = (): AgentPayloadInput => ({
     kind: "marketing-backlinks-page",
     location: pageLocation,
-    description: `The full backlink intelligence workspace for ${site.domain}.`,
+    description: `Everything on the backlinks page for ${site.domain}.`,
     data: pageFullData(),
     summary: humanSummarySnapshot(summary, site.domain),
     context: { seo_environment: seoTarget?.environment ?? undefined },
@@ -665,7 +811,7 @@ export function BacklinksWorkspace() {
                 dofollow_backlinks: summary.dofollow_backlinks,
                 nofollow_backlinks: summary.nofollow_backlinks,
                 rank_score: summary.rank_score,
-                collected_at: summary.created_at,
+                collected_at: summary.observed_at,
               }
             : undefined,
           top_referring_domains: data?.referringDomains
@@ -696,7 +842,7 @@ export function BacklinksWorkspace() {
                   dofollow_backlinks: summary.dofollow_backlinks,
                   nofollow_backlinks: summary.nofollow_backlinks,
                   rank_score: summary.rank_score,
-                  collected_at: summary.created_at,
+                  collected_at: summary.observed_at,
                 },
                 referring_domain_count: data?.referringDomains.length ?? 0,
                 anchor_count: data?.anchors.length ?? 0,
@@ -725,7 +871,7 @@ export function BacklinksWorkspace() {
             provider_metrics: row.provider_metrics,
             human_ruling: row.human_ruling,
           })),
-          backlinks_collected_at: detailSnapshot?.created_at ?? undefined,
+          backlinks_collected_at: detailSnapshot?.observed_at ?? undefined,
           refresh_schedule: {
             enabled: savedSchedule.enabled,
             cadence: savedSchedule.cadence,
@@ -821,14 +967,21 @@ export function BacklinksWorkspace() {
               <SelectTrigger
                 data-surface-value="refresh_profile"
                 size="sm"
-                className="w-36"
+                aria-label="How deep the next refresh should look"
+                className="w-52"
               >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="weekly">Weekly core</SelectItem>
-                <SelectItem value="monthly">Monthly detail</SelectItem>
-                <SelectItem value="bootstrap">Full bootstrap</SelectItem>
+                {BACKLINK_REFRESH_PROFILES.map((entry) => (
+                  <SelectItem
+                    key={entry.key}
+                    value={entry.key}
+                    title={entry.description}
+                  >
+                    {entry.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button
@@ -852,7 +1005,7 @@ export function BacklinksWorkspace() {
               <SelectTrigger
                 size="sm"
                 className="w-20"
-                aria-label="Source pages per analysis run"
+                aria-label="How many pages to review at a time"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -876,15 +1029,15 @@ export function BacklinksWorkspace() {
               ) : (
                 <BrainCircuit className="h-3.5 w-3.5" />
               )}
-              Analyze next {enrichmentBatchSize}
+              Review next {enrichmentBatchSize}
             </Button>
             <Button
               size="icon"
               variant="outline"
               className="h-8 w-8"
-              aria-label="Refresh schedule settings"
+              aria-label="Automatic link checks"
               aria-pressed={settingsOpen}
-              title="Automatic refresh schedule"
+              title="Check for new links automatically"
               onClick={() => setSettingsOpen((open) => !open)}
             >
               <Settings2
@@ -894,31 +1047,46 @@ export function BacklinksWorkspace() {
           </div>
         </div>
 
+        {/* "Review next N" runs on every tab — its aggregate progress belongs
+            under the toolbar, not only inside an opened record. */}
+        {batchRun ? (
+          <BacklinkEnrichmentRunPanel
+            run={batchRun}
+            onDismiss={dismissBatchRun}
+          />
+        ) : null}
+
         {settingsOpen ? (
           <div className="shrink-0 px-3 pt-2 sm:px-4">
-            <SectionCard title="Automatic refresh" anchor="refresh_schedule">
+            <SectionCard
+              title="Check for new links automatically"
+              anchor="refresh_schedule"
+            >
               <div className="flex flex-wrap items-end gap-3 p-3">
                 <div className="mr-auto min-w-64">
                   <div className="flex items-center gap-2">
                     <Switch
-                      aria-label="Enable automatic backlink refresh"
+                      aria-label="Check this site for new links automatically"
                       checked={schedule.enabled}
                       onCheckedChange={(enabled) =>
                         setSchedule((current) => ({ ...current, enabled }))
                       }
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Stored on this site; the aidream scheduler checks due
-                      sites daily. Manual refresh follows the shell&apos;s{" "}
-                      <span data-surface-value="seo_environment">
-                        {seoTarget?.environment ?? "selected"}
-                      </span>{" "}
-                      AI Dream work target.
+                    {/* The `data-surface-value` anchor stays so agents can
+                        still Locate this control; the environment name is an
+                        internal detail and never reads on screen. */}
+                    <p
+                      className="text-xs text-muted-foreground"
+                      data-surface-value="seo_environment"
+                    >
+                      Turn this on and we check this site for new links on the
+                      schedule you pick. Refresh at the top runs one right now,
+                      whenever you want.
                     </p>
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-foreground">Cadence</Label>
+                  <Label className="text-xs text-foreground">How often</Label>
                   <Select
                     value={schedule.cadence}
                     onValueChange={(cadence) =>
@@ -941,8 +1109,9 @@ export function BacklinksWorkspace() {
                   <Label
                     htmlFor="backlink-detail-limit"
                     className="text-xs text-foreground"
+                    title="How many individual links to pull in each time (1–1000)."
                   >
-                    Detail rows
+                    Links per check
                   </Label>
                   <Input
                     id="backlink-detail-limit"
@@ -973,7 +1142,7 @@ export function BacklinksWorkspace() {
                   ) : (
                     <Save className="h-3.5 w-3.5" />
                   )}
-                  Save schedule
+                  Save
                 </Button>
               </div>
             </SectionCard>
@@ -991,35 +1160,23 @@ export function BacklinksWorkspace() {
               <BacklinkKpiBand
                 summary={summary ?? null}
                 siteDomain={site.domain}
+                sitePath={sitePath}
                 location={pageLocation}
               />
               <SectionCard
-                title="Source-page enrichment"
+                title="How far we have got reading the pages that link to you"
                 anchor="backlink_enrichment"
               >
                 <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-6">
-                  {[
-                    ["Known links", data?.enrichment.total ?? 0],
-                    ["Analyzed", data?.enrichment.completed ?? 0],
-                    ["Awaiting", data?.enrichment.awaiting ?? 0],
-                    ["Needs retry", data?.enrichment.failed ?? 0],
-                    [
-                      "High-priority actions",
-                      data?.enrichment.highPriority ?? 0,
-                    ],
-                    ["Likely controllable", data?.enrichment.controllable ?? 0],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      className="rounded-md border border-border/60 bg-card p-2"
-                    >
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {label}
-                      </p>
-                      <p className="mt-1 text-lg font-semibold tabular-nums text-foreground">
-                        {value}
-                      </p>
-                    </div>
+                  {enrichmentTiles.map((tile) => (
+                    <MetricCell
+                      key={tile.label}
+                      variant="card"
+                      label={tile.label}
+                      value={tile.value}
+                      tone={tile.tone ?? "default"}
+                      href={tile.href}
+                    />
                   ))}
                 </div>
               </SectionCard>
@@ -1028,7 +1185,7 @@ export function BacklinksWorkspace() {
                 anchor="backlink_trend"
               >
                 {trend.isLoading ? (
-                  <LoadingSurface label="Loading backlink trend…" />
+                  <LoadingSurface label="Loading link history…" />
                 ) : trend.isError ? (
                   <div className="p-2">
                     <InlineQueryError
@@ -1047,7 +1204,7 @@ export function BacklinksWorkspace() {
               </SectionCard>
               {backlinks.isError ? (
                 <InlineQueryError
-                  what="the stored backlink rows (copy/export payloads may be incomplete)"
+                  what="your stored links (copies and exports may be incomplete)"
                   error={backlinks.error}
                   onRetry={() => void backlinks.refetch()}
                 />
@@ -1059,18 +1216,30 @@ export function BacklinksWorkspace() {
                     title={group.title}
                     anchor={group.anchor}
                     rows={group.rows}
-                    viewAllHref={tabHref(group.tab)}
+                    // These cards render PROVIDER dimension rows, so "View all"
+                    // must open the provider view of the Domains tab — not our
+                    // first-party directory, which is a different dataset with
+                    // different counts.
+                    viewAllHref={tabHref(
+                      group.tab,
+                      group.tab === "domains"
+                        ? { [DOMAIN_VIEW_PARAM]: "provider" }
+                        : undefined,
+                    )}
                     kind={group.kind}
                     location={pageLocation}
                     siteDomain={site.domain}
                     showIntersections={group.id === "competitors"}
+                    ourPagesPath={
+                      group.id === "target_pages" ? sitePath : null
+                    }
                   />
                 ))}
               </div>
               {receipt ? (
                 <SectionCard
                   key={`receipt-${receiptRun}`}
-                  title="Refresh receipt"
+                  title="What the last refresh collected"
                   anchor="refresh_receipt"
                   collapsible
                   defaultOpen={receiptRun > 0}
@@ -1078,14 +1247,14 @@ export function BacklinksWorkspace() {
                   <div className="h-80 overflow-hidden">
                     <JsonInspector
                       data={receipt}
-                      label="Exact refresh receipt"
+                      label="Last refresh details"
                       defaultView="json"
                       defaultExpandDepth={3}
                       className="rounded-none"
                       agentCopy={() => ({
                         kind: "backlink-refresh-receipt",
                         location: pageLocation,
-                        description: `The raw receipt from the last manual backlink refresh for ${site.domain}.`,
+                        description: `Exactly what the last refresh collected for ${site.domain}.`,
                         data: receipt,
                         attributes: { profile },
                       })}
@@ -1115,8 +1284,36 @@ export function BacklinksWorkspace() {
               />
             </div>
           ) : tab === "domains" ? (
-            <div className="flex min-h-0 flex-1 flex-col">
-              <ReferringDomainIntelligenceTable siteId={site.id} />
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <div className="flex w-max items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
+                {DOMAIN_VIEWS.map((view) => (
+                  <button
+                    key={view.key}
+                    type="button"
+                    disabled={isNavigating}
+                    aria-pressed={domainView === view.key}
+                    className={cn(
+                      "shrink-0 whitespace-nowrap rounded px-2 py-1 text-xs transition-colors",
+                      domainView === view.key
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    )}
+                    onClick={() => setDomainView(view.key)}
+                  >
+                    {view.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col">
+                {domainView === "provider" ? (
+                  <BacklinkDimensionTable
+                    siteId={site.id}
+                    kind={DIMENSION_KIND_BY_TAB.domains}
+                  />
+                ) : (
+                  <ReferringDomainIntelligenceTable siteId={site.id} />
+                )}
+              </div>
             </div>
           ) : isDimensionTab(tab) ? (
             <div className="flex min-h-0 flex-1 flex-col">

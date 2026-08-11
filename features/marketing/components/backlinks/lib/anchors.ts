@@ -1,39 +1,43 @@
 /**
- * Anchor-text classification + profile analysis (pure — unit-testable).
+ * Anchor-text grouping + profile analysis (pure — unit-testable).
  *
- * The classic SEO anchor discipline: branded anchors should dominate a
- * natural profile; a high share of keyword-bearing ("topical") anchors — or
- * any single non-branded anchor carrying an outsized share — reads as
- * over-optimization risk. This module classifies each anchor and rolls the
- * distribution up with explicit, threshold-driven warnings.
+ * "Anchor text" is the visible wording of a link. Sites that earn links
+ * naturally get mostly their own name; a big share of keyword-stuffed
+ * wording — or one phrase repeated across a lot of links — is the pattern
+ * search engines read as manipulation. This module sorts each anchor into a
+ * group and rolls the spread up with explicit, threshold-driven warnings.
+ *
+ * Warning copy here is read by a non-technical owner: no "over-optimization",
+ * no "footprint", no "equity" — say what happened and what to do.
  */
 
 export const ANCHOR_CLASSES = [
   {
     key: "branded",
-    label: "Branded",
-    description: "Contains the brand or domain name — the safe backbone.",
+    label: "Your name",
+    description:
+      "Uses your business or website name. This is the safest kind to have most of.",
   },
   {
     key: "naked_url",
-    label: "Naked URL",
-    description: "The raw URL or domain as the anchor.",
+    label: "Your web address",
+    description: "The address itself is the wording of the link.",
   },
   {
     key: "generic",
-    label: "Generic",
-    description: "“click here”, “website”, “read more” and friends.",
+    label: "Filler words",
+    description: "“Click here”, “website”, “read more” and the like.",
   },
   {
     key: "empty",
-    label: "Empty / image",
-    description: "No anchor text — image links and bare elements.",
+    label: "No wording",
+    description: "Nothing to read — image links and bare buttons.",
   },
   {
     key: "topical",
-    label: "Topical",
+    label: "Keywords",
     description:
-      "Keyword-bearing anchors. Valuable, but the class to watch for over-optimization.",
+      "Wording that describes what you do. Valuable, but too much of it looks unnatural.",
   },
 ] as const;
 
@@ -206,18 +210,18 @@ export function analyzeAnchorProfile(
     if (topical && topical.share >= TOPICAL_SHARE_CRITICAL) {
       warnings.push({
         severity: "critical",
-        message: `Topical (keyword) anchors carry ${Math.round(topical.share * 100)}% of links — well past a natural profile. Diversify toward branded anchors before building more keyword links.`,
+        message: `${Math.round(topical.share * 100)}% of your links use keyword wording — far more than a site earns naturally. Aim the next links at your own name instead.`,
       });
     } else if (topical && topical.share >= TOPICAL_SHARE_WARN) {
       warnings.push({
         severity: "warning",
-        message: `Topical (keyword) anchors carry ${Math.round(topical.share * 100)}% of links — approaching over-optimization territory. Favor branded anchors in upcoming links.`,
+        message: `${Math.round(topical.share * 100)}% of your links use keyword wording — higher than most sites get naturally. Favour your own name in the links you build next.`,
       });
     }
     for (const item of concentrated.slice(0, 3)) {
       warnings.push({
         severity: item.share >= 0.2 ? "critical" : "warning",
-        message: `“${item.anchor}” alone carries ${Math.round(item.share * 100)}% of all links — a single-anchor footprint search engines notice.`,
+        message: `“${item.anchor}” is the wording on ${Math.round(item.share * 100)}% of all your links. One phrase repeated that often is a pattern search engines notice.`,
       });
     }
   }

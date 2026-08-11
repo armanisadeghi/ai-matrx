@@ -646,3 +646,23 @@ as keyof paths` cast pending the OpenAPI type sync).
   editor beside a long document. The remaining current-vs-plan data gaps are
   tracked in `docs/handoffs/marketing-page-studio-alignment.md`.
 - 2026-08-11 — Claude: **`lib/markdown/plain-text.ts` — markdown → plain text, for surfaces that show WORDS.** AI Visibility rendered provider answers as raw text, putting literal `**asterisks**` in front of the user; the answer cards now render through `BasicMarkdownContent` (already in that route's graph via `LiveRunDisplay`, so no added bundle weight), bounded and faded rather than line-clamped — `line-clamp` cannot clamp the block children markdown produces. The claims table's "Exact influential wording" column quoted the same markers, and a table cell shows words rather than a rendered document, so it goes through the new primitive. That primitive replaces a private `stripMarkdown` buried in `presentation-export.ts` that only handled bold; it is deliberately conservative (lone `*` and `snake_case` identifiers survive untouched — mangling prose is worse than a stray marker) and covered by 6 tests. **Reach for it only when a single line of text IS the product** — a table cell, tooltip, aria-label, or exported slide. Anywhere formatting fits, render through the canonical markdown path instead.
+- 2026-08-11 — Claude: **backlinks correctness + doors pass, and one new shared primitive.** Fixed four real defects (deep link built `?search=` where the table hook reads `?q=`, so it always landed unfiltered; the Domains tab matched before `isDimensionTab()` so the provider's referring-domain aggregates were collected-but-unreachable; the dimension drawer had a title and no body; a long analyze batch rendered no progress and its error panel offered no retry), and turned the inert KPI/review counts into doors onto their lens (the hand-rolled second KPI strip is now the canonical `MetricCell`). **New:** `lib/records/recordUnavailable.ts` + `components/shared/RecordUnavailableNotice.tsx` — a zero-row single-record read is soft-deleted OR alive-but-no-access OR a stale id, and `assertFound` asserted deletion for all three (two agent-review items were rejected as "site deleted or inaccessible" while brand and site were both live; the null was RLS). Deletion is now claimed only when a probe proves it, the ambiguous case says both possibilities and offers doors, and every construction reports to the Error Inspector. Audit remainder (plain-language pass, verdict-first Overview, mobile, assists producer, agent-role binding, disavow, drilldowns, movers, anchor footprint, watchlist) is chipped in `.matrx/AGENT_TASKS.md` with context in `docs/handoffs/backlink-intelligence-frontend.md`.
+- 2026-08-11 — Claude: **the backlinks workspace now speaks English, not
+  DataForSEO and not our pipeline.** Every user-visible string under
+  `components/backlinks/**` was rewritten for the non-technical owner (root
+  CLAUDE.md, THE MISMATCH RULE), with the vocabulary living in
+  `components/backlinks/lib/vocab.ts` rather than per component. Refresh depths
+  are `Quick check (weekly)` / `Full detail (monthly)` / `Complete history
+  (first run)`; the eleven empty states that repeated "run a Monthly detail or
+  Full bootstrap refresh" verbatim now call ONE `backlinkEmptyHint(what)`.
+  Pipeline states stopped being shown as status (`Dead letter` → `Gave up —
+  needs help`, `Capturing` → `Reading the page`), the `3 trys` attempt badge is
+  gone from the table, `PR`/`DR`/`Rel` became `Page authority` / `Site
+  authority` / `Counts for SEO?` (values `Passes credit` / `No credit` / `Paid
+  placement` / `User-posted`), and `r412` renders as `Authority 412`. The
+  vendor name, "the aidream scheduler", "AI Dream work target", "provider
+  observations" and "resolved assessment … in their exact persisted form" are
+  out of user copy; `Your ruling` / `Confirm assessment` became `Do you agree?`
+  / `Yes, this looks right`. `StatusBadge` gained an optional `label` so tone
+  still keys on the machine value while the words are human. Layout, tabs, and
+  components were deliberately untouched — that is the Overview/IA chip.

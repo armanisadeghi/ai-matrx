@@ -183,7 +183,16 @@ export type CapturedErrorSource =
    */
   | "agent-json-result"
   /** Unsaved user work existed only in a browser buffer after repeated save failure or identity drift. */
-  | "unsaved-work";
+  | "unsaved-work"
+  /**
+   * A single-record read returned ZERO rows (`lib/records/recordUnavailable.ts`).
+   * The user sees an honest "deleted, or an org you can't reach" message — but
+   * the cause is either a real access gap (the over-tightening defect class:
+   * D133, the owner blocked from his own sites) or a stale id handed to the
+   * router. Both are defects to find, so every firing lands here with its
+   * entity, id, and whether deletion was actually PROVEN.
+   */
+  | "record-unavailable";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =

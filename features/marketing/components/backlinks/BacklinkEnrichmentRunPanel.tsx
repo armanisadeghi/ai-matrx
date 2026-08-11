@@ -56,10 +56,10 @@ export function BacklinkEnrichmentRunPanel({
               </p>
               <p className="text-[11px] tabular-nums text-muted-foreground">
                 {run.candidateCount > 0
-                  ? `${settled} of ${run.candidateCount} settled`
-                  : "Waiting for the queue…"}
-                {run.completed > 0 ? ` · ${run.completed} analyzed` : ""}
-                {run.failed > 0 ? ` · ${run.failed} failed` : ""}
+                  ? `${settled} of ${run.candidateCount} done`
+                  : "Getting ready…"}
+                {run.completed > 0 ? ` · ${run.completed} reviewed` : ""}
+                {run.failed > 0 ? ` · ${run.failed} could not finish` : ""}
               </p>
               {run.runId ? (
                 <p
@@ -116,7 +116,7 @@ export function BacklinkEnrichmentRunPanel({
               size="icon"
               variant="ghost"
               className="h-7 w-7 shrink-0"
-              aria-label="Dismiss analysis progress"
+              aria-label="Hide this progress panel"
               onClick={onDismiss}
             >
               <X className="h-3.5 w-3.5" />
