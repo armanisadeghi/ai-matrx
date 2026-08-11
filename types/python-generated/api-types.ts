@@ -5072,6 +5072,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/nodes/{node_id}/brief-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Brief Runs
+         * @description Every brief run recorded for this page — the history surface.
+         *
+         *     Real server work, not a DB pass-through: the rows are reached through
+         *     `platform.associations` and org-verified per row by the engine.
+         */
+        get: operations["brief_runs_content_plan_nodes__node_id__brief_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/nodes/{node_id}/brief-runs/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Brief Run Route
+         * @description Make a past run the node's current proposal again.
+         */
+        post: operations["restore_brief_run_route_content_plan_nodes__node_id__brief_runs_restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-plan/sites/{site_id}/reconcile": {
         parameters: {
             query?: never;
@@ -6803,6 +6846,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -20904,6 +20971,49 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
+        /** BriefRunHistoryResult */
+        BriefRunHistoryResult: {
+            /** Node Id */
+            node_id: string;
+            /** Runs */
+            runs: components["schemas"]["BriefRunSummary"][];
+        };
+        /**
+         * BriefRunSummary
+         * @description One past run, as the panel's history list needs it.
+         */
+        BriefRunSummary: {
+            /** Run Id */
+            run_id: string;
+            /** Status */
+            status: string;
+            /** Created At */
+            created_at: string;
+            /** Model Id */
+            model_id?: string | null;
+            /** Agent Id */
+            agent_id?: string | null;
+            /**
+             * Brief Line Count
+             * @default 0
+             */
+            brief_line_count?: number;
+            /**
+             * Angle
+             * @default
+             */
+            angle?: string;
+            /**
+             * Is Current
+             * @default false
+             */
+            is_current?: boolean;
+            /**
+             * Error
+             * @default
+             */
+            error?: string;
+        };
         /**
          * BrokeredCredential
          * @description The one envelope for every brokered credential, regardless of mode.
@@ -25740,6 +25850,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -37999,6 +38136,17 @@ export interface components {
              */
             type: "text";
         };
+        /** RestoreBriefRunBody */
+        RestoreBriefRunBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Run Id */
+            run_id: string;
+        };
         /** RestoreRequest */
         RestoreRequest: {
             /**
@@ -40167,6 +40315,27 @@ export interface components {
              */
             force_refresh?: boolean;
         };
+        /** SitePerformanceAutomation */
+        SitePerformanceAutomation: {
+            /** Enabled */
+            enabled: boolean;
+            /** Schedule Matches Expected */
+            schedule_matches_expected: boolean;
+            /** Cadence Minutes */
+            cadence_minutes: number;
+            /** Requests Per Cycle */
+            requests_per_cycle: number;
+            /** Daily Request Target */
+            daily_request_target: number;
+            /** Next Run At */
+            next_run_at?: string | null;
+            /** Last Run At */
+            last_run_at?: string | null;
+            /** Last Status */
+            last_status?: string | null;
+            /** Last Error */
+            last_error?: string | null;
+        };
         /** SitePerformanceChangePage */
         SitePerformanceChangePage: {
             /** Page Id */
@@ -40267,6 +40436,9 @@ export interface components {
             /** Most Regressed */
             most_regressed?: components["schemas"]["SitePerformanceChangePage"][];
             suggested_action?: components["schemas"]["SitePerformanceSuggestedAction"] | null;
+            /** Suggested Pages */
+            suggested_pages?: components["schemas"]["SitePerformanceSuggestedAction"][];
+            automation: components["schemas"]["SitePerformanceAutomation"];
         };
         /** SitePerformanceSuggestedAction */
         SitePerformanceSuggestedAction: {
@@ -40276,6 +40448,26 @@ export interface components {
             url: string;
             /** Sync Path */
             sync_path: string;
+            /**
+             * Gsc Clicks
+             * @default 0
+             */
+            gsc_clicks?: number;
+            /**
+             * Gsc Impressions
+             * @default 0
+             */
+            gsc_impressions?: number;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "never_measured" | "content_changed" | "refresh_due";
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "critical" | "high" | "normal" | "low";
         };
         /** SiteScheduleStatusResponse */
         SiteScheduleStatusResponse: {
@@ -55394,6 +55586,72 @@ export interface operations {
             };
         };
     };
+    brief_runs_content_plan_nodes__node_id__brief_runs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BriefRunHistoryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_brief_run_route_content_plan_nodes__node_id__brief_runs_restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreBriefRunBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptBriefResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     reconcile_content_plan_sites__site_id__reconcile_post: {
         parameters: {
             query?: never;
@@ -58544,6 +58802,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

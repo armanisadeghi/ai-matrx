@@ -22,7 +22,7 @@
  * pipeline — never a bespoke renderer, never a bare spinner.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
@@ -52,10 +52,30 @@ export interface BriefDraft {
   generated_at: string;
   /** Set once the user promotes it onto the live brief. */
   accepted_at: string | null;
+  /** The `chat.agent_run` row holding this run's complete request + result. */
+  run_id: string | null;
+}
+
+/** One past run, from `GET /content-plan/nodes/{id}/brief-runs`. */
+export interface BriefRunSummary {
+  run_id: string;
+  status: string;
+  created_at: string;
+  model_id: string | null;
+  agent_id: string | null;
+  brief_line_count: number;
+  angle: string;
+  is_current: boolean;
+  error: string;
 }
 
 /** Where the server keeps it — one key, named once on each side. */
 const BRIEF_DRAFT_KEY = "ai_brief_draft";
+
+/** Query keys for a node's recorded brief runs. */
+export const briefRunKeys = {
+  list: (nodeId: string) => ["content-plan", "brief-runs", nodeId] as const,
+};
 
 /**
  * Read the node's persisted draft. This is the source of truth the panel
@@ -90,7 +110,37 @@ export function readBriefDraft(node: PlanNodeRow): BriefDraft | null {
     model_id: typeof row.model_id === "string" ? row.model_id : null,
     generated_at: typeof row.generated_at === "string" ? row.generated_at : "",
     accepted_at: typeof row.accepted_at === "string" ? row.accepted_at : null,
+    run_id: typeof row.run_id === "string" ? row.run_id : null,
   };
+}
+
+/**
+ * The run-history response, read defensively at the wire boundary (the repo's
+ * established pattern for callApi bodies — `result.data` is deliberately loose).
+ */
+function parseRunSummaries(data: unknown): BriefRunSummary[] {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return [];
+  const rows = (data as Record<string, unknown>).runs;
+  if (!Array.isArray(rows)) return [];
+  const out: BriefRunSummary[] = [];
+  for (const row of rows) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+    const item = row as Record<string, unknown>;
+    if (typeof item.run_id !== "string" || !item.run_id) continue;
+    out.push({
+      run_id: item.run_id,
+      status: typeof item.status === "string" ? item.status : "",
+      created_at: typeof item.created_at === "string" ? item.created_at : "",
+      model_id: typeof item.model_id === "string" ? item.model_id : null,
+      agent_id: typeof item.agent_id === "string" ? item.agent_id : null,
+      brief_line_count:
+        typeof item.brief_line_count === "number" ? item.brief_line_count : 0,
+      angle: typeof item.angle === "string" ? item.angle : "",
+      is_current: item.is_current === true,
+      error: typeof item.error === "string" ? item.error : "",
+    });
+  }
+  return out;
 }
 
 /**
@@ -250,6 +300,59 @@ export function useBriefWriter(args: { node: PlanNodeRow; siteId: string }) {
     toast.success("Brief applied to this page.");
   }, [accepting, dispatch, nodeId, queryClient, siteId]);
 
+  /**
+   * Every recorded run for this page. The node metadata holds only the CURRENT
+   * proposal; these rows are the archive — five runs stay five runs, and any
+   * one can be brought back.
+   */
+  const runsQuery = useQuery({
+    queryKey: briefRunKeys.list(nodeId),
+    queryFn: async (): Promise<BriefRunSummary[]> => {
+      const result = await dispatch(
+        callApi({
+          path: "/content-plan/nodes/{node_id}/brief-runs",
+          method: "GET",
+          pathParams: { node_id: nodeId },
+        }),
+      );
+      if (result.error) {
+        throw new Error(
+          describeBackendFailure(parseCallApiError(result.error)).headline,
+        );
+      }
+      return parseRunSummaries(result.data);
+    },
+    staleTime: 30_000,
+  });
+
+  const [restoringRunId, setRestoringRunId] = useState<string | null>(null);
+
+  /** Make a past run the current proposal. Destroys nothing. */
+  const restore = useCallback(
+    async (runId: string) => {
+      setRestoringRunId(runId);
+      const result = await dispatch(
+        callApi({
+          path: "/content-plan/nodes/{node_id}/brief-runs/restore",
+          method: "POST",
+          pathParams: { node_id: nodeId },
+          body: { run_id: runId },
+        }),
+      );
+      setRestoringRunId(null);
+      void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+      void queryClient.invalidateQueries({ queryKey: briefRunKeys.list(nodeId) });
+      if (result.error) {
+        toast.error(
+          `Could not restore that run: ${describeBackendFailure(parseCallApiError(result.error)).headline}`,
+        );
+        return;
+      }
+      toast.success("That run is the current draft again — review and apply it.");
+    },
+    [dispatch, nodeId, queryClient, siteId],
+  );
+
   const reset = useCallback(() => {
     if (inFlight.current) {
       cancelledRef.current = true;
@@ -269,6 +372,14 @@ export function useBriefWriter(args: { node: PlanNodeRow; siteId: string }) {
     accepting,
     reset,
     busy: run.status === "running",
+    runs: runsQuery.data ?? [],
+    runsLoading: runsQuery.isLoading,
+    // An unreachable history is NOT an empty history — saying "no runs yet"
+    // when the call failed tells the user their paid runs are gone.
+    runsError:
+      runsQuery.error instanceof Error ? runsQuery.error.message : null,
+    restore,
+    restoringRunId,
   };
 }
 

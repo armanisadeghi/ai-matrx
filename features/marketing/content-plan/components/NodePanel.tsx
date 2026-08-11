@@ -22,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { createContentPlanNodeScope } from "@/features/surfaces/manifests/content-plan-node.manifest";
 import {
@@ -62,6 +61,7 @@ import type { CmsPageMapEntry } from "../setup/bridge";
 import { KeywordPicker } from "./KeywordPicker";
 import { NodeAssociations } from "./NodeAssociations";
 import { AttributesEditor } from "./AttributesEditor";
+import { BriefEditor } from "./BriefEditor";
 
 export function NodePanel({
   node,
@@ -92,10 +92,6 @@ export function NodePanel({
   const deepeningThisNode = deepening && deepen.nodeId === node.id;
 
   const [draft, setDraft] = useState<PlanNodeUpdate>({});
-  // Raw textarea text for brief — split into the string[] draft only on
-  // change, but the DISPLAYED value is the raw text so typing spaces and
-  // blank lines works (transforming the controlled value ate them).
-  const [briefText, setBriefText] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Reset the draft only when a DIFFERENT node is shown (the panel is also
@@ -106,7 +102,6 @@ export function NodePanel({
   if (prevNodeId !== node.id) {
     setPrevNodeId(node.id);
     setDraft({});
-    setBriefText(null);
   }
 
   const current = useMemo(
@@ -140,7 +135,6 @@ export function NodePanel({
       {
         onSuccess: () => {
           setDraft({});
-          setBriefText(null);
           toast.success("Node saved.");
         },
         onError: (error) =>
@@ -245,7 +239,6 @@ export function NodePanel({
         throw new Error("node_brief must be an array of strings");
       }
       stage({ brief: value });
-      setBriefText(value.join("\n"));
     },
     node_attributes: (value) => {
       if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -257,7 +250,6 @@ export function NodePanel({
       if (!dirty) throw new Error("Nothing to save — the draft is empty.");
       await update.mutateAsync({ id: node.id, patch: draft });
       setDraft({});
-      setBriefText(null);
     },
   });
 
@@ -596,87 +588,19 @@ export function NodePanel({
         </PanelSection>
 
         <PanelSection title="Brief">
-          {/* The AI draft is PERSISTED on the node — it survives a refresh, a
-              closed panel, and a user who never presses anything. This is a
-              pending decision, not a copy of something living in memory. */}
-          {draftPending && briefDraft ? (
-            <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-2.5">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-foreground">
-                    AI draft ready — {briefDraft.brief.length} line
-                    {briefDraft.brief.length === 1 ? "" : "s"}
-                  </p>
-                  {briefDraft.angle ? (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      Angle: {briefDraft.angle}
-                    </p>
-                  ) : null}
-                </div>
-                <Button
-                  size="sm"
-                  className="h-7 shrink-0"
-                  disabled={briefWriter.accepting}
-                  onClick={() => void briefWriter.accept()}
-                >
-                  {briefWriter.accepting ? "Applying…" : "Use this brief"}
-                </Button>
-              </div>
-              <ul className="list-disc space-y-0.5 pl-4 text-xs text-foreground">
-                {briefDraft.brief.map((line, index) => (
-                  <li key={`${index}-${line.slice(0, 24)}`}>{line}</li>
-                ))}
-              </ul>
-              {briefDraft.must_not_cover.length > 0 ? (
-                <div>
-                  <p className="text-xs font-medium text-foreground">
-                    Leave to sibling pages
-                  </p>
-                  <ul className="list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
-                    {briefDraft.must_not_cover.map((line, index) => (
-                      <li key={`${index}-${line.slice(0, 24)}`}>{line}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {briefDraft.concerns.length > 0 ? (
-                <div>
-                  <p className="text-xs font-medium text-foreground">Concerns</p>
-                  <ul className="list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
-                    {briefDraft.concerns.map((line, index) => (
-                      <li key={`${index}-${line.slice(0, 24)}`}>{line}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {briefDraft.suggested_word_count ? (
-                <p className="text-xs text-muted-foreground">
-                  Suggested length: ~{briefDraft.suggested_word_count} words
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-          <div>
-            <Label className="mb-1 block text-xs font-medium">
-              One point per line
-            </Label>
-            <Textarea
-              value={briefText ?? (node.brief ?? []).join("\n")}
-              onChange={(event) => {
-                const text = event.target.value;
-                setBriefText(text);
-                setDraft((d) => ({
-                  ...d,
-                  brief: text
-                    .split("\n")
-                    .map((line) => line.trim())
-                    .filter((line) => line.length > 0),
-                }));
-              }}
-              placeholder={"What this page must cover…\nOne bullet per line"}
-              className="min-h-28 text-sm"
-            />
-          </div>
+          <BriefEditor
+            lines={current.brief ?? []}
+            onChange={(next) => stage({ brief: next })}
+            draft={briefDraft}
+            draftPending={draftPending}
+            onAccept={() => void briefWriter.accept()}
+            accepting={briefWriter.accepting}
+            runs={briefWriter.runs}
+            runsLoading={briefWriter.runsLoading}
+            runsError={briefWriter.runsError}
+            onRestore={(runId) => void briefWriter.restore(runId)}
+            restoringRunId={briefWriter.restoringRunId}
+          />
         </PanelSection>
 
         <AttributesEditor
