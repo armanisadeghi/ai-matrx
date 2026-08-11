@@ -3474,75 +3474,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/vault/items/{item_id}/attachments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Add Attachment */
-        post: operations["add_attachment_vault_items__item_id__attachments_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/vault/items/{item_id}/attachments/{attachment_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete Attachment */
-        delete: operations["delete_attachment_vault_items__item_id__attachments__attachment_id__delete"];
-        options?: never;
-        head?: never;
-        /** Update Attachment */
-        patch: operations["update_attachment_vault_items__item_id__attachments__attachment_id__patch"];
-        trace?: never;
-    };
-    "/vault/items/{item_id}/attachments/{attachment_id}/file": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Replace Attachment */
-        put: operations["replace_attachment_vault_items__item_id__attachments__attachment_id__file_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/vault/items/{item_id}/attachments/{attachment_id}/download": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Download Attachment */
-        get: operations["download_attachment_vault_items__item_id__attachments__attachment_id__download_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/vault/items/{item_id}/reveal": {
         parameters: {
             query?: never;
@@ -6443,6 +6374,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hindsight/reviews/{review_id}/thread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Thread
+         * @description The reviewer's own conversation, so a human can read it and reply.
+         */
+        get: operations["get_thread_hindsight_reviews__review_id__thread_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/reviews/{review_id}/discuss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discuss Review Route
+         * @description Send guidance into the reviewer's thread; returns new/revised findings.
+         */
+        post: operations["discuss_review_route_hindsight_reviews__review_id__discuss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/findings/{finding_id}/discuss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discuss Finding Route
+         * @description Same thread, scoped to one finding — 'this is close, but here's what matters'.
+         */
+        post: operations["discuss_finding_route_hindsight_findings__finding_id__discuss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hindsight/findings/{finding_id}/apply": {
         parameters: {
             query?: never;
@@ -6743,6 +6734,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19012,6 +19027,11 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
+        /** ArchiveOut */
+        ArchiveOut: {
+            /** Status */
+            status: string;
+        };
         /** ArchiveRequest */
         ArchiveRequest: {
             /**
@@ -20285,20 +20305,6 @@ export interface components {
             /** Resource Ref */
             resource_ref: string;
         };
-        /** Body_add_attachment_vault_items__item_id__attachments_post */
-        Body_add_attachment_vault_items__item_id__attachments_post: {
-            /** File */
-            file: string;
-            /** Label */
-            label: string;
-            /** Description */
-            description?: string | null;
-            /**
-             * Handling
-             * @default revealable
-             */
-            handling?: string;
-        };
         /** Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post */
         Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post: {
             /** File */
@@ -20365,11 +20371,6 @@ export interface components {
              * @description Destination cld_files.file_path
              */
             file_path: string;
-        };
-        /** Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put */
-        Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put: {
-            /** File */
-            file: string;
         };
         /** Body_transcribe_upload_audio_transcribe_post */
         Body_transcribe_upload_audio_transcribe_post: {
@@ -25676,6 +25677,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -25970,6 +25998,26 @@ export interface components {
             job_id: string;
             /** Deleted */
             deleted: number;
+        };
+        /** DiscussRequest */
+        DiscussRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Message */
+            message: string;
         };
         /**
          * DismissBatchRequest
@@ -26322,6 +26370,35 @@ export interface components {
             /** Results */
             results: components["schemas"]["DrainRowResult"][];
         };
+        /** DrainResult */
+        DrainResult: {
+            /**
+             * Enrollments Seen
+             * @default 0
+             */
+            enrollments_seen?: number;
+            /**
+             * Enrollments Reviewed
+             * @default 0
+             */
+            enrollments_reviewed?: number;
+            /**
+             * Findings Created
+             * @default 0
+             */
+            findings_created?: number;
+            /**
+             * Assists Created
+             * @default 0
+             */
+            assists_created?: number;
+            /** Skipped */
+            skipped?: {
+                [key: string]: number;
+            };
+            /** Errors */
+            errors?: string[];
+        };
         /** DrainRowResult */
         DrainRowResult: {
             /** Queue Id */
@@ -26646,6 +26723,117 @@ export interface components {
              * @default 14
              */
             backfill_days?: number;
+        };
+        /** EnrollmentCostRow */
+        EnrollmentCostRow: {
+            /** Enrollment Id */
+            enrollment_id: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Review Cost
+             * @default 0
+             */
+            review_cost?: number;
+            /**
+             * Replay Cost
+             * @default 0
+             */
+            replay_cost?: number;
+            /**
+             * Total Cost
+             * @default 0
+             */
+            total_cost?: number;
+        };
+        /** EnrollmentDetailOut */
+        EnrollmentDetailOut: {
+            enrollment: components["schemas"]["EnrollmentOut"];
+            /**
+             * Pending Examples
+             * @default 0
+             */
+            pending_examples?: number;
+            spend: components["schemas"]["EnrollmentSpend"];
+            /** Reviews */
+            reviews?: components["schemas"]["ReviewOut"][];
+            /** Findings */
+            findings?: components["schemas"]["FindingOut"][];
+        };
+        /**
+         * EnrollmentOut
+         * @description One enrolled subject — the thing Hindsight watches.
+         */
+        EnrollmentOut: {
+            /** Id */
+            id: string;
+            /**
+             * Subject Kind
+             * @enum {string}
+             */
+            subject_kind: "agent" | "workflow" | "tool" | "environment";
+            /** Subject Id */
+            subject_id?: string | null;
+            /** Subject Ref */
+            subject_ref?: string | null;
+            /** Subject Selector */
+            subject_selector?: {
+                [key: string]: string;
+            };
+            /** Display Name */
+            display_name: string;
+            /** Review Every N */
+            review_every_n: number;
+            /** Max Examples Per Review */
+            max_examples_per_review: number;
+            /** Goal */
+            goal?: string | null;
+            /** Status */
+            status: string;
+            /** Example Watermark At */
+            example_watermark_at?: string | null;
+            /** Last Review At */
+            last_review_at?: string | null;
+            /** Next Eligible At */
+            next_eligible_at?: string | null;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /**
+         * EnrollmentSpend
+         * @description What Hindsight SPENT on one enrollment. Excludes original-run cost.
+         */
+        EnrollmentSpend: {
+            /**
+             * Review Cost
+             * @default 0
+             */
+            review_cost?: number;
+            /**
+             * Replay Cost
+             * @default 0
+             */
+            replay_cost?: number;
+            /**
+             * Total Cost
+             * @default 0
+             */
+            total_cost?: number;
+            /**
+             * Review Count
+             * @default 0
+             */
+            review_count?: number;
+            /**
+             * Replay Count
+             * @default 0
+             */
+            replay_count?: number;
+            /**
+             * Replay Failed Count
+             * @default 0
+             */
+            replay_failed_count?: number;
         };
         /** EnrollmentUpdateRequest */
         EnrollmentUpdateRequest: {
@@ -28416,6 +28604,84 @@ export interface components {
             /** Candidates */
             candidates: components["schemas"]["FindSimilarCandidate"][];
         };
+        /**
+         * FindingDecisionOut
+         * @description Receipt for an apply / reject click.
+         */
+        FindingDecisionOut: {
+            /** Finding Id */
+            finding_id: string;
+            /** Status */
+            status: string;
+            /** Applied Version Number */
+            applied_version_number?: number | null;
+        };
+        /**
+         * FindingOut
+         * @description One proposed improvement on one of the four levers.
+         */
+        FindingOut: {
+            /** Id */
+            id: string;
+            /** Review Id */
+            review_id: string;
+            /** Enrollment Id */
+            enrollment_id: string;
+            /**
+             * Lever
+             * @enum {string}
+             */
+            lever: "instructions" | "resources" | "tools" | "architecture";
+            /** Title */
+            title: string;
+            /** Reasoning */
+            reasoning?: string | null;
+            /** Evidence */
+            evidence?: string[];
+            proposal?: components["schemas"]["FindingProposalOut"];
+            /**
+             * Machine Applicable
+             * @default false
+             */
+            machine_applicable?: boolean;
+            /** Confidence */
+            confidence?: number | null;
+            /** Status */
+            status: string;
+            /** Applied At */
+            applied_at?: string | null;
+            /** Applied Version Number */
+            applied_version_number?: number | null;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /**
+         * FindingProposalOut
+         * @description The reviewer's proposed change. Shape varies by lever, so every field is
+         *     optional; the UI renders the first populated body it finds.
+         */
+        FindingProposalOut: {
+            /** Summary */
+            summary?: string | null;
+            /** Details */
+            details?: string | null;
+            /** Proposed System Text */
+            proposed_system_text?: string | null;
+            /** Section Key */
+            section_key?: string | null;
+            /** Section Content */
+            section_content?: string | null;
+            /** Content */
+            content?: string | null;
+            /** Resource Description */
+            resource_description?: string | null;
+            /** Replay Verdicts */
+            replay_verdicts?: {
+                [key: string]: number;
+            };
+        } & {
+            [key: string]: unknown;
+        };
         /** FireResponse */
         FireResponse: {
             /** Trigger Id */
@@ -29201,6 +29467,39 @@ export interface components {
             compaction_group_id: string;
             /** Hidden Message Ids */
             hidden_message_ids: string[];
+        };
+        /**
+         * HindsightCostsOut
+         * @description Platform-wide Hindsight spend — what this system costs to run.
+         */
+        HindsightCostsOut: {
+            /**
+             * Review Cost
+             * @default 0
+             */
+            review_cost?: number;
+            /**
+             * Replay Cost
+             * @default 0
+             */
+            replay_cost?: number;
+            /**
+             * Total Cost
+             * @default 0
+             */
+            total_cost?: number;
+            /**
+             * Review Count
+             * @default 0
+             */
+            review_count?: number;
+            /**
+             * Replay Count
+             * @default 0
+             */
+            replay_count?: number;
+            /** By Enrollment */
+            by_enrollment?: components["schemas"]["EnrollmentCostRow"][];
         };
         /** IdeDiagnostic */
         IdeDiagnostic: {
@@ -37040,6 +37339,52 @@ export interface components {
              */
             only_default_error_class?: boolean;
         };
+        /**
+         * ReplayOut
+         * @description One re-run of a real historical request under a candidate change.
+         *
+         *     ``metrics.cost`` is what the replay SPENT; ``original_metrics.cost`` is the
+         *     baseline the replay is being compared against. A replay whose ``status`` is
+         *     not ``completed`` never spent anything and must not render a comparison.
+         */
+        ReplayOut: {
+            /** Id */
+            id: string;
+            /** Enrollment Id */
+            enrollment_id: string;
+            /** Finding Id */
+            finding_id?: string | null;
+            /** Source Conversation Id */
+            source_conversation_id: string;
+            /** Replay Conversation Id */
+            replay_conversation_id?: string | null;
+            /** Variant */
+            variant: string;
+            /** Status */
+            status: string;
+            /** Metrics */
+            metrics?: {
+                [key: string]: unknown;
+            };
+            /** Original Metrics */
+            original_metrics?: {
+                [key: string]: unknown;
+            };
+            /** Verdict */
+            verdict?: ("better" | "same" | "worse" | "regressed") | null;
+            /** Judge */
+            judge?: {
+                [key: string]: unknown;
+            } | null;
+            /** Error */
+            error?: {
+                [key: string]: unknown;
+            } | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+        };
         /** ReplayRequest */
         ReplayRequest: {
             /**
@@ -37086,6 +37431,21 @@ export interface components {
             skipped_count: number;
             /** Errors */
             errors?: string[];
+        };
+        /** ReplayRunResult */
+        ReplayRunResult: {
+            /** Replay Id */
+            replay_id: string;
+            /**
+             * Status
+             * @default completed
+             * @enum {string}
+             */
+            status?: "completed" | "failed";
+            /** Verdict */
+            verdict?: string | null;
+            /** Reason */
+            reason?: string | null;
         };
         /** RepositoriesListResponse */
         RepositoriesListResponse: {
@@ -37770,6 +38130,113 @@ export interface components {
         RetrySubmitRequest: {
             /** Queue Item Id */
             queue_item_id: string;
+        };
+        /** ReviewDetailOut */
+        ReviewDetailOut: {
+            review: components["schemas"]["ReviewOut"];
+            /** Findings */
+            findings?: components["schemas"]["FindingOut"][];
+            /** Replays */
+            replays?: components["schemas"]["ReplayOut"][];
+        };
+        /**
+         * ReviewExample
+         * @description One real run the reviewer read.
+         */
+        ReviewExample: {
+            /**
+             * Kind
+             * @default
+             */
+            kind?: string;
+            /**
+             * Id
+             * @default
+             */
+            id?: string;
+            /** Stats */
+            stats?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * ReviewOut
+         * @description One review pass over a window of real examples.
+         */
+        ReviewOut: {
+            /** Id */
+            id: string;
+            /** Enrollment Id */
+            enrollment_id: string;
+            /** Status */
+            status: string;
+            /** Window From */
+            window_from?: string | null;
+            /** Window To */
+            window_to?: string | null;
+            /**
+             * Example Count
+             * @default 0
+             */
+            example_count?: number;
+            /** Examples */
+            examples?: components["schemas"]["ReviewExample"][];
+            /** Reviewer Conversation Id */
+            reviewer_conversation_id?: string | null;
+            /** Summary */
+            summary?: string | null;
+            /** What Worked */
+            what_worked?: string | null;
+            /** Error */
+            error?: {
+                [key: string]: unknown;
+            } | null;
+            /** Total Cost */
+            total_cost?: number | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+        };
+        /** ReviewRunResult */
+        ReviewRunResult: {
+            /** Enrollment Id */
+            enrollment_id: string;
+            /** Review Id */
+            review_id?: string | null;
+            /**
+             * Status
+             * @default completed
+             * @enum {string}
+             */
+            status?: "completed" | "skipped" | "failed";
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Example Count
+             * @default 0
+             */
+            example_count?: number;
+            /**
+             * Findings Created
+             * @default 0
+             */
+            findings_created?: number;
+            /**
+             * Assists Created
+             * @default 0
+             */
+            assists_created?: number;
+            /**
+             * Replays Run
+             * @default 0
+             */
+            replays_run?: number;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
         };
         /** ReviewedGmailRequest */
         ReviewedGmailRequest: {
@@ -42049,6 +42516,20 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * ToolSubjectOut
+         * @description A tool ranked by recent dispatch volume + failure ratio (enroll picker).
+         */
+        ToolSubjectOut: {
+            /** Tool Name */
+            tool_name: string;
+            /** Calls */
+            calls: number;
+            /** Fails */
+            fails: number;
+            /** Fail Ratio */
+            fail_ratio: number;
+        };
         /** ToolSummary */
         ToolSummary: {
             /** Code Count */
@@ -43761,80 +44242,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * VaultAttachmentOut
-         * @description Safe attachment metadata. File bytes only cross the dedicated
-         *     no-store download response and ciphertext never crosses this API.
-         */
-        VaultAttachmentOut: {
-            /** Id */
-            id: string;
-            /** Credential Item Id */
-            credential_item_id: string;
-            /** Label */
-            label: string;
-            /** Description */
-            description?: string | null;
-            /** File Name */
-            file_name: string;
-            /**
-             * Media Type
-             * @default application/octet-stream
-             */
-            media_type?: string;
-            /** Size Bytes */
-            size_bytes: number;
-            /**
-             * Handling
-             * @default revealable
-             * @enum {string}
-             */
-            handling?: "visible" | "revealable" | "sealed";
-            /**
-             * Value Version
-             * @default 1
-             */
-            value_version?: number;
-            /** Last Used At */
-            last_used_at?: string | null;
-            /** Created At */
-            created_at: string;
-            /** Updated At */
-            updated_at: string;
-        };
-        /** VaultAttachmentUpdateRequest */
-        VaultAttachmentUpdateRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Label */
-            label?: string | null;
-            /** Description */
-            description?: string | null;
-            /**
-             * Clear Description
-             * @default false
-             */
-            clear_description?: boolean;
-            /** File Name */
-            file_name?: string | null;
-            /** Handling */
-            handling?: ("visible" | "revealable" | "sealed") | null;
-        } & {
-            [key: string]: unknown;
-        };
         /** VaultAuditEntry */
         VaultAuditEntry: {
             /** Id */
@@ -44188,7 +44595,7 @@ export interface components {
             /** Display Name */
             display_name: string;
             /** Fields */
-            fields?: components["schemas"]["FieldIn"][];
+            fields: components["schemas"]["FieldIn"][];
             /**
              * Definition Key
              * @default custom
@@ -44289,8 +44696,6 @@ export interface components {
             updated_at: string;
             /** Fields */
             fields?: components["schemas"]["VaultFieldOut"][];
-            /** Attachments */
-            attachments?: components["schemas"]["VaultAttachmentOut"][];
             capabilities?: components["schemas"]["VaultCapabilities"];
         } & {
             [key: string]: unknown;
@@ -52001,173 +52406,6 @@ export interface operations {
             };
         };
     };
-    add_attachment_vault_items__item_id__attachments_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                item_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_add_attachment_vault_items__item_id__attachments_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VaultAttachmentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_attachment_vault_items__item_id__attachments__attachment_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                item_id: string;
-                attachment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_attachment_vault_items__item_id__attachments__attachment_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                item_id: string;
-                attachment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VaultAttachmentUpdateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VaultAttachmentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    replace_attachment_vault_items__item_id__attachments__attachment_id__file_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                item_id: string;
-                attachment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VaultAttachmentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    download_attachment_vault_items__item_id__attachments__attachment_id__download_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                item_id: string;
-                attachment_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     reveal_vault_items__item_id__reveal_post: {
         parameters: {
             query?: never;
@@ -57068,9 +57306,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["EnrollmentOut"][];
                 };
             };
             /** @description Validation Error */
@@ -57103,9 +57339,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["EnrollmentOut"];
                 };
             };
             /** @description Validation Error */
@@ -57136,9 +57370,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["EnrollmentDetailOut"];
                 };
             };
             /** @description Validation Error */
@@ -57169,9 +57401,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
+                    "application/json": components["schemas"]["ArchiveOut"];
                 };
             };
             /** @description Validation Error */
@@ -57206,9 +57436,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["EnrollmentOut"];
                 };
             };
             /** @description Validation Error */
@@ -57237,9 +57465,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["HindsightCostsOut"];
                 };
             };
         };
@@ -57250,6 +57476,68 @@ export interface operations {
             header?: never;
             path: {
                 enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewRunResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_review_hindsight_reviews__review_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                review_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_thread_hindsight_reviews__review_id__thread_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                review_id: string;
             };
             cookie?: never;
         };
@@ -57277,7 +57565,7 @@ export interface operations {
             };
         };
     };
-    get_review_hindsight_reviews__review_id__get: {
+    discuss_review_route_hindsight_reviews__review_id__discuss_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -57286,7 +57574,48 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscussRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discuss_finding_route_hindsight_findings__finding_id__discuss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscussRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -57327,9 +57656,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["FindingDecisionOut"];
                 };
             };
             /** @description Validation Error */
@@ -57360,9 +57687,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["FindingDecisionOut"];
                 };
             };
             /** @description Validation Error */
@@ -57397,9 +57722,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ReplayRunResult"];
                 };
             };
             /** @description Validation Error */
@@ -57430,9 +57753,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ReplayOut"];
                 };
             };
             /** @description Validation Error */
@@ -57463,9 +57784,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["ToolSubjectOut"][];
                 };
             };
             /** @description Validation Error */
@@ -57494,9 +57813,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DrainResult"];
                 };
             };
         };
@@ -57848,6 +58165,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

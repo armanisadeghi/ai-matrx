@@ -178,6 +178,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "Activity",
         destinations: [
           destination("/administration/agents/reports/agent-drift"),
+          destination("/administration/agents/hindsight"),
         ],
       },
     ],

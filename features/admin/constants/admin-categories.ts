@@ -1141,6 +1141,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Hindsight",
+        description:
+          "Continuous review — enroll an agent, workflow, tool, or environment and every N real runs a reviewer agent reads the actual transcripts and proposes fixes across four levers (instructions, resources, tool design, architecture), with Replay evidence and one-click apply.",
+        iconName: "Telescope",
+        link: "/administration/agents/hindsight",
+        isNew: true,
+      },
+      {
         title: "No Dead Ends",
         description:
           "Door Law scoreboard — every surface that names a record without letting the user open it, ranked by feature and file, each row with a one-click repair brief.",
