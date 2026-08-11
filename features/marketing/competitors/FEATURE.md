@@ -54,3 +54,13 @@ site, loaded competitors and opportunities, latest persisted artifact, and activ
   change — bumping the agent alone would have changed nothing). **Both bounds are real:** too small
   truncates the artifact, too large exceeds the lease. A verified run on datadestruction.com now
   produces 3 competitors, 5 prioritized opportunities, and a 35% already-covered verdict.
+- 2026-08-11 — Claude: **polish pass — six defects a paying user would have seen.** The autopsy hook
+  fell back to the RAW stream kind for any unmapped event, so `seo.analyze_page_completed — complete`
+  reached the screen; `STAGES` now covers every event the run can emit (nested `seo.analyze_page_*`
+  from page_agents.py, the provider `_limited` events, and the durable-command envelope) and
+  `stageLabel()` keeps the last human sentence rather than ever printing platform vocabulary. The
+  `LiveRunDisplay` is mounted only while `status === "running"`: the strategist returns pure
+  structured JSON, so the canonical renderer has nothing to draw and parks on its "Processing…"
+  shimmer — left mounted, that sat under a finished "Autopsy complete" forever. Added the missing
+  `PageHeader` (the route showed no title in the shell header) and centered the hero's left column
+  against the taller run form.
