@@ -28,6 +28,7 @@ export function EntityAttachSection({
   onDismissError,
   onRun,
   onApply,
+  onDismiss,
   applying,
   appliedAt,
 }: {
@@ -42,6 +43,8 @@ export function EntityAttachSection({
   onDismissError?: () => void;
   onRun: () => void;
   onApply: () => void;
+  /** Throw the staged plan away — it is persisted, so this is the only exit. */
+  onDismiss: () => void;
   applying: boolean;
   appliedAt: string | null;
 }) {
@@ -58,24 +61,37 @@ export function EntityAttachSection({
     <SetupSection
       title="E-E-A-T attachments"
       action={
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 gap-1.5 px-2 text-xs"
-          disabled={Boolean(disabledReason) || anyBusy}
-          title={
-            disabledReason ??
-            "Decide which pages carry which author, reviewer, and citation — chosen only from this site's roster."
-          }
-          onClick={onRun}
-        >
-          {busy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <UserCheck className="h-3 w-3" />
-          )}
-          {plan ? "Re-assign" : "Assign entities"}
-        </Button>
+        <div className="flex items-center gap-1">
+          {plan && !busy ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground"
+              title="Discard this entity plan — it is saved with your setup until you do."
+              onClick={onDismiss}
+            >
+              Dismiss
+            </Button>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 gap-1.5 px-2 text-xs"
+            disabled={Boolean(disabledReason) || anyBusy}
+            title={
+              disabledReason ??
+              "Decide which pages carry which author, reviewer, and citation — chosen only from this site's roster."
+            }
+            onClick={onRun}
+          >
+            {busy ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <UserCheck className="h-3 w-3" />
+            )}
+            {plan ? "Re-assign" : "Assign entities"}
+          </Button>
+        </div>
       }
     >
       {error ? (

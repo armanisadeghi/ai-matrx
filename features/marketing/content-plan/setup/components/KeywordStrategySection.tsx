@@ -45,6 +45,7 @@ export function KeywordStrategySection({
   onDismissError,
   onRun,
   onApply,
+  onDismiss,
   applying,
   appliedAt,
 }: {
@@ -57,6 +58,8 @@ export function KeywordStrategySection({
   onDismissError?: () => void;
   onRun: () => void;
   onApply: () => void;
+  /** Throw the staged run away — it is persisted, so this is the only exit. */
+  onDismiss: () => void;
   applying: boolean;
   /** Set once applied — the button becomes a receipt. */
   appliedAt: string | null;
@@ -79,24 +82,37 @@ export function KeywordStrategySection({
     <SetupSection
       title="Keyword strategy"
       action={
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 gap-1.5 px-2 text-xs"
-          disabled={Boolean(disabledReason) || anyBusy}
-          title={
-            disabledReason ??
-            "Assign keywords across the WHOLE plan — money pages get distinct commercial terms, educational pages get easier terms that feed them."
-          }
-          onClick={onRun}
-        >
-          {busy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Network className="h-3 w-3" />
-          )}
-          {strategy ? "Re-plan keywords" : "Plan keywords"}
-        </Button>
+        <div className="flex items-center gap-1">
+          {strategy && !busy ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground"
+              title="Discard this keyword strategy — it is saved with your setup until you do."
+              onClick={onDismiss}
+            >
+              Dismiss
+            </Button>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 gap-1.5 px-2 text-xs"
+            disabled={Boolean(disabledReason) || anyBusy}
+            title={
+              disabledReason ??
+              "Assign keywords across the WHOLE plan — money pages get distinct commercial terms, educational pages get easier terms that feed them."
+            }
+            onClick={onRun}
+          >
+            {busy ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Network className="h-3 w-3" />
+            )}
+            {strategy ? "Re-plan keywords" : "Plan keywords"}
+          </Button>
+        </div>
       }
     >
       {error ? (

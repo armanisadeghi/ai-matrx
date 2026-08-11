@@ -91,6 +91,7 @@ export function PlanReviewSection({
   error,
   onDismissError,
   onRun,
+  onDismiss,
   onAddPage,
   addingRoute,
   addedRoutes,
@@ -105,6 +106,8 @@ export function PlanReviewSection({
   error: string | null;
   onDismissError?: () => void;
   onRun: () => void;
+  /** Throw the staged review away — it is persisted, so this is the only exit. */
+  onDismiss: () => void;
   /** Create one suggested page (SetupView owns the write). */
   onAddPage: (finding: PlanReviewFinding) => void;
   addingRoute: string | null;
@@ -120,25 +123,38 @@ export function PlanReviewSection({
     <SetupSection
       title="Plan review"
       action={
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 gap-1.5 px-2 text-xs"
-          disabled={!aiReady || anyBusy}
-          title={
-            aiReady
-              ? "Audit this plan against the research report — what is missing, mismatched, or misprioritized."
-              : "Pick a research topic with a finished report in the AI grounding bar first"
-          }
-          onClick={onRun}
-        >
-          {busy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <ClipboardCheck className="h-3 w-3" />
-          )}
-          {review ? "Re-review" : "Review plan"}
-        </Button>
+        <div className="flex items-center gap-1">
+          {review && !busy ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground"
+              title="Discard this review — it is saved with your setup until you do."
+              onClick={onDismiss}
+            >
+              Dismiss
+            </Button>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 gap-1.5 px-2 text-xs"
+            disabled={!aiReady || anyBusy}
+            title={
+              aiReady
+                ? "Audit this plan against the research report — what is missing, mismatched, or misprioritized."
+                : "Pick a research topic with a finished report in the AI grounding bar first"
+            }
+            onClick={onRun}
+          >
+            {busy ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <ClipboardCheck className="h-3 w-3" />
+            )}
+            {review ? "Re-review" : "Review plan"}
+          </Button>
+        </div>
       }
     >
       {/* The error sits ABOVE the findings, never INSTEAD of them: one failed

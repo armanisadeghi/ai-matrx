@@ -19,6 +19,14 @@
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 
+import {
+  coerceEntityAttachPlan,
+  coerceKeywordStrategy,
+  coercePlanReview,
+  type EntityAttachPlan,
+  type KeywordStrategyResult,
+  type PlanReviewResult,
+} from "./ai";
 import { SITE_SETTINGS_KEY } from "./archetypes";
 
 export const SETUP_DRAFT_KEY = "setup_draft";
@@ -50,6 +58,26 @@ export interface SetupDraft {
   topicsByArchetype: Record<string, Record<string, string[]>>;
   /** The research topic grounding the AI steps (rs_topic.id). */
   researchTopicId: string | null;
+  /**
+   * The three WHOLE-PLAN agent runs staged in Setup — a semantic plan review,
+   * a keyword strategy, and an E-E-A-T attachment plan.
+   *
+   * These are the most expensive things this view produces (the keyword pass
+   * alone reasons over the entire plan plus the full research report on a
+   * 420s budget), and every one of them is REVIEW-then-apply: the user is
+   * meant to read it, argue with it, and decide. Holding them in component
+   * state made a refresh or a tab-out silently bill the user again — so they
+   * stage exactly like the shape/naming steps do. Applying does NOT clear
+   * them; only the user's Dismiss (or a full commit) does.
+   */
+  review: PlanReviewResult | null;
+  /** Routes already created from the staged review — the "added" receipt. */
+  reviewAddedRoutes: string[];
+  keywordStrategy: KeywordStrategyResult | null;
+  /** ISO time the staged strategy was applied (null = still unapplied). */
+  keywordsAppliedAt: string | null;
+  entityPlan: EntityAttachPlan | null;
+  entitiesAppliedAt: string | null;
   updatedAt: string | null;
 }
 
@@ -61,6 +89,12 @@ export function emptySetupDraft(): SetupDraft {
     conceptNamesByArchetype: {},
     topicsByArchetype: {},
     researchTopicId: null,
+    review: null,
+    reviewAddedRoutes: [],
+    keywordStrategy: null,
+    keywordsAppliedAt: null,
+    entityPlan: null,
+    entitiesAppliedAt: null,
     updatedAt: null,
   };
 }
@@ -87,6 +121,79 @@ function readNameMap(raw: unknown): Record<string, Record<string, string[]>> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+/**
+ * The three staged runs are stored in the AGENT'S OWN WIRE SHAPE (snake_case)
+ * so `coerce*` from ./ai stays the ONE parser for each of them — a staged run
+ * read back off the draft goes through exactly the validation a fresh run
+ * does, and there is no second shape to drift. A section that no longer
+ * parses degrades to null (the user re-runs), never throws away the draft.
+ */
+function planReviewToStorage(review: PlanReviewResult): Record<string, unknown> {
+  return {
+    summary: review.summary,
+    findings: review.findings.map((finding) => ({
+      severity: finding.severity,
+      title: finding.title,
+      detail: finding.detail,
+      suggested_route: finding.suggestedRoute,
+      suggested_label: finding.suggestedLabel,
+    })),
+  };
+}
+
+function keywordStrategyToStorage(
+  strategy: KeywordStrategyResult,
+): Record<string, unknown> {
+  return {
+    strategy_summary: strategy.strategySummary,
+    warnings: strategy.warnings,
+    assignments: strategy.assignments.map((assignment) => ({
+      route: assignment.route,
+      page_role: assignment.pageRole,
+      primary_keyword: assignment.primaryKeyword,
+      primary_is_new: assignment.primaryIsNew,
+      secondary_keywords: assignment.secondaryKeywords,
+      supports_routes: assignment.supportsRoutes,
+      internal_links: assignment.internalLinks.map((link) => ({
+        to_route: link.toRoute,
+        anchor_text: link.anchorText,
+      })),
+      reason: assignment.reason,
+    })),
+  };
+}
+
+function entityPlanToStorage(plan: EntityAttachPlan): Record<string, unknown> {
+  return {
+    notes: plan.notes,
+    attachments: plan.attachments.map((attachment) => ({
+      route: attachment.route,
+      entity_label: attachment.entityLabel,
+      role: attachment.role,
+      reason: attachment.reason,
+    })),
+    missing_entities: plan.missingEntities.map((gap) => ({
+      suggested_label: gap.suggestedLabel,
+      entity_type: gap.entityType,
+      why_needed: gap.whyNeeded,
+    })),
+  };
+}
+
+/** Parse one staged run; a malformed section is dropped, never fatal. */
+function readStaged<T>(raw: unknown, coerce: (value: unknown) => T): T | null {
+  if (!isRecord(raw)) return null;
+  try {
+    return coerce(raw);
+  } catch {
+    return null;
+  }
+}
+
+function readIsoString(raw: unknown): string | null {
+  return typeof raw === "string" && raw.trim() ? raw : null;
 }
 
 /** Read the draft off a site's settings. Malformed sections degrade per-key. */
@@ -134,6 +241,21 @@ export function readSetupDraft(settings: unknown): SetupDraft | null {
       }
     }
   }
+
+  draft.review = readStaged(raw.plan_review, coercePlanReview);
+  if (Array.isArray(raw.plan_review_added_routes)) {
+    draft.reviewAddedRoutes = raw.plan_review_added_routes.filter(
+      (route): route is string => typeof route === "string" && Boolean(route.trim()),
+    );
+  }
+  draft.keywordStrategy = readStaged(raw.keyword_strategy, coerceKeywordStrategy);
+  draft.keywordsAppliedAt = draft.keywordStrategy
+    ? readIsoString(raw.keywords_applied_at)
+    : null;
+  draft.entityPlan = readStaged(raw.entity_attach_plan, coerceEntityAttachPlan);
+  draft.entitiesAppliedAt = draft.entityPlan
+    ? readIsoString(raw.entities_applied_at)
+    : null;
   return draft;
 }
 
@@ -145,11 +267,15 @@ export function draftHasContent(draft: SetupDraft): boolean {
       Object.keys(draft.countsByArchetype).length > 0 ||
       Object.keys(draft.namesByArchetype).length > 0 ||
       Object.keys(draft.conceptNamesByArchetype).length > 0 ||
-      Object.keys(draft.topicsByArchetype).length > 0,
+      Object.keys(draft.topicsByArchetype).length > 0 ||
+      draft.review ||
+      draft.keywordStrategy ||
+      draft.entityPlan,
   );
 }
 
-function draftToStorage(draft: SetupDraft): Record<string, unknown> {
+/** Exported for the round-trip test — the write half of `readSetupDraft`. */
+export function draftToStorage(draft: SetupDraft): Record<string, unknown> {
   const out: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
@@ -166,6 +292,20 @@ function draftToStorage(draft: SetupDraft): Record<string, unknown> {
   }
   if (Object.keys(draft.topicsByArchetype).length > 0) {
     out.topics_by_archetype = draft.topicsByArchetype;
+  }
+  if (draft.review) {
+    out.plan_review = planReviewToStorage(draft.review);
+    if (draft.reviewAddedRoutes.length > 0) {
+      out.plan_review_added_routes = draft.reviewAddedRoutes;
+    }
+  }
+  if (draft.keywordStrategy) {
+    out.keyword_strategy = keywordStrategyToStorage(draft.keywordStrategy);
+    if (draft.keywordsAppliedAt) out.keywords_applied_at = draft.keywordsAppliedAt;
+  }
+  if (draft.entityPlan) {
+    out.entity_attach_plan = entityPlanToStorage(draft.entityPlan);
+    if (draft.entitiesAppliedAt) out.entities_applied_at = draft.entitiesAppliedAt;
   }
   return out;
 }
@@ -251,6 +391,139 @@ export async function clearSetupDraft(siteId: string): Promise<void> {
   if (await writeDraftOnce(siteId, mutate)) return;
   if (await writeDraftOnce(siteId, mutate)) return;
   throw new Error("Could not clear the setup draft — the site record kept changing.");
+}
+
+/**
+ * THE APPLIED RECORD — what an Apply left behind that no row of the plan can
+ * hold on its own.
+ *
+ * Applying a keyword strategy writes each page's own share to
+ * `plan.node.attributes.keyword_strategy`; applying an entity plan writes
+ * canonical association edges. But both agents also return WHOLE-PLAN facts
+ * that belong to no single page — the strategy's summary and its warnings,
+ * and the roster gaps the attacher refused to invent — and those were
+ * previously dropped on the floor at the exact moment the user acted on the
+ * run. They land here, in the same guarded `web.site.settings.content_plan`
+ * block the committed archetype and the draft already live in: one row, one
+ * copy, existing jsonb, no new column and no duplication across N nodes.
+ */
+export const KEYWORD_STRATEGY_APPLIED_KEY = "keyword_strategy_applied";
+export const ENTITY_ATTACH_APPLIED_KEY = "entity_attach_applied";
+
+export interface AppliedKeywordStrategy {
+  summary: string;
+  warnings: string[];
+  /** Pages whose primary keyword the apply actually bound. */
+  bound: number;
+  appliedAt: string;
+}
+
+export interface AppliedEntityAttachments {
+  notes: string;
+  missingEntities: EntityAttachPlan["missingEntities"];
+  attached: number;
+  appliedAt: string;
+}
+
+export async function recordAppliedKeywordStrategy(
+  siteId: string,
+  record: Omit<AppliedKeywordStrategy, "appliedAt">,
+): Promise<void> {
+  const stored = {
+    summary: record.summary,
+    warnings: record.warnings,
+    bound: record.bound,
+    applied_at: new Date().toISOString(),
+  };
+  const mutate = (block: Record<string, unknown>) => {
+    block[KEYWORD_STRATEGY_APPLIED_KEY] = stored;
+  };
+  if (await writeDraftOnce(siteId, mutate)) return;
+  if (await writeDraftOnce(siteId, mutate)) return;
+  throw new Error(
+    "Keywords were applied, but the strategy summary and warnings could not be recorded — the site record kept changing.",
+  );
+}
+
+export function readAppliedKeywordStrategy(
+  settings: unknown,
+): AppliedKeywordStrategy | null {
+  const raw = readSettingsBlockKey(settings, KEYWORD_STRATEGY_APPLIED_KEY);
+  if (!raw) return null;
+  const appliedAt = readIsoString(raw.applied_at);
+  if (!appliedAt) return null;
+  return {
+    summary: typeof raw.summary === "string" ? raw.summary : "",
+    warnings: Array.isArray(raw.warnings)
+      ? raw.warnings.filter((item): item is string => typeof item === "string")
+      : [],
+    bound: typeof raw.bound === "number" ? raw.bound : 0,
+    appliedAt,
+  };
+}
+
+export async function recordAppliedEntityAttachments(
+  siteId: string,
+  record: Omit<AppliedEntityAttachments, "appliedAt">,
+): Promise<void> {
+  const stored = {
+    notes: record.notes,
+    missing_entities: record.missingEntities.map((gap) => ({
+      suggested_label: gap.suggestedLabel,
+      entity_type: gap.entityType,
+      why_needed: gap.whyNeeded,
+    })),
+    attached: record.attached,
+    applied_at: new Date().toISOString(),
+  };
+  const mutate = (block: Record<string, unknown>) => {
+    block[ENTITY_ATTACH_APPLIED_KEY] = stored;
+  };
+  if (await writeDraftOnce(siteId, mutate)) return;
+  if (await writeDraftOnce(siteId, mutate)) return;
+  throw new Error(
+    "Entities were attached, but the roster gaps and notes could not be recorded — the site record kept changing.",
+  );
+}
+
+export function readAppliedEntityAttachments(
+  settings: unknown,
+): AppliedEntityAttachments | null {
+  const raw = readSettingsBlockKey(settings, ENTITY_ATTACH_APPLIED_KEY);
+  if (!raw) return null;
+  const appliedAt = readIsoString(raw.applied_at);
+  if (!appliedAt) return null;
+  const gaps: EntityAttachPlan["missingEntities"] = [];
+  if (Array.isArray(raw.missing_entities)) {
+    for (const item of raw.missing_entities) {
+      if (!isRecord(item)) continue;
+      if (typeof item.suggested_label !== "string" || !item.suggested_label.trim()) {
+        continue;
+      }
+      gaps.push({
+        suggestedLabel: item.suggested_label,
+        entityType: typeof item.entity_type === "string" ? item.entity_type : "source",
+        whyNeeded: typeof item.why_needed === "string" ? item.why_needed : "",
+      });
+    }
+  }
+  return {
+    notes: typeof raw.notes === "string" ? raw.notes : "",
+    missingEntities: gaps,
+    attached: typeof raw.attached === "number" ? raw.attached : 0,
+    appliedAt,
+  };
+}
+
+function readSettingsBlockKey(
+  settings: unknown,
+  key: string,
+): Record<string, unknown> | null {
+  if (!isRecord(settings)) return null;
+  const block = settings[SITE_SETTINGS_KEY];
+  if (!isRecord(block)) return null;
+  const raw = block[key];
+  return isRecord(raw) ? raw : null;
 }
 
 /** The site's recorded research-topic link, off already-loaded settings. */

@@ -341,6 +341,30 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
   cleared on a fully-successful commit. Because draft saves bump the site
   row's `version`, the commit's `recordSiteArchetype` reads the FRESH row
   (`fetchFreshSite`) instead of the query cache's copy.
+- 🚨 **ANY AI result a Setup step STAGES belongs in `SetupDraft` — never in
+  bare component state.** A staged run is an expensive artifact the user is
+  asked to review before applying; component state means a refresh, a tab-out,
+  or a stray navigation silently bills them for the same reasoning twice. The
+  three whole-plan runs (`plan_review`, `keyword_strategy`,
+  `entity_attach_plan`, each with its applied-at receipt and the review's
+  added-route receipts) ride the SAME autosave as the shape/naming steps —
+  stored in the agent's own snake_case wire shape so `coerce*` in `setup/ai.ts`
+  stays the one parser, with a malformed section degrading to null rather than
+  destroying the draft. Every staged run is **dismissible**, and Dismiss is what
+  clears it; Apply does not. Adding a fourth step means adding its result to
+  `SetupDraft`, its serializer to `draftToStorage`, its rehydration to the seed
+  effect, and its `onDismiss` — not a `useState`.
+- **What an Apply leaves behind that no plan row can hold goes on the site.**
+  Applying keywords writes each page's own share to
+  `plan.node.attributes.keyword_strategy`; applying entities writes association
+  edges. The WHOLE-PLAN half — the strategist's summary and warnings, the
+  attacher's roster gaps and notes — belongs to no page, so it is recorded once
+  in the same guarded settings block
+  (`content_plan.keyword_strategy_applied` / `.entity_attach_applied`, via
+  `recordAppliedKeywordStrategy` / `recordAppliedEntityAttachments`). Never a
+  new column, and never duplicated across N nodes. Dropping it was the defect:
+  the roster-gap list is precisely what tells the user which entities to create
+  next, and it died at the moment they clicked Apply.
 - **The committed work order lives in ONE place:**
   `web.site.settings.content_plan.archetype = {key, counts, concept_names?,
   instantiated_at}` — byte-identical to what aidream's `_record_site_archetype`
@@ -393,6 +417,18 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
   pattern as `features/marketing`). No barrels.
 
 ## Change log
+
+- 2026-08-11 — Claude: **Setup's three whole-plan AI runs survive a refresh.**
+  Plan review, keyword strategy and E-E-A-T attachments were held in `useState`
+  only, so a reload or a navigation destroyed runs that cost a full research
+  report of reasoning (the keyword pass on a 420s budget) — and only the `gap`
+  findings the user individually clicked Add were ever persisted at all. All
+  three now stage in `SetupDraft` (agent wire shape, parsed back through the
+  existing `coerce*`), rehydrate on mount, and are dismissible per section;
+  `draft.test.ts` guards the round trip and the degrade-don't-destroy rule. At
+  Apply, the whole-plan fields that used to be dropped are recorded on the site
+  settings block — the strategist's `strategySummary` + `warnings`, and the
+  attacher's `missingEntities` + `notes`. Invariants recorded above.
 
 - 2026-08-11 — Claude: **"Suggest from research" no longer destroys a paid
   run on Cancel.** The Entity Curator's result used to live in a local

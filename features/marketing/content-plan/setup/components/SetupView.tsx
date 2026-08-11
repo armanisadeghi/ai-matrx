@@ -89,6 +89,8 @@ import {
   fetchFreshSite,
   readSetupDraft,
   readSiteResearchTopicId,
+  recordAppliedEntityAttachments,
+  recordAppliedKeywordStrategy,
   recordSiteResearchTopic,
   saveSetupDraft,
   type SetupDraft,
@@ -365,6 +367,22 @@ export function SetupView() {
             setTopicsByArchetype(draft.topicsByArchetype);
           }
           if (draft.researchTopicId) setResearchTopicId(draft.researchTopicId);
+          // The three expensive WHOLE-PLAN runs come back exactly as they
+          // were left — a returning user reads their review, strategy and
+          // entity plan instead of an empty panel with a Run button that
+          // would charge them for the same reasoning twice.
+          if (draft.review) {
+            setReview(draft.review);
+            setAddedRoutes(new Set(draft.reviewAddedRoutes));
+          }
+          if (draft.keywordStrategy) {
+            setKeywordStrategy(draft.keywordStrategy);
+            setKeywordsAppliedAt(draft.keywordsAppliedAt);
+          }
+          if (draft.entityPlan) {
+            setEntityPlan(draft.entityPlan);
+            setEntitiesAppliedAt(draft.entitiesAppliedAt);
+          }
         }
         // No in-progress draft topic → the site's recorded research link
         // (the same one aidream's generator/deepen read) is the default.
@@ -405,6 +423,12 @@ export function SetupView() {
       conceptNamesByArchetype,
       topicsByArchetype,
       researchTopicId,
+      review,
+      reviewAddedRoutes: Array.from(addedRoutes).sort(),
+      keywordStrategy,
+      keywordsAppliedAt,
+      entityPlan,
+      entitiesAppliedAt,
       updatedAt: null,
     };
     const serialized = JSON.stringify(draft);
@@ -450,6 +474,12 @@ export function SetupView() {
     conceptNamesByArchetype,
     topicsByArchetype,
     researchTopicId,
+    review,
+    addedRoutes,
+    keywordStrategy,
+    keywordsAppliedAt,
+    entityPlan,
+    entitiesAppliedAt,
   ]);
 
   // Unmount FLUSH — the last ≤800ms of edits must survive a view toggle or
@@ -1212,6 +1242,21 @@ export function SetupView() {
       }
       if (result.attached > 0) {
         setEntitiesAppliedAt(new Date().toISOString());
+        // The roster gaps and the pass's notes belong to no single page —
+        // they are the half of this run the edges cannot carry, and they are
+        // what tells the user which entities to go create. Recorded on the
+        // site beside the applied edges, loudly if it fails.
+        try {
+          await recordAppliedEntityAttachments(siteId, {
+            notes: entityPlan.notes,
+            missingEntities: entityPlan.missingEntities,
+            attached: result.attached,
+          });
+        } catch (error) {
+          setAttachError(
+            `Attached ${result.attached}, but the roster gaps were not recorded: ${extractErrorMessage(error)}`,
+          );
+        }
         toast.success(`Attached ${result.attached} entity edge(s).`);
       }
     } catch (error) {
@@ -1295,6 +1340,20 @@ export function SetupView() {
       }
       if (result.bound > 0 || result.secondaryEdges > 0) {
         setKeywordsAppliedAt(new Date().toISOString());
+        // Each page keeps its own share in `attributes.keyword_strategy`; the
+        // strategist's whole-plan summary and warnings belong to no page, so
+        // they are recorded on the site instead of dropped at Apply.
+        try {
+          await recordAppliedKeywordStrategy(siteId, {
+            summary: keywordStrategy.strategySummary,
+            warnings: keywordStrategy.warnings,
+            bound: result.bound,
+          });
+        } catch (error) {
+          setKeywordError(
+            `Bound ${result.bound} page(s), but the strategy summary was not recorded: ${extractErrorMessage(error)}`,
+          );
+        }
         toast.success(
           `Keywords applied: ${result.bound} primary, ${result.secondaryEdges} secondary` +
             (result.createdKeywords > 0
@@ -1918,6 +1977,11 @@ export function SetupView() {
                     onDismissError={() => setKeywordError(null)}
                     onRun={() => void handlePlanKeywords()}
                     onApply={() => void handleApplyKeywords()}
+                    onDismiss={() => {
+                      setKeywordStrategy(null);
+                      setKeywordsAppliedAt(null);
+                      setKeywordError(null);
+                    }}
                     applying={applyingKeywords}
                     appliedAt={keywordsAppliedAt}
                   />
@@ -1932,6 +1996,11 @@ export function SetupView() {
                     onDismissError={() => setAttachError(null)}
                     onRun={() => void handleAttachEntities()}
                     onApply={() => void handleApplyEntityAttachments()}
+                    onDismiss={() => {
+                      setEntityPlan(null);
+                      setEntitiesAppliedAt(null);
+                      setAttachError(null);
+                    }}
                     applying={applyingEntities}
                     appliedAt={entitiesAppliedAt}
                   />
@@ -1944,6 +2013,11 @@ export function SetupView() {
                     error={reviewError}
                     onDismissError={() => setReviewError(null)}
                     onRun={() => void handleReviewPlan()}
+                    onDismiss={() => {
+                      setReview(null);
+                      setAddedRoutes(new Set());
+                      setReviewError(null);
+                    }}
                     onAddPage={(finding) => void handleAddSuggestedPage(finding)}
                     addingRoute={addingRoute}
                     addedRoutes={addedRoutes}
