@@ -4,9 +4,15 @@ jest.mock("@/lib/diagnostics/captureStreamError", () => ({
 }));
 
 import { TextDecoder as NodeTextDecoder } from "node:util";
+import { captureStreamTransportError } from "@/lib/diagnostics/captureStreamError";
+import { BackendApiError } from "../errors";
 import { parseNdjsonStream } from "../stream-parser";
 
 describe("parseNdjsonStream cancellation", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   beforeAll(() => {
     if (typeof globalThis.TextDecoder === "undefined") {
       Object.defineProperty(globalThis, "TextDecoder", {
@@ -49,7 +55,13 @@ describe("parseNdjsonStream cancellation", () => {
     consoleError.mockRestore();
   });
 
-  it("still reports Load failed when the stream was not cancelled", async () => {
+  // A transport failure on a LIVE stream is never swallowed. Before the wire
+  // kernel extraction it was only `console.error`-logged and the generator then
+  // ended as if the response had completed — a dropped socket looked identical
+  // to a finished answer. It now becomes a typed BackendApiError that is
+  // recorded once (Error Inspector) and re-thrown; `callApi` relies on that
+  // same object reaching its catch so one dropped socket is one red row.
+  it("surfaces Load failed as a typed transport error when the stream was not cancelled", async () => {
     const reader = {
       read: jest.fn().mockRejectedValue(new TypeError("Load failed")),
       releaseLock: jest.fn(),
@@ -64,14 +76,20 @@ describe("parseNdjsonStream cancellation", () => {
 
     const { events } = parseNdjsonStream(response);
 
-    await expect(events.next()).resolves.toEqual({
-      done: true,
-      value: undefined,
+    await expect(events.next()).rejects.toMatchObject({
+      name: "BackendApiError",
+      code: "internal_error",
+      detail: "Load failed",
+      userMessage: "The connection to the AI response was lost.",
     });
-    expect(consoleError).toHaveBeenCalledWith(
-      "[stream-parser] readLoop error:",
-      expect.objectContaining({ message: "Load failed" }),
-    );
+
+    expect(captureStreamTransportError).toHaveBeenCalledTimes(1);
+    expect(
+      jest.mocked(captureStreamTransportError).mock.calls[0]?.[0],
+    ).toBeInstanceOf(BackendApiError);
+    expect(reader.releaseLock).toHaveBeenCalledTimes(1);
+    // The failure travels as a structured error, not as console noise.
+    expect(consoleError).not.toHaveBeenCalled();
 
     consoleError.mockRestore();
   });
