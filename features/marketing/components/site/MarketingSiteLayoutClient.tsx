@@ -33,6 +33,9 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
@@ -107,6 +110,38 @@ const SITE_MODE_ICONS: Record<
   settings: Settings,
 };
 
+/**
+ * A site reached through the wrong brand's URL is a broken link, not a locked
+ * door: the user can open it, they just took a wrong turn. Naming the site and
+ * linking to its real home is the door THE DOOR LAW asks for — the old copy
+ * ("This site does not belong to the brand in the URL") named a problem it
+ * already knew how to fix and then didn't fix it.
+ */
+function WrongBrandNotice({
+  siteName,
+  href,
+}: {
+  siteName: string | null;
+  href: string;
+}) {
+  return (
+    <div className="flex h-full min-h-64 items-center justify-center p-6">
+      <div className="w-full max-w-lg">
+        <h1 className="text-lg font-semibold text-foreground">
+          This link points at the wrong brand
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {siteName ? `"${siteName}"` : "This site"} lives under a different
+          brand. Everything is fine &mdash; the address just needs updating.
+        </p>
+        <Button asChild className="mt-4" size="sm">
+          <Link href={href}>Open {siteName ?? "the site"}</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function FallbackHeader() {
   return (
     <RouteHeader
@@ -140,12 +175,21 @@ export function MarketingSiteLayoutClient({
   }
 
   if (site.isError || !site.data) {
+    // A zero-row read means one of four things — denied, deleted, never
+    // existed, or a signed-out session — and this surface cannot tell them
+    // apart. It used to assert "deleted", which was wrong most of the time and
+    // offered a Retry that could never work. The gate asks the platform and
+    // says the true one, with a way forward.
     return (
       <>
         <FallbackHeader />
-        <QueryError
-          error={site.error ?? new Error("Site not found")}
+        <AccessGate
+          token="web_site"
+          id={siteId}
+          error={site.error}
           onRetry={() => void site.refetch()}
+          fallbackHref="/marketing/sites"
+          fallbackLabel="All sites"
         />
       </>
     );
@@ -153,14 +197,15 @@ export function MarketingSiteLayoutClient({
 
   const current = site.data;
   if (current.brand_id !== brandId) {
-    // A cross-brand URL must never resolve another brand's site.
+    // A cross-brand URL must never resolve another brand's site. The site is
+    // readable, so this is a bad link, not an access problem — send them to the
+    // site where it actually lives rather than to an error.
     return (
       <>
         <FallbackHeader />
-        <QueryError
-          error={
-            new Error("This site does not belong to the brand in the URL.")
-          }
+        <WrongBrandNotice
+          siteName={current.name}
+          href={marketingRoutes.site(current.brand_id, siteId)}
         />
       </>
     );

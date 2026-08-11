@@ -13,11 +13,25 @@
 "use client";
 
 import { useState } from "react";
-import { AlarmClock, CircleCheck, ExternalLink, FileChartColumn, Search } from "lucide-react";
+import {
+  AlarmClock,
+  CircleCheck,
+  CircleSlash,
+  ExternalLink,
+  FileChartColumn,
+  Flag,
+  KeyRound,
+  PenLine,
+  Search,
+} from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import type { AccessRequestStatus } from "@/features/access-gate/types";
 import { useOpenAgentFindUsagesWindow } from "@/features/overlays/openers/agentFindUsagesWindow";
 import type {
+  AccessRequestActionPayload,
   AgentDriftActionPayload,
   MessageActionData,
   OpenLinkActionPayload,
@@ -182,7 +196,144 @@ function TaskReminderChips({ data, isOwn }: { data: MessageActionData; isOwn: bo
   );
 }
 
+/**
+ * `access_request` — someone is asking to get into something you own.
+ *
+ * The DM IS the approval surface. The owner grants, declines, or reports right
+ * here, without going to find a queue — which is the difference between a
+ * request that gets answered and one that rots. The requester's own copy of the
+ * message shows the same card with no buttons, so they can see what they sent.
+ */
+function AccessRequestChips({
+  data,
+  isOwn,
+}: {
+  data: MessageActionData;
+  isOwn: boolean;
+}) {
+  const p = data.payload as AccessRequestActionPayload;
+  const currentUserId = useAppSelector(selectUserId);
+  const [done, setDone] = useState<AccessRequestStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (!p?.request_id) return null;
+
+  // The sender sees their own ask; only the recipient can answer it.
+  if (isOwn) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-primary-foreground/80">
+        <KeyRound className="h-3 w-3" aria-hidden />
+        Access requested
+      </span>
+    );
+  }
+
+  async function decide(decision: "grant" | "decline", level?: "viewer" | "editor") {
+    setBusy(true);
+    try {
+      const { decideAccessRequest } = await import(
+        "@/features/access-gate/service/accessRequests"
+      );
+      const result = await decideAccessRequest({
+        requestId: p.request_id,
+        decision,
+        level,
+        currentUserId,
+      });
+      setDone(result.status);
+      toast.success(
+        result.already
+          ? "This was already answered."
+          : decision === "grant"
+            ? `Access granted${p.entity_title ? ` to ${p.entity_title}` : ""}.`
+            : "Request declined.",
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "We couldn't do that.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function report() {
+    setBusy(true);
+    try {
+      const { reportAccessRequest } = await import(
+        "@/features/access-gate/service/accessRequests"
+      );
+      await reportAccessRequest(p.request_id);
+      setDone("reported");
+      toast.success("Reported. They can't ask about this again.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "We couldn't do that.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] text-muted-foreground">
+        {done === "granted"
+          ? "Access granted"
+          : done === "declined"
+            ? "Declined"
+            : done === "reported"
+              ? "Reported"
+              : "Answered"}
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className={chipClass(isOwn)}
+        disabled={busy}
+        onClick={() => void decide("grant", "viewer")}
+      >
+        <CircleCheck className="h-3 w-3" aria-hidden />
+        Let them view
+      </button>
+      <button
+        type="button"
+        className={chipClass(isOwn)}
+        disabled={busy}
+        onClick={() => void decide("grant", "editor")}
+      >
+        <PenLine className="h-3 w-3" aria-hidden />
+        Let them edit
+      </button>
+      <button
+        type="button"
+        className={chipClass(isOwn)}
+        disabled={busy}
+        onClick={() => void decide("decline")}
+      >
+        <CircleSlash className="h-3 w-3" aria-hidden />
+        Decline
+      </button>
+      <button
+        type="button"
+        className={chipClass(isOwn)}
+        disabled={busy}
+        onClick={() => void report()}
+      >
+        <Flag className="h-3 w-3" aria-hidden />
+        Report
+      </button>
+    </>
+  );
+}
+
 const RENDERERS: Record<string, ChipRenderer> = {
+  access_request: (data, ctx) => (
+    <AccessRequestChips data={data} isOwn={ctx.isOwn} />
+  ),
   agent_drift: (data, ctx) => <AgentDriftChips data={data} isOwn={ctx.isOwn} />,
   open_link: (data, ctx) => <OpenLinkChip data={data} isOwn={ctx.isOwn} />,
   resource_shared: (data) => <ResourceSharedCard data={data} />,

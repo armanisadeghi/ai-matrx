@@ -22734,6 +22734,77 @@ export type Database = {
   }
   iam: {
     Tables: {
+      access_requests: {
+        Row: {
+          created_at: string
+          created_by: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          deleted_at: string | null
+          id: string
+          message: string | null
+          metadata: Json
+          organization_id: string
+          requested_level: string
+          resource_id: string
+          resource_type: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          deleted_at?: string | null
+          id?: string
+          message?: string | null
+          metadata?: Json
+          organization_id: string
+          requested_level?: string
+          resource_id: string
+          resource_type: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          deleted_at?: string | null
+          id?: string
+          message?: string | null
+          metadata?: Json
+          organization_id?: string
+          requested_level?: string
+          resource_id?: string
+          resource_type?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       canonical_sweep: {
         Row: {
           claimed_at: string | null
@@ -23553,6 +23624,13 @@ export type Database = {
         Args: { p_id: string; p_org: string; p_owner: string; p_type: string }
         Returns: Database["public"]["Enums"]["permission_level"]
       }
+      access_request_recipients: {
+        Args: { p_id: string; p_type: string }
+        Returns: {
+          reason: string
+          user_id: string
+        }[]
+      }
       accessible_entity_ids: {
         Args: {
           p_depth?: number
@@ -23593,6 +23671,10 @@ export type Database = {
       }
       can_access_conversation: { Args: { p_conv: string }; Returns: boolean }
       can_access_run: { Args: { p_run: string }; Returns: boolean }
+      can_decide_access_request: {
+        Args: { p_id: string; p_type: string; p_user_id: string }
+        Returns: boolean
+      }
       canonical_certify: {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: {
@@ -25771,6 +25853,7 @@ export type Database = {
           default_needs_approval: boolean
           default_scopeable: boolean
           default_visibility: Database["platform"]["Enums"]["visibility"] | null
+          deny_preview: boolean
           has_soft_delete: boolean
           is_active: boolean
           is_component: boolean
@@ -25801,6 +25884,7 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
+          deny_preview?: boolean
           has_soft_delete?: boolean
           is_active?: boolean
           is_component?: boolean
@@ -25831,6 +25915,7 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
+          deny_preview?: boolean
           has_soft_delete?: boolean
           is_active?: boolean
           is_component?: boolean
@@ -30793,8 +30878,36 @@ export type Database = {
         Args: { p_organization_id?: string; p_suggestion_id: string }
         Returns: Json
       }
+      access_denied_context: {
+        Args: { p_id: string; p_type: string }
+        Returns: Json
+      }
       access_drift_report: { Args: never; Returns: Json }
       access_matrix_tree: { Args: { p_store: string }; Returns: Json }
+      access_request_create: {
+        Args: {
+          p_level?: string
+          p_message?: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
+      }
+      access_request_decide: {
+        Args: {
+          p_decision: string
+          p_level?: string
+          p_note?: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      access_request_list: { Args: { p_box?: string }; Returns: Json }
+      access_request_report: {
+        Args: { p_reason?: string; p_request_id: string }
+        Returns: Json
+      }
+      access_request_withdraw: { Args: { p_request_id: string }; Returns: Json }
       add_column_to_user_table: {
         Args: {
           p_data_type: string
@@ -44852,6 +44965,34 @@ export type Database = {
       }
     }
     Functions: {
+      _site_keyword_query_totals: {
+        Args: { p_site_id: string }
+        Returns: {
+          average_position: number
+          clicks: number
+          ctr: number
+          first_date: string
+          impressions: number
+          keyword_id: string
+          last_date: string
+          organization_id: string
+          provider: string
+          query: string
+          site_id: string
+        }[]
+      }
+      _site_keyword_top_pages: {
+        Args: { p_site_id: string }
+        Returns: {
+          clicks: number
+          impressions: number
+          keyword_id: string
+          page_id: string
+          provider: string
+          query: string
+          site_id: string
+        }[]
+      }
       fn_archive_keywords: {
         Args: { p_keyword_ids: string[]; p_reason?: string }
         Returns: number
@@ -45444,6 +45585,46 @@ export type Database = {
           class_source: string
           keyword_id: string
           traffic_class: string
+        }[]
+      }
+      site_keyword_performance_page: {
+        Args: {
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_site_id: string
+          p_sort?: string
+          p_sort_dir?: string
+        }
+        Returns: {
+          average_position: number
+          clicks: number
+          competition: string
+          competition_index: number
+          competitive_position: string
+          content_role: string
+          cpc: number
+          ctr: number
+          demand_trajectory: string
+          first_date: string
+          impressions: number
+          keyword_id: string
+          last_date: string
+          market_fetched_at: string
+          organization_id: string
+          priority_score: number
+          provider: string
+          query: string
+          search_volume: number
+          site_id: string
+          top_page_clicks: number
+          top_page_id: string
+          top_page_impressions: number
+          top_page_path: string
+          top_page_url: string
+          total_count: number
+          workflow_status: string
         }[]
       }
       update_backlink_human_ruling: {

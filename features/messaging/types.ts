@@ -105,6 +105,28 @@ export interface ResourceSharedActionPayload {
   sharer_name?: string;
 }
 
+/**
+ * Payload for `kind: "access_request"` — "someone wants into your Site".
+ *
+ * The DM IS the approval surface: the chips grant/decline/report in place, so
+ * the owner never has to go find a queue. Carries the pretty label and title so
+ * the bubble reads as a sentence even if the record is later renamed or the
+ * reader has no access to resolve it.
+ */
+export interface AccessRequestActionPayload {
+  request_id: string;
+  /** Registry entity token of the thing being asked for. */
+  resource_type: string;
+  resource_id: string;
+  requested_level: "viewer" | "editor";
+  entity_label: string | null;
+  entity_title: string | null;
+  /** The requester's own note, if they wrote one. */
+  note?: string | null;
+  /** Where the record lives, when the registry could resolve a route. */
+  href?: string | null;
+}
+
 export interface Message {
   id: string; // UUID
   conversation_id: string; // UUID
