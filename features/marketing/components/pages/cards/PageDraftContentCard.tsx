@@ -167,13 +167,13 @@ export function PageDraftContentCard({ page }: { page: MarketingPage }) {
         {contentQuery.isLoading ? (
           <div className="h-48 animate-pulse rounded-lg border border-border bg-muted/40" />
         ) : (
-          <div className="min-h-[20rem] flex-1">
+          <div className="relative min-h-[20rem] flex-1">
             <BasicContentEditorLazy
               content={value}
               onChange={setDraft}
               placeholder="Write the content this page SHOULD have — markdown, saved on demand."
               resetKey={`${page.id}:${row?.version ?? 0}:${stagedNonce}`}
-              className="h-full"
+              className="absolute inset-0"
             />
           </div>
         )}
