@@ -54,31 +54,6 @@ because nothing routinely re-emits. Fixing the 10 needs a decision on whether
 the emitter's `additionalProperties:true` for open objects is the intended
 behavior; the other two need their upstream data fixed first.
 
-### D162 — Two more slot agents carry an `output_schema` that NEVER reaches the provider (2026-08-11)
-
-Same trap found and fixed on `seo.keyword_researcher` during the output-kind
-binding pass: `matrx_ai.client_host.agent_source.definition_to_agent_config` lifts
-`output_schema` into `config.response_format` **only** `if … config.response_format
-is None`, so anything in `settings.response_format` wins and the agent's real schema
-is silently discarded. Live 2026-08-11, both still broken:
-
-| slot | agent | `settings.response_format` | `output_schema.name` | declared `output_kind` |
-|---|---|---|---|---|
-| `research.structured_page_summary` | Structured Research Page Summary | `{"type":"json_object"}` | `research_page_summary` | `research_page_analysis` |
-| `research.cross_cutting_tags` | Cross-Cutting Tag Generator | `{"type":"json_schema"}` | `suggested_tags_schema` | `research_cross_cutting_tags` |
-
-`research.cross_cutting_tags` is the worse of the two: `{"type":"json_schema"}` with
-no schema attached is a bare placeholder, and Anthropic's translator
-(`_build_anthropic_output_format`) finds no usable schema and **downgrades to
-prompt-only**, logging the adjustment — so the agent is running unconstrained while
-the DB shows it bound.
-
-Note both agents' `output_schema.name` also disagrees with the slot's declared
-`output_kind`, so the fix is not purely mechanical: per agent, decide whether to
-bind the declared kind (the `agent_bind_*.sql` recipe) or to correct the slot's
-`output_kind` to match the bespoke schema it actually emits. Each needs its own
-live before/after run — and D160's 10-minute cache wait applies.
-
 ### D160 — An agent definition edited in the DB is served STALE for ~10 min, so "bound and verified" can be a lie (2026-08-11)
 
 Agent execution loads the definition through the Matrx ORM's **per-process**
@@ -1096,6 +1071,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git.
 
+- **D162** — both research agents bound to the kind their own code already parses, and `settings.response_format` (the key that was winning and discarding the real schema) dropped: `migrations/agent_bind_cross_cutting_tags_output_kind.sql` + `agent_bind_structured_page_summary_output_kind.sql`. Each slot's declared `output_kind` was CORRECT — the disagreeing `output_schema.name` was name-only drift, since each kind's `emitted_json_schema` is generated from the exact Pydantic `Output` the pipeline parses (`CrossCuttingTagOutput` → `research/tag_generation.py`, `PageAnalysis` → `research/analysis.py`) — so no slot was changed and neither prompt taught a conflicting shape. Verified live 11.6 min after apply (D160 wait): the `GOOGLE ADJUSTMENT: structured output OMITTED` warning fired on every pre-fix run and on the in-cache run 21s after apply, then **stopped**; output flipped from markdown-fenced to raw JSON emitted in the SCHEMA's property order rather than the prompt's (incl. nested `evidence_signals`) — grammar, not instructions. Correction to the original entry: the downgrade came from Google's `_build_google_response_schema`, not Anthropic's translator — both agents are gemini-3.6-flash, and `json_object` has no Gemini equivalent either, so BOTH were prompt-only. 2026-08-11.
 - **D64** — `ContainerResourceSheet` refactored to the keyed derived-state pattern (SlotEditor style): items + search query keyed by `table|column|value`, loading derived, no setState in the effect body; lint clean. 2026-08-09.
 - **D106 (remainder)** — BudgetMeter headline is now a green/yellow/red verdict ("Fine / Getting heavy / Too much", weighed against the active or default ceiling); token count demoted to fine print (`features/research/components/resources/BudgetMeter.tsx`). 2026-08-09.
 - **D106b** — last 4 "Only you" surfaces reworded to honest claims: vault SharePanel reports the grant list (org-admin caveat included), CanvasShareSheet Private = "Not published — no public page or link access", StructuredListManagerV2 Private = "Not shared", education marketing copy scoped to "within your account / workspace you add them to" (FAQ + feature grid). 2026-08-09.
