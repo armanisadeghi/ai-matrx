@@ -18,6 +18,10 @@ Every task is a probe exposing what the platform is missing. Build (or extend) t
 
 **Our core user is world-best at something (a doctor, lawyer, researcher, SEO expert, opera singer) and here to turn that knowledge into AI-integrated systems — and they do not code, do not prompt-engineer, do not know AI, and never will.** A surface that needs technical intuition is broken for our user regardless of its power: zero jargon, zero developer concepts, a UX that just flows. **THE MISMATCH RULE:** never assume the person inside a topic UI is an expert in that topic — the SEO expert is most likely here building their own SEO systems; the opera singer may be the one inside our SEO tools. Build **topic surfaces** for a smart novice (the system supplies the expert reflexes, per the Canvas Doctrine); build **builder surfaces** (workflows, agents, scopes, apps) for a genius in something else who is a total novice at building. Canonical (Arman's words, 2026-08-08): `/Users/armanisadeghi/code/common-docs/systems/ai-dream-platform/USER.md`.
 
+## What we are — THE CORE DOCTRINE
+
+**AI Matrx is where expertise becomes reliable, reusable, and accountable** — not a no-code platform, not an app builder, not a prompt library. Canonical (Arman's words): `/Users/armanisadeghi/code/common-docs/systems/ai-dream-platform/ai-matrx-core.md`. The build test: does this make expertise more reliable, more reusable, or more accountable? If not, cut it.
+
 ## 🚨 NO DEAD ENDS — every identity is a door, every capability is on the table
 
 > **THE DOOR LAW.** If the UI names a thing that has an identity in our system, the UI must let the user reach it.
