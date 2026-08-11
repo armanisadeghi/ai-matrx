@@ -37,6 +37,28 @@ export const selectActiveRunByJob = (
   return root(state)?.activeRuns[jobId] ?? null;
 };
 
+/**
+ * True while ANY chunked extraction run is in flight for this file —
+ * across every template on it, not just the selected one.
+ *
+ * Used by the surface write handlers (`ChunkingConfigForm`) to refuse an
+ * agent-originated edit to the template while its own run is executing:
+ * changing the geometry mid-run stages a config that does not describe the
+ * chunks currently being produced. Returns a plain boolean, so no
+ * memoization is needed for `useAppSelector`.
+ */
+export const selectIsRunInFlightForFile = (
+  state: RootState,
+  fileId: string | null | undefined,
+): boolean => {
+  if (!fileId) return false;
+  const runs = root(state)?.activeRuns;
+  if (!runs) return false;
+  return Object.values(runs).some(
+    (run) => run.fileId === fileId && run.status === "running",
+  );
+};
+
 export const selectSelectedJobForFile = (
   state: RootState,
   fileId: string | null | undefined,

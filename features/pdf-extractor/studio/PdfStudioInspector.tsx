@@ -10,7 +10,7 @@
  * a doc", inspector handles "do something with a doc".
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Rocket,
   GitBranch,
@@ -113,6 +113,16 @@ export function PdfStudioInspector({
   const sourceAvailable =
     sourceStatus === "ready" && sourceFile?.fileId === sourceFileId;
   const chunkedFileId = sourceAvailable ? sourceFileId : null;
+  /**
+   * Page numbers the studio has already loaded for this document. Handed to
+   * the Content extractors panel so its surface write handlers can reject an
+   * agent-supplied page range that names pages this document does not have,
+   * without paying for a second fetch.
+   */
+  const availablePageNumbers = useMemo(
+    () => pages.map((p) => p.pageNumber).sort((a, b) => a - b),
+    [pages],
+  );
 
   return (
     <aside className="flex flex-col h-full min-h-0 border-l border-border bg-card/30">
@@ -155,6 +165,7 @@ export function PdfStudioInspector({
                 fileId={chunkedFileId}
                 processedDocumentId={doc.id}
                 documentName={doc.name}
+                availablePageNumbers={availablePageNumbers}
               />
             ) : (
               <p className="p-3 text-[11px] text-amber-700 dark:text-amber-400 leading-snug overflow-y-auto">
