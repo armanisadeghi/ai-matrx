@@ -34,6 +34,42 @@ viewer — *not* a permanent public URL. Converting a private asset into a perma
 public one to make this check come back clean is a data-exposure incident, not a fix.
 If you cannot tell whether an asset is meant to be public, **stop and ask Arman.**
 
+## Two rules this system paid for — general, not about media
+
+Both were learned here, and neither is about media URLs. They apply to any guard,
+anywhere in the platform. If you take nothing else from this document, take these.
+
+### 1. Assert the machinery out of the LIVE DATABASE, not out of a file
+
+A test that lives in a file can be deleted by the same change that breaks the thing it
+guards — and a `create or replace` written against a stale copy silently deletes working
+behaviour with nothing going red. That is not hypothetical here: the guard trigger's
+per-element array branch was **actually removed from production** by a migration authored
+against an older copy of the function. No error. No failing test. The only way to see it
+was to read the deployed function.
+
+So the check reads `prosrc` out of `pg_proc` and asserts the properties are still there
+(`mtx_media_durability_health()`). A guard whose own integrity is only asserted by a file
+sitting next to it is guarding nothing the moment someone rewrites that file.
+
+**Generalise it:** when the artifact you depend on lives in the database — a trigger, an
+RPC, a policy, a constraint — assert its shape *from the database*. Code-side tests prove
+what the repo believes, not what production does.
+
+### 2. Assert that nothing is STUCK, not that a queue is EMPTY
+
+A queue at zero and a queue quietly filling look identical to a row count. That is exactly
+how the media healer stayed green for three weeks while returning `-1` every ten minutes
+and healing nothing — `cron.job_run_details` logged "succeeded" the whole time.
+
+So `heal_queue_draining` fails on **staleness**: any row pending or healing for more than
+24h, reported with the count and the oldest timestamp. Emptiness is not evidence of a
+working drain; absence of *stuck* work is.
+
+**Generalise it:** for any queue, retry table, or outbox, the health signal is age of the
+oldest unfinished item, never depth. Depth-zero is equally consistent with "working
+perfectly" and "nothing is running".
+
 ## How it runs
 
 | Command | Scope | Use |
