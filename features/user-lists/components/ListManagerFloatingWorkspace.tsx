@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { getAccessibleLists, getListWithItems } from "../service";
 import type { UserList, UserListWithItems } from "../types";
 import { ListsSidebar } from "./ListsSidebar";
@@ -14,7 +14,7 @@ import {
   createListManagerScope,
   type ListManagerItemEntry,
 } from "@/features/surfaces/manifests/list-manager.manifest";
-import { addItemAction, updateListAction } from "../actions/list-actions";
+import { buildListSurfaceWriteHandlers } from "../surface-write-handlers";
 
 export function ListManagerFloatingWorkspace() {
   const [lists, setLists] = useState<UserList[]>([]);
@@ -114,86 +114,46 @@ export function ListManagerFloatingWorkspace() {
     });
   };
 
-  // Write half of the list-manager surface (manifest `writeTargets`). Every
-  // handler validates and THROWS on a bad shape — the writeback seam turns a
-  // throw into the error envelope the agent reads, so a wrong value is the
-  // agent's problem to hear about, never something we coerce. There is no
-  // draft layer on this surface: each handler runs the SAME canonical server
-  // action the user's own dialog runs, so an applied write is a DB commit
-  // (hence every target is `applyPolicy: "ask"`). We refetch immediately
-  // afterwards rather than waiting out the 5s poll, so the read twins the
+  // Write half of the list-manager surface (manifest `writeTargets`). The
+  // validation and the canonical server-action calls live in the shared
+  // `buildListSurfaceWriteHandlers` — the SAME implementation the `/lists/[id]`
+  // route mount (`matrx-user/lists`) uses, so the two mounts of this state can
+  // never drift apart. This component supplies only what is mount-specific:
+  // which list is active, and how to refresh the read twins afterwards. We
+  // refetch immediately rather than waiting out the 5s poll, so the values the
   // agent sees next turn already reflect what it just wrote.
-  const refreshAfterWrite = async (listId: string) => {
-    const [detail] = await Promise.all([getListWithItems(listId), fetchLists()]);
-    if (listId === activeListId) setActiveListData(detail);
-  };
+  //
+  // `activeListId` is read through a REF, not off the render closure:
+  // `applySurfaceWrite` resolves handler closures BEFORE the confirm dialog is
+  // answered, so a value captured at render time can be stale by Apply.
+  const activeListIdRef = useRef(activeListId);
+  useEffect(() => {
+    activeListIdRef.current = activeListId;
+  }, [activeListId]);
 
-  const requireActiveListId = (target: string): string => {
-    if (!activeListId)
-      throw new Error(
-        `${target} needs a list open in the detail pane — no list is active. Ask the user which list to work on.`,
-      );
-    return activeListId;
-  };
-
-  const getSurfaceWriteHandlers = () => ({
-    active_list_name: async (value: unknown) => {
-      if (typeof value !== "string" || !value.trim())
-        throw new Error("active_list_name expects a non-empty string.");
-      const listId = requireActiveListId("active_list_name");
-      await updateListAction({ list_id: listId, list_name: value.trim() });
-      await refreshAfterWrite(listId);
-    },
-    active_list_description: async (value: unknown) => {
-      if (typeof value !== "string")
-        throw new Error(
-          "active_list_description expects a string (empty string clears it).",
-        );
-      const listId = requireActiveListId("active_list_description");
-      await updateListAction({ list_id: listId, description: value });
-      await refreshAfterWrite(listId);
-    },
-    add_list_items: async (value: unknown) => {
-      if (!Array.isArray(value) || value.length === 0)
-        throw new Error(
-          "add_list_items expects a non-empty array of { label, description?, help_text?, group? } objects.",
-        );
-      const listId = requireActiveListId("add_list_items");
-      const items = value.map((entry, index) => {
-        if (typeof entry !== "object" || entry === null || Array.isArray(entry))
-          throw new Error(
-            `add_list_items item ${index + 1} must be an object with at least a "label".`,
-          );
-        const row = entry as Record<string, unknown>;
-        // Every optional field must be a string when present — a number or an
-        // object here means the agent misread the contract, not that we should
-        // stringify something the user will later see as garbage.
-        const optional = (key: string): string | undefined => {
-          const raw = row[key];
-          if (raw === undefined || raw === null || raw === "") return undefined;
-          if (typeof raw !== "string")
+  const listWriteHandlers = useMemo(
+    () =>
+      buildListSurfaceWriteHandlers({
+        resolveListId: (target) => {
+          const listId = activeListIdRef.current;
+          if (!listId)
             throw new Error(
-              `add_list_items item ${index + 1} field "${key}" must be a string.`,
+              `${target} needs a list open in the detail pane — no list is active. Ask the user which list to work on.`,
             );
-          return raw.trim() || undefined;
-        };
-        if (typeof row.label !== "string" || !row.label.trim())
-          throw new Error(
-            `add_list_items item ${index + 1} needs a non-empty "label" string.`,
-          );
-        return {
-          label: row.label.trim(),
-          description: optional("description"),
-          helpText: optional("help_text"),
-          groupName: optional("group"),
-        };
-      });
-      for (const item of items) {
-        await addItemAction({ listId, ...item });
-      }
-      await refreshAfterWrite(listId);
-    },
-  });
+          return listId;
+        },
+        afterWrite: async (listId) => {
+          const [detail] = await Promise.all([
+            getListWithItems(listId),
+            fetchLists(),
+          ]);
+          if (listId === activeListIdRef.current) setActiveListData(detail);
+        },
+      }),
+    [fetchLists],
+  );
+
+  const getSurfaceWriteHandlers = () => listWriteHandlers;
 
   return (
     <SurfaceRuntimeProvider

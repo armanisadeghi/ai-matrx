@@ -18,8 +18,8 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
-  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { LIST_SURFACE_WRITE_TARGETS } from "@/features/user-lists/surface-write-targets";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -153,57 +153,26 @@ const surfaceSpecific: SurfaceValue[] = [
 /**
  * Write half of the List Manager surface.
  *
- * There is NO draft layer here: every user-facing edit on this surface is a
- * server action that persists on submit (`AddItemDialog` → `addItemAction`,
- * `EditListDialog` → `updateListAction`). So every target is `mode: "entity"`
- * — an applied write is a database commit, not a staged change — and every one
- * is `applyPolicy: "ask"`. `auto` is deliberately absent and must stay absent:
- * there is nothing to review after the fact and no Save bar to undo it.
+ * The targets themselves now live in
+ * `features/user-lists/surface-write-targets.ts`, because this surface is one
+ * of TWO mounts of the same editable list state — the other is the
+ * `/lists/[id]` route (`matrx-user/lists`). This surface's vocabulary shipped
+ * first and remains authoritative; it was lifted into the shared module
+ * unchanged (same names, same semantics, same prose) so the route mount reuses
+ * it instead of inventing a competing set, and so the two can no longer drift.
+ *
+ * Everything the original docblock asserted still holds and is documented at
+ * the shared definition: there is NO draft layer here (every edit is a server
+ * action that persists on submit), so every target is `mode: "entity"` and
+ * `applyPolicy: "ask"`, with `auto` deliberately absent. Deletes and
+ * visibility are NOT declared — destructive and permission-shaped changes stay
+ * human-only by doctrine.
  *
  * Handlers are registered by `ListManagerFloatingWorkspace` on its
  * `SurfaceRuntimeProvider` — the component that owns `activeListId` and both
  * refetch paths, so an applied write refreshes the read twins immediately.
- * Deletes and visibility are NOT declared: destructive and permission-shaped
- * changes stay human-only by doctrine.
  */
-const writeTargets: SurfaceWriteTarget[] = [
-  {
-    name: "active_list_name",
-    label: "Active list name",
-    description:
-      "Renames the ACTIVE list. Saved to the database immediately — there is no draft to review. Value: a non-empty plain string, the list's display name; it replaces the current name entirely.",
-    valueType: "string",
-    updatesValue: "active_list_name",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "active_list",
-    sortOrder: 330,
-  },
-  {
-    name: "active_list_description",
-    label: "Active list description",
-    description:
-      "Replaces the ACTIVE list's description. Saved to the database immediately — there is no draft to review. Value: a plain string (pass an empty string to clear it). This REPLACES the full description rather than appending — read active_list_description first and include any existing text you want kept.",
-    valueType: "string",
-    updatesValue: "active_list_description",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "active_list",
-    sortOrder: 340,
-  },
-  {
-    name: "add_list_items",
-    label: "Add list items",
-    description:
-      'ADDS new items to the ACTIVE list, in order. Saved to the database immediately — there is no draft to review. Value: a non-empty array of objects { label, description?, help_text?, group? }. `label` is required and is the short name shown in the list; `description` is the longer detail; `help_text` is a one-line hint shown under the label; `group` is the heading it files under (omit or pass "" for Ungrouped — reuse an exact group name from items_grouped rather than inventing a near-duplicate). This APPENDS only: it never edits or removes existing items, so read all_items first and do not re-send items that are already there.',
-    valueType: "array",
-    updatesValue: "all_items",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "list_items",
-    sortOrder: 420,
-  },
-];
+const writeTargets = LIST_SURFACE_WRITE_TARGETS;
 
 export const listManagerManifest: SurfaceManifest = {
   surfaceName: "matrx-user/list-manager",

@@ -110,28 +110,72 @@ RLS enforced server-side. UI hides edit controls based on `isOwner` prop.
 
 Direct table queries used for: listing accessible lists, item-level mutations (add/update/delete).
 
-## Agent-writable surface (`matrx-user/list-manager`)
+## Agent-writable surface (two mounts, ONE vocabulary)
 
-The floating List Manager window (`ListManagerFloatingWorkspace`) is a live
-write target for surface-bound agents. Three targets are declared on
-[`features/surfaces/manifests/list-manager.manifest.ts`](../surfaces/manifests/list-manager.manifest.ts):
-`add_list_items` (the decomposition action — an agent turns a goal into items),
-`active_list_name`, and `active_list_description`.
+A user list is a live write target for surface-bound agents from **both** of
+its homes:
+
+| Surface | Mount | Manifest |
+| --- | --- | --- |
+| `matrx-user/list-manager` | `ListManagerFloatingWorkspace` (the floating window) | [`list-manager.manifest.ts`](../surfaces/manifests/list-manager.manifest.ts) |
+| `matrx-user/lists` | `ListDetailClient` with `asRoute` (the `/lists/[id]` route) | [`lists.manifest.ts`](../surfaces/manifests/lists.manifest.ts) |
+
+They are two mounts of the SAME editable state — the window renders the very
+same `ListDetailClient` in its detail pane — so they offer the same three
+targets under the same names: `add_list_items` (the decomposition action — an
+agent turns a goal into items), `active_list_name`, and
+`active_list_description`.
+
+**There is exactly one definition of each, and that is deliberate.** The
+targets live in [`surface-write-targets.ts`](./surface-write-targets.ts) and
+their validation + canonical action calls in
+[`surface-write-handlers.ts`](./surface-write-handlers.ts); both manifests and
+both mounts import them. Two target sets over the same fields would be a
+defect. **Add or change a target HERE, never on one mount** — a target added
+to a single mount is drift, and the next person to read the other manifest
+will not find it.
+
+`ListDetailClient` registers its provider ONLY when `asRoute` is true. The
+window renders the same component inside its own provider, and the surface
+registry resolves deepest-first, so an ungated provider would shadow
+`matrx-user/list-manager` from inside its own detail pane. The `/lists` index
+is a landing page and mounts nothing.
 
 **This feature has no draft layer** — every user edit is a server action that
 persists on submit. So all three targets are `mode: "entity"` and
 `applyPolicy: "ask"`: an applied agent write is a database commit with no Save
 bar to undo it. **Never set one of these to `auto`**, and do not declare
 targets for delete or visibility — destructive and permission-shaped changes
-stay human-only. Handlers live on the provider in
-`ListManagerFloatingWorkspace.tsx`; they validate and throw on a bad shape,
-call the same `addItemAction` / `updateListAction` the dialogs call, and
-refetch so the surface's read twins update in the same turn. Read
+stay human-only; the agent proposes a deletion in words and the human presses
+the button. Handlers validate and throw on a bad shape, call the same
+`addItemAction` / `updateListAction` the dialogs call, and refresh so the
+surface's read twins update in the same turn. On the route, writes also
+require ownership (`list_is_owner`) — a list opened through a shared link is
+read-only and every target refuses. Read
 [`features/surfaces/FEATURE.md`](../surfaces/FEATURE.md) § "The 360 loop"
 before changing them.
 
 ## Change Log
 
+- `2026-08-11` — claude: **The `/lists/[id]` ROUTE is now agent-writable too
+  (`matrx-user/lists`), sharing ONE vocabulary with the List Manager window.**
+  The two are mounts of the same state, so the three targets and their
+  handlers moved into `surface-write-targets.ts` / `surface-write-handlers.ts`
+  and both manifests + both mounts import them — nothing renamed, list-manager's
+  names win. Registration is gated on `asRoute` so the window's surface is not
+  shadowed from inside its own detail pane. The surface was `readiness: "stub"`
+  with no emitter; it now emits a real scope (`list_visibility` from the actual
+  `LIST_VISIBILITY_VALUES` constant instead of the fictional
+  `personal | shared | public` it used to claim, plus a new `list_is_owner`).
+  **Fixed a pre-existing bug this depended on:** `get_user_list_with_items`
+  returns no `user_id`, so `ListDetailClient`'s `isOwner` was false for
+  everyone and the route header's "Edit list" / "Delete list" actions never
+  appeared for owners — `app/(core)/lists/[id]/page.tsx` now attaches the
+  owner from the table. Live-verified with a Badass Agent run on a throwaway
+  list: three targets applied in one message (SQL-confirmed), a decline
+  returned `{ok:false, declined:true}`, delete requests produced no tool call,
+  and a JSON object forced into `active_list_name` returned the handler's
+  "plain text, not JSON and not JSON-encoded" throw verbatim to the model.
 - `2026-08-10` — claude: **List Manager surface made agent-writable** (3 entity
   targets, all `ask`). Verified with a live Badass Agent run on a throwaway
   list: items added and persisted, description rewritten, a declined rename

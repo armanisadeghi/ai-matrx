@@ -176,6 +176,17 @@ internal platform use — never a washed-down user variant beside a private one:
   the canonical `addItemAction` / `updateListAction` server actions; that
   surface has NO draft layer, so `auto` is barred on it and delete /
   visibility stay undeclared), and
+  `matrx-user/lists` (the SAME three targets on the `/lists/[id]` ROUTE mount
+  of that same list state — `ListDetailClient asRoute`. THE shared-vocabulary
+  reference: the List Manager window and this route render the SAME component
+  over the same rows, so the targets and their handlers were lifted into
+  `features/user-lists/surface-write-targets.ts` +
+  `surface-write-handlers.ts` and BOTH manifests / BOTH mounts now import the
+  one definition — two target sets over the same fields would be a defect, so
+  there is only one set. Registration is gated on `asRoute`, because the
+  window renders this component inside its own provider and the registry
+  resolves deepest-first; an ungated provider would shadow the shipped window
+  surface from inside its own detail pane), and
   `matrx-user/schedules` (8 ask-policy targets across the surface's TWO
   write-capable mounts — 6 `schedule_draft_*` drafts wired by
   `ScheduleForm.tsx`, plus `schedule_title` / `schedule_description` as

@@ -34,7 +34,23 @@ const loadList = cache(
       // get_user_list_with_items returns Json directly (no row schema in
       // database.types.ts to guard against) — this is the sanctioned
       // Json-direct RPC cast per the type-safety skill's supabase-patterns.
-      return data as unknown as UserListWithItems;
+      const list = data as unknown as UserListWithItems;
+
+      // The RPC's payload has NO `user_id` (list_id, list_name, description,
+      // created_at, updated_at, is_public, public_read, items_grouped only),
+      // so `ListDetailClient`'s `userId === list.user_id` ownership test was
+      // comparing against undefined and resolving to false for EVERYONE — the
+      // owner included. That silently hid the header's "Edit list" / "Delete
+      // list" actions on this route, and it is the signal the surface's
+      // `list_is_owner` value and every write handler gate on. Read the owner
+      // off the table and attach it.
+      const { data: ownerRow } = await supabase
+        .schema("workbench")
+        .from("udt_structured_lists")
+        .select("user_id")
+        .eq("id", listId)
+        .maybeSingle();
+      return { ...list, user_id: ownerRow?.user_id ?? undefined };
     } catch {
       return null;
     }
