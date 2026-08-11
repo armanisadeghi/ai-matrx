@@ -37,6 +37,14 @@ export function describeAssistAction(
         explainer: `Takes you to ${action.href}. Nothing is changed or run.`,
         receipt: `Opened ${action.href}.`,
       };
+    case "server_action":
+      return {
+        verb: action.label ?? "Apply",
+        explainer:
+          action.confirm ??
+          "Makes this change on the server. You can undo it afterwards.",
+        receipt: "Done — the change has been made.",
+      };
     case "surface_write":
       return {
         verb: "Apply to page",

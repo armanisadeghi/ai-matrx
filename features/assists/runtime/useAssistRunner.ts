@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
+import { callApi } from "@/lib/api/call-api";
 import type { Json } from "@/types/database.types";
 import { decideAssist } from "../service";
 import { assistDecided } from "../redux/assistsSlice";
@@ -30,6 +31,7 @@ import type { Assist } from "../types";
 // added by importing them here.
 import "./handlers/launch-agent";
 import "./handlers/navigate";
+import "./handlers/server-action";
 import "./handlers/surface-write";
 
 export interface AssistRunnerApi {
@@ -50,8 +52,30 @@ export function useAssistRunner(): AssistRunnerApi {
       userId: userId ?? null,
       openAgentRun,
       navigate: (href: string) => router.push(href),
+      callServer: async (endpoint, body) => {
+        const result = await dispatch(
+          callApi({
+            // The endpoint is allow-listed by the server_action handler before
+            // it ever reaches here; the generated `paths` type cannot express
+            // a runtime-chosen path, so this one cast is deliberate and is the
+            // only place it happens.
+            path: endpoint as never,
+            method: "POST",
+            body: (body ?? {}) as never,
+          }),
+        );
+        if (result.error) {
+          return {
+            ok: false,
+            error:
+              result.error.message ||
+              "The server could not complete that action.",
+          };
+        }
+        return { ok: true, data: result.data };
+      },
     }),
-    [userId, openAgentRun, router],
+    [userId, openAgentRun, router, dispatch],
   );
 
   const acceptAssist = useCallback(

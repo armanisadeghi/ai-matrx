@@ -31,6 +31,17 @@ export interface AssistActionContext {
   openAgentRun: (opts: OpenAgentRunWindowOptions) => void;
   /** Client-side navigation. */
   navigate: (href: string) => void;
+  /**
+   * POST an aidream endpoint and return its parsed response.
+   *
+   * Bound by the runner (which owns dispatch + auth); handlers never reach
+   * for `fetch` or `callApi` themselves. The `server_action` handler gates
+   * WHICH endpoints may be called — this capability only knows how.
+   */
+  callServer: (
+    endpoint: string,
+    body: unknown,
+  ) => Promise<{ ok: true; data: unknown } | { ok: false; error: string }>;
 }
 
 export type AssistActionHandler = (

@@ -43,6 +43,32 @@ export type AssistAction =
     }
   | { kind: "navigate"; href: string }
   | {
+      /**
+       * Call a server endpoint that performs a durable, named domain write.
+       *
+       * The other three kinds move the user (`navigate`), pre-fill a
+       * conversation (`launch_agent`), or write one value into the page
+       * (`surface_write`). None of them can make a server-side change the
+       * user actually asked for in one click, so an assist whose whole point
+       * IS that change had nowhere to go.
+       *
+       * Deliberately NOT a generic fetch: `endpoint` is matched against an
+       * allow-list at run time, so a malicious or stale ledger row cannot
+       * turn a chip into an arbitrary request. Adding an endpoint is a
+       * one-line change in the handler, reviewed like any other capability.
+       */
+      kind: "server_action";
+      /** Bare aidream path, e.g. "/seo/endpoint-families/apply". */
+      endpoint: string;
+      method?: "POST";
+      /** Verb-labeled button text (THE INTENTIONAL-ACTION LAW). */
+      label?: string;
+      /** Exactly what will happen, in the user's words, BEFORE it happens. */
+      confirm?: string;
+      /** The request body the server expects. */
+      body?: Json;
+    }
+  | {
       kind: "surface_write";
       target: string;
       value: Json;
@@ -105,6 +131,16 @@ function narrowAction(value: Json): AssistAction | null {
   const kind = obj.kind;
   if (kind === "navigate" && typeof obj.href === "string") {
     return { kind, href: obj.href };
+  }
+  if (kind === "server_action" && typeof obj.endpoint === "string") {
+    return {
+      kind,
+      endpoint: obj.endpoint,
+      method: "POST",
+      label: typeof obj.label === "string" ? obj.label : undefined,
+      confirm: typeof obj.confirm === "string" ? obj.confirm : undefined,
+      body: (obj.body ?? null) as Json,
+    };
   }
   if (kind === "launch_agent") {
     return {
