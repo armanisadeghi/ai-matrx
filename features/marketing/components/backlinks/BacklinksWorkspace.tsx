@@ -57,13 +57,13 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  formatCompactDate,
   InlineQueryError,
   LoadingSurface,
   MetricCell,
   QueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { formatGscDate } from "@/features/marketing/search-console/lib/format";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingBacklinksScope } from "@/features/surfaces/manifests/marketing-backlinks.manifest";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -605,7 +605,7 @@ export function BacklinksWorkspace() {
       ),
       `Links stored: ${(backlinks.data?.total ?? 0).toLocaleString()}${
         detailSnapshot
-          ? `, as of ${formatCompactDate(detailSnapshot.observed_at)}`
+          ? `, as of ${formatGscDate(detailSnapshot.observed_at)}`
           : ""
       }.`,
     ].join("\n\n");
