@@ -740,16 +740,18 @@ philosophy this is the over-tightening defect class: the owner blocked from his 
 orgs — memberships are one INSERT each once ruled. Review items 2ecba5c0/b60b6c75 were
 repointed at datadestruction.com (visible to admin@admin.com) and resubmitted.
 
-**The wording half is DONE (2026-08-11).** `lib/records/recordUnavailable.ts` +
-`RecordUnavailableNotice` are the one shape for a zero-row single-record read: `deleted` is
-claimed ONLY when a probe read the row and saw `deleted_at`; otherwise the copy states both
-possibilities and the surface offers real doors instead of a dead sentence. Reads that can
-cheaply re-ask without the `deleted_at` filter use `assertFoundOrProbeDeleted`
-(`features/marketing/data/service.ts`) and get the truth. Every construction reports into
-the Error Inspector — an access gap masquerading as data loss is a defect to find, not a
-friendly sentence to render. The last read still hard-claiming deletion
-(`integrations-service.ts#getCurrentSite`) was migrated the same day; the exact sentence
-"This site was deleted or is no longer accessible." no longer exists in the tree.
+**The wording half is DONE (2026-08-11), now end to end.** Two layers, both live:
+`lib/records/recordUnavailable.ts` is the honest THROW — `deleted` is claimed ONLY when a
+probe read the row and saw `deleted_at` — and `features/access-gate/` is the SURFACE that
+resolves which of the four situations it actually was (denied / deleted / missing /
+signed-out) via `public.access_denied_context`, names the owner and organization, and offers
+**Request access** with one-click approval in the owner's DM. The exact sentence "This site
+was deleted or is no longer accessible." no longer exists in the tree.
+
+**What that does and does NOT fix for D133:** a reviewer hitting a site they aren't a member
+of now sees who owns it and can ask for access in one click, instead of being told it was
+deleted. It does not decide the membership question below — that is still the
+over-tightening defect, and the ask flow is a humane workaround, not the answer.
 **This does not close the defect** — the membership question above is the actual cause, and
 honest ambiguity is a better error message, not access.
 

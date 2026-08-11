@@ -246,6 +246,7 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
 - **Depends on:** `utils/permissions/*` (lives outside `features/` — the core logic), `features/organizations/` (org-as-target for shares), `lib/email/*` (notification delivery)
 - **Depended on by:** `features/prompts/` (gold-standard integration), `features/agents/components/sharing/`, `features/notes/`, `features/canvas/`, `features/cx-chat/`, `features/cx-conversation/`, `features/tasks/`, `features/window-panels/windows/ShareModalWindow.tsx`, and every other resource type listed under `ResourceType`
 - **Cross-links:**
+  - [`features/access-gate/FEATURE.md`](../access-gate/FEATURE.md) — **the mirror image of this feature.** Sharing is the owner handing out a key unprompted; the access gate is what the person WITHOUT the key sees, and how they ask for one. A granted request writes an ordinary `iam.permissions` row through this same model, so the two are one loop: read it before changing anything about how a grant is created or displayed.
   - [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) — the broader scope / project / org hierarchy that `check_resource_access` evaluates on top of direct grants
   - `features/invitations/` — org invitation flow; separate system, don't fold it in
   - `features/organizations/` — target source for org-level shares

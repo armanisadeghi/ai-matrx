@@ -29,7 +29,7 @@ export type AccessGateStatus =
 export type AccessDisclosure =
   /** Kind + name + owner + organization (the default, per the 2026-08-11 ruling). */
   | "full"
-  /** Kind only — the entity opted out via `platform.entity_types.deny_preview`. */
+  /** Kind only — the entity opted out via `platform.entity_types.allow_preview = false`. */
   | "kind_only"
   /** Signed out: kind only, and never whether the record exists. */
   | "anonymous"
