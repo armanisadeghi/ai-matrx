@@ -38,7 +38,7 @@ The correction repeated the required full scan rather than relying on git churn:
 node .claude/skills/light-dark-integrity/scripts/detect-light-dark.mjs --json
 ```
 
-Entering scan: 6,940 `.tsx` files; 312 files / 754 matching lines; 604 lines
+Entering scan: 6,941 `.tsx` files; 312 files / 754 matching lines; 604 lines
 with a property-specific same-line dark pair; 150 lines requiring contextual
 review.
 
@@ -50,7 +50,7 @@ Independent line-by-line review classified those 150 lines as:
 - **3 lines / 2 files:** real light/dark defects, still open after the attempted
   repair batch was rejected and fully reverted.
 
-Final baseline: 6,940 `.tsx` files; 312 files / 754 matching lines; 604
+Final baseline: 6,941 `.tsx` files; 312 files / 754 matching lines; 604
 property-specific pairs; 150 remaining review candidates; 0 approved
 exceptions; 0 invalid exception records. `--strict` correctly exits nonzero
 while proposals and defects remain open.
@@ -79,9 +79,11 @@ harness.
 
 - **Approved:** 0
 - **Pending:** 52 files / 109 lines
-- **Reviewable by production URL or existing harness:** 51
-- **Blocked:** 1 — `features/applet/home/app-display/ModernGlass.tsx` has no
-  stable/current render path and requires a Tier-C review harness before approval.
+- **Reviewable by production URL or existing harness:** 50
+- **Blocked:** 2 — `features/applet/home/app-display/ModernGlass.tsx` has no
+  stable/current render path, and the apparent production route for
+  `features/applet/styles/StyledComponents.tsx` returns 404. Both require a
+  Tier-C review harness before approval.
 
 Representative production examples for Arman to inspect:
 
@@ -90,9 +92,7 @@ Representative production examples for Arman to inspect:
 - `https://manage.aimatrx.com/administration/ui/official-components/content-editor`
   — open an HTML preview to judge a deliberately light document matte;
 - `https://aimatrx.com/images/convert` — upload an image and enter crop mode;
-- `https://aimatrx.com/tools/scanner` — enter capture mode to judge camera chrome;
-- `https://aimatrx.com/_apps/app-builder/apps/create` — inspect yellow, amber,
-  and lime action-button labels in both themes.
+- `https://aimatrx.com/tools/scanner` — enter capture mode to judge camera chrome.
 
 ## Validation and certification
 
