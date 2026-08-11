@@ -86,6 +86,7 @@ import { resilientFetch } from "@/lib/net/resilient-fetch";
 import { isNetError } from "@/lib/net/errors";
 import { extractErrorMessage } from "@/utils/errors";
 import { captureApiError } from "@/lib/diagnostics/captureApiError";
+import { wasStreamErrorCaptured } from "@/lib/diagnostics/captureStreamError";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { isV2Path, toV1FallbackUrl } from "@/lib/api/ai-api-version";
 import { applyDesktopTargetToRequestBody } from "@/lib/api/desktop-target-request";
@@ -1166,12 +1167,19 @@ export function callApi<
       return result;
     } catch (err) {
       const error = normalizeError(err);
-      // Network-layer / thrown failures (timeout, DNS, abort) capture here.
-      captureApiError(error, {
-        url,
-        method: config.method,
-        path: config.path,
-      });
+      // Network-layer / thrown failures (timeout, DNS, abort) capture here —
+      // UNLESS the stream layer already recorded this exact throw. A dropped
+      // NDJSON socket surfaces in `parseNdjsonStream`, which captures it as
+      // `agent-stream-transport` (with requestId + conversationId) and
+      // re-throws; capturing it again here produced a second, poorer red row
+      // for one failure.
+      if (!wasStreamErrorCaptured(err)) {
+        captureApiError(error, {
+          url,
+          method: config.method,
+          path: config.path,
+        });
+      }
       if (config.onStreamError) config.onStreamError(error);
       return { error };
     }

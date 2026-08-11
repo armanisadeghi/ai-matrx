@@ -205,6 +205,23 @@ export function captureStreamEvent(
 }
 
 /**
+ * Errors this module has already recorded. `parseNdjsonStream` captures a
+ * transport failure and then RE-THROWS it, so the same object reaches
+ * `callApi`'s catch, which used to capture it a second time as `api-network` —
+ * one dropped socket, two red rows in the Inspector (observed on the podcast
+ * run 2026-08-11T19:06:46Z). The stream-layer capture is the richer of the two
+ * (it carries requestId + conversationId), so it wins and the API-layer
+ * chokepoint stands down. A WeakSet keeps the marker off the error's own shape,
+ * so nothing serialized or displayed changes.
+ */
+const capturedStreamErrors = new WeakSet<object>();
+
+/** True when the stream layer already recorded this thrown value. */
+export function wasStreamErrorCaptured(err: unknown): boolean {
+  return typeof err === "object" && err !== null && capturedStreamErrors.has(err);
+}
+
+/**
  * Capture a transport-level stream failure (the NDJSON parser threw a
  * BackendApiError — no body, network drop, etc.).
  */
@@ -213,6 +230,7 @@ export function captureStreamTransportError(
   ctx: StreamErrorContext = {},
 ): void {
   try {
+    capturedStreamErrors.add(err);
     captureError({
       source: "agent-stream-transport",
       code: err.code,

@@ -66,7 +66,15 @@ export type CapturedErrorSource =
   | "agent-stream-record-failed"
   /** A typed `data` event carrying an error (search_error, memory_error, …). */
   | "agent-stream-data-error"
-  /** Stream transport failure surfaced by the NDJSON parser (BackendApiError). */
+  /**
+   * Stream transport failure surfaced by the NDJSON parser (BackendApiError) —
+   * the response body died before the server's terminal event. This is the ONE
+   * row for such a failure: the parser re-throws after capturing, and
+   * `callApi`'s catch stands down via `wasStreamErrorCaptured` rather than
+   * adding a poorer `api-network` duplicate. Genuinely red — a clean
+   * end-of-stream close never reaches here (measured in production
+   * 2026-08-11: `end` → body close in 1 ms, zero captures).
+   */
   | "agent-stream-transport"
   /** Client-side stream death (heartbeat loss, total-timeout, fetch failure). */
   | "agent-stream-client-error"

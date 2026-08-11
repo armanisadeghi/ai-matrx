@@ -104,6 +104,33 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-11 — **The two red errors on run `68605dd6` were TRUE, and one
+  dropped socket now produces ONE of them.** Investigated whether the server
+  holds `/podcast/generate` open past its terminal event (the D130
+  `agent-stream-terminal-guard` shape) or whether the client mislabels a normal
+  end-of-stream close. **Measured in production, neither.** A full instrumented
+  run (`9fbc23e6`, 17/17 steps, script → 6 covers → 2 clips → audio → official
+  video) logged `end` at t=321480ms and the body's clean `done` at t=321481ms —
+  **1 ms**, no post-terminal hold — and the client captured **zero** errors on
+  that close. A fast-failing run behaved identically (`end` t=890ms, close
+  t=891ms). So `68605dd6`'s stream never reached a terminal event at all: it was
+  severed mid-flight, which is exactly why nothing wrote the run's terminal
+  status (see the entry below). The deliverables already existed, so the user
+  saw success — but "the connection to the AI response was lost" was an honest
+  report of a real transport failure and **must never be downgraded or filtered**.
+  Circumstantially it lines up with an aidream redeploy: the drop
+  (19:06:46Z) sits inside the deploy window for the aidream releases committed
+  at 18:58–19:07Z, and a Coolify container swap severs every in-flight stream. **Fixed here:** `parseNdjsonStream` captured the failure as
+  `agent-stream-transport` and re-threw, and `callApi`'s catch captured the same
+  object again as `api-network` — one failure, two red rows, the second one
+  poorer (no requestId/conversationId). `captureStreamTransportError` now marks
+  the thrown value (WeakSet, nothing added to the error's shape) and
+  `wasStreamErrorCaptured` stands the API chokepoint down. Pinned by
+  `lib/diagnostics/captureStreamError.test.ts`. **Still open, aidream-owned:** a
+  severed stream leaves `agent_run.status` at `processing` forever — the run
+  needs a terminal write that does not depend on the client still being
+  connected (the detach supervisor already runs the work to completion).
+
 - 2026-08-11 — **A finished episode is never shown as "interrupted": run status
   is DERIVED from the deliverable, not read from a column somebody forgot to
   write.** Run `68605dd6-e282-4d82-b04f-2a5c6286a10b` generated its script, six
