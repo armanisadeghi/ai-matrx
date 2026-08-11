@@ -31,19 +31,35 @@ describe("page content classification", () => {
     expect(isPageContentType("html", "https://x.com/a")).toBe(true);
   });
 
-  it("treats every non-html content type as a resource", () => {
-    for (const contentType of [
-      "image",
-      "json",
-      "xml",
-      "pdf",
-      "txt",
-      "md",
-      "other",
-    ]) {
+  it("treats every POSITIVELY non-html content type as a resource", () => {
+    for (const contentType of ["image", "json", "xml", "pdf", "txt", "md"]) {
       expect(isResourceContentType(contentType)).toBe(true);
       expect(isPageContentType(contentType)).toBe(false);
     }
+  });
+
+  it("treats an unknown verdict like NULL, never as a resource", () => {
+    // `other` is what the crawler stores when detection GIVES UP, and its
+    // biggest producer is a real HTML page (Content-Type says text/html but
+    // the body-marker sniff missed). Treating it as a resource hid 97
+    // allgreenrecycling.com pages with real titles and up to 52 headings.
+    for (const contentType of ["other", "unknown", "", "  ", "OTHER"]) {
+      expect(isResourceContentType(contentType, "https://x.com/real-page")).toBe(
+        false,
+      );
+      expect(isPageContentType(contentType, "https://x.com/real-page")).toBe(
+        true,
+      );
+    }
+    // Unknown still defers to URL shape, exactly like NULL does.
+    expect(isResourceContentType("other", "https://x.com/wp-json/wp/v2/x")).toBe(
+      true,
+    );
+  });
+
+  it("normalizes case and whitespace on the recorded verdict", () => {
+    expect(isResourceContentType("  JSON  ", "https://x.com/a")).toBe(true);
+    expect(isResourceContentType(" HTML ", "https://x.com/a")).toBe(false);
   });
 });
 

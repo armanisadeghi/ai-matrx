@@ -34,6 +34,23 @@
 /** The single content type that counts as an HTML page. */
 export const HTML_CONTENT_TYPE = "html";
 
+/**
+ * Recorded content types that are an admission of IGNORANCE, not a verdict of
+ * "not HTML" — they must behave exactly like NULL.
+ *
+ * `other` is what the crawler stores when detection gives up, and its biggest
+ * single producer is a real HTML page: the scraper returns OTHER when a
+ * response's `Content-Type` says `text/html` but the body-marker regex misses.
+ * Treating that as "definitely not HTML" hid 97 allgreenrecycling.com pages —
+ * each with a real `<title>` and up to 52 headings — from their own site audit.
+ * Unknown-by-failure and unknown-by-omission are the same thing.
+ */
+export const UNKNOWN_CONTENT_TYPES: ReadonlySet<string> = new Set([
+  "other",
+  "unknown",
+  "",
+]);
+
 /** Extensions that can never serve an HTML page. `.html`/`.php`/`.aspx` are pages. */
 const RESOURCE_EXTENSIONS = new Set([
   // images
@@ -98,10 +115,11 @@ export function isResourceContentType(
   contentTypeLast: string | null | undefined,
   url?: string | null,
 ): boolean {
+  const recorded = (contentTypeLast ?? "").trim().toLowerCase();
   if (
-    contentTypeLast !== null &&
-    contentTypeLast !== undefined &&
-    contentTypeLast !== HTML_CONTENT_TYPE
+    recorded !== "" &&
+    !UNKNOWN_CONTENT_TYPES.has(recorded) &&
+    recorded !== HTML_CONTENT_TYPE
   ) {
     return true;
   }
