@@ -209,6 +209,32 @@ plan CRUD through it.
 
 ## Invariants & gotchas
 
+### An AI proposal is NEVER destroyed by a dismissal
+
+**A paid agent run's output is staged in component state and survives every
+dismissal — closing a confirm dialog means "not right now", never "throw the
+run away".** A result assigned to a local `const`, shown in a confirm, and
+dropped on Cancel bills the user for reasoning they can no longer see, and
+forces a re-run to get it back.
+
+The rules, live in `EntityManager.tsx`'s "Suggest from research" panel
+(`EntityProposal[]` + `curationNotes`):
+
+- The result lands in state and renders as a reviewable list with **per-entity
+  accept/skip**; the confirm dialog is the canonical `ConfirmDialog`
+  (`components/ui/confirm-dialog.tsx`), and its Cancel closes only the dialog.
+- Only an explicit **Discard suggestions** clears the panel.
+- **Every justification the agent produced is on screen** — each proposal's
+  `reason` and `description`, plus the run's `notes`. They are what the user
+  decides on; hiding them in a one-line confirm string wastes the run.
+- Accepted proposals persist that justification onto the row
+  (`attributes.research = { description, reason }` — the same shape the
+  `add_entities` write target writes). Landed rows stay in the panel marked
+  Added; per-row failures render beside their row, never only in a toast.
+
+Every other AI-proposal surface here (Shape Planner, Family Namer, Plan
+Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
+
 ### Site Setup — the three rules that make it correct
 
 - **ONE identity, shared by the preview and the writer:** the DB's own unique
@@ -344,6 +370,17 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-11 — Claude: **"Suggest from research" no longer destroys a paid
+  run on Cancel.** The Entity Curator's result used to live in a local
+  `const`, get summarized into one imperative-confirm string, and vanish on
+  Cancel — `notes` unstored, every entity's `reason` invisible. It now stages
+  into `EntityProposal[]` + `curationNotes` and renders as a reviewable panel
+  (per-entity accept/skip checkboxes, each proposal's description + reason,
+  the run's notes, per-row write errors, Added markers, Toggle all, explicit
+  Discard suggestions). The gate is the canonical `ConfirmDialog`; Cancel
+  closes the dialog only, with nothing re-run. Accepted rows keep persisting
+  provenance in `attributes.research`. New invariant recorded above: an AI
+  proposal is never destroyed by a dismissal.
 - 2026-08-10 — Claude: **Reconciled the Entities write-half docs with what
   actually shipped, and removed the merge debris left behind.** Two agents
   built this surface in parallel and BOTH merged; main resolved to the

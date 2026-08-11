@@ -13,10 +13,19 @@
  * mutation the dialog's own buttons run.
  */
 import { useRef, useState } from "react";
-import { Lightbulb, Loader2, Pencil, Plus, Trash2, Users } from "lucide-react";
+import {
+  Check,
+  Lightbulb,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -44,7 +53,6 @@ import {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { getLatestSuccessfulDocument } from "@/features/research/service";
 
 import {
@@ -77,6 +85,28 @@ interface EntityDraft {
   label: string;
   entityType: PlanEntityType;
   sourceTypeId: string | null;
+}
+
+/**
+ * One entity the Entity Curator proposed, staged for review.
+ *
+ * A paid agent run is NEVER destroyed by a dismissal: the proposals live here
+ * until the user explicitly discards them, so closing the confirm dialog means
+ * "not right now", not "throw the run away". `reason` (the curator's
+ * justification) and `description` ride along — they are what the user decides
+ * on, and they are persisted onto the created row.
+ */
+interface EntityProposal {
+  label: string;
+  entityType: PlanEntityType;
+  description: string;
+  reason: string;
+  /** Per-entity accept (true) / skip (false). */
+  selected: boolean;
+  /** Set once this proposal has landed as a real row. */
+  added: boolean;
+  /** The last write failure for this proposal, kept beside it. */
+  error: string | null;
 }
 
 function asRecord(value: unknown, target: string): Record<string, unknown> {
@@ -126,6 +156,15 @@ export function EntityManager({
   /** The open editor's staged draft; `null` means no editor is open. */
   const [draft, setDraft] = useState<EntityDraft | null>(null);
   const [deleting, setDeleting] = useState<PlanEntityRow | null>(null);
+
+  /**
+   * The curator's staged output. Survives the confirm dialog, survives Cancel,
+   * and is only cleared when the user says "Discard suggestions".
+   */
+  const [proposals, setProposals] = useState<EntityProposal[]>([]);
+  const [curationNotes, setCurationNotes] = useState<string>("");
+  const [confirmingAdd, setConfirmingAdd] = useState(false);
+  const [addingProposals, setAddingProposals] = useState(false);
 
   const rows = entities.data ?? [];
 
@@ -227,57 +266,93 @@ export function EntityManager({
       const existingLabels = new Set(
         rows.map((entity) => entity.label.trim().toLowerCase()),
       );
-      const fresh_suggestions = outcome.entities.filter(
+      const freshSuggestions = outcome.entities.filter(
         (item) => !existingLabels.has(item.label.trim().toLowerCase()),
       );
-      if (fresh_suggestions.length === 0) {
+      // The notes are the run's own explanation of what it did — keep them on
+      // screen, never only inside a dialog the user is about to dismiss.
+      setCurationNotes(outcome.notes);
+      setProposals(
+        freshSuggestions.map((item) => ({
+          label: item.label,
+          entityType: item.entityType,
+          description: item.description,
+          reason: item.reason,
+          selected: true,
+          added: false,
+          error: null,
+        })),
+      );
+      if (freshSuggestions.length === 0) {
         toast.success(
           outcome.notes ||
             "The curator found nothing new — everything it proposed already exists.",
         );
-        return;
-      }
-      const ok = await confirm({
-        title: `Add ${fresh_suggestions.length} suggested entit${fresh_suggestions.length === 1 ? "y" : "ies"}?`,
-        description:
-          fresh_suggestions
-            .map((item) => `${item.entityType}: ${item.label}`)
-            .join(" · ") + (outcome.notes ? ` — ${outcome.notes}` : ""),
-        confirmLabel: "Add entities",
-      });
-      if (!ok) return;
-      let created = 0;
-      const failures: string[] = [];
-      for (const item of fresh_suggestions) {
-        try {
-          await createPlanEntity({
-            site_id: siteId,
-            organization_id: organizationId,
-            label: item.label,
-            entity_type: item.entityType,
-            attributes: {
-              research: { description: item.description, reason: item.reason },
-            },
-          });
-          created += 1;
-        } catch (error) {
-          failures.push(`${item.label}: ${extractErrorMessage(error)}`);
-        }
-      }
-      await queryClient.invalidateQueries({
-        queryKey: planKeys.entities(siteId),
-      });
-      if (failures.length > 0) {
-        toast.error(
-          `Added ${created}; ${failures.length} failed — ${failures[0]}`,
-        );
-      } else {
-        toast.success(
-          `Added ${created} entit${created === 1 ? "y" : "ies"} from the research report.`,
-        );
       }
     } catch (error) {
       toast.error(`Entity suggestion failed: ${extractErrorMessage(error)}`);
+    }
+  };
+
+  const pendingProposals = proposals.filter(
+    (item) => item.selected && !item.added,
+  );
+
+  /**
+   * Create the accepted proposals. Each row carries the curator's
+   * `description` and `reason` into the existing `attributes.research` jsonb —
+   * the same shape the `add_entities` write target uses, so the justification
+   * for a row is durable rather than living only in a dismissed dialog.
+   */
+  const addSelectedProposals = async () => {
+    if (pendingProposals.length === 0) return;
+    setAddingProposals(true);
+    const outcomes = new Map<string, string | null>();
+    let created = 0;
+    for (const item of pendingProposals) {
+      try {
+        await createPlanEntity({
+          site_id: siteId,
+          organization_id: organizationId,
+          label: item.label,
+          entity_type: item.entityType,
+          attributes: {
+            research: { description: item.description, reason: item.reason },
+          },
+        });
+        outcomes.set(item.label, null);
+        created += 1;
+      } catch (error) {
+        outcomes.set(item.label, extractErrorMessage(error));
+      }
+    }
+    // Landed rows are marked, not deleted — the panel keeps showing what the
+    // run produced and what happened to each proposal.
+    setProposals((current) =>
+      current.map((item) =>
+        outcomes.has(item.label)
+          ? {
+              ...item,
+              added: outcomes.get(item.label) === null ? true : item.added,
+              error: outcomes.get(item.label) ?? null,
+            }
+          : item,
+      ),
+    );
+    await queryClient.invalidateQueries({
+      queryKey: planKeys.entities(siteId),
+    });
+    setAddingProposals(false);
+    setConfirmingAdd(false);
+    const failed = [...outcomes.values()].filter(
+      (value): value is string => value !== null,
+    );
+    if (failed.length > 0) {
+      toast.error(`Added ${created}; ${failed.length} failed — ${failed[0]}`);
+    } else {
+      toast.success(
+        `Added ${created} entit${created === 1 ? "y" : "ies"} from the research report.`,
+      );
     }
   };
 
@@ -497,6 +572,132 @@ export function EntityManager({
             </div>
           ) : null}
 
+          {proposals.length > 0 || curationNotes ? (
+            <div className="mb-3 rounded-lg border border-border bg-card">
+              <div className="flex items-start justify-between gap-3 border-b border-border px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground">
+                    Suggested from research
+                    {proposals.length > 0 ? ` (${proposals.length})` : ""}
+                  </p>
+                  {curationNotes ? (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {curationNotes}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {proposals.length > 0 ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs"
+                      onClick={() =>
+                        setProposals((current) => {
+                          const selectAll = current.some(
+                            (item) => !item.selected && !item.added,
+                          );
+                          return current.map((item) =>
+                            item.added
+                              ? item
+                              : { ...item, selected: selectAll },
+                          );
+                        })
+                      }
+                    >
+                      Toggle all
+                    </Button>
+                  ) : null}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setProposals([]);
+                      setCurationNotes("");
+                    }}
+                  >
+                    Discard suggestions
+                  </Button>
+                  {proposals.length > 0 ? (
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={pendingProposals.length === 0 || addingProposals}
+                      onClick={() => setConfirmingAdd(true)}
+                    >
+                      {addingProposals ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : null}
+                      Add {pendingProposals.length} selected
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+              {proposals.map((item) => (
+                <div
+                  key={`${item.entityType}:${item.label}`}
+                  className="flex items-start gap-3 border-b border-border px-3 py-2 last:border-b-0"
+                >
+                  {item.added ? (
+                    <Check
+                      className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+                      aria-label="Added"
+                    />
+                  ) : (
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={item.selected}
+                      aria-label={`Include ${item.label}`}
+                      onCheckedChange={(checked) =>
+                        setProposals((current) =>
+                          current.map((entry) =>
+                            entry.label === item.label
+                              ? { ...entry, selected: checked === true }
+                              : entry,
+                          ),
+                        )
+                      }
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-16 shrink-0 rounded bg-muted px-1.5 py-0.5 text-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        {item.entityType}
+                      </span>
+                      <span className="truncate text-sm font-medium text-foreground">
+                        {item.label}
+                      </span>
+                      {item.added ? (
+                        <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Added
+                        </span>
+                      ) : null}
+                    </div>
+                    {item.description ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {item.description}
+                      </p>
+                    ) : null}
+                    {item.reason ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                          Why:
+                        </span>{" "}
+                        {item.reason}
+                      </p>
+                    ) : null}
+                    {item.error ? (
+                      <p className="mt-1 text-xs text-destructive">
+                        {item.error}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           {entities.isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }, (_, index) => (
@@ -584,6 +785,33 @@ export function EntityManager({
             }}
           />
         ) : null}
+        {/* Cancelling here closes the dialog only — the proposals stay staged
+            in the panel above, re-openable with nothing re-run. */}
+        <ConfirmDialog
+          open={confirmingAdd}
+          onOpenChange={(open) => {
+            if (!open && !addingProposals) setConfirmingAdd(false);
+          }}
+          title={`Add ${pendingProposals.length} suggested entit${pendingProposals.length === 1 ? "y" : "ies"}?`}
+          description="Cancelling keeps the suggestions on screen — nothing is re-run."
+          content={
+            <ul className="max-h-56 space-y-1 overflow-y-auto text-sm">
+              {pendingProposals.map((item) => (
+                <li key={item.label} className="text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {item.label}
+                  </span>{" "}
+                  ({item.entityType})
+                </li>
+              ))}
+            </ul>
+          }
+          confirmLabel="Add entities"
+          busy={addingProposals}
+          onConfirm={() => {
+            void addSelectedProposals();
+          }}
+        />
         <ConfirmDialog
           open={deleting !== null}
           onOpenChange={(open) => {
