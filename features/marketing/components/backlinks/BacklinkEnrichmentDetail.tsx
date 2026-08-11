@@ -172,7 +172,9 @@ export function BacklinkEnrichmentDetail({
     : null;
   const lastErrorMessage = jsonText(lastError.message);
   const referringDomainHref = row.source_domain
-    ? `${sitePath}/backlinks?tab=domains&search=${encodeURIComponent(row.source_domain)}`
+    ? // `q` is the search param `useMarketingTableState` reads — `search` was
+      // silently ignored, landing the user on an unfiltered domain list.
+      `${sitePath}/backlinks?tab=domains&q=${encodeURIComponent(row.source_domain)}`
     : null;
 
   return (
@@ -397,6 +399,26 @@ export function BacklinkEnrichmentDetail({
                     </span>
                   ) : null}
                 </div>
+                {/* A detected problem ships with its one-click fix — the same
+                    guarded action as the header button, beside the error. */}
+                {onAnalyze ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                    disabled={analysisAction.disabled}
+                    title={analysisAction.title}
+                    onClick={onAnalyze}
+                  >
+                    {running || analysisAction.inProgress ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <BrainCircuit className="h-3.5 w-3.5" />
+                    )}
+                    {analysisAction.label}
+                  </Button>
+                ) : null}
               </div>
             </div>
           </section>

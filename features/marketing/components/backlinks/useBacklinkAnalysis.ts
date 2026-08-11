@@ -62,6 +62,16 @@ export function useBacklinkAnalysis({
   const [analysisRuns, setAnalysisRuns] = useState<
     Record<string, BacklinkEnrichmentRunState>
   >({});
+  /**
+   * Aggregate state for a "Analyze next N" batch. Per-row runs live in
+   * `analysisRuns`; without this the whole batch was invisible outside an
+   * open record — a long run showed only a spinning button. The reducer is
+   * aggregate-capable (candidate count, settled ids, terminal result), so one
+   * run object fed every batch event IS the batch's true progress.
+   */
+  const [batchRun, setBatchRun] = useState<BacklinkEnrichmentRunState | null>(
+    null,
+  );
   const runningIds = useRef(new Set<string>());
   const batchRunningRef = useRef(false);
   const [batchAnalyzing, setBatchAnalyzing] = useState(false);
@@ -232,12 +242,20 @@ export function useBacklinkAnalysis({
       }
       batchRunningRef.current = true;
       setBatchAnalyzing(true);
+      setBatchRun(
+        startBacklinkEnrichmentRun(
+          `Analyze next ${limit} source page${limit === 1 ? "" : "s"}`,
+        ),
+      );
       let commandRunId: string | null = null;
       const onEvent = (event: SeoStreamEvent) => {
         if (event.kind === "seo.command_run" && event.run_id) {
           commandRunId = event.run_id;
         }
         applyAnalysisEvent(event, { commandRunId });
+        setBatchRun((current) =>
+          current ? applyBacklinkEnrichmentEvent(current, event) : current,
+        );
       };
 
       try {
@@ -271,7 +289,11 @@ export function useBacklinkAnalysis({
           );
         }
       } catch (error) {
-        toast.error(errorMessage(error));
+        const message = errorMessage(error);
+        setBatchRun((current) =>
+          current ? failBacklinkEnrichmentRun(current, message) : current,
+        );
+        toast.error(message);
       } finally {
         batchRunningRef.current = false;
         setBatchAnalyzing(false);
@@ -291,6 +313,8 @@ export function useBacklinkAnalysis({
     analysisDisabled: !seoTargetUrl,
     analysisRuns,
     batchAnalyzing,
+    batchRun,
+    dismissBatchRun: () => setBatchRun(null),
     analyzeBacklink,
     analyzeNext,
     beginAnalysisRuns,

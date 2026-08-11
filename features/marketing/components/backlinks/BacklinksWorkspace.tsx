@@ -60,6 +60,7 @@ import {
   formatCompactDate,
   InlineQueryError,
   LoadingSurface,
+  MetricCell,
   QueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
@@ -79,6 +80,7 @@ import { BacklinkTrendChart } from "@/features/marketing/components/backlinks/Ba
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
 import { BacklinkDimensionTable } from "@/features/marketing/components/backlinks/BacklinkDimensionTable";
 import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/BacklinkInsightsTab";
+import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
 import { ReferringDomainIntelligenceTable } from "@/features/marketing/components/backlinks/ReferringDomainIntelligenceTable";
 import {
   BACKLINK_TABS,
@@ -141,6 +143,28 @@ const DIMENSION_KIND_BY_TAB = {
 
 type DimensionTabKey = keyof typeof DIMENSION_KIND_BY_TAB;
 
+/**
+ * The Referring domains tab holds TWO datasets over the same subject, and the
+ * user picks which one explicitly. "Our view" is the first-party
+ * `referring_domain_profile` directory (our score, verdict, ruling); "What the
+ * data service reported" is the provider's referring-domain aggregate snapshot
+ * (referring pages, platform/country mix, broken count, first/last seen).
+ * Before this toggle the provider table was unreachable — the `domains` branch
+ * returned first — so those columns were collected, stored, and invisible.
+ */
+const DOMAIN_VIEW_PARAM = "domainView";
+
+const DOMAIN_VIEWS = [
+  { key: "ours", label: "Our view" },
+  { key: "provider", label: "What the data service reported" },
+] as const;
+
+type DomainViewKey = (typeof DOMAIN_VIEWS)[number]["key"];
+
+function isDomainViewKey(value: string | null): value is DomainViewKey {
+  return DOMAIN_VIEWS.some((view) => view.key === value);
+}
+
 function isDimensionTab(tab: BacklinkTabKey): tab is DimensionTabKey {
   return tab in DIMENSION_KIND_BY_TAB;
 }
@@ -155,6 +179,7 @@ function TopTenCard({
   location,
   siteDomain,
   showIntersections = false,
+  ourPagesPath = null,
 }: {
   title: string;
   anchor: string;
@@ -165,6 +190,13 @@ function TopTenCard({
   location: string;
   siteDomain: string;
   showIntersections?: boolean;
+  /**
+   * Set for the "Top pages" card only: these rows are OUR pages, so the name
+   * opens the page inside AI Matrx (`{sitePath}/pages` searched by URL —
+   * dimension snapshot rows carry no `page_id`), with the live URL kept as a
+   * separate new-tab affordance.
+   */
+  ourPagesPath?: string | null;
 }) {
   const visible = rows.slice(0, 10);
   return (
@@ -193,6 +225,11 @@ function TopTenCard({
           const extras = showIntersections
             ? parseDimensionExtras(row.extras)
             : null;
+          const ourPageUrl = row.url ?? row.dimension_key;
+          const internalHref =
+            ourPagesPath && ourPageUrl
+              ? `${ourPagesPath}/pages?q=${encodeURIComponent(ourPageUrl)}`
+              : null;
           return (
             <div
               key={row.id}
@@ -203,12 +240,33 @@ function TopTenCard({
                   <span
                     className={cn(
                       "h-1.5 w-1.5 shrink-0 rounded-full",
-                      tone === "toxic" ? "bg-destructive" : "bg-amber-500",
+                      tone === "toxic" ? "bg-destructive" : "bg-warning",
                     )}
                     title={`Spam score ${row.spam_score}`}
                   />
                 ) : null}
-                {row.url ? (
+                {internalHref ? (
+                  <>
+                    <Link
+                      href={internalHref}
+                      className="min-w-0 truncate text-foreground hover:text-primary hover:underline"
+                      title={`Open ${label} in AI Matrx`}
+                    >
+                      {label}
+                    </Link>
+                    {row.url ? (
+                      <a
+                        href={row.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`Open ${row.url} live`}
+                        aria-label={`Open ${label} live in a new tab`}
+                      >
+                        <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground hover:text-primary" />
+                      </a>
+                    ) : null}
+                  </>
+                ) : row.url ? (
                   <a
                     href={row.url}
                     target="_blank"
@@ -287,6 +345,8 @@ export function BacklinksWorkspace() {
     analysisDisabled,
     analysisRuns,
     batchAnalyzing,
+    batchRun,
+    dismissBatchRun,
     analyzeBacklink,
     analyzeNext,
     dismissAnalysisRun,
@@ -312,10 +372,21 @@ export function BacklinksWorkspace() {
   const tab: BacklinkTabKey = isBacklinkTabKey(tabParam)
     ? tabParam
     : "overview";
-  const tabHref = (next: BacklinkTabKey): string => {
+  const domainViewParam = searchParams.get(DOMAIN_VIEW_PARAM);
+  const domainView: DomainViewKey = isDomainViewKey(domainViewParam)
+    ? domainViewParam
+    : "ours";
+  const tabHref = (
+    next: BacklinkTabKey,
+    extra?: Record<string, string>,
+  ): string => {
     const params = new URLSearchParams(searchParams.toString());
     if (next === "overview") params.delete("tab");
     else params.set("tab", next);
+    params.delete(DOMAIN_VIEW_PARAM);
+    for (const [key, value] of Object.entries(extra ?? {})) {
+      params.set(key, value);
+    }
     // Every tab's table persists state through the same URL params
     // (useMarketingTableState). Drop them on tab switch so one tab's
     // paging/filters never leak into another's query.
@@ -326,6 +397,18 @@ export function BacklinksWorkspace() {
   const setTab = (next: BacklinkTabKey) => {
     startNavigation(() => {
       router.replace(tabHref(next), { scroll: false });
+    });
+  };
+
+  const setDomainView = (next: DomainViewKey) => {
+    if (next === domainView) return;
+    startNavigation(() => {
+      // The two views are different tables with different columns — one's
+      // paging/sort/search must never carry into the other's query.
+      router.replace(
+        tabHref("domains", next === "ours" ? {} : { [DOMAIN_VIEW_PARAM]: next }),
+        { scroll: false },
+      );
     });
   };
 
@@ -453,6 +536,57 @@ export function BacklinksWorkspace() {
       rows: data?.competitors ?? [],
     },
   ] as const;
+
+  /**
+   * Every enrichment count is a door. The status sets below are the SAME sets
+   * `getBacklinkWorkspace` counts, so each link lands on exactly the rows it
+   * promises (the Links tab honors `f_enrichment_status` server-side).
+   */
+  const linksStatusHref = (statuses?: string[]) =>
+    `${sitePath}/backlinks?tab=links${
+      statuses
+        ? `&f_enrichment_status=${encodeURIComponent(`select:${statuses.join("|")}`)}`
+        : ""
+    }`;
+  const enrichmentTiles: Array<{
+    label: string;
+    value: number;
+    href: string;
+    tone?: "default" | "good" | "warning" | "bad";
+  }> = [
+    {
+      label: "Known links",
+      value: data?.enrichment.total ?? 0,
+      href: linksStatusHref(),
+    },
+    {
+      label: "Analyzed",
+      value: data?.enrichment.completed ?? 0,
+      href: linksStatusHref(["completed"]),
+      tone: "good",
+    },
+    {
+      label: "Awaiting",
+      value: data?.enrichment.awaiting ?? 0,
+      href: linksStatusHref(["pending", "capturing", "analyzing"]),
+    },
+    {
+      label: "Needs retry",
+      value: data?.enrichment.failed ?? 0,
+      href: linksStatusHref(["failed", "dead_letter"]),
+      tone: (data?.enrichment.failed ?? 0) > 0 ? "warning" : "default",
+    },
+    {
+      label: "High-priority actions",
+      value: data?.enrichment.highPriority ?? 0,
+      href: `${sitePath}/backlinks?tab=insights&insight=actionable`,
+    },
+    {
+      label: "Likely controllable",
+      value: data?.enrichment.controllable ?? 0,
+      href: `${sitePath}/backlinks?tab=insights&insight=controllable`,
+    },
+  ];
 
   const pageHuman = () =>
     [
@@ -894,6 +1028,15 @@ export function BacklinksWorkspace() {
           </div>
         </div>
 
+        {/* "Analyze next N" runs on every tab — its aggregate progress belongs
+            under the toolbar, not only inside an opened record. */}
+        {batchRun ? (
+          <BacklinkEnrichmentRunPanel
+            run={batchRun}
+            onDismiss={dismissBatchRun}
+          />
+        ) : null}
+
         {settingsOpen ? (
           <div className="shrink-0 px-3 pt-2 sm:px-4">
             <SectionCard title="Automatic refresh" anchor="refresh_schedule">
@@ -991,6 +1134,7 @@ export function BacklinksWorkspace() {
               <BacklinkKpiBand
                 summary={summary ?? null}
                 siteDomain={site.domain}
+                sitePath={sitePath}
                 location={pageLocation}
               />
               <SectionCard
@@ -998,28 +1142,15 @@ export function BacklinksWorkspace() {
                 anchor="backlink_enrichment"
               >
                 <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-6">
-                  {[
-                    ["Known links", data?.enrichment.total ?? 0],
-                    ["Analyzed", data?.enrichment.completed ?? 0],
-                    ["Awaiting", data?.enrichment.awaiting ?? 0],
-                    ["Needs retry", data?.enrichment.failed ?? 0],
-                    [
-                      "High-priority actions",
-                      data?.enrichment.highPriority ?? 0,
-                    ],
-                    ["Likely controllable", data?.enrichment.controllable ?? 0],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      className="rounded-md border border-border/60 bg-card p-2"
-                    >
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {label}
-                      </p>
-                      <p className="mt-1 text-lg font-semibold tabular-nums text-foreground">
-                        {value}
-                      </p>
-                    </div>
+                  {enrichmentTiles.map((tile) => (
+                    <MetricCell
+                      key={tile.label}
+                      variant="card"
+                      label={tile.label}
+                      value={tile.value}
+                      tone={tile.tone ?? "default"}
+                      href={tile.href}
+                    />
                   ))}
                 </div>
               </SectionCard>
@@ -1059,11 +1190,23 @@ export function BacklinksWorkspace() {
                     title={group.title}
                     anchor={group.anchor}
                     rows={group.rows}
-                    viewAllHref={tabHref(group.tab)}
+                    // These cards render PROVIDER dimension rows, so "View all"
+                    // must open the provider view of the Domains tab — not our
+                    // first-party directory, which is a different dataset with
+                    // different counts.
+                    viewAllHref={tabHref(
+                      group.tab,
+                      group.tab === "domains"
+                        ? { [DOMAIN_VIEW_PARAM]: "provider" }
+                        : undefined,
+                    )}
                     kind={group.kind}
                     location={pageLocation}
                     siteDomain={site.domain}
                     showIntersections={group.id === "competitors"}
+                    ourPagesPath={
+                      group.id === "target_pages" ? sitePath : null
+                    }
                   />
                 ))}
               </div>
@@ -1115,8 +1258,36 @@ export function BacklinksWorkspace() {
               />
             </div>
           ) : tab === "domains" ? (
-            <div className="flex min-h-0 flex-1 flex-col">
-              <ReferringDomainIntelligenceTable siteId={site.id} />
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <div className="flex w-max items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
+                {DOMAIN_VIEWS.map((view) => (
+                  <button
+                    key={view.key}
+                    type="button"
+                    disabled={isNavigating}
+                    aria-pressed={domainView === view.key}
+                    className={cn(
+                      "shrink-0 whitespace-nowrap rounded px-2 py-1 text-xs transition-colors",
+                      domainView === view.key
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    )}
+                    onClick={() => setDomainView(view.key)}
+                  >
+                    {view.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col">
+                {domainView === "provider" ? (
+                  <BacklinkDimensionTable
+                    siteId={site.id}
+                    kind={DIMENSION_KIND_BY_TAB.domains}
+                  />
+                ) : (
+                  <ReferringDomainIntelligenceTable siteId={site.id} />
+                )}
+              </div>
             </div>
           ) : isDimensionTab(tab) ? (
             <div className="flex min-h-0 flex-1 flex-col">

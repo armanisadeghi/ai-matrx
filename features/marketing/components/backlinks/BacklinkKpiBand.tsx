@@ -32,17 +32,24 @@ interface KpiTile {
   /** Raw value + explainer for the copy payload. */
   raw: number | null;
   explainer?: string;
+  /** A count is a door — the Insights lens that lists exactly these links. */
+  href?: string;
 }
 
 export function BacklinkKpiBand({
   summary,
   siteDomain,
+  sitePath,
   location,
 }: {
   summary: BacklinkSnapshotRow | null | undefined;
   siteDomain: string;
+  /** `/marketing/brands/x/sites/y` — the base for every in-app destination. */
+  sitePath: string;
   location: string;
 }) {
+  const lensHref = (insight: string) =>
+    `${sitePath}/backlinks?tab=insights&insight=${insight}`;
   if (!summary) {
     return (
       <div className="rounded-md border border-dashed border-border bg-card/60 p-4">
@@ -106,18 +113,21 @@ export function BacklinkKpiBand({
       value: compactNumber(summary.new_backlinks),
       raw: summary.new_backlinks,
       tone: (summary.new_backlinks ?? 0) > 0 ? "good" : "default",
+      href: lensHref("new"),
     },
     {
       label: "Lost links",
       value: compactNumber(summary.lost_backlinks),
       raw: summary.lost_backlinks,
       tone: (summary.lost_backlinks ?? 0) > 0 ? "warning" : "default",
+      href: lensHref("lost"),
     },
     {
       label: "Broken links",
       value: compactNumber(summary.broken_backlinks),
       raw: summary.broken_backlinks,
       tone: (summary.broken_backlinks ?? 0) > 0 ? "warning" : "default",
+      href: lensHref("broken"),
     },
     {
       label: "Rank",
@@ -149,6 +159,7 @@ export function BacklinkKpiBand({
             value={tile.value}
             detail={tile.detail}
             tone={tile.tone ?? "default"}
+            href={tile.href}
             copy={{
               label: tile.label,
               human: () =>

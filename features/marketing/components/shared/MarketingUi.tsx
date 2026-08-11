@@ -18,6 +18,8 @@ import {
   type CopyButtonsProps,
 } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
+import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
+import { RecordUnavailableNotice } from "@/features/marketing/components/shared/RecordUnavailableNotice";
 import { extractErrorMessage } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import { isJsonRecord } from "@/features/marketing/types";
@@ -129,6 +131,11 @@ export function QueryError({
   error: unknown;
   onRetry?: () => void;
 }) {
+  // A zero-row single-record read is not "could not load this data" — it has
+  // its own honest copy and its own doors.
+  if (isRecordUnavailableError(error)) {
+    return <RecordUnavailableNotice error={error} onRetry={onRetry} />;
+  }
   return (
     <div className="flex h-full min-h-40 items-center justify-center p-6">
       <div className="max-w-lg rounded-lg border border-destructive/30 bg-destructive/5 p-4">

@@ -9,7 +9,10 @@
  * per-column filter renders because the server honors none for dimensions.
  */
 
+import type { ReactNode } from "react";
+import Link from "next/link";
 import { ExternalLink, Globe, Link2, Quote, Users } from "lucide-react";
+import { formatGscDate } from "@/features/marketing/search-console/lib/format";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import {
@@ -34,6 +37,7 @@ import type { BacklinkDimensionKind } from "@/features/marketing/data/backlinks-
 import type { BacklinkDimensionRow } from "@/features/marketing/data/backlinks-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 
 const INTERSECTIONS_EXPLAINER =
   "Referring domains you share with this competitor — a ready-made outreach prospect list.";
@@ -100,7 +104,26 @@ const EMPTY_ICON: Record<BacklinkDimensionKind, typeof Globe> = {
   competitor_domain: Users,
 };
 
-function nameCell(kind: BacklinkDimensionKind, row: BacklinkDimensionRow) {
+/** Links tab, searched by this dimension's domain — the rows it stands for. */
+function domainLinksHref(sitePath: string, label: string): string {
+  return `${sitePath}/backlinks?tab=links&q=${encodeURIComponent(label)}`;
+}
+
+/** Broken links FROM this domain: the broken lens, narrowed to that domain. */
+function domainBrokenHref(sitePath: string, label: string): string {
+  return `${sitePath}/backlinks?tab=insights&insight=broken&q=${encodeURIComponent(label)}`;
+}
+
+/** Our own page, opened in AI Matrx (dimension rows carry no `page_id`). */
+function ourPageHref(sitePath: string, url: string): string {
+  return `${sitePath}/pages?q=${encodeURIComponent(url)}`;
+}
+
+function nameCell(
+  kind: BacklinkDimensionKind,
+  row: BacklinkDimensionRow,
+  sitePath: string,
+) {
   const label = row.label ?? row.dimension_key;
   const extras = parseDimensionExtras(row.extras);
 
@@ -121,17 +144,30 @@ function nameCell(kind: BacklinkDimensionKind, row: BacklinkDimensionRow) {
     const fullUrl = row.url ?? row.dimension_key;
     return (
       <span className="block min-w-44 max-w-80">
-        <a
-          href={row.url ?? undefined}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={fullUrl}
-          onClick={(event) => event.stopPropagation()}
-          className="flex items-center gap-1 truncate font-mono text-[11px] text-primary hover:underline"
-        >
-          <span className="truncate">{urlPath(fullUrl)}</span>
-          <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
-        </a>
+        <span className="flex items-center gap-1">
+          {/* Our own page opens in OUR system first; the live URL stays as a
+              separate new-tab affordance. */}
+          <Link
+            href={ourPageHref(sitePath, fullUrl)}
+            title={`Open ${fullUrl} in AI Matrx`}
+            onClick={(event) => event.stopPropagation()}
+            className="truncate font-mono text-[11px] text-primary hover:underline"
+          >
+            {urlPath(fullUrl)}
+          </Link>
+          {row.url ? (
+            <a
+              href={row.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={`Open ${row.url} live`}
+              aria-label={`Open ${fullUrl} live in a new tab`}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground hover:text-primary" />
+            </a>
+          ) : null}
+        </span>
         {extras.metaTitle ? (
           <span className="block truncate text-[11px] text-muted-foreground">
             {extras.metaTitle}
@@ -158,6 +194,131 @@ function nameCell(kind: BacklinkDimensionKind, row: BacklinkDimensionRow) {
   );
 }
 
+function Fact({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="min-w-0 rounded-md border border-border/60 bg-muted/20 p-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <div className="mt-0.5 break-words text-xs text-foreground">
+        {value === null || value === undefined || value === "" ? "—" : value}
+      </div>
+    </div>
+  );
+}
+
+function histogramLine(
+  histogram: Record<string, number> | null,
+  max = 6,
+): string | null {
+  if (!histogram) return null;
+  return Object.entries(histogram)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, max)
+    .map(([key, count]) => `${key || "(none)"} ${formatCount(count)}`)
+    .join(" · ");
+}
+
+/**
+ * The drawer body for one dimension row. Previously this drawer opened with a
+ * title and an empty panel — every fact below was already parsed and stored.
+ */
+function DimensionDetail({
+  kind,
+  row,
+  sitePath,
+}: {
+  kind: BacklinkDimensionKind;
+  row: BacklinkDimensionRow;
+  sitePath: string;
+}) {
+  const label = row.label ?? row.dimension_key;
+  const extras = parseDimensionExtras(row.extras);
+  const isDomain = kind === "referring_domain" || kind === "competitor_domain";
+  return (
+    <div className="h-full overflow-y-auto p-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {kind === "target_page" ? (
+          <Link
+            href={ourPageHref(sitePath, row.url ?? row.dimension_key)}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Open this page in AI Matrx
+          </Link>
+        ) : null}
+        {isDomain ? (
+          <Link
+            href={domainLinksHref(sitePath, label)}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            View this domain&apos;s links
+          </Link>
+        ) : null}
+        {row.url ? (
+          <a
+            href={row.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            Open live URL <ExternalLink className="h-3 w-3" />
+          </a>
+        ) : null}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-3">
+        <Fact label={KIND_CONFIG[kind].nameHeader} value={label} />
+        <Fact label="Backlinks" value={formatCount(row.backlinks)} />
+        <Fact
+          label="Referring domains"
+          value={formatCount(row.referring_domains)}
+        />
+        <Fact label="Referring pages" value={formatCount(extras.referringPages)} />
+        <Fact
+          label="Nofollow referring pages"
+          value={formatCount(extras.referringPagesNofollow)}
+        />
+        <Fact
+          label="Broken backlinks"
+          value={
+            extras.brokenBacklinks && extras.brokenBacklinks > 0 && isDomain ? (
+              <Link
+                href={domainBrokenHref(sitePath, label)}
+                className="font-medium text-destructive hover:underline"
+              >
+                {formatCount(extras.brokenBacklinks)}
+              </Link>
+            ) : (
+              formatCount(extras.brokenBacklinks)
+            )
+          }
+        />
+        <Fact label="Rank" value={row.rank_score} />
+        <Fact label="Spam score" value={row.spam_score} />
+        <Fact label="Shared referring domains" value={extras.intersections} />
+        <Fact label="Target HTTP status" value={extras.statusCode} />
+        <Fact label="Page title" value={extras.metaTitle} />
+        <Fact label="Provider" value={row.provider} />
+        <Fact label="First seen" value={formatGscDate(row.first_seen_at)} />
+        <Fact label="Last seen" value={formatGscDate(row.last_seen_at)} />
+      </div>
+      <div className="mt-2 grid gap-2">
+        <Fact label="Platform types" value={histogramLine(extras.platformTypes)} />
+        <Fact label="Countries" value={histogramLine(extras.countries)} />
+        <Fact label="TLDs" value={histogramLine(extras.tlds)} />
+        <Fact label="Link types" value={histogramLine(extras.linkTypes)} />
+        <Fact
+          label="Rel attributes"
+          value={histogramLine(extras.linkAttributes)}
+        />
+        <Fact
+          label="Placements"
+          value={histogramLine(extras.semanticLocations)}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function BacklinkDimensionTable({
   siteId,
   kind,
@@ -166,6 +327,7 @@ export function BacklinkDimensionTable({
   kind: BacklinkDimensionKind;
 }) {
   const config = KIND_CONFIG[kind];
+  const { sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "backlinks", direction: "desc" },
     defaultPageSize: 50,
@@ -182,7 +344,7 @@ export function BacklinkDimensionTable({
       header: config.nameHeader,
       filter: false,
       cellKind: "text",
-      cell: (row) => nameCell(kind, row),
+      cell: (row) => nameCell(kind, row, sitePath),
     },
     {
       id: "backlinks",
@@ -271,13 +433,17 @@ export function BacklinkDimensionTable({
               parseDimensionExtras(row.extras).brokenBacklinks ?? 0,
             cell: (row) => {
               const broken = parseDimensionExtras(row.extras).brokenBacklinks;
+              const label = row.label ?? row.dimension_key;
               return broken && broken > 0 ? (
-                <span
-                  className="text-xs font-medium tabular-nums text-destructive"
-                  title={`${formatCount(broken)} broken backlinks from this domain`}
+                // A count is a door: the broken lens narrowed to this domain.
+                <Link
+                  href={domainBrokenHref(sitePath, label)}
+                  onClick={(event) => event.stopPropagation()}
+                  className="text-xs font-medium tabular-nums text-destructive hover:underline"
+                  title={`Open the ${formatCount(broken)} broken backlinks from ${label}`}
                 >
                   {formatCount(broken)}
-                </span>
+                </Link>
               ) : (
                 <span className="text-xs text-muted-foreground">—</span>
               );
@@ -416,6 +582,9 @@ export function BacklinkDimensionTable({
             title: (row) => row.label ?? row.dimension_key,
             description: (row) =>
               `${formatCount(row.backlinks)} backlinks in the latest snapshot`,
+            render: (row) => (
+              <DimensionDetail kind={kind} row={row} sitePath={sitePath} />
+            ),
           }}
           window={{ enabled: false }}
           pageSize={50}

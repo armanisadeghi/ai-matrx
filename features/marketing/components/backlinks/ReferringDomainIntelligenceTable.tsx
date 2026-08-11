@@ -162,6 +162,7 @@ export function ReferringDomainIntelligenceTable({
 }: {
   siteId: string;
 }) {
+  const { sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "opinion_score", direction: "desc" },
     defaultPageSize: 50,
@@ -203,6 +204,18 @@ export function ReferringDomainIntelligenceTable({
       header: "Links",
       filter: false,
       align: "right",
+      // A count is a door — the Links tab searched by this domain (its server
+      // search matches `source_domain`), so it lands on exactly these rows.
+      cell: (row) => (
+        <Link
+          href={`${sitePath}/backlinks?tab=links&q=${encodeURIComponent(row.display_domain)}`}
+          onClick={(event) => event.stopPropagation()}
+          className="tabular-nums text-primary hover:underline"
+          title={`Open the stored links from ${row.display_domain}`}
+        >
+          {row.current_backlinks}
+        </Link>
+      ),
     },
     {
       id: "opinion_score",

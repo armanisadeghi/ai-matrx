@@ -62,6 +62,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   assists: "Assist chip action failure",
   "layout-scroll-chain": "Content clipped — scroll chain broken",
   "unsaved-work": "Unsaved user work at risk",
+  "record-unavailable": "Record unavailable (deleted, or access gap)",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {
