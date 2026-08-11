@@ -12,16 +12,16 @@ the `/marketing` hub, `/marketing/tools`, the shell nav (generated —
 `marketingNavChildren()`), and the route metadata. One declaration, four
 surfaces; they cannot drift.
 
-| Pillar                         | Live today                                                                                                     | Reserved (coming soon)                                                |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Brands & Websites              | `/marketing/brands`, `/marketing/sites`                                                                        | `/marketing/local`                                                    |
-| Strategy & Planning            | `/marketing/content-plan`                                                                                      | `/marketing/campaigns`, `/calendar`, `/audience`                      |
-| Discovery, Search & Visibility | `/marketing/keyword-research`, `/marketing/discovery/youtube`, `/marketing/ranks`, `/marketing/search-console` | `/marketing/ai-visibility`                                            |
-| Content & Channels             | —                                                                                                              | `/marketing/content-studio`, `/social`, `/email`, `/ads`, `/outreach` |
-| Market Intelligence            | —                                                                                                              | `/marketing/competitors`, `/marketing/monitoring`                     |
-| Measurement                    | `/marketing/cost`                                                                                              | `/marketing/analytics`, `/marketing/reports`                          |
-| SEO Tools                      | `/marketing/tools` → the PUBLIC analyzers on `/seo/*`                                                          | —                                                                     |
-| Data & Operations              | `/marketing/connections`, `/marketing/batches`                                                                 | `/marketing/automations`                                              |
+| Pillar                         | Live today                                                                                                                                 | Reserved (coming soon)                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Brands & Websites              | `/marketing/brands`, `/marketing/sites`                                                                                                    | `/marketing/local`                                                    |
+| Strategy & Planning            | `/marketing/content-plan`                                                                                                                  | `/marketing/campaigns`, `/calendar`, `/audience`                      |
+| Discovery, Search & Visibility | `/marketing/keyword-research`, `/marketing/discovery/youtube`, `/marketing/ranks`, `/marketing/search-console`, `/marketing/ai-visibility` | —                                                                     |
+| Content & Channels             | —                                                                                                                                          | `/marketing/content-studio`, `/social`, `/email`, `/ads`, `/outreach` |
+| Market Intelligence            | `/marketing/competitors`                                                                                                                   | `/marketing/monitoring`                                               |
+| Measurement                    | `/marketing/cost`                                                                                                                          | `/marketing/analytics`, `/marketing/reports`                          |
+| SEO Tools                      | `/marketing/tools` → the PUBLIC analyzers on `/seo/*`                                                                                      | —                                                                     |
+| Data & Operations              | `/marketing/connections`, `/marketing/batches`                                                                                             | `/marketing/automations`                                              |
 
 ### Rules
 
@@ -62,6 +62,28 @@ declarations must exist together, or the placeholder throws at render:
 and drop `status`/`comingSoonId` from its nav entry. The href never changes —
 that permanence is the whole point of reserving it.
 
+## AI citation reverse engineer (2026-08-11)
+
+`/marketing/ai-visibility` is the cross-site home; every managed site also has
+`.../sites/[siteId]/ai-visibility` in its permanent mode rail. A user supplies the
+exact buyer question and chooses ChatGPT, Claude, Gemini, and/or Perplexity. Work
+goes directly to aidream's streamed durable command; saved evidence reads directly
+from Supabase.
+
+- The stream is adopted with `adoptForeignStream` and rendered only through
+  `MarkdownStream`. The server emits balanced `structured_info` `__kind` values for
+  provider answers, source captures, specialist verdicts, and synthesis; this surface
+  never hand-parses or hand-routes model output.
+- Four provider cards reveal answers as soon as they land, independently of the slower
+  citation capture and specialist stages. A session-stored run id rejoins after refresh;
+  the durable `seo.collection_run.result` snapshot recovers completed work.
+- `MatrxDataTable` owns local sort/filter/pagination for claims, cited sources,
+  decision signals, and history. “Unverified but influential” is an explicit critical
+  claim state, not hidden in prose. Cited URLs always open the real source in a new tab.
+- The browser never writes server-owned evidence. It reads
+  `seo.ai_visibility_response/claim/citation/signal` under RLS; the Python brain owns
+  provider calls, crawl-cache reuse, specialist analysis, cost accounting, and writes.
+
 ### Guest vs. authed
 
 `app/(core)/marketing/layout.tsx` branches server-side: guests get
@@ -80,7 +102,9 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
 
 - `/marketing/brands` — brand portfolio (the anchor list).
 - `/marketing/brands/[brandId]` — brand cockpit: identity, website properties with connection chips, social properties, confirmed business facts, brand asset library, pending-review count.
-- `/marketing/brands/[brandId]/sites/[siteId]/**` — every site vertical (overview, performance, discovery, pages, crawls, analysis, findings, links, backlinks, keywords, screenshots, integrations, cost, access, settings) lives nested under its brand. `/socials/...` will join as a sibling.
+- `/marketing/brands/[brandId]/sites/[siteId]/**` — every registered site mode
+  in `MARKETING_SITE_SECTIONS` lives nested under its brand and appears in the
+  shared `EntityModeHeader`. `/socials/...` will join as a sibling.
 - `/marketing/sites` — flattened all-sites view (kept deliberately); rows link to the nested canonical URLs.
 - `/marketing/sites/[siteId]/**` — LEGACY shim only: client redirect that resolves the brand under the caller's session and replaces the URL. Cross-links built from rows that only carry `site_id` may target it.
 - `/marketing/connections` — user/org credential onboarding and site-provider binding guide.
@@ -148,7 +172,7 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
   `web.analysis_result` belongs to its site/page, producing crawl session, and
   analysis catalog item; it has no `web.batch_job` dependency.
 - `web.v_priority_queue` — open, non-suppressed findings ranked by weight × severity × confidence.
-- `web.v_page_list` — security-invoker, one-row-per-page query projection for latest snapshot fields, live sitemap count, health verdicts, and rolling 28-day GSC metrics; the Pages table filters/sorts this projection before pagination, then hydrates canonical `web.page` rows by id. **It INNER JOINs live sites and exposes `is_resource`** — the two guards described in the page-registry invariants. Prefer it over a raw `web.page` count for anything a user reads as "pages".
+- `web.v_page_list` — security-invoker, one-row-per-registry-URL query projection for latest snapshot fields, live sitemap count, health verdicts, and rolling 28-day GSC metrics; the Pages table filters/sorts this projection before pagination, then hydrates canonical `web.page` rows by id. **It INNER JOINs live sites and exposes `is_resource`, `is_canonical`, and `has_page_evidence`.** User-facing page totals and the default Pages list require canonical + non-resource + evidence; aliases, machine resources, and unconfirmed crawl candidates remain deliberate audit destinations rather than inflating the number called “Pages.” Prefer this projection over a raw `web.page` count for anything a user reads as "pages".
 - `web.v_page_score` and `web.v_site_score` — current score projections.
 
 Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` scopes the normal browser client to the custom schema.
@@ -233,7 +257,8 @@ Grants: `migrations/web_marketing_crud_grants.sql` added the missing authenticat
 - Crawler commands/live NDJSON go browser ↔ scraper directly. Durable rows written by the crawler are subsequently read from Supabase.
 - A canonical page is not a crawl URL. A page's current content is its latest accepted snapshot, not a page column.
 - **A page whose SITE is soft-deleted stays live in `web.page` — every cross-site reader MUST exclude it.** Site soft-delete cascades to `web.property(kind='website')` and deliberately NOT to pages: `web.page` carries `_gc_assoc_softdelete`, which HARD-deletes every `platform.associations` edge, so a cascade would irreversibly destroy page↔keyword/task/note edges that a site restore could not rebuild. The guard is at the read layer instead — `v_page_list` INNER JOINs `web.site … deleted_at IS NULL`, and a direct `web.page` read that is not `site_id`-scoped adds `site!inner(id)` + `.is("site.deleted_at", null)` (`searchPagesForMetaApply` is the one such reader). 817 orphans of one deleted site produced every "the same URL appears twice" report; there were zero same-site duplicates.
-- **`content_type_last` classifies a registry row; it never removes one.** Non-HTML URLs are recorded (597 of 10,608 live rows: image/json/xml/pdf/txt/md/other) because coverage disagreement is the product — but they are not pages, so they are segmented, never counted as pages and never offered where a user picks a page. ONE rule, three mirrors: `lib/page-content-class.ts` (`isResourceContentType` / `PAGE_CONTENT_TYPE_OR_FILTER`), `v_page_list.is_resource`, and matrx-scraper's `web_crawl/analysis.py` audit gate — change one, change all three. **`NULL` is NOT a resource** (8.5k rows: declared by sitemap/GSC, not yet fetched); treating unknown as an asset hides most of the registry. Resources are a deliberate destination (`.../pages?scope=resources`), exactly like `?scope=dismissed`.
+- **A registry row is classified, never removed.** Non-HTML URLs and machine endpoints are recorded because coverage disagreement is the product — but they are not pages, so they are segmented, never counted as pages, never offered where a user picks a page, and never scored by the HTML audit. A row is a resource when EITHER signal fires: the crawler's `content_type_last` verdict is non-HTML, OR the URL's shape proves it (asset extension / machine endpoint path — `/wp-json/`, `/wp-content/`, `/feed`, `rest_route=`). ONE rule, three mirrors: `lib/page-content-class.ts` (`isResourceContentType` / `isMachineResourceUrl` / `applyPageOnlyFilters`), `web.is_machine_resource_url` + `v_page_list.is_resource`, and matrx-scraper's `web_crawl/page_class.py` — change one, change all three. **URL shape is load-bearing, not belt-and-braces:** `content_type_last` is NULL for 8.7k of 10.8k rows (declared by sitemap/GSC, never fetched), so the verdict alone is silent for most of the registry — that gap is how 717 `/wp-json/...` endpoints became datadestruction.com's worst-ranked pages, each faulted for missing `og:title` and `<h1>`. The shape set stays narrow: extensionless, `.php`, `.html` and `.aspx` are NOT matched, because that ambiguity is what the verdict is for. Resources are a deliberate destination (`.../pages?scope=resources`), exactly like `?scope=dismissed`.
+- **Evidence, identity, and content kind are separate page-count gates.** `v_page_list.is_canonical` removes live alias spellings; `is_resource` removes positively classified non-HTML responses; `has_page_evidence` requires a retained snapshot, live sitemap membership, live GSC row, or a manual assertion. The Overview and Coverage “Pages” number applies all three. A crawl-discovered URL that never produced any of that evidence remains an **Unconfirmed candidate**, linked at `.../pages?coverage=unconfirmed`; it is never silently erased and never presented as a confirmed page. Coverage reports the overlapping current evidence totals (crawl / sitemap / Google) beside first-source provenance, whose non-overlapping buckets add back to the confirmed total.
 - Every child query scopes both its resource id and `site_id`; cross-site ids must not resolve under the wrong shell.
 - Deep tables always use controlled Supabase filtering, sorting, exact counts, and bounded ranges. The canonical table never imports Supabase.
 - Analysis tables use `table.queryState` for debounced database queries and `table.state` for immediate controlled-table feedback.
@@ -520,6 +545,12 @@ as keyof paths` cast pending the OpenAPI type sync).
   dead `batch_item` branch while preserving every live site/page/session/item
   integrity check; a rollback-only clone insert verified the trigger on the
   live database.
+- 2026-08-11 — Codex: **Page totals now mean evidence-backed pages, not every
+  durable URL candidate.** `v_page_list` exposes canonical identity and retained
+  page-evidence verdicts; Overview, Pages, and Coverage exclude aliases,
+  resources, and unconfirmed candidates from the headline while preserving
+  linked destinations for each. Coverage now accounts for the registry total,
+  overlapping crawl/sitemap/GSC evidence, and non-overlapping first source.
 - 2026-08-10 — Codex: **Page Studio comparison rows now fold and align as one.**
   Each Current/Plan pair has one compact Studio disclosure, nested card toggles
   are suppressed only in Studio, and paired cards stretch to the taller lane.
