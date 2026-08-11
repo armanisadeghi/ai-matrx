@@ -1,8 +1,20 @@
 /**
  * assembleMessageParts
  *
- * Converts a completed ActiveRequest into CxContentBlock[] — the canonical
- * format stored in cx_message.content[] in the database.
+ * Converts a completed ActiveRequest into CxContentBlock[] — the same shape
+ * chat.message.content[] stores.
+ *
+ * 🚨 THIS FILE DOES NOT WRITE THE DATABASE. The blocks it returns go to
+ * `updateMessageRecord`, which is Redux-only: it keeps the just-finished turn
+ * in the live transcript until a reload replaces it with the server's own row.
+ * `chat.message.content` is written by aidream
+ * (`matrx_ai/db/persistence.py::persist_completed_request`) from the server's
+ * `config.messages`. So a part that renders live but is MISSING after F5 is a
+ * server-side persistence bug, not a bug here — check aidream first. (A whole
+ * tool call went missing exactly this way on 2026-08-11: the OpenAI translator
+ * ordered a turn's messages so a text message sat between a tool_use and its
+ * tool_result, and `MessageList.sanitize` deleted the pair before it was ever
+ * written. Fixed in aidream commit 795db7689.)
  *
  * This is the inverse of normalizeContentBlocks (DB → RenderBlockPayload[]).
  * Call this once at the end of a stream, right before the final
