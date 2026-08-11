@@ -8,6 +8,10 @@ import type {
   MatrxDataTableQueryState,
 } from "@/components/official/matrx-data-table/types";
 import type { MarketingTableStateOptions } from "@/features/marketing/types";
+import {
+  decodeLayeredFilterRules,
+  encodeLayeredFilterRules,
+} from "@/components/official/matrx-data-table/layered-filters";
 
 const PAGE_SIZE_OPTIONS = new Set([10, 25, 50, 100, 250]);
 
@@ -81,7 +85,15 @@ function readFilters(params: URLSearchParams): ColumnFiltersState {
  * leak into the next slice's server query.
  */
 export function clearTableUrlParams(params: URLSearchParams): void {
-  for (const key of ["page", "pageSize", "q", "anyOf", "sort", "direction"]) {
+  for (const key of [
+    "page",
+    "pageSize",
+    "q",
+    "anyOf",
+    "layers",
+    "sort",
+    "direction",
+  ]) {
     params.delete(key);
   }
   for (const key of Array.from(params.keys())) {
@@ -106,6 +118,8 @@ function writeState(
     : next.set("pageSize", String(state.pageSize));
   state.search ? next.set("q", state.search) : next.delete("q");
   state.anyOf ? next.set("anyOf", state.anyOf) : next.delete("anyOf");
+  const encodedLayers = encodeLayeredFilterRules(state.layeredFilters);
+  encodedLayers ? next.set("layers", encodedLayers) : next.delete("layers");
 
   if (
     state.sort &&
@@ -144,6 +158,7 @@ function readState(
     pageSize,
     search: params.get("q") ?? "",
     anyOf: params.get("anyOf") ?? "",
+    layeredFilters: decodeLayeredFilterRules(params.get("layers")),
     columnFilters: readFilters(params),
     sort: sortId
       ? { id: sortId, direction: direction === "asc" ? "asc" : "desc" }

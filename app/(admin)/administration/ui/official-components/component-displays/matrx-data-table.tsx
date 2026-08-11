@@ -5,7 +5,10 @@ import { Database, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableToolbar,
+} from "@/components/official/matrx-data-table/types";
 import type { ComponentEntry } from "../parts/component-list";
 
 interface ComponentDisplayProps {
@@ -100,6 +103,24 @@ const COLUMNS: MatrxColumnDef<DemoRow>[] = [
   },
 ];
 
+const LAYERED_FIELDS: NonNullable<
+  MatrxDataTableToolbar["layeredFilters"]
+>["fields"] = [
+  { id: "name", label: "Name", kind: "text" },
+  {
+    id: "status",
+    label: "Status",
+    kind: "select",
+    options: [
+      { value: "active", label: "Active" },
+      { value: "paused", label: "Paused" },
+      { value: "archived", label: "Archived" },
+    ],
+  },
+  { id: "count", label: "Count", kind: "number" },
+  { id: "owner", label: "Owner", kind: "text" },
+];
+
 export default function MatrxDataTableDisplay({
   component,
 }: ComponentDisplayProps) {
@@ -115,8 +136,8 @@ export default function MatrxDataTableDisplay({
           {component?.name ?? "Matrx Data Table"}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Sticky headers, every-column sort/filter, toolbar facets, row →
-          SidePanelSurface, panel icon → WindowPanel.
+          Sticky headers, every-column sort/filter, layered advanced rules,
+          toolbar facets, row → SidePanelSurface, panel icon → WindowPanel.
         </p>
       </div>
 
@@ -133,6 +154,7 @@ export default function MatrxDataTableDisplay({
           }}
           toolbar={{
             searchPlaceholder: "Search demo rows…",
+            layeredFilters: { fields: LAYERED_FIELDS },
             facets: [
               {
                 type: "button-group",

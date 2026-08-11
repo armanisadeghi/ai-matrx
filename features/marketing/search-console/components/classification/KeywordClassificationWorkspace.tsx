@@ -33,13 +33,27 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Check, Fingerprint, ListFilter, Loader2, Scale, Sparkles, Tags, X } from "lucide-react";
+import {
+  Check,
+  Fingerprint,
+  ListFilter,
+  Loader2,
+  Scale,
+  Sparkles,
+  Tags,
+  X,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
 } from "@/components/official/matrx-data-table/types";
+import {
+  columnFiltersToLayeredRules,
+  completeLayeredFilterRules,
+  type LayeredFilterField,
+} from "@/components/official/matrx-data-table/layered-filters";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -58,7 +72,12 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { supabase } from "@/utils/supabase/client";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
-import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
+import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { ClassCell } from "@/features/marketing/search-console/components/classification/ClassCell";
 import { ClassStatsBand } from "@/features/marketing/search-console/components/classification/ClassStatsBand";
 import { ClassRulesPanel } from "@/features/marketing/search-console/components/classification/ClassRulesPanel";
@@ -69,6 +88,7 @@ import {
   confirmGscKeywordClass,
   getGscClassReview,
   getGscClassReviewAll,
+  isGscClassReviewSort,
   setGscKeywordClass,
   type GscClassRuling,
   type GscClassReviewQuery,
@@ -123,15 +143,77 @@ function reviewRange(): GscDateRange {
   return { start: iso(start), end: iso(end) };
 }
 
-const SORTABLE = new Set(["impressions", "clicks", "ctr", "query"]);
 const DEFAULT_STATE: MatrxDataTableQueryState = {
   page: 1,
   pageSize: 50,
   search: "",
   anyOf: "",
+  layeredFilters: [],
   columnFilters: {},
   sort: { id: "impressions", direction: "desc" },
 };
+
+const CLASSIFICATION_LAYERED_FIELDS: readonly LayeredFilterField[] = [
+  { id: "query", label: "Keyword", kind: "text" },
+  {
+    id: "traffic_class",
+    label: "Class",
+    kind: "select",
+    options: GSC_TRAFFIC_CLASSES.map((entry) => ({
+      value: entry.key,
+      label: entry.label,
+    })),
+  },
+  {
+    id: "class_source",
+    label: "Why",
+    kind: "select",
+    options: GSC_CLASS_SOURCES.map((entry) => ({
+      value: entry.key,
+      label: entry.label,
+    })),
+  },
+  {
+    id: "impressions",
+    label: "Impressions (28d)",
+    kind: "number",
+    placeholder: "Impressions",
+  },
+  {
+    id: "clicks",
+    label: "Clicks (28d)",
+    kind: "number",
+    placeholder: "Clicks",
+  },
+  {
+    id: "ctr",
+    label: "CTR %",
+    kind: "number",
+    placeholder: "Percent",
+  },
+  { id: "intent_class", label: "AI intent", kind: "text" },
+  { id: "notes", label: "Notes", kind: "text" },
+  {
+    id: "ruling_origin",
+    label: "Ruling origin",
+    kind: "select",
+    options: [
+      { value: "manual", label: "Manual" },
+      { value: "rule", label: "Pattern rule" },
+      { value: "import", label: "Import" },
+      { value: "ai", label: "AI" },
+    ],
+  },
+  {
+    id: "ruling_confirmed",
+    label: "Ruling review",
+    kind: "select",
+    options: [
+      { value: "true", label: "Confirmed" },
+      { value: "false", label: "Needs review" },
+    ],
+  },
+];
 
 /** Local (non-URL) table state with the same surface as
  *  `useMarketingTableState` — for the window-panel mount, where URL params
@@ -173,6 +255,7 @@ export function KeywordClassificationWorkspace({
   urlState = true,
 }: KeywordClassificationWorkspaceProps) {
   const dispatch = useAppDispatch();
+  const openKeywordWindow = useOpenKeywordWindow();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const queryClient = useQueryClient();
   const [range] = useState(reviewRange);
@@ -203,11 +286,22 @@ export function KeywordClassificationWorkspace({
   const sourceFilter = state.columnFilters.class_source;
   const confirmedFilter = state.columnFilters.ruling_confirmed;
   const sortId =
-    state.sort && SORTABLE.has(state.sort.id) ? state.sort.id : "impressions";
+    state.sort && isGscClassReviewSort(state.sort.id)
+      ? state.sort.id
+      : "impressions";
 
-  const selectValues = (
-    filter: typeof classFilter,
-  ): string[] | null =>
+  const reviewFilters = [
+    ...completeLayeredFilterRules(state.layeredFilters),
+    ...columnFiltersToLayeredRules(state.columnFilters, [
+      "query",
+      "impressions",
+      "clicks",
+      "ctr",
+      "intent_class",
+    ]),
+  ];
+
+  const selectValues = (filter: typeof classFilter): string[] | null =>
     filter?.kind === "select"
       ? filter.values?.length
         ? filter.values
@@ -220,11 +314,12 @@ export function KeywordClassificationWorkspace({
     trafficClasses: selectValues(classFilter) as GscTrafficClass[] | null,
     sources: selectValues(sourceFilter) as GscClassSource[] | null,
     search: state.search,
-    sort: sortId as "impressions" | "clicks" | "ctr" | "query",
+    sort: sortId,
     sortDir: state.sort?.direction === "asc" ? "asc" : "desc",
     pattern: preview?.pattern ?? null,
     matchKind: preview?.matchKind ?? null,
     brandAlias: brandAliasFilter,
+    filters: reviewFilters,
     confirmed:
       confirmedFilter?.kind === "boolean" ? confirmedFilter.value : null,
   };
@@ -317,7 +412,11 @@ export function KeywordClassificationWorkspace({
     },
   });
 
-  const rule = (ruling: GscClassRuling, keywordIds: string[], label: string) => {
+  const rule = (
+    ruling: GscClassRuling,
+    keywordIds: string[],
+    label: string,
+  ) => {
     if (keywordIds.length === 0) return;
     if (ruling === "mismatch" || keywordIds.length > 1) {
       setNotes("");
@@ -329,19 +428,31 @@ export function KeywordClassificationWorkspace({
 
   // ── Rule preview + apply ─────────────────────────────────────────────────
 
-  const startPreview = (source: KeywordClassRuleRow | ClassRuleDraft, ruleRow: KeywordClassRuleRow | null) => {
+  const startPreview = (
+    source: KeywordClassRuleRow | ClassRuleDraft,
+    ruleRow: KeywordClassRuleRow | null,
+  ) => {
     const isRow = "pattern" in source && "id" in source;
     setPreview({
-      pattern: (isRow ? (source as KeywordClassRuleRow).pattern : (source as ClassRuleDraft).pattern).toLowerCase(),
-      matchKind: (isRow
-        ? ((source as KeywordClassRuleRow).match_kind as ClassRuleDraft["matchKind"])
-        : (source as ClassRuleDraft).matchKind),
-      targetClass: (isRow
-        ? ((source as KeywordClassRuleRow).target_class as ClassRuleDraft["targetClass"])
-        : (source as ClassRuleDraft).targetClass),
-      notes: (isRow ? ((source as KeywordClassRuleRow).notes ?? "") : (source as ClassRuleDraft).notes),
+      pattern: (isRow
+        ? (source as KeywordClassRuleRow).pattern
+        : (source as ClassRuleDraft).pattern
+      ).toLowerCase(),
+      matchKind: isRow
+        ? ((source as KeywordClassRuleRow)
+            .match_kind as ClassRuleDraft["matchKind"])
+        : (source as ClassRuleDraft).matchKind,
+      targetClass: isRow
+        ? ((source as KeywordClassRuleRow)
+            .target_class as ClassRuleDraft["targetClass"])
+        : (source as ClassRuleDraft).targetClass,
+      notes: isRow
+        ? ((source as KeywordClassRuleRow).notes ?? "")
+        : (source as ClassRuleDraft).notes,
       rule: ruleRow,
-      label: isRow ? (source as KeywordClassRuleRow).name : ((source as ClassRuleDraft).name.trim() || "Draft rule"),
+      label: isRow
+        ? (source as KeywordClassRuleRow).name
+        : (source as ClassRuleDraft).name.trim() || "Draft rule",
     });
     setExcluded(new Set());
     setSelected(new Set());
@@ -475,11 +586,17 @@ export function KeywordClassificationWorkspace({
         });
         return;
       }
-      const result = await classifyKeywordsWithAi(dispatch, ids, (done, all) => {
-        if (all > 200) {
-          toast.message(`AI classifying… ${done}/${all}`, { id: "ai-classify" });
-        }
-      });
+      const result = await classifyKeywordsWithAi(
+        dispatch,
+        ids,
+        (done, all) => {
+          if (all > 200) {
+            toast.message(`AI classifying… ${done}/${all}`, {
+              id: "ai-classify",
+            });
+          }
+        },
+      );
       toast.success(
         `AI classified ${result.updated.toLocaleString()} keywords`,
         {
@@ -508,7 +625,9 @@ export function KeywordClassificationWorkspace({
       setSelected(new Set());
       invalidate();
     } catch (error) {
-      toast.error("Confirm failed", { description: extractErrorMessage(error) });
+      toast.error("Confirm failed", {
+        description: extractErrorMessage(error),
+      });
     }
   };
 
@@ -571,29 +690,11 @@ export function KeywordClassificationWorkspace({
       ),
     },
     {
-      id: "query",
-      accessorKey: "query",
-      header: "Keyword",
-      filter: "text",
-      cell: (row) => (
-        <div className="min-w-44">
-          <p className="text-xs font-medium text-foreground">{row.query}</p>
-          {row.notes ? (
-            <p
-              className="mt-0.5 max-w-72 truncate text-[10px] text-muted-foreground"
-              title={row.notes}
-            >
-              {row.notes}
-            </p>
-          ) : null}
-        </div>
-      ),
-    },
-    {
       id: "traffic_class",
       accessorKey: "traffic_class",
       header: "Class",
       filter: "select",
+      width: 136,
       filterOptions: GSC_TRAFFIC_CLASSES.map((c) => ({
         value: c.key,
         label: c.label,
@@ -608,6 +709,40 @@ export function KeywordClassificationWorkspace({
             onRule={(ruling) => rule(ruling, [row.keyword_id], row.query)}
           />
         </span>
+      ),
+    },
+    {
+      id: "query",
+      accessorKey: "query",
+      header: "Keyword",
+      filter: "text",
+      width: 300,
+      cell: (row) => (
+        <div className="min-w-44">
+          <button
+            type="button"
+            className="block max-w-80 truncate text-left text-xs font-medium text-foreground underline-offset-2 hover:text-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            title={`Open keyword intelligence for ${row.query}`}
+            onClick={() =>
+              openKeywordWindow({
+                phrase: row.query,
+                organizationId: organizationId ?? undefined,
+                siteId,
+                tab: "site",
+              })
+            }
+          >
+            {row.query}
+          </button>
+          {row.notes ? (
+            <p
+              className="mt-0.5 max-w-72 truncate text-[10px] text-muted-foreground"
+              title={row.notes}
+            >
+              {row.notes}
+            </p>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -626,7 +761,7 @@ export function KeywordClassificationWorkspace({
       accessorKey: "impressions",
       header: "Impressions (28d)",
       align: "right",
-      filter: false,
+      filter: "number",
       cell: (row) => (
         <span className="text-xs font-semibold tabular-nums">
           {formatCount(row.impressions)}
@@ -638,7 +773,7 @@ export function KeywordClassificationWorkspace({
       accessorKey: "clicks",
       header: "Clicks (28d)",
       align: "right",
-      filter: false,
+      filter: "number",
       cell: (row) => (
         <span className="text-xs tabular-nums">{formatCount(row.clicks)}</span>
       ),
@@ -646,9 +781,9 @@ export function KeywordClassificationWorkspace({
     {
       id: "ctr",
       accessorKey: "ctr",
-      header: "CTR",
+      header: "CTR %",
       align: "right",
-      filter: false,
+      filter: "number",
       cell: (row) => (
         <span className="text-xs tabular-nums text-muted-foreground">
           {row.ctr === null || row.ctr === undefined
@@ -661,8 +796,7 @@ export function KeywordClassificationWorkspace({
       id: "intent_class",
       accessorKey: "intent_class",
       header: "AI intent",
-      sortable: false,
-      filter: false,
+      filter: "text",
       cell: (row) => (
         <span className="text-[11px] text-muted-foreground">
           {row.intent_class ? row.intent_class.replaceAll("_", " ") : "—"}
@@ -756,7 +890,8 @@ export function KeywordClassificationWorkspace({
               ) : (
                 <Check className="h-3 w-3" />
               )}
-              Apply {preview.targetClass} to {formatCount(Math.max(previewKept, 0))}
+              Apply {preview.targetClass} to{" "}
+              {formatCount(Math.max(previewKept, 0))}
             </Button>
             <Button
               type="button"
@@ -899,6 +1034,13 @@ export function KeywordClassificationWorkspace({
             />
           </span>
         </div>
+        {review.isError ? (
+          <InlineQueryError
+            what="Keyword review"
+            error={review.error}
+            onRetry={() => void review.refetch()}
+          />
+        ) : null}
         <MatrxDataTable<GscClassReviewRow>
           data={rows}
           columns={columns}
@@ -911,7 +1053,14 @@ export function KeywordClassificationWorkspace({
             totalItems: total,
             onStateChange: table.onStateChange,
           }}
-          toolbar={{ searchPlaceholder: "Search keywords…" }}
+          toolbar={{
+            searchPlaceholder: "Search keywords…",
+            layeredFilters: {
+              fields: CLASSIFICATION_LAYERED_FIELDS,
+              maxRules: 20,
+              label: "Advanced keyword filters",
+            },
+          }}
           copy={{
             label: "Keyword classification",
             listLabel: "Keyword classification review",
@@ -990,6 +1139,7 @@ export function KeywordClassificationWorkspace({
                   page: 1,
                   search: "",
                   anyOf: "",
+                  layeredFilters: [],
                   columnFilters: {},
                 });
                 setBrandOpen(false);
@@ -1009,48 +1159,61 @@ export function KeywordClassificationWorkspace({
         >
           <div className="flex h-full min-h-0 flex-col overflow-hidden px-3 pb-3">
             <ClassRulesPanel
-            rules={rules.data ?? []}
-            loading={rules.isLoading}
-            currentUserId={classRulesUser.data || null}
-            previewRuleId={preview?.rule?.id ?? null}
-            previewMatchCount={preview ? total : null}
-            selectionPruned={excluded.size > 0}
-            onPreview={(selectedRule) => {
-              if (!selectedRule) {
-                setPreview(null);
-                setExcluded(new Set());
-                return;
-              }
-              startPreview(selectedRule, selectedRule);
-            }}
-            onPreviewDraft={(draft) => startPreview(draft, null)}
-            onCreate={async (draft) => {
-              const created = await createClassRule(draft, siteId, organizationId);
-              void queryClient.invalidateQueries({
-                queryKey: ["marketing", "gsc", "class-rules"],
-              });
-              return created;
-            }}
-            onUpdate={async (ruleId, draft) => {
-              const updated = await updateClassRule(ruleId, draft, siteId, organizationId);
-              void queryClient.invalidateQueries({
-                queryKey: ["marketing", "gsc", "class-rules"],
-              });
-              return updated;
-            }}
-            onDelete={async (ruleId) => {
-              await deleteClassRule(ruleId);
-              void queryClient.invalidateQueries({
-                queryKey: ["marketing", "gsc", "class-rules"],
-              });
-            }}
-            onAdopt={async (template) => {
-              const adopted = await adoptClassTemplate(template, siteId, organizationId);
-              void queryClient.invalidateQueries({
-                queryKey: ["marketing", "gsc", "class-rules"],
-              });
-              return adopted;
-            }}
+              rules={rules.data ?? []}
+              loading={rules.isLoading}
+              currentUserId={classRulesUser.data || null}
+              previewRuleId={preview?.rule?.id ?? null}
+              previewMatchCount={preview ? total : null}
+              selectionPruned={excluded.size > 0}
+              onPreview={(selectedRule) => {
+                if (!selectedRule) {
+                  setPreview(null);
+                  setExcluded(new Set());
+                  return;
+                }
+                startPreview(selectedRule, selectedRule);
+              }}
+              onPreviewDraft={(draft) => startPreview(draft, null)}
+              onCreate={async (draft) => {
+                const created = await createClassRule(
+                  draft,
+                  siteId,
+                  organizationId,
+                );
+                void queryClient.invalidateQueries({
+                  queryKey: ["marketing", "gsc", "class-rules"],
+                });
+                return created;
+              }}
+              onUpdate={async (ruleId, draft) => {
+                const updated = await updateClassRule(
+                  ruleId,
+                  draft,
+                  siteId,
+                  organizationId,
+                );
+                void queryClient.invalidateQueries({
+                  queryKey: ["marketing", "gsc", "class-rules"],
+                });
+                return updated;
+              }}
+              onDelete={async (ruleId) => {
+                await deleteClassRule(ruleId);
+                void queryClient.invalidateQueries({
+                  queryKey: ["marketing", "gsc", "class-rules"],
+                });
+              }}
+              onAdopt={async (template) => {
+                const adopted = await adoptClassTemplate(
+                  template,
+                  siteId,
+                  organizationId,
+                );
+                void queryClient.invalidateQueries({
+                  queryKey: ["marketing", "gsc", "class-rules"],
+                });
+                return adopted;
+              }}
             />
           </div>
         </SidePanelSurface>
@@ -1087,7 +1250,11 @@ export function KeywordClassificationWorkspace({
             rows={3}
           />
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialog(null)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDialog(null)}
+            >
               Cancel
             </Button>
             <Button
