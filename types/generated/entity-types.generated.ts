@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 323 active entity tokens. A token here is FK-valid for
+// 324 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -346,6 +346,7 @@ export type EntityTypeToken =
   | "web_result"
   | "web_screenshot"
   | "web_site"
+  | "web_site_endpoint_rule"
   | "web_site_item_config"
   | "web_sitemap"
   | "web_snapshot"
@@ -576,6 +577,7 @@ export type ComponentEntityToken =
   | "web_property"
   | "web_result"
   | "web_screenshot"
+  | "web_site_endpoint_rule"
   | "web_site_item_config"
   | "web_sitemap"
   | "web_snapshot"
@@ -875,6 +877,7 @@ export type ScopeableEntityToken =
   | "web_result"
   | "web_screenshot"
   | "web_site"
+  | "web_site_endpoint_rule"
   | "web_site_item_config"
   | "web_sitemap"
   | "web_snapshot"
@@ -1237,6 +1240,7 @@ export const ENTITY_TYPE_METADATA = {
   "web_result": { token: "web_result", schema: "web", table: "analysis_result", label: "Analysis Result", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_screenshot": { token: "web_screenshot", schema: "web", table: "screenshot", label: "Screenshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_site": { token: "web_site", schema: "web", table: "site", label: "Site", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
+  "web_site_endpoint_rule": { token: "web_site_endpoint_rule", schema: "web", table: "site_endpoint_rule", label: "Site Endpoint Rule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "path_prefix", contentRole: null, referenceCategory: null },
   "web_site_item_config": { token: "web_site_item_config", schema: "web", table: "site_item_config", label: "Site Item Config", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_sitemap": { token: "web_sitemap", schema: "web", table: "sitemap", label: "Sitemap", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "url", contentRole: null, referenceCategory: null },
   "web_snapshot": { token: "web_snapshot", schema: "web", table: "snapshot", label: "Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1564,6 +1568,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_result",
   "web_screenshot",
   "web_site",
+  "web_site_endpoint_rule",
   "web_site_item_config",
   "web_sitemap",
   "web_snapshot",
