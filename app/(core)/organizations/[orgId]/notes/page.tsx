@@ -50,7 +50,6 @@ export default function OrgNotesPage() {
   return (
     <OrgResourceLayout
       resourceName="Notes"
-      icon={<LuNotepadText className="h-4 w-4" />}
     >
       {!resolvedOrgId ? (
         <div className="flex items-center justify-center py-12">

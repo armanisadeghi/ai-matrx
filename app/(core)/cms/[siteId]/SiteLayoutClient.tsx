@@ -270,13 +270,17 @@ export default function SiteLayoutClient({
       <>
         <SiteHeaderFallback />
         <div className="flex items-center justify-center h-full">
+          {/* CMS sites live in the standalone CMS Supabase project, so
+              `<AccessGate>` (which resolves against Matrx Main's entity
+              registry) cannot answer for them. What we must NOT do is what
+              this branch used to: substring-sniff the error text for "403"
+              and, on a hit, tell the user they have no access. A 403 in a
+              message body is not proof of anything, and the four reasons a
+              read comes back empty are indistinguishable from here. So we say
+              only what we know, and keep both doors open. */}
           <div className="flex flex-col items-center gap-3 text-destructive">
             <AlertCircle className="h-8 w-8" />
-            <p className="text-sm font-medium">
-              {error?.includes("403")
-                ? "You don't have access to this site"
-                : "Failed to load site"}
-            </p>
+            <p className="text-sm font-medium">We couldn&apos;t open this site</p>
             <p className="text-xs text-muted-foreground">{error}</p>
             <div className="flex gap-2">
               <Button

@@ -73,15 +73,22 @@ export default function AcceptInvitationPage() {
 
       // Canonical chokepoint — `inv_get_by_token` is gated to the invited party,
       // so it returns the invite even before a membership exists.
+      // `inv_get_by_token` is gated to the invited party, so an empty answer
+      // is genuinely ambiguous: used, withdrawn, or addressed to a different
+      // account. We say all of that instead of picking one — and we name the
+      // account they're actually signed in as, which is the usual culprit and
+      // the only part they can act on.
+      const unopenable = `This invitation link isn't open for ${user.email ?? "this account"}. It may have already been used or withdrawn, or it may have been sent to a different email address.`;
+
       const inviteResult = await invitationsService.getByToken(token);
       if (isScopesRpcErr(inviteResult)) {
-        setError("Invitation not found or has already been used");
+        setError(unopenable);
         return;
       }
 
       const invitationData = inviteResult.data.invitation;
       if (!invitationData || invitationData.targetType !== "organization") {
-        setError("Invitation not found or has already been used");
+        setError(unopenable);
         return;
       }
 
@@ -238,7 +245,8 @@ export default function AcceptInvitationPage() {
                 Unable to Accept Invitation
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                {error || "Invitation not found"}
+                {error ??
+                  "We couldn't open this invitation. Check the link, or ask whoever invited you to send a new one."}
               </p>
               <Button
                 onClick={() => router.push("/settings/organizations")}

@@ -1,42 +1,45 @@
 /**
  * ForbiddenSurface — the SERVER-side face of the access gate.
  *
- * Rendered by every `forbidden.tsx` boundary. When `requireAccess(...,
- * { forbid: true })` refused a specific record, this is the same
- * `<AccessGate>` the client surfaces render, so a server-refused route and a
- * client-refused route say the identical honest thing and offer the identical
- * "ask the owner" flow.
+ * Rendered by every `forbidden.tsx` boundary, i.e. whenever a Server Component
+ * calls Next's `forbidden()` (see `requireAccess(..., { forbid: true })`). It
+ * says the one thing we can actually prove — you're signed in and this page
+ * isn't yours to open, or you're signed out — and hands over real doors. It
+ * never claims a deletion, an absence, or a wrong link.
  *
- * When there is no target — a bare `forbidden()` from somewhere that never
- * named a record — we degrade to the one sentence we can actually prove
- * ("you're signed in, this page isn't yours to open") plus real doors. We do
- * NOT guess a reason, and we never say deleted, missing, or wrong-link.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * WHY THIS DOESN'T NAME THE RECORD, AND WHY YOU SHOULDN'T TRY (2026-08-11)
+ *
+ * The obvious idea is to have `requireAccess` stash `{token, id}` somewhere
+ * request-scoped right before it throws, and let this component read it back
+ * and render the full `<AccessGate>` — kind, name, owner, "Request access".
+ * It was built that way (a `React.cache()` holder) and it DOES NOT WORK, for a
+ * structural reason rather than a fixable bug:
+ *
+ *   Next renders the `forbidden.tsx` fallback EAGERLY, as part of building the
+ *   loader tree — BEFORE the page component runs and throws. Instrumented in
+ *   the browser, the order is literally GET → GET → SET. Whatever the page
+ *   sets, the fallback has already rendered without it.
+ *
+ * So no request-scoped channel of any kind (cache, ALS, module global) can
+ * carry the target here; the write always loses the race, and a module global
+ * would additionally risk naming one user's record to another. Do not
+ * reintroduce it.
+ *
+ * THE PATTERN THAT WORKS: a route that wants the record-specific gate must not
+ * call `forbidden()` at all — it renders `<AccessGate token id/>` itself and
+ * returns it. `AccessGate` is a client component, so a Server Component can
+ * return it directly; `app/(core)/lists/[id]/page.tsx` is the live example.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 import "server-only";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { ArrowLeft, Lock, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { getForbiddenTarget } from "@/lib/access/forbiddenTarget";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
 export async function ForbiddenSurface() {
-  const target = getForbiddenTarget();
-
-  if (target) {
-    // The real thing: the platform resolves which of the four states this is,
-    // names the record, and offers Request access.
-    return (
-      <AccessGate
-        token={target.token}
-        id={target.id}
-        fallbackHref={target.fallbackHref}
-        fallbackLabel={target.fallbackLabel}
-      />
-    );
-  }
-
   const [{ isAuthenticated }, headerList] = await Promise.all([
     getServerAuth(),
     headers(),

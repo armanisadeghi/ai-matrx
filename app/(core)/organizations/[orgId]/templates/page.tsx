@@ -49,7 +49,6 @@ export default function OrgTemplatesPage() {
   return (
     <OrgResourceLayout
       resourceName="Message Templates"
-      icon={<ClipboardType className="h-4 w-4" />}
     >
       {!resolvedOrgId ? (
         <div className="flex items-center justify-center py-12">

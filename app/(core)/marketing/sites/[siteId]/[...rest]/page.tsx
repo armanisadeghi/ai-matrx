@@ -13,6 +13,7 @@ import { use, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSite } from "@/features/marketing/data/hooks";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
   LoadingSurface,
   QueryError,
@@ -38,11 +39,19 @@ export default function LegacySiteRedirect({
     );
   }, [brandId, rest, router, searchParams, siteId]);
 
-  if (site.isError) {
+  // The read failed, or came back empty. Same four possibilities as anywhere
+  // else — the gate resolves which, names the site and its owner, and offers a
+  // request. It also handles the "you DO have access, that was a blip" case
+  // that a hand-written error can never tell you about.
+  if (site.isError || (!site.isLoading && !site.data)) {
     return (
-      <QueryError
-        error={site.error ?? new Error("Site not found")}
+      <AccessGate
+        token="web_site"
+        id={siteId}
+        error={site.error}
         onRetry={() => void site.refetch()}
+        fallbackHref="/marketing/sites"
+        fallbackLabel="All sites"
       />
     );
   }

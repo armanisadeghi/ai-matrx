@@ -49,9 +49,14 @@ const RULES: Array<{ kind: Kind; re: RegExp }> = [
     re: /throw new Error\(\s*[A-Za-z_$][\w$]*(\?)?\.message/,
   },
   // A sentence asserting the record is gone.
+  //
+  // `doesn&apos;t exist` / `doesn’t exist` count: JSX escapes the apostrophe,
+  // and a plain `'?` missed every escaped copy — including the research-topic
+  // 404 that said "doesn't exist or may have been deleted", which sat
+  // invisible to this report until 2026-08-11.
   {
     kind: "claims-deleted",
-    re: /["'`][^"'`]*\b(was deleted|no longer accessible|has been deleted|doesn'?t exist|does not exist|not found)\b[^"'`]*["'`]/i,
+    re: /["'`][^"'`]*\b(was deleted|no longer accessible|has been deleted|doesn(&apos;|&#39;|['’])?t exist|does not exist|not found)\b[^"'`]*["'`]/i,
   },
   // A sentence asserting a permission outcome.
   {
@@ -73,6 +78,14 @@ const ALLOW = [
   // only teach the next agent to ignore this report. This sweep is strictly
   // about copy a HUMAN reads on a page.
   /^app\/api\//,
+  // Same rule, same reason, one directory up: EVERY Route Handler answers a
+  // machine. `app/(core)/podcast/[slug]/feed.xml/route.ts` returning the body
+  // "Podcast not found" with a 404 is what a podcast client expects to read —
+  // it renders on nobody's screen. Route Handlers live outside `app/api/`
+  // whenever the URL has to sit beside the page it belongs to, and the
+  // original `^app/api/` rule missed exactly those.
+  /(^|\/)route\.(ts|tsx|js|jsx)$/,
+  /(^|\/)route\.dev\.(ts|tsx|js|jsx)$/,
 ];
 
 function listFiles(): string[] {

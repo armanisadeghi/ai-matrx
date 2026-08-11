@@ -49,7 +49,6 @@ export default function OrgTablesPage() {
   return (
     <OrgResourceLayout
       resourceName="Tables"
-      icon={<Table className="h-4 w-4" />}
     >
       {!resolvedOrgId ? (
         <div className="flex items-center justify-center py-12">

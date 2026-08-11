@@ -23,6 +23,7 @@ import {
 import {
   getUserOrganizations,
   getOrganization,
+  getOrganizationBySlugOrId,
   createOrganization,
   updateOrganization,
   deleteOrganization,
@@ -128,6 +129,76 @@ export function useOrganization(orgId: string | undefined) {
     loading,
     error,
     refresh: fetchOrganization,
+  };
+}
+
+/**
+ * Resolve the `[orgId]` route param — which is a UUID **or** a slug — into the
+ * organization plus the caller's role, in ONE place.
+ *
+ * Every `/organizations/[orgId]/…` page used to inline this: fetch by
+ * slug-or-id, `if (!org) setError("Organization not found")`, fetch the role,
+ * `if (!role) setError("Access denied…")`. Both of those sentences were
+ * guesses — under RLS a null read means denied OR deleted OR never-existed OR
+ * signed-out, and a missing role means the exact same four things. Twenty-odd
+ * copies of the same guess is what `<OrganizationAccessGate>` (which consumes
+ * this hook's output) exists to delete.
+ *
+ * This hook therefore does NOT produce copy. It reports what happened and lets
+ * the gate ask the platform what it means.
+ */
+export function useResolvedOrganization(orgSlugOrId: string | undefined) {
+  const [nonce, setNonce] = useState(0);
+
+  // ONE key identifies "which org is currently being asked about". Both the
+  // freshness check and the loading flag derive from it, so the effect never
+  // calls setState synchronously to reset itself when the param changes — the
+  // pattern that cascades renders (react-hooks/set-state-in-effect). Same
+  // shape as `useAccessGate`, deliberately.
+  const key = orgSlugOrId ? `${orgSlugOrId}:${nonce}` : null;
+
+  const [resolved, setResolved] = useState<{
+    key: string;
+    organization: Organization | null;
+    role: OrgRole | null;
+    /** A genuine fault (network, thrown query) — NOT "we got no row back". */
+    error: unknown;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!key || !orgSlugOrId) return;
+    // An answer must never be applied to a different org — the user can
+    // navigate between two of them faster than the reads return.
+    let active = true;
+    void (async () => {
+      try {
+        const org = await getOrganizationBySlugOrId(orgSlugOrId);
+        const role = org ? await getUserRole(org.id) : null;
+        if (active) setResolved({ key, organization: org, role, error: null });
+      } catch (err) {
+        if (active)
+          setResolved({ key, organization: null, role: null, error: err });
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [key, orgSlugOrId]);
+
+  // Stale answers are discarded by comparing keys, not by clearing state.
+  const current = resolved && resolved.key === key ? resolved : null;
+  const refresh = useCallback(() => setNonce((n) => n + 1), []);
+
+  return {
+    organization: current?.organization ?? null,
+    /** The org's real uuid once known — what the access gate needs. */
+    organizationId: current?.organization?.id ?? null,
+    role: current?.role ?? null,
+    /** True when the caller is a member (any role). */
+    isMember: (current?.role ?? null) !== null,
+    loading: key !== null && current === null,
+    error: current?.error ?? null,
+    refresh,
   };
 }
 

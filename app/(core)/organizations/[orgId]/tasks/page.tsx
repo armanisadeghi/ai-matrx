@@ -52,7 +52,6 @@ export default function OrgTasksPage() {
   return (
     <OrgResourceLayout
       resourceName="Tasks"
-      icon={<ListTodo className="h-4 w-4" />}
     >
       {!resolvedOrgId ? (
         <div className="flex items-center justify-center py-12">

@@ -1,23 +1,29 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+// The 404 boundary for /data/[id].
+//
+// It used to say "The table you're looking for doesn't exist or you don't have
+// permission to view it" — a hedge written because the code genuinely could
+// not tell those two apart. The access gate can: it asks the platform which of
+// the four states this actually is (denied / deleted / never existed / signed
+// out), names the table and its owner, and offers a one-click request when the
+// answer is "someone else's".
 
-export default function NotFound() {
-  const router = useRouter();
+import { useParams } from "next/navigation";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
+
+export default function DataTableUnavailable() {
+  const params = useParams();
+  const id = typeof params?.id === "string" ? params.id : "";
 
   return (
-    <div className="w-full h-full overflow-hidden flex flex-col items-center justify-center bg-muted/40 p-8 pt-[var(--shell-header-h)] rounded-lg">
-      <div className="text-center max-w-md">
-        <h2 className="text-2xl font-bold text-foreground mb-4">
-          Table Not Found
-        </h2>
-        <p className="text-muted-foreground mb-6">
-          The table you're looking for doesn't exist or you don't have
-          permission to view it.
-        </p>
-        <Button onClick={() => router.push("/data")}>Return to Tables</Button>
-      </div>
+    <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+      <AccessGate
+        token="dataset"
+        id={id}
+        fallbackHref="/data"
+        fallbackLabel="Your tables"
+      />
     </div>
   );
 }

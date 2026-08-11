@@ -75,10 +75,9 @@ is the same class of lie this feature exists to kill.
 | Path | Role |
 |---|---|
 | `components/AccessGate.tsx` | The drop-in. Fault vs access-state decision. |
-| `components/ForbiddenSurface.tsx` | The SERVER face: what `forbidden.tsx` renders. Shows the same gate when a record was named, and an honest generic refusal when one wasn't. |
-| `../../lib/access/forbiddenTarget.ts` | Request-scoped (`React.cache`) handoff — how the boundary learns WHICH record was refused, since `forbidden()` carries no payload. |
+| `components/ForbiddenSurface.tsx` | The SERVER face: what `forbidden.tsx` renders. Honest generic refusal — it structurally cannot name the record; the file says why. |
 | `../../app/forbidden.tsx` · `../../app/(core)/forbidden.tsx` | The boundaries. Root is bare; `(core)`'s renders inside the AppShell. |
-| `../../utils/permissions/requireAccess.ts` | Server-side `requireAccess(type, id, level, { forbid: true })` — names the target, then calls `forbidden()`. |
+| `../../utils/permissions/requireAccess.ts` | Server-side `requireAccess(type, id, level, { forbid: true })` → real 403 + the boundary. |
 | `components/AccessDenied.tsx` | The screen (+ `AccessDeniedView` for variants). |
 | `components/RequestAccessPanel.tsx` | Ask → pending → answered, in place. |
 | `hooks/useAccessGate.ts` | `(token, id) → status + context`. |
@@ -151,11 +150,21 @@ the loop closes in the surface the requester already reads.
   zero consumers.** The DM is therefore not the primary surface, it is the only
   one — a request whose DM fails, or one created without a signed-in sender, is
   a durable row with no way to see it. Build the page.
-- **`requireAccess(..., { forbid: true })` has no production callsite yet.** The
-  server half exists and is verified, but every gated route still redirects.
-  Converting them (an `[id]/edit` that a viewer can't edit should refuse in
-  place with "ask for edit access", not bounce to the view route) is the next
-  step.
+- **`requireAccess(..., { forbid: true })` has no production callsite yet.**
+  Built and verified in the browser (real 403 + the boundary inside the shell),
+  but every gated route still redirects — and for the seven `[id]/edit` routes
+  that is *correct*, because the view route offers "Make a copy". The flag is
+  for future routes with no better destination. Left deliberately unused rather
+  than converted for the sake of it.
+- **A `forbidden.tsx` can never name the record — do not rebuild the handoff.**
+  It was built (a `React.cache()` request-scoped target set by `requireAccess`
+  before throwing) and instrumentation in the browser showed the boundary reads
+  it BEFORE the page writes it: literally `GET → GET → SET`. Next renders the
+  fallback eagerly as part of the loader tree, so no request-scoped channel can
+  win that race, and a module-global would risk naming one user's record to
+  another. Deleted the same day it was written. The record-specific surface on
+  a server route is `return <AccessGate token id/>` from the page itself
+  (`app/(core)/lists/[id]/page.tsx` is the live example).
 - **CMS sites can't be gated.** `/cms/[siteId]` reads the standalone CMS
   Supabase project, so `access_denied_context` — which resolves against Matrx
   Main's entity registry — cannot answer for them. That surface now says only
@@ -188,8 +197,10 @@ the loop closes in the surface the requester already reads.
   pass through. Verified in the browser on four routes.
 - **2026-08-11** — **The server half, and `app/(core)` converted.**
   `experimental.authInterrupts` is ON (first use of Next's `forbidden()` in
-  this repo), `app/forbidden.tsx` + `app/(core)/forbidden.tsx` render the gate,
-  and `requireAccess` gained `{ forbid: true }`. On the client, all 46
+  this repo), `app/forbidden.tsx` + `app/(core)/forbidden.tsx` render the
+  refusal, and `requireAccess` gained `{ forbid: true }`. Browser verification
+  killed the record-naming half of that design — see the Open note above; the
+  handoff module was deleted rather than shipped inert. On the client, all 46
   `app/(core)` findings are gone: 15 organization surfaces collapsed onto ONE
   `useResolvedOrganization` + `<OrganizationAccessGate>` (they each carried
   their own copy of the same two guesses), `/lists/[id]` and the research-topic

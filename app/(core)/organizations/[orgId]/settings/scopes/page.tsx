@@ -5,53 +5,33 @@ import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
-import { useOrganization, useUserRole } from "@/features/organizations/hooks";
+import {
+  useResolvedOrganization,
+  useUserRole,
+} from "@/features/organizations/hooks";
+import { OrganizationAccessGate } from "@/features/organizations/components/OrganizationAccessGate";
 import { ScopeManagerPage } from "@/features/agent-context/components/scope-admin/ScopeManagerPage";
-import { getOrganizationBySlugOrId } from "@/features/organizations/service";
-import React from "react";
 
 export default function OrganizationScopesPage() {
   const params = useParams();
   const router = useRouter();
   const orgId = params.orgId as string;
 
-  const [resolvedOrgId, setResolvedOrgId] = React.useState<string | null>(null);
-  const [resolveError, setResolveError] = React.useState<string | null>(null);
-  const [resolving, setResolving] = React.useState(true);
-
-  React.useEffect(() => {
-    async function resolve() {
-      try {
-        const org = await getOrganizationBySlugOrId(orgId);
-        if (!org) {
-          setResolveError("Organization not found");
-          return;
-        }
-        setResolvedOrgId(org.id);
-      } catch {
-        setResolveError("Failed to load organization");
-      } finally {
-        setResolving(false);
-      }
-    }
-    resolve();
-  }, [orgId]);
-
   const {
     organization,
-    loading: orgLoading,
-    error: orgError,
-  } = useOrganization(resolvedOrgId ?? undefined);
-  const {
+    organizationId,
     role,
+    loading: resolving,
+    error,
+    refresh,
+  } = useResolvedOrganization(orgId);
+  const {
     loading: roleLoading,
     isOwner,
     isAdmin,
-  } = useUserRole(resolvedOrgId ?? undefined);
+  } = useUserRole(organizationId ?? undefined);
 
-  const loading = resolving || orgLoading || roleLoading;
-
-  if (loading) {
+  if (resolving || roleLoading) {
     return (
       <div className="p-4 md:p-6 space-y-4">
         <div className="h-7 w-56 bg-muted animate-pulse rounded" />
@@ -69,33 +49,20 @@ export default function OrganizationScopesPage() {
     );
   }
 
-  if (resolveError || orgError || !organization) {
+  if (!organization) {
     return (
-      <div className="p-4 md:p-6">
-        <Card className="max-w-lg mx-auto p-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-2">
-              Organization Not Found
-            </h2>
-            <p className="text-sm text-red-700 dark:text-red-300 mb-4">
-              {resolveError ||
-                orgError ||
-                "This organization doesn't exist or you don't have access."}
-            </p>
-            <Button
-              onClick={() => router.push("/organizations")}
-              variant="outline"
-              size="sm"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Organizations
-            </Button>
-          </div>
-        </Card>
-      </div>
+      <OrganizationAccessGate
+        orgSlugOrId={orgId}
+        organizationId={organizationId}
+        error={error}
+        onRetry={refresh}
+      />
     );
   }
 
+  // NOT an access-gate case: this person can open the org, they simply aren't
+  // an admin of it. That is a role fact we KNOW, so we state it plainly — the
+  // gate is for the four things we can't know, not for every locked door.
   if (!role || (!isAdmin && !isOwner)) {
     return (
       <div className="p-4 md:p-6">

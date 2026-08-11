@@ -15,7 +15,7 @@
  * works. Uses the SSR Supabase client so it sees the caller's real session.
  */
 import "server-only";
-import { redirect } from "next/navigation";
+import { forbidden, redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import {
@@ -33,6 +33,25 @@ export interface RequireAccessOptions {
    * offer inline instead of bouncing).
    */
   redirectTo?: string;
+  /**
+   * Refuse in place instead of redirecting: calls Next's `forbidden()`, which
+   * answers with a real HTTP 403 and renders the nearest `forbidden.tsx`
+   * (`app/(core)/forbidden.tsx` inside the shell, `app/forbidden.tsx` bare).
+   *
+   * Use it when a redirect would silently swallow the question the user asked.
+   * `redirectTo` stays correct for the view/edit split, where the view route
+   * genuinely IS the better destination.
+   *
+   * SCOPE — the 403 page CANNOT name the record. Next renders the
+   * `forbidden.tsx` fallback before the page throws, so nothing the page knows
+   * can reach it (proven 2026-08-11; see `ForbiddenSurface.tsx`). If the
+   * surface should say WHICH record and offer "Request access", do not use
+   * this flag: resolve access yourself with `resolveAccess()` and return
+   * `<AccessGate token id/>` from the page.
+   *
+   * Takes precedence over `redirectTo` when both are given.
+   */
+  forbid?: boolean;
 }
 
 /**
@@ -53,8 +72,9 @@ export async function resolveAccess(
 
 /**
  * Require at least `level` on a resource. Returns the resolved access when
- * satisfied. When not satisfied: redirects to `options.redirectTo` if given,
- * otherwise returns the (insufficient) access so the caller can branch.
+ * satisfied. When not satisfied: refuses in place via `forbidden()` if
+ * `options.forbid`, else redirects to `options.redirectTo` if given, else
+ * returns the (insufficient) access so the caller can branch.
  */
 export async function requireAccess(
   resourceType: string,
@@ -63,7 +83,12 @@ export async function requireAccess(
   options: RequireAccessOptions = {},
 ): Promise<ResourceAccess> {
   const access = await resolveAccess(resourceType, resourceId);
-  if (!accessSatisfies(access.level, level) && options.redirectTo) {
+  if (accessSatisfies(access.level, level)) return access;
+
+  if (options.forbid) {
+    forbidden();
+  }
+  if (options.redirectTo) {
     redirect(options.redirectTo);
   }
   return access;

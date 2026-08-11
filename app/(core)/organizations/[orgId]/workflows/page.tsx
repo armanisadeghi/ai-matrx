@@ -54,7 +54,6 @@ export default function OrgWorkflowsPage() {
   return (
     <OrgResourceLayout
       resourceName="Workflows"
-      icon={<Workflow className="h-4 w-4" />}
     >
       {!resolvedOrgId ? (
         <div className="flex items-center justify-center py-12">

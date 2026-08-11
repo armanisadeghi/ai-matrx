@@ -55,15 +55,21 @@ export default function AcceptProjectInvitationPage() {
       // Read the invitation through the canonical chokepoint. `inv_get_by_token`
       // is gated to the invited party, so it returns the invite even before a
       // membership exists (it omits the token field itself).
+      // `inv_get_by_token` is gated to the invited party, so an empty answer
+      // is genuinely ambiguous: used, withdrawn, or addressed to a different
+      // account. Say all three rather than asserting one, and name the account
+      // they are actually signed in as.
+      const unopenable = `This invitation link isn't open for ${user.email ?? 'this account'}. It may have already been used or withdrawn, or it may have been sent to a different email address.`;
+
       const inviteResult = await invitationsService.getByToken(token);
       if (isScopesRpcErr(inviteResult)) {
-        setError('Invitation not found or has already been used');
+        setError(unopenable);
         return;
       }
 
       const invitationData = inviteResult.data.invitation;
       if (!invitationData || invitationData.targetType !== 'project') {
-        setError('Invitation not found or has already been used');
+        setError(unopenable);
         return;
       }
 
@@ -79,9 +85,11 @@ export default function AcceptProjectInvitationPage() {
         return;
       }
 
+      // An invitee is not a member yet, so a null read here says nothing about
+      // whether the project exists — only that we can't show its details.
       const project = await getProject(invitationData.targetId);
       if (!project) {
-        setError('Project not found');
+        setError("We couldn't load the details of the project this invitation is for.");
         return;
       }
 

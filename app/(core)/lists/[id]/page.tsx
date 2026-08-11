@@ -1,8 +1,8 @@
 import { cache } from "react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { ListChecks } from "lucide-react";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { createClient } from "@/utils/supabase/server";
 import type { UserListWithItems } from "@/features/user-lists/types";
 import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
@@ -62,7 +62,10 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const list = await loadList(id);
-  if (!list) return { title: "List Not Found" };
+  // The read coming back empty tells us nothing about WHY (denied / deleted /
+  // never existed / session gone), so the tab title must not pick one. The
+  // page body says the true thing via <AccessGate>.
+  if (!list) return { title: "Picklist | AI Matrx" };
   return {
     title: `${list.list_name} | Picklists | AI Matrx`,
     description: list.description ?? undefined,
@@ -90,7 +93,22 @@ export default async function ListDetailPage({ params }: PageProps) {
     );
   }
 
-  if (!list) notFound();
+  // `notFound()` was an assertion we had no basis for: the owner-scoped RPC
+  // returns null for a picklist that was shared-then-unshared, soft-deleted,
+  // or simply someone else's, and a 404 told all of them the same lie. The
+  // gate resolves which it is and offers a request when it's a real record.
+  if (!list) {
+    return (
+      <div className="h-full overflow-hidden">
+        <AccessGate
+          token="structured_list"
+          id={id}
+          fallbackHref="/lists"
+          fallbackLabel="Your picklists"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">

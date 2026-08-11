@@ -4,49 +4,18 @@
 // it off to ScopesManager, which renders a minimal org-identity header
 // followed by per-scope-type cards with inline add/edit/open flows.
 
-import React from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import {
-  getOrganizationBySlugOrId,
-  getUserRole,
-} from "@/features/organizations/service";
+import { useParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useResolvedOrganization } from "@/features/organizations/hooks";
+import { OrganizationAccessGate } from "@/features/organizations/components/OrganizationAccessGate";
 import { ScopesManager } from "@/features/scopes/components/management/ScopesManager";
-import type { Organization } from "@/features/organizations/types";
 
 export default function OrgScopesPage() {
   const params = useParams();
-  const router = useRouter();
   const orgSlugOrId = params.orgId as string;
 
-  const [organization, setOrganization] = React.useState<Organization | null>(
-    null,
-  );
-  const [role, setRole] = React.useState<string | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    async function resolve() {
-      try {
-        const org = await getOrganizationBySlugOrId(orgSlugOrId);
-        if (!org) {
-          setError("Organization not found");
-          return;
-        }
-        setOrganization(org);
-        const r = await getUserRole(org.id);
-        setRole(r);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load");
-      } finally {
-        setLoading(false);
-      }
-    }
-    resolve();
-  }, [orgSlugOrId]);
+  const { organization, organizationId, role, loading, error, refresh } =
+    useResolvedOrganization(orgSlugOrId);
 
   if (loading) {
     return (
@@ -55,23 +24,16 @@ export default function OrgScopesPage() {
       </div>
     );
   }
-  if (error || !organization) {
+
+  if (!organization) {
     return (
-      <div className="h-dvh flex items-center justify-center bg-textured p-4">
-        <Card className="max-w-lg w-full p-8">
-          <h2 className="text-lg font-semibold mb-2">Couldn't load</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            {error ?? "Organization not found"}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/organizations")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Organizations
-          </Button>
-        </Card>
+      <div className="h-dvh bg-textured">
+        <OrganizationAccessGate
+          orgSlugOrId={orgSlugOrId}
+          organizationId={organizationId}
+          error={error}
+          onRetry={refresh}
+        />
       </div>
     );
   }

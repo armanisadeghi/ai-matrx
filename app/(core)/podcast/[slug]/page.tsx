@@ -76,8 +76,10 @@ export async function generateMetadata({
   const { slug } = await params;
   const result = await resolveSlug(slug);
 
+  // Neutral: an unresolved public slug may be an unpublished episode rather
+  // than a nonexistent one, and the tab title must not pick.
   if (!result) {
-    return { title: "Episode Not Found" };
+    return { title: "Podcast" };
   }
 
   if (result.type === "episode") {

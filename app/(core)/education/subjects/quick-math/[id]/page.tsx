@@ -13,8 +13,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const problem = await getMathProblemById(id);
     if (!problem) {
       return {
-        title: "Math Problem Not Found - AI Matrx Education",
-        description: "The requested math problem could not be found",
+        title: "Math Problem - AI Matrx Education",
+        description: "Step-by-step algebra practice on AI Matrx Education.",
       };
     }
     const title = `${problem.title} | ${problem.topic_name} - AI Matrx Education`;

@@ -1,10 +1,8 @@
 "use client";
 
 import React from "react";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import {
-  AlertCircle,
-  ArrowLeft,
   Eye,
   Folder,
   LayoutDashboard,
@@ -13,16 +11,12 @@ import {
   Zap,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import {
-  getOrganizationBySlugOrId,
-  getUserRole,
-} from "@/features/organizations/service";
-import type { Organization, OrgRole } from "@/features/organizations/types";
+import { useResolvedOrganization } from "@/features/organizations/hooks";
+import { OrganizationAccessGate } from "@/features/organizations/components/OrganizationAccessGate";
+import type { OrgRole } from "@/features/organizations/types";
 import {
   OrgShortcutsProvider,
   type OrgShortcutsContextValue,
@@ -62,42 +56,9 @@ export function OrgShortcutsLayoutClient({
   const params = useParams();
   const urlOrgId = params.orgId as string;
   const pathname = usePathname();
-  const router = useRouter();
 
-  const [organization, setOrganization] = React.useState<Organization | null>(
-    null,
-  );
-  const [role, setRole] = React.useState<OrgRole | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    async function load() {
-      try {
-        setLoading(true);
-        setError(null);
-        const org = await getOrganizationBySlugOrId(urlOrgId);
-        if (!org) {
-          setError("Organization not found");
-          return;
-        }
-        setOrganization(org);
-        const userRole = await getUserRole(org.id);
-        if (!userRole) {
-          setError("Access denied. You must be a member of this organization.");
-          return;
-        }
-        setRole(userRole);
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to load organization";
-        setError(message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [urlOrgId]);
+  const { organization, organizationId, role, loading, error, refresh } =
+    useResolvedOrganization(urlOrgId);
 
   const isEditPage = pathname.includes("/shortcuts/edit/");
 
@@ -112,41 +73,21 @@ export function OrgShortcutsLayoutClient({
     );
   }
 
-  if (error || !organization || !role) {
+  // No org, or an org this person isn't a member of. Both branches used to
+  // assert a reason ("Organization Not Found" / "Access Denied") that the code
+  // had no way to establish. The gate resolves it and, when they really are
+  // locked out, hands them a one-click way to ask the owner.
+  if (!organization || !role) {
     return (
-      <div className="h-full flex items-center justify-center bg-textured p-4">
-        <Card className="max-w-lg w-full p-8 border-destructive/30">
-          <div className="flex flex-col items-center text-center space-y-4">
-            <div className="p-3 bg-destructive/10 rounded-full">
-              <AlertCircle className="h-8 w-8 text-destructive" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-foreground mb-1">
-                {!organization ? "Organization Not Found" : "Access Denied"}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {error ?? "You don't have permission to access this resource."}
-              </p>
-            </div>
-            <div className="flex gap-2 justify-center">
-              <Button
-                onClick={() => router.push(`/organizations/${urlOrgId}`)}
-                variant="outline"
-                size="sm"
-              >
-                <ArrowLeft className="h-4 w-4 mr-1.5" />
-                Back to Organization
-              </Button>
-              <Button
-                onClick={() => router.push("/dashboard")}
-                variant="outline"
-                size="sm"
-              >
-                Dashboard
-              </Button>
-            </div>
-          </div>
-        </Card>
+      <div className="h-full bg-textured">
+        <OrganizationAccessGate
+          orgSlugOrId={urlOrgId}
+          organizationId={organizationId}
+          error={error}
+          onRetry={refresh}
+          fallbackHref={`/organizations/${urlOrgId}`}
+          fallbackLabel="Back to organization"
+        />
       </div>
     );
   }

@@ -63,7 +63,6 @@ export default function OrgAgentsPage() {
   return (
     <OrgResourceLayout
       resourceName="Agents"
-      icon={<FaIndent className="h-4 w-4" />}
     >
       {!resolvedOrgId ? (
         <div className="flex items-center justify-center py-12">

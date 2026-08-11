@@ -9,9 +9,10 @@ export default function TopicNotFound() {
         <div className="mx-auto h-12 w-12 rounded-2xl bg-muted flex items-center justify-center">
           <Search className="h-6 w-6 text-muted-foreground" />
         </div>
-        <h2 className="text-lg font-semibold">Topic not found</h2>
+        <h2 className="text-lg font-semibold">That link isn&apos;t a topic</h2>
         <p className="text-sm text-muted-foreground">
-          This research topic doesn&apos;t exist or may have been deleted.
+          The address in the URL isn&apos;t a research topic id. Open one from
+          your topics list.
         </p>
         <div className="pt-2">
           <Button variant="outline" size="sm" asChild className="gap-1.5">

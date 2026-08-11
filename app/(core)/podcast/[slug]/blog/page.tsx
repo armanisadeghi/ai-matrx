@@ -56,7 +56,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const result = await resolveBlog(slug);
-  if (!result) return { title: "Article Not Found" };
+  // Nothing resolved. We can't tell "no such slug" from "not published to
+  // you", so the tab title stays neutral; the route itself still 404s, which
+  // is the correct answer for a public URL that resolves to nothing.
+  if (!result) return { title: "Blog | Podcast" };
 
   const { episode, article } = result;
   const showName = episode.show?.title;

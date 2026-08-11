@@ -41,6 +41,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { SshAccessPanel } from "@/components/sandbox/ssh-access-panel";
 import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createSandboxesScope } from "@/features/surfaces/manifests/sandboxes.manifest";
 import { sandboxInstanceSummary } from "@/lib/sandbox/format";
@@ -98,8 +99,12 @@ export default function SandboxDetailPage() {
     try {
       const resp = await fetch(`/api/sandbox/${id}`);
       if (!resp.ok) {
+        // A 404 from our own route means the row didn't come back — which is
+        // ALSO what a denied read and a soft-deleted row look like. Leave the
+        // reason to <AccessGate>; recording a sentence here would be a guess.
         if (resp.status === 404) {
-          setError("Sandbox instance not found");
+          setInstance(null);
+          setError(null);
           return;
         }
         throw new Error("Failed to fetch sandbox");
@@ -340,20 +345,15 @@ export default function SandboxDetailPage() {
     return (
       <>
         <EntityModeHeader backHref="/sandbox" entityLabel="Sandbox" />
-        <div className="h-full overflow-hidden bg-textured flex items-center justify-center pt-[var(--shell-header-h)]">
-          <Card className="max-w-md">
-            <CardContent className="p-8 text-center">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
-              <h3 className="text-lg font-medium mb-2">Sandbox Not Found</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {error || "This sandbox does not exist."}
-              </p>
-              <Button onClick={() => router.push("/sandbox")}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Sandboxes
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="h-full overflow-hidden bg-textured pt-[var(--shell-header-h)]">
+          <AccessGate
+            token="sandbox_instance"
+            id={id}
+            error={error ? new Error(error) : undefined}
+            onRetry={() => void fetchInstance()}
+            fallbackHref="/sandbox"
+            fallbackLabel="Your sandboxes"
+          />
         </div>
       </>
     );

@@ -8,6 +8,7 @@ import {
   getResearchIntentsServer,
 } from "@/features/research/service/server";
 import { IntentBadge } from "@/features/research/components/shared/IntentBadge";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import ResearchTopicShell from "./ResearchTopicShell";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 
@@ -22,17 +23,19 @@ export async function generateMetadata({
   const { topicId } = await params;
   if (!UUID_RE.test(topicId)) {
     return createDynamicRouteMetadata("/research", {
-      title: "Topic Not Found",
-      description: "The requested research topic could not be found.",
+      title: "Research topic",
+      description: "Research topics in AI Matrx.",
       letter: "Rs",
     });
   }
 
   const topic = await getTopicServer(topicId);
+  // An empty read does not tell us the topic is gone — the tab title must not
+  // say so. The page body resolves the real reason via <AccessGate>.
   if (!topic) {
     return createDynamicRouteMetadata("/research", {
-      title: "Topic Not Found",
-      description: "The requested research topic could not be found.",
+      title: "Research topic",
+      description: "Research topics in AI Matrx.",
       letter: "Rs",
     });
   }
@@ -64,8 +67,21 @@ export default async function ResearchTopicLayout({
     getResearchIntentsServer(),
   ]);
 
+  // Was `notFound()`. A server read returning nothing means denied, deleted,
+  // never-existed, or an expired session — four different answers that a 404
+  // flattened into one wrong one. The gate asks the platform which it is and
+  // offers a request when the topic is real and someone else's.
   if (!topic) {
-    notFound();
+    return (
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+        <AccessGate
+          token="research_topic"
+          id={topicId}
+          fallbackHref="/research/topics"
+          fallbackLabel="All topics"
+        />
+      </div>
+    );
   }
 
   const intentLabel = topic.intent_key

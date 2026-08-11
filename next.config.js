@@ -248,6 +248,13 @@ const nextConfig = {
     // accepted cost. Do not flip this off without also rewriting the memoization doctrine.
     reactCompiler: true,
     experimental: {
+        // ON (2026-08-11): enables `forbidden()` / `unauthorized()` from
+        // next/navigation and their `forbidden.tsx` / `unauthorized.tsx`
+        // boundaries. Required by `requireAccess(..., { forbid: true })` —
+        // without it the import is a build error. See CLAUDE.md § Access Gate
+        // and features/access-gate/FEATURE.md; app/forbidden.tsx +
+        // app/(core)/forbidden.tsx are the boundaries it renders.
+        authInterrupts: true,
         // MEMORY KNOBS REMOVED (2026-07-28, Arman ruling): `turbopackMemoryLimit`
         // and `cpus` were reactive shields for build-graph memory bombs, not
         // genuine tuning. The 2026-07 OOM eras were CODE, both times: v0.4.130-136

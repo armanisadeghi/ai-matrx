@@ -50,7 +50,6 @@ export default function OrgAgentAppsPage() {
   return (
     <OrgResourceLayout
       resourceName="Agent Apps"
-      icon={<LayoutGrid className="h-4 w-4" />}
     >
       {!resolvedOrgId ? (
         <div className="flex items-center justify-center py-12">

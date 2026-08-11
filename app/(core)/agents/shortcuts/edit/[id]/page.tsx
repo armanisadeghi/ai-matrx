@@ -2,10 +2,11 @@
 
 import React, { use, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
@@ -22,7 +23,7 @@ export default function UserEditShortcutPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const { shortcuts, categories, isLoading } = useAgentShortcuts({
     scope: SCOPE,
@@ -85,32 +86,21 @@ export default function UserEditShortcutPage({
     );
   }
 
+  // It isn't in the caller's personal shortcuts — which is NOT the same as
+  // "doesn't exist". It may be an org shortcut, someone else's, deleted, or
+  // the session may have lapsed while the list loaded. The gate finds out and
+  // offers a request when it's a real record with an owner.
   if (!resolved) {
     return (
       <>
-        <EntityModeHeader
-          backHref="/agents/shortcuts"
-          entityLabel="Not found"
-        />
-        <div className="h-full flex items-center justify-center p-6 bg-textured">
-          <Card className="max-w-md w-full border-destructive/30">
-            <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
-              <div className="p-3 bg-destructive/10 rounded-full">
-                <AlertCircle className="h-8 w-8 text-destructive" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-foreground mb-1">
-                  Shortcut not found
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  This shortcut doesn&apos;t exist in your personal shortcuts.
-                </p>
-              </div>
-              <Button size="sm" onClick={goToList} disabled={isPending}>
-                Back to shortcuts
-              </Button>
-            </CardContent>
-          </Card>
+        <EntityModeHeader backHref="/agents/shortcuts" entityLabel="Shortcut" />
+        <div className="h-full bg-textured">
+          <AccessGate
+            token="agent_shortcut"
+            id={id}
+            fallbackHref="/agents/shortcuts"
+            fallbackLabel="Your shortcuts"
+          />
         </div>
       </>
     );

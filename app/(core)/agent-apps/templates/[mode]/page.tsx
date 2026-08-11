@@ -26,7 +26,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { mode } = await params;
   const option = DISPLAY_MODE_OPTIONS.find((o) => o.value === mode);
-  if (!option) return { title: "Template Not Found" };
+  if (!option) return { title: "Template Preview | Agent Apps" };
 
   return {
     title: `${option.label} Template Preview | Agent Apps`,

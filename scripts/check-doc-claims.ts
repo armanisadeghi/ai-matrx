@@ -25,6 +25,7 @@
  */
 
 import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 
 const ROOT = process.cwd();
@@ -70,6 +71,24 @@ function nextConfigSetting(key: string): string | null {
     .join("\n");
   const m = new RegExp(`\\b${key}\\s*:\\s*([^,\\n]+)`).exec(live);
   return m ? m[1].trim() : null;
+}
+
+/**
+ * Files matching a pattern under the given roots, via git's own index (so
+ * node_modules / .next / untracked scratch can never leak in). Returns [] when
+ * nothing matches — `git grep` exits 1 for "no results", which is not an error.
+ */
+function grepRepo(pattern: string, roots: string[]): string[] {
+  try {
+    const out = execFileSync(
+      "git",
+      ["grep", "-lE", pattern, "--", ...roots],
+      { cwd: ROOT, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
+    );
+    return out.split("\n").filter(Boolean);
+  } catch {
+    return [];
+  }
 }
 
 interface Claim {
@@ -127,6 +146,43 @@ const claims: Claim[] = [
       return problems.length ? problems.join("; ") : null;
     },
     fix: "Enable experimental.cacheComponents, or state in CLAUDE.md that caching is currently off and 'use cache' is unavailable.",
+  },
+  {
+    id: "auth-interrupts-flag",
+    claim: "`authInterrupts` is ON, so forbidden() and forbidden.tsx work",
+    where: "CLAUDE.md § Core invariants",
+    check: () => {
+      // `forbidden()` / `unauthorized()` are build errors without the flag, and
+      // a `forbidden.tsx` boundary silently never renders. The doc, the config,
+      // and the callsites must move together.
+      const enabled = /\bauthInterrupts\s*:\s*true/.test(NEXT_CONFIG);
+      const docClaimsOn = /`authInterrupts`\s+is\s+ON/i.test(CLAUDE_MD);
+      // NB: git grep's -E is POSIX ERE — `\b` is NOT a word boundary there and
+      // silently matches nothing, which would make this alarm permanently
+      // green. Spell the boundary out.
+      const callsites = grepRepo(
+        String.raw`(^|[^A-Za-z0-9_.])(forbidden|unauthorized)\(\)`,
+        ["app", "features", "utils", "lib"],
+      );
+      const problems: string[] = [];
+      if (docClaimsOn && !enabled) {
+        problems.push(
+          "CLAUDE.md says authInterrupts is ON but next.config.js does not enable it — every forbidden()/unauthorized() call is a build error",
+        );
+      }
+      if (!enabled && callsites.length > 0) {
+        problems.push(
+          `${callsites.length} file(s) call forbidden()/unauthorized() with the flag off (${callsites[0]})`,
+        );
+      }
+      if (enabled && !docClaimsOn) {
+        problems.push(
+          "next.config.js enables authInterrupts but CLAUDE.md does not say so",
+        );
+      }
+      return problems.length ? problems.join("; ") : null;
+    },
+    fix: "Keep experimental.authInterrupts: true in next.config.js and the '`authInterrupts` is ON' line in CLAUDE.md § Core invariants in lockstep. Removing the flag means deleting every forbidden()/unauthorized() callsite and both forbidden.tsx boundaries in the same change.",
   },
   {
     id: "route-groups",
