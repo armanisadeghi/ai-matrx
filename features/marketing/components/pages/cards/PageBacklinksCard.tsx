@@ -63,6 +63,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
   const [selectedRow, setSelectedRow] = useState<BacklinkObservationRow | null>(
     null,
   );
+  const [showAllRecords, setShowAllRecords] = useState(false);
   const {
     analysisDisabled,
     analysisRuns,
@@ -87,6 +88,10 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
   ).length;
   const firstSeen = minDate(observations.map((row) => row.first_seen_at));
   const lastSeen = maxDate(observations.map((row) => row.last_seen_at));
+  const pageBacklinksHref = `${sitePath}/backlinks?tab=links&q=${encodeURIComponent(page.url)}`;
+  const visibleObservations = showAllRecords
+    ? observations
+    : observations.slice(0, 10);
 
   const copy = webCopy({
     kind: "web-page-backlinks",
@@ -142,7 +147,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
         not have run, or providers report no links here. Run or review
         collection in the{" "}
         <Link
-          href={`${sitePath}/backlinks`}
+          href={pageBacklinksHref}
           className="font-medium text-primary hover:underline"
         >
           site Backlinks workspace
@@ -196,14 +201,14 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                 Backlink records
               </p>
               <Link
-                href={`${sitePath}/backlinks?tab=links`}
+                href={pageBacklinksHref}
                 className="text-[11px] font-medium text-primary hover:underline"
               >
                 View all in Backlinks
               </Link>
             </div>
             <ul className="divide-y divide-border/60">
-              {observations.slice(0, 10).map((row) => {
+              {visibleObservations.map((row) => {
                 const assessment = parseBacklinkAssessment(
                   row.resolved_assessment,
                 );
@@ -307,10 +312,33 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                 );
               })}
               {observations.length > 10 || backlinks.data?.truncated ? (
-                <li className="px-3 py-2 text-[11px] text-muted-foreground">
-                  Showing 10 of {observations.length}
-                  {backlinks.data?.truncated ? "+" : ""} backlink records. The
-                  complete list is available in the Backlinks workspace.
+                <li className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[11px] text-muted-foreground">
+                  <span>
+                    Showing {visibleObservations.length} of{" "}
+                    {observations.length}
+                    {backlinks.data?.truncated ? "+" : ""} backlink records.
+                  </span>
+                  {observations.length > 10 ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-[11px]"
+                      onClick={() => setShowAllRecords((current) => !current)}
+                    >
+                      {showAllRecords
+                        ? "Show first 10"
+                        : `Show all ${observations.length} here`}
+                    </Button>
+                  ) : null}
+                  {backlinks.data?.truncated ? (
+                    <Link
+                      href={pageBacklinksHref}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Open the complete filtered table
+                    </Link>
+                  ) : null}
                 </li>
               ) : null}
             </ul>
@@ -321,7 +349,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
             observations are resolved to this page yet — collect link details in
             the{" "}
             <Link
-              href={`${sitePath}/backlinks`}
+              href={pageBacklinksHref}
               className="font-medium text-primary hover:underline"
             >
               site Backlinks workspace
@@ -339,7 +367,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
       copy={copy}
       collapsible
       anchor="page_backlinks"
-      action={{ label: "View all", href: `${sitePath}/backlinks?tab=links` }}
+      action={{ label: "View all", href: pageBacklinksHref }}
     >
       {body}
       {selectedRow ? (
