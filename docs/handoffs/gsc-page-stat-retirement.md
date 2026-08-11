@@ -1,16 +1,28 @@
-# Handoff — retire the legacy `web.gsc_page_stat` GSC pipeline
+---
+status: active
+updated: 2026-08-11
+repos: [matrx-frontend, aidream, matrx-scraper]
+---
 
-**Status:** open · **Created:** 2026-07-30 · **Owner:** unclaimed
-**Context:** the replacement GSC spine is live — aidream ingests all six
-dimension profiles into `seo.search_performance_daily` (nightly
-`seo_gsc_sync` + `POST /seo/sites/{id}/gsc/search-performance/sync`), and
-`/marketing/search-console` reads it through the `seo.gsc_perf_*` RPCs
-(accuracy contract in `migrations/seo_gsc_perf_rpcs.sql`). The legacy
-scraper pipeline (`matrx-scraper gsc_sync.py` → `web.gsc_page_stat`,
-page×date only, 28-day window) still feeds several surfaces and stays live
-until they migrate.
+# Retire the legacy `web.gsc_page_stat` GSC pipeline
 
-## Preconditions (verify before starting)
+The replacement spine is live: aidream ingests all six dimension profiles
+into `seo.search_performance_daily`, and `/marketing/search-console` reads it
+through the `seo.gsc_perf_*` RPCs. The legacy scraper pipeline
+(`matrx-scraper gsc_sync.py` → `web.gsc_page_stat`, page×date only, 28-day
+window) remains only until the page-level readers below migrate.
+
+## Resources
+
+- Feature contract: `features/marketing/search-console/FEATURE.md`
+- Accuracy contract: `migrations/seo_gsc_perf_rpcs.sql`
+- Canonical site portfolio adapter:
+  `migrations/seo_gsc_site_portfolio_canonical_source.sql`
+- Sync entry point: `features/marketing/search-console/sync.ts`
+
+## Remaining work
+
+Before retiring the table, verify:
 
 - [ ] Replacement table has ≥90 days of `page`-profile history for every
       GSC-bound site (nightly backfill has caught up) — compare
@@ -19,16 +31,15 @@ until they migrate.
       `web.gsc_page_stat` sums (small GSC aggregation variance is expected;
       property profile is truth).
 
-## Tasks
+Then:
 
-1. Migrate readers onto the replacement table / RPCs:
+1. Migrate the remaining readers onto the replacement table / RPCs:
    - `features/marketing/seo/keyword/data.ts::fetchGscPageStatRows` /
      `getPageSearchTotals` (page cards) → `gsc_perf_summary`/`breakdown`
      with `page_eq`.
-   - `web.v_site_kpis` + `web.v_page_list` GSC columns and the
-     `web.site_gsc_daily` / `web.site_gsc_top_pages` RPCs (sites portfolio,
-     peeks, coverage) → replacement equivalents (add a site-rollup RPC or
-     extend `gsc_perf_*`).
+   - `web.v_page_list` GSC columns and the `web.site_gsc_daily` /
+     `web.site_gsc_top_pages` RPCs (peeks, coverage) → replacement
+     equivalents.
    - `PageSearchConsoleCard` range totals + per-query table →
      `gsc_perf_breakdown(dimension='query', page_eq=…)`.
 2. Point the Integrations `GscSyncRow` "Sync now" at the replacement route
@@ -40,6 +51,11 @@ until they migrate.
 4. Graveyard `web.gsc_page_stat` (db-graveyard-table skill) + drop the
    scraper `gsc_sync.py` write path; update surface manifests
    (`gsc_metrics_28d`, `gsc_queries`, …) and both repos' FEATURE docs.
+
+## Done
+
+- Sites portfolio migrated without changing its caller contract — see
+  `migrations/seo_gsc_site_portfolio_canonical_source.sql`.
 
 ## Notes
 
