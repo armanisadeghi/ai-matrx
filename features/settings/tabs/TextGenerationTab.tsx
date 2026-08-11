@@ -10,6 +10,11 @@ import { useModels } from "@/features/ai-models/hooks/useModels";
 import { selectPlatformDefaultTextModelName } from "@/features/ai-models/redux/platformDefaultModel";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useSetting } from "../hooks/useSetting";
+import {
+  CREATIVITY_LEVEL_OPTIONS,
+  LANGUAGE_OPTIONS,
+  TEXT_TONE_OPTIONS,
+} from "../agent-writable-settings";
 
 // Radix Select items cannot carry an empty value — this internal sentinel
 // maps to `null` ("platform default") at the preference boundary.
@@ -82,43 +87,19 @@ export default function TextGenerationTab() {
           label="Tone"
           value={tone}
           onValueChange={setTone}
-          options={[
-            { value: "neutral", label: "Neutral" },
-            { value: "professional", label: "Professional" },
-            { value: "casual", label: "Casual" },
-            { value: "friendly", label: "Friendly" },
-            { value: "formal", label: "Formal" },
-            { value: "creative", label: "Creative" },
-            { value: "technical", label: "Technical" },
-            { value: "persuasive", label: "Persuasive" },
-          ]}
+          options={TEXT_TONE_OPTIONS}
         />
         <SettingsSelect
           label="Creativity"
           value={creativity}
           onValueChange={setCreativity}
-          options={[
-            { value: "low", label: "Low — factual" },
-            { value: "medium", label: "Medium" },
-            { value: "high", label: "High — creative" },
-          ]}
+          options={CREATIVITY_LEVEL_OPTIONS}
         />
         <SettingsSelect
           label="Language"
           value={language}
           onValueChange={setLanguage}
-          options={[
-            { value: "en", label: "English" },
-            { value: "es", label: "Spanish" },
-            { value: "fr", label: "French" },
-            { value: "de", label: "German" },
-            { value: "it", label: "Italian" },
-            { value: "pt", label: "Portuguese" },
-            { value: "zh", label: "Chinese" },
-            { value: "ja", label: "Japanese" },
-            { value: "ko", label: "Korean" },
-            { value: "ru", label: "Russian" },
-          ]}
+          options={LANGUAGE_OPTIONS}
         />
         <SettingsSwitch
           label="Plagiarism check"

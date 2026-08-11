@@ -18,7 +18,8 @@ export type SettingsSegmentedProps<T extends string = string> =
   SettingsCommonProps & {
     value: T;
     onValueChange: (value: T) => void;
-    options: SettingsOption<T>[];
+    /** Read-only: shared vocabularies (agent-writable-settings) are `as const`. */
+    options: readonly SettingsOption<T>[];
     size?: SettingsControlSize;
     /** Takes the full row width (stacks on mobile). */
     fullWidth?: boolean;
