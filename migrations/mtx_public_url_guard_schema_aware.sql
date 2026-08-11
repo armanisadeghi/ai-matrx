@@ -61,14 +61,36 @@ update public.mtx_public_url_guard set schema_name = 'public'
    and schema_name is null;
 
 -- ── Schema-aware trigger ────────────────────────────────────────────────────
+--
+-- MERGED BODY — do not re-derive this from mtx_public_media_url_guard.sql.
+-- Two independent improvements live here and BOTH are load-bearing:
+--
+--   (1) ARRAY AWARENESS (from mtx_public_media_url_guard_rollout.sql): the
+--       columns this whole defect class is about are `text[]` —
+--       podcast.pc_studio_runs.image_urls / .video_urls. A scalar `->>` on an
+--       array yields the array's JSON *text*, so a signed element is caught only
+--       because the regex happens to match inside the blob: detection by
+--       accident, per-blob instead of per-element. The array branch checks each
+--       element with jsonb_array_elements_text + bool_or, and skips JSON nulls.
+--
+--   (2) SCHEMA AWARENESS (this file): the registry lookup is keyed on
+--       (schema_name, table_name), because bare names like `definition` and
+--       `template` exist in several schemas.
+--
+-- This file originally shipped (2) with a scalar-only body and would have
+-- reverted (1) had it been re-applied. If you edit this function, edit it HERE
+-- and keep both branches — a `create or replace` in any migration silently
+-- overwrites whatever the previous one taught it.
 create or replace function public.mtx_public_url_guard_trigger()
 returns trigger
 language plpgsql
 as $$
 declare
-  guarded record;
-  val text;
-  row_json jsonb := to_jsonb(NEW);
+  guarded   record;
+  row_json  jsonb := to_jsonb(NEW);
+  col_json  jsonb;
+  val       text;
+  bad       boolean;
 begin
   for guarded in
     select column_name
@@ -76,8 +98,25 @@ begin
      where table_name = TG_TABLE_NAME
        and (schema_name is null or schema_name = TG_TABLE_SCHEMA)
   loop
-    val := row_json ->> guarded.column_name;
-    if not public.mtx_is_durable_media_url(val) then
+    col_json := row_json -> guarded.column_name;
+
+    if col_json is null or jsonb_typeof(col_json) = 'null' then
+      continue;
+    end if;
+
+    if jsonb_typeof(col_json) = 'array' then
+      -- array media column (e.g. text[]): non-durable if ANY element is signed.
+      -- Checked per ELEMENT, never as one JSON blob.
+      select bool_or(not public.mtx_is_durable_media_url(e))
+        into bad
+        from jsonb_array_elements_text(col_json) as e;
+      val := col_json::text;
+    else
+      val := row_json ->> guarded.column_name;
+      bad := not public.mtx_is_durable_media_url(val);
+    end if;
+
+    if coalesce(bad, false) then
       raise warning '[MEDIA-DURABILITY] %.%.% on row % received a NON-PUBLIC / expiring URL that must never have been written here (signed S3 link). value=%',
         TG_TABLE_SCHEMA, TG_TABLE_NAME, guarded.column_name, (row_json ->> 'id'), left(val, 100);
       insert into public.mtx_media_heal_queue
@@ -91,4 +130,4 @@ end;
 $$;
 
 comment on function public.mtx_public_url_guard_trigger() is
-  'Generic AFTER INSERT/UPDATE trigger. Matches public.mtx_public_url_guard on (schema_name, table_name) — schema_name NULL matches any schema. A non-durable value raises a loud WARNING and enqueues a heal job. Non-blocking by design.';
+  'Generic AFTER INSERT/UPDATE trigger. Matches public.mtx_public_url_guard on (schema_name, table_name) — schema_name NULL matches any schema. Array columns (text[]) are checked PER ELEMENT; JSON nulls are skipped. A non-durable value raises a loud WARNING and enqueues a heal job. Non-blocking by design.';

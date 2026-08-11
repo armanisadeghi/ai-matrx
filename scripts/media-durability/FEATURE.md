@@ -105,6 +105,41 @@ create trigger pc_episodes_public_url_guard
 **Do NOT register intentional-expiry columns** — that would queue heal jobs against
 working features and break them.
 
+### 🚨 The trigger body is MERGED — never re-derive it from one migration
+
+`mtx_public_url_guard_trigger()` carries two independent improvements from two
+different migrations, and a `create or replace` in either one silently overwrites
+whatever the other taught it:
+
+1. **Array awareness** (`mtx_public_media_url_guard_rollout.sql`) — the columns this
+   defect class is actually about are `text[]`: `podcast.pc_studio_runs.image_urls`
+   and `.video_urls`. A scalar `->>` on an array yields the array's JSON *text*, so a
+   signed element is caught only because the regex happens to match inside the blob —
+   detection by accident, per-blob instead of per-element. The array branch checks each
+   element (`jsonb_array_elements_text` + `bool_or`) and skips JSON nulls.
+2. **Schema awareness** (`mtx_public_url_guard_schema_aware.sql`) — the registry lookup
+   keyed on `(schema_name, table_name)`.
+
+**This already went wrong once.** The schema-aware migration first shipped with a
+scalar-only body and would have reverted the array branch on any re-apply; a parallel
+session working the podcast half caught it. Both branches now live in
+`mtx_public_url_guard_schema_aware.sql`, which is the file to edit. Regression-tested
+2026-08-11 on a throwaway table (`public.mtx_guard_selftest`, created and dropped in the
+same run so no live row is touched) across six cases — array with one signed element
+among durable ones, all-durable array, empty array, SQL NULL, scalar signed, scalar
+durable: all pass.
+
+### The healer is NOT pg_cron anymore (2026-08-11)
+
+The original migration's comment promised "a pg_cron + pg_net + backend publish endpoint
+tomorrow". That healer existed, then **died silently on 2026-07-21**:
+`mtx_media_heal_dispatch()` returned `-1` every 10 minutes because the vault secret
+`CLOUD_FILES_BYPASS_SECRET` was removed by the org-vault annihilation, while
+`cron.job_run_details` cheerfully logged "succeeded". It is now an in-process loop on the
+aidream scheduler host with a stall alarm; aidream migration `0332` unschedules the
+`mtx-media-heal-drain` cron job and **drops `mtx_media_heal_dispatch()`**. Don't
+resurrect either name.
+
 ### The guard was schema-blind, and it silently died (fixed 2026-08-11)
 
 `mtx_public_url_guard_trigger()` matched the registry on `TG_TABLE_NAME` alone. Two
