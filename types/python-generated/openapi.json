@@ -10733,6 +10733,57 @@
         }
       }
     },
+    "/seo/sites/{site_id}/authority/route": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Route Site Authority",
+        "description": "Combine crawl, backlink, GSC, page-map, and plan evidence into an\nexact internal-authority plan while streaming the agent's Content IR.",
+        "operationId": "route_site_authority_seo_sites__site_id__authority_route_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthorityRouterBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/sites/{site_id}/backlinks/enrich": {
       "post": {
         "tags": [
@@ -10758,6 +10809,57 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BacklinkEnrichmentBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/reputation/analyze": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Analyze Site Reputation",
+        "description": "Compose the site's grounded evidence lanes and stream the dedicated\nContent IR reputation adjudicator. The final brief and accepted case\nprojections persist durably; weak or unresolvable output is excluded.",
+        "operationId": "analyze_site_reputation_seo_sites__site_id__reputation_analyze_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReputationIntelligenceBody"
               }
             }
           }
@@ -52445,6 +52547,230 @@
         ],
         "title": "AuditTotals"
       },
+      "AuthorityCandidate": {
+        "properties": {
+          "candidate_key": {
+            "type": "string",
+            "title": "Candidate Key"
+          },
+          "source_page_id": {
+            "type": "string",
+            "title": "Source Page Id"
+          },
+          "target_page_id": {
+            "type": "string",
+            "title": "Target Page Id"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "target_url": {
+            "type": "string",
+            "title": "Target Url"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "source_supply": {
+            "type": "integer",
+            "title": "Source Supply"
+          },
+          "target_need": {
+            "type": "integer",
+            "title": "Target Need"
+          },
+          "topical_overlap": {
+            "type": "integer",
+            "title": "Topical Overlap"
+          },
+          "estimated_equity_share": {
+            "type": "number",
+            "title": "Estimated Equity Share"
+          },
+          "deterministic_cannibalization_risk": {
+            "type": "string",
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Deterministic Cannibalization Risk"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_key",
+          "source_page_id",
+          "target_page_id",
+          "source_url",
+          "target_url",
+          "score",
+          "source_supply",
+          "target_need",
+          "topical_overlap",
+          "estimated_equity_share",
+          "deterministic_cannibalization_risk"
+        ],
+        "title": "AuthorityCandidate"
+      },
+      "AuthorityPage": {
+        "properties": {
+          "page_id": {
+            "type": "string",
+            "title": "Page Id"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "target_keyword": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Keyword"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role",
+            "default": "unknown"
+          },
+          "cluster": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cluster"
+          },
+          "plan_priority": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Priority"
+          },
+          "link_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Score"
+          },
+          "inbound_links": {
+            "type": "integer",
+            "title": "Inbound Links",
+            "default": 0
+          },
+          "outbound_links": {
+            "type": "integer",
+            "title": "Outbound Links",
+            "default": 0
+          },
+          "active_backlinks": {
+            "type": "integer",
+            "title": "Active Backlinks",
+            "default": 0
+          },
+          "dofollow_backlinks": {
+            "type": "integer",
+            "title": "Dofollow Backlinks",
+            "default": 0
+          },
+          "backlink_quality": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backlink Quality"
+          },
+          "clicks": {
+            "type": "integer",
+            "title": "Clicks",
+            "default": 0
+          },
+          "impressions": {
+            "type": "integer",
+            "title": "Impressions",
+            "default": 0
+          },
+          "average_position": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Position"
+          },
+          "educational_clicks": {
+            "type": "integer",
+            "title": "Educational Clicks",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page_id",
+          "url"
+        ],
+        "title": "AuthorityPage"
+      },
       "AuthorityRankRequest": {
         "properties": {
           "source_ids": {
@@ -52471,6 +52797,280 @@
         "type": "object",
         "title": "AuthorityRankRequest",
         "description": "Trigger AI authoritativeness ranking over a topic's sources.\n\n``source_ids=None`` ranks every included source on the topic. ``force=False``\nonly ranks sources not yet ranked (incremental); ``force=True`` re-ranks all."
+      },
+      "AuthorityRouteRecommendation": {
+        "properties": {
+          "candidate_key": {
+            "type": "string",
+            "title": "Candidate Key"
+          },
+          "source_page_id": {
+            "type": "string",
+            "title": "Source Page Id"
+          },
+          "target_page_id": {
+            "type": "string",
+            "title": "Target Page Id"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "target_url": {
+            "type": "string",
+            "title": "Target Url"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "anchor_text": {
+            "type": "string",
+            "title": "Anchor Text"
+          },
+          "placement_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Placement Quote"
+          },
+          "placement_instruction": {
+            "type": "string",
+            "title": "Placement Instruction"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "expected_benefit": {
+            "type": "string",
+            "title": "Expected Benefit"
+          },
+          "confidence": {
+            "type": "integer",
+            "title": "Confidence"
+          },
+          "topical_relevance": {
+            "type": "string",
+            "enum": [
+              "strong",
+              "moderate",
+              "weak",
+              "conflict"
+            ],
+            "title": "Topical Relevance"
+          },
+          "cannibalization_risk": {
+            "type": "string",
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Cannibalization Risk"
+          },
+          "cannibalization_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cannibalization Reason"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_key",
+          "source_page_id",
+          "target_page_id",
+          "source_url",
+          "target_url",
+          "score",
+          "anchor_text",
+          "placement_instruction",
+          "rationale",
+          "expected_benefit",
+          "confidence",
+          "topical_relevance",
+          "cannibalization_risk"
+        ],
+        "title": "AuthorityRouteRecommendation"
+      },
+      "AuthorityRouterBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "guidance": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Guidance",
+            "default": ""
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AuthorityRouterBody"
+      },
+      "AuthorityRouterResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "authority.route",
+            "title": "Result Kind",
+            "default": "authority.route"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "router_version": {
+            "type": "string",
+            "title": "Router Version",
+            "default": "authority-router-v1"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "pages_analyzed": {
+            "type": "integer",
+            "title": "Pages Analyzed"
+          },
+          "edges_analyzed": {
+            "type": "integer",
+            "title": "Edges Analyzed"
+          },
+          "edge_scan_truncated": {
+            "type": "boolean",
+            "title": "Edge Scan Truncated",
+            "default": false
+          },
+          "backlink_scan_truncated": {
+            "type": "boolean",
+            "title": "Backlink Scan Truncated",
+            "default": false
+          },
+          "gsc_scan_truncated": {
+            "type": "boolean",
+            "title": "Gsc Scan Truncated",
+            "default": false
+          },
+          "executive_summary": {
+            "type": "string",
+            "title": "Executive Summary",
+            "default": ""
+          },
+          "overall_verdict": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "opportunities",
+              "urgent"
+            ],
+            "title": "Overall Verdict",
+            "default": "healthy"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/AuthorityPage"
+            },
+            "type": "array",
+            "title": "Pages"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/AuthorityCandidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/AuthorityRouteRecommendation"
+            },
+            "type": "array",
+            "title": "Recommendations"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "pages_analyzed",
+          "edges_analyzed"
+        ],
+        "title": "AuthorityRouterResult"
       },
       "AutoConsolidatePassRequest": {
         "properties": {
@@ -71123,6 +71723,133 @@
         ],
         "title": "EscrowWrappingKeyResponse"
       },
+      "EvidenceCoverage": {
+        "properties": {
+          "backlinks_reviewed": {
+            "type": "integer",
+            "title": "Backlinks Reviewed",
+            "default": 0
+          },
+          "domains_reviewed": {
+            "type": "integer",
+            "title": "Domains Reviewed",
+            "default": 0
+          },
+          "competitor_intersections_reviewed": {
+            "type": "integer",
+            "title": "Competitor Intersections Reviewed",
+            "default": 0
+          },
+          "ai_citations_reviewed": {
+            "type": "integer",
+            "title": "Ai Citations Reviewed",
+            "default": 0
+          },
+          "brand_facts_reviewed": {
+            "type": "integer",
+            "title": "Brand Facts Reviewed",
+            "default": 0
+          },
+          "rag_hits_reviewed": {
+            "type": "integer",
+            "title": "Rag Hits Reviewed",
+            "default": 0
+          },
+          "captured_pages_reviewed": {
+            "type": "integer",
+            "title": "Captured Pages Reviewed",
+            "default": 0
+          },
+          "excluded_low_quality_inputs": {
+            "type": "integer",
+            "title": "Excluded Low Quality Inputs",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "EvidenceCoverage"
+      },
+      "EvidenceReference": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "backlink",
+              "referring_domain",
+              "competitor",
+              "competitor_opportunity",
+              "ai_citation",
+              "ai_claim",
+              "brand_fact",
+              "rag_chunk",
+              "crawl_capture",
+              "other"
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "exact_excerpt": {
+            "type": "string",
+            "title": "Exact Excerpt"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          },
+          "supports": {
+            "type": "string",
+            "title": "Supports"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind",
+          "exact_excerpt",
+          "supports"
+        ],
+        "title": "EvidenceReference"
+      },
       "ExcludePageBody": {
         "properties": {
           "reason": {
@@ -86040,6 +86767,62 @@
         "title": "MutedPattern",
         "description": "An admin UI-muted signature (app_log_muted_pattern row)."
       },
+      "Narrative": {
+        "properties": {
+          "narrative": {
+            "type": "string",
+            "title": "Narrative"
+          },
+          "stance": {
+            "type": "string",
+            "title": "Stance"
+          },
+          "verification_status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "partially_verified",
+              "unverified",
+              "contradicted",
+              "opinion",
+              "unknown"
+            ],
+            "title": "Verification Status"
+          },
+          "prevalence": {
+            "type": "string",
+            "title": "Prevalence"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "recommended_handling": {
+            "type": "string",
+            "title": "Recommended Handling"
+          },
+          "evidence_refs": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceReference"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Evidence Refs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "narrative",
+          "stance",
+          "verification_status",
+          "prevalence",
+          "severity",
+          "recommended_handling",
+          "evidence_refs"
+        ],
+        "title": "Narrative"
+      },
       "NavLink": {
         "properties": {
           "label": {
@@ -93941,6 +94724,78 @@
         "title": "PublicWorkflowRecord",
         "description": "Read-only public view — only the fields safe to expose anonymously.\nDeliberately omits user_id / project_id / org_id."
       },
+      "PublicationOpportunity": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "publication_name": {
+            "type": "string",
+            "title": "Publication Name"
+          },
+          "referring_domain_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Referring Domain Profile Id"
+          },
+          "relationship_basis": {
+            "type": "string",
+            "title": "Relationship Basis"
+          },
+          "demonstrated_topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Demonstrated Topics"
+          },
+          "suggested_angle": {
+            "type": "string",
+            "title": "Suggested Angle"
+          },
+          "supporting_assets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Supporting Assets"
+          },
+          "confidence": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "evidence_refs": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceReference"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Evidence Refs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "domain",
+          "publication_name",
+          "relationship_basis",
+          "demonstrated_topics",
+          "suggested_angle",
+          "supporting_assets",
+          "confidence",
+          "evidence_refs"
+        ],
+        "title": "PublicationOpportunity"
+      },
       "PublicationStatus": {
         "properties": {
           "provider": {
@@ -94196,6 +95051,42 @@
           "slot"
         ],
         "title": "PutDeclaredSampleResponse"
+      },
+      "QualitySummary": {
+        "properties": {
+          "overall_confidence": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Overall Confidence"
+          },
+          "accepted_cases": {
+            "type": "integer",
+            "title": "Accepted Cases",
+            "default": 0
+          },
+          "rejected_cases": {
+            "type": "integer",
+            "title": "Rejected Cases",
+            "default": 0
+          },
+          "accepted_publication_opportunities": {
+            "type": "integer",
+            "title": "Accepted Publication Opportunities",
+            "default": 0
+          },
+          "rejected_publication_opportunities": {
+            "type": "integer",
+            "title": "Rejected Publication Opportunities",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "overall_confidence"
+        ],
+        "title": "QualitySummary"
       },
       "QuarantinedRowSummary": {
         "properties": {
@@ -97425,6 +98316,434 @@
           "last_synced_at"
         ],
         "title": "RepositorySummary"
+      },
+      "ReputationBrief": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "digital_pr_reputation_brief_v1",
+            "title": "Kind",
+            "default": "digital_pr_reputation_brief_v1"
+          },
+          "analyst_version": {
+            "type": "string",
+            "title": "Analyst Version"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "site_domain": {
+            "type": "string",
+            "title": "Site Domain"
+          },
+          "executive_verdict": {
+            "type": "string",
+            "title": "Executive Verdict"
+          },
+          "evidence_coverage": {
+            "$ref": "#/components/schemas/EvidenceCoverage"
+          },
+          "cases": {
+            "items": {
+              "$ref": "#/components/schemas/ReputationCase"
+            },
+            "type": "array",
+            "title": "Cases"
+          },
+          "publication_opportunities": {
+            "items": {
+              "$ref": "#/components/schemas/PublicationOpportunity"
+            },
+            "type": "array",
+            "title": "Publication Opportunities"
+          },
+          "narratives": {
+            "items": {
+              "$ref": "#/components/schemas/Narrative"
+            },
+            "type": "array",
+            "title": "Narratives"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/QualitySummary"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "analyst_version",
+          "site_id",
+          "site_domain",
+          "executive_verdict",
+          "evidence_coverage",
+          "quality"
+        ],
+        "title": "ReputationBrief"
+      },
+      "ReputationCase": {
+        "properties": {
+          "case_key": {
+            "type": "string",
+            "title": "Case Key"
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "backlink",
+              "ai_citation",
+              "competitor_intersection",
+              "media_coverage",
+              "directory_listing",
+              "brand_gap",
+              "other"
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Domain"
+          },
+          "source_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Title"
+          },
+          "case_type": {
+            "type": "string",
+            "enum": [
+              "positive_opportunity",
+              "negative_risk",
+              "correction_needed",
+              "relationship_opportunity",
+              "citation_opportunity",
+              "neutral_monitoring"
+            ],
+            "title": "Case Type"
+          },
+          "sentiment": {
+            "type": "string",
+            "enum": [
+              "positive",
+              "negative",
+              "neutral",
+              "mixed",
+              "unknown"
+            ],
+            "title": "Sentiment"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "protect",
+              "correct",
+              "respond",
+              "request_update",
+              "leave_alone",
+              "pitch",
+              "strengthen",
+              "monitor",
+              "investigate"
+            ],
+            "title": "Verdict"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "controllability": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "likely",
+              "possible",
+              "unlikely",
+              "unknown"
+            ],
+            "title": "Controllability"
+          },
+          "priority": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Priority"
+          },
+          "confidence": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "evidence_quality": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Evidence Quality"
+          },
+          "risk_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Risk Score"
+          },
+          "opportunity_score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Opportunity Score"
+          },
+          "recommended_action": {
+            "type": "string",
+            "title": "Recommended Action"
+          },
+          "action_reason": {
+            "type": "string",
+            "title": "Action Reason"
+          },
+          "pitch_angle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pitch Angle"
+          },
+          "target_page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Page Id"
+          },
+          "target_page_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Page Url"
+          },
+          "facts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Facts"
+          },
+          "inferences": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Inferences"
+          },
+          "evidence_refs": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceReference"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Evidence Refs"
+          },
+          "contradictions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Contradictions"
+          },
+          "missing_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Evidence"
+          },
+          "requires_human_review": {
+            "type": "boolean",
+            "title": "Requires Human Review",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case_key",
+          "source_kind",
+          "case_type",
+          "sentiment",
+          "verdict",
+          "headline",
+          "summary",
+          "controllability",
+          "priority",
+          "confidence",
+          "evidence_quality",
+          "risk_score",
+          "opportunity_score",
+          "recommended_action",
+          "action_reason",
+          "evidence_refs"
+        ],
+        "title": "ReputationCase"
+      },
+      "ReputationIntelligenceBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReputationIntelligenceBody"
+      },
+      "ReputationRunResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "reputation.intelligence",
+            "title": "Result Kind",
+            "default": "reputation.intelligence"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "kind_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Instance Id"
+          },
+          "accepted_cases": {
+            "type": "integer",
+            "title": "Accepted Cases",
+            "default": 0
+          },
+          "rejected_cases": {
+            "type": "integer",
+            "title": "Rejected Cases",
+            "default": 0
+          },
+          "publication_opportunities": {
+            "type": "integer",
+            "title": "Publication Opportunities",
+            "default": 0
+          },
+          "evidence_coverage": {
+            "$ref": "#/components/schemas/EvidenceCoverage"
+          },
+          "brief": {
+            "$ref": "#/components/schemas/ReputationBrief"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "evidence_coverage",
+          "brief"
+        ],
+        "title": "ReputationRunResult"
       },
       "RequestRecord": {
         "properties": {
@@ -102010,6 +103329,9 @@
                     "$ref": "#/components/schemas/BacklinkEnrichmentResult"
                   },
                   {
+                    "$ref": "#/components/schemas/AuthorityRouterResult"
+                  },
+                  {
                     "$ref": "#/components/schemas/KeywordResearchResult"
                   },
                   {
@@ -102025,6 +103347,9 @@
                     "$ref": "#/components/schemas/PageAuditResult"
                   },
                   {
+                    "$ref": "#/components/schemas/ReputationRunResult"
+                  },
+                  {
                     "$ref": "#/components/schemas/RobotsCheckResult"
                   },
                   {
@@ -102034,6 +103359,7 @@
                 "discriminator": {
                   "propertyName": "result_kind",
                   "mapping": {
+                    "authority.route": "#/components/schemas/AuthorityRouterResult",
                     "backlinks.enrich": "#/components/schemas/BacklinkEnrichmentResult",
                     "keywords.relationship_research": "#/components/schemas/KeywordResearchResult",
                     "keywords.volume_refresh": "#/components/schemas/KeywordVolumeRefreshResult",
@@ -102041,7 +103367,8 @@
                     "pages.map_keywords": "#/components/schemas/PageKeywordMapResult",
                     "public.page_audit": "#/components/schemas/PageAuditResult",
                     "public.robots_check": "#/components/schemas/RobotsCheckResult",
-                    "public.structured_data_validate": "#/components/schemas/StructuredDataValidateResult"
+                    "public.structured_data_validate": "#/components/schemas/StructuredDataValidateResult",
+                    "reputation.intelligence": "#/components/schemas/ReputationRunResult"
                   }
                 }
               },
