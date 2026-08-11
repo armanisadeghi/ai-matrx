@@ -324,13 +324,20 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
   // ref — the render closure a handler was built in may already be a stale
   // snapshot by the time the user clicks Apply.
   const isProcessingRef = useRef(studio.isProcessing);
-  isProcessingRef.current = studio.isProcessing;
+  const isSavingRef = useRef(studio.isSaving);
+  const sourceFileCountRef = useRef(studio.files.length);
   // Same reason, for the crop anchor's gate below: an agent may stage the fit
   // in one call and the anchor in the next within a single turn, so the gate
   // has to resolve against the fit as it stands WHEN APPLIED, not the one
   // captured when the closure was built.
   const fitRef = useRef(studio.fit);
-  fitRef.current = studio.fit;
+
+  useEffect(() => {
+    isProcessingRef.current = studio.isProcessing;
+    isSavingRef.current = studio.isSaving;
+    sourceFileCountRef.current = studio.files.length;
+    fitRef.current = studio.fit;
+  }, [studio.files.length, studio.fit, studio.isProcessing, studio.isSaving]);
 
   // Both handlers validate and THROW on a bad shape; the writeback seam
   // (`applySurfaceWrite`) turns the throw into a safe error envelope the
@@ -350,6 +357,14 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
           throw new Error(
             "A conversion is already running. selected_presets cannot be written while variants are being generated — wait for it to finish, then write the next selection.",
           );
+        if (isSavingRef.current)
+          throw new Error(
+            "A save to the library is already running. selected_presets cannot be written until it finishes.",
+          );
+        if (sourceFileCountRef.current === 0)
+          throw new Error(
+            "No source images are loaded. selected_presets cannot be written into an empty studio — add images first, then choose the presets to create.",
+          );
         if (!Array.isArray(value))
           throw new Error(
             'selected_presets expects an array of preset id strings, e.g. ["og-image", "favicon-32"]. It REPLACES the full selection — read selected_preset_ids first and include everything you want kept.',
@@ -366,11 +381,16 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
             );
           const id = entry.trim();
           if (!getPresetById(id)) unknown.push(id);
-          else if (!ids.includes(id)) ids.push(id);
+          else ids.push(id);
         }
         if (unknown.length > 0)
           throw new Error(
             `selected_presets got ${unknown.length} id(s) that are not in the preset catalog: ${unknown.join(", ")}. Read available_presets for the valid ids — nothing was changed.`,
+          );
+        const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+        if (duplicates.length > 0)
+          throw new Error(
+            `selected_presets got duplicate preset id(s): ${Array.from(new Set(duplicates)).join(", ")}. Each id may appear once — nothing was changed.`,
           );
 
         // The SAME full-replace path a "recommended bundle" click takes.
@@ -388,6 +408,14 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
         if (isProcessingRef.current)
           throw new Error(
             "A conversion is already running. conversion_settings cannot be written while variants are being generated — wait for it to finish, then write the next settings.",
+          );
+        if (isSavingRef.current)
+          throw new Error(
+            "A save to the library is already running. conversion_settings cannot be written until it finishes.",
+          );
+        if (sourceFileCountRef.current === 0)
+          throw new Error(
+            "No source images are loaded. conversion_settings cannot be written into an empty studio — add images first, then stage the conversion settings.",
           );
 
         const patch = value as Record<string, unknown>;
@@ -457,7 +485,10 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
               `conversion_settings.resize_fit expects one of: ${IMAGE_FITS.join(" | ")}.`,
             );
           const next = patch.resize_fit as ImageFit;
-          apply.push(() => studio.setFit(next));
+          apply.push(() => {
+            fitRef.current = next;
+            studio.setFit(next);
+          });
         }
         if ("resize_position" in patch) {
           if (
