@@ -896,11 +896,11 @@ export const selectUnifiedSlots = (requestId: string) =>
         ...Object.values(activeOperations ?? {}),
         ...Object.values(completedOperations ?? {}),
       ]) {
-        if (op.operation !== "sub_agent" || op.blockAnchor === undefined) {
+        if (op.operation !== "sub_agent" || typeof op.blockAnchor !== "number") {
           continue;
         }
         const end = Math.min(
-          "blockEnd" in op && op.blockEnd !== undefined
+          "blockEnd" in op && typeof op.blockEnd === "number"
             ? op.blockEnd
             : blockOrder.length,
           blockOrder.length,
