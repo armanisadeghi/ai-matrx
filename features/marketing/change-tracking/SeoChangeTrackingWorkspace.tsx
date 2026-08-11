@@ -20,6 +20,7 @@ import {
   Target,
   XCircle,
 } from "lucide-react";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -1436,9 +1437,13 @@ function ChangeDetail({
   if (bundle.isLoading)
     return <LoadingSurface label="Loading the complete change record…" />;
   if (bundle.isError || !bundle.data)
+    // "Change not found" was a guess. A zero-row read is equally a denial or a
+    // stale link, and the platform can tell the difference.
     return (
-      <QueryError
-        error={bundle.error ?? new Error("Change not found")}
+      <AccessGate
+        token="seo_change_set"
+        id={changeId}
+        error={bundle.error}
         onRetry={() => void bundle.refetch()}
       />
     );

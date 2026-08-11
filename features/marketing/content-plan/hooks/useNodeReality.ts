@@ -50,26 +50,9 @@ export const nodeRealityKeys = {
     page: (pageId: string) => ["content-plan", "cms-page-detail", pageId] as const,
 };
 
-/**
- * Stage narration for the authoring run. The endpoint emits ONE event when it
- * finishes, so there are no real milestones to relay — these are declared
- * approximations (the platform's sanctioned fallback when true stages are not
- * available), never a bare spinner. Each entry is "show this from N seconds in".
- */
-const WRITE_STAGES: { after: number; label: string }[] = [
-    { after: 0, label: "Reading the brief and keyword targeting" },
-    { after: 12, label: "Researching and outlining the page" },
-    { after: 40, label: "Writing the page content" },
-    { after: 110, label: "Saving it into the website" },
-];
-
-export function writeStageLabel(elapsedSeconds: number): string {
-    let label = WRITE_STAGES[0].label;
-    for (const stage of WRITE_STAGES) {
-        if (elapsedSeconds >= stage.after) label = stage.label;
-    }
-    return label;
-}
+// Stage narration for the authoring run lives in `hooks/useRunStage.ts` —
+// ONE table (WRITE_STAGES) shared with Setup's "Preview one page" rung, which
+// calls this very endpoint. Never re-declare it beside a component.
 
 export interface UseNodeRealityArgs {
     siteId: string;

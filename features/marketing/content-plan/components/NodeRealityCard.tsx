@@ -17,7 +17,6 @@
  * The verdict is derived live on every read (`lib/page-reality.ts`), never
  * stamped on a column — see THE TRUE CURRENT STATUS LAW.
  */
-import { useEffect, useState } from "react";
 import {
     ExternalLink,
     Hammer,
@@ -32,7 +31,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
-import { writeStageLabel, type NodeReality } from "../hooks/useNodeReality";
+import { type NodeReality } from "../hooks/useNodeReality";
+import { useElapsedSeconds, writeStageLabel } from "../hooks/useRunStage";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import {
     isWritePolicyBlocked,
@@ -62,19 +62,6 @@ const ACTION_ICON = {
     publish: Rocket,
     "edit-in-cms": PenLine,
 } as const;
-
-/** Ticking elapsed seconds for the authoring stage line. */
-function useElapsedSeconds(startedAt: number | null): number {
-    const [now, setNow] = useState(() => Date.now());
-    useEffect(() => {
-        if (startedAt === null) return;
-        setNow(Date.now());
-        const timer = window.setInterval(() => setNow(Date.now()), 1000);
-        return () => window.clearInterval(timer);
-    }, [startedAt]);
-    if (startedAt === null) return 0;
-    return Math.max(0, Math.floor((now - startedAt) / 1000));
-}
 
 export function NodeRealityCard({
     node,

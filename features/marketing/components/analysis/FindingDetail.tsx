@@ -11,6 +11,7 @@ import {
   Loader2,
   RefreshCw,
 } from "lucide-react";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
@@ -178,9 +179,13 @@ export function FindingDetail({ findingId }: { findingId: string }) {
     return <LoadingSurface label="Loading finding…" />;
   }
   if (detail.isError || !detail.data) {
+    // "Finding not found" was a guess: a zero-row read here is equally a
+    // denial, a deletion, or a stale link. The gate asks the platform.
     return (
-      <QueryError
-        error={detail.error ?? new Error("Finding not found")}
+      <AccessGate
+        token="web_finding"
+        id={findingId}
+        error={detail.error}
         onRetry={() => void detail.refetch()}
       />
     );

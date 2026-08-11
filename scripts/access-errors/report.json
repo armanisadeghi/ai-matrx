@@ -1,15 +1,15 @@
 {
   "generatedAt": "2026-08-11",
-  "total": 545,
+  "total": 543,
   "byKind": {
     "raw-supabase-message": 149,
-    "claims-deleted": 357,
+    "claims-deleted": 355,
     "claims-denied": 39
   },
   "byFeature": {
     "lib": 65,
     "app/(core)": 46,
-    "features/marketing": 41,
+    "features/marketing": 39,
     "features/education": 38,
     "features/agents": 34,
     "features/files": 32,
@@ -1895,22 +1895,10 @@
       "snippet": "throw new Error(detail?.message ?? created.error.message);"
     },
     {
-      "file": "features/marketing/change-tracking/SeoChangeTrackingWorkspace.tsx",
-      "line": 1441,
-      "kind": "claims-deleted",
-      "snippet": "error={bundle.error ?? new Error(\"Change not found\")}"
-    },
-    {
       "file": "features/marketing/change-tracking/data.ts",
       "line": 87,
       "kind": "raw-supabase-message",
       "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/components/analysis/FindingDetail.tsx",
-      "line": 183,
-      "kind": "claims-deleted",
-      "snippet": "error={detail.error ?? new Error(\"Finding not found\")}"
     },
     {
       "file": "features/marketing/components/backlinks/BacklinkObservationTable.tsx",

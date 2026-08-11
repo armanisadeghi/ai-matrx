@@ -85,8 +85,104 @@ import {
 } from "../bridge";
 import { setupKeys } from "../hooks";
 import { useCmsPageMap } from "../../hooks/useCmsPageMap";
+import {
+  COMPARE_STAGES,
+  FILL_SEED_STAGES,
+  KIT_STAGES,
+  LINK_STAGES,
+  PUBLISH_PREVIEW_STAGES,
+  PUBLISH_STAGES,
+  REALIZE_STAGES,
+  stageLabel,
+  useElapsedSeconds,
+  WRITE_STAGES,
+  type RunStage,
+} from "../../hooks/useRunStage";
 import { normalizeDomain, type CmsFacts } from "../readiness";
 import { SetupSection } from "./SetupSection";
+
+type BridgeAction =
+  | "link"
+  | "kit"
+  | "check"
+  | "preview"
+  | "apply"
+  | "fillPreview"
+  | "fillStart"
+  | "fillCancel"
+  | "publishPreview"
+  | "publishApply";
+
+/**
+ * What each rung narrates while it runs. Every entry here is an action that
+ * routinely outlives a couple of seconds — several of them are full LLM passes
+ * — so none of them may sit behind a bare spinner.
+ *
+ * `fillCancel` is deliberately ABSENT: cancelling is a single fast write, and a
+ * plain busy state on the button is the honest thing to show for it.
+ */
+const RUN_STAGES: Partial<Record<BridgeAction, readonly RunStage[]>> = {
+  link: LINK_STAGES,
+  kit: KIT_STAGES,
+  check: COMPARE_STAGES,
+  // The realize dry run does the same read-both-sides work as a compare.
+  preview: COMPARE_STAGES,
+  apply: REALIZE_STAGES,
+  // The SAME endpoint the node panel's Write action calls — one shared table.
+  fillPreview: WRITE_STAGES,
+  fillStart: FILL_SEED_STAGES,
+  publishPreview: PUBLISH_PREVIEW_STAGES,
+  publishApply: PUBLISH_STAGES,
+};
+
+/**
+ * A rung's action row, and the stage line that replaces it while it runs.
+ *
+ * 🚨 ZERO PAGE SHIFT, structurally: the buttons stay in the DOM and keep their
+ * exact box (`invisible`), and the stage line is laid over them. A row that
+ * wraps to two lines therefore cannot collapse to one when a run starts —
+ * nothing below the running rung moves by a pixel.
+ */
+function RunRow({
+  stage,
+  elapsed,
+  className,
+  children,
+}: {
+  /** The current stage label, or null when nothing is running on this rung. */
+  stage: string | null;
+  elapsed: number;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const row = (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-1.5",
+        className,
+        stage !== null && "invisible",
+      )}
+      aria-hidden={stage !== null}
+    >
+      {children}
+    </div>
+  );
+  if (stage === null) return row;
+  return (
+    <div className="relative">
+      <div className="pointer-events-none">{row}</div>
+      <div
+        className="absolute inset-0 flex items-center gap-2 text-[11px] text-muted-foreground"
+        role="status"
+        aria-live="polite"
+      >
+        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+        <span className="min-w-0 truncate">{stage}</span>
+        <span className="ml-auto shrink-0 tabular-nums">{elapsed}s</span>
+      </div>
+    </div>
+  );
+}
 
 /** Candidate CMS sites for "link existing" — only loaded while unlinked. */
 function useLinkCandidates(enabled: boolean) {
@@ -144,19 +240,29 @@ export function SetupBridgeSection({
   // leaves behind if its reconcile step failed mid-flight.
   const knownCmsSite = cms?.link.cmsSiteId ?? undefined;
 
-  const [busy, setBusy] = useState<
-    | "link"
-    | "kit"
-    | "check"
-    | "preview"
-    | "apply"
-    | "fillPreview"
-    | "fillStart"
-    | "fillCancel"
-    | "publishPreview"
-    | "publishApply"
-    | null
-  >(null);
+  const [busy, setBusy] = useState<BridgeAction | null>(null);
+  // When the current run started, so its stage line can narrate and count.
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const elapsed = useElapsedSeconds(startedAt);
+
+  const startBusy = (action: BridgeAction) => {
+    setBusy(action);
+    setStartedAt(Date.now());
+  };
+  const endBusy = () => {
+    setBusy(null);
+    setStartedAt(null);
+  };
+
+  /**
+   * The stage line for a rung: non-null only while one of ITS actions runs, so
+   * exactly one rung narrates at a time and the others keep their buttons.
+   */
+  const stageFor = (actions: readonly BridgeAction[]): string | null => {
+    if (busy === null || !actions.includes(busy)) return null;
+    const stages = RUN_STAGES[busy];
+    return stages ? stageLabel(stages, elapsed) : null;
+  };
   const [linkChoice, setLinkChoice] = useState<string>("__create__");
   const [report, setReport] = useState<BridgeReport | null>(null);
   const [alignResult, setAlignResult] = useState<BridgeAlignResult | null>(null);
@@ -221,7 +327,7 @@ export function SetupBridgeSection({
 
   // ── rung 1: create (or pick) the CMS counterpart and link both sides ──────
   const handleLink = async () => {
-    setBusy("link");
+    startBusy("link");
     try {
       let cmsSiteId: string;
       let cmsSlug: string;
@@ -268,13 +374,13 @@ export function SetupBridgeSection({
     } catch (error) {
       toast.error(`Linking failed: ${extractErrorMessage(error)}`);
     } finally {
-      setBusy(null);
+      endBusy();
     }
   };
 
   // ── rung 2: starter kit ────────────────────────────────────────────────────
   const runKit = async (force: boolean) => {
-    setBusy("kit");
+    startBusy("kit");
     try {
       const outcome = await bridgeStarterKit(dispatch, site.id, {
         force,
@@ -305,13 +411,13 @@ export function SetupBridgeSection({
         toast.error(`Starter kit failed: ${message}`);
       }
     } finally {
-      setBusy(null);
+      endBusy();
     }
   };
 
   // ── rung 3: reconcile → dry-run preview → apply ───────────────────────────
   const handleCheck = async () => {
-    setBusy("check");
+    startBusy("check");
     setAlignResult(null);
     try {
       const next = await bridgeReconcile(dispatch, site.id, { cmsSite: knownCmsSite });
@@ -322,7 +428,7 @@ export function SetupBridgeSection({
     } catch (error) {
       toast.error(`Alignment check failed: ${extractErrorMessage(error)}`);
     } finally {
-      setBusy(null);
+      endBusy();
     }
   };
 
@@ -337,7 +443,7 @@ export function SetupBridgeSection({
       });
       if (!ok) return;
     }
-    setBusy(dryRun ? "preview" : "apply");
+    startBusy(dryRun ? "preview" : "apply");
     try {
       const outcome = await bridgeRealize(
         dispatch,
@@ -366,13 +472,13 @@ export function SetupBridgeSection({
     } catch (error) {
       toast.error(`Realize failed: ${extractErrorMessage(error)}`);
     } finally {
-      setBusy(null);
+      endBusy();
     }
   };
 
   // ── rung 4: generate content — preview ONE authored page, then fan out ────
   const handleFillPreview = async () => {
-    setBusy("fillPreview");
+    startBusy("fillPreview");
     try {
       const outcome = await bridgeFillPreview(dispatch, site.id, {
         cmsSite: knownCmsSite,
@@ -382,7 +488,7 @@ export function SetupBridgeSection({
     } catch (error) {
       toast.error(`Content preview failed: ${extractErrorMessage(error)}`);
     } finally {
-      setBusy(null);
+      endBusy();
     }
   };
 
@@ -398,7 +504,7 @@ export function SetupBridgeSection({
       confirmLabel: "Generate content",
     });
     if (!ok) return;
-    setBusy("fillStart");
+    startBusy("fillStart");
     try {
       const started = await bridgeFillStart(dispatch, site.id, { cmsSite: knownCmsSite });
       for (const line of started.skipped) toast.info(line);
@@ -407,20 +513,20 @@ export function SetupBridgeSection({
     } catch (error) {
       toast.error(`Content generation failed to start: ${extractErrorMessage(error)}`);
     } finally {
-      setBusy(null);
+      endBusy();
     }
   };
 
   const handleFillCancel = async () => {
     if (!fillStatus?.jobId) return;
-    setBusy("fillCancel");
+    startBusy("fillCancel");
     try {
       setFillStatus(await bridgeFillCancel(dispatch, site.id, fillStatus.jobId));
       toast.info("Content generation stopped — in-flight pages finish, nothing else starts.");
     } catch (error) {
       toast.error(`Cancel failed: ${extractErrorMessage(error)}`);
     } finally {
-      setBusy(null);
+      endBusy();
     }
   };
 
@@ -438,7 +544,7 @@ export function SetupBridgeSection({
       });
       if (!ok) return;
     }
-    setBusy(dryRun ? "publishPreview" : "publishApply");
+    startBusy(dryRun ? "publishPreview" : "publishApply");
     try {
       const outcome = await bridgePublish(dispatch, site.id, {
         dryRun,
@@ -468,7 +574,7 @@ export function SetupBridgeSection({
     } catch (error) {
       toast.error(`Publish failed: ${extractErrorMessage(error)}`);
     } finally {
-      setBusy(null);
+      endBusy();
     }
   };
 
@@ -521,7 +627,11 @@ export function SetupBridgeSection({
               Waiting for the CMS check…
             </span>
           ) : (
-            <div className="flex w-full flex-wrap items-center gap-1.5">
+            <RunRow
+              className="w-full"
+              stage={stageFor(["link"])}
+              elapsed={elapsed}
+            >
               <Select value={linkChoice} onValueChange={setLinkChoice}>
                 <SelectTrigger className="h-7 w-44 text-xs">
                   <SelectValue />
@@ -548,7 +658,7 @@ export function SetupBridgeSection({
                 )}
                 {linkChoice === "__create__" ? "Create & link" : "Link"}
               </Button>
-            </div>
+            </RunRow>
           )}
         </Rung>
 
@@ -573,7 +683,7 @@ export function SetupBridgeSection({
           }
           blockedReason={linked ? null : "Link a CMS site first (step 1)."}
         >
-          <div className="flex flex-wrap items-center gap-1.5">
+          <RunRow stage={stageFor(["kit"])} elapsed={elapsed}>
             <Button
               size="sm"
               variant="outline"
@@ -599,7 +709,7 @@ export function SetupBridgeSection({
                 the CMS instead.
               </span>
             )}
-          </div>
+          </RunRow>
         </Rung>
 
         {/* ── 3 · Realize pages ── */}
@@ -624,7 +734,10 @@ export function SetupBridgeSection({
           }
           blockedReason={linked ? null : "Link a CMS site first (step 1)."}
         >
-          <div className="flex flex-wrap items-center gap-1.5">
+          <RunRow
+            stage={stageFor(["check", "preview", "apply"])}
+            elapsed={elapsed}
+          >
             <Button
               size="sm"
               variant="outline"
@@ -677,7 +790,7 @@ export function SetupBridgeSection({
                 ) : null}
               </>
             ) : null}
-          </div>
+          </RunRow>
         </Rung>
 
         {/* ── 4 · Generate content ── */}
@@ -699,7 +812,13 @@ export function SetupBridgeSection({
           }
           blockedReason={linked ? null : "Link a CMS site first (step 1)."}
         >
-          <div className="flex flex-wrap items-center gap-1.5">
+          {/* The fan-out run narrates from REAL queue counts below; these two
+            actions are single request/response calls, so they narrate from
+            their stage tables instead. */}
+          <RunRow
+            stage={stageFor(["fillPreview", "fillStart"])}
+            elapsed={elapsed}
+          >
             {fillRunning ? (
               <>
                 <span className="inline-flex items-center gap-1.5 text-[11px] tabular-nums text-muted-foreground">
@@ -760,7 +879,7 @@ export function SetupBridgeSection({
                 ) : null}
               </>
             )}
-          </div>
+          </RunRow>
         </Rung>
 
         {/* ── 5 · Publish ── */}
@@ -792,7 +911,10 @@ export function SetupBridgeSection({
           }
           blockedReason={linked ? null : "Link a CMS site first (step 1)."}
         >
-          <div className="flex flex-wrap items-center gap-1.5">
+          <RunRow
+            stage={stageFor(["publishPreview", "publishApply"])}
+            elapsed={elapsed}
+          >
             <Button
               size="sm"
               variant="outline"
@@ -837,7 +959,7 @@ export function SetupBridgeSection({
                 Nothing has pending changes — the live site is already current.
               </span>
             ) : null}
-          </div>
+          </RunRow>
         </Rung>
       </ol>
 
