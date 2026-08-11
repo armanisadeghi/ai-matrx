@@ -165,7 +165,6 @@ NEXT_PUBLIC_TYPESENSE_SEARCH_KEY=
 | `app/global-error.tsx` | Added `Sentry.captureException(error)` |
 | `components/next-js/loading-error-not-found.tsx` | Added `Sentry.captureException(error)` |
 | `app/api/public/email/route.ts` | Replaced in-memory rate limiter with Upstash |
-| `app/api/public/apps/[slug]/execute/route.ts` | Replaced `ip-rate-limiter.ts` with Upstash |
 | `app/api/contact/route.ts` | Added Upstash rate limiting |
 | `lib/email/notificationService.ts` | Migrated 4 send functions to React Email templates |
 | `package.json` | Added `"email": "email dev ..."` preview script |

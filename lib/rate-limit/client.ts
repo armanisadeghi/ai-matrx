@@ -24,16 +24,6 @@ function getRedis(): Redis {
  * not a fixed hourly bucket. This is more resilient to burst traffic.
  */
 
-// Public prompt app executions: 20 per IP per 24 hours
-export function getPublicAppsRatelimiter() {
-  return new Ratelimit({
-    redis: getRedis(),
-    limiter: Ratelimit.slidingWindow(20, "24 h"),
-    prefix: "rl:public_apps",
-    analytics: true,
-  });
-}
-
 // Public email endpoint: 5 emails per IP per hour
 export function getPublicEmailRatelimiter() {
   return new Ratelimit({

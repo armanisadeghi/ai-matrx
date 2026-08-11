@@ -34,7 +34,7 @@
 - `api/prompts/templates/[id]/use`
 - `api/system-prompts` + `[id]` + `[id]/link-prompt` + `[id]/compatible-prompts`
 - `api/prompt-apps/[id]` + `duplicate` + `generate-favicon`
-- `api/public/apps/[slug]/execute` + `api/public/apps/response/[taskId]`
+- ~~`api/public/apps/[slug]/execute` + `api/public/apps/response/[taskId]`~~ — **deleted `2026-08-11`** (whole `app/api/public/apps/` directory gone)
 - `api/admin/prompt-builtins` + `[id]` + `create-from-ai` + `user-prompts` + `convert-from-prompt`
 - `api/admin/prompt-shortcuts` + `[id]`
 - `api/admin/shortcut-categories` + `[id]`

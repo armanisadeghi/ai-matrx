@@ -8,10 +8,9 @@
 ## What's Done
 
 - `@upstash/ratelimit` and `@upstash/redis` installed
-- `lib/rate-limit/client.ts` — centralized limiter definitions (6 rate limiters)
+- `lib/rate-limit/client.ts` — centralized limiter definitions (5 rate limiters; `getPublicAppsRatelimiter()` removed `2026-08-11` with its dead route)
 - `lib/rate-limit/helpers.ts` — `ipRateLimit()` and `checkRateLimit()` utility functions
 - `app/api/public/email/route.ts` — migrated from in-memory to Upstash (5/hr per IP)
-- `app/api/public/apps/[slug]/execute/route.ts` — migrated from `ip-rate-limiter.ts` to Upstash (20/24hr per IP)
 - `app/api/contact/route.ts` — added rate limiting (3/hr per IP)
 
 ## Pending Setup (Required to Activate)
@@ -37,7 +36,6 @@ Also add to `.env.local` for local development. Without these, rate limiting is 
 
 | Limiter | Limit | Window | Used On |
 |---------|-------|--------|---------|
-| `getPublicAppsRatelimiter()` | 20 req | 24 hours | `/api/public/apps/[slug]/execute` |
 | `getPublicEmailRatelimiter()` | 5 req | 1 hour | `/api/public/email` |
 | `getAuthRatelimiter()` | 10 req | 15 min | Auth endpoints (to be added) |
 | `getContactRatelimiter()` | 3 req | 1 hour | `/api/contact` |

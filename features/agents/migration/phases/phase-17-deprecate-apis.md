@@ -8,7 +8,7 @@
 ## Delete
 - `app/api/prompts/**`
 - `app/api/prompt-apps/**`
-- `app/api/public/apps/**`
+- ~~`app/api/public/apps/**`~~ — **done `2026-08-11`** (both routes were dead; directory removed)
 - `app/api/admin/prompt-builtins/**`
 - `app/api/admin/prompt-shortcuts/**`
 - `app/api/admin/shortcut-categories/**`
