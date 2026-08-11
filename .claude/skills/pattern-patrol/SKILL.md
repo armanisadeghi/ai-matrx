@@ -44,6 +44,12 @@ system doc). The repo-specific facts it needs:
 - **Scoping:** structural novelty (new `app/**/page.tsx` leaves, new
   `features/*` dirs, new files matching the patrol's surface signature) + the
   ledger + a full pass every Nth run. NEVER scope by raw git churn.
+- **Loud degradation:** if a Tier-M patrol is forced down to report-only, or a
+  required read, scan, fix, certification, gate, release, report, or memory
+  update does not happen, follow `FEATURE.md`'s exact Loud Degradation
+  Contract. Begin with `AUTOMATION DEGRADED — ACTION REQUIRED`; when Arman must
+  act, end with `ARMAN, WE NEED YOU: <one specific next action>.` Counts alone
+  are never an adequate warning.
 
 ## Duty 2 — logging a sighting (you're on another mission)
 
@@ -75,5 +81,6 @@ patterns.
 - A patrol "improving" style beyond its registered pattern.
 - Reporting a clean run as wasted effort — zero findings is the system working.
 - Marking a registry status ✅ that isn't (the registry must never lie).
+- Giving a polished normal-looking summary for a degraded or incomplete run.
 - Growing this skill with per-patrol content — that belongs in the registry row
   or the pattern's own skill.

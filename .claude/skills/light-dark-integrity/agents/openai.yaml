@@ -1,0 +1,4 @@
+interface:
+  display_name: "Light/Dark Integrity"
+  short_description: "Detect and safely fix theme-token violations"
+  default_prompt: "Use $light-dark-integrity to detect, triage, and safely repair light/dark theme violations."
