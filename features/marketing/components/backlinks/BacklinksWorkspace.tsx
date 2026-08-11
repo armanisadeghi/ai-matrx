@@ -837,7 +837,7 @@ export function BacklinksWorkspace() {
             <Select
               value={String(enrichmentBatchSize)}
               onValueChange={(value) => setEnrichmentBatchSize(Number(value))}
-              disabled={batchEnriching || refreshing}
+              disabled={batchAnalyzing || refreshing}
             >
               <SelectTrigger
                 size="sm"
