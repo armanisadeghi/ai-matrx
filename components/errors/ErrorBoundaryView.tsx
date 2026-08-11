@@ -106,7 +106,13 @@ function buildAIContext(
 // Primitive sub-components
 // ---------------------------------------------------------------------------
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({
+  text,
+  surface = "theme",
+}: {
+  text: string;
+  surface?: "theme" | "dark";
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -118,7 +124,11 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="p-1 rounded hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
+      className={`p-1 rounded transition-colors ${
+        surface === "dark"
+          ? "text-zinc-400 hover:text-white hover:bg-white/10"
+          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+      }`}
       title="Copy to clipboard"
     >
       {copied ? (
@@ -340,7 +350,7 @@ function AdminPanel({ error }: { error: Error & { digest?: string } }) {
               {stackExpanded && (
                 <div className="relative rounded-lg bg-zinc-950 dark:bg-black border border-border/60 overflow-hidden">
                   <div className="absolute top-2 right-2">
-                    <CopyButton text={error.stack} />
+                    <CopyButton text={error.stack} surface="dark" />
                   </div>
                   <pre className="text-[11px] font-mono text-zinc-300 p-3 overflow-x-auto leading-relaxed whitespace-pre-wrap break-all">
                     {error.stack}
