@@ -39,6 +39,57 @@
  *
  * Emitter: `VoiceAgentSurface.tsx` mounts `<SurfaceRuntimeProvider>` and
  * builds the payload at trigger time via `createChatVoiceScope`.
+ *
+ * ## Write targets (2026-08-11) — the PLAYGROUND's config, and nothing else
+ *
+ * Three `ask`-policy draft targets cover the only authored, agent-drafted
+ * state this surface has: the system prompt the voice agent will follow
+ * (`voice_instructions` full-replace + `append_voice_instructions`, the
+ * `agent-builder` replace/append pair applied to a voice prompt) and which
+ * of xAI's five voices speaks it (`voice_id`). All three land through the
+ * SAME `updateConfig` action the settings sheet's textarea and picker
+ * dispatch on every keystroke/click.
+ *
+ * They are registered ONLY by `PlaygroundSettingsSheet`, which renders only
+ * on `/chat/voice/playground`. The intro route at `/chat/voice` mounts the
+ * same provider but no handlers, so an agent there is offered no write tool
+ * at all — the deliberate per-mount split `schedules` and
+ * `education-assessment` use. That split is also load-bearing rather than
+ * cosmetic: `updateConfig` is a silent no-op for the `intro` preset, so
+ * handlers registered on the intro route would report success for a write
+ * that never happened.
+ *
+ * `mode: "draft"` follows `image-generate` / `marketing-crawls` /
+ * `education-assessment`: a settings form the user reviews and then executes
+ * with their own press. Nothing here is persisted to any record — the values
+ * live in `voiceAgentSlice` and are consumed when the user next taps the mic.
+ * Every description says "for the NEXT session" so the claim the user reads
+ * is precise, since the description leads the confirm dialog.
+ *
+ * **Every handler refuses while a session is LIVE** (status not `idle` /
+ * `error` — the same gate that greys the sheet's controls). Mid-session the
+ * change either does nothing (the instructions were already sent in
+ * `session.update`) or silently alters what the user is mid-conversation
+ * with. Both are worse than a refusal that says "end the session first".
+ *
+ * ### Deliberately NOT writable, and why
+ *
+ * - `connection_status`, `mic_muted`, `connection_error`,
+ *   `session_started_at_ms`, `active_turn`, and starting/ending a session:
+ *   live session and DEVICE state, not values. Muting someone's microphone
+ *   or opening their mic is not a copy edit.
+ * - `transcript_text`, `transcript_turns`, `last_user_utterance`,
+ *   `last_assistant_utterance`, `turn_count`, `total_interruptions`,
+ *   `latency_summary`: the RECORD of what was actually said and how the
+ *   session behaved. Writing it would forge the transcript — the
+ *   input-vs-output line `voice-pad` drew around `transcript_entries` and
+ *   `transcripts-cleanup` drew around `raw_transcript_text`.
+ * - `conversation_id`, `voice_agent_id`: identity.
+ * - `realtime_tools` / `realtime_tool_names`: what the voice agent may
+ *   REACH is a capability change, not a copy edit (the `agent-builder` and
+ *   tool-registry line). The sheet's tool switches stay human-only.
+ * - `session_preset`: derived from the ROUTE. "Writing" it would mean
+ *   navigating the user somewhere else.
  */
 
 import type {
@@ -46,7 +97,9 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { VOICES } from "@/features/voice-agent/constants";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type {
   VoiceActiveTurnScope,
@@ -311,11 +364,56 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * The five xAI voice ids, spelled into every model-facing description so the
+ * agent never has to guess the vocabulary. Derived from `VOICES` rather than
+ * re-typed, so adding a voice cannot leave the contract prose lying.
+ */
+const VOICE_ID_VOCABULARY = VOICES.map((v) => v.id).join(" | ");
+
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "voice_instructions",
+    label: "Voice instructions",
+    description:
+      "Replaces the ENTIRE system prompt the playground voice agent will follow, as one plain-text string (markdown headings are the convention here). Send the whole prompt — to add a single rule without restating it, use Append voice instructions instead. Staged into the Voice settings sheet for the NEXT session: nothing is persisted to any record, and it takes effect when the user next taps the mic. Refused while a voice session is live.",
+    valueType: "string",
+    updatesValue: "voice_instructions",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "voice_session",
+    sortOrder: 100,
+  },
+  {
+    name: "append_voice_instructions",
+    label: "Append voice instructions",
+    description:
+      "Adds text to the END of the playground voice agent's existing system prompt, separated by a blank line — for adding one rule (a pronunciation entry, a guardrail, a style note) without re-sending the whole prompt. Takes the text to append as a string; do NOT include the existing prompt. Updates the same Voice instructions value a full replace does. Staged for the NEXT session, nothing is persisted, and refused while a voice session is live.",
+    valueType: "string",
+    updatesValue: "voice_instructions",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "voice_session",
+    sortOrder: 110,
+  },
+  {
+    name: "voice_id",
+    label: "Voice",
+    description: `Sets which xAI voice speaks. Must be exactly one of: ${VOICE_ID_VOCABULARY} — any other value is refused, and these are the only voices the provider offers. Staged into the Voice settings sheet for the NEXT session: nothing is persisted, and it takes effect when the user next taps the mic. Refused while a voice session is live, because the running session is already speaking in the voice it was started with.`,
+    valueType: "string",
+    updatesValue: "voice_id",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "voice_session",
+    sortOrder: 120,
+  },
+];
+
 export const chatVoiceManifest: SurfaceManifest = {
   surfaceName: CHAT_VOICE_SURFACE,
   readiness: "partial",
   readinessNote:
-    "Manifest + SurfaceRuntimeProvider emitter landed; registry.ts entry, the /chat/voice route mapping (must sit ABOVE the /chat prefix), and the DB manifest sync are still pending.",
+    "Manifest + SurfaceRuntimeProvider emitter, registry.ts entry, and the /chat/voice route mapping (route-to-surface.ts, above the /chat prefix) are all landed and verified 2026-08-11; write targets added the same day. The DB manifest sync is still pending.",
   label: "Voice Chat",
   urlPattern: "/chat/voice",
   intro: `<surface_intro>
@@ -332,6 +430,9 @@ Turn status matters here in a way it does not in typed chat: a turn marked "inte
     pickBaseline("content", "context"),
     surfaceSpecific,
   ),
+  // Handlers live in `useVoicePlaygroundWriteHandlers` and are registered by
+  // `PlaygroundSettingsSheet` — playground route only. See the header.
+  writeTargets,
 };
 
 /**

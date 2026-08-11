@@ -3,6 +3,15 @@
 //
 // Right-side panel hosting the playground knobs. Locked while a session
 // is active (changes apply on next session start).
+//
+// Also the registration point for the `matrx-user/chat-voice` surface's write
+// targets: this component owns `instanceId` and is the ONLY thing that renders
+// the editable controls, and it renders only on /chat/voice/playground. The
+// intro route mounts the same SurfaceRuntimeProvider but reaches this file
+// never, so an agent there is offered no write tool — which is correct, since
+// `updateConfig` is a silent no-op for the intro preset. Registration is at
+// this level rather than inside the panel body so the targets stay live while
+// the sheet is CLOSED (the panel unmounts its children).
 
 import {
   cloneElement,
@@ -14,6 +23,9 @@ import {
 } from "react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Separator } from "@/components/ui/separator";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { CHAT_VOICE_SURFACE } from "@/features/surfaces/manifests/chat-voice.manifest";
+import { useVoicePlaygroundWriteHandlers } from "../../hooks/useVoicePlaygroundWriteHandlers";
 import { VoicePicker } from "./VoicePicker";
 import { ToolToggleList } from "./ToolToggleList";
 import { InstructionsEditor } from "./InstructionsEditor";
@@ -48,6 +60,14 @@ export function PlaygroundSettingsSheet({
   disabled,
 }: PlaygroundSettingsSheetProps) {
   const [open, setOpen] = useState(false);
+
+  // Write targets for `matrx-user/chat-voice`. The handlers read the live
+  // store at call time, so they do not depend on this component re-rendering
+  // when the session status changes.
+  useSurfaceWriteHandlers(
+    CHAT_VOICE_SURFACE,
+    useVoicePlaygroundWriteHandlers(instanceId),
+  );
 
   return (
     <>
