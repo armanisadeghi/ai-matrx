@@ -563,6 +563,30 @@ internal platform use — never a washed-down user variant beside a private one:
   stays undeclared by doctrine — bulk-replacing every cell of a user's
   spreadsheet is destructive, not authoring — as do permissions, visibility,
   provenance and every structural sheet edit).
+  `matrx-user/analysis-studio` (3 ask-policy targets on the PDF studio —
+  `annotation_label` and `annotation_extracted_text` as ENTITY writes on ONE
+  open annotation, plus `studio_focus_annotation` as the surface's `mode:"ui"`
+  target; handlers built in
+  [`features/file-analysis/studio/analysis-studio-write-handlers.ts`](../file-analysis/studio/analysis-studio-write-handlers.ts)
+  and registered on `StudioShell`'s own provider, all landing through
+  `useAnnotations(fileId).update` — the exact function the region context menu
+  writes `extracted_text` with and the canvas writes a dragged `bbox` with.
+  THE reference for the POINTER-GESTURE line: an agent may say what a region
+  IS and what it SAYS, but never where it is — `bbox` and all geometry stay
+  human because an agent cannot see the rendered page, so a "corrected" box
+  silently re-points the region at different text. `redact` is excluded as a
+  disclosure decision rather than a copy edit, and delete stays human.
+  `entity` rather than the preferred `draft` because the studio has no staging
+  buffer for an EXISTING annotation (the label picker's draft state lives only
+  while CREATING one), so each handler re-reads the row the server returns and
+  throws when the value did not land — the optimistic shared cache must never
+  let a rejected write toast as success. Label and category are ONE target
+  because the label catalog owns their pairing: a catalog label id carries its
+  own category, and a conflicting `label_category` is rejected rather than
+  producing a combination the user's own picker cannot make. `document_summary`
+  is derived emitter output with no write path, and `notes` /
+  `normalized_value` are writable on the API but have no editor for an
+  existing annotation and no read twin — no evidence loop, no target).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as

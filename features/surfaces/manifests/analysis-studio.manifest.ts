@@ -20,6 +20,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -296,6 +297,83 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the agent-writable half of Analysis Studio.
+ *
+ * What an agent can honestly author here is the CONTENT of a region the
+ * human already drew: what that region is (its label) and what it says (its
+ * extracted text). Both land through `useAnnotations(fileId).update` — the
+ * exact function the region context menu writes `extracted_text` with and the
+ * canvas writes a dragged `bbox` with — so an agent write and a user click
+ * share one path to `PUT /files/{id}/annotations/{aid}`. The studio has NO
+ * staging buffer for an existing annotation (the label picker's draft state
+ * exists only while CREATING one), so every content target is `mode: "entity"`
+ * and says so; `applyPolicy: "ask"` is what keeps a human in the loop.
+ *
+ * Deliberately NOT declared, and why:
+ *  - `bbox` / any geometry — where a rectangle belongs on the page is a
+ *    pointer gesture against a rendered document. An agent cannot see the
+ *    page; a "corrected" bbox would be a guess that silently re-points the
+ *    region at different text.
+ *  - `redact` — marking a region for redaction is a disclosure decision, not
+ *    a copy edit. It stays on the human's context menu.
+ *  - delete / `status` — destructive, and the panel already asks.
+ *  - annotation ids, `file_id`, page identity — identity, never authored.
+ *  - `document_summary` — derived output (`{file_id, filename, mime_type,
+ *    total_pages, active_page_count}` composed by the emitter). The studio
+ *    has no write path for any of it: filename is renamed on the file record,
+ *    the counts are `file_pages` facts. A "write" here would have to invent a
+ *    parallel path, which is exactly what this seam exists to prevent.
+ *  - `notes` / `normalized_value` — writable on the API body, but the studio
+ *    offers no editor for them on an EXISTING annotation and neither has a
+ *    read twin on this surface, so an agent would be writing into something
+ *    the page can never show back. No evidence loop, no target.
+ *  - `inspector_tab` / `canvas_mode` — pure chrome an agent has no business
+ *    driving. The one view-state target below is `studio_focus_annotation`,
+ *    and it earns its place because "the thing I am telling you about is that
+ *    rectangle, on page 7" is otherwise unsayable: it does exactly what the
+ *    user's own click on an Annotations-panel row does (select + jump to the
+ *    annotation's page) and persists nothing.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "annotation_label",
+    label: "Annotation label",
+    description:
+      'Re-label ONE existing annotation — the region named by `annotation_id`, or the selected one when you omit it. Value: `{ label: string, annotation_id?: string, label_category?: string }`. `label` is a label-catalog id (the raw `label` in the annotations value, e.g. "invoice_number"); when it names a catalog entry the category is taken FROM the catalog, and passing a `label_category` that disagrees is rejected. A label that is not in the catalog is a custom label and then `label_category` is REQUIRED and must be a catalog category key or "custom". Saved immediately through the same annotation update the label picker and region menu use — there is no draft to save afterwards. Rejected when nothing is selected and you passed no id, when the id is not an active annotation on this document, or while another annotation write is still in flight.',
+    valueType: "object",
+    updatesValue: "annotations",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "studio_annotations",
+    sortOrder: 300,
+  },
+  {
+    name: "annotation_extracted_text",
+    label: "Annotation text",
+    description:
+      "Set the extracted text stored on ONE existing annotation — the region named by `annotation_id`, or the selected one when you omit it. Value: `{ text: string, annotation_id?: string }`. The text REPLACES the region's current `extracted_text` in full (there is no append) — this is for transcribing or cleaning up what a region says, so send the corrected text for that region alone, never the whole page. Saved immediately through the same annotation update the region menu's \"Extract text here\" writes with — there is no draft to save afterwards. Rejected when the text is empty, when nothing is selected and you passed no id, when the id is not an active annotation on this document, or while another annotation write is still in flight.",
+    valueType: "object",
+    updatesValue: "annotations",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "studio_annotations",
+    sortOrder: 310,
+  },
+  {
+    name: "studio_focus_annotation",
+    label: "Focused annotation",
+    description:
+      "Point the user at ONE annotation: select it on the canvas and jump the studio to its page — the same thing their own click on an Annotations-panel row does. Value: `{ annotation_id: string }`, required, and it must be an active annotation on this document. View state only: nothing is written to the document and there is nothing to save.",
+    valueType: "object",
+    updatesValue: "studio_view_state",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "studio_view",
+    sortOrder: 250,
+  },
+];
+
 export const analysisStudioManifest: SurfaceManifest = {
   surfaceName: "matrx-user/analysis-studio",
   readiness: "verified",
@@ -354,6 +432,7 @@ send the user to the extractor studio.
       },
     ],
   ),
+  writeTargets,
 };
 
 /**
