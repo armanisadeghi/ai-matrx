@@ -187,6 +187,24 @@ begin
     else stale || ' heal job(s) stuck since ' || oldest
          || ' — the drain (in-process loop on the aidream scheduler host) is not keeping up' end;
   return next;
+
+  -- A 'failed' row is the drain GIVING UP, and it never ages into the pending
+  -- set above — so without this check it would be invisible here forever. That
+  -- is the same shape as the bug this whole system exists for: a terminal state
+  -- that looks identical to "nothing to do". Any failed row is a finding, at any
+  -- age: the media it points at is still non-durable and nothing will retry it.
+  select count(*), min(created_at) into stale, oldest
+    from public.mtx_media_heal_queue
+   where status = 'failed';
+  check_name := 'heal_queue_no_failures';
+  ok := stale = 0;
+  detail := case when stale = 0
+    then 'no heal job has been abandoned'
+    else stale || ' heal job(s) FAILED (oldest ' || oldest
+         || ') — the media is still non-durable and nothing will retry it. '
+         || 'Check mtx_media_heal_queue.error; a "column not found" here usually means the '
+         || 'drain resolved the wrong schema for an ambiguous table name.' end;
+  return next;
 end;
 $$;
 

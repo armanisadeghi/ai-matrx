@@ -66,6 +66,17 @@ So `heal_queue_draining` fails on **staleness**: any row pending or healing for 
 24h, reported with the count and the oldest timestamp. Emptiness is not evidence of a
 working drain; absence of *stuck* work is.
 
+And its twin, `heal_queue_no_failures` — because a **terminal** state is the other way a
+queue lies. A `failed` row is the drain giving up; it never ages into the pending set, so
+a staleness check alone would never see it, *at any age*. Any failed row is a finding
+regardless of age: the media it points at is still non-durable and nothing will retry it.
+(This gap was real — the first version of this check looked only at `pending`/`healing`,
+and the aidream session's measurement of a live mis-resolution is what exposed it.)
+
+**Generalise both:** a queue has three ways to be unhealthy and depth catches none of
+them — work that is stuck, work that was abandoned, and a worker that is not running.
+Assert on the age of the oldest unfinished item AND on the count of terminal failures.
+
 **Generalise it:** for any queue, retry table, or outbox, the health signal is age of the
 oldest unfinished item, never depth. Depth-zero is equally consistent with "working
 perfectly" and "nothing is running".
