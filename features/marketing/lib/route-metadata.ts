@@ -5,6 +5,10 @@ import {
   isCrawlReportKey,
 } from "@/features/marketing/lib/crawl-reports";
 import { listMarketingComingSoon } from "@/features/marketing/lib/marketing-nav";
+import {
+  getMarketingCrawlSection,
+  getMarketingSiteSection,
+} from "@/features/marketing/lib/route-sections";
 
 interface MarketingRouteIdentity {
   titlePrefix?: string;
@@ -130,111 +134,6 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
   },
 };
 
-const SITE_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
-  access: {
-    titlePrefix: "Access",
-    description: "Manage site access and sharing.",
-    letter: "Ac",
-  },
-  analysis: {
-    titlePrefix: "Analysis",
-    description: "Review prioritized marketing analysis for this site.",
-    letter: "An",
-  },
-  cost: {
-    titlePrefix: "Site Cost",
-    description: "Review cost attribution for this site.",
-    letter: "Sc",
-  },
-  performance: {
-    titlePrefix: "Site Performance",
-    description:
-      "See PageSpeed coverage, site-wide score health, trends, and the slowest pages with real search traffic.",
-    letter: "Pf",
-  },
-  audit: {
-    titlePrefix: "Site Audit",
-    description:
-      "Deterministic site-wide audit rollup: indexability, SERP metadata, social cards, headings, and URL quality.",
-    letter: "Au",
-  },
-  authority: {
-    titlePrefix: "Authority Router",
-    description:
-      "Route backlink and internal authority toward strategically important pages with exact, evidence-grounded link recommendations.",
-    letter: "Ar",
-  },
-  backlinks: {
-    titlePrefix: "Backlinks",
-    description:
-      "Inspect persisted backlink authority, referring domains, anchors, linked pages, and competitors.",
-    letter: "Bl",
-  },
-  reputation: {
-    titlePrefix: "Digital PR & Reputation",
-    description:
-      "Review evidence-backed publication opportunities and reputation handling decisions.",
-    letter: "Pr",
-  },
-  coverage: {
-    titlePrefix: "Coverage",
-    description: "Compare sitemap, crawl, and search coverage for this site.",
-    letter: "Cv",
-  },
-  crawls: {
-    titlePrefix: "Crawls",
-    description: "Inspect and run website crawl sessions.",
-    letter: "Cr",
-  },
-  discovery: {
-    titlePrefix: "Discovery",
-    description: "Review discovered brand assets and business facts.",
-    letter: "Di",
-  },
-  findings: {
-    titlePrefix: "Findings",
-    description: "Review durable marketing findings and evidence.",
-    letter: "Fi",
-  },
-  integrations: {
-    titlePrefix: "Integrations",
-    description: "Configure this site's marketing data providers.",
-    letter: "In",
-  },
-  keywords: {
-    titlePrefix: "Keywords",
-    description:
-      "Inspect persisted organic query performance and keyword-market intelligence.",
-    letter: "Kw",
-  },
-  links: {
-    titlePrefix: "Links",
-    description: "Inspect accepted link evidence for this site.",
-    letter: "Ln",
-  },
-  pages: {
-    titlePrefix: "Pages",
-    description: "Manage canonical pages and their observed content.",
-    letter: "Pg",
-  },
-  settings: {
-    titlePrefix: "Settings",
-    description: "Configure website identity and crawl behavior.",
-    letter: "Se",
-  },
-  sitemaps: {
-    titlePrefix: "Sitemaps",
-    description: "Inspect sitemap documents and page membership.",
-    letter: "Sm",
-  },
-  structure: {
-    titlePrefix: "Structure",
-    description:
-      "Explore the site's routing tree with page totals at every level.",
-    letter: "Tr",
-  },
-};
-
 function normalizePathname(pathname: string): string {
   const path = pathname.split(/[?#]/, 1)[0] || "/marketing";
   return path.length > 1 ? path.replace(/\/+$/, "") : path;
@@ -304,11 +203,10 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
 
   const siteSection = segments[5];
   if (!siteSection) {
-    return createMarketingMetadata(normalizedPath, {
-      titlePrefix: "Site Overview",
-      description: "Review website identity, health, and recent activity.",
-      letter: "So",
-    });
+    return createMarketingMetadata(
+      normalizedPath,
+      getMarketingSiteSection("") ?? MARKETING_ROOT,
+    );
   }
 
   if (siteSection === "crawls") {
@@ -343,12 +241,13 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
 
   return createMarketingMetadata(
     normalizedPath,
-    SITE_ROUTES[siteSection] ?? MARKETING_ROOT,
+    getMarketingSiteSection(siteSection) ?? MARKETING_ROOT,
   );
 }
 
 function getCrawlIdentity(rest: readonly string[]): MarketingRouteIdentity {
-  if (rest.length === 0) return SITE_ROUTES.crawls;
+  if (rest.length === 0)
+    return getMarketingSiteSection("crawls") ?? MARKETING_ROOT;
   if (rest[0] === "new") {
     return {
       titlePrefix: "New Crawl",
@@ -357,13 +256,7 @@ function getCrawlIdentity(rest: readonly string[]): MarketingRouteIdentity {
     };
   }
   const detail = rest[1];
-  if (!detail) {
-    return {
-      titlePrefix: "Crawl Detail",
-      description: "Inspect a crawl session and its durable results.",
-      letter: "Cd",
-    };
-  }
+  if (!detail) return getMarketingCrawlSection("") ?? MARKETING_ROOT;
   if (detail === "reports") {
     const reportKey = rest[2];
     if (reportKey && isCrawlReportKey(reportKey)) {
@@ -374,40 +267,18 @@ function getCrawlIdentity(rest: readonly string[]): MarketingRouteIdentity {
         letter: report.badge,
       };
     }
-    return {
-      titlePrefix: "Crawl Reports",
-      description:
-        "Browse dedicated technical SEO reports for this crawl session.",
-      letter: "Rp",
-    };
+    return getMarketingCrawlSection("reports") ?? MARKETING_ROOT;
   }
-  const identities: Readonly<Record<string, MarketingRouteIdentity>> = {
-    links: {
-      titlePrefix: "Crawl Links",
-      description: "Inspect link evidence captured during this crawl.",
-      letter: "Cl",
-    },
-    logs: {
-      titlePrefix: "Crawl Logs",
-      description: "Inspect the durable event history for this crawl.",
-      letter: "Cg",
-    },
-    snapshots: {
-      titlePrefix: "Crawl Captures",
-      description: "Inspect page captures produced by this crawl.",
-      letter: "Cs",
-    },
-    urls: {
-      titlePrefix: "Crawl URLs",
-      description: "Inspect URLs encountered during this crawl.",
-      letter: "Cu",
-    },
-  };
-  return identities[detail] ?? SITE_ROUTES.crawls;
+  return (
+    getMarketingCrawlSection(detail) ??
+    getMarketingSiteSection("crawls") ??
+    MARKETING_ROOT
+  );
 }
 
 function getPageIdentity(rest: readonly string[]): MarketingRouteIdentity {
-  if (rest.length === 0) return SITE_ROUTES.pages;
+  if (rest.length === 0)
+    return getMarketingSiteSection("pages") ?? MARKETING_ROOT;
   if (rest[1] !== "snapshots") {
     return {
       titlePrefix: "Page Detail",

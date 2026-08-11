@@ -56,11 +56,14 @@ import {
   NavTooltipProvider,
 } from "@/features/shell/components/header/NavItemTooltip";
 import { centerSlotWidth } from "@/features/shell/components/header/RouteHeader";
+import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 
 export interface RouteNavItem {
   name: string;
   href: string;
   icon?: LucideIcon;
+  /** Match only this pathname; use for Overview/root modes. */
+  exact?: boolean;
 }
 
 type Variant = "full" | "icons" | "menu";
@@ -69,18 +72,6 @@ interface RouteModeNavProps {
   items: RouteNavItem[];
   /** Optional explicit active href. Defaults to matching the current pathname. */
   activeHref?: string;
-}
-
-function resolveActive(
-  items: RouteNavItem[],
-  pathname: string,
-): RouteNavItem | undefined {
-  const exact = items.find((i) => i.href === pathname);
-  if (exact) return exact;
-  // Longest prefix match handles nested routes (e.g. /x/y under /x).
-  return items
-    .filter((i) => pathname.startsWith(i.href))
-    .sort((a, b) => b.href.length - a.href.length)[0];
 }
 
 const PILL =
@@ -108,7 +99,7 @@ export function RouteModeNav({ items, activeHref }: RouteModeNavProps) {
   const canIcons = items.every((i) => i.icon);
   const current = activeHref
     ? items.find((i) => i.href === activeHref)
-    : resolveActive(items, pathname);
+    : resolveActiveRouteMode(items, pathname);
 
   const navigate = (href: string) => {
     if (href === current?.href) return;

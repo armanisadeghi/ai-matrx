@@ -61,6 +61,15 @@ surfaces; they cannot drift.
   analyzers that must render without a session. Never add an authed `/seo/*` route.
 - **Adding or shipping a Marketing surface means editing `marketing-nav.ts`** —
   never the hub page, the tools page, the sidebar, or the metadata individually.
+- **Every site/crawl child URL is a visible mode.** Declare it once in
+  `lib/route-sections.ts`; the header, sibling-site switching, crawl subnav, and
+  route metadata consume that registry. Root modes are exact-only.
+  `route-sections.test.ts` compares both registries to the App Router filesystem,
+  so a new child page without navigation fails.
+- **Every customer-facing top-level Marketing page is in the Marketing map.**
+  `marketing-route-navigation.test.ts` compares the live App Router directories
+  with `marketing-nav.ts` in both directions; privileged `/marketing/admin` is
+  the sole explicit exception.
 - The brands/websites pillar is the largest, not the most important. `/marketing`
   is a list view of all pillars — it must never redirect into one of them.
 - **The scraper is NOT part of Marketing.** `/scraper/*` and `features/scraper/`
@@ -307,6 +316,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-11 — Codex: **Marketing child routes cannot masquerade as Overview.** Site and crawl modes now come from `lib/route-sections.ts`, which also drives sibling switching and route metadata; Overview/Summary match exactly, the shared matcher is segment-safe, `/capabilities` and cross-site `/ranks` are visibly registered, and filesystem-backed tests fail on any future route/navigation drift.
 - 2026-08-11 — Codex: **Backlinks now use one complete canonical record window.** Drawer and WindowPanel show every identity and evidence layer without truncating the source or target URL; Analyze opens that window, streams per-link progress inside it, and no longer shifts or blocks the workspace. Multiple exact links can run concurrently. Intelligence columns use generated `seo.backlink` query fields for real full-dataset sorting and filtering, and the item window refreshes its exact durable row independently of table order.
 - 2026-08-11 — Codex: **Backlink analysis became individually controllable and
   visibly live.** The old toolbar action hard-coded 25 items, discarded every

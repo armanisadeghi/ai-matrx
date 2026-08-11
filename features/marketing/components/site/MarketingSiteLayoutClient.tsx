@@ -30,6 +30,8 @@ import {
   TrendingUp,
   Loader2,
   Timer,
+  Wrench,
+  type LucideIcon,
 } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
@@ -48,6 +50,11 @@ import {
   useSiteCrawlActivity,
   type SiteCrawlActivity,
 } from "@/features/marketing/data/useSiteCrawlActivity";
+import {
+  MARKETING_SITE_SECTIONS,
+  listMarketingSiteModes,
+  marketingSiteSectionSuffix,
+} from "@/features/marketing/lib/route-sections";
 
 interface MarketingSiteContextValue {
   site: MarketingSite;
@@ -69,41 +76,36 @@ export function useMarketingSite() {
   return value;
 }
 
-function sectionSuffix(
-  pathname: string,
-  brandId: string,
-  siteId: string,
-): string {
-  const rest = pathname.slice(marketingRoutes.site(brandId, siteId).length);
-  for (const section of [
-    "discovery",
-    "sitemaps",
-    "coverage",
-    "performance",
-    "audit",
-    "pages",
-    "structure",
-    "media",
-    "crawls",
-    "analysis",
-    "findings",
-    "links",
-    "authority",
-    "backlinks",
-    "changes",
-    "reputation",
-    "keywords",
-    "ranks",
-    "integrations",
-    "cost",
-    "access",
-    "settings",
-    "intake",
-  ]) {
-    if (rest.startsWith(`/${section}`)) return `/${section}`;
-  }
-  return "";
-}
+const SITE_MODE_ICONS: Record<
+  (typeof MARKETING_SITE_SECTIONS)[number]["slug"],
+  LucideIcon
+> = {
+  "": Gauge,
+  capabilities: Wrench,
+  performance: Timer,
+  discovery: Inbox,
+  sitemaps: Map,
+  coverage: Grid3x3,
+  audit: ClipboardCheck,
+  pages: FileText,
+  structure: Network,
+  media: Images,
+  crawls: ScanSearch,
+  analysis: Activity,
+  findings: AlertTriangle,
+  links: Link2,
+  authority: Route,
+  backlinks: BadgeCheck,
+  changes: FlaskConical,
+  reputation: Newspaper,
+  keywords: KeyRound,
+  intake: Compass,
+  ranks: TrendingUp,
+  integrations: Plug,
+  cost: CircleDollarSign,
+  access: ShieldCheck,
+  settings: Settings,
+};
 
 function FallbackHeader() {
   return (
@@ -164,6 +166,7 @@ export function MarketingSiteLayoutClient({
     );
   }
   const base = marketingRoutes.site(brandId, siteId);
+  const siteModes = listMarketingSiteModes(base);
   const activeCrawl = crawlActivity.activeCrawl;
   const fetched = activeCrawl
     ? jsonNumber(activeCrawl.stats, ["pages_fetched"])
@@ -192,127 +195,15 @@ export function MarketingSiteLayoutClient({
         }
         entityOptions={(options.data ?? []).map((option) => ({
           label: option.name,
-          href: `${marketingRoutes.site(option.brand_id, option.id)}${sectionSuffix(pathname, brandId, siteId)}`,
+          href: `${marketingRoutes.site(option.brand_id, option.id)}${marketingSiteSectionSuffix(pathname, base)}`,
           active: option.id === siteId,
         }))}
-        modes={[
-          { name: "Overview", href: `${base}`, icon: Gauge },
-          {
-            name: "Performance",
-            href: `${base}/performance`,
-            icon: Timer,
-          },
-          {
-            name: "Discovery",
-            href: `${base}/discovery`,
-            icon: Inbox,
-          },
-          {
-            name: "Sitemaps",
-            href: `${base}/sitemaps`,
-            icon: Map,
-          },
-          {
-            name: "Coverage",
-            href: `${base}/coverage`,
-            icon: Grid3x3,
-          },
-          {
-            name: "Audit",
-            href: `${base}/audit`,
-            icon: ClipboardCheck,
-          },
-          {
-            name: "Pages",
-            href: `${base}/pages`,
-            icon: FileText,
-          },
-          {
-            name: "Structure",
-            href: `${base}/structure`,
-            icon: Network,
-          },
-          {
-            name: "Media",
-            href: `${base}/media`,
-            icon: Images,
-          },
-          {
-            name: "Crawls",
-            href: `${base}/crawls`,
-            icon: ScanSearch,
-          },
-          {
-            name: "Analysis",
-            href: `${base}/analysis`,
-            icon: Activity,
-          },
-          {
-            name: "Findings",
-            href: `${base}/findings`,
-            icon: AlertTriangle,
-          },
-          {
-            name: "Links",
-            href: `${base}/links`,
-            icon: Link2,
-          },
-          {
-            name: "Authority",
-            href: `${base}/authority`,
-            icon: Route,
-          },
-          {
-            name: "Backlinks",
-            href: `${base}/backlinks`,
-            icon: BadgeCheck,
-          },
-          {
-            name: "Changes",
-            href: marketingRoutes.siteChanges(brandId, siteId),
-            icon: FlaskConical,
-          },
-          {
-            name: "Reputation",
-            href: `${base}/reputation`,
-            icon: Newspaper,
-          },
-          {
-            name: "Keywords",
-            href: `${base}/keywords`,
-            icon: KeyRound,
-          },
-          {
-            name: "Intake",
-            href: `${base}/intake`,
-            icon: Compass,
-          },
-          {
-            name: "Ranks",
-            href: `${base}/ranks`,
-            icon: TrendingUp,
-          },
-          {
-            name: "Integrations",
-            href: `${base}/integrations`,
-            icon: Plug,
-          },
-          {
-            name: "Cost",
-            href: `${base}/cost`,
-            icon: CircleDollarSign,
-          },
-          {
-            name: "Access",
-            href: `${base}/access`,
-            icon: ShieldCheck,
-          },
-          {
-            name: "Settings",
-            href: `${base}/settings`,
-            icon: Settings,
-          },
-        ]}
+        modes={siteModes.map((mode) => ({
+          name: mode.name,
+          href: mode.href,
+          icon: SITE_MODE_ICONS[mode.slug],
+          exact: mode.exact,
+        }))}
         actions={[
           ...(activeCrawl
             ? [

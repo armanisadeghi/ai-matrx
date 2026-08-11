@@ -9,19 +9,34 @@ import {
   ListTree,
   Network,
   PanelsTopLeft,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type { CrawlSession } from "@/features/marketing/types";
-import {
-  humanLines,
-  webCopy,
-} from "@/features/marketing/lib/copy-payloads";
+import { humanLines, webCopy } from "@/features/marketing/lib/copy-payloads";
 import {
   formatCompactDate,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import {
+  MARKETING_CRAWL_SECTIONS,
+  listMarketingCrawlModes,
+} from "@/features/marketing/lib/route-sections";
+import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
+
+const CRAWL_MODE_ICONS: Record<
+  (typeof MARKETING_CRAWL_SECTIONS)[number]["slug"],
+  LucideIcon
+> = {
+  "": Activity,
+  urls: Link2,
+  reports: PanelsTopLeft,
+  snapshots: FileStack,
+  links: Network,
+  logs: ListTree,
+};
 
 export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
   const pathname = usePathname();
@@ -40,7 +55,10 @@ export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
       ["Status", crawl.status],
       ["Trigger", crawl.trigger],
       ["Started", formatCompactDate(crawl.started_at ?? crawl.created_at)],
-      ["Finished", crawl.finished_at ? formatCompactDate(crawl.finished_at) : "—"],
+      [
+        "Finished",
+        crawl.finished_at ? formatCompactDate(crawl.finished_at) : "—",
+      ],
       ["Error", crawl.error],
     ],
     attributes: {
@@ -49,14 +67,8 @@ export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
       status: crawl.status,
     },
   });
-  const items = [
-    { label: "Summary", href: root, icon: Activity },
-    { label: "URLs", href: `${root}/urls`, icon: Link2 },
-    { label: "Reports", href: `${root}/reports`, icon: PanelsTopLeft },
-    { label: "Snapshots", href: `${root}/snapshots`, icon: FileStack },
-    { label: "Links", href: `${root}/links`, icon: Network },
-    { label: "Logs", href: `${root}/logs`, icon: ListTree },
-  ];
+  const items = listMarketingCrawlModes(root);
+  const current = resolveActiveRouteMode(items, pathname);
   return (
     <div className="flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-card px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
       <div className="group/session min-w-0">
@@ -79,22 +91,20 @@ export function CrawlSubnav({ crawl }: { crawl: CrawlSession }) {
         aria-label="Crawl views"
       >
         {items.map((item) => {
-          const active =
-            item.href === root
-              ? pathname === root
-              : pathname.startsWith(item.href);
-          const Icon = item.icon;
+          const active = item.href === current?.href;
+          const Icon = CRAWL_MODE_ICONS[item.slug];
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground",
                 active && "bg-background text-foreground shadow-sm",
               )}
             >
               <Icon className="h-3.5 w-3.5" />
-              {item.label}
+              {item.name}
             </Link>
           );
         })}
