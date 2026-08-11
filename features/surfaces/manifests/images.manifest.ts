@@ -25,6 +25,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -235,13 +236,85 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Write targets (read/write manifest v1)
+// ---------------------------------------------------------------------------
+
+/**
+ * What an agent may DRIVE here. This is a selection-and-query surface — there
+ * is no authored content on the page — so the targets are the three controls
+ * that shape what the user is looking at and pointed at: the search box, the
+ * Recents chip, and the bulk checkbox selection. All three are handled by
+ * `CloudImagesTab` (which also mounts the provider) through the SAME setters
+ * its own controls call.
+ *
+ * DELIBERATELY EXCLUDED: the bulk actions themselves. Download / Move /
+ * Visibility / Delete mutate the user's files, and delete stays human — an
+ * agent's reach stops at proposing WHICH images, never at acting on them.
+ *
+ * WHY EVERY TARGET IS `ask`, NOT `auto`, DESPITE ALL THREE BEING `ui`:
+ * the doctrine says `ui` is where `auto` is defensible, and for a merely
+ * cosmetic toggle it would be. It is not defensible here. `CloudImagesTab`
+ * prunes `bulkSelectedIds` down to the visible rows whenever the visible set
+ * changes, so search_query and recents_only do not just re-filter tiles —
+ * they silently SHRINK the selection. That selection is the live argument to
+ * the Delete and Move buttons sitting on screen. An agent quietly narrowing
+ * the filter under a user who is about to click Delete changes what gets
+ * deleted, which is precisely the class of surprise `ask` exists to prevent.
+ * Same reasoning as `matrx-user/markdown-studio`'s `view_mode`, which held at
+ * `ask` because the change was bigger than it looked.
+ *
+ * `view_mode` (cozy / compact / list) is NOT declared: it is the
+ * pure-mechanical display toggle the judgment bar names as a NO — nobody asks
+ * an agent to change tile density, and unlike the three above it shapes
+ * neither the visible set nor the selection.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "search_query",
+    label: "Library search",
+    description:
+      'Sets the text in the library search box, narrowing the visible tiles to images whose file name or id matches. Value is a plain string, e.g. "invoice"; pass an empty string to clear the search and show the whole library again. Matching is a case-insensitive substring of the FILE NAME plus a partial-id match — it is not semantic, so search for a literal fragment of the name rather than a description of the picture. Ephemeral view state; nothing is saved. NOTE: narrowing the list drops any selected image that no longer matches, so set this BEFORE image_selection, never after.',
+    valueType: "string",
+    updatesValue: "search_query",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "library_query",
+    sortOrder: 320,
+  },
+  {
+    name: "recents_only",
+    label: "Recents filter",
+    description:
+      "Turns the Recents chip on or off, restricting the visible tiles to images created or updated in the last 30 days. Value is a boolean: true to filter to recents, false to show the whole library. Ephemeral view state; nothing is saved. Like search_query this changes which rows are visible and therefore drops any selected image that falls outside the window — set it BEFORE image_selection.",
+    valueType: "boolean",
+    updatesValue: "recents_only",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "library_query",
+    sortOrder: 325,
+  },
+  {
+    name: "image_selection",
+    label: "Image selection",
+    description:
+      'Replaces the ENTIRE bulk-checkbox selection with the images you name — the same selection the user builds by ticking tile checkboxes, and the exact set the Download / Move / Visibility / Delete buttons act on. Value is an array of image UUIDs, e.g. ["7f3a…", "b21c…"]; pass [] to clear the selection. It REPLACES rather than appends, so include every id you want selected, including ones already selected. Every id must be one of visible_image_ids (the rows on screen right now) — an id that is filtered out, deleted, or invented is REJECTED and the selection is left completely untouched. IMPORTANT: your visible_image_ids was captured when the run started, so it goes STALE the moment you apply search_query or recents_only; after either of those, the ids still visible are a SUBSET of what you read, and a rejection lists the live ones back to you. Selecting images is as far as this goes: it moves the selection only, and the user still presses the bulk action themselves.',
+    valueType: "array",
+    updatesValue: "selected_image_ids",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "image_selection",
+    sortOrder: 400,
+  },
+];
+
 export const IMAGES_SURFACE_NAME = "matrx-user/images";
 
 export const imagesManifest: SurfaceManifest = {
   surfaceName: IMAGES_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Completeness audit done against CloudImagesTab; registered, route-mapped, and DB-synced. Remaining gaps: no `data-surface-value` anchors on tiles, and no live non-matching-name binding test.",
+    "Completeness audit done against CloudImagesTab; registered, route-mapped, and DB-synced. Write targets (search_query / recents_only / image_selection) are live and verified against a real agent run. Remaining gaps: no `data-surface-value` anchors on tiles, and no live non-matching-name binding test.",
   label: "Images Library",
   urlPattern: "/images/my-cloud",
   intro: `<surface_intro>
@@ -267,6 +340,15 @@ file handler from that id. This surface never emits a signed/expiring URL or a
 storage location; a public_url appears only for images with a verified permanent
 CDN URL. If you need image content, ask for it by id.
 
+YOU CAN SHAPE THIS VIEW, NOT ACT ON IT. Three controls are writable: the
+search box (search_query), the Recents filter (recents_only), and the bulk
+selection (image_selection). Order matters — the filters prune the selection
+down to what stays visible, so narrow FIRST and select SECOND. Picking out the
+images that match what the user described is the useful work here; the bulk
+actions behind the selection (download, move, visibility, DELETE) are
+deliberately not writable, so hand the selection back and let the user press
+the button.
+
 There is no text editor here, so the text baselines are populated only when the
 user highlighted something on the page.
 </surface_intro>`,
@@ -275,6 +357,7 @@ user highlighted something on the page.
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 export interface ImagesImageSummary {
