@@ -26,6 +26,8 @@ export type RealityState =
     | "empty"
     /** The page has content and has never been published. */
     | "unpublished"
+    /** A human declared this page deliberately not part of the plan. */
+    | "retired"
     /** Published, with newer unpublished edits waiting. */
     | "draft-pending"
     /** Published, but the plan changed after the page was written. */
@@ -39,19 +41,28 @@ export type RealityAction =
     | "create-page"
     | "write-content"
     | "publish"
-    | "rewrite"
+    | "edit-in-cms"
     | null;
 
 export interface RealityPageFacts {
     isPublished: boolean;
     hasDraft: boolean;
-    /** Characters of published HTML. */
+    /**
+     * Have we actually READ the page body yet? The plan-wide overlay carries no
+     * content, so `false` means "we do not know", NOT "empty". Treating unknown
+     * as empty told the user a live 900-word page was blank whenever the detail
+     * fetch was in flight or had failed — and offered to author over it.
+     */
+    contentKnown: boolean;
+    /** Characters of published HTML. Meaningless unless `contentKnown`. */
     contentChars: number;
-    /** Characters of draft HTML. */
+    /** Characters of draft HTML. Meaningless unless `contentKnown`. */
     draftChars: number;
     /** `client_pages.updated_at` — when the page last changed. */
     updatedAt: string | null;
     lastPublishedAt: string | null;
+    /** `plan_excluded_at` — a human said this page is not part of the plan. */
+    excludedAt: string | null;
 }
 
 export interface RealityInput {
@@ -86,19 +97,35 @@ function parseTime(value: string | null): number | null {
  *
  * Deliberately compares the node's whole `updated_at` rather than a brief-only
  * timestamp — the plan schema has no per-field stamp, and claiming precision we
- * do not have would be worse than the honest phrasing the headline uses ("the
- * plan changed after this page was written"). Unknown timestamps are NOT
- * treated as drift: a missing stamp means we cannot tell, and inventing a
- * "stale" verdict from absent data would nag the user forever.
+ * do not have would be worse than the honest phrasing the headline uses. Unknown
+ * timestamps are NOT treated as drift: a missing stamp means we cannot tell, and
+ * inventing a "stale" verdict from absent data would nag the user forever.
+ *
+ * Publishing writes the PAGE and then advances the plan node's status, so the
+ * node's `updated_at` always lands a moment AFTER the page's. Without a grace
+ * window every publish immediately reported its own page as "behind plan" —
+ * a false verdict caused by the very action that produced it.
  */
+export const PLAN_DRIFT_GRACE_MS = 5 * 60 * 1000;
+
 export function planChangedAfterPage(
     nodeUpdatedAt: string | null,
     pageUpdatedAt: string | null,
+    pageLastPublishedAt: string | null = null,
 ): boolean {
     const node = parseTime(nodeUpdatedAt);
-    const page = parseTime(pageUpdatedAt);
+    // The page's real "as of" moment is the LATER of its last content write and
+    // its last publish — publishing is a page event too.
+    const written = parseTime(pageUpdatedAt);
+    const published = parseTime(pageLastPublishedAt);
+    const page =
+        written === null
+            ? published
+            : published === null
+              ? written
+              : Math.max(written, published);
     if (node === null || page === null) return false;
-    return node > page;
+    return node > page + PLAN_DRIFT_GRACE_MS;
 }
 
 export function judgePageReality(input: RealityInput): RealityVerdict {
@@ -123,7 +150,21 @@ export function judgePageReality(input: RealityInput): RealityVerdict {
         };
     }
 
-    const hasContent = page.contentChars > 0 || page.draftChars > 0;
+    if (page.excludedAt) {
+        return {
+            state: "retired",
+            headline:
+                "This page was deliberately taken out of the plan — it is not built or maintained from here.",
+            action: "edit-in-cms",
+            actionLabel: "Open it in the CMS",
+            settled: true,
+        };
+    }
+
+    // Unknown content is NOT empty. Fall through to the publish states, which
+    // are answerable from the summary alone, rather than claiming a blank page.
+    const hasContent =
+        !page.contentKnown || page.contentChars > 0 || page.draftChars > 0;
     if (!hasContent) {
         return {
             state: "empty",
@@ -154,12 +195,22 @@ export function judgePageReality(input: RealityInput): RealityVerdict {
         };
     }
 
-    if (planChangedAfterPage(input.nodeUpdatedAt, page.updatedAt)) {
+    if (
+        planChangedAfterPage(
+            input.nodeUpdatedAt,
+            page.updatedAt,
+            page.lastPublishedAt,
+        )
+    ) {
         return {
             state: "stale",
             headline: "The plan changed after this page was written — the live page is behind.",
-            action: "rewrite",
-            actionLabel: "Rewrite from the brief",
+            // NOT "rewrite": the authoring pipeline refuses published pages
+            // outright (`_fillable` excludes them), so offering to rewrite one
+            // was a button that could only ever fail. Editing a LIVE page is a
+            // CMS job until the server can re-author into a draft.
+            action: "edit-in-cms",
+            actionLabel: "Open it in the CMS",
             settled: false,
         };
     }
@@ -232,46 +283,14 @@ export function isWritePolicyBlocked(message: string | null): boolean {
     );
 }
 
-/** Compact badge text for tree/table rows — same verdict, four characters wide. */
+/** Compact badge text for tree/table rows — the same verdict, in two words. */
 export const REALITY_BADGE: Record<RealityState, string> = {
     "no-cms-site": "No site",
     "not-built": "Not built",
+    retired: "Retired",
     empty: "Empty",
     unpublished: "Draft",
     "draft-pending": "Draft pending",
     stale: "Behind plan",
     live: "Live",
 };
-
-/**
- * Roll a whole plan's verdicts up into the site-level answer. Counts are the
- * honest denominator (every planned page), so "12 of 40 built" cannot flatter
- * itself by only counting the pages that already exist.
- */
-export interface RealityRollup {
-    planned: number;
-    built: number;
-    written: number;
-    published: number;
-    behind: number;
-}
-
-export function rollupReality(states: RealityState[]): RealityRollup {
-    const rollup: RealityRollup = {
-        planned: states.length,
-        built: 0,
-        written: 0,
-        published: 0,
-        behind: 0,
-    };
-    for (const state of states) {
-        if (state === "no-cms-site" || state === "not-built") continue;
-        rollup.built += 1;
-        if (state === "empty") continue;
-        rollup.written += 1;
-        if (state === "unpublished") continue;
-        rollup.published += 1;
-        if (state === "stale" || state === "draft-pending") rollup.behind += 1;
-    }
-    return rollup;
-}

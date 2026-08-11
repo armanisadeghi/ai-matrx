@@ -48,6 +48,7 @@ const STATE_TONE: Record<RealityState, string> = {
     "not-built":
         "bg-amber-500/15 text-amber-700 dark:text-amber-400",
     empty: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+    retired: "bg-muted text-muted-foreground",
     unpublished: "bg-sky-500/15 text-sky-700 dark:text-sky-400",
     "draft-pending": "bg-sky-500/15 text-sky-700 dark:text-sky-400",
     stale: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
@@ -59,7 +60,7 @@ const ACTION_ICON = {
     "create-page": Hammer,
     "write-content": Sparkles,
     publish: Rocket,
-    rewrite: RefreshCw,
+    "edit-in-cms": PenLine,
 } as const;
 
 /** Ticking elapsed seconds for the authoring stage line. */
@@ -101,8 +102,23 @@ export function NodeRealityCard({
     // against a guess. Surfaced ONLY when the next action spends money, so the
     // caution lands where it costs something rather than nagging on every node.
     const missingKeyword =
-        !node.primary_keyword_id &&
-        (verdict.action === "write-content" || verdict.action === "rewrite");
+        !node.primary_keyword_id && verdict.action === "write-content";
+
+    /**
+     * Rewriting overwrites the CMS draft — human work included — so it is
+     * confirmed wherever it is offered. It is only reachable on a page that is
+     * NOT yet published: the server's authoring pipeline refuses published
+     * pages outright, so offering it there would be a button that cannot work.
+     */
+    async function rewrite() {
+        const ok = await confirm({
+            title: "Rewrite this page from the brief?",
+            description:
+                "The AI replaces the current draft with a fresh version written from this page's brief. Anything unsaved in the CMS editor is lost.",
+            confirmLabel: "Rewrite it",
+        });
+        if (ok) void reality.write();
+    }
 
     async function runAction() {
         switch (verdict.action) {
@@ -115,14 +131,13 @@ export function NodeRealityCard({
             case "write-content":
                 void reality.write();
                 return;
-            case "rewrite": {
-                const ok = await confirm({
-                    title: "Rewrite this page from the brief?",
-                    description:
-                        "The AI writes a fresh version into the website's draft. The live page keeps serving the current version until you publish.",
-                    confirmLabel: "Rewrite it",
-                });
-                if (ok) void reality.write();
+            case "edit-in-cms": {
+                if (cmsPage && cmsSiteId) {
+                    window.open(
+                        `/cms/${cmsSiteId}/pages/${cmsPage.pageId}`,
+                        "_blank",
+                    );
+                }
                 return;
             }
             case "publish": {
@@ -145,7 +160,7 @@ export function NodeRealityCard({
     const retryAction =
         verdict.action === "create-page"
             ? ("create" as const)
-            : verdict.action === "write-content" || verdict.action === "rewrite"
+            : verdict.action === "write-content"
               ? ("write" as const)
               : verdict.action === "publish"
                 ? ("publish" as const)
@@ -271,14 +286,13 @@ export function NodeRealityCard({
                     {/* Written but not yet live: publishing is available even
                       though the headline already asked for it, and rewriting
                       stays reachable without waiting for a "stale" verdict. */}
-                    {verdict.state === "unpublished" ||
-                    verdict.state === "draft-pending" ? (
+                    {verdict.state === "unpublished" ? (
                         <Button
                             variant="outline"
                             size="sm"
                             className="h-7 gap-1 text-xs"
                             disabled={busy !== null}
-                            onClick={() => void reality.write()}
+                            onClick={() => void rewrite()}
                         >
                             <RefreshCw className="h-3 w-3" />
                             Rewrite

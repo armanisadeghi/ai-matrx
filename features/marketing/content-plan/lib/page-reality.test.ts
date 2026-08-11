@@ -3,18 +3,18 @@ import {
     isWritePolicyBlocked,
     judgePageReality,
     planChangedAfterPage,
-    rollupReality,
     type RealityPageFacts,
-    type RealityState,
 } from "./page-reality";
 
 const page = (over: Partial<RealityPageFacts> = {}): RealityPageFacts => ({
     isPublished: false,
     hasDraft: false,
+    contentKnown: true,
     contentChars: 0,
     draftChars: 0,
     updatedAt: "2026-08-01T00:00:00Z",
     lastPublishedAt: null,
+    excludedAt: null,
     ...over,
 });
 
@@ -80,7 +80,8 @@ describe("judgePageReality", () => {
             nodeUpdatedAt: "2026-08-09T00:00:00Z",
         });
         expect(verdict.state).toBe("stale");
-        expect(verdict.action).toBe("rewrite");
+        // NOT "rewrite" — the server refuses to re-author a published page.
+        expect(verdict.action).toBe("edit-in-cms");
     });
 
     it("settles on live when the page is published and current", () => {
@@ -99,6 +100,70 @@ describe("judgePageReality", () => {
     });
 });
 
+describe("judgePageReality — the three false verdicts found by adversarial review", () => {
+    it("never calls a page empty while its body is unknown", () => {
+        // The full row has not landed (in flight, or the fetch failed). The old
+        // code reported a live 900-word page as empty and offered to author
+        // over it.
+        const verdict = judgePageReality({
+            cmsLinked: true,
+            page: page({
+                contentKnown: false,
+                isPublished: true,
+                updatedAt: "2026-08-09T00:00:00Z",
+            }),
+            nodeUpdatedAt: "2026-08-01T00:00:00Z",
+        });
+        expect(verdict.state).not.toBe("empty");
+        expect(verdict.state).toBe("live");
+    });
+
+    it("does not report a page as behind plan because publishing it bumped the node", () => {
+        // Publish writes the page, THEN advances the plan node's status — so
+        // the node is always a moment newer than the page it just published.
+        const verdict = judgePageReality({
+            cmsLinked: true,
+            page: page({
+                isPublished: true,
+                contentChars: 900,
+                updatedAt: "2026-08-11T10:00:00Z",
+                lastPublishedAt: "2026-08-11T10:00:02Z",
+            }),
+            nodeUpdatedAt: "2026-08-11T10:00:03Z",
+        });
+        expect(verdict.state).toBe("live");
+    });
+
+    it("still reports real drift once it is well past the publish", () => {
+        const verdict = judgePageReality({
+            cmsLinked: true,
+            page: page({
+                isPublished: true,
+                contentChars: 900,
+                updatedAt: "2026-08-11T10:00:00Z",
+                lastPublishedAt: "2026-08-11T10:00:02Z",
+            }),
+            nodeUpdatedAt: "2026-08-11T14:00:00Z",
+        });
+        expect(verdict.state).toBe("stale");
+    });
+
+    it("names a retired page instead of pretending it is part of the plan", () => {
+        const verdict = judgePageReality({
+            cmsLinked: true,
+            page: page({
+                isPublished: true,
+                contentChars: 900,
+                excludedAt: "2026-08-05T00:00:00Z",
+            }),
+            nodeUpdatedAt: "2026-08-09T00:00:00Z",
+        });
+        expect(verdict.state).toBe("retired");
+        expect(verdict.action).toBe("edit-in-cms");
+    });
+
+});
+
 describe("planChangedAfterPage", () => {
     it("never invents drift from a missing timestamp", () => {
         expect(planChangedAfterPage(null, "2026-08-01T00:00:00Z")).toBe(false);
@@ -109,6 +174,18 @@ describe("planChangedAfterPage", () => {
     it("is false when the page is newer or identical", () => {
         expect(planChangedAfterPage("2026-08-01T00:00:00Z", "2026-08-01T00:00:00Z")).toBe(false);
         expect(planChangedAfterPage("2026-08-01T00:00:00Z", "2026-08-02T00:00:00Z")).toBe(false);
+    });
+
+    it("measures from the LATER of the page's write and publish", () => {
+        // Written long ago, published moments ago: a node edit between the two
+        // is not drift.
+        expect(
+            planChangedAfterPage(
+                "2026-08-11T09:00:00Z",
+                "2026-08-01T00:00:00Z",
+                "2026-08-11T10:00:00Z",
+            ),
+        ).toBe(false);
     });
 });
 
@@ -175,36 +252,5 @@ describe("isWritePolicyBlocked", () => {
         expect(isWritePolicyBlocked(null)).toBe(false);
         expect(isWritePolicyBlocked("A page already serves /about.")).toBe(false);
         expect(isWritePolicyBlocked("HTTP 500")).toBe(false);
-    });
-});
-
-describe("rollupReality", () => {
-    it("counts every planned page in the denominator, built or not", () => {
-        const states: RealityState[] = [
-            "not-built",
-            "not-built",
-            "empty",
-            "unpublished",
-            "live",
-            "stale",
-            "draft-pending",
-        ];
-        expect(rollupReality(states)).toEqual({
-            planned: 7,
-            built: 5,
-            written: 4,
-            published: 3,
-            behind: 2,
-        });
-    });
-
-    it("treats an unlinked site as nothing built", () => {
-        expect(rollupReality(["no-cms-site", "no-cms-site"])).toEqual({
-            planned: 2,
-            built: 0,
-            written: 0,
-            published: 0,
-            behind: 0,
-        });
     });
 });

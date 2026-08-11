@@ -525,6 +525,8 @@ export interface CmsPageMapEntry {
   isHomePage: boolean;
   liveUrl: string | null;
   previewUrl: string | null;
+  /** `plan_excluded_at` — a human declared this page not part of the plan. */
+  planExcludedAt: string | null;
 }
 
 export interface CmsPageMap {
@@ -576,6 +578,7 @@ export async function bridgeCmsPages(
       isHomePage: record.is_home_page === true,
       liveUrl: str(record.live_url) || null,
       previewUrl: str(record.preview_url) || null,
+      planExcludedAt: str(record.plan_excluded_at) || null,
     });
   }
   return {

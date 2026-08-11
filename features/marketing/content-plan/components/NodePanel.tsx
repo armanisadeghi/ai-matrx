@@ -246,6 +246,17 @@ export function NodePanel({
           "This page does not exist on the website yet — apply build_page first.",
         );
       }
+      // Guarded like the others: without this an agent could chain
+      // build_page -> publish_page and put an EMPTY page on the public web.
+      // The human card never offers publish in those states either.
+      if (
+        reality.verdict.state === "empty" ||
+        reality.verdict.state === "retired"
+      ) {
+        throw new Error(
+          `This page is ${reality.verdict.state} — publishing it would put an unfinished page on the public web. Apply write_page_content first.`,
+        );
+      }
       const failure = await reality.publish();
       if (failure) throw new Error(failure);
     },

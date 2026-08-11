@@ -41,8 +41,9 @@ export function PlanWebsiteBar({
     siteDomain: string | null;
     onOpenSetup: () => void;
 }) {
-    // Still resolving — say nothing rather than flash "no website".
-    if (!cmsLink) return null;
+    // Still resolving — say nothing rather than flash "no website", and say
+    // nothing before the plan is counted rather than "12 of 0 pages built".
+    if (!cmsLink || plannedCount === 0) return null;
 
     if (!cmsLink.linked || !cmsSiteId) {
         return (
@@ -67,14 +68,22 @@ export function PlanWebsiteBar({
         );
     }
 
-    const built = pagesByNodeId.size;
-    const publishedLinked = [...pagesByNodeId.values()].filter(
-        (page) => page.isPublished,
-    ).length;
+    const linked = [...pagesByNodeId.values()];
+    // Clamp: a deleted plan node can leave a page still carrying its id, which
+    // otherwise reads "27 of 26 planned pages built".
+    const built = Math.min(pagesByNodeId.size, plannedCount);
+    const publishedLinked = linked.filter((page) => page.isPublished).length;
     // Live pages the plan does not describe — the other half of the truth.
     const unplanned = allPages.filter((page) => !page.planNodeId).length;
+    // Only a PUBLISHED page has a URL a visitor can actually open; linking an
+    // unpublished page's future address is a 404 with a friendly label. Prefer
+    // the home page, which is what "view the site" means to a person.
+    const liveCandidates = allPages.filter(
+        (page) => page.isPublished && page.liveUrl,
+    );
     const liveUrl =
-        [...pagesByNodeId.values()].find((page) => page.liveUrl)?.liveUrl ?? null;
+        (liveCandidates.find((page) => page.isHomePage) ?? liveCandidates[0])
+            ?.liveUrl ?? null;
 
     return (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs">

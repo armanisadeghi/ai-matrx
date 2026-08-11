@@ -353,7 +353,10 @@ export function ContentPlanWorkbench({
               // Send an explicit topic ONLY when the user picked one this
               // session — otherwise the server reads its own recorded link
               // from the live row, which can never be cache-stale.
-              void generate.start({ ...options, researchTopicId: genTopicOverride })
+              void generate.start({
+                ...options,
+                researchTopicId: genTopicOverride,
+              })
             }
             onDismiss={generate.reset}
             researchTopicId={generateTopicId}
@@ -506,9 +509,11 @@ export function ContentPlanWorkbench({
                       profiles={profiles.data ?? []}
                       onDeleted={() => setSelectedNodeId(null)}
                       deepen={deepen}
-                      cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
+                      cmsPage={
+                        cmsPages.pagesByNodeId.get(selectedNode.id) ?? null
+                      }
                       cmsSiteId={resolvedCmsSiteId}
-                  cmsPagesByNodeId={cmsPages.pagesByNodeId}
+                      cmsPagesByNodeId={cmsPages.pagesByNodeId}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center p-6">
@@ -555,7 +560,7 @@ export function ContentPlanWorkbench({
               deepen={deepen}
               cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
               cmsSiteId={resolvedCmsSiteId}
-                  cmsPagesByNodeId={cmsPages.pagesByNodeId}
+              cmsPagesByNodeId={cmsPages.pagesByNodeId}
               hosted
             />
           </SidePanelSurface>

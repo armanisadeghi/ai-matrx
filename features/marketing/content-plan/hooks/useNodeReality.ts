@@ -129,10 +129,14 @@ export function useNodeReality(args: UseNodeRealityArgs) {
                 ? {
                       isPublished: row?.is_published ?? args.cmsPage.isPublished,
                       hasDraft: row?.has_draft ?? args.cmsPage.hasDraft,
+                      // Only the FULL row carries a body. Until it lands, the
+                      // verdict must not guess "empty" — see contentKnown.
+                      contentKnown: Boolean(row),
                       contentChars: (row?.html_content ?? "").trim().length,
                       draftChars: (row?.html_content_draft ?? "").trim().length,
                       updatedAt: row?.updated_at ?? null,
                       lastPublishedAt: row?.last_published_at ?? null,
+                      excludedAt: args.cmsPage.planExcludedAt,
                   }
                 : null,
             nodeUpdatedAt: args.nodeUpdatedAt,
@@ -179,11 +183,14 @@ export function useNodeReality(args: UseNodeRealityArgs) {
                 if (action === "create") {
                     // Ancestors first: a deep URL is a real page tree, and the
                     // server refuses a child whose parent page does not exist.
-                    const chain = buildChainToRealize(
-                        args.nodeId,
-                        nodesById,
-                        (id) => args.cmsPagesByNodeId.has(id),
-                    );
+                    // An unloaded tree yields no chain — build THIS page alone
+                    // and let the server refuse it, rather than claiming the
+                    // page already exists when we simply have not looked.
+                    const chain = nodesById.size
+                        ? buildChainToRealize(args.nodeId, nodesById, (id) =>
+                              args.cmsPagesByNodeId.has(id),
+                          )
+                        : [args.nodeId];
                     if (chain.length === 0) {
                         throw new Error("This page already exists on the website.");
                     }
@@ -202,10 +209,16 @@ export function useNodeReality(args: UseNodeRealityArgs) {
                                 "The website refused to create this page.",
                         );
                     }
+                    // Count what the server actually CHANGED — an ancestor that
+                    // already existed comes back ok-but-unchanged, and claiming
+                    // to have created it is a lie about a write.
+                    const created = result.items.filter((row) => row.changed).length;
                     toast.success(
-                        chain.length > 1
-                            ? `Created ${chain.length} pages, including the parent pages this one needed.`
-                            : "The page was created on the website.",
+                        created > 1
+                            ? `Created ${created} pages, including the parent pages this one needed.`
+                            : created === 1
+                              ? "The page was created on the website."
+                              : "Everything this page needed already existed.",
                     );
                 } else if (action === "write") {
                     const preview = await bridgeFillPreview(dispatch, args.siteId, {
@@ -239,13 +252,17 @@ export function useNodeReality(args: UseNodeRealityArgs) {
                         toast.success("The page is live.");
                     }
                 }
-                await invalidate();
             } catch (error) {
                 const message = extractErrorMessage(error);
                 setFailure(message);
                 toast.error(message);
                 return message;
             } finally {
+                // ALWAYS refresh, including after a failure: these calls are
+                // per-item isolated server-side, so a 3-page chain can create
+                // two and fail the third. Skipping the refresh on error left
+                // real new pages invisible for a full cache lifetime.
+                await invalidate();
                 setBusy(null);
                 setStartedAt(null);
             }
