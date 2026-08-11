@@ -90,6 +90,7 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
 
 ## Change Log
 
+- 2026-08-10 — Claude: **`shape-authoring-service.ts` profile saves now run their version CAS through the shared `utils/supabase/guardedUpdate.ts` helper** (platform optimistic-concurrency contract, `common-docs/systems/optimistic-concurrency/FEATURE.md`). Semantics unchanged: the owner-mode `created_by` belt stays inside the guarded UPDATE, a lost swap (or vanished row) still throws the same "The Shape changed while you were editing it" copy, and the post-save example re-pin/revalidation is untouched.
 - 2026-08-10 — claude: **The Markdown Editor / classification tester — the
   workbench this pipeline is developed against — is now agent-writable;
   classification untouched.** `matrx-user/markdown-editor` declares

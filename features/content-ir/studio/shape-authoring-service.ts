@@ -11,6 +11,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/database.types";
+import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
 
 export type ShapeWriteClient = SupabaseClient<Database>;
 export type ShapeVisibility = Database["platform"]["Enums"]["visibility"];
@@ -181,29 +182,50 @@ export async function updateOwnedShapeProfile(
   if (!label) throw new Error("Shape name cannot be empty.");
 
   const metadata = mergeEditableShapeMetadata(current.metadata, args);
-  let updateQuery = client
-    .schema("content_ir")
-    .from("kind_definition")
-    .update({
-      label,
-      visibility: args.visibility,
-      metadata,
-      updated_by: userId,
-    })
-    .eq("id", current.id)
-    .eq("version", current.version);
-  if (mode === "owner") updateQuery = updateQuery.eq("created_by", userId);
-  const { data: updated, error: updateError } = await updateQuery
-    .select("label,visibility,version,metadata")
-    .maybeSingle();
-  if (updateError) {
-    throw new Error(`Failed to update the Shape: ${updateError.message}`);
-  }
-  if (!updated) {
+  const result = await guardedUpdate<{
+    label: string;
+    visibility: ShapeVisibility;
+    version: number;
+    metadata: Json;
+  }>({
+    expectedVersion: current.version,
+    applyUpdate: async ({ expectedVersion, nextVersion }) => {
+      let updateQuery = client
+        .schema("content_ir")
+        .from("kind_definition")
+        .update({
+          label,
+          visibility: args.visibility,
+          metadata,
+          updated_by: userId,
+          version: nextVersion,
+        })
+        .eq("id", current.id)
+        .eq("version", expectedVersion);
+      if (mode === "owner") updateQuery = updateQuery.eq("created_by", userId);
+      const { data, error } = await updateQuery
+        .select("label,visibility,version,metadata")
+        .maybeSingle();
+      if (error) {
+        throw new Error(`Failed to update the Shape: ${error.message}`);
+      }
+      return { data, error: null };
+    },
+    fetchCurrent: () =>
+      client
+        .schema("content_ir")
+        .from("kind_definition")
+        .select("label,visibility,version,metadata")
+        .eq("id", current.id)
+        .is("deleted_at", null)
+        .maybeSingle(),
+  });
+  if (result.status !== "saved") {
     throw new Error(
       "The Shape changed while you were editing it. Refresh the page and try again.",
     );
   }
+  const updated = result.row;
 
   const { data: repinned, error: repinError } = await client
     .schema("content_ir")

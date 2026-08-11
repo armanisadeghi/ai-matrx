@@ -32,6 +32,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import {
@@ -184,24 +185,38 @@ export async function commitWorkingDocumentContent(
   content: string,
   baseVersion: number,
 ): Promise<ContentCommitResult> {
-  const { data, error } = await WD()
-    .update({ content })
-    .eq("id", id)
-    .eq("version", baseVersion)
-    .select("*")
-    .maybeSingle();
-  if (error) {
-    throw new Error(`[working-document] commit failed: ${error.message}`);
+  const result = await guardedUpdate<CxWorkingDocumentRow>({
+    expectedVersion: baseVersion,
+    applyUpdate: async ({ expectedVersion, nextVersion }) => {
+      const { data, error } = await WD()
+        .update({ content, version: nextVersion })
+        .eq("id", id)
+        .eq("version", expectedVersion)
+        .select("*")
+        .maybeSingle();
+      if (error) {
+        throw new Error(`[working-document] commit failed: ${error.message}`);
+      }
+      return { data: data as CxWorkingDocumentRow | null, error: null };
+    },
+    fetchCurrent: async () => {
+      const { data, error } = await WD()
+        .select("*")
+        .eq("id", id)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error) {
+        throw new Error(
+          `[working-document] get by id failed: ${error.message}`,
+        );
+      }
+      return { data: data as CxWorkingDocumentRow | null, error: null };
+    },
+  });
+  if (result.status === "saved") {
+    return { status: "saved", document: rowToCxWorkingDocument(result.row) };
   }
-  if (data) {
-    return {
-      status: "saved",
-      document: rowToCxWorkingDocument(data as CxWorkingDocumentRow),
-    };
-  }
-  // 0 rows updated: the version moved (concurrent edit) OR the row is gone.
-  const current = await getCxWorkingDocumentById(id);
-  if (!current) {
+  if (result.status === "not_found") {
     // Row vanished — fall back to an unconditional write so we don't lose the
     // user's content to a transient read.
     return {
@@ -209,7 +224,10 @@ export async function commitWorkingDocumentContent(
       document: await updateCxWorkingDocumentContent(id, content),
     };
   }
-  return { status: "conflict", document: current };
+  return {
+    status: "conflict",
+    document: rowToCxWorkingDocument(result.currentRow),
+  };
 }
 
 /**

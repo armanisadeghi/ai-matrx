@@ -76,6 +76,11 @@ import {
 } from "@/features/marketing/lib/page-url";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import {
+  guardedUpdate,
+  type GuardedUpdateArgs,
+  type VersionedRow,
+} from "@/utils/supabase/guardedUpdate";
 
 function rangeFor(state: MatrxDataTableQueryState) {
   const from = (state.page - 1) * state.pageSize;
@@ -1295,6 +1300,22 @@ export async function searchPagesForMetaApply(
   return response.data ?? [];
 }
 
+/**
+ * Marketing's posture on the shared optimistic-concurrency helper: every
+ * guarded write here historically threw ONE feature-specific message on a
+ * lost CAS, whether the row changed or vanished (a soft-deleted row is
+ * "gone" per the contract, and both read as "changed in another session" to
+ * the user). This wrapper keeps that exact outcome on top of guardedUpdate.
+ */
+async function guardedUpdateOrThrow<Row extends VersionedRow>(
+  args: GuardedUpdateArgs<Row> & { conflictMessage: string },
+): Promise<Row> {
+  const { conflictMessage, ...guardArgs } = args;
+  const result = await guardedUpdate(guardArgs);
+  if (result.status !== "saved") throw new Error(conflictMessage);
+  return result.row;
+}
+
 export async function updatePageIntent(
   input: UpdatePageIntentInput,
 ): Promise<MarketingPage> {
@@ -1317,24 +1338,29 @@ export async function updatePageIntent(
         )
       : null,
   };
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("page")
-    .update(patch)
-    .eq("site_id", input.siteId)
-    .eq("id", input.pageId)
-    .eq("version", input.expectedVersion)
-    .is("deleted_at", null)
-    .select(PAGE_COLUMNS)
-    .maybeSingle();
-  if (response.error) throw response.error;
-  if (!response.data) {
-    throw new Error(
-      "This page changed in another session. Reload and try again.",
-    );
-  }
-  return response.data;
+  const db = await authenticatedWebDb(supabase);
+  return guardedUpdateOrThrow<MarketingPage>({
+    expectedVersion: input.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("page")
+        .update({ ...patch, version: nextVersion })
+        .eq("site_id", input.siteId)
+        .eq("id", input.pageId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select(PAGE_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("page")
+        .select(PAGE_COLUMNS)
+        .eq("site_id", input.siteId)
+        .eq("id", input.pageId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+    conflictMessage: "This page changed in another session. Reload and try again.",
+  });
 }
 
 /**
@@ -1361,23 +1387,38 @@ export async function updatePageDesiredValues(
     ? (fresh.desired_values as PageDesiredValues)
     : {};
   const merged = { ...current, ...input.patch };
-  const response = await db
-    .from("page")
-    .update({ desired_values: merged as PageUpdate["desired_values"] })
-    .eq("site_id", input.siteId)
-    .eq("id", input.pageId)
-    .eq("version", fresh.version)
-    .is("deleted_at", null)
-    .select(PAGE_COLUMNS)
-    .maybeSingle();
-  if (response.error) throw response.error;
-  if (!response.data) {
-    if (attempt === 0) return updatePageDesiredValues(input, 1);
-    throw new Error(
-      "This page changed in another session. Reload and try again.",
-    );
+  const result = await guardedUpdate<MarketingPage>({
+    expectedVersion: fresh.version,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("page")
+        .update({
+          desired_values: merged as PageUpdate["desired_values"],
+          version: nextVersion,
+        })
+        .eq("site_id", input.siteId)
+        .eq("id", input.pageId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select(PAGE_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("page")
+        .select(PAGE_COLUMNS)
+        .eq("site_id", input.siteId)
+        .eq("id", input.pageId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+  });
+  if (result.status === "saved") return result.row;
+  // One silent retry on a true version race — the retry re-reads and re-merges.
+  if (result.status === "conflict" && attempt === 0) {
+    return updatePageDesiredValues(input, 1);
   }
-  return response.data;
+  throw new Error(
+    "This page changed in another session. Reload and try again.",
+  );
 }
 
 /** Authored draft content row for a page (1:1); null until first save. */
@@ -1423,22 +1464,29 @@ export async function savePageContent(
     if (!response.data) throw new Error("Draft create returned no row.");
     return response.data;
   }
-  const response = await db
-    .from("page_content")
-    .update({ content: input.content })
-    .eq("site_id", input.siteId)
-    .eq("page_id", input.pageId)
-    .eq("version", input.expectedVersion)
-    .is("deleted_at", null)
-    .select("*")
-    .maybeSingle();
-  if (response.error) throw response.error;
-  if (!response.data) {
-    throw new Error(
+  return guardedUpdateOrThrow<PageContent>({
+    expectedVersion: input.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("page_content")
+        .update({ content: input.content, version: nextVersion })
+        .eq("site_id", input.siteId)
+        .eq("page_id", input.pageId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select("*")
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("page_content")
+        .select("*")
+        .eq("site_id", input.siteId)
+        .eq("page_id", input.pageId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+    conflictMessage:
       "This draft changed in another session. Reload and try again.",
-    );
-  }
-  return response.data;
+  });
 }
 
 export async function listSnapshots(
@@ -1777,23 +1825,28 @@ export async function listCrawlEvents(
 export async function updateSiteIdentity(
   input: UpdateSiteIdentityInput,
 ): Promise<MarketingSite> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("site")
-    .update(input.patch)
-    .eq("id", input.siteId)
-    .eq("version", input.expectedVersion)
-    .is("deleted_at", null)
-    .select(SITE_COLUMNS)
-    .maybeSingle();
-  if (response.error) throw response.error;
-  if (!response.data) {
-    throw new Error(
+  const db = await authenticatedWebDb(supabase);
+  return guardedUpdateOrThrow<MarketingSite>({
+    expectedVersion: input.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("site")
+        .update({ ...input.patch, version: nextVersion })
+        .eq("id", input.siteId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select(SITE_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("site")
+        .select(SITE_COLUMNS)
+        .eq("id", input.siteId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+    conflictMessage:
       "This site changed in another session. Reload and try again.",
-    );
-  }
-  return response.data;
+  });
 }
 
 const SCREENSHOT_COLUMNS =
@@ -2578,23 +2631,28 @@ export async function createBrand(
 export async function updateBrand(
   input: UpdateBrandInput,
 ): Promise<MarketingBrand> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("brand")
-    .update(input.patch)
-    .eq("id", input.brandId)
-    .eq("version", input.expectedVersion)
-    .is("deleted_at", null)
-    .select(BRAND_COLUMNS)
-    .maybeSingle();
-  if (response.error) throw response.error;
-  if (!response.data) {
-    throw new Error(
+  const db = await authenticatedWebDb(supabase);
+  return guardedUpdateOrThrow<MarketingBrand>({
+    expectedVersion: input.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("brand")
+        .update({ ...input.patch, version: nextVersion })
+        .eq("id", input.brandId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select(BRAND_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("brand")
+        .select(BRAND_COLUMNS)
+        .eq("id", input.brandId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+    conflictMessage:
       "This brand changed in another session. Reload and try again.",
-    );
-  }
-  return response.data;
+  });
 }
 
 /**
@@ -2969,23 +3027,28 @@ export async function createProperty(
 export async function updateProperty(
   input: UpdatePropertyInput,
 ): Promise<BrandProperty> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("property")
-    .update(input.patch)
-    .eq("id", input.propertyId)
-    .eq("version", input.expectedVersion)
-    .is("deleted_at", null)
-    .select(PROPERTY_COLUMNS)
-    .maybeSingle();
-  if (response.error) throw response.error;
-  if (!response.data) {
-    throw new Error(
+  const db = await authenticatedWebDb(supabase);
+  return guardedUpdateOrThrow<BrandProperty>({
+    expectedVersion: input.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("property")
+        .update({ ...input.patch, version: nextVersion })
+        .eq("id", input.propertyId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select(PROPERTY_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("property")
+        .select(PROPERTY_COLUMNS)
+        .eq("id", input.propertyId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+    conflictMessage:
       "This property changed in another session. Reload and try again.",
-    );
-  }
-  return response.data;
+  });
 }
 
 export async function deleteProperty(propertyId: string): Promise<void> {
@@ -3031,23 +3094,28 @@ export async function createBrandAsset(
 export async function updateBrandAsset(
   input: UpdateBrandAssetInput,
 ): Promise<BrandAsset> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("brand_asset")
-    .update(input.patch)
-    .eq("id", input.assetId)
-    .eq("version", input.expectedVersion)
-    .is("deleted_at", null)
-    .select(BRAND_ASSET_COLUMNS)
-    .maybeSingle();
-  if (response.error) throw response.error;
-  if (!response.data) {
-    throw new Error(
+  const db = await authenticatedWebDb(supabase);
+  return guardedUpdateOrThrow<BrandAsset>({
+    expectedVersion: input.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("brand_asset")
+        .update({ ...input.patch, version: nextVersion })
+        .eq("id", input.assetId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select(BRAND_ASSET_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("brand_asset")
+        .select(BRAND_ASSET_COLUMNS)
+        .eq("id", input.assetId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+    conflictMessage:
       "This asset changed in another session. Reload and try again.",
-    );
-  }
-  return response.data;
+  });
 }
 
 export async function deleteBrandAsset(assetId: string): Promise<void> {
@@ -3096,27 +3164,33 @@ export async function createBusinessFact(
 export async function updateBusinessFact(
   input: UpdateBusinessFactInput,
 ): Promise<BusinessFact> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
-    .from("business_fact")
-    .update({
-      kind: input.kind,
-      label: input.label,
-      value: factValuePayload(input.value),
-    })
-    .eq("id", input.factId)
-    .eq("version", input.expectedVersion)
-    .is("deleted_at", null)
-    .select(BUSINESS_FACT_COLUMNS)
-    .maybeSingle();
-  if (response.error) throw response.error;
-  if (!response.data) {
-    throw new Error(
+  const db = await authenticatedWebDb(supabase);
+  return guardedUpdateOrThrow<BusinessFact>({
+    expectedVersion: input.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("business_fact")
+        .update({
+          kind: input.kind,
+          label: input.label,
+          value: factValuePayload(input.value),
+          version: nextVersion,
+        })
+        .eq("id", input.factId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select(BUSINESS_FACT_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("business_fact")
+        .select(BUSINESS_FACT_COLUMNS)
+        .eq("id", input.factId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+    conflictMessage:
       "This fact changed in another session. Reload and try again.",
-    );
-  }
-  return response.data;
+  });
 }
 
 export async function deleteBusinessFact(factId: string): Promise<void> {
