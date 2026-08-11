@@ -163,7 +163,6 @@ export function PlanAiRunsView({
                     <div className="flex flex-col gap-3">
                       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <span>Model: {run.modelId ?? "unrecorded"}</span>
-                        <span>Run id: {run.runId}</span>
                         {detail.data.nodeId ? (
                           <Button
                             variant="link"
