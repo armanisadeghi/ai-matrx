@@ -4,6 +4,7 @@ import type {
   AiCustomSource,
   AiVariant,
 } from "@/components/agent-copy/AiCopyMenu";
+import type { LayeredFilterField, LayeredFilterRule } from "./layered-filters";
 
 /** How a column's filter UI behaves. `auto` infers from sample values. */
 export type ColumnFilterKind =
@@ -186,6 +187,8 @@ export interface MatrxDataTableQueryState {
   pageSize: number;
   search: string;
   anyOf: string;
+  /** Ordered AND rules from the compact advanced-filter builder. */
+  layeredFilters?: LayeredFilterRule[];
   columnFilters: ColumnFiltersState;
   sort: SortState | null;
 }
@@ -253,6 +256,16 @@ export interface MatrxDataTableToolbar {
    * Shown as its own input beside global search when set.
    */
   anyOf?: AnyOfColumnSearch;
+  /**
+   * Optional compact advanced-filter builder beside the regular search. In
+   * controlled mode rules live in `query.state.layeredFilters`; local tables
+   * evaluate them against matching column ids.
+   */
+  layeredFilters?: {
+    fields: readonly LayeredFilterField[];
+    maxRules?: number;
+    label?: string;
+  };
   /** Extensible facet strip (button groups, later radios/switches/…). */
   facets?: ToolbarFacet[];
   /** Left-side extra nodes (after search / facets). */

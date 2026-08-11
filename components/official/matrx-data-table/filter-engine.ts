@@ -4,6 +4,11 @@ import type {
   MatrxColumnDef,
   SortState,
 } from "./types";
+import {
+  completeLayeredFilterRules,
+  layeredFilterMatchesValue,
+  type LayeredFilterRule,
+} from "./layered-filters";
 
 /**
  * Sentinel select-filter values for "no value" / "any value" — every select
@@ -106,10 +111,12 @@ export function filterAndSortRows<T>(
   sort: SortState | null,
   globalSearch: string,
   anyOf?: { columnIds: string[]; query: string },
+  layeredFilters?: readonly LayeredFilterRule[],
 ): T[] {
   const colById = new Map(columns.map((c) => [columnId(c), c]));
   const q = globalSearch.trim().toLowerCase();
   const anyQ = anyOf?.query.trim().toLowerCase() ?? "";
+  const activeLayeredFilters = completeLayeredFilterRules(layeredFilters);
 
   let result = rows.filter((row) => {
     for (const [id, filter] of Object.entries(columnFilters)) {
@@ -117,6 +124,13 @@ export function filterAndSortRows<T>(
       const col = colById.get(id);
       if (!col || col.filter === false) continue;
       if (!passesColumnFilter(getCellValue(row, col), filter)) return false;
+    }
+
+    for (const rule of activeLayeredFilters) {
+      const col = colById.get(rule.field);
+      if (!col || !layeredFilterMatchesValue(getCellValue(row, col), rule)) {
+        return false;
+      }
     }
 
     if (anyQ && anyOf) {

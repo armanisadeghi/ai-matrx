@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** shared official primitive (`components/official/`)
-**Last updated:** `2026-07-18`
+**Last updated:** `2026-08-11`
 
 ---
 
@@ -30,6 +30,13 @@ tables (AI Models, relationships, …) can cut over to one contract.
   direct database query and returns only the current rows.
 - **Controlled search feedback is immediate.** Consumers may debounce the query
   state, but must pass the immediate display state back to the table.
+- **Layered filters use one shared rule contract.** Set
+  `toolbar.layeredFilters.fields`; the compact Advanced control emits ordered,
+  AND-combined text/select/number rules into `query.state.layeredFilters`.
+  Rules stay visible as removable chips, serialize safely into URL state, and
+  the global Clear all removes them. Local tables evaluate them through the
+  canonical filter engine; controlled consumers send the same validated rule
+  shape to their direct database query. Never filter only the visible page.
 - **Select filters are type-to-search and MULTI-select (OR semantics)** — toggling options builds a `values` set; single-`value` writers stay valid. Whenever a column has blank cells, the options automatically include **"(empty)" / "(not empty)"** sentinels (composable with real values: "A or (empty)"). An explicit `filter: "select"` lists ALL distinct values (auto-inference still caps at 24 before falling back to text). **Text filters have Contains / (empty) / (not empty) modes.** **Sorting always puts empty cells last**, both directions. Active filters show a clear **X**; toolbar has **Clear all**.
 - **Row click → `SidePanelSurface` by default, or `WindowPanel` when `window.openOnRowClick` is set.** The window-first mode turns the trailing action and the window header into explicit “Open in side panel” doors. Desktop side panels use `MatrxDynamicPanelHost`; mobile uses Drawer. Never a blocking `Sheet` / split-pane.
 - **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel. `detail.render`, every window renderer, and `rowActions` receive record controls (`openDetail`, `closeDetail`, `openWindow`, `closeWindow`) so one record body can close or switch its canonical presentation without reaching into table state. The table retains the opened row snapshot even when a controlled refetch or sort moves it off the current page.
@@ -98,7 +105,11 @@ expose `aria-sort` on the `<th>` automatically.
     …
   ]}
   getRowId={(r) => r.id}
-  toolbar={{ facets: […], anyOf: { columnIds: ["a", "b"] } }}
+  toolbar={{
+    facets: […],
+    anyOf: { columnIds: ["a", "b"] },
+    layeredFilters: { fields: [{ id: "name", label: "Name", kind: "text" }] },
+  }}
   copy={{ label, location, rowKind, listKind, humanRow }}
   edit={{ enabled: true, onSave: async (edits) => { … } }}
   detail={{ title: (r) => r.name, render: (r) => <Editor row={r} /> }}
@@ -113,7 +124,7 @@ expose `aria-sort` on the `<th>` automatically.
 
 | Feature     | How                                                                               |
 | ----------- | --------------------------------------------------------------------------------- |
-| Filters     | Per-column; searchable selects; clear-X; Clear all                                |
+| Filters     | Per-column + ordered layered rules; searchable selects; clear-X; Clear all        |
 | `anyOf`     | OR-search across named columns                                                    |
 | Copy        | Per-row + toolbar “this view”                                                     |
 | Inline edit | `editable` on col; string in-cell; else popover; Save/Cancel pill                 |
@@ -138,6 +149,14 @@ Do not drop these when replacing `AiModelTable`:
 | AiModelTable                  | sticky + filters + UuidCell → MatrxUuidCell | domain coupling, split-pane sidebar     |
 | aidream UuidDisplay / IdField | short + copy + FK open semantics            | `/database/…` routes, GlobalRecordSheet |
 | GenericDataTable              | pagination, empty/loading                   | no sticky / filters / panels            |
+
+## Change log
+
+- 2026-08-11 — Added the shared compact layered-filter builder, URL-safe rule
+  codec, local evaluator, controlled-query state, whole-word exclusions,
+  numeric comparisons/ranges, ordered chips, drag/keyboard reorder, and one
+  global clear path. The keyword classification workbench is the first
+  server-backed consumer.
 | RunControlsWindow             | WindowPanel sidebar tab pattern             | —                                       |
 | `CopyButtons`                 | agent envelope                              | —                                       |
 

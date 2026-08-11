@@ -29368,6 +29368,7 @@ export type Database = {
           healed_at: string | null
           id: string
           row_id: string
+          schema_name: string | null
           status: string
           table_name: string
         }
@@ -29379,6 +29380,7 @@ export type Database = {
           healed_at?: string | null
           id?: string
           row_id: string
+          schema_name?: string | null
           status?: string
           table_name: string
         }
@@ -29390,6 +29392,7 @@ export type Database = {
           healed_at?: string | null
           id?: string
           row_id?: string
+          schema_name?: string | null
           status?: string
           table_name?: string
         }
@@ -29401,6 +29404,7 @@ export type Database = {
           created_at: string
           id: string
           note: string | null
+          schema_name: string | null
           table_name: string
         }
         Insert: {
@@ -29408,6 +29412,7 @@ export type Database = {
           created_at?: string
           id?: string
           note?: string | null
+          schema_name?: string | null
           table_name: string
         }
         Update: {
@@ -29415,6 +29420,7 @@ export type Database = {
           created_at?: string
           id?: string
           note?: string | null
+          schema_name?: string | null
           table_name?: string
         }
         Relationships: []
@@ -35121,7 +35127,21 @@ export type Database = {
         Returns: undefined
       }
       mtx_is_durable_media_url: { Args: { url: string }; Returns: boolean }
-      mtx_media_heal_dispatch: { Args: never; Returns: number }
+      mtx_media_durability_scan: {
+        Args: { p_full?: boolean; p_schema?: string }
+        Returns: {
+          column_name: string
+          row_count: number
+          schema_name: string
+          table_name: string
+        }[]
+      }
+      mtx_media_durability_schemas: {
+        Args: never
+        Returns: {
+          schema_name: string
+        }[]
+      }
       org_admin_get_member: {
         Args: { p_org_id: string; p_user_id: string }
         Returns: Json
@@ -44878,6 +44898,34 @@ export type Database = {
           last_backfill_at: string
         }[]
       }
+      gsc_brand_alias_match_strength: {
+        Args: {
+          p_joined: string
+          p_normalized_phrase: string
+          p_probe: string
+          p_toks: string[]
+        }
+        Returns: number
+      }
+      gsc_brand_alias_preview: {
+        Args: {
+          p_alias: string
+          p_end: string
+          p_limit?: number
+          p_site_id: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      gsc_brand_alias_spec: {
+        Args: { p_alias: string }
+        Returns: {
+          joined: string
+          probe: string
+          raw_name: string
+          toks: string[]
+        }[]
+      }
       gsc_brand_aliases: {
         Args: { p_site_id: string }
         Returns: {
@@ -44973,9 +45021,11 @@ export type Database = {
       }
       gsc_keyword_class_review: {
         Args: {
+          p_brand_alias?: string
           p_classes?: string[]
           p_confirmed?: boolean
           p_end: string
+          p_filters?: Json
           p_limit?: number
           p_match?: string
           p_offset?: number

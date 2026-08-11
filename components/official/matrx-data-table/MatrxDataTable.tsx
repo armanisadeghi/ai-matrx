@@ -39,6 +39,11 @@ import { tokenFromColumnName } from "@/components/official/entity-ref/doors";
 import { MatrxUuidCell } from "./MatrxUuidCell";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { ToolbarFacets, resetToolbarFacets } from "./ToolbarFacets";
+import { LayeredFilterBuilder } from "./LayeredFilterBuilder";
+import {
+  completeLayeredFilterRules,
+  type LayeredFilterRule,
+} from "./layered-filters";
 import {
   applyRowEdits,
   columnId,
@@ -146,6 +151,20 @@ export function MatrxDataTable<T>({
       setInternalAnyOf(v);
     }
     toolbar?.anyOf?.onChange?.(v);
+  };
+
+  const [internalLayeredFilters, setInternalLayeredFilters] = useState<
+    LayeredFilterRule[]
+  >([]);
+  const layeredFilters = controlledQuery
+    ? (controlledQuery.state.layeredFilters ?? [])
+    : internalLayeredFilters;
+  const setLayeredFilters = (next: LayeredFilterRule[]) => {
+    if (controlledQuery) {
+      emitControlledQueryChange({ layeredFilters: next }, { resetPage: true });
+      return;
+    }
+    setInternalLayeredFilters(next);
   };
 
   const [internalColumnFilters, setInternalColumnFilters] =
@@ -264,6 +283,7 @@ export function MatrxDataTable<T>({
       toolbar?.anyOf
         ? { columnIds: toolbar.anyOf.columnIds, query: anyOfValue }
         : undefined,
+      layeredFilters,
     );
   }, [
     data,
@@ -273,6 +293,7 @@ export function MatrxDataTable<T>({
     searchValue,
     toolbar,
     anyOfValue,
+    layeredFilters,
     controlledQuery,
   ]);
 
@@ -280,7 +301,15 @@ export function MatrxDataTable<T>({
     if (controlledQuery) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Preserve the original local-mode contract: every query-shape change returns to page one, including externally controlled toolbar values.
     setInternalPage(1);
-  }, [searchValue, anyOfValue, columnFilters, sort, pageSize, controlledQuery]);
+  }, [
+    searchValue,
+    anyOfValue,
+    layeredFilters,
+    columnFilters,
+    sort,
+    pageSize,
+    controlledQuery,
+  ]);
 
   const totalItems = controlledQuery
     ? Math.max(0, controlledQuery.totalItems)
@@ -350,6 +379,7 @@ export function MatrxDataTable<T>({
     activeFilterCount > 0 ||
     Boolean(searchValue.trim()) ||
     Boolean(anyOfValue.trim()) ||
+    completeLayeredFilterRules(layeredFilters).length > 0 ||
     facetActive;
 
   const changeCount = useMemo(() => {
@@ -400,7 +430,7 @@ export function MatrxDataTable<T>({
   const clearAllFilters = () => {
     if (controlledQuery) {
       emitControlledQueryChange(
-        { search: "", anyOf: "", columnFilters: {} },
+        { search: "", anyOf: "", layeredFilters: [], columnFilters: {} },
         { resetPage: true },
       );
       toolbar?.onSearchChange?.("");
@@ -409,6 +439,7 @@ export function MatrxDataTable<T>({
       setInternalColumnFilters({});
       setSearchValue("");
       setAnyOfValue("");
+      setInternalLayeredFilters([]);
     }
     resetToolbarFacets(toolbar?.facets);
   };
@@ -467,6 +498,7 @@ export function MatrxDataTable<T>({
       {/* Toolbar */}
       {(showSearch ||
         toolbar?.anyOf ||
+        toolbar?.layeredFilters ||
         (toolbar?.facets && toolbar.facets.length > 0) ||
         toolbar?.leading ||
         toolbar?.actions ||
@@ -494,6 +526,16 @@ export function MatrxDataTable<T>({
                 </button>
               ) : null}
             </div>
+          ) : null}
+
+          {toolbar?.layeredFilters ? (
+            <LayeredFilterBuilder
+              fields={toolbar.layeredFilters.fields}
+              rules={layeredFilters}
+              onChange={setLayeredFilters}
+              maxRules={toolbar.layeredFilters.maxRules}
+              label={toolbar.layeredFilters.label}
+            />
           ) : null}
 
           {toolbar?.anyOf ? (
@@ -549,7 +591,9 @@ export function MatrxDataTable<T>({
                     buildViewAgentInput(copy, processed, data, {
                       search: searchValue,
                       anyOf: anyOfValue,
-                      filterCount: activeFilterCount,
+                      filterCount:
+                        activeFilterCount +
+                        completeLayeredFilterRules(layeredFilters).length,
                       sort: sort ? `${sort.id}:${sort.direction}` : null,
                     })
                   }
@@ -598,16 +642,16 @@ export function MatrxDataTable<T>({
             tableClassName,
           )}
         >
-        {isFetching && !isLoading ? (
-          <div
-            role="status"
-            className="sticky left-0 top-0 z-20 h-0.5 w-full overflow-hidden bg-primary/15"
-          >
-            <div className="h-full w-full animate-pulse bg-primary" />
-            <span className="sr-only">Refreshing table data</span>
-          </div>
-        ) : null}
-        {/* Below `sm` the table sizes to its CONTENT (w-max + max-w-none — a
+          {isFetching && !isLoading ? (
+            <div
+              role="status"
+              className="sticky left-0 top-0 z-20 h-0.5 w-full overflow-hidden bg-primary/15"
+            >
+              <div className="h-full w-full animate-pulse bg-primary" />
+              <span className="sr-only">Refreshing table data</span>
+            </div>
+          ) : null}
+          {/* Below `sm` the table sizes to its CONTENT (w-max + max-w-none — a
             global `table { max-width: 100% }` otherwise clamps it and silently
             kills the scroll) so the container scrolls horizontally instead of
             crushing every column into an unreadable wrap. Cells go nowrap and
@@ -621,275 +665,277 @@ export function MatrxDataTable<T>({
             scroller — the frozen column then sticks to the table's scrollport
             (which itself moves) and never freezes. Utilities outrank the
             `@layer base` rule and restore real table layout. */}
-        <table className="table w-max min-w-full max-w-none caption-bottom overflow-visible text-sm sm:w-full sm:min-w-0 sm:max-w-full">
-          <thead className="sticky top-0 z-10 border-b border-border bg-muted/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur-sm">
-            <tr>
-              {visibleColumns.map((col, colIdx) => {
-                const id = columnId(col);
-                const meta = filterMeta.get(id);
-                const isSorted = sort?.id === id;
-                return (
-                  <th
-                    key={id}
-                    aria-sort={
-                      isSorted
-                        ? sort?.direction === "asc"
-                          ? "ascending"
-                          : "descending"
-                        : undefined
-                    }
-                    className={cn(
-                      "h-9 px-2 text-left align-middle max-sm:whitespace-nowrap",
-                      // bg-inherit picks up the thead's translucent bg-muted/90
-                      // but NOT its backdrop-filter — re-apply the blur so
-                      // scrolled-under header text can't ghost through.
-                      mobileScroll &&
-                        colIdx === 0 &&
-                        "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit max-sm:backdrop-blur-sm",
-                      // Consumer widths are desktop tuning: applied from `sm`
-                      // up via a CSS var, so mobile stays content-sized
-                      // (nowrap + a hard width would bleed into the next cell).
-                      col.width !== undefined && "sm:w-[var(--matrx-col-w)]",
-                      col.headerClassName,
-                      col.align === "center" && "text-center",
-                      col.align === "right" && "text-right",
-                    )}
-                    style={columnWidthVar(col.width)}
-                  >
-                    <ColumnHeaderCell
-                      label={col.header}
-                      labelText={
-                        typeof col.header === "string" ? col.header : id
-                      }
-                      sortable={col.sortable !== false}
-                      isSorted={Boolean(isSorted)}
-                      sortDirection={sort?.direction ?? "asc"}
-                      onSortAsc={() => setSort({ id, direction: "asc" })}
-                      onSortDesc={() => setSort({ id, direction: "desc" })}
-                      onClearSort={() => setSort(null)}
-                      onHeaderSortClick={() => {
-                        if (!isSorted) {
-                          setSort({ id, direction: "asc" });
-                          return;
-                        }
-                        if (sort?.direction === "asc") {
-                          setSort({ id, direction: "desc" });
-                          return;
-                        }
-                        setSort(null);
-                      }}
-                      filterKind={meta?.kind ?? null}
-                      filterValue={columnFilters[id]}
-                      onFilterChange={(next) => setColumnFilter(id, next)}
-                      selectOptions={meta?.options}
-                      align={col.align}
-                    />
-                  </th>
-                );
-              })}
-              {showActionsCol && (
-                <th className="h-9 w-28 px-2 text-right align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Actions
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              Array.from({ length: 6 }).map((_, i) => (
-                <tr key={`sk-${i}`} className="border-b border-border/60">
-                  {visibleColumns.map((col) => (
-                    <td key={columnId(col)} className="px-2 py-2">
-                      <Skeleton className="h-5 w-full" />
-                    </td>
-                  ))}
-                  {showActionsCol && (
-                    <td className="px-2 py-2">
-                      <Skeleton className="ml-auto h-5 w-10" />
-                    </td>
-                  )}
-                </tr>
-              ))
-            ) : paginated.length === 0 ? (
+          <table className="table w-max min-w-full max-w-none caption-bottom overflow-visible text-sm sm:w-full sm:min-w-0 sm:max-w-full">
+            <thead className="sticky top-0 z-10 border-b border-border bg-muted/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur-sm">
               <tr>
-                <td
-                  colSpan={visibleColumns.length + (showActionsCol ? 1 : 0)}
-                  className="px-4 py-12 text-center"
-                >
-                  <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
-                    {emptyState?.icon}
-                    <p className="text-sm font-medium text-foreground">
-                      {emptyState?.title ?? "No rows"}
-                    </p>
-                    {emptyState?.description ? (
-                      <p className="text-xs text-muted-foreground">
-                        {emptyState.description}
-                      </p>
-                    ) : null}
-                    {emptyState?.action}
-                  </div>
-                </td>
+                {visibleColumns.map((col, colIdx) => {
+                  const id = columnId(col);
+                  const meta = filterMeta.get(id);
+                  const isSorted = sort?.id === id;
+                  return (
+                    <th
+                      key={id}
+                      aria-sort={
+                        isSorted
+                          ? sort?.direction === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : undefined
+                      }
+                      className={cn(
+                        "h-9 px-2 text-left align-middle max-sm:whitespace-nowrap",
+                        // bg-inherit picks up the thead's translucent bg-muted/90
+                        // but NOT its backdrop-filter — re-apply the blur so
+                        // scrolled-under header text can't ghost through.
+                        mobileScroll &&
+                          colIdx === 0 &&
+                          "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit max-sm:backdrop-blur-sm",
+                        // Consumer widths are desktop tuning: applied from `sm`
+                        // up via a CSS var, so mobile stays content-sized
+                        // (nowrap + a hard width would bleed into the next cell).
+                        col.width !== undefined && "sm:w-[var(--matrx-col-w)]",
+                        col.headerClassName,
+                        col.align === "center" && "text-center",
+                        col.align === "right" && "text-right",
+                      )}
+                      style={columnWidthVar(col.width)}
+                    >
+                      <ColumnHeaderCell
+                        label={col.header}
+                        labelText={
+                          typeof col.header === "string" ? col.header : id
+                        }
+                        sortable={col.sortable !== false}
+                        isSorted={Boolean(isSorted)}
+                        sortDirection={sort?.direction ?? "asc"}
+                        onSortAsc={() => setSort({ id, direction: "asc" })}
+                        onSortDesc={() => setSort({ id, direction: "desc" })}
+                        onClearSort={() => setSort(null)}
+                        onHeaderSortClick={() => {
+                          if (!isSorted) {
+                            setSort({ id, direction: "asc" });
+                            return;
+                          }
+                          if (sort?.direction === "asc") {
+                            setSort({ id, direction: "desc" });
+                            return;
+                          }
+                          setSort(null);
+                        }}
+                        filterKind={meta?.kind ?? null}
+                        filterValue={columnFilters[id]}
+                        onFilterChange={(next) => setColumnFilter(id, next)}
+                        selectOptions={meta?.options}
+                        align={col.align}
+                      />
+                    </th>
+                  );
+                })}
+                {showActionsCol && (
+                  <th className="h-9 w-28 px-2 text-right align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Actions
+                  </th>
+                )}
               </tr>
-            ) : (
-              paginated.map((row, index) => {
-                const id = getRowId(row);
-                const isSelected = selectedId === id;
-                const rowEdits = edits[id];
-                const displayRow = applyRowEdits(row, rowEdits);
-                return (
-                  <tr
-                    key={id}
-                    data-row-id={id}
-                    data-state={isSelected ? "selected" : undefined}
-                    onClick={(e) => {
-                      // A click that started on a real link (the D112 title
-                      // anchor, an FK cell link) must not ALSO fire the
-                      // row-open — the anchor owns that navigation.
-                      if ((e.target as HTMLElement).closest("a")) return;
-                      openRow(row);
-                    }}
-                    className={cn(
-                      // bg-card is a visual no-op (the container is bg-card) but
-                      // gives the frozen first cell an OPAQUE background to
-                      // inherit, so horizontally-scrolled content never shows
-                      // through it. The translucent tints (zebra/hover) would
-                      // let it bleed, so they are desktop-only.
-                      "border-b border-border/60 bg-card transition-colors",
-                      (detailEnabled || Boolean(onRowOpen)) &&
-                        "cursor-pointer sm:hover:bg-muted/50",
-                      isSelected && "bg-muted",
-                      zebra &&
-                        index % 2 === 1 &&
-                        !isSelected &&
-                        "sm:bg-muted/20",
-                    )}
-                  >
-                    {visibleColumns.map((col, colIdx) => {
-                      const field = col.accessorKey
-                        ? String(col.accessorKey)
-                        : columnId(col);
-                      const display = renderCell(displayRow, col, index);
-                      const editable = Boolean(
-                        editEnabled &&
-                          col.editable &&
-                          (col.editableIf?.(row) ?? true),
-                      );
-                      const dirty = Boolean(rowEdits && field in rowEdits);
-                      const cellHref = col.href?.(row) ?? undefined;
-                      return (
-                        <td
-                          key={columnId(col)}
-                          className={cn(
-                            "px-2 py-1.5 align-middle",
-                            // nowrap (NOT truncate — truncate clips the cell and
-                            // defeats w-max, killing the horizontal scroll).
-                            "max-sm:whitespace-nowrap",
-                            mobileScroll &&
-                              colIdx === 0 &&
-                              "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",
-                            col.width !== undefined &&
-                              "sm:w-[var(--matrx-col-w)] sm:max-w-[var(--matrx-col-w)]",
-                            col.className,
-                            col.align === "center" && "text-center",
-                            col.align === "right" && "text-right",
-                          )}
-                          style={columnWidthVar(col.width)}
-                        >
-                          {editable && col.editable ? (
-                            <EditableTableCell
-                              value={
-                                rowEdits && field in rowEdits
-                                  ? rowEdits[field]
-                                  : getCellValue(row, col)
-                              }
-                              editType={col.editable}
-                              editOptions={col.editOptions}
-                              display={display}
-                              dirty={dirty}
-                              onCommit={(next) => commitCell(id, field, next)}
-                              href={cellHref}
-                              editTrigger={col.editTrigger}
-                            />
-                          ) : cellHref ? (
-                            <Link
-                              href={cellHref}
-                              onClick={(e) => e.stopPropagation()}
-                              className="block w-full min-w-0 rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-                            >
-                              {display}
-                            </Link>
-                          ) : (
-                            display
-                          )}
-                        </td>
-                      );
-                    })}
+            </thead>
+            <tbody>
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={`sk-${i}`} className="border-b border-border/60">
+                    {visibleColumns.map((col) => (
+                      <td key={columnId(col)} className="px-2 py-2">
+                        <Skeleton className="h-5 w-full" />
+                      </td>
+                    ))}
                     {showActionsCol && (
-                      <td className="px-2 py-1.5 text-right align-middle">
-                        <div
-                          className="inline-flex items-center justify-end gap-0.5"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {showRowCopy && copy ? (
-                            <CopyButtons
-                              size="icon"
-                              label={copy.label}
-                              human={() => copy.humanRow(displayRow)}
-                              json={() =>
-                                copy.agentRow
-                                  ? copy.agentRow(displayRow)
-                                  : displayRow
-                              }
-                              agent={() => buildRowAgentInput(copy, displayRow)}
-                            />
-                          ) : null}
-                          {rowActions?.(row, {
-                            closeDetail: () => setSelectedId(null),
-                            openDetail: () => openDetail(row),
-                            openWindow: () => openWindow(row),
-                            closeWindow,
-                          })}
-                          {windowEnabled ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                              aria-label={
-                                opensWindowOnRowClick
-                                  ? "Open in side panel"
-                                  : "Open in window"
-                              }
-                              title={
-                                opensWindowOnRowClick
-                                  ? "Open in side panel"
-                                  : "Open in window"
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (opensWindowOnRowClick) {
-                                  openDetail(row);
-                                } else {
-                                  openWindow(row);
-                                }
-                              }}
-                            >
-                              {opensWindowOnRowClick ? (
-                                <PanelRightOpen className="h-3.5 w-3.5" />
-                              ) : (
-                                <PanelRight className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
-                          ) : null}
-                        </div>
+                      <td className="px-2 py-2">
+                        <Skeleton className="ml-auto h-5 w-10" />
                       </td>
                     )}
                   </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                ))
+              ) : paginated.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={visibleColumns.length + (showActionsCol ? 1 : 0)}
+                    className="px-4 py-12 text-center"
+                  >
+                    <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
+                      {emptyState?.icon}
+                      <p className="text-sm font-medium text-foreground">
+                        {emptyState?.title ?? "No rows"}
+                      </p>
+                      {emptyState?.description ? (
+                        <p className="text-xs text-muted-foreground">
+                          {emptyState.description}
+                        </p>
+                      ) : null}
+                      {emptyState?.action}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginated.map((row, index) => {
+                  const id = getRowId(row);
+                  const isSelected = selectedId === id;
+                  const rowEdits = edits[id];
+                  const displayRow = applyRowEdits(row, rowEdits);
+                  return (
+                    <tr
+                      key={id}
+                      data-row-id={id}
+                      data-state={isSelected ? "selected" : undefined}
+                      onClick={(e) => {
+                        // A click that started on a real link (the D112 title
+                        // anchor, an FK cell link) must not ALSO fire the
+                        // row-open — the anchor owns that navigation.
+                        if ((e.target as HTMLElement).closest("a")) return;
+                        openRow(row);
+                      }}
+                      className={cn(
+                        // bg-card is a visual no-op (the container is bg-card) but
+                        // gives the frozen first cell an OPAQUE background to
+                        // inherit, so horizontally-scrolled content never shows
+                        // through it. The translucent tints (zebra/hover) would
+                        // let it bleed, so they are desktop-only.
+                        "border-b border-border/60 bg-card transition-colors",
+                        (detailEnabled || Boolean(onRowOpen)) &&
+                          "cursor-pointer sm:hover:bg-muted/50",
+                        isSelected && "bg-muted",
+                        zebra &&
+                          index % 2 === 1 &&
+                          !isSelected &&
+                          "sm:bg-muted/20",
+                      )}
+                    >
+                      {visibleColumns.map((col, colIdx) => {
+                        const field = col.accessorKey
+                          ? String(col.accessorKey)
+                          : columnId(col);
+                        const display = renderCell(displayRow, col, index);
+                        const editable = Boolean(
+                          editEnabled &&
+                          col.editable &&
+                          (col.editableIf?.(row) ?? true),
+                        );
+                        const dirty = Boolean(rowEdits && field in rowEdits);
+                        const cellHref = col.href?.(row) ?? undefined;
+                        return (
+                          <td
+                            key={columnId(col)}
+                            className={cn(
+                              "px-2 py-1.5 align-middle",
+                              // nowrap (NOT truncate — truncate clips the cell and
+                              // defeats w-max, killing the horizontal scroll).
+                              "max-sm:whitespace-nowrap",
+                              mobileScroll &&
+                                colIdx === 0 &&
+                                "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",
+                              col.width !== undefined &&
+                                "sm:w-[var(--matrx-col-w)] sm:max-w-[var(--matrx-col-w)]",
+                              col.className,
+                              col.align === "center" && "text-center",
+                              col.align === "right" && "text-right",
+                            )}
+                            style={columnWidthVar(col.width)}
+                          >
+                            {editable && col.editable ? (
+                              <EditableTableCell
+                                value={
+                                  rowEdits && field in rowEdits
+                                    ? rowEdits[field]
+                                    : getCellValue(row, col)
+                                }
+                                editType={col.editable}
+                                editOptions={col.editOptions}
+                                display={display}
+                                dirty={dirty}
+                                onCommit={(next) => commitCell(id, field, next)}
+                                href={cellHref}
+                                editTrigger={col.editTrigger}
+                              />
+                            ) : cellHref ? (
+                              <Link
+                                href={cellHref}
+                                onClick={(e) => e.stopPropagation()}
+                                className="block w-full min-w-0 rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                              >
+                                {display}
+                              </Link>
+                            ) : (
+                              display
+                            )}
+                          </td>
+                        );
+                      })}
+                      {showActionsCol && (
+                        <td className="px-2 py-1.5 text-right align-middle">
+                          <div
+                            className="inline-flex items-center justify-end gap-0.5"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {showRowCopy && copy ? (
+                              <CopyButtons
+                                size="icon"
+                                label={copy.label}
+                                human={() => copy.humanRow(displayRow)}
+                                json={() =>
+                                  copy.agentRow
+                                    ? copy.agentRow(displayRow)
+                                    : displayRow
+                                }
+                                agent={() =>
+                                  buildRowAgentInput(copy, displayRow)
+                                }
+                              />
+                            ) : null}
+                            {rowActions?.(row, {
+                              closeDetail: () => setSelectedId(null),
+                              openDetail: () => openDetail(row),
+                              openWindow: () => openWindow(row),
+                              closeWindow,
+                            })}
+                            {windowEnabled ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                aria-label={
+                                  opensWindowOnRowClick
+                                    ? "Open in side panel"
+                                    : "Open in window"
+                                }
+                                title={
+                                  opensWindowOnRowClick
+                                    ? "Open in side panel"
+                                    : "Open in window"
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (opensWindowOnRowClick) {
+                                    openDetail(row);
+                                  } else {
+                                    openWindow(row);
+                                  }
+                                }}
+                              >
+                                {opensWindowOnRowClick ? (
+                                  <PanelRightOpen className="h-3.5 w-3.5" />
+                                ) : (
+                                  <PanelRight className="h-3.5 w-3.5" />
+                                )}
+                              </Button>
+                            ) : null}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
         {/* Mobile-only scroll affordance: right/left edge fades over the
             scroll container (siblings, so they don't scroll away). The right
@@ -1173,6 +1219,5 @@ function resolveStringTitle(
   if (typeof title === "number") return String(title);
   return fallback;
 }
-
 
 export default MatrxDataTable;
