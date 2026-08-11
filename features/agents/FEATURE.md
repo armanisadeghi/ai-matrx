@@ -306,7 +306,7 @@ model overrides.
 
 ## Related features
 
-- **Depends on:** `features/agent-context/` + `features/brokers/` (variable/context resolution), `features/api-integrations/` (MCP + external tools), `features/artifacts/` (rendering output), `features/tool-call-visualization/` (tool UI)
+- **Depends on:** `features/agent-context/` (variable/context resolution; `features/brokers/` was deleted 2026-08-11 — it was never in the invocation path), `features/api-integrations/` (MCP + external tools), `features/artifacts/` (rendering output), `features/tool-call-visualization/` (tool UI)
 - **Depended on by:** `features/agent-shortcuts/`, `features/agent-apps/`, `features/conversation/`, almost every user-facing surface
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 

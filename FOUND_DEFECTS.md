@@ -92,7 +92,11 @@ to a site/brand/client and deciding which link kinds count as "marketing cost" i
 a product decision (Arman), not a repair. Until then `/marketing/cost` shows only
 org-level provider spend against monthly ceilings.
 
-### D148 — `pnpm type-check` is red on main: 11 errors in `features/brokers/` (2026-08-10)
+### D148 — ✅ RESOLVED 2026-08-11 — `pnpm type-check` is red on main: 11 errors in `features/brokers/` (2026-08-10)
+
+**Resolution:** the RPCs were not "drifted" — they were deliberately DROPPED. aidream removed all nine broker-value overloads on 2026-08-09 after proving the tables were graveyard-only with zero call statistics; its migration `0240` explicitly left the FE side "awaiting Arman" because matrx-frontend still shipped calling code. Live-verified before acting: zero broker functions in any schema, every `broker*` table in `graveyard`, `graveyard.broker_values` at **0 rows**, and zero importers of `features/brokers/` anywhere outside itself. The feature was never wired into an agent run. Deleted the island plus the orphaned `data_broker` / `broker_values` entries in `utils/supabase/deprecated-tables.ts`; no casts or suppressions used. Repo-wide `pnpm type-check` now reports zero brokers errors. Detail: [`features/agent-context/FEATURE.md`](features/agent-context/FEATURE.md) § Removal record.
+
+**Original report:**
 
 On a clean `main` checkout (v0.4.380), `pnpm type-check` fails with 11 errors confined to `features/brokers/services/core-broker-crud.ts` (7), `features/brokers/types.ts` (3), and `features/brokers/services/resolution-service.ts` (1) — the code calls RPCs (`upsert_broker_value`, …) that no longer exist in the generated `types/database.types.ts` RPC union, i.e. the brokers feature drifted from a DB-types regeneration. Since the build ignores type errors (`ignoreBuildErrors: true`), this ships silently AND masks the gate for every other task (a red gate can't prove a change clean; per-file filtering is the only workaround). Fix: reconcile the brokers service with the live RPC surface (restore/rename the RPCs in the DB, or update the code to the current ones), then confirm `pnpm type-check` is green repo-wide.
 
