@@ -329,9 +329,14 @@ export function EnhanceSetDialog({
                     </div>
 
                     {/* No spinner while AI works: the run streams right here,
-                        under the card it belongs to, growing downward. */}
+                        under the card it belongs to, growing downward.
+                        It is shown WHILE the run is in flight only — the
+                        moment the preview below exists, that preview is the
+                        better surface for the same content, and leaving the
+                        stream up would show the agent's raw payload above a
+                        rendered copy of itself. */}
                     <LiveRunDisplay
-                      conversationId={w.conversationId}
+                      conversationId={w.running !== null ? w.conversationId : null}
                       pending={w.running !== null}
                       label={
                         w.running === "deepen"
