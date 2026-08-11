@@ -76,8 +76,10 @@ export function SummaryDetail({ id }: { id: string }) {
         id={id}
         error={loadError}
         onRetry={() => setReloadKey((k) => k + 1)}
-        fallbackHref="/education/summaries"
-        fallbackLabel="All summaries"
+        // `/education/summaries` has only a `[id]` leaf — there is no list
+        // page to send them to yet, and a door onto a 404 is worse than none.
+        fallbackHref="/education"
+        fallbackLabel="Education"
       />
     );
   }

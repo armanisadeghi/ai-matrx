@@ -150,6 +150,14 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- **2026-08-11** — **Detail / edit / results route their failures to the access gate.** All three
+  stopped asserting "Not found" over a zero-row read and now render `<AccessGate>` — detail and edit
+  on `assessment`, results on **whichever row is actually missing**: the assessment, or the
+  `assessment_result` (whose door back is the assessment itself, which the learner can usually still
+  open). The results effect records each of its two reads independently, so a readable assessment is
+  no longer discarded because its result failed. Kind-aware doors come from `assessmentListDoor()` in
+  `kindConfig.ts`, derived from the pathname because the row that knows its kind is the one that
+  didn't load. `duplicate()`'s "source not found" became `recordUnavailable().message`.
 - **2026-08-11** — **Graded attempts now persist the grader's reasoning.** `useTakeAssessment.submit`
   and `useGradeWork.grade` were writing `result` / `scoreValue` / transcript / steps to the spine and
   dropping `explanation` + `misconception` in `useState` — the paid half of every AI grade died on

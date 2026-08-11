@@ -83,15 +83,20 @@ export function AssessmentResults({
       if (cancelled) return;
       setAssessmentError(null);
       setResultError(null);
+      // Each read is recorded on its own: which row is missing decides which
+      // record the gate explains, so a readable assessment must not be thrown
+      // away because its result failed.
       if (aw.error || !aw.data) {
         setAssessment(null);
         setAssessmentError(aw.error ?? null);
-      } else if (r.error || !r.data) {
-        setResult(null);
-        setResultError(r.error ?? null);
       } else {
         setAssessment(aw.data.assessment);
         setItems(aw.data.items);
+      }
+      if (r.error || !r.data) {
+        setResult(null);
+        setResultError(r.error ?? null);
+      } else {
         setResult(r.data);
         // Learning-gain delta for a post-test.
         if (r.data.phase === "post") {

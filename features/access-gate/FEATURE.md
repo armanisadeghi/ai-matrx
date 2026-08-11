@@ -75,6 +75,10 @@ is the same class of lie this feature exists to kill.
 | Path | Role |
 |---|---|
 | `components/AccessGate.tsx` | The drop-in. Fault vs access-state decision. |
+| `components/ForbiddenSurface.tsx` | The SERVER face: what `forbidden.tsx` renders. Shows the same gate when a record was named, and an honest generic refusal when one wasn't. |
+| `../../lib/access/forbiddenTarget.ts` | Request-scoped (`React.cache`) handoff — how the boundary learns WHICH record was refused, since `forbidden()` carries no payload. |
+| `../../app/forbidden.tsx` · `../../app/(core)/forbidden.tsx` | The boundaries. Root is bare; `(core)`'s renders inside the AppShell. |
+| `../../utils/permissions/requireAccess.ts` | Server-side `requireAccess(type, id, level, { forbid: true })` — names the target, then calls `forbidden()`. |
 | `components/AccessDenied.tsx` | The screen (+ `AccessDeniedView` for variants). |
 | `components/RequestAccessPanel.tsx` | Ask → pending → answered, in place. |
 | `hooks/useAccessGate.ts` | `(token, id) → status + context`. |
@@ -136,18 +140,64 @@ the loop closes in the surface the requester already reads.
 ## Open
 
 - **The sweep.** `pnpm check:access-errors` (advisory, in the release gates)
-  measures it: **543 human-facing surfaces** still guess — 149 hand over raw
-  PostgREST text, 355 assert a deletion they cannot know, 39 assert a permission.
+  measures it: **410 human-facing surfaces** still guess (was 543 on
+  2026-08-11) — 97 hand over raw PostgREST text, 282 assert a deletion they
+  cannot know, 31 assert a permission.
   Ranked worst-feature-first; `--write` refreshes `scripts/access-errors/report.json`.
-  Marketing's record surfaces are converted; education / files+rag / `app/(core)`
-  are queued as separate tasks.
+  Marketing's record surfaces and `app/(core)` are converted; education /
+  files+rag were converted alongside. What remains is concentrated in `lib`,
+  `features/agents`, and `features/scope-system`.
 - **No `/settings/access-requests` inbox page yet, and `listAccessRequests` has
   zero consumers.** The DM is therefore not the primary surface, it is the only
   one — a request whose DM fails, or one created without a signed-in sender, is
   a durable row with no way to see it. Build the page.
-- `app/forbidden.tsx` + `requireAccess(..., { forbid: true })` for server routes.
+- **`requireAccess(..., { forbid: true })` has no production callsite yet.** The
+  server half exists and is verified, but every gated route still redirects.
+  Converting them (an `[id]/edit` that a viewer can't edit should refuse in
+  place with "ask for edit access", not bounce to the view route) is the next
+  step.
+- **CMS sites can't be gated.** `/cms/[siteId]` reads the standalone CMS
+  Supabase project, so `access_denied_context` — which resolves against Matrx
+  Main's entity registry — cannot answer for them. That surface now says only
+  what it knows ("We couldn't open this site") instead of sniffing the error
+  text for "403". A real fix needs a `cms_site` entity token, which is a
+  cross-project decision, not an agent's call.
+- **Slug-addressed records have no gate.** `access_denied_context(p_type, p_id
+  uuid)` needs the uuid, and `/organizations/[orgId]` accepts a slug. When the
+  slug doesn't resolve, `OrganizationAccessGate` says the address didn't match
+  rather than inventing a reason. Same shape will hit any future slug route.
+- **`check:access-errors` only sees quoted strings.** Bare JSX text
+  (`<p>This doesn&apos;t exist…</p>`) is invisible to it — that is why the
+  research-topic 404 went unreported for so long. The escaped-apostrophe blind
+  spot is fixed; the bare-JSX one is not.
 
 ## Change Log
+
+- **2026-08-11** — **`features/education` converted (38 → 0).** Six single-record
+  surfaces render the gate: assessment detail / edit / results (the results page
+  resolves the ASSESSMENT or the RESULT depending on which read came back empty,
+  and its door back is the assessment itself), study summary, study session,
+  multiplayer game room. Four service-layer "not found" strings became
+  `recordUnavailable().message`, so the honest sentence and the Error Inspector
+  scream arrive together. The 23 `throw new Error(error.message)` sites moved to
+  the new `operationFailed(action, cause)` in `utils/errors.ts` — the humane
+  counterpart to `extractErrorMessage`, with no "try again" (a retry that cannot
+  succeed is the lie this feature kills). One deliberate exception, documented in
+  place: the creator handle RPCs raise sentences authored FOR the user ("That
+  handle is reserved") under errcodes that contract owns, and only those codes
+  pass through. Verified in the browser on four routes.
+- **2026-08-11** — **The server half, and `app/(core)` converted.**
+  `experimental.authInterrupts` is ON (first use of Next's `forbidden()` in
+  this repo), `app/forbidden.tsx` + `app/(core)/forbidden.tsx` render the gate,
+  and `requireAccess` gained `{ forbid: true }`. On the client, all 46
+  `app/(core)` findings are gone: 15 organization surfaces collapsed onto ONE
+  `useResolvedOrganization` + `<OrganizationAccessGate>` (they each carried
+  their own copy of the same two guesses), `/lists/[id]` and the research-topic
+  layout stopped calling `notFound()` on an empty record read, `/data/[id]`'s
+  "doesn't exist or you don't have permission" hedge became the gate, and every
+  `"… Not Found"` page title went neutral. Two checker blind spots fixed:
+  escaped apostrophes (`doesn&apos;t exist`) were invisible, and Route Handlers
+  outside `app/api/` were being flagged for copy no human reads.
 
 
 - **2026-08-11** — Built and shipped. DB resolver + request ledger + RPC family +
