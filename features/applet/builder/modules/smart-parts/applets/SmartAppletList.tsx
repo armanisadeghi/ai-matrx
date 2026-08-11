@@ -96,7 +96,14 @@ const SmartAppletList = forwardRef<
         const error = useAppSelector(selectAppletError);
 
         // Derived state
-        const baseApplets = appletIds ? useAppSelector((state) => selectAppletsByIds(state, appletIds)) : allApplets;
+        // The selector runs UNCONDITIONALLY and branches inside. Written as
+        // `appletIds ? useAppSelector(...) : allApplets` it was a hook inside a
+        // ternary (react-hooks/rules-of-hooks): a list that received `appletIds`
+        // after mount changed its hook count and React throws.
+        const appletsById = useAppSelector((state) =>
+            appletIds ? selectAppletsByIds(state, appletIds) : null
+        );
+        const baseApplets = appletsById ?? allApplets;
 
         const handleLocalCreateApplet = () => {
             // Only handle creation internally if no external callback is provided

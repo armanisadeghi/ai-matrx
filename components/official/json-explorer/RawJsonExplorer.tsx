@@ -35,7 +35,25 @@ interface RawJsonExplorerProps {
   onPathCopy?: (path: string) => void;
 }
 
-const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
+/**
+ * No-data guard as its OWN component, above the hooked body.
+ *
+ * It used to be an early `return` above a `useCallback`, so the render where data
+ * arrived changed the hook count and React throws "rendered more hooks than
+ * during the previous render".
+ */
+const RawJsonExplorer: React.FC<RawJsonExplorerProps> = (props) => {
+  if (!props.pageData) {
+    return (
+      <div className="p-4 text-gray-500 dark:text-gray-400">
+        No raw data available
+      </div>
+    );
+  }
+  return <RawJsonExplorerBody {...props} />;
+};
+
+const RawJsonExplorerBody: React.FC<RawJsonExplorerProps> = ({
   pageData,
   ignorePrefix = undefined,
   withSelect = true,
@@ -226,14 +244,6 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
   useEffect(() => {
     setHiddenPaths([]);
   }, [currentPath.length]);
-
-  if (!pageData) {
-    return (
-      <div className="p-4 text-gray-500 dark:text-gray-400">
-        No raw data available
-      </div>
-    );
-  }
 
   const handleSaveBookmark = () => {
     const pathString = generateAccessPath(currentPath);

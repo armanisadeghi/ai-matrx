@@ -37,7 +37,21 @@ const convertUiPathToExtractorPath = (uiPath: PathArray): string => {
     return "data." + formattedPath.join(".");
 };
 
-const ProcessorExtractor = ({ jsonData, configKey }: ProcessorExtractorProps) => {
+/**
+ * No-data guard as its OWN component, above the hooked body.
+ *
+ * It used to be an early `return` above two `useMemo`s and a `useCallback`, so the render where data
+ * arrived changed the hook count and React throws "rendered more hooks than
+ * during the previous render".
+ */
+const ProcessorExtractor = (props: ProcessorExtractorProps) => {
+    if (!props.jsonData) {
+        return <div className="p-4 text-gray-500 dark:text-gray-400">No raw data available</div>;
+    }
+    return <ProcessorExtractorBody {...props} />;
+};
+
+const ProcessorExtractorBody = ({ jsonData, configKey }: ProcessorExtractorProps) => {
     const [originalData, setOriginalData] = useState<unknown>(null);
     const [currentPath, setCurrentPath] = useState<PathArray>([[0, "All"]]); // [[rowIndex, selectedKey], ...]
     const [displayData, setDisplayData] = useState<unknown>(null);
@@ -177,10 +191,6 @@ const ProcessorExtractor = ({ jsonData, configKey }: ProcessorExtractorProps) =>
     useEffect(() => {
         setHiddenPaths([]);
     }, [currentPath.length]);
-
-    if (!jsonData) {
-        return <div className="p-4 text-gray-500 dark:text-gray-400">No raw data available</div>;
-    }
 
     // Memoize the normalized hidden paths to avoid unnecessary recalculations
     const normalizedHiddenPaths = useMemo(() => {

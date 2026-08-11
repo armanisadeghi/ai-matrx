@@ -42,6 +42,12 @@ const ParseExtractorOptions = ({ content, processors, configKey }: ParseExtracto
         });
     }, [content, processors]);
 
+    // useDebounce runs ABOVE the empty-processors guard: it only reads
+    // processedResults, and below the guard it was a conditional hook
+    // (react-hooks/rules-of-hooks) that React throws on the render where
+    // `processors` arrives.
+    const debouncedResults = useDebounce(processedResults, 1000);
+
     if (!processors || processors.length === 0) {
         return (
             <div className="p-4 text-gray-500 dark:text-gray-400">
@@ -49,8 +55,6 @@ const ParseExtractorOptions = ({ content, processors, configKey }: ParseExtracto
             </div>
         );
     }
-
-    const debouncedResults = useDebounce(processedResults, 1000);
 
     // If only one processor, don't show tabs
     if (processors.length === 1) {

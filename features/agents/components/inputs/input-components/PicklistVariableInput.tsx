@@ -47,6 +47,16 @@ export function PicklistVariableInput({
   containerWidth = 0,
 }: PicklistVariableInputProps) {
   const binding = readStructuredList(customComponent);
+
+  // The hook runs UNCONDITIONALLY, with an empty listId standing in for the
+  // unbound case. Below the guard it was a conditional hook
+  // (react-hooks/rules-of-hooks): a variable that gained a picklist binding
+  // after mount went from 0 hooks to N and React throws.
+  const { items, loading, unavailable } = useStructuredListForSelection(
+    binding?.listId ?? null,
+    binding?.groupName,
+  );
+
   if (!binding) {
     // Caller (VariableInputComponent) only renders this when
     // customComponent.picklist.listId is set — this guards the invariant
@@ -60,11 +70,6 @@ export function PicklistVariableInput({
   const listId = binding.listId;
   const multiple = !!binding.multiple;
   const allowOther = customComponent.allowOther;
-
-  const { items, loading, unavailable } = useStructuredListForSelection(
-    listId,
-    binding.groupName,
-  );
 
   const options = items.map((i) => i.label);
   const itemByLabel = new Map(items.map((i) => [i.label, i]));

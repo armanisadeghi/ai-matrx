@@ -33,13 +33,14 @@ export function BrokerForm({ fields, onSubmit, brokerSync = true }: BrokerFormCo
         return fieldValues;
     });
 
-    // Sync to server if enabled
-    if (brokerSync) {
-        useServerBrokerSync({
-            brokers: fields.map((f) => f.broker),
-            syncOnChange: true,
-        });
-    }
+    // Called UNCONDITIONALLY — a `use*` function may not sit inside an `if`
+    // (react-hooks/rules-of-hooks). The flag moves into the arguments.
+    // NOTE: `useServerBrokerSync` is currently a no-op stub
+    // (lib/redux/brokerSlice/hooks/useTempBroker.ts — "Legacy server sync removed").
+    useServerBrokerSync({
+        brokers: brokerSync ? fields.map((f) => f.broker) : [],
+        syncOnChange: brokerSync,
+    });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -20,7 +20,13 @@ function applyWordReplacements(text: string, replaceMap: Record<string, string> 
     return formatted;
 }
 
-export function getCurrentParsedPathName() {
+/**
+ * These ARE hooks — they call `usePathname` / `useSearchParams`. They were
+ * named `getX`, so React's rules-of-hooks lint (and the React Compiler) read
+ * every call site as "a hook called from a plain function", and neither could
+ * verify the call order. Renamed to the `useX` convention they already obey.
+ */
+export function useParsedPathName() {
     const pathName = usePathname();
     const segments = pathName.split('/').filter(Boolean);
     
@@ -54,7 +60,7 @@ export function getCurrentParsedPathName() {
     return result;
 }
 
-export function getParsedSearchParams() {
+export function useParsedSearchParams() {
     const searchParams = useSearchParams();
     const result: { key: string; value: string; encoded: string }[] = [];
 
@@ -69,9 +75,9 @@ export function getParsedSearchParams() {
     return result;
 }
 
-export function getParsedPathNameAndSearchParams() {
-    const parsedPathName = getCurrentParsedPathName();
-    const parsedSearchParams = getParsedSearchParams();
+export function useParsedPathNameAndSearchParams() {
+    const parsedPathName = useParsedPathName();
+    const parsedSearchParams = useParsedSearchParams();
 
     return {
         pathName: parsedPathName,
@@ -80,7 +86,7 @@ export function getParsedPathNameAndSearchParams() {
 }
 
 // New function for customized replacement map usage
-export function getCurrentParsedPathNameWithCustomReplacements(customReplaceMap: Record<string, string>) {
+export function useParsedPathNameWithCustomReplacements(customReplaceMap: Record<string, string>) {
     const pathName = usePathname();
     const segments = pathName.split('/').filter(Boolean);
     
@@ -118,9 +124,9 @@ export function getCurrentParsedPathNameWithCustomReplacements(customReplaceMap:
 }
 
 // New function for customized path and search params
-export function getParsedPathNameAndSearchParamsWithCustomReplacements(customReplaceMap: Record<string, string>) {
-    const parsedPathName = getCurrentParsedPathNameWithCustomReplacements(customReplaceMap);
-    const parsedSearchParams = getParsedSearchParams();
+export function useParsedPathNameAndSearchParamsWithCustomReplacements(customReplaceMap: Record<string, string>) {
+    const parsedPathName = useParsedPathNameWithCustomReplacements(customReplaceMap);
+    const parsedSearchParams = useParsedSearchParams();
 
     return {
         pathName: parsedPathName,

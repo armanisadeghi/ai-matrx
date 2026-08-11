@@ -122,6 +122,27 @@ export default function MultiFileCodeEditor({
     [sidebarWidth],
   );
 
+  // Neither callback reads `currentFile`, so both live ABOVE the empty-files
+  // guard. Below it they were conditional hooks (react-hooks/rules-of-hooks):
+  // an editor whose `files` arrived asynchronously went from N hooks to N+2 in
+  // one render, and React throws on that.
+  const handleFileSelect = useCallback(
+    (path: string) => {
+      setActiveFile(path);
+      onFileSelect?.(path);
+    },
+    [onFileSelect],
+  );
+
+  const handleContentChange = useCallback(
+    (content: string | undefined) => {
+      if (content !== undefined && activeFile) {
+        onChange?.(activeFile, content);
+      }
+    },
+    [activeFile, onChange],
+  );
+
   // Safe fallback: if no file matches activeFile, fall back to first file
   const currentFile = files.find((f) => f.path === activeFile) ?? files[0];
 
@@ -156,23 +177,6 @@ export default function MultiFileCodeEditor({
       : measuredHeight
         ? `${measuredHeight - tabBarHeight}px`
         : "500px";
-
-  const handleFileSelect = useCallback(
-    (path: string) => {
-      setActiveFile(path);
-      onFileSelect?.(path);
-    },
-    [onFileSelect],
-  );
-
-  const handleContentChange = useCallback(
-    (content: string | undefined) => {
-      if (content !== undefined && activeFile) {
-        onChange?.(activeFile, content);
-      }
-    },
-    [activeFile, onChange],
-  );
 
   // CodeBlock-like handlers
   const handleCopy = async (

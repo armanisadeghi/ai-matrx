@@ -83,7 +83,11 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({
     }
   };
 
-  const useWorkspaceToken = async () => {
+  // NOT a hook — a click handler. Named `useWorkspaceToken` it tripped
+  // react-hooks/rules-of-hooks ("cannot be called inside a callback"), because
+  // the `use` prefix is reserved for hooks and every tool in the toolchain,
+  // including the React Compiler, reads it that way.
+  const applyWorkspaceToken = async () => {
     setBusy(true);
     setError(null);
     setMessage(null);
@@ -145,7 +149,7 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => void useWorkspaceToken()}
+                onClick={() => void applyWorkspaceToken()}
                 disabled={busy}
                 className="flex w-full items-center justify-center gap-1.5 rounded-sm border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-[11px] font-medium text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/60"
               >

@@ -33,7 +33,25 @@ interface PageContentProps {
   dataUtils: typeof import("../../utils/data-utils").default;
 }
 
-const PageContent: React.FC<PageContentProps> = ({
+/**
+ * No-data guard as its OWN component, above the hooked body.
+ *
+ * It used to be an early `return` above two `useMemo`s, so the render where
+ * scraped page data arrived went from 1 hook to 3 and React throws
+ * "rendered more hooks than during the previous render".
+ */
+const PageContent: React.FC<PageContentProps> = (props) => {
+  if (!props.pageData) {
+    return (
+      <div className="p-4 text-gray-500 dark:text-gray-400">
+        No data available for this page
+      </div>
+    );
+  }
+  return <PageContentBody {...props} />;
+};
+
+const PageContentBody: React.FC<PageContentProps> = ({
   pageData,
   activeTab,
   setActiveTab,
@@ -44,14 +62,6 @@ const PageContent: React.FC<PageContentProps> = ({
     keywordAnalysis: false,
     factChecker: false,
   });
-
-  if (!pageData) {
-    return (
-      <div className="p-4 text-gray-500 dark:text-gray-400">
-        No data available for this page
-      </div>
-    );
-  }
 
   // Extract data using the new ScraperDataUtils system
   const extractedData = useMemo(() => {
@@ -149,6 +159,18 @@ const PageContent: React.FC<PageContentProps> = ({
     }
   }, [pageData, dataUtils]);
 
+  // Computed ABOVE the error guard: below it this was a conditional hook
+  // (react-hooks/rules-of-hooks), so a page that failed extraction and then
+  // succeeded on a retry went from 2 hooks to 3 and React throws. The memo
+  // short-circuits on the error shape rather than being skipped.
+  const value = useMemo(
+    () =>
+      extractedData.isError
+        ? ""
+        : convertOrganizedDataToString(extractedData.organizedData),
+    [extractedData],
+  );
+
   if (extractedData.isError) {
     return (
       <Alert className="m-4">
@@ -168,11 +190,6 @@ const PageContent: React.FC<PageContentProps> = ({
     contentOutline,
     images,
   } = extractedData;
-
-  const value = useMemo(
-    () => convertOrganizedDataToString(organizedData),
-    [organizedData],
-  );
 
   // Function to enable a specific feature when requested from the placeholder
   const enableFeature = (feature: keyof typeof featureToggles) => {

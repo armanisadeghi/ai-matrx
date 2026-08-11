@@ -84,6 +84,24 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
     void fetchVersions();
   }, [fetchVersions]);
 
+  const handleRestore = useCallback(
+    async (versionNumber: number) => {
+      setRestoring(versionNumber);
+      try {
+        await dispatch(
+          restoreVersionThunk({ fileId, versionNumber }),
+        ).unwrap();
+      } finally {
+        setRestoring(null);
+        setConfirmTarget(null);
+      }
+    },
+    [dispatch, fileId],
+  );
+
+  // The virtual-source guard sits BELOW every hook. Above them handleRestore
+  // was a conditional hook (react-hooks/rules-of-hooks) — a file whose
+  // `isVirtual` flips once its source resolves would crash the tab.
   if (isVirtual) {
     return (
       <div
@@ -100,21 +118,6 @@ export function FileVersionsList({ fileId, className }: FileVersionsListProps) {
       </div>
     );
   }
-
-  const handleRestore = useCallback(
-    async (versionNumber: number) => {
-      setRestoring(versionNumber);
-      try {
-        await dispatch(
-          restoreVersionThunk({ fileId, versionNumber }),
-        ).unwrap();
-      } finally {
-        setRestoring(null);
-        setConfirmTarget(null);
-      }
-    },
-    [dispatch, fileId],
-  );
 
   // ── Render ─────────────────────────────────────────────────────────────
 

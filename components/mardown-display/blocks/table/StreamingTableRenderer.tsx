@@ -268,7 +268,42 @@ const ExportDropdownMenu: React.FC<ExportDropdownMenuProps> = ({
 // MAIN COMPONENT
 // ============================================================================
 
-export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
+/**
+ * Parse + guard ONLY. Everything else lives in the core below.
+ *
+ * THIS SPLIT IS LOAD-BEARING, not tidiness. `parseMarkdownTable` returns null
+ * for a partial table and non-null the moment the separator row lands — which,
+ * in a STREAM, happens mid-render-sequence by definition. The guard used to sit
+ * below four more hooks (`defaultHiddenCols`, `hiddenColsOverride`,
+ * `useTableUndo`, `useDoubleClickEdit`), so the render where a streaming table
+ * became parseable went from N hooks to N+4 and React throws
+ * "Rendered more hooks than during the previous render" — a hard crash on the
+ * exact path this component exists to serve.
+ *
+ * The core's state (edit mode, column overrides, undo history) resets when
+ * `parsedTable` flips null → non-null. That happens once, at the start of the
+ * stream, before any of it can be user-set.
+ */
+export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = (
+  props,
+) => {
+  // Parse the table content once — shared parser (also used by the artifact
+  // "Convert to table" path) so the markdown→table reading never forks.
+  const parsedTable = useMemo<ParsedTable | null>(
+    () => parseMarkdownTable(props.content),
+    [props.content],
+  );
+
+  // Parsing failed (or the stream hasn't produced a whole table yet) — the
+  // parent handles the fallback.
+  if (!parsedTable) return null;
+
+  return <StreamingTableRendererCore {...props} parsedTable={parsedTable} />;
+};
+
+const StreamingTableRendererCore: React.FC<
+  StreamingTableRendererProps & { parsedTable: ParsedTable }
+> = ({
   content,
   metadata,
   isStreamActive = false,
@@ -279,6 +314,7 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
   onContentChange,
   convertToTable,
   expanded = false,
+  parsedTable,
 }) => {
   const toast = useToastManager();
   const isMobile = useIsMobile();
@@ -294,20 +330,10 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
   );
   const [showSaveModal, setShowSaveModal] = useState(false);
 
-  // Parse the table content once — shared parser (also used by the artifact
-  // "Convert to table" path) so the markdown→table reading never forks.
-  const parsedTable = useMemo<ParsedTable | null>(
-    () => parseMarkdownTable(content),
-    [content],
-  );
-
   // internalTableData holds user edits. null means "not yet in edit mode — use parsedTable".
   // We never sync parsedTable → state during streaming to avoid the useEffect update cascade.
   const [internalTableData, setInternalTableData] =
     useState<ParsedTable | null>(null);
-
-  // If parsing failed, return null (parent handles fallback)
-  if (!parsedTable) return null;
 
   // During streaming (or when no edits have been made), render from the live parsedTable.
   // Once the user enters edit mode, internalTableData diverges from parsedTable.

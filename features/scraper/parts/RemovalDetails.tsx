@@ -24,7 +24,25 @@ interface RemovalDetailsProps {
   allRemovals: RemovalItem[];
 }
 
+/**
+ * Empty-input guard as its OWN component, above the hooked body.
+ *
+ * It used to be an early `return` above `filteredDetails` (useMemo), so the
+ * render where removals arrived went from 5 hooks to 6 and React throws
+ * "rendered more hooks than during the previous render".
+ */
 const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
+  if (!allRemovals?.length) {
+    return (
+      <div className="p-4 text-gray-500 dark:text-gray-400">
+        No removal details available
+      </div>
+    );
+  }
+  return <RemovalDetailsBody allRemovals={allRemovals} />;
+};
+
+const RemovalDetailsBody = ({ allRemovals }: RemovalDetailsProps) => {
   const [selectedItem, setSelectedItem] = useState<RemovalItem | null>(null);
   const [sortColumn, setSortColumn] = useState<SortColumn>("text");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -37,13 +55,6 @@ const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
     remover: new Set(),
   });
 
-  if (!allRemovals?.length) {
-    return (
-      <div className="p-4 text-gray-500 dark:text-gray-400">
-        No removal details available
-      </div>
-    );
-  }
 
   const cleanText = (text: string) => text.replace(/\n+/g, " ").trim();
 

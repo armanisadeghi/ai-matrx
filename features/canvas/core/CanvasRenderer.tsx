@@ -88,6 +88,11 @@ export function CanvasRenderer({
   // Use prop content if provided, otherwise use Redux state
   const content = propContent || currentItem?.content;
 
+  // Declared ABOVE the no-content guard. Below it this was a conditional hook
+  // (react-hooks/rules-of-hooks): the render where content arrives went from 5
+  // hooks to 6 and React throws.
+  const [isSyncing, setIsSyncing] = useState(false);
+
   if (!content) {
     return (
       <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600">
@@ -118,7 +123,6 @@ export function CanvasRenderer({
     setIsShareSheetOpen(true);
   };
 
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const handleSync = async () => {
     if (!content || !currentItem) return;

@@ -92,6 +92,27 @@ export function useCodeEditorBasics({
     [sidebarWidth],
   );
 
+  // Neither callback reads `currentFile`, so both live ABOVE the empty-files
+  // guard. Below it they were conditional hooks (react-hooks/rules-of-hooks):
+  // a consumer whose `files` arrived asynchronously went from N hooks to N+2 in
+  // one render, and React throws on that.
+  const handleFileSelect = useCallback(
+    (path: string) => {
+      setActiveFile(path);
+      onFileSelect?.(path);
+    },
+    [onFileSelect],
+  );
+
+  const handleContentChange = useCallback(
+    (content: string | undefined) => {
+      if (content !== undefined && activeFile) {
+        onChange?.(activeFile, content);
+      }
+    },
+    [activeFile, onChange],
+  );
+
   // Safe fallback: if no file matches activeFile, fall back to first file
   const currentFile = files.find((f) => f.path === activeFile) ?? files[0];
 
@@ -114,23 +135,6 @@ export function useCodeEditorBasics({
   };
 
   const editorPath = getProperPath(currentFile);
-
-  const handleFileSelect = useCallback(
-    (path: string) => {
-      setActiveFile(path);
-      onFileSelect?.(path);
-    },
-    [onFileSelect],
-  );
-
-  const handleContentChange = useCallback(
-    (content: string | undefined) => {
-      if (content !== undefined && activeFile) {
-        onChange?.(activeFile, content);
-      }
-    },
-    [activeFile, onChange],
-  );
 
   // CodeBlock-like handlers
   const handleCopy = async (

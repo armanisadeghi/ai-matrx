@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { fetchAppsThunk, deleteAppThunk } from "@/lib/redux/app-builder/thunks/appBuilderThunks";
-import { selectAllApps, selectAppLoading, selectAppError, selectAppsByIds } from "@/lib/redux/app-builder/selectors/appSelectors";
+import { selectAllApps, selectAppLoading, selectAppError } from "@/lib/redux/app-builder/selectors/appSelectors";
 import { IconPicker } from "@/components/ui/IconPicker";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { COLOR_VARIANTS } from "@/features/applet/styles/StyledComponents";
@@ -88,19 +88,21 @@ const SmartAppList = forwardRef<
         const isLoading = useAppSelector(selectAppLoading);
         const error = useAppSelector(selectAppError);
 
-        // Derived state
-        const apps = appIds
-            ? useAppSelector((state) => {
-                  if (!appIds.length) {
-                      return allApps;
-                  }
-                  const filteredApps = allApps.filter(
+        // Derived state — plain computation, NOT a selector.
+        //
+        // This was `appIds ? useAppSelector(...) : allApps`: a hook inside a
+        // ternary (react-hooks/rules-of-hooks), so a list that received `appIds`
+        // after mount changed its hook count and React throws. The selector body
+        // never actually read `state` — it filtered `allApps`, already selected
+        // above, and its one `state` call assigned to a variable nothing used.
+        // So it becomes what it always was: a derived value.
+        const appsMatchingIds =
+            appIds && appIds.length
+                ? allApps.filter(
                       (app) => app.id !== undefined && appIds.includes(app.id)
-                  );
-                  const selectorResult = selectAppsByIds(state, appIds);
-                  return filteredApps.length ? filteredApps : allApps;
-              })
-            : allApps;
+                  )
+                : null;
+        const apps = appsMatchingIds?.length ? appsMatchingIds : allApps;
 
         // Apply filters and sorting to apps from Redux
         const filteredApps = React.useMemo(() => {

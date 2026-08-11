@@ -2,7 +2,7 @@
 
 // TODO: Fix loading inefficiency.
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import { toast } from "@/lib/toast";
 import {
@@ -22,6 +22,7 @@ import {
   Code2,
 } from "lucide-react";
 import { useHTMLPages } from "@/features/html-pages/hooks/useHTMLPages";
+import { ReactReduxContext } from "react-redux";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -57,12 +58,46 @@ interface HtmlPreviewModalProps {
   title?: string;
 }
 
-export default function HtmlPreviewModal({
+/**
+ * Redux presence is detected by CONTEXT, and the selector lives in a component
+ * that only mounts when a Provider exists.
+ *
+ * This used to be `try { user = useAppSelector(selectUser) } catch { … }` — a
+ * hook in a try/catch (react-hooks/rules-of-hooks). react-redux throws from
+ * inside `useSelector` AFTER it has begun registering hooks, so the caught and
+ * uncaught paths register different hook counts and React's cursor desyncs for
+ * the rest of the render. Reading `ReactReduxContext` with `useContext` cannot
+ * throw and answers the same question honestly.
+ *
+ * This modal renders in public/anonymous contexts with no Provider — that is a
+ * real supported case, not a defensive guess.
+ */
+export default function HtmlPreviewModal(props: HtmlPreviewModalProps) {
+  const hasReduxProvider = useContext(ReactReduxContext) !== null;
+  return hasReduxProvider ? (
+    <HtmlPreviewModalWithUser {...props} />
+  ) : (
+    <HtmlPreviewModalBody {...props} user={null} hasReduxProvider={false} />
+  );
+}
+
+/** Only ever mounted under a Provider, so the selector is unconditional. */
+function HtmlPreviewModalWithUser(props: HtmlPreviewModalProps) {
+  const user = useAppSelector(selectUser);
+  return <HtmlPreviewModalBody {...props} user={user} hasReduxProvider />;
+}
+
+function HtmlPreviewModalBody({
   isOpen,
   onClose,
   htmlContent,
   title = "HTML Preview",
-}: HtmlPreviewModalProps) {
+  user,
+  hasReduxProvider,
+}: HtmlPreviewModalProps & {
+  user: { id?: string } | null;
+  hasReduxProvider: boolean;
+}) {
   const [copied, setCopied] = useState(false);
   const [copiedNoBullets, setCopiedNoBullets] = useState(false);
   const [copiedCSS, setCopiedCSS] = useState(false);
@@ -79,19 +114,6 @@ export default function HtmlPreviewModal({
   const [includeBulletStyles, setIncludeBulletStyles] = useState(true);
   const [includeDecorativeLineBreaks, setIncludeDecorativeLineBreaks] =
     useState(true);
-
-  // HTML Pages system (gracefully handle missing Redux provider)
-  let user: any = null;
-  let hasReduxProvider = true;
-  try {
-    user = useAppSelector(selectUser);
-  } catch (error) {
-    // Expected in public context without Redux provider
-    hasReduxProvider = false;
-    console.warn(
-      "[HtmlPreviewModal] Redux provider not found, HTML page features disabled",
-    );
-  }
 
   // useHTMLPages doesn't use Redux, so it's safe to call unconditionally
   const { createHTMLPage, isCreating, error, clearError } = useHTMLPages(

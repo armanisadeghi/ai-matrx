@@ -1,6 +1,6 @@
 'use client';
 
-import { getCurrentParsedPathName } from "@/utils/client-nav-utils";
+import { useParsedPathName } from "@/utils/client-nav-utils";
 import {
     Breadcrumb,
     BreadcrumbList,
@@ -15,7 +15,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 const AutoBreadcrumbs = () => {
-    const pathParts = getCurrentParsedPathName();
+    const pathParts = useParsedPathName();
 
     return (
         <Breadcrumb>

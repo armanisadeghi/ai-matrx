@@ -1,6 +1,6 @@
 'use client';
 
-import {getCurrentParsedPathName} from "@/utils/client-nav-utils";
+import {useParsedPathName} from "@/utils/client-nav-utils";
 import {
     Breadcrumb,
     BreadcrumbList,
@@ -65,7 +65,7 @@ const AutoBreadcrumbs: React.FC<AutoBreadcrumbsProps> = (
         size = 'sm',
         showIcons = true,
     }) => {
-    const pathParts = getCurrentParsedPathName();
+    const pathParts = useParsedPathName();
     const styles = variant === 'custom' ? customStyles : variantStyles[variant];
 
     const IconComponent = styles?.icon || Component;
