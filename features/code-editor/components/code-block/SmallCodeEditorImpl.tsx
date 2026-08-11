@@ -47,6 +47,14 @@ export interface CodeEditorProps {
   controlledWordWrap?: "on" | "off"; // Controlled word wrap from parent
   controlledMinimap?: boolean; // Controlled minimap from parent
   fileExtension?: string; // Explicit file extension hint (e.g., '.tsx', '.jsx')
+  /**
+   * Called once with the live Monaco instance when it mounts (and with `null`
+   * on unmount). Lets an owner reach the real editor — selection, cursor, and
+   * the undoable edit stack — without forking this component. Used by the
+   * Smart Code Editor to wire its surface write targets onto the SAME edit
+   * stack the user's typing uses.
+   */
+  onEditorMount?: (editor: editor.IStandaloneCodeEditor | null) => void;
 }
 
 const SmallCodeEditor = ({
@@ -69,6 +77,7 @@ const SmallCodeEditor = ({
   controlledWordWrap,
   controlledMinimap,
   fileExtension,
+  onEditorMount,
 }: CodeEditorProps) => {
   const [ref, { width, height }] = useMeasure();
   const monaco = useMonaco();
@@ -236,6 +245,7 @@ const SmallCodeEditor = ({
   const handleEditorDidMount = useCallback(
     (editor: editor.IStandaloneCodeEditor, monaco: any) => {
       editorRef.current = editor;
+      onEditorMount?.(editor);
 
       // CRITICAL: Force set the language immediately after mount
       const model = editor.getModel();
@@ -304,8 +314,16 @@ const SmallCodeEditor = ({
         attemptFormat();
       }
     },
-    [autoFormat, language],
+    [autoFormat, language, onEditorMount],
   );
+
+  // Release the owner's handle when this editor goes away, so nothing holds a
+  // disposed Monaco instance. Mount-only by design — the callback identity is
+  // irrelevant to "the editor is gone".
+  useEffect(() => {
+    return () => onEditorMount?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFormatCode = useCallback(() => {
     if (editorRef.current) {
