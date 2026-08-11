@@ -88,7 +88,11 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
   ).length;
   const firstSeen = minDate(observations.map((row) => row.first_seen_at));
   const lastSeen = maxDate(observations.map((row) => row.last_seen_at));
-  const pageBacklinksHref = `${sitePath}/backlinks?tab=links&q=${encodeURIComponent(page.url)}`;
+  const targetPageSearch = page.url
+    .trim()
+    .replace(/^https?:\/\/(?:www\.)?/i, "")
+    .replace(/\/+$/, "");
+  const pageBacklinksHref = `${sitePath}/backlinks?tab=links&q=${encodeURIComponent(targetPageSearch)}`;
   const visibleObservations = showAllRecords
     ? observations
     : observations.slice(0, 10);
