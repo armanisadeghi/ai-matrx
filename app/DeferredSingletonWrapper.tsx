@@ -32,6 +32,22 @@ import { useIdleReady } from "@/utils/idle-scheduler";
 import { installGlobalErrorCapture } from "@/lib/diagnostics/globalErrorCapture";
 import { installErrorPersistence } from "@/lib/diagnostics/persistCapturedErrors";
 
+// Install the global error listeners at MODULE scope, not in the effect below.
+// React reports hydration mismatches (minified errors #418/#423/#425) through
+// `console.error` DURING hydration — which is strictly before any effect runs.
+// An effect-time install therefore cannot see the single most common
+// production-only error class, and the Error Inspector recorded nothing while
+// the browser console showed #418 on every marketing route (2026-08-11
+// investigation: the error was visible in Arman's console and structurally
+// invisible to our own diagnostics).
+//
+// This module is already statically imported into every route's client boot
+// bundle, so module-scope evaluation happens as that bundle loads — before
+// `hydrateRoot`. `installGlobalErrorCapture` is idempotent and returns
+// immediately when `window` is undefined, so the SSR pass of this client
+// module is a no-op.
+installGlobalErrorCapture();
+
 const DeferredSingletonCore = dynamic(
   () => import("./DeferredSingletonCore"),
   { ssr: false, loading: () => null },
@@ -41,16 +57,10 @@ export default function DeferredSingletonWrapper() {
   const [mounted, setMounted] = useState(false);
   const ready = useIdleReady();
 
-  // Install the global error listeners (window 'error', unhandledrejection,
-  // console.error) on FIRST client mount — before the idle gate — so errors
-  // are captured as early as the client tree exists. This must live in the
-  // shell, not the deferred core: the core doesn't mount until page-idle,
-  // and boot-window errors are exactly the ones worth catching. Both
-  // installs are idempotent; the modules are lightweight (store + filters)
-  // and were already in the boot static graph under the old
-  // `DeferredSingletons.tsx`.
+  // Error capture itself is installed at module scope above (pre-hydration).
+  // Persistence stays here: it writes to Supabase and has nothing to gain from
+  // running before the client tree exists.
   useEffect(() => {
-    installGlobalErrorCapture();
     // Persist red-tier captures to public.system_error (canonical sink) —
     // self-gates to production + authenticated; deduped + throttled. See
     // lib/diagnostics/persistCapturedErrors.ts.
