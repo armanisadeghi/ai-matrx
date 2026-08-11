@@ -122,3 +122,75 @@ as $$
 $$;
 
 grant execute on function public.mtx_media_durability_schemas() to authenticated, service_role;
+
+-- ============================================================================
+-- public.mtx_media_durability_health() — assert the MACHINERY still works.
+--
+-- Two silent failures already happened in this system, and neither surfaced as
+-- an error:
+--   * the guard trigger was rebuilt from a stale .sql copy, deleting the
+--     per-element array branch. Nothing failed; the guard simply stopped seeing
+--     the text[] columns this defect class is actually about.
+--   * the pg_cron healer returned -1 every 10 minutes for three weeks while
+--     cron.job_run_details logged "succeeded".
+-- A scan that only looks at DATA cannot catch either. So the checker also asserts
+-- that the guard body still has all four load-bearing properties, and that the
+-- heal queue is not quietly accumulating an undrained backlog — a queue that
+-- silently fills is the same failure wearing a different hat.
+-- ============================================================================
+create or replace function public.mtx_media_durability_health()
+returns table (check_name text, ok boolean, detail text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  body   text;
+  stale  int;
+  oldest timestamptz;
+begin
+  select prosrc into body from pg_proc where proname = 'mtx_public_url_guard_trigger';
+
+  if body is null then
+    check_name := 'guard_trigger_exists'; ok := false;
+    detail := 'mtx_public_url_guard_trigger() does not exist — the write-time guard is GONE';
+    return next; return;
+  end if;
+
+  check_name := 'guard_array_branch';
+  ok := body like '%jsonb_array_elements_text%';
+  detail := 'per-ELEMENT check for text[] columns (pc_studio_runs.image_urls/.video_urls). Lost once already when a migration rebuilt this function from a stale copy.';
+  return next;
+
+  check_name := 'guard_schema_match';
+  ok := body like '%schema_name = TG_TABLE_SCHEMA%';
+  detail := 'registry keyed on (schema_name, table_name) — bare names like "definition"/"template" repeat across schemas';
+  return next;
+
+  check_name := 'guard_json_null_skip';
+  ok := body like '%jsonb_typeof(col_json)%null%';
+  detail := 'a SQL NULL media column must not be treated as a non-durable value';
+  return next;
+
+  check_name := 'guard_queue_records_schema';
+  ok := body like '%mtx_media_heal_queue%schema_name%';
+  detail := 'queued heal jobs record their schema so the drain resolves the right table';
+  return next;
+
+  select count(*), min(created_at) into stale, oldest
+    from public.mtx_media_heal_queue
+   where status in ('pending', 'healing') and created_at < now() - interval '24 hours';
+  check_name := 'heal_queue_draining';
+  ok := stale = 0;
+  detail := case when stale = 0
+    then 'no heal job older than 24h'
+    else stale || ' heal job(s) stuck since ' || oldest
+         || ' — the drain (in-process loop on the aidream scheduler host) is not keeping up' end;
+  return next;
+end;
+$$;
+
+comment on function public.mtx_media_durability_health() is
+  'Asserts the media-durability MACHINERY, not the data: the four load-bearing properties of mtx_public_url_guard_trigger() and that the heal queue has no job stuck over 24h. Consumed by pnpm check:media-durability.';
+
+grant execute on function public.mtx_media_durability_health() to authenticated, service_role;

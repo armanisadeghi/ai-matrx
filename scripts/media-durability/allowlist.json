@@ -1,6 +1,6 @@
 {
   "$comment": [
-    "THE CLASSIFICATION. An expiring signed URL is NOT a defect — it is the correct,",
+    "THE CLASSIFICATION. An expiring signed URL is NOT a defect \u2014 it is the correct,",
     "intended mechanism in many places. The defect is the MISMATCH between a URL's",
     "lifetime and its consumer's contract. Every entry below is a column where a",
     "stored signed URL is CORRECT, with the reason and the reading code path that",
@@ -9,13 +9,23 @@
     "",
     "Adding an entry here is a judgement, not a silencer. Write the real reason.",
     "If you cannot name the consumer and why expiry is fine for it, it is not",
-    "intentional — fix the writer instead."
+    "intentional \u2014 fix the writer instead.",
+    "",
+    "THE VISIBILITY-FLIP CRITERION (sharper than 'it expires later'): flipping a file",
+    "to public MOVES the S3 object, which invalidates every signed URL already handed",
+    "out for it. So the broken write pattern is: generate private -> store the signed",
+    "URL -> later flip that file public -> every stored URL dies INSTANTLY. Such a row",
+    "is already broken even when the stored URL looks fresh and its expiry is far away.",
+    "When classifying a writer, ask not only 'does this expire before the reader needs",
+    "it' but 'does anything later change this file's visibility'. The fix is to persist",
+    "PUBLIC AT GENERATION (aidream matrx_ai.media.public_media_scope()), never to flip",
+    "afterwards."
   ],
   "intentional": [
     {
       "target": "public.mtx_media_heal_queue.bad_value",
       "reason": "The queue's entire job is to hold the offending URL until it is healed. The expiring string IS the payload.",
-      "consumer": "migrations/mtx_public_media_url_guard.sql — the heal worker reads bad_value to know what to replace."
+      "consumer": "migrations/mtx_public_media_url_guard.sql \u2014 the heal worker reads bad_value to know what to replace."
     },
     {
       "target": "public.api_request_log.error",
@@ -30,17 +40,17 @@
     {
       "target": "public.system_error.error_text",
       "reason": "Error capture. Rewriting a captured error would falsify the record.",
-      "consumer": "Error Inspector (lib/diagnostics/) — rendered as text."
+      "consumer": "Error Inspector (lib/diagnostics/) \u2014 rendered as text."
     },
     {
       "target": "public.system_error.traceback",
-      "reason": "Error capture — same as error_text.",
-      "consumer": "Error Inspector — rendered as text."
+      "reason": "Error capture \u2014 same as error_text.",
+      "consumer": "Error Inspector \u2014 rendered as text."
     },
     {
       "target": "public.system_error.context",
-      "reason": "Error capture — same as error_text.",
-      "consumer": "Error Inspector — rendered as text."
+      "reason": "Error capture \u2014 same as error_text.",
+      "consumer": "Error Inspector \u2014 rendered as text."
     },
     {
       "target": "public.system_write_failure.payload",
@@ -49,13 +59,13 @@
     },
     {
       "target": "public.system_write_failure.traceback",
-      "reason": "Failure capture — same as payload.",
+      "reason": "Failure capture \u2014 same as payload.",
       "consumer": "admin failure triage."
     },
     {
       "target": "history.row_versions.row_data",
       "reason": "Row-history snapshot: a verbatim record of what the row held at a point in time. Rewriting history is the opposite of an audit trail.",
-      "consumer": "history/diff surfaces — rendered as data, never as live media."
+      "consumer": "history/diff surfaces \u2014 rendered as data, never as live media."
     },
     {
       "target": "chat.request_snapshot.request_payload",
@@ -79,7 +89,7 @@
     },
     {
       "target": "chat.agent_run.result",
-      "reason": "Execution record of a finished run — what the run produced at the time.",
+      "reason": "Execution record of a finished run \u2014 what the run produced at the time.",
       "consumer": "run history; live media renders through the file handler, not this column."
     },
     {
@@ -95,12 +105,12 @@
     {
       "target": "chat.tool_call.arguments",
       "reason": "Verbatim arguments a tool was invoked with.",
-      "consumer": "tool-call visualization — rendered as data."
+      "consumer": "tool-call visualization \u2014 rendered as data."
     },
     {
       "target": "chat.tool_call.output",
       "reason": "Verbatim tool result at execution time. Mostly third-party URLs the tool fetched.",
-      "consumer": "tool-call visualization — rendered as data."
+      "consumer": "tool-call visualization \u2014 rendered as data."
     },
     {
       "target": "chat.tool_call.execution_events",
@@ -125,7 +135,7 @@
     {
       "target": "chat.coding_session_entry.payload",
       "reason": "Owner-only mirror of raw coding-agent provider entries. Stored verbatim by contract.",
-      "consumer": "coding_session_bridge — projected to messages, not dereferenced as media."
+      "consumer": "coding_session_bridge \u2014 projected to messages, not dereferenced as media."
     },
     {
       "target": "chat.conversation.variables",
@@ -140,7 +150,7 @@
     {
       "target": "workflow.node_events.payload",
       "reason": "Workflow execution event record.",
-      "consumer": "workflow run timeline — rendered as data."
+      "consumer": "workflow run timeline \u2014 rendered as data."
     },
     {
       "target": "workflow.node_outcome.output",
@@ -154,27 +164,27 @@
     },
     {
       "target": "tool.test_sample.raw_stream_events",
-      "reason": "Captured test fixture — a frozen recording of a real stream. Editing it invalidates the fixture.",
+      "reason": "Captured test fixture \u2014 a frozen recording of a real stream. Editing it invalidates the fixture.",
       "consumer": "tool renderer test bench."
     },
     {
       "target": "tool.test_sample.final_payload",
-      "reason": "Captured test fixture — same as raw_stream_events.",
+      "reason": "Captured test fixture \u2014 same as raw_stream_events.",
       "consumer": "tool renderer test bench."
     },
     {
       "target": "admin.feature_docs.content",
-      "reason": "DOCUMENTATION PROSE, not media. These rows are FEATURE.md/CLAUDE.md text that literally describes this defect class ('?X-Amz-Signature=…&Expires=…'). Verified by sampling: the matches are inside fenced examples, not renderable image references.",
-      "consumer": "/admin/docs/<slug> — rendered as markdown text."
+      "reason": "DOCUMENTATION PROSE, not media. These rows are FEATURE.md/CLAUDE.md text that literally describes this defect class ('?X-Amz-Signature=\u2026&Expires=\u2026'). Verified by sampling: the matches are inside fenced examples, not renderable image references.",
+      "consumer": "/admin/docs/<slug> \u2014 rendered as markdown text."
     },
     {
       "target": "research.rs_media.url",
-      "reason": "THIRD-PARTY media discovered on the open web (100% non-ours). The URL is the observed datum — what we found at that address. Not ours to re-mint or publish.",
-      "consumer": "research source review — rendered as an external reference."
+      "reason": "THIRD-PARTY media discovered on the open web (100% non-ours). The URL is the observed datum \u2014 what we found at that address. Not ours to re-mint or publish.",
+      "consumer": "research source review \u2014 rendered as an external reference."
     },
     {
       "target": "research.rs_media.thumbnail_url",
-      "reason": "Third-party thumbnail from a scraped page — same as url.",
+      "reason": "Third-party thumbnail from a scraped page \u2014 same as url.",
       "consumer": "research source review."
     },
     {
@@ -210,7 +220,7 @@
     {
       "target": "research.rs_topic.outputs",
       "reason": "Owner-only research run outputs. NOT in the topic's anon share projection (public_columns = id,name,description,status,created_at), and every media render goes through the file handler, which re-mints from the recoverable file_id.",
-      "consumer": "features/research — media via buildMediaSource/useFileSrc."
+      "consumer": "features/research \u2014 media via buildMediaSource/useFileSrc."
     },
     {
       "target": "scraper.scrape_parsed_page.content",
@@ -234,34 +244,34 @@
     },
     {
       "target": "graveyard.ai_runs.messages",
-      "reason": "Retired table in the graveyard schema — no live consumer by definition.",
+      "reason": "Retired table in the graveyard schema \u2014 no live consumer by definition.",
       "consumer": "none (graveyard = retired)."
     },
     {
       "target": "graveyard.compiled_recipe.compiled_recipe",
-      "reason": "Retired table — no live consumer.",
+      "reason": "Retired table \u2014 no live consumer.",
       "consumer": "none (graveyard)."
     },
     {
       "target": "graveyard.data_broker.default_value",
-      "reason": "Retired table — no live consumer.",
+      "reason": "Retired table \u2014 no live consumer.",
       "consumer": "none (graveyard)."
     },
     {
       "target": "graveyard.message.content",
-      "reason": "Retired table — no live consumer.",
+      "reason": "Retired table \u2014 no live consumer.",
       "consumer": "none (graveyard)."
     },
     {
       "target": "graveyard.note_versions.content",
-      "reason": "Retired table — no live consumer.",
+      "reason": "Retired table \u2014 no live consumer.",
       "consumer": "none (graveyard)."
     }
   ],
   "mitigated": [
     {
       "target": "chat.message.content",
-      "reason": "Stores our own expiring URLs inside message bodies, but EVERY reading path re-mints: markdown images through ImageBlock -> useRemintableSrc -> recognizeOurFileUrl, and media blocks through buildMediaSource, which recovers the file_id from the URL and hands the handler a durable file_id source. No user-visible break. NOT auto-healed because message bodies are the conversation record — rewriting them edits what was said, which is Arman's call, not an agent's.",
+      "reason": "Stores our own expiring URLs inside message bodies, but EVERY reading path re-mints: markdown images through ImageBlock -> useRemintableSrc -> recognizeOurFileUrl, and media blocks through buildMediaSource, which recovers the file_id from the URL and hands the handler a durable file_id source. No user-visible break. NOT auto-healed because message bodies are the conversation record \u2014 rewriting them edits what was said, which is Arman's call, not an agent's.",
       "consumer": "components/mardown-display/blocks/images/ImageBlock.tsx:33, components/mardown-display/blocks/buildMediaSource.ts:54",
       "open": true
     },
@@ -273,7 +283,7 @@
     },
     {
       "target": "extend.wbx_screenshot.file_url",
-      "reason": "An expiring convenience copy stored ALONGSIDE the durable file_id on the same row. No consumer depends on it resolving — the extension builds its URL from file_id and downloads bytes by file_id.",
+      "reason": "An expiring convenience copy stored ALONGSIDE the durable file_id on the same row. No consumer depends on it resolving \u2014 the extension builds its URL from file_id and downloads bytes by file_id.",
       "consumer": "matrx-extend src/features/screenshots/ScreenshotsView.tsx:394,431 (uses row.file_id, not file_url)",
       "open": true
     },
@@ -287,12 +297,25 @@
   "mismatch_open": [
     {
       "target": "workbench.notes.content",
-      "reason": "THE ONE REAL MISMATCH. A note is anon-shareable: platform.shareable_resource_registry exposes `content` in note.public_columns, and app/(public)/s/[token]/SharedResourceView.tsx:238 renders it through MarkdownRenderer with no session. An anonymous recipient cannot re-mint, so an embedded own-signed image goes dark once the signature expires. NOT auto-healed: the only durable ref for a private embedded image is a permanently public URL, and publishing a user's private asset to make a scan pass is a data-exposure incident. Needs Arman's decision — publish those assets, or add token-scoped minting to the share lane.",
+      "reason": "THE ONE REAL MISMATCH. A note is anon-shareable: platform.shareable_resource_registry exposes `content` in note.public_columns, and app/(public)/s/[token]/SharedResourceView.tsx:238 renders it through MarkdownRenderer with no session, so an anonymous recipient cannot re-mint. VERIFIED 2026-08-11: these URLs are not merely going-to-expire, they are ALREADY DEAD \u2014 all 4 distinct own-signed URLs return HTTP 403 today (the visibility-flip criterion above). The OWNER still sees the images because ImageBlock -> useRemintableSrc re-mints on load failure; an anonymous share recipient would see broken images IMMEDIATELY, not eventually. Zero of the 9 notes are currently shared, so nothing is broken for anyone right now. NOT auto-healed: 2 of the 3 recoverable file_ids resolve to live files.files rows with visibility='internal' \u2014 access-controlled \u2014 and publishing them to make a scan pass is a data-exposure incident. Needs Arman's decision: publish those specific assets, or add token-scoped minting to the share lane.",
       "consumer": "app/(public)/s/[token]/SharedResourceView.tsx:41 (MarkdownRenderer) / :238",
       "rows_affected": 15,
       "rows_ours": 9,
       "currently_shared": 0,
-      "open": true
+      "open": true,
+      "distinct_own_signed_urls": 4,
+      "all_already_403": true,
+      "unhealable": [
+        {
+          "file_id": "da5868b9-0925-47af-b6e5-f150628b8bf6",
+          "url_shape": "\u2026/{user_id}/ai-media/{file_id}.jpg",
+          "reason": "no row in files.files \u2014 the underlying file is gone, so there is no identity to re-mint from. Listed explicitly rather than silently skipped; no decision can heal it."
+        }
+      ],
+      "healable_pending_decision": [
+        "69f5ae74-560d-4bf5-b42e-47593076396f (files.files, visibility=internal)",
+        "54582f60-d21d-4b5a-8b5e-3621ad969e84 (files.files, visibility=internal)"
+      ]
     }
   ]
 }

@@ -131,6 +131,51 @@ async function main(): Promise<void> {
     }
     process.stdout.write("\n");
   }
+  // ── MACHINERY health, asserted alongside the data ─────────────────────────
+  // Both prior failures in this system were SILENT: the guard trigger was
+  // rebuilt from a stale .sql copy and lost its per-element array branch, and
+  // the pg_cron healer returned -1 for three weeks while cron logged
+  // "succeeded". A clean data scan proves nothing if the machinery that
+  // produces the data is broken, so this runs even when the scan is empty.
+  let machineryOk = true;
+  const { data: health, error: healthErr } = await supabase.rpc(
+    "mtx_media_durability_health",
+  );
+  if (healthErr) {
+    machineryOk = false;
+    console.error(
+      `${C.yellow}[media-durability] health RPC failed: ${healthErr.message}${C.reset}`,
+    );
+  } else {
+    const checks = (health ?? []) as {
+      check_name: string;
+      ok: boolean;
+      detail: string;
+    }[];
+    const failed = checks.filter((c) => !c.ok);
+    if (failed.length) {
+      machineryOk = false;
+      console.log(
+        `\n${C.red}${C.bold}✗ MEDIA-DURABILITY MACHINERY IS BROKEN — ` +
+          `the scan below cannot be trusted:${C.reset}`,
+      );
+      for (const f of failed) {
+        console.log(`  ${C.red}${f.check_name}${C.reset} — ${f.detail}`);
+      }
+      console.log(
+        `${C.dim}  The guard lives in migrations/mtx_public_url_guard_schema_aware.sql.\n` +
+          `  Read the LIVE body out of the database before replacing it — a\n` +
+          `  create-or-replace written against a stale copy deletes working\n` +
+          `  behaviour and nothing fails.${C.reset}`,
+      );
+    } else {
+      console.log(
+        `\n${C.green}✓ machinery healthy${C.reset} ${C.dim}(${checks.length} checks: ` +
+          `guard array/schema/null handling, queue schema, heal-queue drain)${C.reset}`,
+      );
+    }
+  }
+
   const allow = loadAllowlist();
   const byTarget = new Map<string, { entry: AllowEntry; bucket: string }>();
   for (const [bucket, list] of Object.entries(allow) as [
@@ -212,7 +257,7 @@ async function main(): Promise<void> {
   }
 
   console.log("");
-  process.exit(strict && unclassified.length ? 1 : 0);
+  process.exit(strict && (unclassified.length || !machineryOk) ? 1 : 0);
 }
 
 void main();
