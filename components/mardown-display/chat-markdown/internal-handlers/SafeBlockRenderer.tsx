@@ -22,12 +22,7 @@ interface SafeBlockRendererProps {
   index: number;
   isStreamActive?: boolean;
   onContentChange?: (newContent: string) => void;
-  /**
-   * conversationId + messageId are the cx_conversation.id / cx_message.id
-   * pair that identifies the owning message. Threaded through so stateful
-   * render blocks can call `useMessageBlockPersistence` and round-trip
-   * their state into the DB via `cx_message_edit`.
-   */
+  /** Owning message context forwarded to canonical artifact renderers. */
   conversationId?: string;
   messageId?: string;
   taskId?: string;
@@ -87,32 +82,27 @@ export const SafeBlockRenderer: React.FC<SafeBlockRendererProps> = ({
   replaceBlockContent,
   handleOpenEditor,
 }) => {
-  try {
-    return (
-      <div className="contents" {...blockContextTags(block, index)}>
-        <MarkdownErrorBoundary
-          fallback={
-            <BlockFallback block={block} isStreamActive={isStreamActive} />
-          }
-        >
-          <BlockRenderer
-            requestId={requestId}
-            block={block}
-            index={index}
-            isStreamActive={isStreamActive}
-            onContentChange={onContentChange}
-            conversationId={conversationId}
-            messageId={messageId}
-            taskId={taskId}
-            isLastReasoningBlock={isLastReasoningBlock}
-            replaceBlockContent={replaceBlockContent}
-            handleOpenEditor={handleOpenEditor}
-          />
-        </MarkdownErrorBoundary>
-      </div>
-    );
-  } catch (error) {
-    console.error("[MarkdownStream] Error rendering block:", error);
-    return <BlockFallback block={block} isStreamActive={isStreamActive} />;
-  }
+  return (
+    <div className="contents" {...blockContextTags(block, index)}>
+      <MarkdownErrorBoundary
+        fallback={
+          <BlockFallback block={block} isStreamActive={isStreamActive} />
+        }
+      >
+        <BlockRenderer
+          requestId={requestId}
+          block={block}
+          index={index}
+          isStreamActive={isStreamActive}
+          onContentChange={onContentChange}
+          conversationId={conversationId}
+          messageId={messageId}
+          taskId={taskId}
+          isLastReasoningBlock={isLastReasoningBlock}
+          replaceBlockContent={replaceBlockContent}
+          handleOpenEditor={handleOpenEditor}
+        />
+      </MarkdownErrorBoundary>
+    </div>
+  );
 };

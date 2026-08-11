@@ -1295,6 +1295,16 @@ export interface PlanGenStartedData {
   keyword_count?: number;
 }
 
+export interface PlanSetupAgentResultData {
+  type?: "plan_setup_agent_result";
+  site_id: string;
+  kind: string;
+  run_id: string;
+  item_count?: number;
+  summary?: string;
+  model_id?: string | null;
+}
+
 export interface PodcastAssetEvent {
   type?: "podcast_asset";
   asset_kind: "image" | "video";
@@ -1569,6 +1579,7 @@ export type TypedDataPayload =
   | PlanGenCandidateData
   | PlanGenMergedData
   | PlanGenStartedData
+  | PlanSetupAgentResultData
   | PodcastAssetEvent
   | PodcastAssetGenStartedEvent
   | PodcastAssetResultEvent

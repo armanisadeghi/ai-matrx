@@ -12580,6 +12580,57 @@
         }
       }
     },
+    "/seo/sites/{site_id}/verify-urls": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Verify Site Urls Endpoint",
+        "description": "Fill status + content type for registry URLs nothing has ever fetched.\n\nLong-running and multi-item, so it streams. The pipeline lives in\n``aidream/services/seo/url_verification.py``; this router only authorizes\nand hands off. Safe to interrupt — the frontier is durable, so a disconnect\nstops the stream and never the work, and re-running resumes it.",
+        "operationId": "verify_site_urls_endpoint_seo_sites__site_id__verify_urls_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyUrlsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/content-plan/sites/{site_id}/generate": {
       "post": {
         "tags": [
@@ -12686,7 +12737,7 @@
           "Content Plan"
         ],
         "summary": "Draft Brief",
-        "description": "Draft ONE page's brief against its neighbours.\n\nThe result is written to `plan.node.metadata.ai_brief_draft` the instant it\narrives — a disconnect, a refresh, or a user who never presses Save loses\nnothing. Client CRUD still reads the node straight from Supabase.",
+        "description": "Draft ONE page's brief against its neighbours.\n\nThe result is written to `plan.node.metadata.ai_brief_draft` the instant it\narrives — a disconnect, a refresh, or a user who never presses Save loses\nnothing. Client CRUD still reads the node straight from Supabase.\n\nA page with no target keyword is REFUSED here, before the stream opens and\nbefore a paid run starts — as an HTTP 409 the client renders as the gap plus\nits one-click fix, never as a brief-shaped refusal the model was paid to\nwrite.",
         "operationId": "draft_brief_content_plan_nodes__node_id__draft_brief_post",
         "parameters": [
           {
@@ -12880,6 +12931,280 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AcceptBriefResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/keyword-strategy": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Keyword Strategy",
+        "description": "Assign keywords across the WHOLE plan (money pages vs supporting pages).",
+        "operationId": "keyword_strategy_content_plan_sites__site_id__keyword_strategy_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SetupAgentBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/entity-attachments": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Entity Attachments",
+        "description": "Attach roster entities to the pages that need them (E-E-A-T).",
+        "operationId": "entity_attachments_content_plan_sites__site_id__entity_attachments_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SetupAgentBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/review": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Review Plan Route",
+        "description": "Audit the whole plan against the site's research report.",
+        "operationId": "review_plan_route_content_plan_sites__site_id__review_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SetupAgentBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/ai-runs": {
+      "get": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Plan Ai Runs",
+        "description": "Every AI run recorded against this site, newest first — the whole\nfeature's paid work in one place, page-level runs included.",
+        "operationId": "plan_ai_runs_content_plan_sites__site_id__ai_runs_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanAiRunHistoryResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/sites/{site_id}/ai-runs/{run_id}": {
+      "get": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Plan Ai Run Detail",
+        "description": "Open ONE past run in full — the complete request and result the model\nproduced, which is the entire reason the row exists.",
+        "operationId": "plan_ai_run_detail_content_plan_sites__site_id__ai_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanAiRunDetail"
                 }
               }
             }
@@ -96336,6 +96661,177 @@
         "type": "object",
         "title": "PipelineProgress"
       },
+      "PlanAiRunDetail": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "kind_label": {
+            "type": "string",
+            "title": "Kind Label"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "total_cost": {
+            "type": "number",
+            "title": "Total Cost",
+            "default": 0.0
+          },
+          "request": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Request",
+            "default": {}
+          },
+          "result": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Result",
+            "default": {}
+          },
+          "error": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Error",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "kind",
+          "kind_label",
+          "status",
+          "created_at"
+        ],
+        "title": "PlanAiRunDetail",
+        "description": "A past run, opened. The FULL request and result — this is the whole\npoint of recording the run rather than a column projection of it."
+      },
+      "PlanAiRunHistoryResult": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/PlanAiRunSummary"
+            },
+            "type": "array",
+            "title": "Runs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "runs"
+        ],
+        "title": "PlanAiRunHistoryResult"
+      },
+      "PlanAiRunSummary": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "kind_label": {
+            "type": "string",
+            "title": "Kind Label"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "node_route": {
+            "type": "string",
+            "title": "Node Route",
+            "default": ""
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline",
+            "default": ""
+          },
+          "total_cost": {
+            "type": "number",
+            "title": "Total Cost",
+            "default": 0.0
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "kind",
+          "kind_label",
+          "status",
+          "created_at"
+        ],
+        "title": "PlanAiRunSummary",
+        "description": "One recorded run as the site's history list needs it."
+      },
       "PlanAssistRequest": {
         "properties": {
           "organization_id": {
@@ -108972,6 +109468,51 @@
         ],
         "title": "SetVariableOp",
         "description": "Upsert a declared run variable by name."
+      },
+      "SetupAgentBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "guidance": {
+            "type": "string",
+            "title": "Guidance",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SetupAgentBody"
       },
       "ShareLinkInfo": {
         "properties": {
@@ -124482,6 +125023,63 @@
           "content_text"
         ],
         "title": "VerifyRequestChunk"
+      },
+      "VerifyUrlsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "max_urls": {
+            "type": "integer",
+            "maximum": 20000.0,
+            "minimum": 1.0,
+            "title": "Max Urls",
+            "default": 2000
+          },
+          "concurrency": {
+            "type": "integer",
+            "maximum": 32.0,
+            "minimum": 1.0,
+            "title": "Concurrency",
+            "default": 8
+          }
+        },
+        "type": "object",
+        "title": "VerifyUrlsRequest",
+        "description": "Bounded per run — the frontier is prioritized, so the cap always spends\nitself on the URLs where a wrong status costs the customer traffic."
       },
       "VersionHealth": {
         "properties": {

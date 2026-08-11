@@ -186,20 +186,15 @@ function messageMediaPartToUserInputPart(
 ): RequestMediaPart {
   if (part.kind === "youtube") return part;
   const locator = requestMediaLocator(part.url, part.file_id, undefined);
-  const common = {
-    ...part,
-    ...locator,
-    type: "media" as const,
-  };
   switch (part.kind) {
     case "image":
-      return { ...common, kind: "image" };
+      return { ...part, ...locator, type: "media", kind: "image" };
     case "audio":
-      return { ...common, kind: "audio" };
+      return { ...part, ...locator, type: "media", kind: "audio" };
     case "video":
-      return { ...common, kind: "video" };
+      return { ...part, ...locator, type: "media", kind: "video" };
     case "document":
-      return { ...common, kind: "document" };
+      return { ...part, ...locator, type: "media", kind: "document" };
   }
 }
 
@@ -226,12 +221,16 @@ export function userInputPartToMessagePart(part: UserInputPart): MessagePart {
       mime_type: part.mime_type,
     };
   }
+  const base64Data =
+    "base64_data" in part && typeof part.base64_data === "string"
+      ? part.base64_data
+      : undefined;
   const locator = part.url
     ? { url: part.url }
     : part.file_id
       ? { file_id: part.file_id }
-      : "base64_data" in part && part.base64_data
-        ? { url: mediaDataUrl(part.base64_data, part.mime_type ?? undefined) }
+      : base64Data
+        ? { url: mediaDataUrl(base64Data, part.mime_type ?? undefined) }
         : null;
   if (!locator)
     throw new TypeError("Cannot persist optimistic media without a locator");
@@ -335,21 +334,39 @@ function buildResourcePayload(resource: ManagedResource): UserInputPart | null {
         );
       }
       const locator = requestMediaLocator(url, fileId, base64Data);
-      const common = {
-        type: "media" as const,
-        metadata,
-        ...locator,
-        mime_type: mimeType,
-      };
       switch (resource.blockType) {
         case "image":
-          return { ...common, kind: "image" };
+          return {
+            type: "media",
+            kind: "image",
+            metadata,
+            ...locator,
+            mime_type: mimeType,
+          };
         case "audio":
-          return { ...common, kind: "audio" };
+          return {
+            type: "media",
+            kind: "audio",
+            metadata,
+            ...locator,
+            mime_type: mimeType,
+          };
         case "video":
-          return { ...common, kind: "video" };
+          return {
+            type: "media",
+            kind: "video",
+            metadata,
+            ...locator,
+            mime_type: mimeType,
+          };
         case "document":
-          return { ...common, kind: "document" };
+          return {
+            type: "media",
+            kind: "document",
+            metadata,
+            ...locator,
+            mime_type: mimeType,
+          };
       }
     }
     case "youtube_video": {

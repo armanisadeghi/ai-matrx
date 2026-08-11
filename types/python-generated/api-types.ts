@@ -4993,6 +4993,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/verify-urls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Site Urls Endpoint
+         * @description Fill status + content type for registry URLs nothing has ever fetched.
+         *
+         *     Long-running and multi-item, so it streams. The pipeline lives in
+         *     ``aidream/services/seo/url_verification.py``; this router only authorizes
+         *     and hands off. Safe to interrupt — the frontier is durable, so a disconnect
+         *     stops the stream and never the work, and re-running resumes it.
+         */
+        post: operations["verify_site_urls_endpoint_seo_sites__site_id__verify_urls_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-plan/sites/{site_id}/generate": {
         parameters: {
             query?: never;
@@ -5043,6 +5068,11 @@ export interface paths {
          *     The result is written to `plan.node.metadata.ai_brief_draft` the instant it
          *     arrives — a disconnect, a refresh, or a user who never presses Save loses
          *     nothing. Client CRUD still reads the node straight from Supabase.
+         *
+         *     A page with no target keyword is REFUSED here, before the stream opens and
+         *     before a paid run starts — as an HTTP 409 the client renders as the gap plus
+         *     its one-click fix, never as a brief-shaped refusal the model was paid to
+         *     write.
          */
         post: operations["draft_brief_content_plan_nodes__node_id__draft_brief_post"];
         delete?: never;
@@ -5108,6 +5138,108 @@ export interface paths {
          * @description Make a past run the node's current proposal again.
          */
         post: operations["restore_brief_run_route_content_plan_nodes__node_id__brief_runs_restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/keyword-strategy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keyword Strategy
+         * @description Assign keywords across the WHOLE plan (money pages vs supporting pages).
+         */
+        post: operations["keyword_strategy_content_plan_sites__site_id__keyword_strategy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/entity-attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Entity Attachments
+         * @description Attach roster entities to the pages that need them (E-E-A-T).
+         */
+        post: operations["entity_attachments_content_plan_sites__site_id__entity_attachments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review Plan Route
+         * @description Audit the whole plan against the site's research report.
+         */
+        post: operations["review_plan_route_content_plan_sites__site_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/ai-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plan Ai Runs
+         * @description Every AI run recorded against this site, newest first — the whole
+         *     feature's paid work in one place, page-level runs included.
+         */
+        get: operations["plan_ai_runs_content_plan_sites__site_id__ai_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/sites/{site_id}/ai-runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plan Ai Run Detail
+         * @description Open ONE past run in full — the complete request and result the model
+         *     produced, which is the entire reason the row exists.
+         */
+        get: operations["plan_ai_run_detail_content_plan_sites__site_id__ai_runs__run_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -35986,6 +36118,98 @@ export interface components {
              */
             total_documents?: number;
         };
+        /**
+         * PlanAiRunDetail
+         * @description A past run, opened. The FULL request and result — this is the whole
+         *     point of recording the run rather than a column projection of it.
+         */
+        PlanAiRunDetail: {
+            /** Run Id */
+            run_id: string;
+            /** Kind */
+            kind: string;
+            /** Kind Label */
+            kind_label: string;
+            /** Status */
+            status: string;
+            /** Created At */
+            created_at: string;
+            /** Node Id */
+            node_id?: string | null;
+            /**
+             * Total Cost
+             * @default 0
+             */
+            total_cost?: number;
+            /**
+             * Request
+             * @default {}
+             */
+            request?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Result
+             * @default {}
+             */
+            result?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Error
+             * @default {}
+             */
+            error?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** PlanAiRunHistoryResult */
+        PlanAiRunHistoryResult: {
+            /** Site Id */
+            site_id: string;
+            /** Runs */
+            runs: components["schemas"]["PlanAiRunSummary"][];
+        };
+        /**
+         * PlanAiRunSummary
+         * @description One recorded run as the site's history list needs it.
+         */
+        PlanAiRunSummary: {
+            /** Run Id */
+            run_id: string;
+            /** Kind */
+            kind: string;
+            /** Kind Label */
+            kind_label: string;
+            /** Status */
+            status: string;
+            /** Created At */
+            created_at: string;
+            /** Node Id */
+            node_id?: string | null;
+            /**
+             * Node Route
+             * @default
+             */
+            node_route?: string;
+            /** Model Id */
+            model_id?: string | null;
+            /**
+             * Headline
+             * @default
+             */
+            headline?: string;
+            /**
+             * Total Cost
+             * @default 0
+             */
+            total_cost?: number;
+            /**
+             * Error
+             * @default
+             */
+            error?: string;
+        };
         /** PlanAssistRequest */
         PlanAssistRequest: {
             /**
@@ -40990,6 +41214,20 @@ export interface components {
              */
             op: "set_variable";
             variable: components["schemas"]["VariableSpec"];
+        };
+        /** SetupAgentBody */
+        SetupAgentBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Guidance
+             * @default
+             */
+            guidance?: string;
         };
         /**
          * ShareLinkInfo
@@ -46915,6 +47153,38 @@ export interface components {
             chunk_id: string;
             /** Content Text */
             content_text: string;
+        };
+        /**
+         * VerifyUrlsRequest
+         * @description Bounded per run — the frontier is prioritized, so the cap always spends
+         *     itself on the URLs where a wrong status costs the customer traffic.
+         */
+        VerifyUrlsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Max Urls
+             * @default 2000
+             */
+            max_urls?: number;
+            /**
+             * Concurrency
+             * @default 8
+             */
+            concurrency?: number;
         };
         /** VersionHealth */
         VersionHealth: {
@@ -57074,6 +57344,41 @@ export interface operations {
             };
         };
     };
+    verify_site_urls_endpoint_seo_sites__site_id__verify_urls_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyUrlsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     generate_plan_content_plan_sites__site_id__generate_post: {
         parameters: {
             query?: never;
@@ -57263,6 +57568,174 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcceptBriefResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    keyword_strategy_content_plan_sites__site_id__keyword_strategy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SetupAgentBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    entity_attachments_content_plan_sites__site_id__entity_attachments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SetupAgentBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_plan_route_content_plan_sites__site_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SetupAgentBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plan_ai_runs_content_plan_sites__site_id__ai_runs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanAiRunHistoryResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plan_ai_run_detail_content_plan_sites__site_id__ai_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanAiRunDetail"];
                 };
             };
             /** @description Validation Error */

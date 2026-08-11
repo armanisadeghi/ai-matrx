@@ -11,7 +11,7 @@ Pick-up doc for the next agent. The artifact system is the most important featur
 - **Interaction state → `canvas_item_state`** via `useArtifactState` (progress/recipe/decision-tree/troubleshooting/comparison/presentation; questionnaire answers migrated off `_matrxState`). Tasks = tracked proposal + Convert via `ctx_task_associations`. Flashcards→`user_flashcard_*`, quiz→`quiz_sessions`.
 - **aidream R8 (committed, DEPLOY-PENDING):** `aidream/api/utils/artifact_context.py` injects `conversation_artifacts` (latest copy + status + interaction state) each turn via `chat.py` `_prepare`. **Needs a server deploy to take effect.**
 - **html/react security:** `isPublic` prop on `ArtifactRendererProps`; `PublicCanvasRenderer` passes it; html→SandboxedHtml / react→read-only CodeBlock on public surfaces (never execute author content for anonymous viewers).
-- **Quiz "Unknown Data Event" fix** (`normalize-content-blocks.ts#reconstructPersistedBlock`) + **Copy-for-AI** button on `UnknownDataEventBlock` (the canonical failure→agent affordance).
+- **Legacy interactive-block recovery** lives only at `messages/persisted-content-boundary.ts`. It validates and loudly reconstructs already-stored `_matrxState` rows before strict generated `MessagePart` parsing. New quiz progress writes only to `quiz_sessions`; no renderer-private shape may enter `cx_message.content`.
 
 ## NEXT — in priority order (each with the approach)
 
@@ -27,13 +27,13 @@ Pick-up doc for the next agent. The artifact system is the most important featur
 
 6. **Copy-for-AI rollout:** extend the `UnknownDataEventBlock` pattern (page + conversation_id + message_id + error + payload wrapped in `<artifact_failure>`) to every artifact/canvas failure point — `ArtifactRefBlock`'s "couldn't load saved artifact" state, `SafeBlockRenderer` error boundary, the artifact error cards. Arman wants this on ALL aspects of the canvas/artifact system.
 
-7. **Verify the quiz fix live** — the reconstruction renders the quiz; confirm progress restores from `_matrxState` on a healthy server. Consider migrating quizzes off `_matrxState` → `quiz_sessions`/materialized (like questionnaire) to kill the legacy persistence entirely.
+7. **Verify legacy quiz recovery live** — an already-stored `_matrxState` quiz must render without weakening strict parsing. New quiz progress must reload from `quiz_sessions`; never recreate a message-content writer.
 
 8. **NOT artifacts (confirmed with Arman):** `search_results`, `function_result`, `workflow_step` are transient execution events — only persist on an explicit user action, never auto-materialize.
 
 ## Verification reality
-- **Local dev server degraded all session** (app-wide `/chat` + `/artifacts` shimmer; NOT a code issue — 7 restarts + `rm -rf .next-preview` + clean build, no console errors, type-clean; same server rendered fine earlier). Most recent enrollments (html/react/table/transcript/etc. + the quiz fix) are **type-clean + equivalence-proven** against svg/chart/recipe/progress which WERE live-verified this session, but await a live click-test on a healthy `pnpm dev`.
-- **Verify pattern:** insert an admin-owned `cx_conversation` (needs `initial_agent_id`!) + a `cx_message` with the raw block, dev-login token `matrx-dev-a2990c472f1cae47864bb936`, load `/chat/<id>`, check `canvas_items`/`cx_message` content/`canvas_item_state` in Supabase MCP (project `txzxabzwovsujtloxrus`). RESTART the dev server first.
+- **Browser testing:** read [`docs/official/browser-testing.md`](../../../docs/official/browser-testing.md), reuse the single approved `next-dev` preview, and drive only the in-app Browser pane. Never start `pnpm dev` directly.
+- **Verify pattern:** load an admin-owned conversation containing the target block, then inspect `canvas_items`, `cx_message.content`, and the canonical domain-state table. Confirm every current content entry passes generated `parseMessageContent`; legacy recovery must log when it fires.
 - **aidream:** run `PYTHONPATH=. .venv/bin/python` a script calling `resolve_conversation_artifacts_context(conv_id, user_id)` to test the context helper against the live DB (it works — verified on a 12-artifact conv).
 
 ## Concurrency note

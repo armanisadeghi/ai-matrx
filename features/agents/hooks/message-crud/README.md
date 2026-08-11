@@ -1,17 +1,21 @@
 # Message CRUD Playbook
 
-How the agent system persists message edits, forks, and interactive-artifact
-state. All three flow through the same pipe: the authoritative DB row is
-`cx_message`, every write goes through a thunk that updates Redux
-optimistically + round-trips via the relevant Supabase RPC + flips the
-conversation's cache-bypass flag for the next outbound AI call.
+How the agent system persists message edits and forks. The authoritative DB
+row is `cx_message`; writes update Redux optimistically, round-trip through the
+relevant Supabase RPC, and flip cache bypass for the next outbound AI call.
 
-## Four operations
+**`cx_message.content` contains generated `MessagePart` variants only.** Never
+store renderer-private state there. Interactive artifacts persist through
+`features/canvas/artifact-types/persistence/`: domain adapters for quiz,
+flashcards, and tasks; `useArtifactState` + `canvas_item_state` for generic
+per-viewer state. Historical `_matrxState` rows are read only by
+`messages/persisted-content-boundary.ts`; no writer may recreate them.
+
+## Three operations
 
 | Operation | Thunk | RPC | Invoked from |
 |---|---|---|---|
 | Save a whole message (edit in full-screen editor) | `editMessage` | `cx_message_edit` | `saveFullContent` on `useMessageActions` + menu "Edit content" |
-| Patch one block's state (quiz answers, form fields, artifact edits) | `editMessage` with the updated content blocks | `cx_message_edit` | `useMessageBlockPersistence.patchBlock` |
 | Fork at this message ("Submit from here") | `forkConversation` | `cx_fork_conversation` | `forkAtThisMessage` on `useMessageActions` + menu "Fork at this message" |
 | Edit + resubmit | `forkConversation` + `launchConversation` | `cx_fork_conversation` + usual launch | `editAndResubmit` on `useMessageActions` + menu "Edit & resubmit" |
 
@@ -19,57 +23,11 @@ Auxiliary:
 - Soft-delete whole conversation: `softDeleteConversation` / `cx_soft_delete_conversation`.
 - Invalidate server agent cache out-of-band: `invalidateConversationCache`.
 
-## Two hooks
-
-### `useMessageBlockPersistence(conversationId, messageId, blockType?, blockId?, indexHint?)`
-
-For any stateful render block (quiz, flashcard, form, editable table, code
-sandbox). Returns `{ blockState, patchBlock }`.
-
-```ts
-const { blockState, patchBlock } = useMessageBlockPersistence({
-  conversationId, messageId,
-  blockType: "quiz",
-  indexHint: blockIndex,
-});
-
-// rehydrate on mount from the persisted block
-useEffect(() => {
-  if (blockState?._matrxState) setLocalState(blockState._matrxState.quizState);
-}, [blockState?._matrxBlockId]);
-
-// persist on change (debounced in the caller)
-useEffect(() => {
-  const t = setTimeout(() => void patchBlock({ _matrxState: { quizState } }), 750);
-  return () => clearTimeout(t);
-}, [quizState, patchBlock]);
-```
-
-The hook:
-- reads `cx_message.content` (the `CxContentBlock[]` JSON).
-- locates the block by `_matrxBlockId` (preferred) or by `(blockType + indexHint)`.
-- merges the patch into the target block, minting a UUID for `_matrxBlockId` on first write.
-- dispatches `editMessage` which calls `cx_message_edit` and flips cache-bypass.
-
-Side effect: the agent's next-turn history now reflects the current block state. Want the model to "see" how the user did on the quiz? It already does — the answers are inside the message content it's re-shown.
+## Hook
 
 ### `useMessageActions(conversationId, messageId, position?, surfaceKey?, buildInvocationForResubmit?, onNavigateToFork?)`
 
 Returns `{ saveFullContent, forkAtThisMessage, editAndResubmit, deleteConversation }`. Use this from a menu or toolbar, NOT from inside a leaf block.
-
-## Identifying blocks
-
-Render blocks stamped with `_matrxBlockId` persist cleanly. Blocks without
-it fall back to `(blockType + indexHint)` — fine for the FIRST write, but
-risky when the same message has multiple blocks of the same type. The hook
-mints a stable UUID on first `patchBlock` call and writes it back, so
-subsequent round-trips use the stable id.
-
-Agents that author artifacts with a model-provided `id` field can stamp
-`_matrxBlockId` directly from the model output — skip the client mint. All
-existing behavior stays correct: `_matrxBlockId` + `_matrxBlockType` +
-`_matrxState` are namespaced so they never collide with server-side block
-fields.
 
 ## Re-render safety
 
@@ -81,10 +39,6 @@ Key rules:
   `updateMessageRecord` — Immer's structural sharing keeps OTHER messages
   in the transcript reference-stable. Only the edited message's body
   re-renders.
-- Block-level `patchBlock` replaces ONE entry in the content array. The
-  array reference changes, but if consumers subscribe through the narrow
-  `selectMessageContent(cid, mid)` selector, only that one message's
-  subscribers re-run — not every renderer in the transcript.
 
 ## The editor save channel — NEVER pass `onSave` through overlay data
 
@@ -157,21 +111,15 @@ Effect: opening the HTML preview overlay repeatedly (or double-clicking
 "Generate Page" before the artifact fetch settles) produces exactly one
 `cx_artifact` row per message — regardless of client-side races.
 
-## The block persistence pattern (checklist for new stateful blocks)
+## Stateful block persistence
 
-1. Accept `conversationId?: string`, `messageId?: string`, `blockIndex?: number` in the block's props.
-2. Thread them from `BlockRenderer` (already done for `MultipleChoiceQuiz`; copy the pattern).
-3. Call `useMessageBlockPersistence({ conversationId, messageId, blockType: "...", indexHint: blockIndex })`.
-4. Rehydrate local state from `blockState._matrxState` in a mount-only effect.
-5. Debounce writes on state change (150–750ms depending on how hot the changes are). Do NOT write every keystroke — 50 writes/sec would swamp the RPC.
-6. Use `_matrxState` for arbitrary state (serialize anything JSON-safe). Keep the block's OWN fields (the server-authored shape) untouched.
+**Read [`features/artifacts/FEATURE.md`](../../../artifacts/FEATURE.md) before
+adding state to any render block.** Use its registered custom adapter when the
+domain owns state; otherwise use `useArtifactState`. Never patch interactive
+state into `cx_message.content` or invent a local content-part type.
 
 ## Out-of-scope (future work)
 
 - **Full undo/redo on message edits.** `cx_message_edit` archives the
   prior content into `content_history` automatically; a client-side undo
   stack can read from there. Not wired to a menu today.
-- **Per-sub-block ids for renderers that split one block into many parts**
-  (e.g. a quiz renderer that treats each question as a sub-block). Today
-  one quiz → one `_matrxBlockId`; that's sufficient because the serialized
-  `_matrxState` carries the full quiz state.

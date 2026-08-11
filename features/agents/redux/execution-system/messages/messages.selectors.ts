@@ -19,7 +19,6 @@ import type {
   ContentSegmentRenderBlock,
 } from "../active-requests/active-requests.selectors";
 import {
-  parseMessageContent,
   type ToolCallPart,
   type ThinkingPart,
   type MessagePart,
@@ -29,6 +28,10 @@ import {
   type DocumentMediaPart,
   type YouTubeMediaPart,
 } from "@/types/python-generated/stream-events";
+import {
+  messagePartsFromPersistedContent,
+  parsePersistedMessageContent,
+} from "./persisted-content-boundary";
 import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
 import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
 import { removeThinkingContent } from "@/components/matrx/buttons/markdown-copy-utils";
@@ -410,9 +413,7 @@ export function extractContentBlocks(
   record: MessageRecord | undefined,
 ): MessagePart[] {
   if (!record) return [];
-  return Array.isArray(record.content)
-    ? parseMessageContent(record.content)
-    : [];
+  return messagePartsFromPersistedContent(record.content);
 }
 
 type AnyMediaPart =
@@ -515,10 +516,11 @@ export const selectMessageInterleavedContent = (
       if (!record) return EMPTY_SEGMENTS;
       if ((record.role as string) === "tool") return EMPTY_SEGMENTS;
 
-      const parts = Array.isArray(record.content)
-        ? parseMessageContent(record.content)
-        : [];
-      if (parts.length === 0) return EMPTY_SEGMENTS;
+      const entries = parsePersistedMessageContent(record.content);
+      if (entries.length === 0) return EMPTY_SEGMENTS;
+      const parts = entries.flatMap((entry) =>
+        entry.kind === "message_part" ? [entry.part] : [],
+      );
 
       const toolCallByCallId = new Map<
         string,
@@ -537,8 +539,21 @@ export const selectMessageInterleavedContent = (
       const citationIndex = buildMessageCitationIndex(parts);
 
       const segments: ContentSegment[] = [];
-      for (let partIndex = 0; partIndex < parts.length; partIndex++) {
-        const part = parts[partIndex];
+      let partIndex = 0;
+      for (const entry of entries) {
+        if (entry.kind === "legacy_render_block") {
+          const { block } = entry;
+          segments.push({
+            type: "render_block",
+            blockType: block.type,
+            content: block.content ?? null,
+            data: block.data ?? null,
+            metadata: block.metadata,
+          } satisfies ContentSegmentRenderBlock);
+          continue;
+        }
+
+        const part = entry.part;
         // Materialized artifacts are stored as plain text — `<artifact id=uuid>
         // body</artifact>` (vision R1) — so they flow through the normal `text`
         // path below; the splitter detects the tag and BlockRenderer renders it
@@ -706,6 +721,7 @@ export const selectMessageInterleavedContent = (
           default:
             break;
         }
+        partIndex += 1;
       }
 
       return segments.length === 0 ? EMPTY_SEGMENTS : segments;

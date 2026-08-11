@@ -42,22 +42,6 @@ function newId(prefix: string): string {
 }
 
 function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
-  // Legacy interactive blocks (quiz, …) persisted by useMessageBlockPersistence
-  // carry `_matrxBlockType` + `_matrxState` and were written into
-  // cx_message.content as a NON-python part (e.g. `{type:"quiz", _matrxState,
-  // _matrxBlockType:"quiz"}`). They aren't MessagePart variants, so the typed
-  // switch below dumps them to `unknown_data_event` ("This data type is not yet
-  // registered" — the every-reload bug). Recognize + reconstruct them first.
-  // MATRX-EXCEPTION: `raw` is a concrete MessagePart union member (no index
-  // signature), but this legacy helper needs to probe for keys that aren't on
-  // any MessagePart variant (`_matrxBlockType`) — a defensive shape-sniff on
-  // data whose real runtime shape isn't fully described by the generated union.
-  const persisted = reconstructPersistedBlock(
-    raw as unknown as Record<string, unknown>,
-    index,
-  );
-  if (persisted) return persisted;
-
   switch (raw.type) {
     case "text":
       // content-ir Phase 5: a persisted part may carry an IrEnvelopeCache on
@@ -479,50 +463,6 @@ function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
       return makeUnknown(raw as AnyMediaPart, index, "media_unhandled_kind");
     }
   }
-}
-
-/**
- * Reconstruct a legacy persisted interactive block (quiz, …) into its render
- * block instead of `unknown_data_event`. These parts carry `_matrxBlockType` +
- * `_matrxState` (stamped by useMessageBlockPersistence) and are NOT python
- * MessagePart types. Returns null for everything else (real parts are untouched).
- */
-function reconstructPersistedBlock(
-  rb: Record<string, unknown>,
-  index: number,
-): RenderBlockPayload | null {
-  const blockType =
-    typeof rb._matrxBlockType === "string" ? rb._matrxBlockType : undefined;
-  if (!blockType || rb._matrxState === undefined) return null;
-
-  // The quiz definition lives in _matrxState.quizState.originalQuestions —
-  // rebuild the `{ quiz_title, questions }` shape the quiz renderer parses, and
-  // carry _matrxState so the user's progress restores.
-  let data: Record<string, unknown> = rb;
-  if (blockType === "quiz") {
-    const qs = (
-      rb._matrxState as { quizState?: Record<string, unknown> } | undefined
-    )?.quizState;
-    const questions = (qs?.originalQuestions as unknown[]) ?? [];
-    data = {
-      quiz_title: (qs?.title as string) ?? "Quiz",
-      questions,
-      _matrxState: rb._matrxState,
-    };
-  }
-
-  return {
-    blockId:
-      typeof rb._matrxBlockId === "string"
-        ? rb._matrxBlockId
-        : newId("db_persisted"),
-    blockIndex: index,
-    type: blockType,
-    status: "complete",
-    content: null,
-    data,
-    metadata: rb.metadata as Record<string, unknown> | undefined,
-  };
 }
 
 function makeUnknown(

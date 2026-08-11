@@ -6,13 +6,6 @@
  */
 
 export {
-  useMessageBlockPersistence,
-  type UseMessageBlockPersistenceArgs,
-  type UseMessageBlockPersistenceReturn,
-  type PersistedBlock,
-} from "@/features/agents/hooks/message-crud/useMessageBlockPersistence";
-
-export {
   useMessageActions,
   type UseMessageActionsArgs,
   type UseMessageActionsReturn,

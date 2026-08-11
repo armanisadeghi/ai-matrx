@@ -37,13 +37,7 @@ interface BlockRendererProps {
   index: number;
   isStreamActive?: boolean;
   onContentChange?: (newContent: string) => void;
-  /**
-   * conversationId + messageId identify the owning cx_message row. Stateful
-   * render blocks (quiz, flashcards, form, editable table, etc.) use these
-   * via `useMessageBlockPersistence` to round-trip their state into the DB
-   * through the `cx_message_edit` RPC. Optional — blocks that don't need
-   * persistence ignore them.
-   */
+  /** Owning message context forwarded to canonical artifact renderers. */
   conversationId?: string;
   messageId?: string;
   taskId?: string;

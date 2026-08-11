@@ -50,7 +50,6 @@ import {
 import { useQuizPersistence } from "@/hooks/useQuizPersistence";
 import { parseQuizJSON, type RawQuizJSON } from "./quiz-parser";
 import { InlineLatexRenderer } from "@/features/math/components/InlineLatexRenderer";
-import { useMessageBlockPersistence } from "@/features/agents/hooks/message-crud/useMessageBlockPersistence";
 
 // Legacy type for backwards compatibility
 export type Question = OriginalQuestion;
@@ -63,14 +62,7 @@ interface MultipleChoiceQuizProps {
   autoSaveInterval?: number;
   showCanvasButton?: boolean;
   className?: string;
-  /**
-   * When `conversationId` + `messageId` are present, the quiz also persists
-   * its state back into the owning `cx_message.content` via
-   * `useMessageBlockPersistence`. This is what makes the agent "see" the
-   * user's progress — the next turn's conversation history reflects the
-   * current answers + score. Independent from `useQuizPersistence` which
-   * saves to a quiz-session DB table.
-   */
+  /** Owning message context used by the shared artifact renderer. */
   conversationId?: string;
   messageId?: string;
   /** Position of this block within the message content array (hint for location). */
@@ -206,9 +198,6 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
   autoSaveInterval = 10000,
   showCanvasButton = true,
   className,
-  conversationId,
-  messageId,
-  blockIndex,
 }) => {
   // Canvas integration
   const { open: openCanvas } = useCanvas();
@@ -286,56 +275,6 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
       }
     }
   }, [loadedSession]);
-
-  // ── Message-level persistence ────────────────────────────────────────────
-  //
-  // When this quiz is inside an assistant message (conversationId + messageId
-  // present), persist the quiz state back into the owning cx_message.content.
-  // The assistant's conversation history thereby reflects the user's current
-  // progress — next turn, the model sees the answers and can respond to them.
-  // Separate from `useQuizPersistence` above, which saves to a dedicated
-  // quiz-session table for standalone runs.
-  const { blockState, patchBlock } = useMessageBlockPersistence({
-    conversationId,
-    messageId,
-    blockType: "quiz",
-    indexHint: blockIndex,
-  });
-
-  // Rehydrate quiz state from the message's persisted block on first load.
-  // Only fires when there's persisted state — the initial quiz parse from
-  // quizData remains the source of truth for the question set.
-  useEffect(() => {
-    if (!blockState?._matrxState) return;
-    const saved = blockState._matrxState as {
-      quizState?: QuizState;
-      showResults?: boolean;
-    };
-    if (saved.quizState && !quizState) {
-      setQuizState(saved.quizState);
-      if (saved.showResults) setShowResults(true);
-    }
-    // Intentionally runs only when the persisted blockState arrives; avoid
-    // dependency on `quizState` (which would loop the effect on every answer).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blockState?._matrxBlockId]);
-
-  // Debounced write-back — coalesce rapid answer clicks into one round-trip.
-  // 750ms matches the user's "perceptible but not intrusive" threshold.
-  const lastPersistedRef = useRef<string>("");
-  useEffect(() => {
-    if (!conversationId || !messageId || !quizState) return undefined;
-    // Serialize for cheap identity check — avoids a write when nothing changed.
-    const snapshot = JSON.stringify({ quizState, showResults });
-    if (snapshot === lastPersistedRef.current) return undefined;
-    const timer = setTimeout(() => {
-      lastPersistedRef.current = snapshot;
-      void patchBlock({
-        _matrxState: { quizState, showResults },
-      });
-    }, 750);
-    return () => clearTimeout(timer);
-  }, [quizState, showResults, conversationId, messageId, patchBlock]);
 
   // ESC key handler to exit fullscreen
   useEffect(() => {

@@ -3,6 +3,7 @@ import type {
   MessagePart,
   PreFetchedUrl,
 } from "@/types/python-generated/stream-events";
+import type { UserInputPart } from "@/features/agents/types/request.types";
 import { isMessagePart } from "@/types/python-generated/stream-events";
 import {
   messagePartToUserInputPart,
@@ -72,12 +73,16 @@ describe("request/message attachment projection", () => {
   });
 
   it("preserves inline media bytes as a visible optimistic data URL", () => {
-    const optimistic = userInputPartToMessagePart({
+    const inlineRequestImage: Extract<
+      UserInputPart,
+      { type: "media"; kind: "image" }
+    > = {
       type: "media",
       kind: "image",
       base64_data: "YWJj",
       mime_type: "image/png",
-    });
+    };
+    const optimistic = userInputPartToMessagePart(inlineRequestImage);
 
     expect(optimistic).toMatchObject({
       type: "media",
