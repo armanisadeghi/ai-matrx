@@ -33,7 +33,12 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  MAX_CHUNK_SIZE,
+  MIN_CHUNK_SIZE,
+} from "@/features/page-extraction/constants";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 /**
@@ -51,6 +56,13 @@ const groups: SurfaceValueGroup[] = [
   { key: "pdf_reader", label: "Reader state", sortOrder: 300 },
   { key: "pdf_library", label: "Open library", sortOrder: 400 },
   { key: "pdf_pipeline", label: "Processing pipeline", sortOrder: 500 },
+  {
+    key: "pdf_extraction_template",
+    label: "Extraction template",
+    sortOrder: 550,
+    description:
+      "The Content-extractor template the user is composing in the right inspector — its name, page scope, chunk geometry and output columns, plus whether the editor is even open.",
+  },
   { key: "pdf_legacy", label: "Legacy aliases", sortOrder: 800 },
 ];
 
@@ -347,6 +359,183 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "pdf_pipeline",
     sortOrder: 610,
   },
+
+  // ── Extraction template being composed (700-749) ─────────────────────
+  //
+  // READ TWINS of this surface's write targets. Added in the same change
+  // that made the Content-extractor template agent-writable: a write
+  // target whose value an agent cannot read back has no evidence loop, so
+  // the agent can neither check what it just staged nor extend rather than
+  // replace. (`marketing-site-media` set the precedent of closing a
+  // manifest's own readiness gap while landing its write half.)
+  //
+  // Inherited by `matrx-user/extractor-chunker` / `analysis-studio` /
+  // `scanner` per this manifest's stated contract ("the manifest only
+  // declares this is wireable"). Only the studio route POPULATES them —
+  // the chunked run's server-side bag does not, which is exactly the
+  // parent/child split those manifests already document.
+  {
+    name: "extraction_template_editor",
+    label: "Template editor state",
+    description:
+      "Whether the Content extractors panel is showing the template EDITOR right now, and what it is pointed at: `{ editing, selected_template_id, run_in_flight }`. `editing` false means the panel is showing the saved-template list or the read-only view — the editor inputs are not on screen, and every extraction-template write target refuses in that state. `run_in_flight` true means a chunked extraction is running on this document. Read this BEFORE attempting any extraction-template write.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 120,
+    group: "pdf_extraction_template",
+    sortOrder: 700,
+  },
+  {
+    name: "extraction_template_draft",
+    label: "Extraction template draft",
+    description:
+      "The in-progress template config the user is composing: `{ template_name, page_range, page_count, chunk_size, chunk_overlap, chunking_strategy, kind, agent_id }`. `page_range` is the verbatim text of the Pages input (e.g. \"1-50, 80-90\"); `page_count` is how many of those pages actually exist in this document. `chunk_size` is null until the user sets it. This is the read twin of the `extraction_template_draft` write target — read it first if you mean to extend the user's config rather than replace parts of it.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 220,
+    group: "pdf_extraction_template",
+    sortOrder: 710,
+  },
+  {
+    name: "extraction_output_columns",
+    label: "Output table columns",
+    description:
+      "The template's declared Results columns, in order: an array of `{ key, label, type, description?, source }`. Empty array when the template inherits the agent's own output schema instead (the default) or is in text mode. Read twin of the `extraction_output_columns` write target — this is the DEFINITION of the table, never the extracted rows.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 400,
+    autoContext: false,
+    group: "pdf_extraction_template",
+    sortOrder: 720,
+  },
+];
+
+/**
+ * Names of the write targets below, exported so the two handler seams
+ * (`PdfStudioShell`'s base refusal set and `ChunkingConfigForm`'s live
+ * implementation) can never drift from the manifest by re-typing a string.
+ */
+export const PDF_EXTRACTOR_WRITE_TARGETS = {
+  templateDraft: "extraction_template_draft",
+  outputColumns: "extraction_output_columns",
+} as const;
+
+/**
+ * Write half of the 360 loop — what an agent may put into the Content
+ * extractors panel on the right of the PDF studio.
+ *
+ * WHY THIS SURFACE AND NOT `matrx-user/extractor-chunker`. The campaign
+ * assignment named the chunker surface, and on inspection that surface has
+ * NO client mount anywhere in the app: `matrx-user/extractor-chunker` is a
+ * server-side per-chunk vocabulary catalog (aidream `_build_surface_vars`
+ * fills it once per chunk at run time), consumed on the client only by
+ * `VariableMappingEditor` calling `getManifest()` to populate dropdowns.
+ * `writeTargets` on it would be declared and never offered — the exact
+ * "no mounted runtime looks identical to a broken target" trap in the
+ * `surface-write-targets` skill. The FORM the assignment actually pointed
+ * at (`ChunkingConfigForm`, the template editor at
+ * `/tools/pdf-extractor/<documentId>`) lives inside THIS surface's
+ * provider (`PdfStudioShell`), so the targets belong here. Same page, same
+ * URL, correct surface name.
+ *
+ * JUDGMENT BAR, applied honestly. A Content-extractor template is a real
+ * authored artifact, not a settings screen: the user decides what to call
+ * it, which pages of a 400-page document are worth spending an agent on,
+ * how many pages the agent can hold at once, how much overlap it needs to
+ * not lose a table across a page break, and — the biggest one — what
+ * columns the extraction should produce. Every one of those is something
+ * an agent that has just READ the document can propose better and faster
+ * than a user scrolling for the appendix. Nothing here is identity,
+ * ownership, or destructive.
+ *
+ * TWO targets, not six. `template_name` + `page_range` + `chunk_size` +
+ * `chunk_overlap` are ONE act of composing a template, and the page itself
+ * says so: "Apply Recommended" patches the range, the size and the overlap
+ * in a single dispatch, and the name auto-seeds from the chosen agent.
+ * Per the skill's trap ("multiple values in one field object beat five
+ * micro-targets when they're edited together"), they are one object target
+ * and therefore ONE confirm dialog. Every key is optional and partial, so
+ * writing only `{chunk_overlap}` leaves the range the user typed alone.
+ * `extraction_output_columns` is split out for the reason
+ * `marketing-crawls` split its include/exclude patterns: it is a genuinely
+ * separate decision, with its own editor (`SchemaEditor`), its own
+ * downstream consumer (the durable Results table), and a shape a user may
+ * well accept when they reject the chunk geometry, or the reverse.
+ *
+ * `mode: "draft"` in the strictest sense. Both handlers dispatch
+ * `patchDraft({fileId, patch})` — the SAME Redux action the user's own
+ * typing dispatches on every keystroke in that form. The staged value is
+ * visible and editable the instant it lands, the Save/Update bar stays
+ * exactly as it was, and Cancel restores the saved snapshot. No parallel
+ * setter, no raw supabase.
+ *
+ * WHAT IS NOT WRITABLE, on purpose:
+ *  - **Run.** `saveTemplateFromDraft` → `launch()` spends real model budget
+ *    running an agent over every chunk of someone's document. The settled
+ *    precedent (`podcast-studio`, `image-generate`, `marketing-crawls`) is
+ *    that the human press is the gate, and it holds here more than
+ *    anywhere: this is the most expensive button on the surface. An agent
+ *    may compose the template; only the user commits it. Save is left to
+ *    the user for the same reason in miniature — `mode: "draft"` means the
+ *    user still presses Update.
+ *  - **The extracted text and everything about a run.** `clean_text`,
+ *    `raw_text`, `full_document_text`, `current_page_text`, `chunk_index`,
+ *    `chunk_count`, `total_pages`, `job_id`, `run_id` are the RECORD of
+ *    what the extractor actually produced. An agent writing them would be
+ *    fabricating output (the `processed_data`/`ast` rule from
+ *    `markdown-editor`). The way an agent moves those values is by
+ *    changing the config and letting the pipeline re-run — that IS the
+ *    evidence loop on this surface.
+ *  - **Deleting run data.** `clearJobResults` permanently drops every chunk
+ *    run and result row. Destructive stays human.
+ *  - `agent_id` — which agent to run. The surface exposes no agent
+ *    catalog, so an agent writing it would be guessing a UUID.
+ *  - `variable_mapping` — genuinely valuable, and deliberately deferred:
+ *    the keys on the right-hand side are the CHOSEN AGENT's variable names,
+ *    which are not surface values here. A write target whose vocabulary the
+ *    agent cannot read is a target it can only guess at.
+ *  - `chunking_strategy` — "pages" is the only entry in
+ *    `CHUNKING_STRATEGIES` that is not `comingSoon`, and the editor renders
+ *    no picker for it. A target with one legal value and no UI is the
+ *    "pure-mechanical toggle" the bar rejects.
+ *  - `kind` (extraction vs validation) and `rag_boost` — mode switches and
+ *    a tuning knob nobody would ask an agent to flip.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: PDF_EXTRACTOR_WRITE_TARGETS.templateDraft,
+    label: "Extraction template draft",
+    description:
+      "Stages the Content-extractor template the user is composing in the right inspector. NOTHING runs and nothing is saved — the user still presses Update/Save, and then Run. " +
+      "Value: an object with AT LEAST ONE of `{ template_name, page_range, chunk_size, chunk_overlap }`. Each key REPLACES that one field; omit a key to leave it exactly as the user left it (read `extraction_template_draft` first if you mean to extend rather than replace). " +
+      "`template_name` — what this reusable template is called; a non-empty string. " +
+      '`page_range` — which pages the extraction covers, as the page-range text the input accepts: comma-separated pages and hyphenated spans, e.g. "1-50, 80-90". Every page you name must exist in this document (see `total_pages`); naming a page outside it is an error, not a clamp. ' +
+      `\`chunk_size\` — pages per agent call, a whole number from ${MIN_CHUNK_SIZE} to ${MAX_CHUNK_SIZE}. ` +
+      "`chunk_overlap` — pages repeated between neighbouring chunks so a table or clause spanning a page break is not cut; a whole number from 0 to chunk_size - 1. " +
+      "Refused unless the template EDITOR is open (`extraction_template_editor.editing` is true — the user clicked New or Edit), and refused while an extraction run is in flight on this document.",
+    valueType: "object",
+    updatesValue: "extraction_template_draft",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "pdf_extraction_template",
+    sortOrder: 710,
+  },
+  {
+    name: PDF_EXTRACTOR_WRITE_TARGETS.outputColumns,
+    label: "Output table columns",
+    description:
+      "Stages the Results table definition for the template being edited — the columns every chunk's answer is parsed into. NOTHING runs and nothing is saved; the user still presses Update/Save. " +
+      "Value: an ARRAY of column objects, which REPLACES the whole column list (read `extraction_output_columns` first and include the columns you want to keep). Pass an empty array to clear the template schema, which makes the table inherit the agent's own output schema instead. " +
+      "Each column is `{ key, label, type, description? }`. `key` — lower_snake_case, unique, and the field name the agent is expected to emit. `label` — the human column header. `type` — one of: string | number | integer | boolean. `description` — optional prose telling the extraction agent what belongs in this column; this is the field worth writing carefully. " +
+      "Columns you add are recorded as agent-source columns. " +
+      "Refused unless the template EDITOR is open (`extraction_template_editor.editing` is true), and refused while an extraction run is in flight on this document.",
+    valueType: "array",
+    updatesValue: "extraction_output_columns",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "pdf_extraction_template",
+    sortOrder: 720,
+  },
 ];
 
 export const pdfExtractorManifest: SurfaceManifest = {
@@ -369,6 +558,7 @@ Reader state (\`current_page\`, \`visible_panes\`, \`find_query\`) tells you wha
 user is actually looking at right now.
 </surface_intro>`,
   groups,
+  writeTargets,
   evidenceSources: [
     {
       kind: "processed_document",
@@ -513,6 +703,28 @@ export function createPdfExtractorScope(values: {
   library_document_names?: string[];
   pipeline_running?: boolean;
   pipeline_status?: string;
+  extraction_template_editor: {
+    editing: boolean;
+    selected_template_id: string | null;
+    run_in_flight: boolean;
+  };
+  extraction_template_draft: {
+    template_name: string;
+    page_range: string;
+    page_count: number;
+    chunk_size: number | null;
+    chunk_overlap: number;
+    chunking_strategy: string;
+    kind: string;
+    agent_id: string | null;
+  };
+  extraction_output_columns: Array<{
+    key: string;
+    label: string;
+    type: string;
+    description?: string;
+    source: string;
+  }>;
   text_before?: string;
   text_after?: string;
   context?: Record<string, unknown>;

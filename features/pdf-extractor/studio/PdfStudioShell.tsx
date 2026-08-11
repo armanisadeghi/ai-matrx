@@ -76,9 +76,24 @@ import {
 } from "../state/selectors";
 import { selectRunProgress } from "@/features/page-extraction/redux/selectors";
 import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
+import {
+  selectDraftForFile,
+  selectIsEditingForFile,
+  selectIsRunInFlightForFile,
+  selectSelectedJobForFile,
+} from "@/features/page-extraction/redux/selectors";
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { buildPdfExtractorScope } from "@/features/pdf-extractor/lib/pdf-extractor-scope";
+import {
+  buildPdfExtractorScope,
+  type ExtractionOutputColumnValue,
+} from "@/features/pdf-extractor/lib/pdf-extractor-scope";
+import { parseTemplateColumns } from "@/features/page-extraction/utils/columns";
+import {
+  PDF_EXTRACTOR_WRITE_TARGETS,
+  pdfExtractorManifest,
+} from "@/features/surfaces/manifests/pdf-extractor.manifest";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 interface PdfStudioShellProps {
   initialDocumentId?: string;
@@ -149,6 +164,26 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const activeSourceAvailable =
     activeSourceStatus === "ready" &&
     activeSourceFile?.fileId === activeSourceFileId;
+  /**
+   * The `cld_file` the Content extractors panel keys its template draft on —
+   * the same id `PdfStudioInspector` passes to `ChunkingConfigForm`. Null
+   * when this document has no file source, in which case the panel renders
+   * its "needs a cld_file source" notice and there is no draft to read.
+   */
+  const chunkedFileId = activeSourceAvailable ? activeSourceFileId : null;
+  const templateDraft = useAppSelector((st) =>
+    selectDraftForFile(st, chunkedFileId),
+  );
+  const templateEditing = useAppSelector((st) =>
+    selectIsEditingForFile(st, chunkedFileId),
+  );
+  const templateSelectedJobId = useAppSelector((st) =>
+    selectSelectedJobForFile(st, chunkedFileId),
+  );
+  const templateRunInFlight = useAppSelector((st) =>
+    selectIsRunInFlightForFile(st, chunkedFileId),
+  );
+
   const { renameDocById: renameDocByIdHook, handleRenameActiveDoc } =
     useStudioDocRename({
       docs: docsState.docs,
@@ -654,6 +689,59 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [activePage, jumpToPage, togglePane, findOpen]);
 
+  /**
+   * Read twins of this surface's extraction-template write targets. Read at
+   * TRIGGER time from the same Redux draft the Content extractors panel
+   * renders, so an agent sees the template exactly as the user left it.
+   */
+  const extractionTemplateValues = () => ({
+    extraction_template_editor: {
+      editing: templateEditing,
+      selected_template_id: templateSelectedJobId,
+      run_in_flight: templateRunInFlight,
+    },
+    extraction_template_draft: {
+      template_name: templateDraft.jobName,
+      page_range: templateDraft.scopePagesInputRaw,
+      page_count: templateDraft.scopePages.length,
+      chunk_size: templateDraft.chunkSize,
+      chunk_overlap: templateDraft.chunkOverlap,
+      chunking_strategy: templateDraft.chunkingStrategy,
+      kind: templateDraft.kind,
+      agent_id: templateDraft.agentId,
+    },
+    extraction_output_columns: (parseTemplateColumns(
+      templateDraft.outputSchema,
+    ) ?? []) as ExtractionOutputColumnValue[],
+  });
+
+  /**
+   * BASE write handlers for this surface — the "the editor is not on screen"
+   * layer.
+   *
+   * `resolveHandlers` in `surface-writeback.ts` merges the provider's own
+   * handlers UNDER any a descendant registered by name, so whenever the
+   * Content extractors panel is mounted, `ChunkingConfigForm`'s live
+   * handlers override every entry here. These only ever run when that panel
+   * is NOT mounted — the inspector is closed, or it is on the Widgets /
+   * Analysis section — and their whole job is to say so instead of letting
+   * the seam report a generic "declared target with no live handler".
+   */
+  const getPdfExtractorWriteHandlers = (): SurfaceWriteHandlers => {
+    const refuse = () => {
+      throw new Error(
+        "The extraction template editor is not on screen. Open the right " +
+          "inspector, choose the Chunked tab, and click New or Edit on a " +
+          "template first — otherwise there is nothing to stage into.",
+      );
+    };
+    const handlers: SurfaceWriteHandlers = {};
+    for (const name of Object.values(PDF_EXTRACTOR_WRITE_TARGETS)) {
+      handlers[name] = refuse;
+    }
+    return handlers;
+  };
+
   // Header Agents chrome — live scope for `matrx-user/pdf-extractor`. Mirrors the
   // Widgets tab defaults (full doc as active scope; current page always filled).
   const getPdfExtractorScope = () => {
@@ -675,6 +763,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         library_document_names: docsState.docs.map((d) => d.name),
         pipeline_running: pipelineRunning || aiCleanRunning,
         pipeline_status: liveStatus ?? "",
+        ...extractionTemplateValues(),
       });
     }
     const fullText = activeDoc.cleanContent ?? activeDoc.content ?? "";
@@ -730,13 +819,15 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         aiCleanRunning ||
         extractionRunProgress.status === "running",
       pipeline_status: activeProcessingStatus ?? liveStatus ?? "",
+      ...extractionTemplateValues(),
     });
   };
 
   return (
     <SurfaceRuntimeProvider
-      surfaceName="matrx-user/pdf-extractor"
+      surfaceName={pdfExtractorManifest.surfaceName}
       getScope={getPdfExtractorScope}
+      getWriteHandlers={getPdfExtractorWriteHandlers}
       isEditable={false}
     >
       <PageHeader>

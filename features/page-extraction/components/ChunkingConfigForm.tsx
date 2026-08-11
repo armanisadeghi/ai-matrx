@@ -64,8 +64,27 @@ import {
 import {
   selectDraftForFile,
   selectIsEditingForFile,
+  selectIsRunInFlightForFile,
   selectSelectedJobForFile,
 } from "@/features/page-extraction/redux/selectors";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  PDF_EXTRACTOR_WRITE_TARGETS,
+  pdfExtractorManifest,
+} from "@/features/surfaces/manifests/pdf-extractor.manifest";
+import {
+  COLUMN_TYPES,
+  MAX_CHUNK_SIZE,
+  MIN_CHUNK_SIZE,
+} from "@/features/page-extraction/constants";
+import {
+  buildTemplateSchema,
+  parseTemplateColumns,
+} from "@/features/page-extraction/utils/columns";
+import type {
+  ColumnType,
+  ExtractionColumn,
+} from "@/features/page-extraction/types";
 import { useChunkPreview } from "@/features/page-extraction/hooks/useChunkPreview";
 import { useExtractionRunLauncher } from "@/features/page-extraction/hooks/useExtractionRunLauncher";
 import {
@@ -93,6 +112,7 @@ import type {
   PageExtractionJob,
   SourceVariationKind,
 } from "@/features/page-extraction/types";
+import type { ChunkingConfigDraft } from "@/features/page-extraction/redux/pageExtractionSlice";
 import { normalizeExtraInputs } from "@/features/page-extraction/utils/extra-inputs";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
@@ -100,12 +120,22 @@ export interface ChunkingConfigFormProps {
   fileId: string;
   processedDocumentId: string | null;
   documentName: string;
+  /**
+   * Page numbers that actually exist in this processed document, from the
+   * studio's already-loaded page rows. Used only to bound an
+   * AGENT-originated page range (see the write handlers below) — the user's
+   * own typing is bounded by `useChunkPreview`'s `availablePages` inside
+   * `TemplateEditor`. Passed in rather than re-fetched so registering write
+   * handlers costs the panel nothing.
+   */
+  availablePageNumbers?: number[];
 }
 
 export function ChunkingConfigForm({
   fileId,
   processedDocumentId,
   documentName,
+  availablePageNumbers,
 }: ChunkingConfigFormProps) {
   const dispatch = useAppDispatch();
   const toast = useToastManager("page-extraction");
@@ -165,6 +195,303 @@ export function ChunkingConfigForm({
 
   const draft = useAppSelector((s) => selectDraftForFile(s, fileId));
   const userId = useAppSelector(selectUserId);
+
+  // ── Surface write targets (`matrx-user/pdf-extractor`) ────────────────
+  //
+  // The live implementation of the two extraction-template write targets
+  // declared on `pdfExtractorManifest`. Registered from here — not from the
+  // provider in `PdfStudioShell` — because THIS component owns the panel
+  // those targets stage into; the shell's own `getWriteHandlers` is the base
+  // layer that refuses when this panel is not mounted at all, and
+  // `resolveHandlers` in `surface-writeback.ts` merges these OVER it.
+  //
+  // Every handler is validate-then-apply: nothing is dispatched until the
+  // whole value has passed, so a partially-good object never half-lands. A
+  // throw here is converted by the writeback seam into an error envelope the
+  // agent reads verbatim — which is why the messages name the legal shape
+  // rather than just saying "invalid".
+  const runInFlight = useAppSelector((s) =>
+    selectIsRunInFlightForFile(s, fileId),
+  );
+
+  /**
+   * The gate every extraction-template write passes first.
+   *
+   * The panel has three modes (LIST-ONLY / READ-ONLY / EDITING — see this
+   * file's header) and only EDITING renders the inputs these targets write.
+   * Staging into a draft the user cannot see is the failure `quick-note-save`
+   * established the precedent against, so this refuses LOUDLY instead.
+   */
+  const assertTemplateEditorWritable = useCallback(() => {
+    if (runInFlight) {
+      throw new Error(
+        "An extraction run is in flight on this document. Wait for it to " +
+          "finish before changing the template — the chunks being produced " +
+          "right now were built from the current config.",
+      );
+    }
+    if (!isEditing) {
+      throw new Error(
+        "The extraction template editor is not open. The Content extractors " +
+          "panel is showing " +
+          (selectedJobId
+            ? "a saved template read-only; the user has to click Edit first."
+            : "the saved-template list; the user has to click New or Edit " +
+              "first.") +
+          " Nothing can be staged until the editor inputs are on screen " +
+          "(read `extraction_template_editor.editing`).",
+      );
+    }
+  }, [runInFlight, isEditing, selectedJobId]);
+
+  useSurfaceWriteHandlers(pdfExtractorManifest.surfaceName, {
+    [PDF_EXTRACTOR_WRITE_TARGETS.templateDraft]: (value: unknown) => {
+      assertTemplateEditorWritable();
+      if (
+        typeof value !== "object" ||
+        value === null ||
+        Array.isArray(value)
+      ) {
+        throw new Error(
+          "extraction_template_draft takes an object with at least one of " +
+            "{ template_name, page_range, chunk_size, chunk_overlap }.",
+        );
+      }
+      const input = value as Record<string, unknown>;
+      const known = [
+        "template_name",
+        "page_range",
+        "chunk_size",
+        "chunk_overlap",
+      ];
+      const unknownKeys = Object.keys(input).filter(
+        (k) => !known.includes(k),
+      );
+      if (unknownKeys.length > 0) {
+        throw new Error(
+          `extraction_template_draft does not accept ${unknownKeys.join(", ")}. ` +
+            `Accepted keys: ${known.join(", ")}.`,
+        );
+      }
+      if (Object.keys(input).length === 0) {
+        throw new Error(
+          "extraction_template_draft needs at least one of " +
+            `${known.join(", ")} — an empty object changes nothing.`,
+        );
+      }
+
+      // Build the whole patch before dispatching anything.
+      const patch: Partial<ChunkingConfigDraft> = {};
+
+      if ("template_name" in input) {
+        const name = input.template_name;
+        if (typeof name !== "string" || name.trim() === "") {
+          throw new Error(
+            "template_name must be a non-empty string — it is what this " +
+              "reusable template is called.",
+          );
+        }
+        patch.jobName = name.trim();
+      }
+
+      if ("page_range" in input) {
+        const raw = input.page_range;
+        if (typeof raw !== "string" || raw.trim() === "") {
+          throw new Error(
+            'page_range must be a non-empty page-range string such as "1-50, 80-90".',
+          );
+        }
+        // parsePageRangeInput is the SAME parser the Pages input uses; it
+        // throws on a malformed token, which is the error the agent should
+        // see rather than a silently-dropped page.
+        const parsed = parsePageRangeInput(raw);
+        if (parsed.length === 0) {
+          throw new Error(`page_range "${raw}" names no pages.`);
+        }
+        const available = availablePageNumbers ?? [];
+        if (available.length > 0) {
+          const valid = new Set(available);
+          const missing = parsed.filter((n) => !valid.has(n));
+          if (missing.length > 0) {
+            const maxPage = available[available.length - 1];
+            throw new Error(
+              `page_range "${raw}" names ${missing.length} page(s) that do not ` +
+                `exist in this document (first: ${missing[0]}). This document ` +
+                `has ${available.length} page(s), up to page ${maxPage}.`,
+            );
+          }
+        }
+        patch.scopePagesInputRaw = raw.trim();
+        patch.scopePages = parsed;
+      }
+
+      // chunk_size and chunk_overlap are coupled (overlap must be less than
+      // size), so resolve both against the values that will be live AFTER
+      // this patch — not against whichever one happens to be in the draft.
+      let effectiveChunkSize = draft.chunkSize;
+      if ("chunk_size" in input) {
+        const size = input.chunk_size;
+        if (
+          typeof size !== "number" ||
+          !Number.isInteger(size) ||
+          size < MIN_CHUNK_SIZE ||
+          size > MAX_CHUNK_SIZE
+        ) {
+          throw new Error(
+            `chunk_size must be a whole number from ${MIN_CHUNK_SIZE} to ` +
+              `${MAX_CHUNK_SIZE} (pages per agent call). Received: ` +
+              `${JSON.stringify(size)}.`,
+          );
+        }
+        patch.chunkSize = size;
+        effectiveChunkSize = size;
+      }
+
+      if ("chunk_overlap" in input) {
+        const overlap = input.chunk_overlap;
+        if (
+          typeof overlap !== "number" ||
+          !Number.isInteger(overlap) ||
+          overlap < 0
+        ) {
+          throw new Error(
+            "chunk_overlap must be a whole number of pages, 0 or greater. " +
+              `Received: ${JSON.stringify(overlap)}.`,
+          );
+        }
+        if (effectiveChunkSize == null) {
+          throw new Error(
+            "chunk_overlap cannot be set before chunk_size — send both in " +
+              "the same object, or set chunk_size first.",
+          );
+        }
+        if (overlap > effectiveChunkSize - 1) {
+          throw new Error(
+            `chunk_overlap must be less than chunk_size (${effectiveChunkSize}), ` +
+              `so at most ${effectiveChunkSize - 1}. Received: ${overlap}.`,
+          );
+        }
+        patch.chunkOverlap = overlap;
+      } else if (
+        "chunk_size" in input &&
+        effectiveChunkSize != null &&
+        draft.chunkOverlap > effectiveChunkSize - 1
+      ) {
+        // Shrinking the size below the existing overlap would leave the
+        // draft in a state the form itself never produces (its own
+        // handler clamps). Clamp identically rather than staging an
+        // impossible pair.
+        patch.chunkOverlap = Math.max(0, effectiveChunkSize - 1);
+      }
+
+      // The SAME action the user's own typing dispatches on every keystroke.
+      dispatch(patchDraft({ fileId, patch }));
+    },
+
+    [PDF_EXTRACTOR_WRITE_TARGETS.outputColumns]: (value: unknown) => {
+      assertTemplateEditorWritable();
+      if (!Array.isArray(value)) {
+        throw new Error(
+          "extraction_output_columns takes an ARRAY of { key, label, type, " +
+            "description? } column objects. Pass [] to clear the template " +
+            "schema and inherit the agent's own output schema.",
+        );
+      }
+      if (value.length === 0) {
+        dispatch(patchDraft({ fileId, patch: { outputSchema: null } }));
+        return;
+      }
+
+      const existing = parseTemplateColumns(draft.outputSchema) ?? [];
+      const bySource = new Map(existing.map((c) => [c.key, c]));
+      const seen = new Set<string>();
+      const columns: ExtractionColumn[] = [];
+
+      value.forEach((entry, index) => {
+        if (
+          typeof entry !== "object" ||
+          entry === null ||
+          Array.isArray(entry)
+        ) {
+          throw new Error(
+            `extraction_output_columns[${index}] must be an object with ` +
+              "{ key, label, type, description? }.",
+          );
+        }
+        const col = entry as Record<string, unknown>;
+        const unknownKeys = Object.keys(col).filter(
+          (k) => !["key", "label", "type", "description"].includes(k),
+        );
+        if (unknownKeys.length > 0) {
+          throw new Error(
+            `extraction_output_columns[${index}] does not accept ` +
+              `${unknownKeys.join(", ")}. Accepted keys: key, label, type, description.`,
+          );
+        }
+        const key = col.key;
+        if (typeof key !== "string" || !/^[a-z][a-z0-9_]*$/.test(key)) {
+          throw new Error(
+            `extraction_output_columns[${index}].key must be lower_snake_case ` +
+              `starting with a letter (it is the field name the agent emits). ` +
+              `Received: ${JSON.stringify(key)}.`,
+          );
+        }
+        if (seen.has(key)) {
+          throw new Error(
+            `extraction_output_columns has two columns with key "${key}" — ` +
+              "keys must be unique.",
+          );
+        }
+        seen.add(key);
+        const label = col.label;
+        if (typeof label !== "string" || label.trim() === "") {
+          throw new Error(
+            `extraction_output_columns[${index}].label must be a non-empty ` +
+              "string (the column header the user reads).",
+          );
+        }
+        const type = col.type;
+        if (
+          typeof type !== "string" ||
+          !(COLUMN_TYPES as string[]).includes(type)
+        ) {
+          throw new Error(
+            `extraction_output_columns[${index}].type must be one of ` +
+              `${COLUMN_TYPES.join(" | ")}. Received: ${JSON.stringify(type)}.`,
+          );
+        }
+        if (
+          col.description !== undefined &&
+          typeof col.description !== "string"
+        ) {
+          throw new Error(
+            `extraction_output_columns[${index}].description must be a string ` +
+              "when present — it tells the extraction agent what belongs in " +
+              "this column.",
+          );
+        }
+        // Keep a column the user already declared under a non-agent source
+        // (validation / manual / system) on that source; the agent is
+        // describing the table, not reclassifying who fills it.
+        const prior = bySource.get(key);
+        columns.push({
+          key,
+          label: label.trim(),
+          type: type as ColumnType,
+          ...(typeof col.description === "string" && col.description.trim()
+            ? { description: col.description.trim() }
+            : {}),
+          source: prior?.source ?? "agent",
+          agentField: prior?.agentField ?? key,
+        });
+      });
+
+      dispatch(
+        patchDraft({ fileId, patch: { outputSchema: buildTemplateSchema(columns) } }),
+      );
+    },
+  });
+
 
   // Run handler — shared by the readonly view's Run button and any
   // future "save & run" flow.

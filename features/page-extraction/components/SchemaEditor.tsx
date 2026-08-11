@@ -30,6 +30,7 @@ import {
   parseTemplateColumns,
 } from "@/features/page-extraction/utils/columns";
 import { cn } from "@/lib/utils";
+import { COLUMN_TYPES } from "@/features/page-extraction/constants";
 import type {
   ColumnSource,
   ColumnType,
@@ -37,7 +38,7 @@ import type {
 } from "@/features/page-extraction/types";
 
 const SOURCES: ColumnSource[] = ["agent", "validation", "manual", "system"];
-const TYPES: ColumnType[] = ["string", "number", "integer", "boolean"];
+const TYPES: ColumnType[] = COLUMN_TYPES;
 
 export interface SchemaEditorProps {
   /** The draft's current outputSchema (any shape). */

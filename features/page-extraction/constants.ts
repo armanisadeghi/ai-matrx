@@ -6,6 +6,7 @@
 
 import type {
   ChunkingStrategy,
+  ColumnType,
   SourceVariationKind,
 } from "@/features/page-extraction/types";
 
@@ -38,6 +39,21 @@ export const PAGE_MARKER = (pageNumber: number) => `--- Page ${pageNumber} ---`;
 /** Realtime channel name per file. */
 export const realtimeChannelName = (fileId: string) =>
   `page-extraction:${fileId}`;
+
+// ─── Output columns (vocabulary) ──────────────────────────────────────────
+
+/**
+ * The column types a template's output table can declare — the RUNTIME
+ * vocabulary behind the `ColumnType` union. The `SchemaEditor` dropdown and
+ * the surface write handler that lets an agent stage output columns both read
+ * this, so neither can drift from the type by re-typing literals.
+ */
+export const COLUMN_TYPES: ColumnType[] = [
+  "string",
+  "number",
+  "integer",
+  "boolean",
+];
 
 // ─── Source variations (UI registry) ──────────────────────────────────────
 

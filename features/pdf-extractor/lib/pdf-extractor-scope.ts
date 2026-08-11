@@ -42,7 +42,61 @@ export interface PdfExtractorScopeInput {
   library_document_names?: string[];
   pipeline_running?: boolean;
   pipeline_status?: string;
+  /**
+   * The Content-extractor template the user is composing, when the emitter
+   * can see it. Only the studio shell can (the panel lives inside it);
+   * the inspector's own emitter and the standalone workspace pass nothing
+   * and get the "no editor on screen" shape below, which is the honest
+   * reading of `alwaysAvailable: true` for these values — always emitted,
+   * defaulting to not-editing.
+   */
+  extraction_template_editor?: ExtractionTemplateEditorValue;
+  extraction_template_draft?: ExtractionTemplateDraftValue;
+  extraction_output_columns?: ExtractionOutputColumnValue[];
 }
+
+export interface ExtractionTemplateEditorValue {
+  editing: boolean;
+  selected_template_id: string | null;
+  run_in_flight: boolean;
+}
+
+export interface ExtractionTemplateDraftValue {
+  template_name: string;
+  page_range: string;
+  page_count: number;
+  chunk_size: number | null;
+  chunk_overlap: number;
+  chunking_strategy: string;
+  kind: string;
+  agent_id: string | null;
+}
+
+export interface ExtractionOutputColumnValue {
+  key: string;
+  label: string;
+  type: string;
+  description?: string;
+  source: string;
+}
+
+/** The shape emitted when no template editor is on screen. */
+const NO_TEMPLATE_EDITOR: ExtractionTemplateEditorValue = {
+  editing: false,
+  selected_template_id: null,
+  run_in_flight: false,
+};
+
+const NO_TEMPLATE_DRAFT: ExtractionTemplateDraftValue = {
+  template_name: "",
+  page_range: "",
+  page_count: 0,
+  chunk_size: null,
+  chunk_overlap: 0,
+  chunking_strategy: "pages",
+  kind: "extraction",
+  agent_id: null,
+};
 
 /**
  * Derive the composites + legacy aliases and return the manifest-typed
@@ -53,6 +107,11 @@ export function buildPdfExtractorScope(
 ): SurfaceScopePayload {
   return createPdfExtractorScope({
     ...input,
+    extraction_template_editor:
+      input.extraction_template_editor ?? NO_TEMPLATE_EDITOR,
+    extraction_template_draft:
+      input.extraction_template_draft ?? NO_TEMPLATE_DRAFT,
+    extraction_output_columns: input.extraction_output_columns ?? [],
     document_summary: {
       filename: input.filename,
       file_id: input.file_id,
