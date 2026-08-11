@@ -170,8 +170,10 @@ plan CRUD through it.
    Keyword (Bound/Missing), Pillar, Cluster, Depth, Reviewer
    (default-hidden), Updated — every column sorts AND filters; finite
    columns get real option lists with counts (status options in pipeline
-   order). Full-row click opens the node in the SAME NodePanel right sheet
-   the map uses (built-in inspector/window off — one detail surface).
+   order). Full-row click opens the canonical `NodePanel` in the table-owned
+   `WindowPanel`; the trailing panel action and the window header switch the
+   same editor into the canonical adjustable `SidePanelSurface`. No blocking
+   `Sheet` remains in this path.
    Style persists via `useListViewPrefs("content-plan-nodes")` (sort,
    direction, page size, hidden columns via the toolbar Columns picker;
    bump its `version` when columns change); search/filters/page never
@@ -231,6 +233,12 @@ plan CRUD through it.
    destructive confirm since this is the rung that changes the LIVE site;
    per-page results + `remaining_candidates` shown verbatim, and linked plan
    nodes advance to `published`).
+   CMS reads obey the same prerequisite: plan-bearing views first resolve the
+   recorded `settings.cms` choice (then the existing domain match) through
+   `useCmsLink`; only a concrete CMS id enables `useCmsPageMap`, and that id is
+   sent as `cms_site`. A genuinely unlinked plan therefore makes no doomed
+   `/cms-pages` request, while a half-linked plan uses the choice it already
+   has instead of raising `content_plan_cms_unpaired`.
 4. **Entities** (`EntityManager.tsx`): `plan.entity` CRUD per site.
 5. **Agent writes** land directly in the DB (chat tools today, aidream
    generator later) and appear on refetch — the header Refresh invalidates
@@ -423,6 +431,22 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
 
 ## Change log
 
+- 2026-08-11 — Codex: **Content-plan rows are window-first and never block the
+  table.** The table now opens the complete `NodePanel` in its draggable,
+  resizable `WindowPanel` on full-row click. The secondary panel door uses the
+  canonical `SidePanelSurface` / `MatrxDynamicPanelHost`, and map/mobile-tree
+  detail was migrated off the old blocking `Sheet`. Hosted editors keep their
+  action toolbar below the host title/close chrome, so Delete and Close cannot
+  overlap.
+- 2026-08-11 — Codex: **A missing CMS pairing is no longer a red background
+  error.** The plan workspace used to call `GET /cms-pages` for every site and
+  only reinterpret `content_plan_cms_unpaired` as normal *after* the shared API
+  layer had captured the HTTP 400 in Error Inspector. Plan-bearing views now
+  resolve the existing `settings.cms` choice/domain match first, pass the
+  concrete `cms_site` to the page-map read, and skip the read entirely when no
+  CMS site exists. Setup remains the explicit create-or-link door; simply
+  planning content does not force a CMS decision. Resolver regression tests
+  cover recorded id, recorded slug, domain adoption, and truly unlinked state.
 - 2026-08-11 — Codex: **Tree collapse now respects the site root.** Home is a
   permanent, non-collapsible first row; Collapse all and the depth presets
   keep it open, so the fully collapsed view shows every first-tier page.
