@@ -393,7 +393,9 @@ export function SmartCodeEditor({
 
   // Same reason: the agent state machine gates every write, so it is read live.
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   /**
    * The ONE edit path these handlers may use.
