@@ -418,6 +418,41 @@ export interface MatrxDataTableEditConfig<T> {
   onCancel?: () => void;
 }
 
+/**
+ * Multi-row selection — a leading checkbox column plus a bulk bar that appears
+ * only while rows are checked.
+ *
+ * OPT-IN and fully CONTROLLED: the consumer owns the id set, so selection
+ * survives (or is deliberately cleared by) a re-fetch, a filter change, or an
+ * optimistic list update — the table never holds hidden selection state that
+ * can disagree with the surface around it.
+ *
+ * Why this is a primitive and not a per-surface checkbox column: a register
+ * the user cannot clear in bulk is a register they stop reading, and the fifth
+ * hand-rolled selection column — each with its own shift-click, its own
+ * select-all semantics, its own bar — is exactly the fork `components/official/`
+ * exists to prevent.
+ *
+ * Selection turns OFF the mobile frozen-identity-column treatment: two sticky
+ * leading cells would overlap, and a frozen checkbox identifies nothing.
+ * Horizontal scrolling is unchanged.
+ */
+export interface MatrxDataTableSelectionConfig<T> {
+  /** Selected row ids (`getRowId`). Ids not on the current page are kept. */
+  selectedIds: string[];
+  onSelectedIdsChange: (ids: string[]) => void;
+  /**
+   * The bulk bar's actions, given the currently-selected rows THAT ARE LOADED.
+   * Selection can outlive a page change, so also take `selectedIds` when an
+   * action only needs ids.
+   */
+  actions?: (selected: T[], selectedIds: string[]) => ReactNode;
+  /** Rows that cannot be acted on in bulk render a disabled checkbox. */
+  isRowSelectable?: (row: T) => boolean;
+  /** Singular noun for the bar's count ("finding" → "3 findings selected"). */
+  noun?: string;
+}
+
 export interface MatrxDataTableProps<T> {
   data: T[];
   columns: MatrxColumnDef<T>[];
@@ -447,6 +482,10 @@ export interface MatrxDataTableProps<T> {
   /** Controlled selection (selected row id for highlight). */
   selectedId?: string | null;
   onSelectedIdChange?: (id: string | null) => void;
+
+  /** Opt-in multi-row checkbox selection + a bulk action bar. */
+  selection?: MatrxDataTableSelectionConfig<T>;
+
 
   /** Extra row actions rendered in a trailing Actions column. */
   rowActions?: (row: T, controls: MatrxDataTableRecordControls) => ReactNode;
