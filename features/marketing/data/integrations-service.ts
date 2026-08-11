@@ -1,4 +1,7 @@
-import { SITE_COLUMNS } from "@/features/marketing/data/service";
+import {
+  assertFoundOrProbeDeleted,
+  SITE_COLUMNS,
+} from "@/features/marketing/data/service";
 import {
   buildSiteIntegrationsWithProviderChange,
   type BuiltInProviderKey,
@@ -43,9 +46,7 @@ export async function updateSiteIntegrations(
     .eq("id", input.siteId)
     .eq("version", input.expectedVersion)
     .is("deleted_at", null)
-    .select(
-      SITE_COLUMNS,
-    )
+    .select(SITE_COLUMNS)
     .maybeSingle();
 
   if (response.error) throw new Error(response.error.message);
@@ -56,19 +57,24 @@ export async function updateSiteIntegrations(
 }
 
 async function getCurrentSite(siteId: string): Promise<MarketingSite> {
-  const response = await (
-    await authenticatedWebDb(createClient())
-  )
+  const db = await authenticatedWebDb(createClient());
+  const response = await db
     .from("site")
     .select(SITE_COLUMNS)
     .eq("id", siteId)
     .is("deleted_at", null)
     .maybeSingle();
-  if (response.error) throw new Error(response.error.message);
-  if (!response.data) {
-    throw new Error("This site was deleted or is no longer accessible.");
-  }
-  return response.data;
+  // Zero rows here is deleted OR out of this reader's reach OR a stale id.
+  // Claiming deletion for all three is D133; the probe re-asks the SAME
+  // RLS-filtered read without the `deleted_at` filter, so a row that comes
+  // back carrying `deleted_at` proves it and nothing else is asserted.
+  return assertFoundOrProbeDeleted(
+    response.data,
+    response.error,
+    "site",
+    siteId,
+    () => db.from("site").select("deleted_at").eq("id", siteId).maybeSingle(),
+  );
 }
 
 /**
