@@ -53,111 +53,66 @@ becomes public until the user chooses to share); or publish those specific asset
 token-scoped minting to the share lane (most correct, most work). Detection is live and
 repeatable: `pnpm check:media-durability` (`scripts/media-durability/FEATURE.md`).
 
-### D155 — Google's grounded stream DROPS a span of the answer (proven at the SSE chunk level) (2026-08-11)
+### D155 — Google's grounded stream DROPS a span of the answer (confirmed by Google's own forum) (2026-08-11)
 
-**Not ours, and not our schema. Proven on the wire.** When Google Search
-grounding is on, the SSE stream has a HOLE: consecutive chunks arrive
-individually well-formed but with a contiguous span missing between them, so
-the concatenation is unparseable JSON.
+**Not ours, not our schema, and independently reported.** Google's AI Developers
+Forum carries this exact bug: *"Google_search grounding drops the beginning of
+the response text (Gemini 3.5/3.6 Flash) — JSON output starts mid-sentence"*
+(https://discuss.ai.google.dev/t/176967). Their reproduction matches ours almost
+cell for cell: 3.6-flash 4/5, 3.5-flash 1/3, **2.5-flash 0/5**, `finishReason`
+STOP not MAX_TOKENS, worse on citation-heavy topics, and the truncation lands on
+grounding-citation boundaries — "the first grounded text segment(s) were dropped
+from parts during response assembly."
 
-The decisive artifact — raw `streamGenerateContent?alt=sse` over httpx, no
-google.genai SDK, no matrx-ai, no aidream:
+Our own wire capture (raw SSE, no google.genai SDK, no matrx-ai, no aidream):
 
 ```
 chunk #10 = '.",\n      "key_points":'
 chunk #11 = '",\n        "Staging daily fiber increases gradually to avoid gut distress'
 ```
 
-`[` plus the entire first array element never arrived. Same at
-non-streaming: the corruption sits INSIDE a single `parts[0].text` on the raw
-HTTP body (`answer_parts=1`, `total_parts=1`). Nothing downstream can be
-responsible.
+`[` plus the entire first array element never arrived.
 
-**Isolation matrix (raw HTTP, gemini-3.6-flash unless noted):**
-
-| cell | corrupt |
+| cell (raw HTTP) | corrupt |
 |---|---|
 | `$ref` schema + Search | 6/16 |
-| INLINED schema + Search (no `$defs`/`$ref`) | 4/16 |
+| INLINED schema + Search | 4/16 |
 | **NO schema at all** + Search | 6/16 |
-| `$ref` schema, **no tools** | **0/16** (and 0/8 earlier) |
-| streaming + Search | 2/16 |
-| streaming + Search + urlContext | 2/16 |
+| `$ref` schema, **no tools** | **0/16** |
+| streaming + Search (± urlContext) | 2/16 |
 | gemini-3.5-flash + Search | 5/16 |
 | gemini-pro-latest + Search | 1/12 |
-| one high-load round, streaming + Search + urlContext | **7/12** |
+| one high-load round | 7/12 |
 
-Reading: **grounding is necessary and sufficient.** Schema shape is NOT the
-cause (no-schema corrupts at the same rate — and that is the config the
-original incident ran under, since `output_schema` was NULL then). Model choice
-is not a fix (all three affected). Rate is highly variable, 8%–58%.
+Grounding is necessary and sufficient. Schema shape is NOT the cause (no-schema
+corrupts identically — and that is the config the original incident ran under).
 
-**TWO EARLIER CLAIMS OF MINE WERE WRONG — corrected here.** (1) "urlContext
-tripled the rate (3/6 vs 1/6)" was small-sample noise; at N=16 streaming it is
-2/16 either way, so **turning urlContext off is NOT a mitigation** and that
-advice is withdrawn. (2) My "reproduced against the raw SDK" evidence compared
-`r.text` to the joined parts only on a CLEAN run, so it never actually
-distinguished Google from a join artifact. It does now.
+**THERE IS NOTHING TO RECONCILE AGAINST — tested, not assumed.** The hypothesis
+that Google sends the full text at the end and we fail to use it is FALSE. On a
+corrupt streamed run: 55 SSE events, 55 text deltas, longest single delta 338
+chars against a 5,775-char total. Part keys are only `text` and
+`thoughtSignature`; candidate keys only `content`, `finishReason`,
+`groundingMetadata`, `index`. No cumulative payload, no final full-text event,
+and the forum thread likewise reports no recovery path. Non-streaming corrupts
+too, inside a single `parts[0].text`. So "validate the accumulated stream
+against the final message" cannot work — there is no final message.
 
-**No aidream bug found.** Our stack faithfully carries the corruption it is
-given; the incident's signature matches raw Google output exactly.
+**Repair is also wrong:** the hole swallows real content (a whole bullet or
+idea), so repairing returns an answer silently missing data.
 
-**Why the user sees nothing:** `extractFirstJson` cannot recover it (verified
-against the real incident text), so `run-headless-agent-json` settles `noJson`
-and `KindRequestDialog` shows reasoning and no result — while the partial
-answer sits in `chat.message.content`. Incident: `chat.request
+**THE FIX IS NOT A RETRY — it is to stop asking one call to ground AND
+structure.** Retry was the wrong first instinct (mine): at 8–58% a retry still
+fails often, and it re-spends a grounded call. The Google support responder's
+workaround is the real answer, and our own no-tools cell proves it is
+deterministic: **two calls — call 1 grounds and gathers, call 2 structures the
+gathered context with NO search tools (0/16 corrupt).** Costs one extra cheap
+ungrounded call and removes the failure class instead of gambling against it.
+Also worth testing: the forum reports 2.5-flash unaffected (0/5).
+
+**Why the user sees nothing today:** `extractFirstJson` cannot recover it, so
+`run-headless-agent-json` settles `noJson` and `KindRequestDialog` shows
+reasoning and no result. Incident: `chat.request
 c665e986-a1ca-4796-a61e-89204caad0b7`, message `21c2d9cc-…`.
-
-**Repair is the WRONG response — retry is the right one.** The hole swallows
-real content (a whole bullet or idea), so any "JSON repair" silently returns an
-answer with data missing and no signal that it happened. Retry works because
-the failure is random. **Trigger: a run with a declared `output_schema` whose
-answer text fails to parse** — a hard, checkable signal. NOT "empty answer",
-which would never have fired here because there WAS text. Open decision for
-Arman: a retry repeats a paid grounded call, so it needs a visible receipt.
-
-### D157 — We emit `const` for `__kind`; Gemini ignores it. Use a single-value `enum` (2026-08-11)
-
-`makeKindJsonSchemaProperty` (features/content-ir/convert/openai-schema-converter.ts)
-emits `const: <slug>` in strict mode and `enum: [<slug>]` otherwise. The binder
-always exports strict, so every kind-bound agent gets the `const` form.
-
-**Measured live, gemini-3.6-flash, 12 runs per cell, same kind:**
-
-| discriminator | emitted the correct `__kind` |
-|---|---|
-| `const: "topic_ideas"` | **1/12** |
-| `const` + Search grounding | **0/12** |
-| `enum: ["topic_ideas"]` | **12/12** |
-
-With `const` the model invents a value (`PodcastTopicIdeas`,
-`podcast_ideas_response`, `TopicIdeasResult`, `RenterFinanceIdeas`, …). That is
-worse than emitting no discriminator: `useKindRequest.readKind` prefers the
-model's `__kind` over the caller's `expectedKind`, so an invented value routes
-to a kind that does not exist and renders through the generic viewer.
-
-**The fix is one line** — always return `enum: [kindSlug]`; the two are
-identical in JSON Schema and OpenAI strict accepts a single-value `enum`, so
-nothing is lost for providers that DID honour `const`. `strict` keeps governing
-`additionalProperties:false` and the required list.
-
-**The blast radius is why it is not committed yet.** Changing the emitter
-changes `emitted_block_schema` and therefore `emitted_fingerprint`: 59 live
-`kind_definition` rows carry a `const` `__kind`, and 4 tests go red — 2 are
-plain expectation updates, 2 pin fingerprint constants applied by migrations
-(`kind_task_list_full.sql`, `kind_video_prompt_options_full.sql`), which is
-exactly the code↔DB drift guard. Doing it properly = emitter + 2 expectations +
-regenerate the 59 stored block schemas/fingerprints via `planKindMigration` +
-update the 2 migration-parity constants. Note `emitted_block_schema` has NO
-runtime reader (it is written by create-shape / the planner / the migrate
-script and never read back), so the stale rows are not a live correctness
-problem — but leaving code and DB disagreeing would defeat the guard.
-
-Currently live and affected: of 102 agents with an `output_schema`, 4 bind a
-`__kind` export, all on Gemini. Two use `enum` (Flashcard Generator ×2 — fine)
-and two use `const` (YouTube Video Transcription Analysis, Schema Markup
-Auditor) — those two are saved only by their system prompts teaching `__kind`.
-`topic_ideas` sidesteps it by binding the plain `emitted_json_schema`.
 
 ### D156 — Python-owned kinds are FIELDLESS to the frontend (140 active rows) (2026-08-11)
 
@@ -208,6 +163,34 @@ agents carry an `output_schema`; only 4 bind a `__kind`-injected block export,
 all 4 run on Gemini (where `const` is unenforced — see D155), and **all 4 teach
 `__kind` in their system prompt**, so the discriminator arrives correctly
 regardless. Nothing is misrouting today.
+
+### D157 — RESOLVED 2026-08-11 — Gemini ignores `const`; rewritten to `enum` at the Google request boundary
+
+`makeKindJsonSchemaProperty` emits `const: <slug>` for `__kind` in strict mode,
+and Gemini does not honour it. Measured live, gemini-3.6-flash, 12 runs/cell:
+`const` 1/12 correct, `const` + grounding **0/12**, `enum: [slug]` **12/12** —
+with `const` the model invents `PodcastTopicIdeas`, `podcast_ideas_response`,
+`TopicIdeasResult`. Worse than no discriminator, since `readKind` prefers the
+model's `__kind` over the caller's `expectedKind`.
+
+**Fixed in the PROVIDER TRANSLATOR, not the canonical emitter** (aidream
+`890b21303`): `rewrite_const_as_enum` in `matrx_ai/schema/rules.py`, applied in
+`providers/google/translator.py#_build_google_response_schema`. This is the
+doctrine `schema/lint.py` already states — the platform persists the richest,
+most precise schema and each provider's boundary massages it — and the
+translator had literally anticipated it ("If a Gemini quirk ever surfaces, one
+entry fixes it"). A rewrite, not a strip: stripping would drop the constraint.
+
+**Rejected approach, recorded so it is not retried:** changing the FE emitter to
+stop producing `const`. That would bake a Google workaround into the canonical
+schema for every provider, move `emitted_block_schema`/`emitted_fingerprint` on
+59 live rows, and break 2 migration-parity tests that exist as the code↔DB drift
+guard. The boundary fix needed none of that.
+
+Verified through the real seam with the exact `response_format` the binder
+writes: 12/12 correct ungrounded, 11/12 grounded (the miss is D155). 233
+existing schema/translator tests pass; pinned by
+`packages/matrx-ai/tests/test_schema_rules_const_rewrite.py`.
 
 ### D154 — React hydration mismatch (#418) reported on the marketing site shell, not reproducible (2026-08-11)
 
