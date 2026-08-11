@@ -10,6 +10,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Open
 
+- [ ] P10 | `features/tasks/hooks/useTaskManager.ts:150` | current uncommitted `TEMP-RT-DEBUG` block adds an unguarded `window as unknown as { __rtTaskTest?: unknown }` cast; remove through an honest debug-harness type or keep as open debt, never suppress | 2026-08-11
 - [ ] P4 | `.matrx/patrol-reports/light-dark-integrity-exception-review.md` | 52 files / 109 raw-token lines are proposed fixed-palette exceptions; none is approved and every proposal needs Arman's UI decision | 2026-08-11
 - [ ] P4 | `features/applet/home/app-display/ModernGlass.tsx:93-94` | proposed exception has no stable/current render path, so it cannot be approved until a Tier-C review harness exists | 2026-08-11
 - [ ] P4 | `features/applet/styles/StyledComponents.tsx:234,242,243` | proposed fixed-black labels cannot be approved because the apparent app-builder review route returns 404 in production; a Tier-C review harness is required | 2026-08-11
