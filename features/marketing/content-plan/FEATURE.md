@@ -186,6 +186,29 @@ plan CRUD through it.
    workflow/role/priority; the plan reads keyword value, never re-decides
    it), topics / secondary keywords / entity attachments
    (`NodeAssociations.tsx`).
+
+   🚨 **A KEYWORD-LESS PAGE SHOWS THE GAP ON THE PICKER, AND DRAFT BRIEF IS
+   DISABLED.** A page with no target term cannot be briefed or written — the
+   server refuses it (`content_plan_brief_no_keyword`, HTTP 409) rather than
+   spending a paid run to return a brief-shaped refusal. So the panel never
+   offers the button into that wall: the notice sits directly on `KeywordPicker`
+   (the fix), and names the other fix too (`Deepen`, which researches the page
+   and picks its term together). A keyword-less page is a NORMAL state — the
+   concept scaffold mints placeholders on purpose — so this is a gap with a
+   door, never an error.
+
+   Two rules that are easy to get wrong here:
+   * `keywordGap` reads the **saved** row, not the staged draft. The server's
+     precondition reads the saved row, so enabling the button on an unsaved pick
+     would send the user into a guaranteed 409. When a pick IS staged
+     (`keywordStaged`) the notice becomes "press Save" — the real next step.
+   * What counts as an assignment is `hasKeywordAssignment`
+     (`plan-assists-producer.ts`), the mirror of aidream's
+     `assert_brief_preconditions`: the `primary_keyword_id` FK **or**
+     `attributes.keyword_strategy` (a supporting page's role + the money routes
+     it feeds). **Change one predicate and you must change the other** — if they
+     disagree, the UI offers a fix for a gap the server does not see, or blocks
+     a page the server would happily brief.
 3. **Pillar map** (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
    behind the view switch with `ssr:false`): three user-switchable pure
    layouts (radial orbit / tidy tree / pillar columns — `pillar-map/layouts.ts`,
@@ -488,6 +511,25 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-11 — Claude: **a page with no target keyword names the gap where the
+  fix is, instead of costing a paid run to discover.** Reported live: the Brief
+  Writer spent a full run on `/blog/article-4` to return prose saying it could
+  not define a content angle because the page had no keyword. The count already
+  existed (`readiness.nodesWithoutKeyword`) but only as a passive `Stat` inside
+  the Setup wizard with nothing attached to it — a named problem with no door.
+  Three surfaces now: `produceKeywordAssists` (`plan-assists-producer.ts`) emits
+  a keyword-gap chip whose action points at **Plan keywords** or at **keyword
+  research** depending on whether the site actually HAS a library (a chip
+  pointing at an empty picker is the dead end this removes; a failed library read
+  emits NO chip rather than a wrong one) — it runs on its own gate and its own
+  latch, since a plan with no website still needs its keywords and must not
+  inherit the missing-pages CMS-pairing gate; `NodePanel` shows the gap on
+  `KeywordPicker` and disables Draft brief (see the Node panel 🚨 block for the
+  saved-vs-staged and shared-predicate rules); aidream refuses the run outright
+  (`content_plan_brief_no_keyword`, 409). The generator was NOT at fault — the
+  site with a 424-keyword library has 341/341 nodes keyworded; keyword-less
+  sites have zero `seo.site_keyword_value` rows, and the reported plan came from
+  the concept scaffold, which mints placeholders on purpose.
 - 2026-08-11 — Claude: **no bare spinner survives on a multi-second run in
   Setup's "Make it real" rungs.** Every rung except Stop (a single fast write)
   now narrates approximate stages + elapsed seconds from ONE shared module,
