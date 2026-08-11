@@ -60,6 +60,9 @@ import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWind
 import type { CmsPageMapEntry } from "../setup/bridge";
 import { KeywordPicker } from "./KeywordPicker";
 import { NodeRealityCard } from "./NodeRealityCard";
+
+/** Stable empty map — a fresh `new Map()` per render would churn the card. */
+const EMPTY_CMS_PAGES: ReadonlyMap<string, CmsPageMapEntry> = new Map();
 import { NodeAssociations } from "./NodeAssociations";
 import { AttributesEditor } from "./AttributesEditor";
 import { BriefEditor } from "./BriefEditor";
@@ -73,6 +76,7 @@ export function NodePanel({
   deepen,
   cmsPage,
   cmsSiteId,
+  cmsPagesByNodeId,
   hosted = false,
 }: {
   node: PlanNodeRow;
@@ -87,6 +91,8 @@ export function NodePanel({
   cmsPage?: CmsPageMapEntry | null;
   /** The paired CMS site id — the "Edit in CMS" link target. */
   cmsSiteId?: string | null;
+  /** Every node's CMS page — the reality card needs it to build ancestors. */
+  cmsPagesByNodeId?: ReadonlyMap<string, CmsPageMapEntry>;
   /**
    * The canonical side panel / WindowPanel already owns title and close chrome.
    * Keep only this editor's action toolbar when hosted so controls never stack
@@ -531,6 +537,7 @@ export function NodePanel({
             node={node}
             siteId={siteId}
             cmsPage={cmsPage ?? null}
+            cmsPagesByNodeId={cmsPagesByNodeId ?? EMPTY_CMS_PAGES}
             cmsSiteId={cmsSiteId ?? null}
           />
         </PanelSection>

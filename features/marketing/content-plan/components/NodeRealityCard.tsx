@@ -79,11 +79,13 @@ export function NodeRealityCard({
     node,
     siteId,
     cmsPage,
+    cmsPagesByNodeId,
     cmsSiteId,
 }: {
     node: PlanNodeRow;
     siteId: string;
     cmsPage: CmsPageMapEntry | null;
+    cmsPagesByNodeId: ReadonlyMap<string, CmsPageMapEntry>;
     cmsSiteId: string | null;
 }) {
     const { setView } = usePlanWorkspaceParams();
@@ -93,6 +95,7 @@ export function NodeRealityCard({
         nodeUpdatedAt: node.updated_at,
         cmsSiteId,
         cmsPage,
+        cmsPagesByNodeId,
     });
     const { verdict, busy } = reality;
     const elapsed = useElapsedSeconds(reality.startedAt);

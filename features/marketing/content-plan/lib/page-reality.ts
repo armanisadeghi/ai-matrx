@@ -174,6 +174,44 @@ export function judgePageReality(input: RealityInput): RealityVerdict {
 }
 
 /**
+ * The nodes that must be created, root-first, for this one page to be able to
+ * exist — its unbuilt ancestors, then itself.
+ *
+ * A deep URL is a real page tree on the CMS side, not a path string: realizing
+ * `/industry/telecom-data-destruction` while nothing serves `/industry` is
+ * refused outright ("has nothing to hang from"). The BULK rung never hit this
+ * because it sorts its whole batch shallowest-first; a single-page build has to
+ * bring its own ancestors, and the server happily takes them in one call.
+ *
+ * Already-built ancestors are EXCLUDED — re-realizing a route that already has
+ * a page fails the batch (`content_plan_cms_route_taken`).
+ *
+ * A parent id that is not in `nodesById` (a partially-loaded tree) stops the
+ * walk rather than guessing; the server's refusal is a better answer than a
+ * chain we invented. The visited set makes a cyclic parent chain terminate —
+ * the DB forbids cycles, but this must not hang if one ever exists.
+ */
+export function buildChainToRealize<
+    T extends { id: string; parent_id: string | null },
+>(
+    nodeId: string,
+    nodesById: Map<string, T>,
+    isBuilt: (nodeId: string) => boolean,
+): string[] {
+    const chain: string[] = [];
+    const visited = new Set<string>();
+    let current = nodesById.get(nodeId) ?? null;
+    while (current && !visited.has(current.id)) {
+        visited.add(current.id);
+        if (!isBuilt(current.id)) chain.push(current.id);
+        current = current.parent_id
+            ? (nodesById.get(current.parent_id) ?? null)
+            : null;
+    }
+    return chain.reverse();
+}
+
+/**
  * Is this failure the CMS site's write policy refusing us?
  *
  * aidream answers `403 cms_write_policy_denied` with "Write blocked: site

@@ -1,4 +1,5 @@
 import {
+    buildChainToRealize,
     isWritePolicyBlocked,
     judgePageReality,
     planChangedAfterPage,
@@ -108,6 +109,57 @@ describe("planChangedAfterPage", () => {
     it("is false when the page is newer or identical", () => {
         expect(planChangedAfterPage("2026-08-01T00:00:00Z", "2026-08-01T00:00:00Z")).toBe(false);
         expect(planChangedAfterPage("2026-08-01T00:00:00Z", "2026-08-02T00:00:00Z")).toBe(false);
+    });
+});
+
+describe("buildChainToRealize", () => {
+    const tree = new Map(
+        [
+            { id: "home", parent_id: null },
+            { id: "industry", parent_id: "home" },
+            { id: "telecom", parent_id: "industry" },
+        ].map((n) => [n.id, n]),
+    );
+
+    it("returns ancestors root-first so a deep page has something to hang from", () => {
+        expect(buildChainToRealize("telecom", tree, () => false)).toEqual([
+            "home",
+            "industry",
+            "telecom",
+        ]);
+    });
+
+    it("skips ancestors that already exist on the site", () => {
+        const built = new Set(["home", "industry"]);
+        expect(
+            buildChainToRealize("telecom", tree, (id) => built.has(id)),
+        ).toEqual(["telecom"]);
+    });
+
+    it("keeps an unbuilt ancestor even when a higher one exists", () => {
+        const built = new Set(["home"]);
+        expect(
+            buildChainToRealize("telecom", tree, (id) => built.has(id)),
+        ).toEqual(["industry", "telecom"]);
+    });
+
+    it("stops at an unknown parent instead of guessing", () => {
+        const orphan = new Map([["lost", { id: "lost", parent_id: "missing" }]]);
+        expect(buildChainToRealize("lost", orphan, () => false)).toEqual(["lost"]);
+    });
+
+    it("terminates on a cyclic parent chain", () => {
+        const cyclic = new Map(
+            [
+                { id: "a", parent_id: "b" },
+                { id: "b", parent_id: "a" },
+            ].map((n) => [n.id, n]),
+        );
+        expect(buildChainToRealize("a", cyclic, () => false)).toEqual(["b", "a"]);
+    });
+
+    it("is empty when the node itself is already built", () => {
+        expect(buildChainToRealize("telecom", tree, () => true)).toEqual([]);
     });
 });
 

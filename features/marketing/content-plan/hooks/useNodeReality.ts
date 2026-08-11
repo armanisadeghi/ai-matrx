@@ -33,7 +33,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
-import { planKeys } from "../data/hooks";
+import { planKeys, usePlanNodes } from "../data/hooks";
 import {
     bridgeFillPreview,
     bridgePublish,
@@ -41,6 +41,7 @@ import {
     type CmsPageMapEntry,
 } from "../setup/bridge";
 import {
+    buildChainToRealize,
     judgePageReality,
     type RealityVerdict,
 } from "../lib/page-reality";
@@ -78,6 +79,8 @@ export interface UseNodeRealityArgs {
     cmsSiteId: string | null;
     /** The overlay's summary row for this node, or null when none exists. */
     cmsPage: CmsPageMapEntry | null;
+    /** Every node's CMS page, so ancestors can be told built from unbuilt. */
+    cmsPagesByNodeId: ReadonlyMap<string, CmsPageMapEntry>;
 }
 
 export function useNodeReality(args: UseNodeRealityArgs) {
@@ -91,6 +94,17 @@ export function useNodeReality(args: UseNodeRealityArgs) {
     const [failure, setFailure] = useState<string | null>(null);
 
     const pageId = args.cmsPage?.pageId ?? null;
+
+    // The already-loaded plan tree (same cache the tree/table/map read — this
+    // never issues a fetch of its own), used to walk this node's ancestors.
+    const nodes = usePlanNodes(args.siteId);
+    const nodesById = useMemo(() => {
+        const map = new Map<string, { id: string; parent_id: string | null }>();
+        for (const node of nodes.data ?? []) {
+            map.set(node.id, { id: node.id, parent_id: node.parent_id });
+        }
+        return map;
+    }, [nodes.data]);
 
     // The full row — content length is the only way to tell an empty shell from
     // an authored draft, and the plan-wide summary carries no content.
@@ -154,23 +168,35 @@ export function useNodeReality(args: UseNodeRealityArgs) {
             if (action === "write") setStartedAt(Date.now());
             try {
                 if (action === "create") {
+                    // Ancestors first: a deep URL is a real page tree, and the
+                    // server refuses a child whose parent page does not exist.
+                    const chain = buildChainToRealize(
+                        args.nodeId,
+                        nodesById,
+                        (id) => args.cmsPagesByNodeId.has(id),
+                    );
+                    if (chain.length === 0) {
+                        throw new Error("This page already exists on the website.");
+                    }
                     const result = await bridgeRealize(
                         dispatch,
                         args.siteId,
-                        [args.nodeId],
+                        chain,
                         { dryRun: false, cmsSite: args.cmsSiteId },
                     );
-                    const item = result.items[0];
-                    if (result.failed > 0 || (item && !item.ok)) {
+                    const failedItem = result.items.find((row) => !row.ok);
+                    if (result.failed > 0 || failedItem) {
                         // The server's own words — never a laundered summary.
                         throw new Error(
-                            item?.error ||
+                            failedItem?.error ||
                                 result.errors[0] ||
                                 "The website refused to create this page.",
                         );
                     }
                     toast.success(
-                        item?.detail || "The page was created on the website.",
+                        chain.length > 1
+                            ? `Created ${chain.length} pages, including the parent pages this one needed.`
+                            : "The page was created on the website.",
                     );
                 } else if (action === "write") {
                     const preview = await bridgeFillPreview(dispatch, args.siteId, {
@@ -213,7 +239,16 @@ export function useNodeReality(args: UseNodeRealityArgs) {
                 setStartedAt(null);
             }
         },
-        [dispatch, args.cmsSiteId, args.siteId, args.nodeId, pageId, invalidate],
+        [
+            dispatch,
+            args.cmsSiteId,
+            args.siteId,
+            args.nodeId,
+            args.cmsPagesByNodeId,
+            nodesById,
+            pageId,
+            invalidate,
+        ],
     );
 
     /**

@@ -429,6 +429,7 @@ export function ContentPlanWorkbench({
                   deepen={deepen}
                   cmsPage={cmsPages.pagesByNodeId.get(node.id) ?? null}
                   cmsSiteId={resolvedCmsSiteId}
+                  cmsPagesByNodeId={cmsPages.pagesByNodeId}
                   hosted
                 />
               )}
@@ -491,6 +492,7 @@ export function ContentPlanWorkbench({
                       deepen={deepen}
                       cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
                       cmsSiteId={resolvedCmsSiteId}
+                  cmsPagesByNodeId={cmsPages.pagesByNodeId}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center p-6">
@@ -537,6 +539,7 @@ export function ContentPlanWorkbench({
               deepen={deepen}
               cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
               cmsSiteId={resolvedCmsSiteId}
+                  cmsPagesByNodeId={cmsPages.pagesByNodeId}
               hosted
             />
           </SidePanelSurface>
