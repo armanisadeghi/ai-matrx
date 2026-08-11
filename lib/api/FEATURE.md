@@ -53,6 +53,27 @@ both the global choice and pins persist in `matrx.apiConfig.v1`.
   existed until 2026-07-28 and silently kept two weeks of production uploads on aidream after
   the problem it guarded was fixed. A feature toggle in env fails invisibly; put it in code.
 
+## Regenerating the contract — `--fast` points at localhost, silently
+
+`pnpm sync-types:fast` (and `--local`) targets `http://localhost:8000`, whatever
+is listening there. On a machine where another session left an OLD dev server
+running, that silently writes a STALE contract: schemas the deployed backend has
+simply vanish, and unrelated files that consume them break with
+`Property 'X' does not exist on type '{ … }'`. That happened on 2026-08-11 —
+`VaultAttachmentOut` disappeared and `features/secrets/types.ts` went red for
+reasons that had nothing to do with the change being made.
+
+Sync from the source that matches what you are building against, and say so
+explicitly:
+
+```
+node scripts/sync-types.mjs --fast --url https://server.app.matrxserver.com
+node scripts/sync-types.mjs --fast --url http://localhost:8010   # your own server
+```
+
+If a sync makes an unrelated file fail to compile, suspect the source before the
+file.
+
 ## The two rules
 
 **1. Types are DERIVED from the generated contract, never hand-mirrored.**

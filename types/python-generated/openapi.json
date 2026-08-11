@@ -16759,9 +16759,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Thread Hindsight Reviews  Review Id  Thread Get"
+                  "$ref": "#/components/schemas/ReviewThreadOut"
                 }
               }
             }
@@ -16814,9 +16812,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Discuss Review Route Hindsight Reviews  Review Id  Discuss Post"
+                  "$ref": "#/components/schemas/DiscussOut"
                 }
               }
             }
@@ -16869,9 +16865,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Discuss Finding Route Hindsight Findings  Finding Id  Discuss Post"
+                  "$ref": "#/components/schemas/DiscussOut"
                 }
               }
             }
@@ -70599,6 +70593,70 @@
         ],
         "title": "DiscardResponse"
       },
+      "DiscussOut": {
+        "properties": {
+          "review_id": {
+            "type": "string",
+            "title": "Review Id"
+          },
+          "reviewer_conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Conversation Id"
+          },
+          "reply": {
+            "type": "string",
+            "title": "Reply",
+            "default": ""
+          },
+          "findings_created": {
+            "type": "integer",
+            "title": "Findings Created",
+            "default": 0
+          },
+          "finding_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Finding Ids"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "completed"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "review_id"
+        ],
+        "title": "DiscussOut",
+        "description": "Result of sending human guidance into the reviewer's thread.\n\nGuidance commonly produces BRAND-NEW findings rather than edits to the one\nthe human was looking at — ``findings_created`` / ``finding_ids`` say what\nappeared, and the caller must refetch the review. ``status=\"failed\"`` with a\n``reason`` is a normal outcome to render, never an exception."
+      },
       "DiscussRequest": {
         "properties": {
           "organization_id": {
@@ -91417,6 +91475,44 @@
             "type": "boolean",
             "title": "Use Cache",
             "default": true
+          },
+          "capture_screenshot": {
+            "type": "boolean",
+            "title": "Capture Screenshot",
+            "default": false
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "backlink_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backlink Id"
           }
         },
         "type": "object",
@@ -91532,6 +91628,66 @@
             },
             "type": "array",
             "title": "Links To Target"
+          },
+          "screenshot_file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screenshot File Id"
+          },
+          "screenshot_width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screenshot Width"
+          },
+          "screenshot_height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screenshot Height"
+          },
+          "screenshot_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screenshot Kind"
+          },
+          "screenshot_highlighted": {
+            "type": "boolean",
+            "title": "Screenshot Highlighted",
+            "default": false
+          },
+          "screenshot_failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screenshot Failure Reason"
           },
           "failure_reason": {
             "anyOf": [
@@ -102203,6 +102359,48 @@
         ],
         "title": "ReviewRunResult"
       },
+      "ReviewThreadOut": {
+        "properties": {
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": false
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ThreadMessageOut"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReviewThreadOut",
+        "description": "The reviewer's conversation, so a human can read it and reply.\n\n``available=false`` is a NORMAL outcome, not an error: reviews created\nbefore threaded reviews shipped persisted only a cost spine. ``reason``\ncarries the sentence the UI should show instead of an empty void."
+      },
       "ReviewedGmailRequest": {
         "properties": {
           "connection_id": {
@@ -112517,6 +112715,54 @@
         },
         "type": "object",
         "title": "TestNodeRequest"
+      },
+      "ThreadMessageOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "role"
+        ],
+        "title": "ThreadMessageOut",
+        "description": "One message in the reviewer's own conversation, rendered for display."
       },
       "ToolDetail": {
         "properties": {

@@ -26036,6 +26036,45 @@ export interface components {
             /** Deleted */
             deleted: number;
         };
+        /**
+         * DiscussOut
+         * @description Result of sending human guidance into the reviewer's thread.
+         *
+         *     Guidance commonly produces BRAND-NEW findings rather than edits to the one
+         *     the human was looking at — ``findings_created`` / ``finding_ids`` say what
+         *     appeared, and the caller must refetch the review. ``status="failed"`` with a
+         *     ``reason`` is a normal outcome to render, never an exception.
+         */
+        DiscussOut: {
+            /** Review Id */
+            review_id: string;
+            /** Reviewer Conversation Id */
+            reviewer_conversation_id?: string | null;
+            /**
+             * Reply
+             * @default
+             */
+            reply?: string;
+            /**
+             * Findings Created
+             * @default 0
+             */
+            findings_created?: number;
+            /** Finding Ids */
+            finding_ids?: string[];
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
+            /**
+             * Status
+             * @default completed
+             */
+            status?: string;
+            /** Reason */
+            reason?: string | null;
+        };
         /** DiscussRequest */
         DiscussRequest: {
             /**
@@ -34024,6 +34063,17 @@ export interface components {
              * @default true
              */
             use_cache?: boolean;
+            /**
+             * Capture Screenshot
+             * @default false
+             */
+            capture_screenshot?: boolean;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Backlink Id */
+            backlink_id?: string | null;
         };
         /** PageCaptureResult */
         PageCaptureResult: {
@@ -34077,6 +34127,21 @@ export interface components {
             links_to_target?: {
                 [key: string]: unknown;
             }[];
+            /** Screenshot File Id */
+            screenshot_file_id?: string | null;
+            /** Screenshot Width */
+            screenshot_width?: number | null;
+            /** Screenshot Height */
+            screenshot_height?: number | null;
+            /** Screenshot Kind */
+            screenshot_kind?: string | null;
+            /**
+             * Screenshot Highlighted
+             * @default false
+             */
+            screenshot_highlighted?: boolean;
+            /** Screenshot Failure Reason */
+            screenshot_failure_reason?: string | null;
             /** Failure Reason */
             failure_reason?: string | null;
         };
@@ -38275,6 +38340,27 @@ export interface components {
              */
             cost_usd?: number;
         };
+        /**
+         * ReviewThreadOut
+         * @description The reviewer's conversation, so a human can read it and reply.
+         *
+         *     ``available=false`` is a NORMAL outcome, not an error: reviews created
+         *     before threaded reviews shipped persisted only a cost spine. ``reason``
+         *     carries the sentence the UI should show instead of an empty void.
+         */
+        ReviewThreadOut: {
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /**
+             * Available
+             * @default false
+             */
+            available?: boolean;
+            /** Messages */
+            messages?: components["schemas"]["ThreadMessageOut"][];
+            /** Reason */
+            reason?: string | null;
+        };
         /** ReviewedGmailRequest */
         ReviewedGmailRequest: {
             /** Connection Id */
@@ -42258,6 +42344,25 @@ export interface components {
             variables?: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * ThreadMessageOut
+         * @description One message in the reviewer's own conversation, rendered for display.
+         */
+        ThreadMessageOut: {
+            /** Id */
+            id: string;
+            /** Role */
+            role: string;
+            /** Position */
+            position?: number | null;
+            /** Created At */
+            created_at?: string | null;
+            /**
+             * Text
+             * @default
+             */
+            text?: string;
         };
         /** ToolDetail */
         ToolDetail: {
@@ -57829,9 +57934,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ReviewThreadOut"];
                 };
             };
             /** @description Validation Error */
@@ -57866,9 +57969,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DiscussOut"];
                 };
             };
             /** @description Validation Error */
@@ -57903,9 +58004,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DiscussOut"];
                 };
             };
             /** @description Validation Error */

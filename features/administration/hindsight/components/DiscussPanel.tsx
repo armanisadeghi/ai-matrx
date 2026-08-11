@@ -231,7 +231,7 @@ export function DiscussPanel({
       {lastResult && lastResult.status !== "failed" && (
         <div className="rounded-md border border-border bg-muted/30 p-2">
           <div className="text-sm font-medium">
-            {lastResult.findings_created > 0 ? (
+            {(lastResult.findings_created ?? 0) > 0 ? (
               <span className="text-emerald-600 dark:text-emerald-400">
                 The reviewer answered and added {lastResult.findings_created} new
                 finding{lastResult.findings_created === 1 ? "" : "s"} — they are in
