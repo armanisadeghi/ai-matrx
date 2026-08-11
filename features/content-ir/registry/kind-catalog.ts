@@ -58,6 +58,28 @@ export type KindCatalogEntry = {
   family: string | null;
   facets: KindCatalogFacets;
   fields: Record<string, FieldSchema>;
+  /**
+   * The DB row's `emitted_json_schema`, VERBATIM — null for compiled-only
+   * entries (no DB row) and for rows that genuinely have none.
+   *
+   * `fields` and this are two different authorities, and for python-owned
+   * kinds only this one exists: their `data[]` is NULL whenever the schema is
+   * too nested for aidream's `fields_from_json_schema`, so `fields` is `{}`
+   * while the contract is complete here (FOUND_DEFECTS D156). Consumers that
+   * need a JSON Schema — agent output binding above all — read this and must
+   * NOT treat an empty `fields` as "no contract". Never rebuild it from
+   * `fields` via `kindSchemaToJsonSchema`: that round trip is lossy on exactly
+   * the nested schemas this exists to carry.
+   */
+  emittedJsonSchema: unknown;
+  /**
+   * The DB row's `is_contract_artifact`: a machine-minted snapshot of ONE
+   * agent's / tool's I/O contract (665 of 838 active kinds), never a reusable
+   * shape. False for compiled-only entries. Surfaces that offer a human a
+   * CHOICE of kind must filter these out — addressable data, not catalogue
+   * items.
+   */
+  isContractArtifact: boolean;
   /** Kinds this kind references (object refs + array itemKinds, transitive through inline_objects — one level). */
   referencedKinds: string[];
   /** Reverse index computed across the catalog: kinds whose fields reference this one. */
@@ -114,6 +136,8 @@ export function buildKindCatalog(
       family: null,
       facets: facetsOf(def),
       fields: def.schema?.fields ?? {},
+      emittedJsonSchema: null,
+      isContractArtifact: false,
       referencedKinds: [],
       referencedBy: [],
     });
@@ -131,6 +155,8 @@ export function buildKindCatalog(
       existing.family = entry.family ?? null;
       // DB rows are the schema source of truth (registry warm precedence).
       existing.fields = entry.fields;
+      existing.emittedJsonSchema = entry.emittedJsonSchema ?? null;
+      existing.isContractArtifact = entry.isContractArtifact === true;
     } else {
       byKind.set(entry.slug, {
         kind: entry.slug,
@@ -142,6 +168,8 @@ export function buildKindCatalog(
         family: entry.family ?? null,
         facets: emptyFacets(),
         fields: entry.fields,
+        emittedJsonSchema: entry.emittedJsonSchema ?? null,
+        isContractArtifact: entry.isContractArtifact === true,
         referencedKinds: [],
         referencedBy: [],
       });

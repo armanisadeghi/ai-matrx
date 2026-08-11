@@ -77,6 +77,19 @@ export interface KindDefProjection {
   is_active?: boolean | null;
   /** Raw `kind_definition.metadata` (family / data_only live here). */
   metadata?: Json | null;
+  /**
+   * The materialized `emitted_json_schema`. Optional so schema-only callers
+   * stay valid; carried through to `BlockSchemaEntry` verbatim because a
+   * python-owned kind's `data` is NULL and this is its only contract
+   * (FOUND_DEFECTS D156).
+   */
+  emitted_json_schema?: Json | null;
+  /**
+   * `kind_definition.is_contract_artifact` — a MACHINE-MINTED snapshot of one
+   * agent/tool/action's I/O contract, not a reusable shape. 665 of the 838
+   * active kinds are these (2026-08-11).
+   */
+  is_contract_artifact?: boolean | null;
 }
 export interface KindEdgeProjection {
   parent_definition_id: string;
@@ -180,6 +193,8 @@ export function reconstructKindRegistry(
           : {}),
         family: kindFamilyFromMetadata(d.metadata ?? null),
         loadingComponent: kindLoadingComponentFromMetadata(d.metadata ?? null),
+        emittedJsonSchema: d.emitted_json_schema ?? null,
+        isContractArtifact: d.is_contract_artifact ?? false,
       });
     } catch (err) {
       console.warn(
@@ -192,7 +207,18 @@ export function reconstructKindRegistry(
   return { schemas, entries };
 }
 
-const DEF_COLUMNS = "id, kind, label, data, is_active, metadata" as const;
+/**
+ * `emitted_json_schema` rides along because `data` alone does NOT tell you
+ * whether a kind has a contract: python-owned kinds leave `data` NULL whenever
+ * their schema is too nested for aidream's all-or-nothing
+ * `fields_from_json_schema` (140 active kinds, 133 of them nested, measured
+ * 2026-08-11 — FOUND_DEFECTS D156). Reading only `data` made every one of them
+ * look FIELDLESS to the client, which silently disqualified them from agent
+ * output binding. Zero active kinds lack `emitted_json_schema`, so this column
+ * is the reliable one.
+ */
+const DEF_COLUMNS =
+  "id, kind, label, data, is_active, metadata, emitted_json_schema, is_contract_artifact" as const;
 
 /**
  * Warm tier: every non-deleted kind's SCHEMA in one pair of reads.

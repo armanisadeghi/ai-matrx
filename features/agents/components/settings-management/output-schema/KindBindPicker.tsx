@@ -55,7 +55,10 @@ export function KindBindPicker({
 
   const handleSelect = (kind: string) => {
     if (!resolve) return;
-    const built = buildKindOutputSchema(kind, resolve);
+    // The entry — not just the slug — because a python-owned kind's contract
+    // lives in its `emitted_json_schema`, not in resolvable fields (D156).
+    const entry = bindable.find((candidate) => candidate.kind === kind);
+    const built = entry ? buildKindOutputSchema(entry, resolve) : null;
     if (!built) {
       // Loud recovery: a listed kind that fails to export is a registry
       // defect, never something to swallow.

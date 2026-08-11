@@ -50,15 +50,53 @@ const EXCLUDED_FAMILIES: ReadonlySet<string> = new Set([
  *   - compiled-only system kinds (no DB row → usually no verdict) stay
  *     eligible — shipped code is the platform floor — UNLESS the entry is
  *     explicitly marked inactive;
+ *   - machine-minted `is_contract_artifact` rows never show;
  *   - schema-less (scalar/passthrough) kinds are noise for structured output.
+ *
+ * "Schema-less" means NEITHER a field declaration NOR a stored
+ * `emitted_json_schema`. It used to mean `fields` alone, which silently
+ * disqualified 140 active python-owned kinds whose `data[]` is NULL because
+ * their schema is too nested for aidream's `fields_from_json_schema` — every
+ * one of them carries a complete `emitted_json_schema`, so refusing them was
+ * reading the wrong column, not enforcing a real bar (FOUND_DEFECTS D156).
  */
 export function isKindBindable(entry: KindCatalogEntry): boolean {
   if (entry.family !== null && EXCLUDED_FAMILIES.has(entry.family)) {
     return false;
   }
-  if (Object.keys(entry.fields).length === 0) return false;
+  // A machine-minted snapshot of ONE agent's output contract is addressable
+  // data, never a catalogue item a human picks — 665 of 838 active kinds are
+  // these. They were kept out ONLY as a side effect of the old fields check;
+  // reading `emitted_json_schema` makes them buildable, so the exclusion has
+  // to be stated rather than inherited (68 `agent_io_<uuid>_output` rows would
+  // otherwise flood the picker).
+  if (entry.isContractArtifact) return false;
+  if (!hasBindableContract(entry)) return false;
   if (entry.dbRowId !== null) return entry.isActive === true;
   return entry.source === "system" && entry.isActive !== false;
+}
+
+/** A declared field map, or a stored JSON Schema object. Either is a contract. */
+function hasBindableContract(entry: KindCatalogEntry): boolean {
+  return (
+    Object.keys(entry.fields).length > 0 || storedJsonSchemaOf(entry) !== null
+  );
+}
+
+/**
+ * The entry's `emitted_json_schema` when it is a usable JSON Schema object.
+ * Anything else (null, a scalar, an array, `{}`) is not a contract.
+ */
+function storedJsonSchemaOf(
+  entry: KindCatalogEntry,
+): Record<string, unknown> | null {
+  const schema = entry.emittedJsonSchema;
+  if (schema === null || typeof schema !== "object" || Array.isArray(schema)) {
+    return null;
+  }
+  return Object.keys(schema).length > 0
+    ? (schema as Record<string, unknown>)
+    : null;
 }
 
 /** The picker's list: bindable entries, sorted by kind slug. */
@@ -78,15 +116,48 @@ export interface KindBoundOutputSchema {
 }
 
 /**
- * The canonical written shape for one kind: `{ name, strict, schema }` with
- * the STRICT, `__kind`-injected block export. Key order matches the admin
- * Schema explorer's export payload so both surfaces produce byte-identical
- * JSON for the same kind. Null when the resolver does not know the kind.
+ * The canonical written shape for one kind: `{ name, strict, schema }`.
+ *
+ * TWO sources, in this order, because a kind has at most one of them:
+ *
+ *  1. **Declared fields** → the STRICT, `__kind`-injected block export
+ *     (`kindSchemaToJsonSchema`). Key order matches the admin Schema
+ *     explorer's export payload so both surfaces produce byte-identical JSON
+ *     for the same kind, and it fingerprints identically to the row's
+ *     `emitted_block_schema`.
+ *  2. **The stored `emitted_json_schema`, VERBATIM** — for python-owned kinds
+ *     whose `data[]` is NULL because their schema is too nested for aidream's
+ *     `fields_from_json_schema` (FOUND_DEFECTS D156). This is the path
+ *     `topic_ideas` was hand-bound through
+ *     (`migrations/agent_bind_topic_idea_generator_output_kind.sql`).
+ *
+ * The stored schema is passed through UNTOUCHED. It is deliberately NOT
+ * converted to fields and re-exported: that round trip drops exactly the
+ * nesting these 133 kinds are made of. The consequence is that this form
+ * carries no `__kind` discriminator (`planKindMigration` emits
+ * `emitted_json_schema` with `injectKind: false`), so the model emits none and
+ * the caller stamps the kind — which is what `topic_ideas` does today.
+ *
+ * Null when neither source yields a schema.
  */
 export function buildKindOutputSchema(
-  kind: string,
+  entry: KindCatalogEntry,
   resolve: (kind: string) => KindSchema | undefined,
 ): KindBoundOutputSchema | null {
+  const kind = entry.kind;
+  if (Object.keys(entry.fields).length === 0) {
+    const stored = storedJsonSchemaOf(entry);
+    if (stored === null) return null;
+    return {
+      outputSchema: {
+        name: kind,
+        strict: true,
+        schema: stored as OutputSchema["schema"],
+      },
+      unresolved: [],
+    };
+  }
+
   const exported: KindJsonSchemaExport | null = kindSchemaToJsonSchema(
     kind,
     resolve,
@@ -164,7 +235,7 @@ export function buildKindFingerprintIndex(
 ): Map<string, string> {
   const index = new Map<string, string>();
   for (const entry of listBindableKinds(entries)) {
-    const built = buildKindOutputSchema(entry.kind, resolve);
+    const built = buildKindOutputSchema(entry, resolve);
     if (!built) continue;
     const fingerprint = canonicalSchemaFingerprint(built.outputSchema.schema);
     // First writer wins on a (defect-grade) fingerprint collision.

@@ -88,6 +88,27 @@ export type BlockSchemaEntry = {
    * Null/undefined = generic default. content_ir source only.
    */
   loadingComponent?: string | null;
+  /**
+   * The materialized `kind_definition.emitted_json_schema` — the STRUCTURAL
+   * authority, and the only schema a python-owned kind has.
+   *
+   * `fields` is reconstructed from `data[]` + `kind_edge`, which python-owned
+   * kinds leave NULL whenever their schema is too nested for aidream's
+   * all-or-nothing `fields_from_json_schema` (133 of 140 such kinds, measured
+   * 2026-08-11 — FOUND_DEFECTS D156). Those rows are NOT schema-less; they are
+   * only field-declaration-less, and consumers that need a JSON Schema (agent
+   * output binding, structural validation) must read this instead of inferring
+   * "no fields" as "no contract". Carried VERBATIM — never round-tripped
+   * through `fields`, which is lossy on exactly the nested schemas that need
+   * it. content_ir source only.
+   */
+  emittedJsonSchema?: unknown;
+  /**
+   * `kind_definition.is_contract_artifact` — a machine-minted per-agent /
+   * per-tool I/O contract row, not a reusable shape a human would ever choose
+   * (665 of 838 active kinds). content_ir source only.
+   */
+  isContractArtifact?: boolean;
 };
 
 export type BlockSchemaRegistry = {

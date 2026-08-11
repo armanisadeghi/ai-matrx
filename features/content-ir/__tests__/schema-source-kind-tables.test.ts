@@ -64,6 +64,53 @@ describe("content_ir read adapter — reconstruction", () => {
     ]);
   });
 
+  // FOUND_DEFECTS D156: a python-owned kind whose schema is too nested for
+  // aidream's `fields_from_json_schema` stores a NULL `data[]` but a COMPLETE
+  // `emitted_json_schema`. The adapter must carry that column through verbatim
+  // — reading only `data` made 140 active kinds look contract-less.
+  it("carries emitted_json_schema through verbatim, including for a NULL-data kind", () => {
+    const nested = {
+      type: "object",
+      required: ["ideas"],
+      properties: {
+        ideas: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { title: { type: "string" } },
+          },
+        },
+      },
+    };
+    const defs: KindDefProjection[] = [
+      {
+        id: "d-py",
+        kind: "topic_ideas",
+        label: "Topic Ideas",
+        data: null,
+        emitted_json_schema: nested,
+      },
+      {
+        id: "d-none",
+        kind: "no_schema",
+        label: "No Schema",
+        data: null,
+      },
+    ];
+    const { entries } = reconstructKindRegistry(defs, []);
+    const py = entries.find((e) => e.slug === "topic_ideas");
+    expect(py).toBeDefined();
+    // Fieldless, but NOT contract-less.
+    expect(py!.fields).toEqual({});
+    expect(py!.emittedJsonSchema).toEqual(nested);
+    // No nesting is flattened on the way through.
+    expect(JSON.stringify(py!.emittedJsonSchema)).toBe(JSON.stringify(nested));
+    // An absent column reads as null, never undefined-by-omission.
+    expect(
+      entries.find((e) => e.slug === "no_schema")!.emittedJsonSchema,
+    ).toBeNull();
+  });
+
   it("preserves field ORDER from the data array", () => {
     const defs: KindDefProjection[] = [
       {
