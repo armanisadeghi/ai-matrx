@@ -11,10 +11,13 @@
  * a surface write target with `acceptTarget` — the component runs it through
  * the one action path, so the button a human clicks and the target an agent
  * applies are the SAME operation. **Do not build a second brief renderer.**
- * One was built
- * (`BriefEditor.tsx`, deleted 2026-08-11) and it immediately diverged: it
- * crushed full-paragraph directives into one-line textareas while this
- * component rendered the same data correctly in the window beside it.
+ * One was built — the hand-rolled brief inside
+ * `features/marketing/content-plan/components/BriefEditor.tsx` (deleted
+ * 2026-08-11; that file survives only as the panel's composition shell for the
+ * accept decision and the run history, neither of which is part of the shape)
+ * — and it immediately diverged: it crushed full-paragraph directives into
+ * one-line textareas while this component rendered the same data correctly in
+ * the window beside it.
  *
  * Streaming-first by construction: every field is optional at render time
  * because mid-stream it genuinely is. The component mounts the instant the
