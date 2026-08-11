@@ -39,6 +39,15 @@ client-launched run. The gap is 100% client consumption posture:
 
 ## The primitives (built 2026-08-10 — USE THESE, never re-derive)
 
+- **`useFloatingAgentRun` / `useFloatingRunWindow`**
+  (`features/agents/hooks/useFloatingAgentRun.ts`) — THE FLOATING LAW as hooks
+  and the DEFAULT migration target: the window opens before the launch, binds
+  the conversation when the stream connects, is reused per surface, and closes
+  with it. Launch living in a thunk/lane? `useFloatingRunWindow` +
+  **`useLiveRunHandle`** (`.../useLiveRunHandle.ts` — the component owns the
+  kept-alive instance) + **`livePosture(cb)`**
+  (`.../thunks/run-headless-agent-json.ts` — the thunk's three options, and
+  nothing at all when no callback is passed).
 - **`useLiveAgentRun`** (`features/agents/hooks/useLiveAgentRun.ts`) — the
   two-line migration from an await-only `useHeadlessAgentJson` site: same
   `run({...})` contract, forces the live posture, owns instance cleanup
@@ -60,15 +69,18 @@ client-launched run. The gap is 100% client consumption posture:
 
 ## The migration recipe (per call site, ~15 minutes)
 
-1. `useHeadlessAgentJson` → `useLiveAgentRun` (drop any manual
-   `displayMode`/`keepInstance`; the hook owns them + cleanup).
-2. Mount `<LiveRunDisplay conversationId={conversationId} label="…"
-   pending={isRunning} onDismiss={dismiss} />` where the spinner sat — inline,
-   popover, or panel.
-3. Thunk-style sites (`runHeadlessAgentJson` direct): pass
-   `displayMode:"direct"`, `keepInstance:true`, surface
-   `onConversationCreated` to the owning component, and own cleanup — or lift
-   the call into a component and use the hook.
+1. `useHeadlessAgentJson` → `useFloatingAgentRun`, and add a `label` to the
+   `run({...})` call. That is the whole fix — the window opens before the
+   launch, streams, and cleans up. Drop any manual
+   `displayMode`/`keepInstance`.
+2. `useLiveAgentRun` + an inline `<LiveRunDisplay conversationId={…} label="…"
+   pending />` ONLY where the surface EARNS the inline exception: the wait is
+   the whole screen, or the content sits at the bottom and the page only grows.
+3. Thunk-style sites (`runHeadlessAgentJson` direct): give the thunk an
+   optional `onConversationCreated` and spread `livePosture(cb)` into its
+   options; in the owning component call
+   `useFloatingRunWindow().start(label)` BEFORE dispatching and pass
+   `live.bind`. The hook owns the kept-alive instance.
 4. `useRunAgent` sites that are user-visible: migrate to `useLiveAgentRun`
    (slot sites keep `slotKey`); leave `useRunAgent` only for invisible plumbing.
 5. `callApi({stream:true})` pipeline sites: adopt via `adoptForeignStream`

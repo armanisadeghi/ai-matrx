@@ -150,6 +150,7 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- **2026-08-11** — **Every assessment agent run streams (THE FLOATING LAW).** "Make this deeper" (`AssessmentEdit`) traded its `toast.loading` for the floating `LiveRunWindow` — the harder question is written in front of the user — and "Grade my handwritten work" (`useGradeWork` → `gradeAnswerImage` → `runVisionGrader`) floats the vision grader's step-by-step read instead of spinning the button. `deepenItem` / `runVisionGrader` / `gradeAnswerImage` take an optional `onConversationCreated`; with none passed they stay headless. `AssessmentCreate` (inline, earned exception) is unchanged.
 - **2026-08-11** — **Detail / edit / results route their failures to the access gate.** All three
   stopped asserting "Not found" over a zero-row read and now render `<AccessGate>` — detail and edit
   on `assessment`, results on **whichever row is actually missing**: the assessment, or the

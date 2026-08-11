@@ -38,8 +38,11 @@ Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L*
 
 ## Resources
 
-- Primitives: `useLiveAgentRun`, `<LiveRunDisplay>`, `adoptForeignStream`,
-  `useOpenLiveRunWindow()`. Recipe + traps: `live-stream-everywhere.md`.
+- Primitives: **`useFloatingAgentRun` / `useFloatingRunWindow` (start here —
+  they ARE the recipe), `useLiveRunHandle` + `livePosture()` for a
+  thunk-launched run**, and underneath them `useLiveAgentRun`,
+  `<LiveRunDisplay>`, `adoptForeignStream`, `useOpenLiveRunWindow()`.
+  Recipe + traps: `live-stream-everywhere.md`.
 - Reference for a class-B/E migration done whole:
   `features/podcasts/generator/useEpisodeTitleOptions.ts` (2026-08-11) — open
   the window BEFORE the launch, run the slot through `useLiveAgentRun`, and
@@ -168,27 +171,32 @@ copy that shape.
 **Effort:** M each for the A half; the D half is one shared M once
 `useSiteCrawlActivity` is generalized past crawls.
 
-### 2. Education fleet — 12 spinner-only agent runs — A, S each
+### 2. Education fleet — DONE 2026-08-11
 
-All use `useHeadlessAgentJson` / `runHeadlessAgentJson` and render zero live
-output. Each is the two-line `useLiveAgentRun` + `<LiveRunDisplay>` migration.
+All twelve surfaces stream. Default = the floating `LiveRunWindow` (mind map,
+memory aids + the per-card memory hint, study planner, progress narrator,
+verify-against-source, deepen-a-question, Ask-AI tutor help, end-of-session
+review, grade-my-handwritten-work, every converter target). Inline
+`LiveRunDisplay` in the two voice surfaces only — spoken practice
+(design / grade / review) and audio-review grading — earned, because there the
+wait IS the whole screen and a window over an empty voice screen is worse.
+`microCoach` stays deliberately headless: nothing waits on it, it has no
+loading state, its one-line tip arrives as a toast.
 
-| File:line | Route |
-|---|---|
-| `features/education/media/mindmap/components/MindMapNew.tsx:203` | `/education/mind-maps/new` |
-| `features/education/study/planner/components/StudyPlanView.tsx:344,400,442` | `/education/admin` (planner host) |
-| `features/education/study/analytics/components/StudyAnalyticsDashboard.tsx` | `/education/progress` |
-| `features/education/assessment/components/edit/AssessmentEdit.tsx:281` | `/education/quizzes/[id]/edit`, `/education/practice-tests/[id]/edit` |
-| `features/education/memory/components/MemoryNew.tsx:198` | `/education/memory/new` |
-| `features/education/memory/components/MemoryAidButton.tsx:75` | `/education/admin` |
-| `features/education/trust/components/VerifyAgainstSourceButton.tsx:66` | wherever trust chips render |
-| `features/education/assessment/components/HandwrittenWorkInput.tsx` | `/education/grade-work` |
-| `features/education/spoken-practice/components/PracticeRunner.tsx:79,90,160` | spoken-practice runner |
-| `features/education/media/audio/components/AudioReviewSession.tsx:483` | `/education/audio-study/review` |
-| `features/education/tutor/lanes/{helpLive,microCoach,reviewSession}.ts` | tutor lanes (host: `StudyDeck`) |
-| `features/education/convert/runAgentExtraction.ts` | conversion flows |
+**It produced the primitives the rest of this list should use** — every call
+site was writing the same ten lines:
 
-**Exemplar already fixed:** `features/education/assessment/components/create/AssessmentCreate.tsx`.
+- `useFloatingAgentRun` / `useFloatingRunWindow`
+  (`features/agents/hooks/useFloatingAgentRun.ts`) — THE FLOATING LAW as hooks.
+- `useLiveRunHandle` (`features/agents/hooks/useLiveRunHandle.ts`) — the
+  component owns the instance of a run launched by a thunk.
+- `livePosture(cb)` (`.../thunks/run-headless-agent-json.ts`) — the thunk half:
+  direct + keepInstance + the callback, and NOTHING when no callback is passed,
+  so a genuinely headless lane keeps its automatic teardown.
+
+Live-verified with a real run on `/education/mind-maps/new`: the window opens
+pending on click, streams, and the `diagram_spec` renders as its kind component
+token-by-token.
 
 ### 3. Flashcards — DONE 2026-08-11
 

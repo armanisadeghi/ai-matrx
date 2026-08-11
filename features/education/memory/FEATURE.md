@@ -53,4 +53,5 @@ Memory Tools is a **thin tool over the existing study-media substrate** — it i
 
 ## Change log
 
+- **2026-08-11** — **Both memory-aid runs stream (THE FLOATING LAW).** `useGenerateMemoryAid` moved off `runAgentExtraction` onto `useFloatingAgentRun` (same coercion, one fewer hop) and the per-card `MemoryAidButton` floats the `memory_hint` lane through `useFloatingRunWindow`; the lane gained an optional `onConversationCreated` and keeps its background posture when none is passed.
 - **2026-07-13** — **Built + shipped LIVE** (VISION §11 — the last vision section with zero code). `tools.ts` `memory` entry live; `/education/memory` home/new/[id]/[id]/edit; `study_media` `memory_aid` kind (migration + ledger); two authored agents; `education.memory_generate` capability + limits; `memory_aid` converter target; proactive `MemoryAidButton` in StudyDeck; admin map + this doc.

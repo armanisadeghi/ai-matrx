@@ -113,6 +113,7 @@ marketing) and `/education/features/data-security` (the T5 posture statement).
 - Quiz/audio/notes consumers wire the envelope during their own waves (P1–P4) per the contract.
 
 ## Change log
+- **2026-08-11** — **"Verify against source" streams (THE FLOATING LAW).** `useVerifyAgainstSource` runs through `useFloatingAgentRun`: the re-check of the cited passage is watched in the floating `LiveRunWindow` instead of behind the button's spinner. `reset()` closes the window and clears the last run.
 - **2026-08-08** — `<SourceCitations/>` chips now render through the shared presentational
   primitive `CitationChip` (`components/official/citation-chip/CitationChip.tsx` — same chip +
   excerpt popover the chat Sources footer uses). Behavior-identical: this file stays the

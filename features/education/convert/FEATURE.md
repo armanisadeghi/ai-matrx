@@ -131,6 +131,7 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 
 ## Change log
 
+- **2026-08-11** — **Every conversion streams (THE FLOATING LAW).** `ConvertContentDialog` opens the floating `LiveRunWindow` before each target's launch and binds it with the `onRequestId` the converter contract already carried, so the generator's output is written in front of the user instead of behind the row's "Working" spinner. No generator changed.
 - **2026-07-10** — **Lineage + source-affordance convergence (Convergence-B certification).** Closed
   four gaps: (1) extracted `recordSourceLineage.ts` — the ONE writer of the artifact→origin `source`
   edge — and migrated all five inline call sites (deck/summary/mind_map/notes/audio) onto it, THEN

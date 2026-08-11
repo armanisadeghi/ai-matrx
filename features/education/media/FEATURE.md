@@ -96,6 +96,7 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
 
 ## Change log
 
+- **2026-08-11** — **Mind maps and audio review stream (THE FLOATING LAW).** `useGenerateMindMap` runs through `useFloatingAgentRun`, so the `diagram_spec` renders as its kind component in the floating `LiveRunWindow` token-by-token (live-verified on `/education/mind-maps/new`). `AudioReviewSession`'s per-answer grading renders `LiveRunDisplay` inline in the centered grading state — the earned exception: mid-session the wait IS the whole screen, so a floating window over an empty voice screen would be worse.
 - **2026-07-14** — Cross-surface orphan-on-interrupt fix (same pattern as
   `education/spoken-practice`'s GAP 2, `54d379d53`). `AudioReviewSession.endSession` already
   marked the `study_session` terminal (`completed`) synchronously with no async enrichment after

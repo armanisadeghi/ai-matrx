@@ -160,6 +160,7 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-08-11** — **The tutor lanes stream (THE FLOATING LAW).** `helpLive` (Ask AI for help) and `reviewSession` (end-of-session review) take an optional `onConversationCreated`; `StudyDeck` floats both in the `LiveRunWindow`, so the card being studied never moves. `microCoach` stays deliberately headless — nothing waits on it, it has no loading state, and its one-line tip arrives as a toast.
 - **2026-08-10** — **Surface made agent-writable (3 targets) + tutor vocabulary promoted to
   `types.ts`.** `matrx-user/education-tutor` now declares `writeTargets`: `teaching_mode` and
   `personality_style` as `entity`/`ask` writes through the SAME
