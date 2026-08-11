@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, memo } from "react";
+import React, { useState, useRef, useEffect, useCallback, useId, memo } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { Copy, Check, Bookmark, ExternalLink, FileText } from "lucide-react";
@@ -87,6 +87,17 @@ const useGlobalPopupState = (componentId: string) => {
   return { isActive, openPopup, closePopup };
 };
 
+/**
+ * The href guard is its OWN component, sitting above the hooked core.
+ *
+ * It used to be an early `return` inside the core, which made all 23 hooks
+ * below it conditional (react-hooks/rules-of-hooks): the first render with a
+ * bad href registered zero hooks, and the next render with a good one
+ * registered 23 — "rendered more hooks than during the previous render", a hard
+ * crash mid-stream, which is exactly when an href goes from partial to whole.
+ * Splitting the component is the fix; the core now only ever runs with a valid
+ * href, and every hook in it is unconditional.
+ */
 const LinkComponentCore = ({
   href,
   children,
@@ -94,7 +105,6 @@ const LinkComponentCore = ({
   href: string;
   children: React.ReactNode;
 }) => {
-  // Validate props early
   if (!href || typeof href !== "string") {
     return (
       <span className="text-blue-600 dark:text-blue-400">
@@ -102,16 +112,24 @@ const LinkComponentCore = ({
       </span>
     );
   }
+  return <ValidLinkComponentCore href={href}>{children}</ValidLinkComponentCore>;
+};
 
+const ValidLinkComponentCore = ({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) => {
   // Add UTM source to all external links
   const finalHref = addUtmSource(href);
 
-  // Generate stable component ID using useMemo equivalent
-  const componentIdRef = useRef<string | null>(null);
-  if (!componentIdRef.current) {
-    componentIdRef.current = `link-popup-${Math.random().toString(36).substr(2, 9)}`;
-  }
-  const componentId = componentIdRef.current as string;
+  // Stable per-instance id. This was a `useRef` lazily filled with
+  // `Math.random()` DURING RENDER — impure (react-hooks/purity) and a ref
+  // written during render (react-hooks/refs), which also meant server and
+  // client generated different ids. `useId` is the primitive for exactly this.
+  const componentId = `link-popup-${useId()}`;
 
   const [isHovered, setIsHovered] = useState(false);
   const [copied, setCopied] = useState(false);

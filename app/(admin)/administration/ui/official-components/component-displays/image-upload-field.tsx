@@ -10,7 +10,6 @@ interface ComponentDisplayProps {
 }
 
 export default function ImageUploadFieldDisplay({ component }: ComponentDisplayProps) {
-  if (!component) return null;
   
   const [imageUrl, setImageUrl] = useState<string>('');
   const [secondImageUrl, setSecondImageUrl] = useState<string>('');
@@ -49,6 +48,11 @@ function MyComponent() {
 // - Uploads to cld_files via the universal file handler
 // - Returns a permanent share URL for the uploaded image
 // - Upload progress indicator`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

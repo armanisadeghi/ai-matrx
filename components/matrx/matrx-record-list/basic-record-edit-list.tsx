@@ -42,7 +42,21 @@ const sizeMap: Record<ComponentSize, string> = {
   "3xl": "text-3xl",
 };
 
-export function MatrxRecordEditList({
+/**
+ * The empty-input guard is its OWN component, above the hooked body.
+ *
+ * It used to be an early `return null` sitting ABOVE the memoized helpers
+ * below, which made those hooks conditional (react-hooks/rules-of-hooks): a
+ * first render with no records registered zero hooks and the next one with
+ * records registered three, which React throws on. The body now only ever runs
+ * with a non-empty input — what every line in it already assumed.
+ */
+export function MatrxRecordEditList(props: MatrxRecordEditListProps) {
+  if (!props.records || Object.keys(props.records).length === 0 || !props.fields?.length) return null;
+  return <MatrxRecordEditListBody {...props} />;
+}
+
+function MatrxRecordEditListBody({
   records,
   fields,
   density = "compact",
@@ -51,9 +65,6 @@ export function MatrxRecordEditList({
   className,
   padding = "py-0.5",
 }: MatrxRecordEditListProps) {
-  if (!records || Object.keys(records).length === 0 || !fields?.length) {
-    return null;
-  }
 
   const recordItems = React.useMemo(
     () =>

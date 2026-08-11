@@ -12,7 +12,6 @@ interface ComponentDisplayProps {
 }
 
 export default function FullScreenOverlayDisplay({ component }: ComponentDisplayProps) {
-  if (!component) return null;
   
   const [isOpen, setIsOpen] = useState(false);
   
@@ -89,6 +88,11 @@ const [isOpen, setIsOpen] = useState(false);
     height="95dvh"                     // Custom height (default: 95dvh)
   />
 </>`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <>

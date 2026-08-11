@@ -435,32 +435,32 @@ export function buildComponentScope(
     }
 
     try {
-      const module = config.loader();
+      const loadedModule = config.loader();
 
       if (config.scopeStrategy === "spread") {
         if (config.safeProxy) {
           // Wrap in a safe proxy so missing keys return fallback components
-          const safeModule = createSafeModuleProxy(config.path, module);
+          const safeModule = createSafeModuleProxy(config.path, loadedModule);
           // Spread the real module keys into scope
-          for (const key of Object.keys(module)) {
-            scope[key] = module[key];
+          for (const key of Object.keys(loadedModule)) {
+            scope[key] = loadedModule[key];
           }
           // Store the proxy so patchScopeForMissingIdentifiers can use it
           if (!scope.__safeProxies) scope.__safeProxies = {};
           scope.__safeProxies[config.path] = safeModule;
           if (!scope.__safeProxyModuleKeys) scope.__safeProxyModuleKeys = {};
           scope.__safeProxyModuleKeys[config.path] = new Set(
-            Object.keys(module),
+            Object.keys(loadedModule),
           );
         } else {
           // Add all exports directly to scope
-          Object.assign(scope, module);
+          Object.assign(scope, loadedModule);
         }
       } else if (config.scopeStrategy === "named") {
         // Add specific named exports
         if (config.exports) {
           for (const exportName of config.exports) {
-            scope[exportName] = module[exportName];
+            scope[exportName] = loadedModule[exportName];
           }
         }
 
@@ -471,8 +471,8 @@ export function buildComponentScope(
           )) {
             const value =
               moduleKey === "default"
-                ? module.default || module
-                : module[moduleKey];
+                ? loadedModule.default || loadedModule
+                : loadedModule[moduleKey];
             scope[scopeKey] = value;
           }
         }

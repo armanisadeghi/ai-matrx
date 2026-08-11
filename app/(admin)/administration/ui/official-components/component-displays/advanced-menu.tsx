@@ -13,7 +13,6 @@ interface ComponentDisplayProps {
 }
 
 export default function AdvancedMenuDisplay({ component }: ComponentDisplayProps) {
-  if (!component) return null;
   
   const menu = useAdvancedMenu({
     onOpen: () => console.log('Menu opened'),
@@ -173,6 +172,11 @@ const menuItems: MenuItem[] = [
       showToast: false
     }
   ];
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

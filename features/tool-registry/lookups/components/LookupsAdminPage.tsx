@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Plus, Loader2, AlertCircle, Database as DbIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -446,12 +447,12 @@ function UiSurfaceCrud() {
         <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs flex items-center gap-2">
           <span className="text-foreground">
             For most surface work, use the dedicated{" "}
-            <a
+            <Link
               href="/administration/ui/surfaces"
               className="font-medium text-primary hover:underline"
             >
               /administration/ui/surfaces
-            </a>{" "}
+            </Link>{" "}
             page — it groups by client &amp; tier, shows tool/agent usage counts,
             supports bulk activate/deactivate, and is built for the 100+ surface
             scale our system needs.

@@ -46,11 +46,11 @@ export default function DebugModulePanel({ moduleId, onClose }: DebugModulePanel
 
   if (!moduleId || !mounted) return null;
 
-  const module = getDebugModule(moduleId);
-  if (!module) return null;
+  const debugModule = getDebugModule(moduleId);
+  if (!debugModule) return null;
 
-  const DebugComponent = module.component;
-  const Icon = module.icon;
+  const DebugComponent = debugModule.component;
+  const Icon = debugModule.icon;
 
   const panelContent = (
     <div
@@ -64,10 +64,10 @@ export default function DebugModulePanel({ moduleId, onClose }: DebugModulePanel
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-muted/50">
           <div className="flex items-center gap-3">
-            <Icon className={`h-6 w-6 ${module.color || 'text-foreground'}`} />
+            <Icon className={`h-6 w-6 ${debugModule.color || 'text-foreground'}`} />
             <div>
-              <h2 className="text-xl font-semibold">{module.name} Debug</h2>
-              <p className="text-sm text-muted-foreground">{module.description}</p>
+              <h2 className="text-xl font-semibold">{debugModule.name} Debug</h2>
+              <p className="text-sm text-muted-foreground">{debugModule.description}</p>
             </div>
           </div>
           <Button

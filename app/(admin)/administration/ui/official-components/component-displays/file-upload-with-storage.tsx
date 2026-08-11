@@ -12,7 +12,6 @@ interface ComponentDisplayProps {
 }
 
 export default function FileUploadWithStorageDisplay({ component }: ComponentDisplayProps) {
-  if (!component) return null;
   
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFileResult[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -70,6 +69,11 @@ function MyComponent() {
 //     // ... more details
 //   }
 // }`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

@@ -33,7 +33,21 @@ const sizeMap: Record<ComponentSize, string> = {
     '3xl': 'text-3xl',
 };
 
-export function MatrxBasicAutoTable({
+/**
+ * The empty-input guard is its OWN component, above the hooked body.
+ *
+ * It used to be an early `return null` sitting ABOVE the memoized helpers
+ * below, which made those hooks conditional (react-hooks/rules-of-hooks): a
+ * first render with no records registered zero hooks and the next one with
+ * records registered three, which React throws on. The body now only ever runs
+ * with a non-empty input — what every line in it already assumed.
+ */
+export function MatrxBasicAutoTable(props: BasicAutoTableProps) {
+  if (!Array.isArray(props.data) || props.data.length === 0) return null;
+  return <MatrxBasicAutoTableBody {...props} />;
+}
+
+function MatrxBasicAutoTableBody({
                                         data,
                                         density = 'compact',
                                         size = 'xs',
@@ -41,9 +55,6 @@ export function MatrxBasicAutoTable({
                                         className,
                                         maxLength = 100
                                     }: BasicAutoTableProps) {
-    if (!Array.isArray(data) || data.length === 0) {
-        return null;
-    }
 
     const truncate = React.useCallback((text: string) => {
         if (!text || text.length <= maxLength) return text;

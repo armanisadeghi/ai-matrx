@@ -13,7 +13,6 @@ interface ComponentDisplayProps {
 }
 
 export default function FloatingSheetDisplay({ component }: ComponentDisplayProps) {
-  if (!component) return null;
 
   // State for different sheet examples
   const [rightSheet, setRightSheet] = useState(false);
@@ -108,6 +107,11 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
 // ✅ Header and footer support
 // ✅ Backdrop control
 // ✅ Fully accessible (ARIA)`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

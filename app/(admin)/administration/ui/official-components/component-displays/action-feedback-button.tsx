@@ -11,7 +11,6 @@ interface ComponentDisplayProps {
 }
 
 export default function ActionFeedbackButtonDisplay({ component }: ComponentDisplayProps) {
-  if (!component) return null;
   
   // Example state
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +50,11 @@ import { Save, Check } from 'lucide-react';
   showTooltipOnDisabled={true} // Optional - whether to show tooltip when disabled
   disabledTooltip="Cannot save at this time" // Optional - different tooltip text for disabled state
 />`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

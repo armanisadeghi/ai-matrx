@@ -469,24 +469,24 @@ export function parseLogLines(raw: string): ParsedLogLine[] {
 
     // 3) Module path + short name
     let modulePath: string | null = null;
-    let module: string | null = null;
+    let moduleName: string | null = null;
 
     const pathM = RE_MODULE_PATH.exec(rest);
     if (pathM && pathM[1].includes(".")) {
       modulePath = pathM[1];
-      module = pathM[1].split(".").pop() ?? null;
+      moduleName = pathM[1].split(".").pop() ?? null;
       rest = rest.slice(pathM[0].length);
     }
     const shortM = RE_MODULE_SHORT.exec(rest);
     if (shortM) {
-      module = shortM[1];
+      moduleName = shortM[1];
       rest = rest.slice(shortM[0].length);
     }
 
     // 4) Category
     let category: LogCategory =
-      module && MODULE_CATEGORY_MAP[module]
-        ? MODULE_CATEGORY_MAP[module]
+      moduleName && MODULE_CATEGORY_MAP[moduleName]
+        ? MODULE_CATEGORY_MAP[moduleName]
         : inferCategory(rawLine);
     if (
       (level === "ERROR" || level === "CRITICAL") &&
@@ -534,7 +534,7 @@ export function parseLogLines(raw: string): ParsedLogLine[] {
       lineIndex: i,
       timestamp,
       level,
-      module,
+      module: moduleName,
       modulePath,
       category,
       urgency,

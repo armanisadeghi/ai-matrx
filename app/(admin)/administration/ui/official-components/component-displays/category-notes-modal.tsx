@@ -15,7 +15,6 @@ interface ComponentDisplayProps {
 export default function CategoryNotesModalDisplay({
   component,
 }: ComponentDisplayProps) {
-  if (!component) return null;
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -41,6 +40,11 @@ const [isOpen, setIsOpen] = useState(false);
   title="SQL Templates"            // Custom modal title (default: auto-generated)
   description="Manage SQL templates" // Custom description (default: auto-generated)
 />`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

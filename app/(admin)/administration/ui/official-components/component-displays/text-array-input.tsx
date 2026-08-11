@@ -13,7 +13,6 @@ interface ComponentDisplayProps {
 export default function TextArrayInputDisplay({
   component,
 }: ComponentDisplayProps) {
-  if (!component) return null;
 
   const [basicTags, setBasicTags] = useState(["react", "nextjs", "typescript"]);
   const [urlList, setUrlList] = useState(["example.com", "github.com"]);
@@ -71,6 +70,11 @@ export default function TextArrayInputDisplay({
 // ✅ Custom chip styling
 // ✅ Controlled or uncontrolled
 // ✅ Visual feedback on copy`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

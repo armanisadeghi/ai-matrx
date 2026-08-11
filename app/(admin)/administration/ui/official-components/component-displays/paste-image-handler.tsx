@@ -14,7 +14,6 @@ interface ComponentDisplayProps {
 export default function PasteImageHandlerDisplay({
   component,
 }: ComponentDisplayProps) {
-  if (!component) return null;
 
   // The `url` we store + render into <img src> is the EMBEDDABLE direct
   // URL (`{BACKEND}/share/<token>`, served by Python). The
@@ -79,6 +78,11 @@ function MyComponent() {
 // 3. Image is uploaded through canonical Files
 // 4. onImagePasted callback provides the public URL
 // 5. Perfect for quick image uploads without file dialogs!`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

@@ -14,7 +14,6 @@ interface ComponentDisplayProps {
 }
 
 export default function AppletListTableDisplay({ component }: ComponentDisplayProps) {
-  if (!component) return null;
 
   // Standard usage example
   const StandardExample = () => {
@@ -222,6 +221,11 @@ const customSelectRender = (applet: AppletBuilder, onClick: (e: React.MouseEvent
       default: return standardCode;
     }
   };
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

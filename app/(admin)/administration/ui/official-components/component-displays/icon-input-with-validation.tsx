@@ -15,7 +15,6 @@ interface ComponentDisplayProps {
 export default function IconInputWithValidationDisplay({
   component,
 }: ComponentDisplayProps) {
-  if (!component) return null;
 
   const [iconName1, setIconName1] = useState("Home");
   const [iconName2, setIconName2] = useState("");
@@ -78,6 +77,11 @@ export default function IconInputWithValidationDisplay({
 // ✅ Press Enter to validate
 // ✅ Search Lucide opens site frame; paste <IconName />; optional Icon gallery window
 // ✅ Seamlessly replaces standard Input component`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

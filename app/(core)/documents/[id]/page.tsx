@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
@@ -123,7 +124,7 @@ export default function DocumentPage({
           <div className="text-destructive">Could not load document.</div>
           <div className="text-muted-foreground">{error}</div>
           <Button variant="outline" size="sm" asChild>
-            <a href="/documents">Back to documents</a>
+            <Link href="/documents">Back to documents</Link>
           </Button>
         </div>
       </>

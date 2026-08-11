@@ -537,7 +537,22 @@ function GuidedVariableContent({
 // MAIN COMPONENT
 // ============================================================================
 
-export function GuidedVariableInputs({
+/**
+ * The nothing-to-ask guard is its OWN component, above the hooked body.
+ *
+ * It used to be `if (total === 0) return null;` sitting between the effects and
+ * six `useCallback`s below, which made those six CONDITIONAL — an agent whose
+ * variable list arrives a beat after mount took the component from 5 hooks to
+ * 11 in one render, and React throws "rendered more hooks than during the
+ * previous render". Splitting it out also lets the body assume a non-empty
+ * list, which every line below the old guard already did.
+ */
+export function GuidedVariableInputs(props: GuidedVariableInputsProps) {
+  if (props.variableDefaults.length === 0) return null;
+  return <GuidedVariableInputsBody {...props} />;
+}
+
+function GuidedVariableInputsBody({
   variableDefaults,
   values,
   onChange,
@@ -562,8 +577,6 @@ export function GuidedVariableInputs({
     ro.observe(el);
     return () => ro.disconnect();
   }, [activeIndex, isCollapsed]);
-
-  if (total === 0) return null;
 
   const variable = variableDefaults[activeIndex];
   const value = String(values[variable.name] ?? variable.defaultValue ?? "");

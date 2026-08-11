@@ -72,7 +72,35 @@ interface AutoCreateAgentAppFormProps {
 
 type CreationMode = "initial" | "select" | "describe";
 
-export function AutoCreateAgentAppForm({
+/**
+ * The "no agent selected" screen is its OWN component, above the hooked form.
+ *
+ * It used to be an early `return` sitting between this component's `useState`
+ * calls and its 8 later hooks (`useAutoCreateApp`, three `useAppSelector`s, the
+ * effects). That made those hooks CONDITIONAL — picking an agent from the
+ * dropdown took the component from 14 hooks to 22 in one render and React
+ * throws "rendered more hooks than during the previous render". Splitting the
+ * guard out is the fix; the form below only ever runs with an agent.
+ */
+export function AutoCreateAgentAppForm(props: AutoCreateAgentAppFormProps) {
+  if (!props.agent) {
+    return (
+      <div className="flex items-center justify-center min-h-[40dvh]">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center space-y-3">
+            <p className="text-muted-foreground text-lg">No agent selected</p>
+            <p className="text-sm text-muted-foreground">
+              Please select an agent from the dropdown above to continue
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  return <AutoCreateAgentAppFormWithAgent {...props} />;
+}
+
+function AutoCreateAgentAppFormWithAgent({
   agent,
   agents,
   categories,
@@ -113,22 +141,6 @@ export function AutoCreateAgentAppForm({
 
   // Debug mode selector
   const isDebugMode = useAppSelector(selectIsDebugMode);
-
-  // Safety check: If no agent is provided, show a message
-  if (!agent) {
-    return (
-      <div className="flex items-center justify-center min-h-[40dvh]">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center space-y-3">
-            <p className="text-muted-foreground text-lg">No agent selected</p>
-            <p className="text-sm text-muted-foreground">
-              Please select an agent from the dropdown above to continue
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   // Auto-create hook
   const {

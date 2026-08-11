@@ -11,7 +11,6 @@ interface ComponentDisplayProps {
 }
 
 export default function IconSelectDisplay({ component }: ComponentDisplayProps) {
-  if (!component) return null;
   
   const [selectedValue, setSelectedValue] = useState('home');
   
@@ -89,6 +88,11 @@ const [selectedValue, setSelectedValue] = useState('home');
   triggerClassName="h-8 w-8 bg-zinc-200 dark:bg-zinc-800"
   contentClassName="min-w-[200px]"
 />`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

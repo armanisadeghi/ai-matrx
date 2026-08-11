@@ -19,7 +19,6 @@ interface ComponentDisplayProps {
 export default function FloatingDockDisplay({
   component,
 }: ComponentDisplayProps) {
-  if (!component) return null;
 
   // State for active tab
   const [activeTab, setActiveTab] = useState<string>("original");
@@ -130,6 +129,11 @@ const dockItems = [
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

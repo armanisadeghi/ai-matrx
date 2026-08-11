@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import type { UserListWithItems } from "@/features/user-lists/types";
@@ -58,12 +59,12 @@ export default async function ListDetailPage({ params }: ListDetailPageProps) {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Mobile back button */}
       <div className="md:hidden flex items-center gap-2 px-4 py-2.5 border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <a
+        <Link
           href="/lists"
           className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
         >
           ← My Lists
-        </a>
+        </Link>
       </div>
 
       <div className="flex-1 overflow-hidden">

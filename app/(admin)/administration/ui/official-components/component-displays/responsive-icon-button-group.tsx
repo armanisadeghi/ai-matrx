@@ -207,6 +207,7 @@ const buttons: IconButtonConfig[] = [
     <ComponentDisplayGroup
       items={[
         <ComponentDisplayWrapper
+          key="default"
           component={component}
           code={code1}
           description="Default — bare buttons, no container styling. Download is disabled."
@@ -217,6 +218,7 @@ const buttons: IconButtonConfig[] = [
         </ComponentDisplayWrapper>,
 
         <ComponentDisplayWrapper
+          key="classname"
           component={component}
           code={code2}
           description="className — border, rounded corners, and padding applied to the container via className."
@@ -231,6 +233,7 @@ const buttons: IconButtonConfig[] = [
         </ComponentDisplayWrapper>,
 
         <ComponentDisplayWrapper
+          key="force-mobile"
           component={component}
           code={codeForceMobile}
           description="forceMobile — collapses all buttons into a bottom sheet. On real mobile this happens automatically; this prop forces it for testing or tight layouts. Tap '...' to open."
@@ -245,6 +248,7 @@ const buttons: IconButtonConfig[] = [
         </ComponentDisplayWrapper>,
 
         <ComponentDisplayWrapper
+          key="custom-trigger"
           component={component}
           code={codeCustomTrigger}
           description="mobileTrigger — swap the default '...' icon for any node. Useful when the group sits inside a toolbar that needs a labelled button."
@@ -265,6 +269,7 @@ const buttons: IconButtonConfig[] = [
         </ComponentDisplayWrapper>,
 
         <ComponentDisplayWrapper
+          key="component-slot"
           component={component}
           code={codeComponent}
           description="component slot — any React node (badge, popover, dropdown) slots in alongside the icon buttons without breaking the group."
@@ -279,6 +284,7 @@ const buttons: IconButtonConfig[] = [
         </ComponentDisplayWrapper>,
 
         <ComponentDisplayWrapper
+          key="render-slot"
           component={component}
           code={codeRender}
           description="render() — receives isMobile so you can provide entirely different desktop vs. sheet UI for the same logical button. The Favourite button here is a full labelled button on desktop and a full-width sheet row on mobile."

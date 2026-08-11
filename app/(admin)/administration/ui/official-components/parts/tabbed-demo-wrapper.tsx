@@ -28,14 +28,16 @@ export function createTabbedComponentDisplay(
 ) {
   // Return a component that conforms to the ComponentDisplayProps interface
   return function TabbedDemo({ component }: TabbedDemoWrapperProps) {
-    if (!component) return null;
-    
     const [activeTab, setActiveTab] = useState<string>(components[0].id);
-    
+
     // Find the active component config
     const activeConfig = components.find(c => c.id === activeTab) || components[0];
-    const SelectedComponent = activeConfig.component;
-    
+
+    // The guard sits BELOW the hook: an early return above it makes useState
+    // conditional (react-hooks/rules-of-hooks) and React throws the moment
+    // `component` flips from undefined to defined.
+    if (!component) return null;
+
     return (
       <ComponentDisplayWrapper
         component={component}

@@ -19,7 +19,6 @@ const HelpIcon: React.FC<HelpIconProps> = ({
   required = false,
   onAiAssistance
 }) => {
-  if (!text && !content) return null;
   
   const [copied, setCopied] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -132,6 +131,12 @@ const HelpIcon: React.FC<HelpIconProps> = ({
     ));
   };
   
+  // The nothing-to-show guard sits BELOW every hook. Above them it made all 8
+  // hook calls conditional (react-hooks/rules-of-hooks) — a HelpIcon whose
+  // `text` arrives asynchronously would crash with "rendered more hooks than
+  // during the previous render".
+  if (!text && !content) return null;
+
   return (
     <div 
       className={`inline-block relative cursor-help ${className}`}

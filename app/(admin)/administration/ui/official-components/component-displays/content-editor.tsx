@@ -42,7 +42,6 @@ interface ComponentDisplayProps {
 export default function ContentEditorDisplay({
   component,
 }: ComponentDisplayProps) {
-  if (!component) return null;
 
   // Demo state
   const [content, setContent] = useState(
@@ -478,6 +477,11 @@ const customActions: HeaderAction[] = [
       },
     },
   ];
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <>

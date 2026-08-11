@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
@@ -172,7 +173,7 @@ export default function WorkbookPage({
           <div className="text-destructive">Could not load workbook.</div>
           <div className="text-muted-foreground">{error}</div>
           <Button variant="outline" size="sm" asChild>
-            <a href="/workbooks">Back to workbooks</a>
+            <Link href="/workbooks">Back to workbooks</Link>
           </Button>
         </div>
       </>

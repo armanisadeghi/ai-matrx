@@ -11,7 +11,6 @@ interface ComponentDisplayProps {
 }
 
 export default function AdvancedCollapsibleDisplay({ component }: ComponentDisplayProps) {
-  if (!component) return null;
   
   const [content, setContent] = useState<string>("This is some example content that can be saved, reset, copied, or viewed in fullscreen mode.\n\nTry out the action buttons below!\n\nThe component includes modern visual feedback for actions:\n- Save button shows a green checkmark when clicked\n- Reset button shows a green checkmark when clicked\n- Copy button has built-in success animation\n- Fullscreen button expands the content while maintaining state");
   const [savedContent, setSavedContent] = useState<string>(content);
@@ -80,6 +79,11 @@ const handleReset = () => {
     />
   </div>
 </AdvancedCollapsible>`;
+
+  // The guard sits BELOW every hook: an early return above them makes the hook
+  // calls conditional (react-hooks/rules-of-hooks) and React throws the moment
+  // `component` flips from undefined to defined.
+  if (!component) return null;
 
   return (
     <ComponentDisplayWrapper

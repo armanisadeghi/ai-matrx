@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Code2,
   Database,
@@ -287,9 +288,9 @@ function EmptyState() {
       </p>
       <p className="text-xs text-muted-foreground max-w-md mt-3">
         Don't have repos yet but have orphan code files?{" "}
-        <a href="/sandbox" className="underline">
+        <Link href="/sandbox" className="underline">
           Open a sandbox
-        </a>{" "}
+        </Link>{" "}
         to create one.
       </p>
     </div>
