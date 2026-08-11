@@ -155,6 +155,56 @@ export async function createGenerationDraft(
 }
 
 /**
+ * Remove the placeholder version snapshot the draft insert leaves behind.
+ *
+ * `app.definition` seeds `app.definition_version` v1 on INSERT
+ * (`trg_aga_apps_seed_v1`) and snapshots again on any UPDATE that changes
+ * `component_code` (`trg_aga_apps_snapshot_version`). Because the draft row is
+ * created BEFORE the code exists, v1 captures `component_code = ''` — a
+ * restorable snapshot that would BLANK the user's app from the versions page.
+ *
+ * So: drop the empty snapshot and renumber the real one to 1, leaving exactly
+ * the single, correct version row the pre-draft flow produced. Never throws —
+ * a failure here costs a junk row, never the generated code.
+ */
+async function pruneEmptyCodeSnapshot(appId: string): Promise<void> {
+  try {
+    const { error: deleteError } = await supabase
+      .schema("app")
+      .from("definition_version")
+      .delete()
+      .eq("app_id", appId)
+      .eq("component_code", "");
+    if (deleteError) {
+      console.warn(
+        "[autoCreateDraft] Could not prune the empty placeholder version:",
+        deleteError,
+      );
+      return;
+    }
+
+    // Renumber only when the real snapshot is now the ONLY row, so this can
+    // never disturb an app that already has a genuine version history.
+    const { data: remaining, error: readError } = await supabase
+      .schema("app")
+      .from("definition_version")
+      .select("id, version_number")
+      .eq("app_id", appId);
+    if (readError || !remaining || remaining.length !== 1) return;
+    const only = remaining[0] as { id: string; version_number: number };
+    if (only.version_number === 1) return;
+
+    await supabase
+      .schema("app")
+      .from("definition_version")
+      .update({ version_number: 1 })
+      .eq("id", only.id);
+  } catch (error) {
+    console.warn("[autoCreateDraft] Version-snapshot prune failed:", error);
+  }
+}
+
+/**
  * Persist the generated TSX. This is the FIRST thing that happens after the
  * code run resolves — nothing may run between the generation and this write.
  * Retried once, because losing this write loses a 5-minute paid run.
@@ -173,7 +223,10 @@ export async function saveDraftCode(
       .update({ component_code: code, metadata: metadata as Json })
       .eq("id", handle.appId);
 
-    if (!error) return { ...handle, metadata, progress };
+    if (!error) {
+      await pruneEmptyCodeSnapshot(handle.appId);
+      return { ...handle, metadata, progress };
+    }
     lastError = error;
     console.error(
       `[autoCreateDraft] Failed to persist generated code (attempt ${attempt + 1}):`,
