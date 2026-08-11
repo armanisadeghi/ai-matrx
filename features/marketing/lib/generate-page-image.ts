@@ -2,9 +2,17 @@
  * generate-page-image.ts — headless agent-driven image generation for the
  * page workspace's image plan. The proven runVisionGrader pattern
  * (features/education/assessment/data/imageGrading.ts): launch
- * (autoRun:false, background, isEphemeral:false), set input, execute, wait
- * for the run to finish, pull the result out of redux, destroy the instance.
+ * (autoRun:false, isEphemeral:false), set input, execute, wait for the run to
+ * finish, pull the result out of redux, destroy the instance.
  * Callers own persistence (the plan entry's file_id) and UI.
+ *
+ * LIVE POSTURE (2026-08-11). These runs are minutes long and used to be fully
+ * invisible — a spinner on the button and nothing else, which THE FLOATING LAW
+ * bans (features/window-panels/FEATURE.md). Every path now floats its run in
+ * the canonical `LiveRunWindow` via `runHeadlessAgent`'s `live` option: the
+ * two-step pipeline shows the prompt being written and then the image being
+ * rendered IN THE SAME window, and the finished image stays on screen (its
+ * instance is held until the next run) instead of vanishing at completion.
  *
  * `runHeadlessAgent` + `waitForAnswerText` are exported as THE shared
  * headless-agent shell for marketing — generate-video-metadata.ts consumes
@@ -35,6 +43,8 @@ import { launchAgentExecution } from "@/features/agents/redux/execution-system/t
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
+import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   selectAnswerText,
   selectRequestStatus,
@@ -157,12 +167,32 @@ export interface HeadlessRunArgs {
   userText: string;
   /** Passed straight to the run as runtime variables (imageGrading pattern). */
   variables?: Record<string, string>;
+  /**
+   * Float this run in the canonical `LiveRunWindow` instead of hiding it behind
+   * the caller's spinner (THE FLOATING LAW). Pass the SAME `instanceId` for
+   * every step of a multi-step pipeline and each step re-binds the one window
+   * under its own label, so the user watches the prompt get written and then
+   * the image appear — in one place, with the page underneath never moving.
+   */
+  live?: { instanceId: string; label: string };
 }
+
+/**
+ * The instance a live run deliberately kept alive so its finished output stays
+ * readable in the window. Released when the next live run starts — at most ONE
+ * is ever held. (Destroying it at completion would blank the window at the
+ * exact moment the image lands.)
+ */
+let lastLiveConversationId: string | null = null;
 
 /**
  * Launch → set input → execute → destroy, handing the live requestId to
  * `collect` while the instance is still alive. The ONE headless shell every
  * path shares.
+ *
+ * With `args.live`, the run is NOT invisible: the window opens on the launch
+ * (pending), binds the requestId the moment the stream connects, and the
+ * instance outlives the call so the completed output survives.
  */
 export async function runHeadlessAgent<T>(
   dispatch: AppDispatch,
@@ -170,6 +200,16 @@ export async function runHeadlessAgent<T>(
   collect: (requestId: string) => Promise<T>,
 ): Promise<T> {
   let conversationId: string | null = null;
+  let liveBound = false;
+  if (args.live) {
+    dispatch(
+      openLiveRunWindowAction({
+        instanceId: args.live.instanceId,
+        label: args.live.label,
+        pending: true,
+      }),
+    );
+  }
   try {
     const launch = await dispatch(
       launchAgentExecution({
@@ -178,7 +218,10 @@ export async function runHeadlessAgent<T>(
         sourceFeature: "marketing",
         isEphemeral: false,
         ...(args.variables ? { runtime: { variables: args.variables } } : {}),
-        config: { autoRun: false, displayMode: "background" },
+        config: {
+          autoRun: false,
+          displayMode: args.live ? "direct" : "background",
+        },
       }),
     ).unwrap();
     conversationId = launch.conversationId;
@@ -189,9 +232,43 @@ export async function runHeadlessAgent<T>(
     const requestId = exec.requestId;
     if (!requestId) throw new Error("agent run returned no request id");
 
+    if (args.live) {
+      // The previous step/run's instance is superseded the moment this one has
+      // a stream to show — never before, or the window blanks between steps.
+      if (lastLiveConversationId && lastLiveConversationId !== conversationId) {
+        dispatch(destroyInstanceIfAllowed(lastLiveConversationId));
+      }
+      lastLiveConversationId = conversationId;
+      liveBound = true;
+      dispatch(
+        openLiveRunWindowAction({
+          instanceId: args.live.instanceId,
+          label: args.live.label,
+          conversationId,
+          requestId,
+          pending: false,
+        }),
+      );
+    }
+
     return await collect(requestId);
   } finally {
-    if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
+    // A live run's instance is held (see `lastLiveConversationId`); a headless
+    // one is destroyed exactly as before.
+    if (conversationId && !args.live) {
+      dispatch(destroyInstanceIfAllowed(conversationId));
+    }
+    // The launch died before a stream existed: a window stuck on "pending"
+    // forever is worse than the spinner this replaced. Close it and let the
+    // caller's own loud, step-attributed toast carry the failure.
+    if (args.live && !liveBound) {
+      dispatch(
+        closeOverlay({
+          overlayId: "liveRunWindow",
+          instanceId: args.live.instanceId,
+        }),
+      );
+    }
   }
 }
 
@@ -208,6 +285,17 @@ export interface GeneratePageImageArgs {
   /** Full image spec — description, alt intent, placement, page context. */
   prompt: string;
   surfaceKey: string;
+  /**
+   * Window identity for the floating live run. Pass a per-subject id (e.g. the
+   * plan entry's id) so generating a second image opens its own window instead
+   * of stealing the first one's. Defaults to one window per surface.
+   */
+  liveInstanceId?: string;
+}
+
+/** One window per subject; the surface is the fallback subject. */
+function liveWindowId(surfaceKey: string, liveInstanceId?: string): string {
+  return liveInstanceId ?? `image-run:${surfaceKey}`;
 }
 
 /**
@@ -227,6 +315,10 @@ export function generatePageImage(args: GeneratePageImageArgs) {
           agentId: args.agentId,
           surfaceKey: args.surfaceKey,
           userText: args.prompt,
+          live: {
+            instanceId: liveWindowId(args.surfaceKey, args.liveInstanceId),
+            label: "Generating the image",
+          },
         },
         (requestId) => waitForImage(getState, requestId),
       );
@@ -248,6 +340,8 @@ export interface GeneratePageImageTwoStepArgs {
   /** Style preset (or custom style text) — empty string means unstyled. */
   style: string;
   surfaceKey: string;
+  /** Per-subject live-window id (see GeneratePageImageArgs). */
+  liveInstanceId?: string;
 }
 
 /**
@@ -261,6 +355,10 @@ export function generatePageImageTwoStep(args: GeneratePageImageTwoStepArgs) {
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<PageImageResult> => {
+    // ONE window for BOTH steps: the prompt streams into it word by word, then
+    // the same window switches to the render step and the image lands in it.
+    const liveInstanceId = liveWindowId(args.surfaceKey, args.liveInstanceId);
+
     // Step 1 — prompt generation (text run, variables carry the payload).
     let imagePrompt: string | null = null;
     try {
@@ -274,6 +372,7 @@ export function generatePageImageTwoStep(args: GeneratePageImageTwoStepArgs) {
             intent_or_content: args.spec,
             style: args.style || "No specific style — pick the best fit.",
           },
+          live: { instanceId: liveInstanceId, label: "Writing the image prompt" },
         },
         (requestId) => waitForAnswerText(getState, requestId),
       );
@@ -307,6 +406,7 @@ export function generatePageImageTwoStep(args: GeneratePageImageTwoStepArgs) {
           surfaceKey: args.surfaceKey,
           userText: "Generate the image now.",
           variables: { image_description: imagePrompt },
+          live: { instanceId: liveInstanceId, label: "Rendering the image" },
         },
         (requestId) => waitForImage(getState, requestId),
       );
@@ -333,6 +433,8 @@ export interface GeneratePageImageAllInOneArgs {
   spec: string;
   style: string;
   surfaceKey: string;
+  /** Per-subject live-window id (see GeneratePageImageArgs). */
+  liveInstanceId?: string;
 }
 
 /**
@@ -355,6 +457,10 @@ export function generatePageImageAllInOne(args: GeneratePageImageAllInOneArgs) {
             intent_or_content: args.spec,
             style: args.style || "No specific style — pick the best fit.",
             count: "1",
+          },
+          live: {
+            instanceId: liveWindowId(args.surfaceKey, args.liveInstanceId),
+            label: "Generating the image",
           },
         },
         (requestId) => waitForImage(getState, requestId),

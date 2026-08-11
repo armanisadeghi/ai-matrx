@@ -7,10 +7,21 @@
 // (filling blanks, fixing wrong ones, confirming good ones). Those are written to
 // the member EDGES, and the orchestrator's <available_agents> block is then built
 // deterministically from the corrected role/gap + each member's declared I/O.
+//
+// LIVE POSTURE (2026-08-11). The describe pass is the long part — one model call
+// that reads EVERY member of the set — and it used to run headless behind the
+// Sync button's spinner. It now runs `displayMode: "direct"` and streams into
+// the floating `LiveRunWindow` (THE FLOATING LAW,
+// features/window-panels/FEATURE.md). The window is floating, not inline: the
+// builder canvas underneath must not shift while the user watches. The run's
+// instance is deliberately KEPT after completion so the finished description
+// stays readable in the window; the next sync releases it.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { selectRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { saveMemberMeta, loadAgentSet } from "@/features/agents/redux/agent-sets/thunks";
@@ -32,6 +43,15 @@ import {
 } from "./constants";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
+
+/**
+ * The conversation whose instance the LAST sync deliberately kept alive so its
+ * finished output stays readable in the floating window (THE FLOATING LAW: a
+ * run that vanishes at the moment it completes is the same defect as a
+ * spinner). Destroyed when the next sync starts, so at most ONE describer
+ * instance is ever held.
+ */
+let lastLiveSyncConversationId: string | null = null;
 
 /** One member's config + its current set role, fed to the describer. */
 interface MemberDumpEntry {
@@ -137,6 +157,30 @@ export function syncOrchestratorPrompt(args: {
     // retry a couple of times before giving up rather than silently doing the
     // wrong thing. `lastDetail` carries the most specific failure reason for the
     // final loud error.
+    //
+    // THE FLOATING LAW: this is a multi-minute AI pass over every member of the
+    // set, and it used to run `displayMode: "background"` behind a spinner on
+    // the Sync button. It now runs `direct` and streams into the canonical
+    // floating `LiveRunWindow` — the user watches the describer work through
+    // their agents instead of watching a spinner, and the builder underneath
+    // never shifts. One window per set (`instanceId`), so a re-sync (and each
+    // retry attempt) re-binds the SAME window instead of stacking a new one.
+    const windowInstanceId = `agent-set-sync:${args.orchestratorId}`;
+    const runLabel = "Reading your agents";
+    dispatch(
+      openLiveRunWindowAction({
+        instanceId: windowInstanceId,
+        label: runLabel,
+        pending: true,
+      }),
+    );
+    // The previous sync's instance was kept alive so its output stayed
+    // readable; this run replaces it, so release it now.
+    if (lastLiveSyncConversationId) {
+      dispatch(destroyInstanceIfAllowed(lastLiveSyncConversationId));
+      lastLiveSyncConversationId = null;
+    }
+
     const DESCRIBE_ATTEMPTS = 3;
     let responseText = "";
     let lastDetail = "the AI run didn't execute";
@@ -150,7 +194,36 @@ export function syncOrchestratorPrompt(args: {
             sourceFeature: "agent-generator",
             isEphemeral: true,
             autoClearConversation: true,
-            config: { displayMode: "background", autoRun: true, allowChat: false },
+            config: {
+              displayMode: "direct",
+              autoRun: true,
+              allowChat: false,
+              // The product is the roles, not the model's private reasoning.
+              hideReasoning: true,
+            },
+            // Fires BEFORE the stream — this is what turns the window from
+            // "pending" into live output within a second of the click.
+            onConversationCreated: (conversationId) => {
+              // A retry supersedes the previous attempt's instance.
+              if (
+                lastLiveSyncConversationId &&
+                lastLiveSyncConversationId !== conversationId
+              ) {
+                dispatch(destroyInstanceIfAllowed(lastLiveSyncConversationId));
+              }
+              lastLiveSyncConversationId = conversationId;
+              dispatch(
+                openLiveRunWindowAction({
+                  instanceId: windowInstanceId,
+                  label:
+                    attempt === 1
+                      ? runLabel
+                      : `${runLabel} (retry ${attempt} of ${DESCRIBE_ATTEMPTS})`,
+                  conversationId,
+                  pending: false,
+                }),
+              );
+            },
             runtime: {
               variables: {
                 [ROLE_DESCRIBER_INPUT_VAR]: JSON.stringify(dump, null, 2),

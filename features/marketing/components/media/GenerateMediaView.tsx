@@ -144,6 +144,9 @@ export function GenerateMediaView({
             spec,
             style: styleOverride.trim() || preset.style,
             surfaceKey: MARKETING_SITE_MEDIA_SURFACE_NAME,
+            // One window per site's media desk — a re-order replaces the run
+            // in the window the user is already watching.
+            liveInstanceId: `site-media-image:${site.id}`,
           }),
         ),
         new Promise<PageImageResult>((resolve) =>

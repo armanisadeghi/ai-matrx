@@ -3,17 +3,32 @@
 // features/podcasts/generator/useEpisodeArticles.ts
 //
 // Generate + persist per-episode companion content (blog post / show notes).
-// Each kind maps to a built system agent run via the one-shot `useRunAgent`
-// primitive; the streamed markdown is held in `drafts` (live preview) and
-// saved to pc_articles via `articleService`. Regenerating replaces the row
-// (unique (episode_id, kind)).
+// Each kind maps to a DB-managed agent slot; the assembled markdown is held in
+// `drafts` (preview before reload) and saved to pc_articles via
+// `articleService`. Regenerating replaces the row (unique (episode_id, kind)).
+//
+// LIVE POSTURE (2026-08-11). This ran through `useRunAgent`, which produces no
+// requestId at all — live rendering was structurally impossible from it, so the
+// user watched a spinner for the minutes these agents take. THE FLOATING LAW's
+// exact violation. It now runs through `useLiveAgentRun` (the same primitive
+// the title optimizer uses) and streams into the floating `LiveRunWindow`.
+// Floating, not inline: the studio card sits mid-page and an inline block would
+// shove the episode's own content down the moment a run starts.
+//
+// ONE hook instance PER KIND, deliberately: the blog post and the show notes
+// can be generated at the same time, and a single live-run hook holds a single
+// conversation — sharing one would make the second run steal the first's
+// window and destroy its instance mid-stream.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
-import { useRunAgent } from "@/features/agents/run/useRunAgent";
-import { resolveAgentSlot } from "@/features/agents/slots/service";
+import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import {
+  useOpenLiveRunWindow,
+  type LiveRunWindowHandle,
+} from "@/features/overlays/openers/liveRunWindow";
 import { articleService } from "@/features/podcasts/articleService";
-import { assembleArticle } from "@/features/podcasts/generator/articleMarkdown";
+import { assembleArticleFromValue } from "@/features/podcasts/generator/articleMarkdown";
 import { slugify } from "@/features/podcasts/utils";
 import type {
   PcArticle,
@@ -64,7 +79,15 @@ export interface UseEpisodeArticles {
 export function useEpisodeArticles(
   episode: PcEpisodeWithShow | null,
 ): UseEpisodeArticles {
-  const { run } = useRunAgent();
+  // One live-run hook per kind (see the header note on concurrency).
+  const blogRun = useLiveAgentRun();
+  const notesRun = useLiveAgentRun();
+  const openLiveRunWindow = useOpenLiveRunWindow();
+  // One window per episode+kind: re-generating replaces the run inside the
+  // window the user is already watching instead of stacking a second one.
+  const windowsRef = useRef<Partial<Record<PcArticleKind, LiveRunWindowHandle>>>(
+    {},
+  );
   const [articles, setArticles] = useState<
     Partial<Record<PcArticleKind, PcArticle>>
   >({});
@@ -108,6 +131,15 @@ export function useEpisodeArticles(
       }
       setBusy((b) => ({ ...b, [kind]: true }));
       setDrafts((d) => ({ ...d, [kind]: undefined }));
+      // Float FIRST, before the launch: the window is what the user watches
+      // while the run connects, so opening it after the stream would be a
+      // spinner by another name.
+      const handle = openLiveRunWindow({
+        instanceId: `episode-article:${kind}:${episode.id}`,
+        label: kind === "blog" ? "Writing the blog post" : "Writing the show notes",
+        pending: true,
+      });
+      windowsRef.current[kind] = handle;
       try {
         const metadataJson = JSON.stringify(episodeMetadata(episode));
         const variables: Record<string, string> =
@@ -124,25 +156,35 @@ export function useEpisodeArticles(
                   ? String(episode.duration_seconds)
                   : "",
               };
-        // The agents emit a structured JSON envelope (behind a <reasoning>
-        // preamble), NOT raw markdown — streaming it raw would show JSON, so we
-        // assemble renderable markdown from the parsed object on completion.
-        const slot = await resolveAgentSlot(
-          kind === "blog" ? BLOG_WRITER_SLOT_KEY : SHOW_NOTES_SLOT_KEY,
-        );
-        const agentText = await run({
-          agentId: slot.agentId,
-          variables,
-          configOverrides: slot.configOverrides ?? undefined,
-          sourceApp: "matrx-frontend",
+        // These agents answer with a structured JSON envelope, so the run goes
+        // through the structured-JSON primitive and hands back the parsed
+        // object; the renderable markdown is assembled from it. The slot is
+        // resolved INSIDE the canonical launcher (config_overrides preserved) —
+        // never an agent id resolved out here.
+        const value = await (kind === "blog" ? blogRun : notesRun).run<unknown>({
+          slotKey: kind === "blog" ? BLOG_WRITER_SLOT_KEY : SHOW_NOTES_SLOT_KEY,
+          surfaceKey: `podcast-episode-article:${kind}`,
           sourceFeature: "podcasts",
+          variables,
+          // The live handle lands mid-stream; feeding it to the already-open
+          // window is what turns "pending" into streamed output.
+          onConversationCreated: (conversationId) => {
+            handle.update({ conversationId, pending: false });
+          },
         });
         const fallbackTitle = `${episode.title} — ${kind === "blog" ? "Blog" : "Show notes"}`;
-        const { title, markdown, slugSuggestion } = assembleArticle(
+        const { title, markdown, slugSuggestion } = assembleArticleFromValue(
           kind,
-          agentText,
+          value,
           fallbackTitle,
         );
+        if (!markdown.trim()) {
+          throw new Error(
+            kind === "blog"
+              ? "The blog writer returned nothing usable."
+              : "The show-notes writer returned nothing usable.",
+          );
+        }
         setDrafts((d) => ({ ...d, [kind]: markdown }));
         const saved = await articleService.upsert({
           episode_id: episode.id,
@@ -164,11 +206,18 @@ export function useEpisodeArticles(
         toast.success(kind === "blog" ? "Blog post ready." : "Show notes ready.");
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Generation failed.");
+        // The window keeps the partial stream and the run's own error visible.
+        // It is closed only when nothing ever connected — a window stuck on
+        // "pending" forever is worse than the spinner this replaced.
+        if (!(kind === "blog" ? blogRun : notesRun).conversationId) {
+          handle.close();
+          delete windowsRef.current[kind];
+        }
       } finally {
         setBusy((b) => ({ ...b, [kind]: false }));
       }
     },
-    [episode, run],
+    [episode, blogRun, notesRun, openLiveRunWindow],
   );
 
   const togglePublish = useCallback(

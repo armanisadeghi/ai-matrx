@@ -180,6 +180,9 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
             agentId: imageAgentId,
             prompt: buildSpec(entry),
             surfaceKey: MARKETING_PAGE_SURFACE_NAME,
+            // One floating window per planned image, so generating two of
+            // them side by side gives the user two runs to watch.
+            liveInstanceId: `page-image:${entry.id}`,
           }),
         );
         if (!fileId) {
@@ -197,6 +200,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
         spec: buildSpec(entry),
         style: entry.style ?? "",
         surfaceKey: MARKETING_PAGE_SURFACE_NAME,
+        liveInstanceId: `page-image:${entry.id}`,
       };
       const result: PageImageResult = await dispatch(
         mode === "all-in-one"

@@ -105,7 +105,31 @@ function showNotesMarkdown(
 }
 
 /**
- * Parse the agent's accumulated text into renderable markdown + title.
+ * Assemble from the agent's ALREADY-EXTRACTED value — the canonical path now
+ * that these runs go through the structured-JSON primitive
+ * (`useLiveAgentRun` → `runHeadlessAgentJson`), which hands back the parsed
+ * object. A string is still accepted because the extractor's fuzzy fallback can
+ * legitimately resolve to one (and a future plain-markdown agent would).
+ */
+export function assembleArticleFromValue(
+  kind: PcArticleKind,
+  value: unknown,
+  fallbackTitle: string,
+): AssembledArticle {
+  if (typeof value === "string") {
+    return { title: fallbackTitle, markdown: value.trim() };
+  }
+  if (!value || typeof value !== "object") {
+    return { title: fallbackTitle, markdown: "" };
+  }
+  const obj = value as Record<string, unknown>;
+  return kind === "blog"
+    ? blogMarkdown(obj as BlogJson, fallbackTitle)
+    : showNotesMarkdown(obj as ShowNotesJson, fallbackTitle);
+}
+
+/**
+ * Parse the agent's accumulated TEXT into renderable markdown + title.
  * Falls back to treating the text as markdown directly if no JSON object is
  * found (so a future plain-markdown agent still works).
  */
@@ -118,8 +142,5 @@ export function assembleArticle(
   if (!extracted) {
     return { title: fallbackTitle, markdown: agentText.trim() };
   }
-  const obj = extracted.value as Record<string, unknown>;
-  return kind === "blog"
-    ? blogMarkdown(obj as BlogJson, fallbackTitle)
-    : showNotesMarkdown(obj as ShowNotesJson, fallbackTitle);
+  return assembleArticleFromValue(kind, extracted.value, fallbackTitle);
 }
