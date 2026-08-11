@@ -88,6 +88,7 @@ carry no agent-run import at all. That is the signature to search on next time.
 |---|---|---|
 | `features/pdf/scanner/{processing.ts,useScanSaveFlow.ts,components/ProcessingView.tsx}` — `/tools/scanner` | Step 3 "AI cleanup" = 2s DB poll for per-page cleaned_text COUNTS + a progress bar. The multi-LLM step, the expensive one, showed a percentage while the model's rewrite of the user's own scan stayed invisible. | The poll pulls each page's cleaned TEXT once it lands (`fetchCleanedPageText`, only pages that newly turned cleaned — one small select per page, never the whole doc per tick) and the step renders it in an auto-following pane. Counter + ledger stay, **under** the output. |
 | `features/transcription-cleanup/components/CleanupPad.tsx` — `/transcripts/cleanup` | "record → auto-clean → refine with ANY number of agents" fires up to 4 runs at once, but custom slots are tab pills (one visible) and an embedded host can hide Clean entirely. Every hidden pass streamed into a pane nobody could see, behind a 12px tab spinner. | A pass whose pane is not visible floats in `LiveRunWindow` — one per slot, stable `instanceId` so a re-run rebinds instead of stacking. Switching to a pass's own tab closes its window (the pane is the better home when it is on screen). |
+| `features/transcript-studio/redux/{runCleaningPass,runConceptPass,runModulePass,cleanRecording}.thunk.ts` — `/transcripts/studio`, `/transcripts/scribe` | All four passes launched `displayMode: "background"` and discarded the run; the column header spun a `RefreshCw` and segments appeared only when the whole pass finished. | Each thunk binds its conversation at `onConversationCreated` (`redux/liveRunWatch.ts`) and floats `liveRunWindow` for user-initiated causes; interval passes bind without stealing the screen and stay one click away via `<WatchRunButton>`. Batch re-clean narrates "Cleaning recording 2 of 7" into ONE window. Live-verified on a real session. |
 | `features/marketing/discovery/youtube/{service.ts,YouTubeResearchActions.tsx}` | Minutes of AI work (watch → transcribe → analyze → check claims) narrated real phases and threw the stream body away. | `adoptForeignStream` + floated `LiveRunWindow`. Phase/info events still drive the stage line; content never goes through `onEvent`. |
 
 ### Verified compliant — do not re-audit
@@ -127,6 +128,10 @@ carry no agent-run import at all. That is the signature to search on next time.
   The real upgrade is an aidream change: emit the docproc clean pipeline as a
   stream (it already has the shape — `rag.stage.progress` / `page_clean`), then
   the scanner adopts it and the poll dies. Cross-repo, own session.
+- **Transcript Studio runs are never loaded from the DB.** Nothing dispatches
+  `runsLoaded` and there is no `listAgentRuns` — so column run status AND the
+  new watch door are in-memory only, and a refresh mid-pass loses both. Class D,
+  pre-existing, found while fixing §3. Logged in `FOUND_DEFECTS.md`.
 - **A refresh still kills a cleanup pass.** `useAiPostProcess` holds its
   conversationId in local state; reload mid-run and the output is lost (the
   persist happens client-side on completion). Class D, unchanged by this pass.
@@ -185,23 +190,7 @@ output. Each is the two-line `useLiveAgentRun` + `<LiveRunDisplay>` migration.
 
 **Exemplar already fixed:** `features/education/assessment/components/create/AssessmentCreate.tsx`.
 
-### 3. Transcript Studio — four passes launch in the background, output appears only at the end — A, M
-
-`launchAgentExecution({ displayMode: "background" })` — the `requestId` exists
-and is discarded.
-
-- `features/transcript-studio/redux/runCleaningPass.thunk.ts:119` → `features/transcript-studio/components/columns/CleanedTranscriptColumn.tsx:105`
-- `features/transcript-studio/redux/runConceptPass.thunk.ts:145` → `.../columns/ConceptsColumn.tsx:129`
-- `features/transcript-studio/redux/runModulePass.thunk.ts:156` → `.../columns/ModuleColumn.tsx:103`
-- `features/transcript-studio/redux/cleanRecording.thunk.ts:143` → `.../scribe/SessionTranscriptViewer.tsx:65`, `.../scribe/FullTranscriptDrawer.tsx:60`
-
-Routes: `/transcripts/studio/[sessionId]`, `/transcripts/scribe`.
-
-**Fix:** return the `requestId` from each thunk, hold it in the session slice,
-and render `<LiveRunDisplay requestId>` in the owning column. These are long
-runs on a page the user watches — high pain per occurrence.
-
-### 4. Flashcards — 4 spinner-only runs — A, S–M
+### 3. Flashcards — 4 spinner-only runs — A, S–M
 
 - `features/flashcards/data/enhanceCard.ts` → `.../components/set-detail/EnhanceSetDialog.tsx`
 - `features/flashcards/fast-fire/agents/gradeCard.thunk.ts`, `.../grading-core.ts` → `FastFireLiveCard.tsx`, `SingleCardVoiceTest.tsx`
@@ -209,7 +198,7 @@ runs on a page the user watches — high pain per occurrence.
 
 Route family: `/education/flashcards/*`, `/education/fastfire`.
 
-### 5. Research Outputs Studio — slides card — A + E, M
+### 4. Research Outputs Studio — slides card — A + E, M
 
 **SEO card: DONE 2026-08-11.** New `seo_package` kind (+ child `faq_item`) and
 `SeoPackageBlock`; the run moved to `useLiveAgentRun({ slotKey })` +
@@ -229,7 +218,7 @@ has no `context_anchor`, so moving a surface off `useSlotRunner` / `useRunAgent`
 DROPS its durable-entity anchor. Land D165 first if that anchor is load-bearing
 for the surface you are migrating.
 
-### 6. Podcasts — three generators, silent by design — B (+E for two), S–M each
+### 5. Podcasts — three generators, silent by design — B (+E for two), S–M each
 
 `useEpisodeArticles.ts:67` and `useEpisodeChapters.ts:49` still use
 `useRunAgent`, which **produces no `requestId` at all** — live rendering is
@@ -253,7 +242,7 @@ They split three ways once the payloads were actually read:
   **Chipped.** (A `media_chapters` kind has since appeared in
   `system-kinds.ts` — check whether that chip already landed before starting.)
 
-### 7. Page-shifting live blocks — C, S each
+### 6. Page-shifting live blocks — C, S each
 
 The live block sits above the page's own results and pushes them down the
 instant a run starts.
@@ -273,7 +262,7 @@ be *earned*; none of these three is purpose-built enough to qualify.
 historical output) and `AiVisibilityWorkspace.tsx:599` (inside the run section,
 with a real empty-state). `KeywordResearchTab.tsx:267` renders at the bottom.
 
-### 8. Marketing miscellaneous — A, S–M
+### 7. Marketing miscellaneous — A, S–M
 
 - `features/marketing/lib/generate-page-image.ts` — background image run, holds
   a `requestId` (`:113`) and shows no live status.
@@ -285,7 +274,7 @@ with a real empty-state). `KeywordResearchTab.tsx:267` renders at the bottom.
   `features/marketing/components/operations/KeywordDataQualityPanel.tsx:99,211`
   — verify whether these are AI runs or plain saves before spending effort.
 
-### 9. Refresh-fragility only (stage narration is present) — D, M each
+### 8. Refresh-fragility only (stage narration is present) — D, M each
 
 These narrate real stages, which the law permits, but the run is an in-tab
 `await` — navigate away and it is gone with nothing persisted.
@@ -297,7 +286,7 @@ These narrate real stages, which the law permits, but the run is an in-tab
 Lowest priority: runs are short and the stage line means the user is not staring
 at nothing.
 
-### 10. Guard
+### 9. Guard
 
 Nominate "spinner-while-AI-works" as a pattern patrol (already logged in
 `.matrx/PATROL_SIGHTINGS.md`). A static heuristic is plausible: a component that
