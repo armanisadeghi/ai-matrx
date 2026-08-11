@@ -32,6 +32,23 @@ that every other piece of the registry references via FK.
 
 ## Change Log
 
+- 2026-08-11 — **Agent-writable, and the page's first surface emitter.**
+  `LookupsAdminPage` now mounts a `SurfaceRuntimeProvider` for
+  `matrx-admin/lookups`, fed by the new `components/LookupsSurfaceRuntime.tsx`
+  — a page-scoped store the three CRUD children and the open row dialog
+  publish into, so each keeps owning its own state. It builds both the live
+  scope and the single write target, `lookup_draft` (`{name?, description?}`,
+  `mode: "draft"`, `applyPolicy: "ask"`), which stages into the row form the
+  admin is looking at (opening the New form on the active tab when none is
+  open) and never touches the database — Save stays a human click. `name` is
+  accepted only while CREATING: the save is `upsert(onConflict: "name")`, so a
+  changed name on an edit would insert a second row rather than rename.
+  Supporting changes: the three dialogs' inline name regexes moved to the new
+  dependency-free `lookupsVocabulary.ts` (shared by the dialogs, the write
+  handler and the surface manifest, so they cannot drift), and the row dialogs
+  now `preventDefault` on `onInteractOutside` — dismissing the stacked
+  surface-write confirm was closing the form and discarding the staged draft.
+  Escape, Cancel and the X still close normally.
 - 2026-08-09 — Replaced the retired Executor Kind / Gate vocabulary with the
   live `ui.ui_client`, `ui.ui_surface`, and `tool.executor` model and current
   admin route.
