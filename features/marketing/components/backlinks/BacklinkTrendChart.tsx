@@ -19,11 +19,11 @@ import {
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
   YAxis,
 } from "recharts";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import { CalendarPeriodAxis } from "@/features/marketing/components/charts/CalendarPeriodAxis";
 import { formatGscDate } from "@/features/marketing/search-console/lib/format";
 import { humanTrend } from "@/features/marketing/components/backlinks/format";
 import type { BacklinkTrendPoint } from "@/features/marketing/data/backlinks-types";
@@ -54,17 +54,6 @@ function buildPoints(points: BacklinkTrendPoint[]): TrendChartPoint[] {
 
 function compactCount(value: number): string {
   return Intl.NumberFormat("en", { notation: "compact" }).format(value);
-}
-
-/** Month/day tick, read in UTC — observed_at is a date-only provider period. */
-function shortPeriod(iso: string): string {
-  const d = new Date(`${iso.slice(0, 10)}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
 }
 
 function ChartTooltip({
@@ -156,7 +145,6 @@ export function BacklinkTrendChart({
   }
 
   const data = buildPoints(points);
-  const tickInterval = Math.max(0, Math.floor(data.length / 8) - 1);
 
   return (
     <div className="group/chart relative p-2">
@@ -187,13 +175,9 @@ export function BacklinkTrendChart({
             stroke="var(--border)"
             vertical={false}
           />
-          <XAxis
+          <CalendarPeriodAxis
             dataKey="period"
-            tickFormatter={shortPeriod}
-            interval={tickInterval}
-            tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-            axisLine={{ stroke: "var(--border)" }}
-            tickLine={false}
+            periods={data.map((point) => point.period)}
           />
           <YAxis
             yAxisId="delta"
