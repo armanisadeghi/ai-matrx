@@ -113,6 +113,8 @@ describe("compiled bootstrap (system-components)", () => {
       keyword_relationship_research: "keyword_research",
       keyword_classification_batch_v1: "keyword_classification_batch",
       page_brief: "page_brief",
+      media_chapters: "media_chapters",
+      seo_package: "seo_package",
     });
   });
 });

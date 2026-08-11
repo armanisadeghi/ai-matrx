@@ -7,8 +7,11 @@
  * A registered shape gets exactly ONE component. If you need part of a brief
  * somewhere, import the PART exported below — `PageBriefAngle`,
  * `PageBriefPoints`, `PageBriefMustNotCover`, `PageBriefConcerns`. If you need
- * it editable, use `editable` + `onBriefChange`. If you need a verb on it, pass
- * `actions`. **Do not build a second brief renderer.** One was built
+ * it editable, use `editable` + `onBriefChange`. If you need a verb on it, name
+ * a surface write target with `acceptTarget` — the component runs it through
+ * the one action path, so the button a human clicks and the target an agent
+ * applies are the SAME operation. **Do not build a second brief renderer.**
+ * One was built
  * (`BriefEditor.tsx`, deleted 2026-08-11) and it immediately diverged: it
  * crushed full-paragraph directives into one-line textareas while this
  * component rendered the same data correctly in the window beside it.
@@ -22,8 +25,9 @@
  * Consumes the bridge serverData from `features/content-ir/kinds/page-brief.ts`.
  */
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
+  Check,
   Compass,
   FileText,
   Loader2,
@@ -33,6 +37,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import type { PageBriefData } from "@/features/content-ir/kinds/page-brief";
+import { useKindActionRunner } from "@/features/content-ir/react/actions/useKindActionRunner";
 import { cn } from "@/lib/utils";
 
 export interface PageBriefBlockProps {
@@ -45,13 +50,18 @@ export interface PageBriefBlockProps {
   editable?: boolean;
   onBriefChange?: (lines: string[]) => void;
   /**
-   * Verbs that act on THIS brief ("Use this brief", "Apply"), rendered in the
-   * component's own header. The action belongs on the component, never on a
-   * bespoke card beside it. A DB-loaded/sandboxed kind component reaches
-   * capabilities through the kind-component action registry instead
-   * (`features/content-ir/react/actions/kind-action-registry.ts`).
+   * Name of the surface write target that accepts this brief. When set, the
+   * component renders its own "Use this brief" button and runs it through the
+   * ONE action path — `runAction("apply_surface_write", …)` → the mounted
+   * surface's declared write target. There is no second mechanism: the same
+   * target is what an agent applies, so a human click and an agent write are
+   * literally the same operation.
    */
-  actions?: ReactNode;
+  acceptTarget?: string;
+  /** Button copy. Defaults to "Use this brief". */
+  acceptLabel?: string;
+  /** Hide the accept button when there is nothing pending to accept. */
+  canAccept?: boolean;
   /** Copy for the empty state when the brief has no points and is editable. */
   emptyHint?: string;
   className?: string;
@@ -302,12 +312,29 @@ export default function PageBriefBlock({
   serverData,
   editable = false,
   onBriefChange,
-  actions,
+  acceptTarget,
+  acceptLabel = "Use this brief",
+  canAccept = true,
   emptyHint,
   className,
 }: PageBriefBlockProps) {
+  const runAction = useKindActionRunner();
+  const [accepting, setAccepting] = useState(false);
   const data = readPageBriefData(serverData);
   if (!data) return null;
+
+  const accept = async () => {
+    if (!acceptTarget || accepting) return;
+    setAccepting(true);
+    // The runner never throws and owns its own loud failure reporting; a
+    // declined `ask` policy comes back as not-applied, which is not an error.
+    await runAction("apply_surface_write", {
+      target: acceptTarget,
+      value: true,
+      origin: "user",
+    });
+    setAccepting(false);
+  };
 
   return (
     <div className={cn("my-2 space-y-2", className)}>
@@ -331,7 +358,17 @@ export default function PageBriefBlock({
               ~{data.suggestedWordCount.toLocaleString()} words
             </span>
           )}
-          {actions}
+          {acceptTarget && canAccept ? (
+            <button
+              type="button"
+              onClick={() => void accept()}
+              disabled={accepting}
+              className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+            >
+              <Check className="h-3.5 w-3.5" />
+              {accepting ? "Applying…" : acceptLabel}
+            </button>
+          ) : null}
         </div>
       </div>
 

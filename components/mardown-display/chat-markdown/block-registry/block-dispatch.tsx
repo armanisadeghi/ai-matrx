@@ -258,6 +258,21 @@ export function isBlockLoading(block: {
  *    for the registered `page_brief` kind (`__kind` JSON arrival only — no
  *    tag/fence surface); never emitted upstream. Shape-classified by
  *    construction. STREAMING bridge, same contract as the keyword pair.
+ *  - `media_chapters` — produced ONLY by `applyIrKindRoute`'s compiled-bridge
+ *    flip for the registered `media_chapters` kind (`__kind` JSON arrival
+ *    only — no tag/fence surface); never emitted upstream. STREAMING bridge:
+ *    `chapters` is an array of a child kind, so rows appear one at a time.
+ *  - `episode_title_options` — produced ONLY by `applyIrKindRoute`'s
+ *    compiled-bridge flip for the registered `episode_title_options` kind
+ *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
+ *    upstream. Shape-classified by construction. STREAMING bridge; the cards
+ *    apply the picked title through the `episode_title` surface write target
+ *    when the page they landed on offers it.
+ *  - `seo_package` — produced ONLY by `applyIrKindRoute`'s compiled-bridge flip
+ *    for the registered `seo_package` kind (`__kind` JSON arrival only — no
+ *    tag/fence surface); never emitted upstream. STREAMING bridge: the title
+ *    lands with its character budget already measured, and `faq` is an array
+ *    of a child kind, so questions appear one at a time.
  */
 export type FeSynthesizedBlockType =
   | "media_block"
@@ -265,6 +280,9 @@ export type FeSynthesizedBlockType =
   | "keyword_research"
   | "keyword_classification_batch"
   | "page_brief"
+  | "media_chapters"
+  | "episode_title_options"
+  | "seo_package"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
 
@@ -341,6 +359,9 @@ export type ShapeBlockType =
   | "keyword_research"
   | "keyword_classification_batch"
   | "page_brief"
+  | "media_chapters"
+  | "episode_title_options"
+  | "seo_package"
   | "chart"
   | "map"
   | "stats"
@@ -1347,6 +1368,79 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.PageBriefBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (media_chapters → media_chapters): STREAMING bridge, same
+  // contract as page_brief — each chapter row appears as its object closes.
+  // No `onSeek` here: chat has no player to seek. Surfaces that own one
+  // (EpisodeChaptersPanel) render the same component with the handler.
+  media_chapters: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.MediaChaptersBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (episode_title_options): STREAMING bridge — each title card
+  // appears as it parses. Same loader / readable-JSON fallback contract as
+  // the kind-routed entries above.
+  episode_title_options: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.EpisodeTitleOptionsBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (seo_package): STREAMING bridge — the title arrives with its
+  // character budget already measured and each FAQ question lands as its
+  // object closes. Same loader / readable-JSON fallback contract as above.
+  seo_package: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.SeoPackageBlock
           key={index}
           serverData={block.serverData}
         />

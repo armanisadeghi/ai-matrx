@@ -71,6 +71,9 @@ import { KEYWORD_RESEARCH_KIND_DEFINITIONS } from "../kinds/keyword-research";
 import { VIDEO_TRANSCRIPT_RESEARCH_KIND_DEFINITIONS } from "../kinds/video-transcript-research";
 import { SEO_AUTHORITY_ROUTE_KIND_DEFINITIONS } from "../kinds/seo-authority-route-analysis";
 import { PAGE_BRIEF_KIND_DEFINITIONS } from "../kinds/page-brief";
+import { EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS } from "../kinds/episode-title-options";
+import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
+import { SEO_PACKAGE_KIND_DEFINITIONS } from "../kinds/seo-package";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Gold-mine sweep (Stage 6 pulled forward): kinds engineered from existing
@@ -93,6 +96,9 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...VIDEO_TRANSCRIPT_RESEARCH_KIND_DEFINITIONS,
   ...SEO_AUTHORITY_ROUTE_KIND_DEFINITIONS,
   ...PAGE_BRIEF_KIND_DEFINITIONS,
+  ...EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS,
+  ...MEDIA_CHAPTERS_KIND_DEFINITIONS,
+  ...SEO_PACKAGE_KIND_DEFINITIONS,
   {
     kind: "flashcard_set",
     schemaSource: "system",

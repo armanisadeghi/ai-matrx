@@ -20,6 +20,9 @@ import VideoPromptOptionsBlock from "../../blocks/video-prompt-options/VideoProm
 import KeywordResearchBlock from "../../blocks/keyword-research/KeywordResearchBlock";
 import KeywordClassificationBatchBlock from "../../blocks/keyword-research/KeywordClassificationBatchBlock";
 import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
+import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
+import MediaChaptersBlock from "../../blocks/media-chapters/MediaChaptersBlock";
+import SeoPackageBlock from "../../blocks/seo-package/SeoPackageBlock";
 import MultipleChoiceQuiz from "../../blocks/quiz/MultipleChoiceQuiz";
 import Slideshow from "../../blocks/presentations/Slideshow";
 import RecipeViewer from "../../blocks/cooking-recipes/cookingRecipeDisplay";
@@ -240,6 +243,23 @@ export const BlockComponents = {
   PageBriefBlock: (props: React.ComponentProps<typeof PageBriefBlock>) => (
     <LazyBlockWrapper>
       <PageBriefBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  EpisodeTitleOptionsBlock: (
+    props: React.ComponentProps<typeof EpisodeTitleOptionsBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <EpisodeTitleOptionsBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  MediaChaptersBlock: (props: React.ComponentProps<typeof MediaChaptersBlock>) => (
+    <LazyBlockWrapper>
+      <MediaChaptersBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  SeoPackageBlock: (props: React.ComponentProps<typeof SeoPackageBlock>) => (
+    <LazyBlockWrapper>
+      <SeoPackageBlock {...props} />
     </LazyBlockWrapper>
   ),
   MultipleChoiceQuiz: (props: React.ComponentProps<typeof MultipleChoiceQuiz>) => (
