@@ -80,7 +80,7 @@ is the same class of lie this feature exists to kill.
 | `hooks/useAccessGate.ts` | `(token, id) → status + context`. |
 | `service/accessDeniedContext.ts` | Client half of `access_denied_context`. |
 | `service/accessRequests.ts` | create / list / decide / report / withdraw + DM delivery. |
-| `registry/accessDeniedRegistry.ts` | Per-entity bespoke variants. **Empty by design.** |
+| — | **No variant registry.** A feature that earns a bespoke screen composes the exported `AccessDeniedView`. A token→component map consulted during render is a dynamic component boundary for an extension point with zero users — speculative abstraction, and React Compiler lint rightly flags it. |
 | `classifyDataError.ts` | Access question vs real fault. |
 
 ## Database

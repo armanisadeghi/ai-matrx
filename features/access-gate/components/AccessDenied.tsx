@@ -17,8 +17,8 @@
  *  - Every identity it names is a door (THE DOOR LAW) — the owner, the
  *    organization, and the nearest reachable ancestor are all reachable.
  *
- * A feature that wants its own branded version registers it in
- * `registry/accessDeniedRegistry.ts`; it does not fork this file.
+ * A feature that genuinely earns its own branded version composes the exported
+ * `AccessDeniedView` at its own call site; it does not fork this file.
  */
 
 import Link from "next/link";
@@ -37,7 +37,6 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RequestAccessPanel } from "@/features/access-gate/components/RequestAccessPanel";
-import { getAccessDeniedVariant } from "@/features/access-gate/registry/accessDeniedRegistry";
 import { useAccessGate } from "@/features/access-gate/hooks/useAccessGate";
 import type { AccessDeniedContext } from "@/features/access-gate/types";
 
@@ -324,8 +323,14 @@ export function AccessDeniedView({
 }
 
 /**
- * The loader. Resolves why the record couldn't be opened, then renders the
- * registered variant for that entity (or the generic view).
+ * The loader. Resolves why the record couldn't be opened, then renders it.
+ *
+ * A feature that genuinely earns a bespoke screen composes `AccessDeniedView`
+ * (exported above) at its own call site — it does NOT register a variant here.
+ * A token→component registry consulted during render is a dynamic component
+ * boundary (react-hooks/static-components) for an extension point that has
+ * exactly zero users, which is the speculative abstraction docs/reuse-first
+ * bans. Passing your own component down is simpler and has no such hazard.
  */
 export function AccessDenied({
   token,
@@ -343,20 +348,6 @@ export function AccessDenied({
       <div className="flex h-full min-h-64 items-center justify-center p-6">
         <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
       </div>
-    );
-  }
-
-  const Variant = getAccessDeniedVariant(token);
-  if (Variant) {
-    return (
-      <Variant
-        context={context}
-        id={id}
-        fallbackHref={fallbackHref}
-        fallbackLabel={fallbackLabel}
-        onRetry={onRetry}
-        onChanged={refresh}
-      />
     );
   }
 

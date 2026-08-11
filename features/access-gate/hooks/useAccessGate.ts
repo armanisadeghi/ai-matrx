@@ -30,33 +30,37 @@ export function useAccessGate(
   id: string | null | undefined,
   options: { enabled?: boolean } = {},
 ): UseAccessGateResult {
-  const enabled = options.enabled !== false && Boolean(token && id);
-  const [context, setContext] = useState<AccessDeniedContext | null>(null);
-  const [isLoading, setIsLoading] = useState(enabled);
   const [nonce, setNonce] = useState(0);
 
+  // ONE key identifies "which question is currently being asked". Both the
+  // freshness check and the loading state derive from it, so the effect never
+  // has to call setState synchronously to reset itself when the target changes
+  // (that pattern cascades renders — react-hooks/set-state-in-effect).
+  const enabled = options.enabled !== false && Boolean(token && id);
+  const key = enabled ? `${token}:${id}:${nonce}` : null;
+
+  const [resolved, setResolved] = useState<{
+    key: string;
+    context: AccessDeniedContext;
+  } | null>(null);
+
   useEffect(() => {
-    if (!enabled || !token || !id) {
-      setContext(null);
-      setIsLoading(false);
-      return;
-    }
+    if (!key || !token || !id) return;
 
-    // A resolved answer must never be applied to a different record — the user
-    // can navigate between two denied ids faster than the RPC returns.
+    // An answer must never be applied to a different record — the user can
+    // navigate between two denied ids faster than the RPC returns.
     let active = true;
-    setIsLoading(true);
-
     void fetchAccessDeniedContext(token, id).then((next) => {
-      if (!active) return;
-      setContext(next);
-      setIsLoading(false);
+      if (active) setResolved({ key, context: next });
     });
-
     return () => {
       active = false;
     };
-  }, [enabled, token, id, nonce]);
+  }, [key, token, id]);
+
+  // Stale answers are discarded by comparing keys, not by clearing state.
+  const context = resolved && resolved.key === key ? resolved.context : null;
+  const isLoading = key !== null && context === null;
 
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
