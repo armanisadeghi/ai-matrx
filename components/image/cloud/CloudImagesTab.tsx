@@ -12,6 +12,11 @@
  * `metadata.fileId` so downstream features can deep-link back into the
  * cloud-files surfaces (preview, share, restore version).
  *
+ * This component also owns the `matrx-user/images` surface: it mounts the
+ * provider, emits the scope, and services the three declared write targets
+ * (search_query / recents_only / image_selection) through its own setters —
+ * see the handler block below.
+ *
  * Browse-mode click resolves only the *clicked* file's URL (not every
  * visible image's URL) and opens it in the floating ImageViewerWindow.
  * Resolving every image up-front was wasteful and pushed
@@ -439,6 +444,121 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
     [allFiles],
   );
 
+  // ── Surface write handlers ──────────────────────────────────────────────
+  //
+  // The three declared targets on `matrx-user/images`, each landing through
+  // the SAME setter this component's own controls call — the search box calls
+  // `setQuery`, the Recents chip calls `setShowRecentsOnly`, a tile checkbox
+  // calls `setBulkSelectedIds`. No parallel write path exists, so an agent
+  // write and a user click are indistinguishable downstream.
+  //
+  // Every handler VALIDATES AND THROWS before it mutates anything: the
+  // writeback seam turns a throw into a safe error envelope the agent reads
+  // and can correct from, which is far more useful than a silent coercion.
+  //
+  // The provider re-reads `getWriteHandlers` through a ref on every render, so
+  // these closures always see the current query / filter / visible rows.
+
+  /**
+   * Image ids from an agent, validated against what is ON SCREEN.
+   *
+   * Two encodings are accepted deliberately. The inline-tool layer parses a
+   * JSON-looking argument before a handler ever sees it, so a well-formed call
+   * arrives as a real array. A model that double-encodes its argument sends
+   * the JSON *string* instead — tolerating that explicitly is cheaper than
+   * letting it fail, watch the error, and "fix" it by escaping even harder.
+   * Anything that is neither still throws.
+   *
+   * Validation happens against `imageFiles` — the rows actually rendered —
+   * rather than the emitted `visible_image_ids`, which is capped at 200. The
+   * rendered set is a superset of what the agent saw, so the cap can never
+   * cause a false rejection of an id the agent legitimately read.
+   */
+  const parseImageSelection = (value: unknown): string[] => {
+    let raw = value;
+    if (typeof raw === "string") {
+      try {
+        raw = JSON.parse(raw);
+      } catch {
+        throw new Error(
+          "image_selection expects an array of image ids, e.g. [\"<uuid>\", \"<uuid>\"] — received a string that is not valid JSON.",
+        );
+      }
+    }
+    if (!Array.isArray(raw)) {
+      throw new Error(
+        `image_selection expects an array of image ids (pass [] to clear the selection) — received ${typeof raw}.`,
+      );
+    }
+    const ids = raw.map((entry, index) => {
+      if (typeof entry !== "string" || !entry.trim()) {
+        throw new Error(
+          `image_selection entry ${index} is not an image id string.`,
+        );
+      }
+      return entry.trim();
+    });
+
+    // Validate the WHOLE list before touching state — a partly-applied
+    // selection would be worse than a rejected one.
+    const visibleIds = new Set(imageFiles.map((file) => file.id));
+    const unknown = ids.filter((id) => !visibleIds.has(id));
+    if (unknown.length > 0) {
+      // Hand back what IS selectable, not just what was wrong. An agent that
+      // narrowed the library earlier in the same run is holding the scope
+      // snapshot from launch time, so its `visible_image_ids` is stale the
+      // instant search_query or recents_only lands — the common cause of
+      // getting here. Listing the live rows lets it fix the call in one step
+      // instead of guessing which of its cached ids survived the filter.
+      const live = imageFiles
+        .slice(0, 30)
+        .map((file) => `${file.id} (${file.fileName})`)
+        .join(", ");
+      const more = imageFiles.length > 30 ? `, …and ${imageFiles.length - 30} more` : "";
+      throw new Error(
+        `image_selection rejected: ${unknown.length} of the ${ids.length} id(s) you sent are not among the ${imageFiles.length} image(s) currently visible — ${unknown.join(", ")}. ` +
+          `The selection was left unchanged. Note that applying search_query or recents_only changes this set, so ids you read before those writes may no longer be visible. ` +
+          `Currently selectable: ${live || "(nothing — the search or Recents filter is hiding every image)"}${more}.`,
+      );
+    }
+    // De-duplicate, keeping first-seen order: a selection is a set, so the
+    // same id twice is the same selection, not a different one.
+    return Array.from(new Set(ids));
+  };
+
+  const buildImagesWriteHandlers = () => ({
+    search_query: (value: unknown) => {
+      if (typeof value !== "string") {
+        throw new Error(
+          `search_query expects a string (pass "" to clear the search) — received ${typeof value}.`,
+        );
+      }
+      setQuery(value);
+    },
+    recents_only: (value: unknown) => {
+      // Booleans arrive parsed; tolerate the exact "true"/"false" strings a
+      // double-encoding model produces, and reject everything else rather
+      // than guessing at truthiness.
+      const next =
+        typeof value === "boolean"
+          ? value
+          : value === "true"
+            ? true
+            : value === "false"
+              ? false
+              : null;
+      if (next === null) {
+        throw new Error(
+          `recents_only expects a boolean (true to show only the last 30 days, false to show the whole library) — received ${typeof value}.`,
+        );
+      }
+      setShowRecentsOnly(next);
+    },
+    image_selection: (value: unknown) => {
+      setBulkSelectedIds(parseImageSelection(value));
+    },
+  });
+
   // Surface emitter — assembled at trigger time from live render values.
   const getImagesScope = () =>
     buildImagesScope({
@@ -457,6 +577,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
     <SurfaceRuntimeProvider
       surfaceName={IMAGES_SURFACE_NAME}
       getScope={getImagesScope}
+      getWriteHandlers={buildImagesWriteHandlers}
     >
     <TooltipProvider delayDuration={300}>
       <div className="h-full flex flex-col">
