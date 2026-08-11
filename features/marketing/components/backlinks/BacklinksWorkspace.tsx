@@ -605,7 +605,7 @@ export function BacklinksWorkspace() {
       ),
       `Links stored: ${(backlinks.data?.total ?? 0).toLocaleString()}${
         detailSnapshot
-          ? `, as of ${formatCompactDate(detailSnapshot.created_at)}`
+          ? `, as of ${formatCompactDate(detailSnapshot.observed_at)}`
           : ""
       }.`,
     ].join("\n\n");
@@ -630,12 +630,12 @@ export function BacklinksWorkspace() {
                     dofollow_backlinks: summary.dofollow_backlinks,
                     nofollow_backlinks: summary.nofollow_backlinks,
                     rank_score: summary.rank_score,
-                    collected_at: summary.created_at,
+                    collected_at: summary.observed_at,
                   }
                 : {
                     total_backlinks: summary.total_backlinks,
                     referring_domains: summary.referring_domains,
-                    collected_at: summary.created_at,
+                    collected_at: summary.observed_at,
                   },
         levelLabels: {
           full: "Everything we stored",
@@ -811,7 +811,7 @@ export function BacklinksWorkspace() {
                 dofollow_backlinks: summary.dofollow_backlinks,
                 nofollow_backlinks: summary.nofollow_backlinks,
                 rank_score: summary.rank_score,
-                collected_at: summary.created_at,
+                collected_at: summary.observed_at,
               }
             : undefined,
           top_referring_domains: data?.referringDomains
@@ -842,7 +842,7 @@ export function BacklinksWorkspace() {
                   dofollow_backlinks: summary.dofollow_backlinks,
                   nofollow_backlinks: summary.nofollow_backlinks,
                   rank_score: summary.rank_score,
-                  collected_at: summary.created_at,
+                  collected_at: summary.observed_at,
                 },
                 referring_domain_count: data?.referringDomains.length ?? 0,
                 anchor_count: data?.anchors.length ?? 0,
@@ -871,7 +871,7 @@ export function BacklinksWorkspace() {
             provider_metrics: row.provider_metrics,
             human_ruling: row.human_ruling,
           })),
-          backlinks_collected_at: detailSnapshot?.created_at ?? undefined,
+          backlinks_collected_at: detailSnapshot?.observed_at ?? undefined,
           refresh_schedule: {
             enabled: savedSchedule.enabled,
             cadence: savedSchedule.cadence,

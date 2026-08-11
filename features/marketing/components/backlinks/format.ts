@@ -96,7 +96,10 @@ export function humanSummarySnapshot(
 ): string {
   if (!summary) return `We have not checked ${siteDomain}'s links yet.`;
   return [
-    `Backlinks for ${siteDomain} (last checked ${summary.created_at?.slice(0, 10) ?? "unknown"}):`,
+    // `observed_at` is WHEN the check happened; `created_at` is when we wrote
+    // the row. The KPI strip's "Last checked" reads observed_at, so this must
+    // too — the same phrase must never name two different days.
+    `Backlinks for ${siteDomain} (last checked ${summary.observed_at.slice(0, 10)}):`,
     `- Backlinks: ${formatCount(summary.total_backlinks)}`,
     `- Referring domains: ${formatCount(summary.referring_domains)}`,
     `- Pass SEO credit (dofollow): ${formatCount(summary.dofollow_backlinks)}`,
