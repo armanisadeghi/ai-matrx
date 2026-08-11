@@ -4,8 +4,8 @@
 - **Status:** EXCEPTION APPROVAL REQUIRED
 - **Approved exceptions:** 0
 - **Pending proposals:** 52 files / 109 raw-token lines
-- **Reviewable now:** 51
-- **Blocked on a review harness:** 1
+- **Reviewable now:** 50
+- **Blocked on a review harness:** 2
 
 These are proposals, not exclusions. Every item stays an open P4 finding until
 Arman reviews the stated UI and explicitly approves or rejects it. Approval is
@@ -266,14 +266,14 @@ rejection routes the item to a normal P4 repair.
    - Normal-fix effect: A semantic foreground could change with the app theme and weaken contrast against the fixed rose circle.
    - Decision: **PENDING — Arman must approve or reject.**
 
-29. **P4-PENDING-029** — **NO REVIEW URL — approval blocked**
+29. **P4-PENDING-029** — **BLOCKED — no stable/current production review surface**
 
    - Source: `features/applet/home/app-display/ModernGlass.tsx:93,94`
    - Exact raw tokens by line: `93: bg-white/10`; `94: bg-white/5`
    - Why it may be legitimate: Two translucent white blurred circles are decorative light blooms inside a deliberately dark glass composition.
    - Review state: No importer or stable harness was found. A dedicated review harness is required.
    - Normal-fix effect: Semantic fills would recolor or remove the intended glass-light highlights when the app theme changes.
-   - Decision: **PENDING — Arman must approve or reject.**
+   - Decision: **BLOCKED — no approval is valid until a stable review harness exists.**
 
 30. **P4-PENDING-030** — [Open review surface](https://aimatrx.com/agent-apps/templates)
 
@@ -473,14 +473,14 @@ rejection routes the item to a normal P4 repair.
    - Normal-fix effect: Semantic fills would track the app theme and alter contrast against the fixed colored header backgrounds.
    - Decision: **PENDING — Arman must approve or reject.**
 
-52. **P4-PENDING-052** — [Open review surface](https://aimatrx.com/_apps/app-builder/apps/create)
+52. **P4-PENDING-052** — **BLOCKED — no stable/current production review surface**
 
    - Source: `features/applet/styles/StyledComponents.tsx:234,242,243`
    - Exact raw tokens by line: `234: text-black`; `242: text-black`; `243: text-black`
    - Why it may be legitimate: Yellow, amber, and lime action-button variants keep black text across both theme-specific colored backgrounds for contrast.
-   - Review state: Choose yellow, amber, and lime action-button colors and inspect their black labels in both themes.
+   - Review state: The apparent app-builder route returns 404 in production. Build a Tier-C review harness, then choose yellow, amber, and lime action-button colors and inspect their black labels in both themes.
    - Normal-fix effect: A normal semantic foreground token would flip the label with the app theme and could make it unreadable on these bright fixed status colors.
-   - Decision: **PENDING — Arman must approve or reject.**
+   - Decision: **BLOCKED — no approval is valid until a stable review harness exists.**
 
 ## Non-proposals from the same full pass
 
@@ -492,10 +492,10 @@ rejection routes the item to a normal P4 repair.
   `CandidateProfileView.tsx` (2 skeleton lines) and `RoomHeader.tsx` (1
   mobile sheet row). Their attempted Tier-M batch was rejected and fully
   reverted; both findings remain open in the sighting ledger.
-- 16 candidate files have no stable/current render path. Fifteen are currently
-  compliant/non-rendered; the one pending proposal is
-  `features/applet/home/app-display/ModernGlass.tsx`, which cannot be approved
-  until a Tier-C review harness exists.
+- 17 candidate files have no stable/current production render path. Fifteen are
+  currently compliant/non-rendered; the two pending proposals are
+  `features/applet/home/app-display/ModernGlass.tsx` and
+  `features/applet/styles/StyledComponents.tsx`, neither of which can be
+  approved until a Tier-C review harness exists.
 
 ARMAN, WE NEED YOU: approve or reject every listed P4 exception.
-
