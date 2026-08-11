@@ -18,8 +18,8 @@ import { Panel, type Layout } from "react-resizable-panels";
 
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
@@ -410,9 +410,21 @@ export function ContentPlanWorkbench({
               nodes={nodeRows}
               isLoading={nodes.isLoading}
               isFetching={nodes.isFetching}
-              selectedId={selectedNodeId}
               cmsPageById={cmsPages.pagesByNodeId}
-              onSelect={setSelectedNodeId}
+              renderNodePanel={(node, onDeleted) => (
+                <NodePanel
+                  key={node.id}
+                  node={node}
+                  siteId={siteId}
+                  entities={entities.data ?? []}
+                  profiles={profiles.data ?? []}
+                  onDeleted={onDeleted}
+                  deepen={deepen}
+                  cmsPage={cmsPages.pagesByNodeId.get(node.id) ?? null}
+                  cmsSiteId={cmsPages.map?.cmsSiteId ?? null}
+                  hosted
+                />
+              )}
             />
           ) : view === "map" ? (
             <PillarMap
@@ -495,35 +507,32 @@ export function ContentPlanWorkbench({
           )}
         </div>
 
-        {/* Map/table views and the mobile tree open the node in a right
-          sheet — same panel, second presentation. Desktop tree renders it
-          inline. */}
-        {siteId && (view === "map" || view === "table" || isMobile) ? (
-          <Sheet
-            open={selectedNode !== null}
-            onOpenChange={(open) => {
-              if (!open) setSelectedNodeId(null);
-            }}
+        {/* Table rows own their window-first detail through MatrxDataTable.
+          Map nodes and the mobile tree keep a secondary docked presentation,
+          now using the same non-blocking adjustable SidePanelSurface. */}
+        {siteId &&
+        view !== "table" &&
+        (view === "map" || isMobile) &&
+        selectedNode ? (
+          <SidePanelSurface
+            title={selectedNode.label}
+            description={selectedNode.route ?? "No route yet"}
+            defaultWidth={620}
+            onClose={() => setSelectedNodeId(null)}
           >
-            <SheetContent
-              side="right"
-              className="w-full p-0 sm:w-[420px] sm:max-w-[420px]"
-            >
-              {selectedNode ? (
-                <NodePanel
-                  key={selectedNode.id}
-                  node={selectedNode}
-                  siteId={siteId}
-                  entities={entities.data ?? []}
-                  profiles={profiles.data ?? []}
-                  onDeleted={() => setSelectedNodeId(null)}
-                  deepen={deepen}
-                  cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
-                  cmsSiteId={cmsPages.map?.cmsSiteId ?? null}
-                />
-              ) : null}
-            </SheetContent>
-          </Sheet>
+            <NodePanel
+              key={selectedNode.id}
+              node={selectedNode}
+              siteId={siteId}
+              entities={entities.data ?? []}
+              profiles={profiles.data ?? []}
+              onDeleted={() => setSelectedNodeId(null)}
+              deepen={deepen}
+              cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
+              cmsSiteId={cmsPages.map?.cmsSiteId ?? null}
+              hosted
+            />
+          </SidePanelSurface>
         ) : null}
 
         {siteId && site ? (

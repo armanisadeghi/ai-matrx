@@ -54,6 +54,7 @@ import {
 } from "./runsApi";
 import { fetchPodcastRunDetail } from "./runsRepository";
 import { deriveRecoveryState, type RecoveryState } from "./recovery";
+import { trueLiveness } from "./run-truth";
 import { formatText } from "@/utils/text/text-case-converter";
 import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
 import type {
@@ -448,7 +449,12 @@ export function useStudioRun(runId: string): UseStudioRun {
           setDetail(d);
           setRecovery(deriveRecoveryState(d));
           setState(detailToRunState(d));
-          if (d.liveness === "completed" || d.liveness === "failed") {
+          // Judge the poll on the TRUE status (runs/run-truth.ts), not the
+          // stamped one. A run holding its finished audio is DONE — polling it
+          // forever because the server never wrote `completed` is how a
+          // delivered episode ends up offering Resume over itself.
+          const live = trueLiveness(d);
+          if (live === "completed" || live === "failed") {
             completedRef.current = true;
             setBackgroundWorking(false);
             if (d.episode_id) {
@@ -467,9 +473,10 @@ export function useStudioRun(runId: string): UseStudioRun {
             }
             return; // terminal — stop polling
           }
-          if (d.liveness === "stalled") {
+          if (live === "stalled") {
             // No server-side heartbeat for minutes (the pipeline bumps it
-            // every ~30s even mid-video) — genuinely stuck; offer Resume.
+            // every ~30s even mid-video) AND nothing was delivered — genuinely
+            // stuck; offer Resume.
             setBackgroundWorking(false);
             setCanReconnect(d.recovery.resumable);
             return;
@@ -866,7 +873,14 @@ export function useStudioRun(runId: string): UseStudioRun {
       startedRef.current = true;
 
       const pending = takePendingStart(runId);
-      const liveness = runDetail?.liveness;
+      // THE MOUNT DECISION, made on the TRUE status (runs/run-truth.ts): read
+      // the durable record, and if it is still generating, attach to the live
+      // stream; if it already delivered, it is done and nothing is offered.
+      // The stamped status can lie — a run whose socket dropped after the audio
+      // landed stays "processing" server-side forever — and the one thing this
+      // page must never do is invite a re-run of an episode that exists.
+      const liveness = runDetail ? trueLiveness(runDetail) : undefined;
+      const delivered = liveness === "completed";
       if (
         pending &&
         (row?.status === "running" || liveness === "alive" || !runDetail)
@@ -877,6 +891,7 @@ export function useStudioRun(runId: string): UseStudioRun {
         // Still running server-side — attach to the live stream (replay).
         void runStream("resume");
       } else if (
+        !delivered &&
         (liveness === "stalled" ||
           liveness === "failed" ||
           row?.status === "running" ||
@@ -885,7 +900,11 @@ export function useStudioRun(runId: string): UseStudioRun {
       ) {
         // Interrupted with a checkpoint — offer manual Resume (don't auto-burn).
         setCanReconnect(true);
-      } else if (runDetail?.recovery.resumable && backendRunIdRef.current) {
+      } else if (
+        !delivered &&
+        runDetail?.recovery.resumable &&
+        backendRunIdRef.current
+      ) {
         // "Completed" but resumable = a mis-stamped failure (e.g. audio failed
         // while the rest rendered) — surface the Resume affordance.
         setCanReconnect(true);
