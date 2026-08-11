@@ -406,8 +406,8 @@ export function BacklinkObservationTable({
       header: "Source type",
       filter: "select",
       filterOptions: BACKLINK_PAGE_TYPES.map((pageType) => ({
-        value: pageType,
-        label: humanizeAssessmentValue(pageType),
+        value: pageType.key,
+        label: pageType.label,
       })),
       accessorFn: (row) =>
         parseBacklinkAssessment(row.resolved_assessment).pageType ?? "",
@@ -442,8 +442,8 @@ export function BacklinkObservationTable({
       header: "Recommended action",
       filter: "select",
       filterOptions: BACKLINK_RECOMMENDED_ACTIONS.map((action) => ({
-        value: action,
-        label: humanizeAssessmentValue(action),
+        value: action.key,
+        label: action.label,
       })),
       accessorFn: (row) =>
         parseBacklinkAssessment(row.resolved_assessment).action ?? "",

@@ -217,18 +217,39 @@ export const LINK_PLACEMENTS = [
 ] as const;
 
 export const LINK_TYPES = [
-  { key: "anchor", label: "Anchor" },
-  { key: "image", label: "Image" },
+  { key: "anchor", label: "Text link" },
+  { key: "image", label: "Image link" },
   { key: "redirect", label: "Redirect" },
-  { key: "canonical", label: "Canonical" },
-  { key: "alternate", label: "Alternate" },
+  { key: "canonical", label: "Canonical tag" },
+  { key: "alternate", label: "Alternate-language tag" },
 ] as const;
+
+export function linkTypeLabel(value: string | null): string {
+  return (
+    LINK_TYPES.find((type) => type.key === value)?.label ??
+    humanizeAssessmentValue(value)
+  );
+}
 
 export const BACKLINK_STATES = [
   { key: "active", label: "Active" },
   { key: "new", label: "New" },
   { key: "lost", label: "Lost" },
 ] as const;
+
+export function backlinkStateLabel(value: string | null): string {
+  return (
+    BACKLINK_STATES.find((state) => state.key === value)?.label ??
+    humanizeAssessmentValue(value)
+  );
+}
+
+export function linkPlacementLabel(value: string | null): string {
+  return (
+    LINK_PLACEMENTS.find((placement) => placement.key === value)?.label ??
+    humanizeAssessmentValue(value)
+  );
+}
 
 /**
  * How far we have got with reading and reviewing the page a link comes from.
@@ -267,43 +288,95 @@ export function backlinkRelevanceLabel(value: string | null): string {
   );
 }
 
+/** What kind of page the link sits on. Keys are the stored `page_type`. */
 export const BACKLINK_PAGE_TYPES = [
-  "article",
-  "news",
-  "blog",
-  "press_release",
-  "directory",
-  "profile",
-  "resource",
-  "listicle",
-  "forum",
-  "social",
-  "ecommerce",
-  "government",
-  "academic",
-  "landing_page",
-  "other",
-  "unknown",
+  { key: "article", label: "Article" },
+  { key: "news", label: "News story" },
+  { key: "blog", label: "Blog post" },
+  { key: "press_release", label: "Press release" },
+  { key: "directory", label: "Directory listing" },
+  { key: "profile", label: "Profile page" },
+  { key: "resource", label: "Resource page" },
+  { key: "listicle", label: "List article" },
+  { key: "forum", label: "Forum thread" },
+  { key: "social", label: "Social post" },
+  { key: "ecommerce", label: "Online store" },
+  { key: "government", label: "Government site" },
+  { key: "academic", label: "School or university" },
+  { key: "landing_page", label: "Landing page" },
+  { key: "other", label: "Something else" },
+  { key: "unknown", label: "Not sure" },
 ] as const;
 
+export function backlinkPageTypeLabel(value: string | null): string {
+  return (
+    BACKLINK_PAGE_TYPES.find((pageType) => pageType.key === value)?.label ??
+    humanizeAssessmentValue(value)
+  );
+}
+
+/** Whether the user could change this link themselves if they wanted to. */
 export const BACKLINK_CONTROL_LEVELS = [
-  { key: "direct", label: "Direct" },
-  { key: "likely", label: "Likely" },
-  { key: "possible", label: "Possible" },
-  { key: "unlikely", label: "Unlikely" },
-  { key: "unknown", label: "Unknown" },
+  { key: "direct", label: "Yes — it's yours to edit" },
+  { key: "likely", label: "Probably" },
+  { key: "possible", label: "Maybe, with a request" },
+  { key: "unlikely", label: "Probably not" },
+  { key: "unknown", label: "Not sure" },
 ] as const;
 
+export function backlinkControlLabel(value: string | null): string {
+  return (
+    BACKLINK_CONTROL_LEVELS.find((level) => level.key === value)?.label ??
+    humanizeAssessmentValue(value)
+  );
+}
+
+/**
+ * What to do about a link. Keys are the stored `recommended_action` values;
+ * the labels are the sentence a person would actually say. "Disavow" never
+ * appears bare — it is the one action with real consequences, so it reads as
+ * a decision to review, not a button that already happened.
+ */
 export const BACKLINK_RECOMMENDED_ACTIONS = [
-  "protect",
-  "protect_and_monitor",
-  "monitor",
-  "improve_anchor",
-  "update_listing",
-  "request_edit",
-  "reclaim",
-  "fix_target",
-  "remove_request",
-  "disavow_review",
-  "investigate",
+  { key: "protect", label: "Keep it safe" },
+  { key: "protect_and_monitor", label: "Keep it safe and watch it" },
+  { key: "monitor", label: "Just keep an eye on it" },
+  { key: "improve_anchor", label: "Improve the wording of the link" },
+  { key: "update_listing", label: "Update your listing there" },
+  { key: "request_edit", label: "Ask them to change it" },
+  { key: "reclaim", label: "Ask for the link back" },
+  { key: "fix_target", label: "Fix the page it points to" },
+  { key: "remove_request", label: "Ask them to remove it" },
+  {
+    key: "disavow_review",
+    label: "Decide whether to disown this link",
+  },
+  { key: "investigate", label: "Look into it" },
 ] as const;
+
+export function backlinkActionLabel(value: string | null): string {
+  return (
+    BACKLINK_RECOMMENDED_ACTIONS.find((action) => action.key === value)
+      ?.label ?? humanizeAssessmentValue(value)
+  );
+}
+
+/**
+ * Whether a link passes SEO credit. This is the user's real question behind
+ * the `rel` HTML attribute — an attribute name is never a column header.
+ */
+export const LINK_CREDIT_EXPLAINER =
+  "Whether search engines let this link boost your rankings. Most links do; some are marked so they do not.";
+
+/** Extra `rel` values the data service reports beside follow/nofollow. */
+export const LINK_ATTRIBUTE_LABELS: Record<string, string> = {
+  sponsored: "Paid placement",
+  ugc: "User-posted",
+  nofollow: "No credit",
+  noopener: "Opens safely",
+  noreferrer: "Hides where it came from",
+};
+
+export function linkAttributeLabel(value: string): string {
+  return LINK_ATTRIBUTE_LABELS[value] ?? humanizeAssessmentValue(value);
+}

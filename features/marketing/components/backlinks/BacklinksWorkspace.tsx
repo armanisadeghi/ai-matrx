@@ -83,7 +83,11 @@ import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/B
 import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
 import { ReferringDomainIntelligenceTable } from "@/features/marketing/components/backlinks/ReferringDomainIntelligenceTable";
 import {
+  BACKLINK_REFRESH_PROFILES,
   BACKLINK_TABS,
+  backlinkEmptyHint,
+  backlinkRefreshProfileLabel,
+  DOMAIN_RANK_EXPLAINER,
   isBacklinkTabKey,
   spamTone,
   type BacklinkTabKey,
@@ -296,9 +300,9 @@ function TopTenCard({
                 {row.rank_score !== null ? (
                   <span
                     className="text-[11px] text-muted-foreground"
-                    title="DataForSEO rank (0–1000)"
+                    title={DOMAIN_RANK_EXPLAINER}
                   >
-                    r{row.rank_score}
+                    Authority {row.rank_score}
                   </span>
                 ) : null}
                 <span className="font-medium text-foreground">
@@ -310,8 +314,7 @@ function TopTenCard({
         })}
         {visible.length === 0 ? (
           <p className="py-1 text-xs text-muted-foreground">
-            No stored rows yet — run a Weekly core or Full bootstrap refresh to
-            collect this rollup.
+            {backlinkEmptyHint(title.toLowerCase())}
           </p>
         ) : rows.length > visible.length ? (
           <p className="pt-0.5 text-[11px] text-muted-foreground">
@@ -431,8 +434,8 @@ export function BacklinksWorkspace() {
       void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
       toast.success(
         schedule.enabled
-          ? `Automatic ${schedule.cadence} backlink refresh enabled.`
-          : "Automatic backlink refresh disabled.",
+          ? `We will now check for new links ${schedule.cadence}.`
+          : "Automatic link checks turned off.",
       );
     } catch (error) {
       toast.error(backlinkAnalysisErrorMessage(error));
@@ -444,7 +447,7 @@ export function BacklinksWorkspace() {
   const refresh = async () => {
     if (!seoTarget?.url) {
       toast.error(
-        "No AI Dream server is configured for the selected environment.",
+        "Refreshing link data is unavailable right now. Please try again shortly.",
       );
       return;
     }
@@ -453,7 +456,9 @@ export function BacklinksWorkspace() {
       const session = await supabase.auth.getSession();
       if (session.error) throw session.error;
       const token = session.data.session?.access_token;
-      if (!token) throw new Error("Sign in before refreshing backlink data.");
+      if (!token) {
+        throw new Error("Please sign in again before refreshing link data.");
+      }
       const nextReceipt = await refreshSiteBacklinks(
         seoTarget.url,
         token,
@@ -477,7 +482,9 @@ export function BacklinksWorkspace() {
       await queryClient.invalidateQueries({
         queryKey: [...marketingKeys.site(site.id), "backlinks"],
       });
-      toast.success(`Backlink ${profile} refresh completed.`);
+      toast.success(
+        `Refresh finished — ${backlinkRefreshProfileLabel(profile)}.`,
+      );
     } catch (error) {
       toast.error(backlinkAnalysisErrorMessage(error));
     } finally {
@@ -486,7 +493,7 @@ export function BacklinksWorkspace() {
   };
 
   if (workspace.isLoading) {
-    return <LoadingSurface label="Loading backlink intelligence…" />;
+    return <LoadingSurface label="Loading your backlinks…" />;
   }
   if (workspace.isError) {
     return (
@@ -538,7 +545,7 @@ export function BacklinksWorkspace() {
   ] as const;
 
   /**
-   * Every enrichment count is a door. The status sets below are the SAME sets
+   * Every count is a door. The status sets below are the SAME sets
    * `getBacklinkWorkspace` counts, so each link lands on exactly the rows it
    * promises (the Links tab honors `f_enrichment_status` server-side).
    */
@@ -555,34 +562,34 @@ export function BacklinksWorkspace() {
     tone?: "default" | "good" | "warning" | "bad";
   }> = [
     {
-      label: "Known links",
+      label: "Links found",
       value: data?.enrichment.total ?? 0,
       href: linksStatusHref(),
     },
     {
-      label: "Analyzed",
+      label: "Reviewed",
       value: data?.enrichment.completed ?? 0,
       href: linksStatusHref(["completed"]),
       tone: "good",
     },
     {
-      label: "Awaiting",
+      label: "Waiting to be reviewed",
       value: data?.enrichment.awaiting ?? 0,
       href: linksStatusHref(["pending", "capturing", "analyzing"]),
     },
     {
-      label: "Needs retry",
+      label: "Needs another try",
       value: data?.enrichment.failed ?? 0,
       href: linksStatusHref(["failed", "dead_letter"]),
       tone: (data?.enrichment.failed ?? 0) > 0 ? "warning" : "default",
     },
     {
-      label: "High-priority actions",
+      label: "Needs your attention",
       value: data?.enrichment.highPriority ?? 0,
       href: `${sitePath}/backlinks?tab=insights&insight=actionable`,
     },
     {
-      label: "Likely controllable",
+      label: "You can probably edit",
       value: data?.enrichment.controllable ?? 0,
       href: `${sitePath}/backlinks?tab=insights&insight=controllable`,
     },
@@ -707,8 +714,8 @@ export function BacklinksWorkspace() {
     if (receipt) {
       sections.push({
         id: "refresh_receipt",
-        title: "Refresh receipt",
-        description: "Raw receipt from the last manual refresh in this tab.",
+        title: "Last refresh details",
+        description: "Exactly what the last refresh you ran collected.",
         cuttable: true,
         defaultSelection: "off",
         build: (level) =>
@@ -955,14 +962,21 @@ export function BacklinksWorkspace() {
               <SelectTrigger
                 data-surface-value="refresh_profile"
                 size="sm"
-                className="w-36"
+                aria-label="How deep the next refresh should look"
+                className="w-52"
               >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="weekly">Weekly core</SelectItem>
-                <SelectItem value="monthly">Monthly detail</SelectItem>
-                <SelectItem value="bootstrap">Full bootstrap</SelectItem>
+                {BACKLINK_REFRESH_PROFILES.map((entry) => (
+                  <SelectItem
+                    key={entry.key}
+                    value={entry.key}
+                    title={entry.description}
+                  >
+                    {entry.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button
@@ -1016,9 +1030,9 @@ export function BacklinksWorkspace() {
               size="icon"
               variant="outline"
               className="h-8 w-8"
-              aria-label="Refresh schedule settings"
+              aria-label="Automatic link checks"
               aria-pressed={settingsOpen}
-              title="Automatic refresh schedule"
+              title="Check for new links automatically"
               onClick={() => setSettingsOpen((open) => !open)}
             >
               <Settings2
@@ -1039,29 +1053,35 @@ export function BacklinksWorkspace() {
 
         {settingsOpen ? (
           <div className="shrink-0 px-3 pt-2 sm:px-4">
-            <SectionCard title="Automatic refresh" anchor="refresh_schedule">
+            <SectionCard
+              title="Check for new links automatically"
+              anchor="refresh_schedule"
+            >
               <div className="flex flex-wrap items-end gap-3 p-3">
                 <div className="mr-auto min-w-64">
                   <div className="flex items-center gap-2">
                     <Switch
-                      aria-label="Enable automatic backlink refresh"
+                      aria-label="Check this site for new links automatically"
                       checked={schedule.enabled}
                       onCheckedChange={(enabled) =>
                         setSchedule((current) => ({ ...current, enabled }))
                       }
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Stored on this site; the aidream scheduler checks due
-                      sites daily. Manual refresh follows the shell&apos;s{" "}
-                      <span data-surface-value="seo_environment">
-                        {seoTarget?.environment ?? "selected"}
-                      </span>{" "}
-                      AI Dream work target.
+                    {/* The `data-surface-value` anchor stays so agents can
+                        still Locate this control; the environment name is an
+                        internal detail and never reads on screen. */}
+                    <p
+                      className="text-xs text-muted-foreground"
+                      data-surface-value="seo_environment"
+                    >
+                      Turn this on and we check this site for new links on the
+                      schedule you pick. Refresh at the top runs one right now,
+                      whenever you want.
                     </p>
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-foreground">Cadence</Label>
+                  <Label className="text-xs text-foreground">How often</Label>
                   <Select
                     value={schedule.cadence}
                     onValueChange={(cadence) =>
@@ -1084,8 +1104,9 @@ export function BacklinksWorkspace() {
                   <Label
                     htmlFor="backlink-detail-limit"
                     className="text-xs text-foreground"
+                    title="How many individual links to pull in each time (1–1000)."
                   >
-                    Detail rows
+                    Links per check
                   </Label>
                   <Input
                     id="backlink-detail-limit"
@@ -1116,7 +1137,7 @@ export function BacklinksWorkspace() {
                   ) : (
                     <Save className="h-3.5 w-3.5" />
                   )}
-                  Save schedule
+                  Save
                 </Button>
               </div>
             </SectionCard>
@@ -1138,7 +1159,7 @@ export function BacklinksWorkspace() {
                 location={pageLocation}
               />
               <SectionCard
-                title="Source-page enrichment"
+                title="How far we have got reading the pages that link to you"
                 anchor="backlink_enrichment"
               >
                 <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -1159,7 +1180,7 @@ export function BacklinksWorkspace() {
                 anchor="backlink_trend"
               >
                 {trend.isLoading ? (
-                  <LoadingSurface label="Loading backlink trend…" />
+                  <LoadingSurface label="Loading link history…" />
                 ) : trend.isError ? (
                   <div className="p-2">
                     <InlineQueryError
@@ -1178,7 +1199,7 @@ export function BacklinksWorkspace() {
               </SectionCard>
               {backlinks.isError ? (
                 <InlineQueryError
-                  what="the stored backlink rows (copy/export payloads may be incomplete)"
+                  what="your stored links (copies and exports may be incomplete)"
                   error={backlinks.error}
                   onRetry={() => void backlinks.refetch()}
                 />
@@ -1213,7 +1234,7 @@ export function BacklinksWorkspace() {
               {receipt ? (
                 <SectionCard
                   key={`receipt-${receiptRun}`}
-                  title="Refresh receipt"
+                  title="What the last refresh collected"
                   anchor="refresh_receipt"
                   collapsible
                   defaultOpen={receiptRun > 0}
@@ -1221,7 +1242,7 @@ export function BacklinksWorkspace() {
                   <div className="h-80 overflow-hidden">
                     <JsonInspector
                       data={receipt}
-                      label="Exact refresh receipt"
+                      label="Last refresh details"
                       defaultView="json"
                       defaultExpandDepth={3}
                       className="rounded-none"

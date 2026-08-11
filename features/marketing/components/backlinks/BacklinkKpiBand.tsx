@@ -11,7 +11,9 @@ import { MetricCell } from "@/features/marketing/components/shared/MarketingUi";
 import { formatGscDate } from "@/features/marketing/search-console/lib/format";
 import { parseSummaryExtras } from "@/features/marketing/components/backlinks/lib/extras";
 import {
+  backlinkEmptyHint,
   DOMAIN_RANK_EXPLAINER,
+  SPAM_SCORE_EXPLAINER,
   spamTone,
 } from "@/features/marketing/components/backlinks/lib/vocab";
 import { humanMetric } from "@/features/marketing/components/backlinks/format";
@@ -54,11 +56,10 @@ export function BacklinkKpiBand({
     return (
       <div className="rounded-md border border-dashed border-border bg-card/60 p-4">
         <p className="text-sm font-medium text-foreground">
-          No backlink summary snapshot stored yet
+          We have not checked this site&apos;s links yet
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Run a Weekly core or Full bootstrap refresh to collect the first
-          provider snapshot for {siteDomain}.
+          {backlinkEmptyHint(`any link totals for ${siteDomain}`)}
         </p>
       </div>
     );
@@ -91,22 +92,26 @@ export function BacklinkKpiBand({
     {
       label: "Total backlinks",
       value: compactNumber(summary.total_backlinks),
+      detail: "Every link to your site we know about",
       raw: summary.total_backlinks,
     },
     {
       label: "Referring domains",
       value: compactNumber(summary.referring_domains),
-      detail: domainsDetail,
+      detail:
+        domainsDetail ?? "Separate websites linking to you, however many times",
       raw: summary.referring_domains,
     },
     {
-      label: "Dofollow share",
+      label: "Share that passes credit",
       value: dofollowShare === null ? "—" : `${dofollowShare.toFixed(1)}%`,
       detail:
         dofollow !== null || nofollow !== null
-          ? `${compactNumber(dofollow)} dofollow / ${compactNumber(nofollow)} nofollow`
-          : undefined,
+          ? `${compactNumber(dofollow)} help your rankings (dofollow) / ${compactNumber(nofollow)} do not (nofollow)`
+          : "Links that help your rankings, as a share of all links",
       raw: dofollowShare === null ? null : Math.round(dofollowShare * 10) / 10,
+      explainer:
+        "Some sites mark their links so search engines ignore them. A healthy profile has plenty that are not marked.",
     },
     {
       label: "New links",
@@ -130,7 +135,7 @@ export function BacklinkKpiBand({
       href: lensHref("broken"),
     },
     {
-      label: "Rank",
+      label: "Your site's authority",
       value:
         summary.rank_score === null ? "—" : String(summary.rank_score),
       detail: DOMAIN_RANK_EXPLAINER,
@@ -138,10 +143,11 @@ export function BacklinkKpiBand({
       explainer: DOMAIN_RANK_EXPLAINER,
     },
     {
-      label: "Spam score",
+      label: "Spam signals",
       value:
         summary.spam_score === null ? "—" : String(summary.spam_score),
-      detail: "Provider spam signal, 0–100",
+      detail: SPAM_SCORE_EXPLAINER,
+      explainer: SPAM_SCORE_EXPLAINER,
       tone:
         tone === "toxic" ? "bad" : tone === "warn" ? "warning" : "default",
       raw: summary.spam_score,
@@ -191,10 +197,10 @@ export function BacklinkKpiBand({
           />
         ))}
       </div>
-      {/* UTC date-only: observed_at is a provider snapshot day, and the
-          local-tz formatter renders it a day early west of UTC. */}
+      {/* UTC date-only: observed_at is a whole day, and the local-tz
+          formatter renders it a day early west of UTC. */}
       <p className="mt-1 text-right text-[11px] text-muted-foreground">
-        Snapshot collected {formatGscDate(summary.observed_at)}
+        Last checked {formatGscDate(summary.observed_at)}
       </p>
     </div>
   );
