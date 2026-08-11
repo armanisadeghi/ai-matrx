@@ -8,10 +8,14 @@ Relationships" card). Cross-repo contract of record:
 The site-scoped surface is
 `/marketing/brands/[brandId]/sites/[siteId]/keywords` → `SiteKeywordsView`
 (`components/SiteKeywordsView.tsx`), two URL-selected views on one route:
+
 - **Performance** (default) — `SiteKeywordPerformanceWorkspace`: the latest
-  persisted 28-day GSC query observations with canonical keyword-market and
-  site-workflow values through `seo.v_site_keyword_performance`. A read
-  surface: GSC collection and market enrichment remain explicit compute
+  persisted 28-day search-provider query observations with canonical
+  keyword-market and site-workflow values through the bounded
+  `seo.site_keyword_performance_page` RPC. The generic
+  `seo.v_site_keyword_performance` projection remains the point-read model for
+  Keyword Intelligence; it is deliberately not the paged table boundary. A
+  read surface: collection and market enrichment remain explicit compute
   operations.
 - **Classification** (`?view=classification`) — the GSC traffic-class
   truth-editing surface, owned by the search-console feature
@@ -122,9 +126,14 @@ before adding any keyword field or per-keyword display anywhere.
 - `data/queries.ts` — `listKeywordsWithMarket` (ilike on `normalized_phrase`, market
   embedded, volume sort client-side), `listKeywordEdges` (both directions + partner
   phrases).
-- `data/site-performance.ts` + `useSiteKeywordPerformance.ts` — direct, authenticated
-  Supabase reads of `seo.v_site_keyword_performance` with server-side search,
-  filtering, sorting, and pagination for one site.
+- `data/site-performance.ts` + `useSiteKeywordPerformance.ts` — one direct,
+  authenticated `seo.site_keyword_performance_page` call with server-side
+  search, filtering, exact count, sorting, and pagination for one site. The RPC
+  chooses the newest complete run per provider/profile/date before aggregation;
+  private query/strongest-page aggregate helpers declare realistic row counts
+  so PostgreSQL hash/merge-joins them instead of choosing a catastrophic nested
+  loop. Never restore the direct `v_site_keyword_performance` plus exact-count
+  table query here: PostgREST expands that unparameterized view twice.
 - `useKeywordResearch.ts` — page state + the two `callApi` actions; debounced search,
   abort-safe reloads; adopts the pipeline stream and exposes `run.requestId` +
   `run.hasStreamedContent` (the whole live-rendering contract).
@@ -209,6 +218,18 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-11 — **Performance table timeout fixed at the actual query boundary.**
+  The view was present and its 2026-08-09 `NOT MATERIALIZED`/set-based-RLS fixes
+  were live; the new failure was a scale cliff. `allgreenrecycling.com` held
+  960,207 recent provider observations and 25,900 query rows. PostgREST's exact
+  count expanded `v_site_keyword_performance` twice, including two strongest-page
+  histories, until the authenticated 8-second budget raised `57014`. The table
+  now calls `seo.site_keyword_performance_page`: site scope is inside both
+  newest-run aggregates, exact count/filter/sort/pagination happen once, and
+  private helpers carry production row estimates so their ~26k-row results are
+  hash/merge-joined. The view remains for bounded point reads. The Error
+  Inspector and inline failure state were already correct and remain red/loud;
+  no timeout, blind retry, downgrade, or payload special case was added.
 - 2026-08-10 — **The workbench is agent-writable** (`matrx-user/keyword-research`,
   3 `ask`-policy targets — see `features/surfaces/FEATURE.md` for the full
   entry). `library_search` and `cluster_scope` land through the explorer's own
