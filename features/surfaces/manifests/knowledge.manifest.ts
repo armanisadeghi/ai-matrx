@@ -552,14 +552,24 @@ const surfaceSpecific: SurfaceValue[] = [
  *                                  extraction_sort
  *   KgGraphCanvas.tsx            → graph_search, graph_kind_filter,
  *                                  graph_detail_level, graph_layout
- *   SuggestionsManager.tsx       → suggestions_filter, focused_suggestion_id
+ *   SuggestionsManager.tsx       → suggestions_filter
  *
- * All three mounts DO earn handlers: each clears the skill's ~2-YES-field bar
- * on its own. The extraction mount earns it on the authored dataset NAME (a
- * label an agent can write better than a human naming 40 datasets) plus the
+ * The extraction mount earns its handlers on the authored dataset NAME (a
+ * label an agent can write better than a human naming forty datasets) plus the
  * two grid-pointing controls; the graph mount on four real "point the canvas
- * at what I asked about" controls; the suggestion mount on the triage filter
- * plus row focus.
+ * at what I asked about" controls.
+ *
+ * The suggestion mount ships ONE target, below the skill's ~2-YES bar, and
+ * that is the honest count rather than a padded one. `focused_suggestion_id`
+ * (expand one row) WAS declared, built, and then removed after live agent
+ * runs: its only valid inputs are the row ids inside `suggestions_rows`, which
+ * is `autoContext: false` (too large to ship), so in a normal turn the agent
+ * cannot see a single legal value and every attempt ends in a refusal. That is
+ * the `node_primary_keyword_id` rule — a target whose vocabulary is not in
+ * scope does not earn a target — and it is the reason the mount is not scored
+ * as two. `suggestions_filter` stays because it is verified working and is a
+ * genuine capability on its own ("narrow the queue to pending at 70%+"); one
+ * live handler is cheaper than the target it drives is valuable.
  *
  * ── ask vs auto (judgment call, stated so it can be argued with) ────────────
  * The line drawn here: `auto` iff the write is (a) ephemeral client-only view
@@ -710,18 +720,6 @@ const writeTargets: SurfaceWriteTarget[] = [
     applyPolicy: "ask",
     group: "suggestions_queue",
     sortOrder: 750,
-  },
-  {
-    name: "focused_suggestion_id",
-    label: "Focused suggestion",
-    description:
-      'Expands ONE suggestion row in the queue so the user is looking at the evidence for it. Pass the `id` of a row currently listed in the main table (see suggestions_rows), or "" to collapse whatever is open. An id that is not on the current page is refused rather than silently doing nothing — filter or page to it first. Expanding a row reveals its decision card; it does NOT accept, reject, defer, or star it.',
-    valueType: "string",
-    updatesValue: "focused_suggestion_id",
-    mode: "ui",
-    applyPolicy: "auto",
-    group: "suggestion_focus",
-    sortOrder: 800,
   },
 ];
 

@@ -330,13 +330,17 @@ export function SuggestionsManager() {
     );
   }
 
-  // Surface write targets (matrx-user/knowledge) — the SUGGESTIONS mount's two.
-  // Both are `mode: "ui"` and both go through the exact seam the user's own
-  // controls use: `patchQuery` (the filter bar) and `setExpandedId` (the row
-  // chevron). Deliberately absent, and it is the whole point of this queue:
-  // accept / reject / defer / star, and the selection that arms the bulk bar.
-  // A suggestion is a PROPOSAL; turning one into confirmed knowledge stays a
-  // human decision. See the manifest's writeTargets block.
+  // Surface write target (matrx-user/knowledge) — the SUGGESTIONS mount's one.
+  // `mode: "ui"`, and it goes through the exact seam the user's own filter bar
+  // uses: `patchQuery`. Deliberately absent, and it is the whole point of this
+  // queue: accept / reject / defer / star, and the selection that arms the
+  // bulk bar. A suggestion is a PROPOSAL; turning one into confirmed knowledge
+  // stays a human decision.
+  //
+  // Row FOCUS (setExpandedId) was built here and removed: the only legal
+  // inputs are ids inside `suggestions_rows`, which is bindable-only
+  // (`autoContext: false`), so an agent in a normal turn can never see one.
+  // See the manifest's writeTargets block for the full reasoning.
   const getWriteHandlers = useCallback(
     () => ({
       suggestions_filter: (value: unknown) => {
@@ -431,27 +435,8 @@ export function SuggestionsManager() {
 
         patchQuery(patch);
       },
-      focused_suggestion_id: (value: unknown) => {
-        if (typeof value !== "string")
-          throw new Error(
-            'focused_suggestion_id expects a string — the id of a listed suggestion, or "" to collapse the open one.',
-          );
-        if (value === "") {
-          setExpandedId(null);
-          return;
-        }
-        // Only the main table renders an expanded row, so an id that is not on
-        // the current page would expand nothing at all. Refuse instead.
-        if (!rows.some((row) => row.id === value))
-          throw new Error(
-            rows.length > 0
-              ? `focused_suggestion_id "${value}" is not a suggestion on the current page. Read suggestions_rows for the listed ids, or narrow the queue with suggestions_filter first.`
-              : "focused_suggestion_id is unavailable: no suggestions are listed right now.",
-          );
-        setExpandedId(value);
-      },
     }),
-    [patchQuery, rows],
+    [patchQuery],
   );
 
   return (
