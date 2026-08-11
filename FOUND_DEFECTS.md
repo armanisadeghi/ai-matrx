@@ -13,6 +13,82 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D155 — Gemini grounding DROPS a span of the answer text, corrupting structured output (2026-08-11)
+
+**Reproduced live, 4/12 runs on `gemini-3.6-flash`.** When Google Search
+grounding is on, the model's answer text comes back with a span silently
+removed at an array start: `"key_points": [` plus most of its first element
+vanish, leaving `"key_points":.",` followed by the surviving elements. The JSON
+is unparseable. Rates measured 2026-08-11 with `response_json_schema` bound:
+
+| tools | malformed |
+|---|---|
+| `googleSearch` + `urlContext` | 3/6 |
+| `googleSearch` only | 1/6 |
+
+This is Google-side — reproduced against the raw `google.genai` SDK with none
+of our code in the path (non-streaming `generate_content`; `r.text` equals the
+joined parts, so it is not our assembly).
+
+**Why it looks like "the agent returned nothing".** `utils/json/extract-json.ts`
+`extractFirstJson` cannot recover the payload (verified against the real
+incident text), so `run-headless-agent-json` settles `noJson` and
+`KindRequestDialog` shows the user reasoning and no result — even though a
+complete 6.6 KB answer is sitting in `chat.message.content`.
+
+Worked example: `chat.request c665e986-a1ca-4796-a61e-89204caad0b7`
+(message `21c2d9cc-ff90-4a32-8831-11fa2407f219`) — 7 content blocks, 6
+`thinking` + one 6,665-char `text` block of `topic_ideas` JSON, corrupt at
+`"key_points"`. `finish_reason: "stop"`, `tool_calls_count: 0` (correct —
+`googleSearch` is a Google-side built-in, never an orchestrated function call),
+`candidates_token_count` 1736 **plus** `thoughts_token_count` 1488 (they are
+separate totals, so the answer was fully generated and billed).
+
+**Fix — decide before building** (needs Arman; it spends money on a retry):
+
+1. **Retry trigger is NOT "empty answer".** A guard keyed on missing text would
+   never have fired here. The correct trigger is *a run with a declared
+   `output_schema` whose answer text fails to parse* — that is a hard,
+   checkable signal, unlike a prose run where malformation is invisible.
+2. Server-side, one retry, in aidream's execution path; the retry is a repeat
+   of a paid grounded call, so it needs a visible receipt, not a silent redo.
+3. Cheaper mitigation to evaluate first: `internal_url_context` tripled the
+   rate here (3/6 vs 1/6) and buys little for a search-grounded ideation agent
+   — turning it off on `agent.definition 2edcbd85-…` may cut most of the loss
+   for free. Not done unilaterally: it changes a live agent's capabilities.
+
+### D156 — Python-owned kinds are FIELDLESS to the frontend (140 active rows) (2026-08-11)
+
+The FE Shape registry reads **only** `content_ir.kind_definition.data` +
+`kind_edge` (`schema-source-kind-tables.ts` `DEF_COLUMNS`) — it never reads
+`emitted_json_schema`. Every kind registered from Python leaves `data` NULL
+unless its schema is flat enough for `fields_from_json_schema`
+(aidream `tools/implementations/kind_shared.py`, honest all-or-nothing: any
+nested object or array-of-objects declines). Consequences for those rows:
+
+- `isKindBindable` (`features/agents/.../output-schema/kindBinding.ts`) returns
+  false on `Object.keys(entry.fields).length === 0`, so **the kind cannot be
+  bound to an agent's `output_schema` from the picker at all**;
+- `/shapes` Test renders a raw JSON textarea instead of a per-field form.
+
+Live counts 2026-08-11: 838 active kinds, 805 with `data IS NULL`, **140 of
+them non-contract** (the other 665 are machine-minted
+`is_contract_artifact` rows where `data` is correctly irrelevant). Every one of
+the 140 is `authoring_owner='python'`; **zero** `authoring_owner='ts'` rows have
+NULL `data`, and **zero** active kinds lack `emitted_json_schema`. So the schema
+is never missing — only the client-side field declaration is.
+
+`topic_ideas` was fixed as the worked instance
+(`migrations/content_ir_declare_topic_ideas_fields.sql`) via the sanctioned TS
+emitter `planKindMigration` (`scripts/shape/plan-topic-ideas.ts`).
+
+**The general fix is not a blind backfill** and needs a ruling: the flat subset
+could be regenerated from `emitted_json_schema` mechanically, but nested kinds
+need a CHILD kind row per nested object plus `kind_edge` rows — i.e. minting
+registry rows, which is a product decision, not a sweep. The alternative — teach
+the FE registry to fall back to `emitted_json_schema` when `data` is NULL —
+is one change instead of 140 and is probably the right one. Arman decides.
+
 ### D154 — React hydration mismatch (#418) reported on the marketing site shell, not reproducible (2026-08-11)
 
 Arman sees `Minified React error #418` (hydration mismatch) in production on
