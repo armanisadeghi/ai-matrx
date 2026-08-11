@@ -15,13 +15,14 @@
  */
 
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import type { ShellIconName } from "@/features/shell/shellIconMap";
 
 export interface MarketingNavEntry {
   label: string;
   href: string;
   description: string;
   /** Lucide icon name — resolved by the consuming surface. */
-  iconName: string;
+  iconName: ShellIconName;
   /** Opens a public (unauthenticated) utility outside the app shell. */
   external?: boolean;
   /**
@@ -43,7 +44,7 @@ export interface MarketingNavPillar {
   label: string;
   /** One line on what this pillar of marketing is for. */
   description: string;
-  iconName: string;
+  iconName: ShellIconName;
   entries: readonly MarketingNavEntry[];
   /**
    * Marketing-page copy: the 4 short bullets shown for this pillar on the

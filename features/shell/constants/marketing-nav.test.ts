@@ -1,6 +1,7 @@
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
 import { shellIconComponents } from "@/features/shell/shellIconMap";
-import { primaryNavItems } from "./nav-data";
+import { routeMenuRegistry } from "./route-menu-registry";
+import { adminNavItems, primaryNavItems, settingsItem } from "./nav-data";
 
 // Guards the shell Marketing menu against the pillar registry: every live route
 // reachable from the nav, every coming-soon pillar collapsed to one placeholder,
@@ -8,6 +9,29 @@ import { primaryNavItems } from "./nav-data";
 // assertions predate this wrapper and read fine as prose. The wrapper exists
 // because top-level throws made Vitest fail to collect the file at all.
 describe("marketing shell navigation", () => {
+  it("registers every canonical shell navigation icon", () => {
+    const items = [...primaryNavItems, ...adminNavItems, settingsItem];
+    const iconOwners = items.flatMap((item) => [
+      { label: item.label, iconName: item.iconName },
+      ...(item.children ?? []).map((child) => ({
+        label: child.label,
+        iconName: child.iconName,
+      })),
+    ]);
+
+    for (const entry of routeMenuRegistry) {
+      iconOwners.push({ label: entry.label, iconName: entry.iconName });
+    }
+
+    for (const { label, iconName } of iconOwners) {
+      if (!shellIconComponents[iconName]) {
+        throw new Error(
+          `Shell nav icon is not registered: ${iconName} (${label})`,
+        );
+      }
+    }
+  });
+
   it("matches the marketing pillar registry", () => {
     const marketingItem = primaryNavItems.find(
       (item) => item.label === "Marketing",

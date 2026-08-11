@@ -13,10 +13,11 @@
 // Header component receives: { expanded: boolean }
 
 import { AGENT_RUN_PATH_PATTERN } from "@/features/agents/components/shell/agent-run-route";
+import type { ShellIconName } from "@/features/shell/shellIconMap";
 
 export interface RouteMenuEntry {
   pathPattern: RegExp;
-  iconName: string;
+  iconName: ShellIconName;
   label: string;
   importFn: () => Promise<{
     default: React.ComponentType<{ expanded: boolean }>;

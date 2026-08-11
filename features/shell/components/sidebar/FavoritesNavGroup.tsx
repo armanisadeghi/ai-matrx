@@ -20,6 +20,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFavoriteItems } from "@/lib/redux/preferences/userPreferenceSelectors";
 import NavFlyoutGroup from "./NavFlyoutGroup";
 import type { ShellNavChild, ShellNavItem } from "../../constants/nav-data";
+import { resolveShellIconName } from "../../shellIconMap";
 
 const FAVORITES_HREF = "/dashboard"; // hub that hosts the full "Pinned" grid
 
@@ -48,7 +49,7 @@ export default function FavoritesNavGroup() {
   const children: ShellNavChild[] = visibleFavorites.map((f) => ({
     label: f.label,
     href: f.href,
-    iconName: f.iconName ?? "Star",
+    iconName: resolveShellIconName(f.iconName ?? "Star"),
     external: f.href.startsWith("http"),
   }));
   // "Manage favorites" is always available — even with zero pins, so the user

@@ -7,14 +7,18 @@ import {
   Aperture,
   ArrowLeftRight,
   ArrowUpRight,
+  BarChart3,
   BookOpen,
+  Brain,
   Braces,
   BadgeDollarSign,
   Boxes,
   Building2,
   CalendarDays,
   CalendarClock,
+  ChevronDown,
   ChevronRight,
+  CircleHelp,
   CircleDollarSign,
   ChartNoAxesColumn,
   ClipboardCheck,
@@ -23,10 +27,12 @@ import {
   Container,
   Database,
   Eraser,
+  Eye,
   FileBarChart,
   FileChartColumn,
   FileInput,
   FileScan,
+  FileSearch,
   FileSpreadsheet,
   FileText,
   FlaskConical,
@@ -48,6 +54,7 @@ import {
   LayoutPanelLeft,
   LayoutTemplate,
   Lightbulb,
+  Link2,
   List,
   ListChecks,
   ListTree,
@@ -69,6 +76,7 @@ import {
   NotepadText,
   PanelLeft,
   PenLine,
+  PenTool,
   Plug,
   Plus,
   Puzzle,
@@ -78,6 +86,7 @@ import {
   ScanLine,
   Scissors,
   Search,
+  SearchCheck,
   Send,
   Settings,
   Share2,
@@ -90,6 +99,7 @@ import {
   Swords,
   Table,
   Target,
+  TextCursorInput,
   TrendingUp,
   User,
   Users,
@@ -101,19 +111,23 @@ import {
   Zap,
 } from "lucide-react";
 
-export const shellIconComponents: Record<string, LucideIcon> = {
+export const shellIconComponents = {
   AppWindow,
   Aperture,
   ArrowLeftRight,
   ArrowUpRight,
+  BarChart3,
   BookOpen,
+  Brain,
   Braces,
   BadgeDollarSign,
   Boxes,
   Building2,
   CalendarDays,
   CalendarClock,
+  ChevronDown,
   ChevronRight,
+  CircleHelp,
   CircleDollarSign,
   ChartNoAxesColumn,
   ClipboardCheck,
@@ -122,10 +136,12 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   Container,
   Database,
   Eraser,
+  Eye,
   FileBarChart,
   FileChartColumn,
   FileInput,
   FileScan,
+  FileSearch,
   FileSpreadsheet,
   FileText,
   FlaskConical,
@@ -147,6 +163,7 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   LayoutPanelLeft,
   LayoutTemplate,
   Lightbulb,
+  Link2,
   List,
   ListChecks,
   ListTree,
@@ -168,6 +185,7 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   NotepadText,
   PanelLeft,
   PenLine,
+  PenTool,
   Plug,
   Plus,
   Puzzle,
@@ -177,6 +195,7 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   ScanLine,
   Scissors,
   Search,
+  SearchCheck,
   Send,
   Settings,
   Share2,
@@ -189,6 +208,7 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   Swords,
   Table,
   Target,
+  TextCursorInput,
   TrendingUp,
   User,
   Users,
@@ -198,4 +218,24 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   Wrench,
   X,
   Zap,
-};
+} satisfies Record<string, LucideIcon>;
+
+/** Icon names that are guaranteed to render in every main-shell surface. */
+export type ShellIconName = keyof typeof shellIconComponents;
+
+export function isShellIconName(name: string): name is ShellIconName {
+  return Object.hasOwn(shellIconComponents, name);
+}
+
+/**
+ * Normalizes persisted or external icon names before they enter typed shell
+ * navigation. Unknown values stay visible as a help glyph instead of leaving
+ * a blank hole in the menu.
+ */
+export function resolveShellIconName(
+  name: string | null | undefined,
+): ShellIconName {
+  if (name && isShellIconName(name)) return name;
+  if (name) console.error(`[shell-nav] Unregistered icon name: ${name}`);
+  return "CircleHelp";
+}

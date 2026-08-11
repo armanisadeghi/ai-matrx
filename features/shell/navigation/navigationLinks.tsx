@@ -3,7 +3,6 @@
 // React nodes for sidebars/menus.
 
 import React from "react";
-import type { LucideIcon } from "lucide-react";
 import {
   primaryNavItems,
   adminNavItems,
@@ -14,7 +13,10 @@ import {
   type ShellNavItem,
   type ShellNavChild,
 } from "@/features/shell/constants/nav-data";
-import { shellIconComponents } from "@/features/shell/shellIconMap";
+import {
+  shellIconComponents,
+  type ShellIconName,
+} from "@/features/shell/shellIconMap";
 import { faviconRouteData } from "@/constants/favicon-route-data";
 import type { FaviconConfig } from "@/constants/favicon-route-data";
 
@@ -23,9 +25,8 @@ export type { FaviconConfig, AdminNavSurface };
 const iconClassName =
   "text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0";
 
-function buildIconNode(iconName: string): React.ReactNode {
-  const Icon = shellIconComponents[iconName] as LucideIcon | undefined;
-  if (!Icon) return null;
+function buildIconNode(iconName: ShellIconName): React.ReactNode {
+  const Icon = shellIconComponents[iconName];
   return <Icon className={iconClassName} />;
 }
 

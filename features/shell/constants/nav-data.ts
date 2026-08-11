@@ -21,6 +21,7 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  * opt in. Add the next action's id to this union and register its handler.
  */
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
+import type { ShellIconName } from "@/features/shell/shellIconMap";
 import type { ShellNavPanelActionId } from "./nav-window-panels";
 import { SHAPES_ROUTE_BASE } from "@/features/content-ir/studio/constants";
 import { NAV_WINDOW_PANEL_ICON } from "./nav-window-panels";
@@ -68,7 +69,7 @@ export function adminItemOnSurface(
 export interface ShellNavChild {
   label: string;
   href: string;
-  iconName: string;
+  iconName: ShellIconName;
   exact?: boolean;
   /** Optional subgroup label in sidebar / mobile flyouts (e.g. "RAG"). */
   group?: string;
@@ -173,7 +174,7 @@ function marketingNavChildren(): ShellNavChild[] {
 export interface ShellNavItem {
   label: string;
   href: string;
-  iconName: string;
+  iconName: ShellIconName;
   section: "primary" | "admin";
   dockOrder?: number;
   description?: string;
@@ -1558,7 +1559,7 @@ export function navItemsForViewer<T extends ShellNavItem | ShellNavChild>(
 export interface NavDestination {
   label: string;
   href: string;
-  iconName: string;
+  iconName: ShellIconName;
   color?: string;
   description?: string;
   external?: boolean;

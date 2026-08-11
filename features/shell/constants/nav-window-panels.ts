@@ -7,6 +7,8 @@
  * it only appears in the admin Dupes tab until the migration is complete.
  */
 
+import type { ShellIconName } from "@/features/shell/shellIconMap";
+
 /** Lucide icon for every nav entry that opens a window panel (see `shellIconMap`). */
 export const NAV_WINDOW_PANEL_ICON = "AppWindow";
 
@@ -50,7 +52,7 @@ export type ShellNavPanelActionId =
 export interface NavWindowPanelActionDef {
   tileId: string;
   label: string;
-  iconName: string;
+  iconName: ShellIconName;
   /** Graceful fallback for mobile / ctrl-click surfaces. */
   href: string;
 }

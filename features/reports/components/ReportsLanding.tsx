@@ -8,7 +8,10 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { shellIconComponents } from "@/features/shell/shellIconMap";
+import {
+  resolveShellIconName,
+  shellIconComponents,
+} from "@/features/shell/shellIconMap";
 import { REPORTS } from "@/features/reports/registry";
 
 export function ReportsLanding({ mode = "user" }: { mode?: "user" | "admin" }) {
@@ -17,7 +20,7 @@ export function ReportsLanding({ mode = "user" }: { mode?: "user" | "admin" }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {reports.map((report) => {
-        const Icon = shellIconComponents[report.iconName] ?? shellIconComponents.FileText;
+        const Icon = shellIconComponents[resolveShellIconName(report.iconName)];
         const href = mode === "admin" ? (report.adminHref ?? report.href) : report.href;
         const isLive = report.status === "live";
         const card = (
