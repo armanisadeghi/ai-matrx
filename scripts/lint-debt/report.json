@@ -1,31 +1,26 @@
 {
-  "generatedAt": "2026-08-11T16:59:10.226Z",
-  "commit": "e28090dab1f69482e479320b4c42572951081c13",
+  "generatedAt": "2026-08-11T18:16:44.624Z",
+  "commit": "be7fd32cc13125956274bf4fd0c75ed324293367",
   "totals": {
-    "errors": 2358,
-    "filesWithFindings": 1155,
-    "filesScanned": 11549,
+    "errors": 2344,
+    "filesWithFindings": 1149,
+    "filesScanned": 11564,
     "byClass": {
-      "bug": 27,
-      "correctness": 2230,
-      "doctrine": 97,
+      "bug": 0,
+      "correctness": 2234,
+      "doctrine": 106,
       "style": 4
     }
   },
   "byRule": [
     {
-      "rule": "react-hooks/rules-of-hooks",
-      "count": 27,
-      "klass": "bug"
-    },
-    {
       "rule": "react-hooks/set-state-in-effect",
-      "count": 1105,
+      "count": 1107,
       "klass": "correctness"
     },
     {
       "rule": "react-hooks/refs",
-      "count": 589,
+      "count": 591,
       "klass": "correctness"
     },
     {
@@ -70,12 +65,17 @@
     },
     {
       "rule": "no-restricted-imports",
-      "count": 82,
+      "count": 86,
       "klass": "doctrine"
     },
     {
       "rule": "no-restricted-syntax",
-      "count": 15,
+      "count": 19,
+      "klass": "doctrine"
+    },
+    {
+      "rule": "matrx/no-raw-agent-list-query",
+      "count": 1,
       "klass": "doctrine"
     },
     {
@@ -211,11 +211,6 @@
       "real": 10
     },
     {
-      "key": "components/mardown-display/blocks/table/StreamingTableRenderer.tsx",
-      "count": 9,
-      "real": 9
-    },
-    {
       "key": "features/education/onboard/components/StartHero.tsx",
       "count": 9,
       "real": 9
@@ -281,12 +276,17 @@
       "real": 7
     },
     {
-      "key": "components/official/json-explorer/RawJsonExplorer.tsx",
+      "key": "components/ui/JsonComponents/JsonEditor.tsx",
       "count": 7,
       "real": 7
     },
     {
-      "key": "components/ui/JsonComponents/JsonEditor.tsx",
+      "key": "features/agent-shortcuts/components/ShortcutDirectory.tsx",
+      "count": 7,
+      "real": 7
+    },
+    {
+      "key": "features/agent-shortcuts/components/ShortcutList.tsx",
       "count": 7,
       "real": 7
     }
@@ -294,23 +294,23 @@
   "worstFeatures": [
     {
       "key": "features/agents",
-      "count": 172,
-      "real": 161
+      "count": 171,
+      "real": 160
     },
     {
       "key": "components/mardown-display",
-      "count": 143,
-      "real": 141
+      "count": 139,
+      "real": 137
     },
     {
       "key": "features/applet",
-      "count": 135,
-      "real": 135
+      "count": 133,
+      "real": 133
     },
     {
       "key": "app/(dev)",
-      "count": 108,
-      "real": 105
+      "count": 107,
+      "real": 104
     },
     {
       "key": "components/animated",
@@ -319,13 +319,13 @@
     },
     {
       "key": "components/official",
-      "count": 74,
-      "real": 70
+      "count": 69,
+      "real": 65
     },
     {
       "key": "features/files",
-      "count": 65,
-      "real": 65
+      "count": 64,
+      "real": 64
     },
     {
       "key": "app/(admin)",
@@ -343,11 +343,6 @@
       "real": 52
     },
     {
-      "key": "features/scraper",
-      "count": 47,
-      "real": 46
-    },
-    {
       "key": "components/ui",
       "count": 46,
       "real": 46
@@ -361,6 +356,11 @@
       "key": "hooks",
       "count": 45,
       "real": 45
+    },
+    {
+      "key": "features/scraper",
+      "count": 44,
+      "real": 43
     },
     {
       "key": "app/(public)",
@@ -378,6 +378,11 @@
       "real": 37
     },
     {
+      "key": "features/administration",
+      "count": 45,
+      "real": 36
+    },
+    {
       "key": "features/pdf-extractor",
       "count": 35,
       "real": 34
@@ -393,19 +398,9 @@
       "real": 34
     },
     {
-      "key": "features/administration",
-      "count": 32,
-      "real": 32
-    },
-    {
       "key": "features/tasks",
       "count": 32,
       "real": 32
-    },
-    {
-      "key": "features/code-editor",
-      "count": 34,
-      "real": 30
     },
     {
       "key": "features/scopes",
@@ -413,9 +408,9 @@
       "real": 30
     },
     {
-      "key": "features/code",
-      "count": 25,
-      "real": 25
+      "key": "features/code-editor",
+      "count": 30,
+      "real": 26
     },
     {
       "key": "app/(core)",
@@ -425,6 +420,11 @@
     {
       "key": "features/research",
       "count": 25,
+      "real": 24
+    },
+    {
+      "key": "features/code",
+      "count": 24,
       "real": 24
     },
     {
@@ -2050,15 +2050,6 @@
       "feature": "app/(dev)",
       "route": "/demos/tests/slack",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(dev)/demos/tests/slack/with-brokers/components/BrokerForm.tsx",
-      "line": 38,
-      "column": 9,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(dev)",
-      "route": null,
-      "message": "React Hook \"useServerBrokerSync\" is called conditionally. React Hooks must be called in the exact same order in every component render."
     },
     {
       "file": "app/(dev)/demos/tests/slack/with-brokers/components/BrokerSlackClient.tsx",
@@ -4573,48 +4564,12 @@
     },
     {
       "file": "components/mardown-display/blocks/table/StreamingTableRenderer.tsx",
-      "line": 324,
-      "column": 29,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/table/StreamingTableRenderer.tsx",
-      "line": 330,
+      "line": 356,
       "column": 7,
       "rule": "react-hooks/use-memo",
       "feature": "components/mardown-display",
       "route": null,
       "message": "Error: Expected the dependency list to be an array of simple expressions (e.g. `x`, `x.y.z`, `x?.y?.z`) Expected the dependency list to be an array of simple expressions (e.g. `x`, `x.y.z`, `x?.y?.z`). /Users/armanisadeghi/code/matrx-front…"
-    },
-    {
-      "file": "components/mardown-display/blocks/table/StreamingTableRenderer.tsx",
-      "line": 333,
-      "column": 5,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/table/StreamingTableRenderer.tsx",
-      "line": 568,
-      "column": 16,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useTableUndo\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/table/StreamingTableRenderer.tsx",
-      "line": 759,
-      "column": 59,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useDoubleClickEdit\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
     },
     {
       "file": "components/mardown-display/blocks/tasks/TaskChecklist.tsx",
@@ -6310,7 +6265,7 @@
     },
     {
       "file": "components/official/json-explorer/RawJsonExplorer.tsx",
-      "line": 74,
+      "line": 92,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/official",
@@ -6319,7 +6274,7 @@
     },
     {
       "file": "components/official/json-explorer/RawJsonExplorer.tsx",
-      "line": 82,
+      "line": 100,
       "column": 9,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/official",
@@ -6328,7 +6283,7 @@
     },
     {
       "file": "components/official/json-explorer/RawJsonExplorer.tsx",
-      "line": 115,
+      "line": 133,
       "column": 18,
       "rule": "react-hooks/immutability",
       "feature": "components/official",
@@ -6337,7 +6292,7 @@
     },
     {
       "file": "components/official/json-explorer/RawJsonExplorer.tsx",
-      "line": 217,
+      "line": 235,
       "column": 9,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/official",
@@ -6346,7 +6301,7 @@
     },
     {
       "file": "components/official/json-explorer/RawJsonExplorer.tsx",
-      "line": 227,
+      "line": 245,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/official",
@@ -6355,16 +6310,7 @@
     },
     {
       "file": "components/official/json-explorer/RawJsonExplorer.tsx",
-      "line": 318,
-      "column": 42,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/official/json-explorer/RawJsonExplorer.tsx",
-      "line": 349,
+      "line": 359,
       "column": 18,
       "rule": "react-hooks/immutability",
       "feature": "components/official",
@@ -6406,15 +6352,6 @@
       "feature": "components/official",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "components/official/processor-extractor/ParseExtractorOptions.tsx",
-      "line": 53,
-      "column": 30,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useDebounce\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
     },
     {
       "file": "components/official/processor-extractor/path-management/BookmarkManager.tsx",
@@ -6472,7 +6409,7 @@
     },
     {
       "file": "components/official/processor-extractor/ProcessorExtractor.tsx",
-      "line": 55,
+      "line": 69,
       "column": 17,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/official",
@@ -6481,7 +6418,7 @@
     },
     {
       "file": "components/official/processor-extractor/ProcessorExtractor.tsx",
-      "line": 171,
+      "line": 185,
       "column": 17,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/official",
@@ -6490,39 +6427,12 @@
     },
     {
       "file": "components/official/processor-extractor/ProcessorExtractor.tsx",
-      "line": 178,
+      "line": 192,
       "column": 9,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/official",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "components/official/processor-extractor/ProcessorExtractor.tsx",
-      "line": 186,
-      "column": 35,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/official/processor-extractor/ProcessorExtractor.tsx",
-      "line": 191,
-      "column": 34,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/official/processor-extractor/ProcessorExtractor.tsx",
-      "line": 202,
-      "column": 26,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
     },
     {
       "file": "components/official/PublicImageSearch.tsx",
@@ -7567,6 +7477,123 @@
       "feature": "features/administration",
       "route": null,
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/features/administration/databa…"
+    },
+    {
+      "file": "features/administration/hindsight/components/DiscussPanel.tsx",
+      "line": 27,
+      "column": 10,
+      "rule": "no-restricted-imports",
+      "feature": "features/administration",
+      "route": null,
+      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
+    },
+    {
+      "file": "features/administration/hindsight/components/DiscussPanel.tsx",
+      "line": 27,
+      "column": 10,
+      "rule": "no-restricted-syntax",
+      "feature": "features/administration",
+      "route": null,
+      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
+    },
+    {
+      "file": "features/administration/hindsight/components/DiscussPanel.tsx",
+      "line": 214,
+      "column": 73,
+      "rule": "react-hooks/refs",
+      "feature": "features/administration",
+      "route": null,
+      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
+    },
+    {
+      "file": "features/administration/hindsight/components/EnrollDialog.tsx",
+      "line": 16,
+      "column": 10,
+      "rule": "no-restricted-imports",
+      "feature": "features/administration",
+      "route": null,
+      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
+    },
+    {
+      "file": "features/administration/hindsight/components/EnrollDialog.tsx",
+      "line": 16,
+      "column": 10,
+      "rule": "no-restricted-syntax",
+      "feature": "features/administration",
+      "route": null,
+      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
+    },
+    {
+      "file": "features/administration/hindsight/components/EnrollDialog.tsx",
+      "line": 113,
+      "column": 5,
+      "rule": "react-hooks/set-state-in-effect",
+      "feature": "features/administration",
+      "route": null,
+      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
+    },
+    {
+      "file": "features/administration/hindsight/components/EnrollDialog.tsx",
+      "line": 129,
+      "column": 15,
+      "rule": "matrx/no-raw-agent-list-query",
+      "feature": "features/administration",
+      "route": null,
+      "message": "Raw agent.definition LIST query. Any UI listing agents for selection must use the canonical agent listing system: the Redux agent-definition slice (fetchAgentsListFull / fetchAgentsList + purpose-fit selectors — selectBuiltinAgents for adm…"
+    },
+    {
+      "file": "features/administration/hindsight/components/EnrollmentDetailPanel.tsx",
+      "line": 11,
+      "column": 10,
+      "rule": "no-restricted-imports",
+      "feature": "features/administration",
+      "route": null,
+      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
+    },
+    {
+      "file": "features/administration/hindsight/components/EnrollmentDetailPanel.tsx",
+      "line": 11,
+      "column": 10,
+      "rule": "no-restricted-syntax",
+      "feature": "features/administration",
+      "route": null,
+      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
+    },
+    {
+      "file": "features/administration/hindsight/components/EnrollmentDetailPanel.tsx",
+      "line": 257,
+      "column": 24,
+      "rule": "react-hooks/refs",
+      "feature": "features/administration",
+      "route": null,
+      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
+    },
+    {
+      "file": "features/administration/hindsight/components/FindingCard.tsx",
+      "line": 12,
+      "column": 10,
+      "rule": "no-restricted-imports",
+      "feature": "features/administration",
+      "route": null,
+      "message": "'toast' import from 'sonner' is restricted. Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
+    },
+    {
+      "file": "features/administration/hindsight/components/FindingCard.tsx",
+      "line": 12,
+      "column": 10,
+      "rule": "no-restricted-syntax",
+      "feature": "features/administration",
+      "route": null,
+      "message": "Import { toast } from \"@/lib/toast\", not \"sonner\" — bare sonner toasts bypass Error Inspector capture. See lib/toast.ts."
+    },
+    {
+      "file": "features/administration/hindsight/components/HindsightPage.tsx",
+      "line": 38,
+      "column": 31,
+      "rule": "react-hooks/set-state-in-effect",
+      "feature": "features/administration",
+      "route": null,
+      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
       "file": "features/administration/kg-cost/components/KgCostDashboard.tsx",
@@ -8854,15 +8881,6 @@
       "feature": "features/agents",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/agents/components/inputs/input-components/PicklistVariableInput.tsx",
-      "line": 64,
-      "column": 43,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/agents",
-      "route": null,
-      "message": "React Hook \"useStructuredListForSelection\" is called conditionally. React Hooks must be called in the exact same order in every component render."
     },
     {
       "file": "features/agents/components/inputs/smart-input/AgentTextarea.tsx",
@@ -10737,24 +10755,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/applet/builder/modules/smart-parts/applets/SmartAppletList.tsx",
-      "line": 99,
-      "column": 41,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/applet",
-      "route": null,
-      "message": "React Hook \"useAppSelector\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "features/applet/builder/modules/smart-parts/apps/SmartAppList.tsx",
-      "line": 93,
-      "column": 15,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/applet",
-      "route": null,
-      "message": "React Hook \"useAppSelector\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
       "file": "features/applet/builder/modules/smart-parts/containers/ContainerFormComponent.tsx",
       "line": 61,
       "column": 7,
@@ -11808,15 +11808,6 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/canvas/core/CanvasRenderer.tsx",
-      "line": 121,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/canvas",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
       "file": "features/canvas/hooks/useCanvasItem.ts",
       "line": 113,
       "column": 7,
@@ -12078,24 +12069,6 @@
       "message": "'@/features/window-panels/windows/smart-code-editor/useOpenSmartCodeEditorWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/Overla…"
     },
     {
-      "file": "features/code-editor/components/code-block/MultiFileCodeEditor.tsx",
-      "line": 160,
-      "column": 28,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/code-editor",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/code-editor/components/code-block/MultiFileCodeEditor.tsx",
-      "line": 168,
-      "column": 31,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/code-editor",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
       "file": "features/code-editor/components/code-block/SmallCodeEditorImpl.tsx",
       "line": 122,
       "column": 27,
@@ -12238,24 +12211,6 @@
       "feature": "features/code-editor",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/code-editor/multi-file-core/useCodeEdiorBasics.ts",
-      "line": 118,
-      "column": 28,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/code-editor",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/code-editor/multi-file-core/useCodeEdiorBasics.ts",
-      "line": 126,
-      "column": 31,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/code-editor",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
     },
     {
       "file": "features/code-files/actions/useQuickSaveCode.ts",
@@ -12490,15 +12445,6 @@
       "feature": "features/code",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/code/views/source-control/CredentialsModal.tsx",
-      "line": 148,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/code",
-      "route": null,
-      "message": "React Hook \"useWorkspaceToken\" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function."
     },
     {
       "file": "features/code/views/source-control/SourceControlPanel.tsx",
@@ -13554,15 +13500,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/files/components/core/FileVersions/FileVersionsList.tsx",
-      "line": 104,
-      "column": 25,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/files",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
       "file": "features/files/components/core/RenameDialog/RenameDialog.tsx",
       "line": 238,
       "column": 7,
@@ -14077,16 +14014,7 @@
     },
     {
       "file": "features/html-pages/components/HtmlPreviewModal.tsx",
-      "line": 87,
-      "column": 12,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/html-pages",
-      "route": null,
-      "message": "React Hook \"useAppSelector\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "features/html-pages/components/HtmlPreviewModal.tsx",
-      "line": 116,
+      "line": 138,
       "column": 28,
       "rule": "react-hooks/immutability",
       "feature": "features/html-pages",
@@ -14095,7 +14023,7 @@
     },
     {
       "file": "features/html-pages/components/HtmlPreviewModal.tsx",
-      "line": 117,
+      "line": 139,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/html-pages",
@@ -14104,7 +14032,7 @@
     },
     {
       "file": "features/html-pages/components/HtmlPreviewModal.tsx",
-      "line": 124,
+      "line": 146,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/html-pages",
@@ -14113,7 +14041,7 @@
     },
     {
       "file": "features/html-pages/components/HtmlPreviewModal.tsx",
-      "line": 263,
+      "line": 285,
       "column": 11,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/html-pages",
@@ -18297,24 +18225,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/scraper/parts/core/PageContent.tsx",
-      "line": 57,
-      "column": 25,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/scraper",
-      "route": null,
-      "message": "React Hook \"useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "features/scraper/parts/core/PageContent.tsx",
-      "line": 172,
-      "column": 17,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/scraper",
-      "route": null,
-      "message": "React Hook \"useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
       "file": "features/scraper/parts/FancyJsonExplorer.tsx",
       "line": 68,
       "column": 5,
@@ -18322,15 +18232,6 @@
       "feature": "features/scraper",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/scraper/parts/RemovalDetails.tsx",
-      "line": 86,
-      "column": 27,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/scraper",
-      "route": null,
-      "message": "React Hook \"useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render."
     },
     {
       "file": "features/scraper/parts/ScrapedResultDetailTabs.tsx",
@@ -21580,33 +21481,6 @@
       "feature": "styles",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "utils/client-nav-utils.ts",
-      "line": 24,
-      "column": 22,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "utils",
-      "route": null,
-      "message": "React Hook \"usePathname\" is called in function \"getCurrentParsedPathName\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start w…"
-    },
-    {
-      "file": "utils/client-nav-utils.ts",
-      "line": 58,
-      "column": 26,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "utils",
-      "route": null,
-      "message": "React Hook \"useSearchParams\" is called in function \"getParsedSearchParams\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start …"
-    },
-    {
-      "file": "utils/client-nav-utils.ts",
-      "line": 84,
-      "column": 22,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "utils",
-      "route": null,
-      "message": "React Hook \"usePathname\" is called in function \"getCurrentParsedPathNameWithCustomReplacements\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React H…"
     },
     {
       "file": "utils/idle-scheduler/hooks.ts",
