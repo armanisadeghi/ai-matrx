@@ -52,7 +52,7 @@ describe("buildSiteVideoAssets", () => {
     expect(assets[0].pages.map((page) => page.pageId)).toEqual(["p1", "p2"]);
   });
 
-  it("classifies direct files and Vimeo, and excludes tracking iframes and audio", () => {
+  it("classifies direct files and Vimeo, and excludes non-video embeds and audio", () => {
     const assets = buildSiteVideoAssets([
       row("p1", "/a", [
         resource({ url: "https://cdn.example.com/promo.m4v", tag: "video" }),
@@ -63,6 +63,14 @@ describe("buildSiteVideoAssets", () => {
         resource({
           url: "https://www.google.com/recaptcha/api2/anchor?k=abc",
           kind: "embed",
+        }),
+        resource({
+          url: "https://www.google.com/maps/embed?pb=!1m18!1m",
+          kind: "embed",
+        }),
+        resource({
+          url: "https://widgets.example.com/contact-form",
+          kind: "iframe",
         }),
         // Structured-data poster image recorded under kind="video".
         resource({
@@ -83,11 +91,19 @@ describe("buildSiteVideoAssets", () => {
   it("orders providers first and most-referenced first within a group", () => {
     const assets = buildSiteVideoAssets([
       row("p1", "/a", [
-        resource({ url: "https://widgets.example.net/frame", kind: "iframe" }),
+        resource({
+          url: "https://fast.wistia.net/embed/iframe/abc123",
+          kind: "video",
+          attributes: { provider: "wistia" },
+        }),
         resource({ url: "https://www.youtube.com/watch?v=abcdefghijk" }),
       ]),
       row("p2", "/b", [
-        resource({ url: "https://widgets.example.net/frame", kind: "iframe" }),
+        resource({
+          url: "https://fast.wistia.net/embed/iframe/abc123",
+          kind: "video",
+          attributes: { provider: "wistia" },
+        }),
       ]),
     ]);
     expect(assets.map((asset) => asset.provider)).toEqual([

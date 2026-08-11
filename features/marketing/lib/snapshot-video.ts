@@ -28,8 +28,8 @@ import {
 
 /**
  * Hosts whose iframes are tracking/analytics scaffolding, never watchable
- * media, even though the scraper's resource inventory can classify them as
- * video/embed (a GTM `ns.html` noscript frame is the canonical offender).
+ * media, even though old scraper inventories could classify them as video
+ * (a GTM `ns.html` noscript frame is the canonical offender).
  */
 const NON_MEDIA_EMBED_HOSTS = new Set([
   "googletagmanager.com",
@@ -137,6 +137,17 @@ function canonicalize(resource: ParsedSnapshotResource): {
   const isFile =
     VIDEO_FILE_EXT.test(url) ||
     (resource.mimeType?.startsWith("video/") ?? false);
+  const providerHint = resource.attributes.provider;
+  const hasExplicitVideoEvidence =
+    resource.kind.toLowerCase() === "video" ||
+    isFile ||
+    (typeof providerHint === "string" && providerHint.trim().length > 0);
+  // The crawler deliberately records arbitrary iframe/embed/object resources
+  // as `embed`; only recognized media providers are promoted to `video` and
+  // carry a provider hint. Requiring that positive signal keeps Maps, forms,
+  // calendars, documents, and other embedded tools out of the video library.
+  // YouTube/Vimeo are handled above so older snapshots remain compatible.
+  if (!hasExplicitVideoEvidence) return null;
   let normalized = url;
   try {
     const u = new URL(url);
