@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Bookmark, ListPlus, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
+import MediaChaptersBlock from "@/components/mardown-display/blocks/media-chapters/MediaChaptersBlock";
 import { podcastService } from "@/features/podcasts/service";
 import { useEpisodeChapters } from "@/features/podcasts/generator/useEpisodeChapters";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -185,22 +186,17 @@ export function EpisodeChaptersPanel({
         </p>
       )}
 
+      {/* 🚨 THE CANONICAL COMPONENT LAW. Saved chapters ARE a `media_chapters`
+          payload, so they render through that kind's ONE component — the same
+          one the live run window streams into. This panel used to hand-roll
+          its own <ol>, which is exactly the duplicate that drifts. `hideHeader`
+          because the card above already draws the title row. */}
       {hasChapters && (
-        <ol className="mt-3 space-y-2">
-          {chapters.map((ch, i) => (
-            <li key={`${ch.start_hint}-${i}`} className="flex items-start gap-2.5">
-              <span className="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-                {ch.start_hint || "—"}
-              </span>
-              <span className="min-w-0 text-sm">
-                <span className="font-medium text-foreground">{ch.title}</span>
-                {ch.summary && (
-                  <span className="text-muted-foreground"> — {ch.summary}</span>
-                )}
-              </span>
-            </li>
-          ))}
-        </ol>
+        <MediaChaptersBlock
+          className="mt-3"
+          hideHeader
+          serverData={{ chapters, isComplete: true }}
+        />
       )}
     </div>
   );

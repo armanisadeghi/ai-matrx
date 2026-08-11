@@ -114,6 +114,7 @@ describe("compiled bootstrap (system-components)", () => {
       keyword_classification_batch_v1: "keyword_classification_batch",
       page_brief: "page_brief",
       media_chapters: "media_chapters",
+      episode_title_options: "episode_title_options",
       seo_package: "seo_package",
     });
   });

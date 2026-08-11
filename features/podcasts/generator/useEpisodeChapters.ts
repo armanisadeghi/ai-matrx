@@ -5,15 +5,28 @@
 // Generate + persist auto chapter markers for a finished episode. The
 // podcast.chapter_marker agent (DB-managed slot, floating — repin from
 // /administration/agents/slots) segments the episode script into 3–12 ordered
-// chapters; the parsed list is saved under pc_episodes.metadata.chapters via
-// podcastService.saveEpisodeChapters. Sibling of useEpisodeArticles — same
-// resolveAgentSlot + useRunAgent one-shot pattern.
+// chapters and emits them as the `media_chapters` content-IR kind; the parsed
+// list is saved under pc_episodes.metadata.chapters via
+// podcastService.saveEpisodeChapters.
+//
+// 🚨 THE FLOATING LAW (features/window-panels/FEATURE.md). This run STREAMS
+// into the floating LiveRunWindow — it never shows a spinner and never puts a
+// live block above the page's own content. The agent's `__kind` envelope means
+// the window renders MediaChaptersBlock, so chapters appear one at a time as
+// the model writes them, in the same component that renders them after the
+// save. The window is the DEFAULT posture here deliberately: the chapters
+// panel sits mid-page beside other cards, so an inline block would shift
+// everything under it the moment the user clicked Generate.
+//
+// `useLiveAgentRun` (NOT `useRunAgent`) is what makes any of that possible —
+// useRunAgent produces no requestId at all, so live rendering is structurally
+// impossible from it (docs/handoffs/live-stream-everywhere.md).
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
-import { useRunAgent } from "@/features/agents/run/useRunAgent";
-import { resolveAgentSlot } from "@/features/agents/slots/service";
-import { extractFirstObject } from "@/utils/json/extract-json";
+import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
+import type { LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
 import { podcastService } from "@/features/podcasts/service";
 import { parseChapters } from "@/features/podcasts/types";
 import type { PcEpisode, PcEpisodeChapter } from "@/features/podcasts/types";
@@ -46,7 +59,9 @@ export function useEpisodeChapters(
     "id" | "script" | "duration_seconds" | "chapters"
   > | null,
 ): UseEpisodeChapters {
-  const { run } = useRunAgent();
+  const { run } = useLiveAgentRun();
+  const openLiveRunWindow = useOpenLiveRunWindow();
+  const windowRef = useRef<LiveRunWindowHandle | null>(null);
   // This-session generation result, keyed by episode so a stale result can
   // never leak across episodes; persisted chapters come off the episode row.
   const [generated, setGenerated] = useState<{
@@ -70,26 +85,40 @@ export function useEpisodeChapters(
     }
     setBusy(true);
     setError(null);
+    // Open BEFORE the launch so the user sees the run start; the conversation
+    // id lands a moment later via onConversationCreated. One window per
+    // episode — regenerating reuses it instead of stacking a second.
+    windowRef.current = openLiveRunWindow({
+      instanceId: `episode-chapters:${episode.id}`,
+      label: "Marking chapters",
+      pending: true,
+    });
     try {
-      const slot = await resolveAgentSlot(CHAPTER_MARKER_SLOT_KEY);
-      const agentText = await run({
-        agentId: slot.agentId,
+      const list = await run<PcEpisodeChapter[]>({
+        slotKey: CHAPTER_MARKER_SLOT_KEY,
+        surfaceKey: "podcast-episode-chapters",
+        sourceFeature: "podcasts",
         variables: {
           episode_script: episode.script,
           duration_hint: formatDurationHint(episode.duration_seconds),
           granularity_hint: "",
         },
-        configOverrides: slot.configOverrides ?? undefined,
-        sourceApp: "matrx-frontend",
-        sourceFeature: "podcasts",
+        onConversationCreated: (conversationId) => {
+          windowRef.current?.update({ conversationId, pending: false });
+        },
+        // parseChapters is the SAME reader the persistence side uses
+        // (mapPcEpisodeRow), so what the window streamed and what reloads
+        // off the episode row can never disagree.
+        coerce: (value) => {
+          const parsed = parseChapters(value);
+          if (!parsed) {
+            throw new Error(
+              "The chapter agent returned no usable chapter list — try again.",
+            );
+          }
+          return parsed;
+        },
       });
-      const parsed = extractFirstObject(agentText);
-      const list = parseChapters(parsed?.value ?? null);
-      if (!list) {
-        throw new Error(
-          "The chapter agent returned no usable chapter list — try again.",
-        );
-      }
       const saved = await podcastService.saveEpisodeChapters(episode.id, list);
       setGenerated({ episodeId: episode.id, chapters: saved.chapters ?? list });
       toast.success(`Generated ${list.length} chapters.`);
@@ -97,10 +126,13 @@ export function useEpisodeChapters(
       const message = e instanceof Error ? e.message : String(e);
       setError(message);
       toast.error(`Chapter generation failed: ${message}`);
+      // The window deliberately STAYS OPEN on failure: it holds the partial
+      // stream and the error, which is the only place the user can see what
+      // actually went wrong.
     } finally {
       setBusy(false);
     }
-  }, [episode, run]);
+  }, [episode, run, openLiveRunWindow]);
 
   return { chapters, busy, error, generate };
 }
