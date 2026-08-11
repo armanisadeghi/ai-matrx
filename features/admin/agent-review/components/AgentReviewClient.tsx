@@ -39,6 +39,7 @@ import {
   loadReviewQueue,
   updateReviewQueueRow,
 } from "@/features/admin/agent-review/service";
+import { AgentReviewWriteTargets } from "@/features/admin/agent-review/components/AgentReviewWriteTargets";
 import {
   REVIEW_LANES,
   REVIEW_LANE_LABELS,
@@ -129,26 +130,41 @@ function rowHumanText(row: ReviewQueueRow, feedback: string): string {
 
 function ReviewItemCard({
   row,
+  draft,
+  onDraftChange,
+  onDraftCleared,
   onChanged,
 }: {
   row: ReviewQueueRow;
-  onChanged: () => Promise<void>;
+  /** Unsaved editor text for this row, or undefined when it matches the saved
+   * value. Owned by the page so the surface can publish it (and an agent's
+   * `review_feedback_draft` can stage into it). */
+  draft: string | undefined;
+  onDraftChange: (rowId: string, feedback: string) => void;
+  onDraftCleared: (rowId: string) => void;
+  onChanged: () => Promise<unknown>;
 }) {
-  const [feedback, setFeedback] = useState(row.feedback ?? "");
+  const feedback = draft ?? row.feedback ?? "";
+  const setFeedback = (next: string) => onDraftChange(row.id, next);
   const [saving, setSaving] = useState(false);
   const metadata = parseReviewMetadata(row.metadata);
   const triage = metadata.state === "ready" ? metadata.triage : null;
   const status = isReviewStatus(row.status) ? row.status : null;
   const isArchived = status === "archived";
 
-  async function update(patch: ReviewQueueUpdate, successMessage: string) {
+  async function update(
+    patch: ReviewQueueUpdate,
+    successMessage: string,
+  ): Promise<boolean> {
     setSaving(true);
     try {
       await updateReviewQueueRow(row.id, patch);
       toast.success(successMessage);
       await onChanged();
+      return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Update failed");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -156,6 +172,8 @@ function ReviewItemCard({
 
   function saveFeedback(nextStatus?: ReviewStatus) {
     const trimmed = feedback.trim();
+    // Once the text IS the saved value it is no longer a draft — drop it on
+    // success so the editor falls through to the reloaded row.
     void update(
       {
         feedback: trimmed || null,
@@ -165,7 +183,9 @@ function ReviewItemCard({
       nextStatus
         ? `Saved — ${REVIEW_STATUS_LABELS[nextStatus]}`
         : "Feedback saved",
-    );
+    ).then((saved) => {
+      if (saved) onDraftCleared(row.id);
+    });
   }
 
   function applySuggestedTriage() {
@@ -412,11 +432,37 @@ export default function AgentReviewClient() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [laneFilter, setLaneFilter] = useState<LaneFilter>("all");
   const [toolFilter, setToolFilter] = useState<ToolFilter>("all");
+  /**
+   * Unsaved feedback-editor text by row id. Lives here rather than in each
+   * card so the surface can publish it (`feedback_drafts`) and the
+   * `review_feedback_draft` write target can stage into the very buffer the
+   * admin types into. A row with no entry shows its saved feedback.
+   */
+  const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, string>>(
+    {},
+  );
 
-  async function refresh() {
+  function setFeedbackDraft(rowId: string, feedback: string) {
+    setFeedbackDrafts((current) => ({ ...current, [rowId]: feedback }));
+  }
+
+  function clearFeedbackDraft(rowId: string) {
+    setFeedbackDrafts((current) => {
+      if (!(rowId in current)) return current;
+      const next = { ...current };
+      delete next[rowId];
+      return next;
+    });
+  }
+
+  /** Reload the queue, resolving with the rows just read so a caller can
+   * verify what actually landed (see `AgentReviewWriteTargets`). */
+  async function refresh(): Promise<ReviewQueueRow[]> {
     try {
-      setRows(await loadReviewQueue());
+      const data = await loadReviewQueue();
+      setRows(data);
       setError(null);
+      return data;
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -424,6 +470,7 @@ export default function AgentReviewClient() {
           : "Failed to load review queue",
       );
       setRows([]);
+      return [];
     }
   }
 
@@ -510,6 +557,16 @@ export default function AgentReviewClient() {
   }
   const archived = grouped.get("archived") ?? [];
 
+  // Only genuinely UNSAVED text, and only for rows still loaded — a draft that
+  // now matches what is stored is not pending anything.
+  const unsavedFeedbackDrafts = Object.fromEntries(
+    allRows.flatMap((row) => {
+      const draft = feedbackDrafts[row.id];
+      if (draft === undefined || draft === (row.feedback ?? "")) return [];
+      return [[row.id, draft] as [string, string]];
+    }),
+  );
+
   const getSurfaceScope = () =>
     createAdminAgentReviewScope({
       queue_row_count: allRows.length,
@@ -523,6 +580,7 @@ export default function AgentReviewClient() {
       repair_lane_counts: repairLaneCounts,
       repair_tool_counts: repairToolCounts,
       show_archived: showArchived,
+      feedback_drafts: unsavedFeedbackDrafts,
       queue_sample: allRows.slice(0, 20).flatMap((row) => {
         if (!isReviewStatus(row.status)) return [];
         const metadata = parseReviewMetadata(row.metadata);
@@ -549,6 +607,11 @@ export default function AgentReviewClient() {
       getScope={getSurfaceScope}
       isEditable={false}
     >
+      <AgentReviewWriteTargets
+        rows={rows}
+        setFeedbackDraft={setFeedbackDraft}
+        refresh={refresh}
+      />
       <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden">
         <header className="shrink-0 border-b border-border bg-background/95 px-3 py-3 backdrop-blur sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
@@ -711,6 +774,9 @@ export default function AgentReviewClient() {
                         <ReviewItemCard
                           key={row.id}
                           row={row}
+                          draft={feedbackDrafts[row.id]}
+                          onDraftChange={setFeedbackDraft}
+                          onDraftCleared={clearFeedbackDraft}
                           onChanged={refresh}
                         />
                       ))}
@@ -743,6 +809,9 @@ export default function AgentReviewClient() {
                       <ReviewItemCard
                         key={row.id}
                         row={row}
+                        draft={feedbackDrafts[row.id]}
+                        onDraftChange={setFeedbackDraft}
+                        onDraftCleared={clearFeedbackDraft}
                         onChanged={refresh}
                       />
                     ))

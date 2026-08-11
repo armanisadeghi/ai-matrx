@@ -16,15 +16,44 @@
  *
  * What an agent bound here may safely do: read the queue (counts, and a
  * sample of rows with their instructions/feedback) and help the admin triage
- * — draft feedback text, suggest which items are stale, summarize what's
- * pending. It must NOT assume a status change or feedback save has happened;
- * those are the admin's explicit button presses (Save feedback / Request
- * changes / Approve / Archive / Restore), each a direct Supabase update the
- * page issues itself.
+ * — draft feedback text, classify routing metadata, suggest which items are
+ * stale, summarize what's pending.
  *
  * Emitter: WIRED. `AgentReviewClient.tsx` mounts `<SurfaceRuntimeProvider>`
- * and builds the scope from its live `rows` / `grouped` / `showArchived`
- * state at Run time.
+ * and builds the scope from its live `rows` / `feedbackDrafts` /
+ * `showArchived` state at Run time.
+ *
+ * AGENT-WRITABLE (read/write v1, 2026-08-11). Two targets, both `ask`, both
+ * addressing ONE row by `row_id` from `queue_sample` — this surface has no
+ * "selected row", so a write that does not name a live row is refused:
+ *   - `review_feedback_draft` (draft) — stages prose into that row's feedback
+ *     textarea, the same buffer the admin types into. Nothing is saved; the
+ *     admin still presses Save feedback / Request changes / Approve. Read
+ *     twin: `feedback_drafts`.
+ *   - `review_triage_classification` (entity) — patches the four ROUTING
+ *     fields inside `metadata.triage` through the page's own
+ *     `metadataWithReviewTriage` merge, so the VERSIONED metadata envelope is
+ *     patched, never replaced. Read twin: `queue_sample[].triage`.
+ * Handlers live in `AgentReviewWriteTargets.tsx` and go through the page's
+ * canonical `updateReviewQueueRow` service — never raw supabase. Because RLS
+ * makes a non-super-admin UPDATE a silent zero-row no-op rather than an
+ * error, the entity handler RE-READS the queue and throws when the value did
+ * not actually land.
+ *
+ * DELIBERATELY NOT WRITABLE — and this list is the point of the surface:
+ *   - STATUS transitions (Approve / Request changes / Archive / Restore).
+ *     This queue holds work AGENTS produced. An agent approving or archiving
+ *     its own review row is self-dealing, and that boundary is ABSOLUTE — not
+ *     an `ask` dialog, not a policy override, simply undeclared. Every status
+ *     change stays Arman's explicit button press.
+ *   - `id`, `created_at`, `source` — identity and provenance.
+ *   - `url` — the pointer to the artifact under review; changing it would
+ *     re-aim a review at something the reviewer never saw.
+ *   - `show_archived` — a mechanical view filter nobody needs an agent for.
+ *   - `metadata.triage.assignment` and `.verification` — claim coordination
+ *     owned by the `agent-review-queue` skill's atomic SQL claim protocol;
+ *     a page write here would stomp another agent's live claim. The triage
+ *     target preserves both sub-objects verbatim.
  */
 
 import type {
@@ -32,8 +61,15 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
-import type { ReviewTriage } from "@/features/admin/agent-review/triage";
+import {
+  REVIEW_LANES,
+  REVIEW_PRIORITIES,
+  REVIEW_TOOLS,
+  REVIEW_WORKSTREAMS,
+  type ReviewTriage,
+} from "@/features/admin/agent-review/triage";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const ADMIN_AGENT_REVIEW_SURFACE_NAME = "matrx-admin/agent-review";
@@ -160,6 +196,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "queue",
   },
   {
+    name: "feedback_drafts",
+    label: "Unsaved feedback drafts",
+    description:
+      "Feedback text currently staged in the UI but NOT yet saved, keyed by review-row id — the live contents of each row's feedback textarea wherever it differs from the row's saved `feedback`. Empty object when every row's editor matches what is stored. This is the read twin of the `review_feedback_draft` write target: read it back to confirm what is staged and awaiting the admin's Save feedback press.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 400,
+    sortOrder: 158,
+    group: "queue",
+  },
+  {
     name: "queue_sample",
     label: "Queue sample",
     description:
@@ -170,6 +217,33 @@ const surfaceSpecific: SurfaceValue[] = [
     autoContext: false,
     sortOrder: 170,
     group: "queue",
+  },
+];
+
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "review_feedback_draft",
+    label: "Review feedback draft",
+    description:
+      "Stages review feedback into ONE row's feedback textarea — the same buffer the admin types into. Object value: { row_id: string, feedback: string }. `row_id` must be the id of a row present in queue_sample; a missing or unknown id is refused, because this page has no selected row. `feedback` is plain prose (newlines fine) and REPLACES the whole textarea, so include anything already in feedback_drafts / the row's saved feedback that should survive; an empty string clears the editor. Nothing is written to the database: the admin reads the staged text and decides whether to press Save feedback, Request changes, or Approve. Archived rows have no editor and are refused.",
+    valueType: "object",
+    updatesValue: "feedback_drafts",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "queue",
+    sortOrder: 100,
+  },
+  {
+    name: "review_triage_classification",
+    label: "Review triage classification",
+    description:
+      `Re-classifies how ONE row is ROUTED, saved immediately through the page's canonical update. Object value: { row_id: string, lane?, priority?, workstreams?, required_tools? } — row_id must appear in queue_sample, plus at least one of the four routing fields; anything else is refused. lane is one of: ${REVIEW_LANES.join(" | ")}. priority is one of: ${REVIEW_PRIORITIES.join(" | ")}. required_tools is a non-empty array (the FULL set, replacing the old one) of: ${REVIEW_TOOLS.join(" | ")}. workstreams is an array (also the FULL set, may be empty) of: ${REVIEW_WORKSTREAMS.join(" | ")}. Omitted fields keep their current values, and the row's assignment/claim state and verification record are preserved untouched. Only the triage block inside the versioned metadata envelope is patched — the rest of metadata is carried over as-is. A row with missing or invalid triage is classified from the page's own deterministic suggestion, with your fields applied on top. This does NOT change the row's status: approving, requesting changes, and archiving remain the admin's own button presses.`,
+    valueType: "object",
+    updatesValue: "queue_sample",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "queue",
+    sortOrder: 110,
   },
 ];
 
@@ -185,13 +259,16 @@ This is an ADMIN surface: Arman's Agent Review Queue at /administration/users/ag
 
 Rows are grouped by status: pending (needs a first look), changes_requested (repair backlog), approved (signed off), and archived (fully handled). Structured metadata routes repair work by primary lane, required tools, priority, ownership, and verification state. repair_lane_counts and repair_tool_counts summarize that routing; tool counts deliberately overlap because real tasks often need more than one capability. queue_sample includes each row's triage envelope for detail.
 
-What you may safely do: help Arman triage — summarize what's pending, draft feedback text for a row, flag stale items. You never change a row's status or save feedback yourself; every state transition (Save feedback / Request changes / Approve / Archive / Restore) is Arman's explicit button press.
+What you may safely do: help Arman triage — summarize what's pending, draft feedback text for a row, classify how a row should be routed, flag stale items. Two write targets let you act on ONE row at a time, named by its row_id from queue_sample: review_feedback_draft stages prose into that row's feedback editor for him to read and save, and review_triage_classification saves a routing re-classification (lane, priority, workstreams, required tools).
+
+What you never do: change a row's STATUS. This queue is where agents register their own work, so approving or archiving a row is not yours to do at any confidence level — Save feedback, Request changes, Approve, Archive, and Restore are all Arman's explicit button presses, and no write target exists for them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One row as emitted in `queue_sample`. */
@@ -222,6 +299,7 @@ export function createAdminAgentReviewScope(values: {
   repair_lane_counts: Record<string, number>;
   repair_tool_counts: Record<string, number>;
   show_archived: boolean;
+  feedback_drafts: Record<string, string>;
   queue_sample: AdminAgentReviewSampleEntry[];
   // alwaysAvailable: false → optional
   selection?: string;
