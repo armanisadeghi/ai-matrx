@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 322 active entity tokens. A token here is FK-valid for
+// 323 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -45,6 +45,7 @@ export interface EntityTypeMeta {
  * `source_type` / `target_type` argument so an invalid token is a COMPILE error.
  */
 export type EntityTypeToken =
+  | "access_request"
   | "activity"
   | "agent"
   | "agent_card"
@@ -591,6 +592,7 @@ export type ComponentEntityToken =
 
 /** Tokens flagged `default_scopeable` — can carry scope tags by default. */
 export type ScopeableEntityToken =
+  | "access_request"
   | "activity"
   | "agent"
   | "agent_card"
@@ -934,6 +936,7 @@ export type ModuleEntityToken =
 
 /** Full registry metadata, keyed by token. */
 export const ENTITY_TYPE_METADATA = {
+  "access_request": { token: "access_request", schema: "iam", table: "access_requests", label: "Access Request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "System", referencePickable: false, titleColumn: null, contentRole: "utility", referenceCategory: null },
   "activity": { token: "activity", schema: "platform", table: "activity_log", label: "Activity Log Entry", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent": { token: "agent", schema: "agent", table: "definition", label: "Agent", baseTier: 1, isComponent: false, isModule: true, isListed: true, scopeable: true, category: "Agents", referencePickable: true, titleColumn: "name", contentRole: "utility", referenceCategory: null },
   "agent_card": { token: "agent_card", schema: "agent", table: "card", label: "Agent Card", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -1260,6 +1263,7 @@ export const ENTITY_TYPE_METADATA = {
 
 /** Every token, sorted — the iteration/validation source. */
 export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
+  "access_request",
   "activity",
   "agent",
   "agent_card",
