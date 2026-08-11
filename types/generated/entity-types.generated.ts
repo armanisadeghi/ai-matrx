@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 320 active entity tokens. A token here is FK-valid for
+// 321 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -177,6 +177,7 @@ export type EntityTypeToken =
   | "global_meter_entry"
   | "global_origin"
   | "global_request"
+  | "growth_loop_run"
   | "heatmap_save"
   | "industry_curator"
   | "invitation"
@@ -703,6 +704,7 @@ export type ScopeableEntityToken =
   | "global_meter_entry"
   | "global_origin"
   | "global_request"
+  | "growth_loop_run"
   | "heatmap_save"
   | "industry_curator"
   | "invitation"
@@ -906,6 +908,7 @@ export type ListedEntityToken =
   | "crm_campaign"
   | "dataset"
   | "expertise_pack"
+  | "growth_loop_run"
   | "learn_doc"
   | "party"
   | "plan_entity"
@@ -1060,6 +1063,7 @@ export const ENTITY_TYPE_METADATA = {
   "global_meter_entry": { token: "global_meter_entry", schema: "runtime", table: "global_meter_entry", label: "Runtime Meter Entry", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "global_origin": { token: "global_origin", schema: "runtime", table: "global_origin", label: "Runtime Origin", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "global_request": { token: "global_request", schema: "runtime", table: "global_request", label: "Runtime Request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "growth_loop_run": { token: "growth_loop_run", schema: "growth", table: "loop_run", label: "Growth Loop Run", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "heatmap_save": { token: "heatmap_save", schema: "public", table: "heatmap_saves", label: "Heatmap Save", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "industry_curator": { token: "industry_curator", schema: "iam", table: "industry_curators", label: "Industry Curator", baseTier: 2, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "invitation": { token: "invitation", schema: "iam", table: "invitations", label: "Invitation", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1384,6 +1388,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "global_meter_entry",
   "global_origin",
   "global_request",
+  "growth_loop_run",
   "heatmap_save",
   "industry_curator",
   "invitation",
