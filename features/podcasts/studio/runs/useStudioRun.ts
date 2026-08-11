@@ -896,6 +896,35 @@ export function useStudioRun(runId: string): UseStudioRun {
     return () => clearInterval(id);
   }, [streaming]);
 
+  // The run record carries the metadata the PIPELINE generated; pc_episodes
+  // carries what the episode actually IS after any later edit (the Title
+  // options panel's Apply, the episode_title / episode_description write
+  // targets, the admin episode form). Those diverge the moment anyone edits,
+  // and this page rebuilds from the run record — so on every reload the hero,
+  // and the surface values an agent reads back, would show a title the
+  // episode no longer has. Overlay the persisted row once the episode is
+  // known and the stream is done writing it.
+  const overlaidEpisodeRef = useRef<string | null>(null);
+  useEffect(() => {
+    const episodeId = state.episodeId;
+    if (!episodeId || streaming) return;
+    if (overlaidEpisodeRef.current === episodeId) return;
+    overlaidEpisodeRef.current = episodeId;
+    let cancelled = false;
+    void podcastService.fetchEpisodeById(episodeId).then((ep) => {
+      if (cancelled || !ep) return;
+      setState((s) => {
+        const title = ep.title ?? s.title;
+        const description = ep.description ?? s.description;
+        if (title === s.title && description === s.description) return s;
+        return { ...s, title, description };
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.episodeId, streaming]);
+
   const reconnect = useCallback(() => resumeRef.current?.(), []);
   const rerunFromSource = useCallback(() => rerunRef.current?.(), []);
   const refresh = useCallback(() => reloadRef.current?.(), []);
