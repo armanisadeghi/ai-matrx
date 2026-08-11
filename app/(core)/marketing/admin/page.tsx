@@ -495,6 +495,11 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
   ],
   windowPanels: [
     {
+      overlayId: "marketingMediaAssetWindow",
+      description:
+        "Resizable crawled-image detail window: canonical ImageViewer canvas plus a resizable metadata/action inspector with page doors, standards verdict, library promotion, editing, and replacement ordering.",
+    },
+    {
       overlayId: "keywordResearchWindow",
       description:
         "Canonical keyword research runner in a floating window: shared KeywordResearchLauncher (live key-by-key kind-component stream) + compact cluster explorer. Open from anywhere via useOpenKeywordResearchWindow({ primaryKeyword, autoRun }).",

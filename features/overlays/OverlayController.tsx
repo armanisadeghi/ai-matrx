@@ -66,6 +66,7 @@ import type {
   RagAiCopyBundle,
   RagAiSectionKey,
 } from "@/features/rag/components/search/ragAiCopy";
+import { isJsonObject } from "@/types/json";
 
 const AdminIndicator = lazyOverlay(
   () => import("@/components/admin/controls/AdminIndicator"),
@@ -608,6 +609,11 @@ const ImageViewerWindow = lazyOverlay(
     import("@/features/window-panels/windows/image/ImageViewerWindow").then(
       (m) => ({ default: m.ImageViewerWindow }),
     ),
+  { ssr: false },
+);
+const MarketingMediaAssetWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/MarketingMediaAssetWindow"),
   { ssr: false },
 );
 const InstanceUIStateWindow = lazyOverlay(
@@ -1731,6 +1737,9 @@ export default function OverlayController() {
       selectOpenInstances(s, "imageAnnotationWindow"),
     ),
     imageViewer: useAppSelector((s) => selectOpenInstances(s, "imageViewer")),
+    marketingMediaAssetWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "marketingMediaAssetWindow"),
+    ),
     multiFileSmartCodeEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "multiFileSmartCodeEditorWindow"),
     ),
@@ -4005,6 +4014,33 @@ export default function OverlayController() {
                 : undefined
             }
             title={typeof data?.title === "string" ? data.title : undefined}
+          />
+        );
+      })}
+
+      {/* marketingMediaAssetWindow — multi-instance */}
+      {instancesById.marketingMediaAssetWindow.map((inst) => {
+        const data = isJsonObject(inst.data) ? inst.data : null;
+        return (
+          <MarketingMediaAssetWindow
+            key={inst.instanceId}
+            isOpen
+            instanceId={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "marketingMediaAssetWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            siteId={typeof data?.siteId === "string" ? data.siteId : null}
+            assetSrc={typeof data?.assetSrc === "string" ? data.assetSrc : null}
           />
         );
       })}

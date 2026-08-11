@@ -113,6 +113,7 @@ export const OVERLAY_IDS = [
   "listManagerWindow",
   "markdownEditor",
   "markdownEditorWindow",
+  "marketingMediaAssetWindow",
   "messageAnalysisWindow",
   "messagesWindow",
   "multiFileSmartCodeEditorWindow",

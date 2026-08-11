@@ -934,6 +934,22 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
+  // ── Marketing crawled-media asset ───────────────────────────────────────
+  {
+    slug: "marketing-media-asset-window",
+    overlayId: "marketingMediaAssetWindow",
+    kind: "window",
+    label: "Media Asset",
+    defaultData: {
+      callbackGroupId: null,
+      siteId: null,
+      assetSrc: null,
+    },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "multi",
+  },
+
   // ── Image Annotation ─────────────────────────────────────────────────────
   {
     slug: "image-annotation-window",

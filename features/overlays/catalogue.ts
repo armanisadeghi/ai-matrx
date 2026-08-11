@@ -465,6 +465,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  marketingMediaAssetWindow: {
+    label: "Media Asset",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   instanceUIStateWindow: {
     label: "Instance U I State Window",
     instanceMode: "singleton",

@@ -3,7 +3,7 @@
 /**
  * CrawledMediaView — the observed half of the Media workspace: every image
  * across all canonical pages' latest snapshots, deduped, categorized, and
- * filterable, with click-to-drill into the AssetDetailSheet. Extracted from
+ * filterable, with click-to-drill into a resizable media-asset window. Extracted from
  * the original single-view SiteMediaWorkspace when the workspace grew views.
  */
 
@@ -34,8 +34,8 @@ import {
   MediaEmptyState,
   SnapshotMediaGallery,
 } from "@/features/marketing/components/media/SnapshotMediaGallery";
-import { AssetDetailSheet } from "@/features/marketing/components/media/AssetDetailSheet";
 import { AssetImageEditorDialog } from "@/features/marketing/components/media/AssetImageEditorDialog";
+import { useOpenMarketingMediaAssetWindow } from "@/features/overlays/openers/marketingMediaAssetWindow";
 import type { BrandAsset } from "@/features/marketing/types";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { SizeTier } from "@/lib/media/categorization";
@@ -83,13 +83,13 @@ export function CrawledMediaView({
   /** Jump to the Generate view prefilled from an asset. */
   onOrderReplacement: (asset: SnapshotMediaAsset) => void;
 }) {
-  const { site, sitePath } = useMarketingSite();
+  const { site } = useMarketingSite();
   const media = useSiteMedia(site.id);
+  const openMediaAsset = useOpenMarketingMediaAssetWindow();
   const [tierFilter, setTierFilter] = useState<TierFilter>("all");
   const [altFilter, setAltFilter] = useState<"all" | "missing">("all");
   const [pageFilter, setPageFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<SnapshotMediaAsset | null>(null);
   const [editingImported, setEditingImported] = useState<BrandAsset | null>(
     null,
   );
@@ -256,7 +256,14 @@ export function CrawledMediaView({
         <SnapshotMediaGallery
           buckets={buckets}
           showPages
-          onSelect={setSelected}
+          onSelect={(asset) =>
+            openMediaAsset({
+              siteId: site.id,
+              assetSrc: asset.src,
+              onOrderReplacement: (event) => onOrderReplacement(event.asset),
+              onImportedForEdit: (event) => setEditingImported(event.asset),
+            })
+          }
         />
       ) : rows.length === 0 ? (
         <MediaEmptyState
@@ -352,22 +359,6 @@ export function CrawledMediaView({
             : ""}
         </p>
       ) : null}
-
-      <AssetDetailSheet
-        asset={selected}
-        onOpenChange={(open) => {
-          if (!open) setSelected(null);
-        }}
-        sitePath={sitePath}
-        brandId={brandId}
-        organizationId={site.organization_id}
-        standards={standards}
-        onOrderReplacement={(asset) => {
-          setSelected(null);
-          onOrderReplacement(asset);
-        }}
-        onEditImported={setEditingImported}
-      />
 
       <AssetImageEditorDialog
         asset={editingImported}
