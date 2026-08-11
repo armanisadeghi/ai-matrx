@@ -102,6 +102,39 @@ export function isNetError(err: unknown): err is NetError {
   return err instanceof NetError;
 }
 
+/**
+ * True when a failure is the TRANSPORT dying, not the server answering: the
+ * browser is offline, asleep, mid-wifi-handoff, or DNS/TLS failed. `fetch`
+ * rejects with a bare `TypeError: Failed to fetch` in every browser, and
+ * supabase-js surfaces that verbatim (message only — no code, no hint).
+ *
+ * Use it to decide how LOUD a failure is, never whether to handle it. A
+ * transport failure carries nothing an engineer can act on, so logging it at
+ * error level buries the failures that do — that is how `/notes` filed a
+ * system_error every time a laptop slept (2026-08-11). Anything with a Postgres
+ * code, an HTTP status, or a server message is NOT this: keep those loud.
+ */
+export function isTransportFailure(err: unknown): boolean {
+  if (err instanceof NetworkError || err instanceof OfflineError) return true;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+  if (err instanceof TypeError) return true;
+  if (err && typeof err === "object") {
+    const e = err as { code?: unknown; status?: unknown; message?: unknown; name?: unknown };
+    // A real PostgREST/Postgres failure always carries a code or status.
+    if (e.code || e.status) return false;
+    const text = `${typeof e.name === "string" ? e.name : ""} ${
+      typeof e.message === "string" ? e.message : ""
+    }`.toLowerCase();
+    return (
+      text.includes("failed to fetch") ||
+      text.includes("networkerror") ||
+      text.includes("network request failed") ||
+      text.includes("load failed") // Safari's wording for the same condition
+    );
+  }
+  return false;
+}
+
 export function toNetError(err: unknown): NetError {
   if (isNetError(err)) return err;
   if (err instanceof DOMException && err.name === "AbortError") {

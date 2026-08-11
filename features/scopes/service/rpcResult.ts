@@ -12,6 +12,8 @@
 // Every method that returns a `ScopesRpcResult` builds it through `ok`/`err`
 // here and NEVER throws to its caller.
 
+import { isTransportFailure } from "@/lib/net/errors";
+
 import type { ScopesRpcError, ScopesRpcResult } from "@/features/scopes/types";
 
 // Re-exported for convenience so a service file imports its envelope and its
@@ -36,7 +38,17 @@ export function mapPgError(e: unknown): ScopesRpcError {
   // error with full context HERE — the single funnel every failure passes
   // through — so "my association didn't save" is diagnosable from the
   // console instead of vanishing into a generic message.
-  console.error("[scopes/rpcResult] supabase error", e);
+  //
+  // EXCEPT a transport failure. A browser that is asleep, offline, or mid-wifi
+  // handoff rejects fetch with `TypeError: Failed to fetch` — no code, no hint,
+  // nothing lossy to preserve, and nothing an engineer can act on. Filing those
+  // as errors buried the real ones under connectivity noise (2026-08-11), so
+  // they log as warnings; every genuine Postgres/PostgREST failure stays loud.
+  if (isTransportFailure(e)) {
+    console.warn("[scopes/rpcResult] network unreachable (browser offline?)", e);
+  } else {
+    console.error("[scopes/rpcResult] supabase error", e);
+  }
   if (e && typeof e === "object" && "code" in e) {
     const code = String((e as { code: string }).code);
     if (code === "PGRST116") return { code: "not_found", message: "Not found" };

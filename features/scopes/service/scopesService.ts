@@ -40,6 +40,12 @@ import { requireUserId } from "@/utils/auth/getUserId";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import {
+  err,
+  mapPgError,
+  mapPgErrorPair,
+  ok,
+} from "@/features/scopes/service/rpcResult";
 import type {
   ContextItemRow,
   ContextItemValue,
@@ -92,36 +98,12 @@ export interface DatasetTableTemplate {
 }
 
 // ─── helpers ────────────────────────────────────────────────────────
-
-function err(
-  code: ScopesRpcError["code"],
-  message: string,
-  detail?: unknown,
-): { ok: false; error: ScopesRpcError } {
-  return { ok: false, error: { code, message, detail } };
-}
-
-function ok<T>(data: T): { ok: true; data: T } {
-  return { ok: true, data };
-}
-
-function mapPgError(e: unknown): ScopesRpcError {
-  // Loud before lossy: the friendly mapping below discards the PG error
-  // code / constraint / hint that production debugging needs. Log the raw
-  // error with full context HERE — the single funnel every ctx_* failure
-  // passes through — so "my scope didn't save" is diagnosable from the
-  // console instead of vanishing into a generic message.
-  console.error("[scopesService] supabase error", e);
-  if (e && typeof e === "object" && "code" in e) {
-    const code = String((e as { code: string }).code);
-    if (code === "PGRST116") return { code: "not_found", message: "Not found" };
-    if (code === "42501")
-      return { code: "forbidden_org", message: "Permission denied" };
-  }
-  const message =
-    e instanceof Error ? e.message : "Unexpected error talking to Supabase";
-  return { code: "internal", message, detail: e };
-}
+//
+// These lived here as private copies that `rpcResult.ts` was extracted FROM,
+// with a standing "the two MUST stay byte-identical" note — a promise a comment
+// cannot keep. They diverged the first time one side was fixed (transport
+// failures logging as errors, 2026-08-11), so the fork is now deleted: this file
+// consumes the one implementation like every other scopes chokepoint.
 
 // ─── service ────────────────────────────────────────────────────────
 
@@ -1137,13 +1119,6 @@ async function fetchScopeDisplays(
   // ScopeWithType without a DbRpcRow-style guard (this is a table embed, not
   // an RPC). Runtime shape is verified — one scope_types row per scope (FK).
   return ok((data ?? []) as unknown as ScopeWithType[]);
-}
-
-// ─── internal: paired return for err() to satisfy TS tuple unpacking ────
-
-function mapPgErrorPair(e: unknown): [ScopesRpcError["code"], string, unknown] {
-  const mapped = mapPgError(e);
-  return [mapped.code, mapped.message, mapped.detail];
 }
 
 function notYetImplemented(name: string) {

@@ -39,6 +39,11 @@ let reconnectAttempt = 0;
 // full-list catch-up fetch, a self-sustaining fetch storm.
 const BACKOFF_RESET_AFTER_MS = 30_000;
 let backoffResetTimer: ReturnType<typeof setTimeout> | null = null;
+// Reconnect attempts before a dropped channel stops being routine and becomes a
+// captured error. Attempts 1-3 span ~7s of backoff — the window a sleep, a tab
+// backgrounding, or a wifi handoff heals inside. Past it, live sync is genuinely
+// broken and the user needs the alarm. CAPS constant, never an env var.
+const RECONNECT_ALARM_ATTEMPT = 3;
 
 // ── Live-editor attribution ─────────────────────────────────────────────
 // `workbench.notes._stamp_actor` (DB trigger) writes `updated_by` on every
@@ -386,7 +391,24 @@ export const notesRealtimeMiddleware: Middleware<
             void storeApi.dispatch(fetchSharedNotesList());
           }
         } else if (status === "CHANNEL_ERROR") {
-          console.error("[Notes RT] Error:", err);
+          // A dropped websocket is ROUTINE — a laptop sleeping, a tab
+          // backgrounding, a wifi handoff all close with 1006, and the backoff
+          // below reconnects within seconds. Logging the first flap as an ERROR
+          // meant every commute filed a system_error row for a self-healing
+          // event (the /notes "socket closed: 1006" noise, 2026-08-11), which
+          // buries the outages that ARE real. Loud recovery means screaming when
+          // recovery FAILS: warn while the backoff is doing its job, escalate to
+          // a captured error once we've failed past RECONNECT_ALARM_ATTEMPT.
+          const failing = reconnectAttempt >= RECONNECT_ALARM_ATTEMPT;
+          if (failing) {
+            console.error(
+              `[Notes RT] realtime still down after ${reconnectAttempt} reconnect ` +
+                `attempts — live note sync is broken for this session:`,
+              err,
+            );
+          } else {
+            console.warn("[Notes RT] channel dropped (reconnecting):", err);
+          }
           storeApi.dispatch(setRealtimeConnected(false));
           if (subscribedUserId) {
             scheduleReconnect(subscribedUserId, "CHANNEL_ERROR");
