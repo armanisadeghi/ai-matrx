@@ -133,15 +133,26 @@ is easy to fill in.
   — it reaches it late (whenever the detached pipeline finishes), and a client
   that reads the row mid-flight sees `processing` for minutes. That window is
   what `run-truth.ts` covers; there is no missing terminal write.
-  **The one aidream defect that IS real (verified live, 2026-08-11):**
-  `chat.agent_run_stage.cost` is NULL on **all 980 rows** while 172 of them
-  carry a real `output.usage.cost_usd` — **$13.59 of spend recorded nowhere
-  queryable**, and every `agent_run.total_cost` is `0`. Cause found: the
-  per-stage cost write (`_checkpoint.py`), the reconciliation sweep
+  **The one aidream defect that WAS real — now CLOSED (verified live,
+  2026-08-11 21:20 UTC):** `chat.agent_run_stage.cost` was NULL on all 980 rows
+  while 172 carried a real `output.usage.cost_usd` — $13.59 of spend recorded
+  nowhere queryable, and every `agent_run.total_cost` was `0`. The per-stage
+  cost write (`_checkpoint.py`), the reconciliation sweep
   (`aidream/services/podcast/reconcile.py`) and `scripts/backfill_agent_run_cost.py`
-  are **written but UNCOMMITTED** in the aidream checkout — production has
-  never had them. Not fixable from this repo; needs an aidream session that
-  owns those files.
+  were written but uncommitted; they are now **committed, deployed and proven in
+  production**. Live counts: **176 of 176** stages carrying payload money have
+  the `cost` column set (gap = 0), 38 runs carry a non-zero `total_cost`, and
+  the column sum equals the payload sum exactly ($13.6126). Both halves are
+  proven independently — the backfill settled the history, and runs generated
+  *after* the deploy (`ee295ea3`, `55850645`) recorded their cost through the
+  live path with no backfill involved. The run this section names, `7f237d93`,
+  now reads **$0.669998** instead of `0`. The reconciliation sweep is not merely
+  registered but **scheduled and firing**: `scheduler.sch_task` +
+  `sch_trigger` both `enabled=true` on `*/10 * * * *`, handler gate cleared, 7
+  consecutive successful `sch_run` rows. **Consequence for this repo:** a run's
+  cost is now a queryable column, so any studio surface that wants to show what
+  an episode cost can read `agent_run.total_cost` / `agent_run_stage.cost`
+  directly instead of digging through stage `output.usage` JSON.
 
 - 2026-08-11 — **A finished episode is never shown as "interrupted": run status
   is DERIVED from the deliverable, not read from a column somebody forgot to
