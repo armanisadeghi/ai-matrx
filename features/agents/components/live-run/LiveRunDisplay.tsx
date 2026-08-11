@@ -71,34 +71,30 @@ function phaseLabel(phase: StreamPhase | null, fallbackActive: boolean): string 
   }
 }
 
-export interface LiveRunDisplayProps {
-  /** Live handle from `useLiveAgentRun` / `useHeadlessAgentJson`. */
-  conversationId?: string | null;
-  /** Direct request handle (adoptForeignStream / pipeline consumers). */
-  requestId?: string | null;
-  /** What is running — shown in the status line (e.g. "Drafting brief"). */
-  label?: string;
-  /**
-   * The run has been triggered but no conversation/request exists yet — keeps
-   * the status line alive from the very first click (no dead moment).
-   */
-  pending?: boolean;
-  /** Renders a dismiss (X) affordance; caller tears the run down. */
-  onDismiss?: () => void;
-  className?: string;
-  /** Body scroll area classes — default caps height and scrolls. */
-  bodyClassName?: string;
+export interface LiveRunStatus {
+  requestId: string | null;
+  isActive: boolean;
+  /** Human phase line — server phase wins over the generic client label. */
+  statusText: string | null;
+  errorMessage: string | null;
+  /** Monotonic per-chunk tick — drives follow-the-stream scroll. */
+  chunkCount: number;
 }
 
-export function LiveRunDisplay({
-  conversationId,
-  requestId: requestIdProp,
-  label,
+/**
+ * The run's status, with no chrome attached.
+ *
+ * 🚨 THIS EXISTS SO A HOST FRAME CAN OWN THE STATUS LINE. `LiveRunWindow`
+ * already draws a title bar; if `LiveRunDisplay` also drew one, the user would
+ * read the same words twice inside two nested borders. The window consumes
+ * this hook, folds the phase into its own title, and renders the display bare.
+ * Never add a second status bar — put the phase where the frame already is.
+ */
+export function useLiveRunStatus(
+  conversationId?: string | null,
+  requestIdProp?: string | null,
   pending = false,
-  onDismiss,
-  className,
-  bodyClassName,
-}: LiveRunDisplayProps) {
+): LiveRunStatus {
   const derivedRequestId = useAppSelector((state) =>
     conversationId ? selectLatestRequestId(conversationId)(state) : undefined,
   );
@@ -116,7 +112,6 @@ export function LiveRunDisplay({
   const requestError = useAppSelector((state) =>
     requestId ? selectRequestError(requestId)(state) : undefined,
   );
-  // Cheap monotonic tick per streamed chunk — drives follow-the-stream scroll.
   const chunkCount = useAppSelector((state) =>
     requestId
       ? (state.activeRequests.byRequestId[requestId]?.chunkCount ?? 0)
@@ -130,6 +125,61 @@ export function LiveRunDisplay({
       ACTIVE_REQUEST_STATUSES.has(requestStatus)) ||
     (pending && !requestId && streamPhase === null);
 
+  const serverPhase =
+    requestPhase && requestPhase !== "connected" ? requestPhase : null;
+
+  return {
+    requestId,
+    isActive,
+    statusText: serverPhase ?? phaseLabel(streamPhase, isActive || pending) ?? null,
+    errorMessage: requestError?.user_message ?? requestError?.message ?? null,
+    chunkCount,
+  };
+}
+
+export interface LiveRunDisplayProps {
+  /** Live handle from `useLiveAgentRun` / `useHeadlessAgentJson`. */
+  conversationId?: string | null;
+  /** Direct request handle (adoptForeignStream / pipeline consumers). */
+  requestId?: string | null;
+  /** What is running — shown in the status line (e.g. "Drafting brief"). */
+  label?: string;
+  /**
+   * The run has been triggered but no conversation/request exists yet — keeps
+   * the status line alive from the very first click (no dead moment).
+   */
+  pending?: boolean;
+  /** Renders a dismiss (X) affordance; caller tears the run down. */
+  onDismiss?: () => void;
+  className?: string;
+  /** Body scroll area classes — default caps height and scrolls. */
+  bodyClassName?: string;
+  /**
+   * `card` (default) — draws its own border, background, and status bar. For
+   * dropping inline into a page that has no frame of its own.
+   *
+   * `bare` — draws NOTHING but the content. Use inside a host that already IS
+   * the frame (`LiveRunWindow`): a bordered card inside a bordered window is
+   * the nested-chrome defect — two borders, two backgrounds, two status lines,
+   * and a band of dead padding between them. The host owns the status via
+   * `useLiveRunStatus`.
+   */
+  variant?: "card" | "bare";
+}
+
+export function LiveRunDisplay({
+  conversationId,
+  requestId: requestIdProp,
+  label,
+  pending = false,
+  onDismiss,
+  className,
+  bodyClassName,
+  variant = "card",
+}: LiveRunDisplayProps) {
+  const { requestId, isActive, statusText, errorMessage, chunkCount } =
+    useLiveRunStatus(conversationId, requestIdProp, pending);
+
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!isActive) return;
@@ -140,13 +190,32 @@ export function LiveRunDisplay({
   const hasRun = Boolean(conversationId || requestId);
   if (!hasRun && !pending) return null;
 
-  const errorMessage =
-    requestError?.user_message ?? requestError?.message ?? null;
-  const statusText = phaseLabel(streamPhase, isActive || pending);
-  // The server phase line (e.g. "Reading research + drafting brief") beats the
-  // generic client label when one is present.
-  const serverPhase =
-    requestPhase && requestPhase !== "connected" ? requestPhase : null;
+  // BARE: the host frame is the chrome. Content only — no border, no
+  // background, no status bar, no padding. Anything added here reappears as a
+  // second box inside the window.
+  if (variant === "bare") {
+    return (
+      <div className={cn("h-full min-h-0", className)}>
+        {errorMessage ? (
+          <p className="pb-2 text-xs text-destructive">{errorMessage}</p>
+        ) : null}
+        {requestId ? (
+          <div
+            ref={bodyRef}
+            className={cn("h-full min-h-0 overflow-y-auto", bodyClassName)}
+          >
+            <MarkdownStream
+              requestId={requestId}
+              isStreamActive={isActive}
+              hideCopyButton
+            />
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  const serverPhase = statusText;
 
   return (
     <div
@@ -163,10 +232,10 @@ export function LiveRunDisplay({
         ) : null}
         <span className="min-w-0 truncate font-medium">
           {label ?? "AI run"}
-          {statusText || serverPhase ? (
+          {serverPhase ? (
             <span className="font-normal text-muted-foreground/80">
               {" — "}
-              {serverPhase ?? statusText}
+              {serverPhase}
             </span>
           ) : null}
         </span>

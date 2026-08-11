@@ -35,8 +35,6 @@ export interface OpenLiveRunWindowOptions {
   label?: string | null;
   /** Launched, but no stream has connected yet. */
   pending?: boolean;
-  /** Optional line under the title — where the result will land. */
-  subtitle?: string | null;
   /** Stable id to reuse one window per subject. Omit for a fresh window. */
   instanceId?: string;
   /**
@@ -73,7 +71,6 @@ export function useOpenLiveRunWindow() {
               requestId: current.requestId ?? null,
               label: current.label ?? null,
               pending: current.pending ?? false,
-              subtitle: current.subtitle ?? null,
               // Undefined (not null) so the component's chat-matched defaults
               // apply — an explicit null would be passed through as a size.
               width: current.width,
@@ -105,8 +102,7 @@ export function LiveRunWindowController(
 ): null {
   const open = useOpenLiveRunWindow();
   const handleRef = useRef<LiveRunWindowHandle | null>(null);
-  const { instanceId, conversationId, requestId, label, pending, subtitle, width, height } =
-    props;
+  const { instanceId, conversationId, requestId, label, pending, width, height } = props;
 
   useEffect(() => {
     const handle = open({ instanceId });
@@ -123,11 +119,10 @@ export function LiveRunWindowController(
       requestId,
       label,
       pending,
-      subtitle,
       width,
       height,
     });
-  }, [conversationId, requestId, label, pending, subtitle, width, height]);
+  }, [conversationId, requestId, label, pending, width, height]);
 
   return null;
 }

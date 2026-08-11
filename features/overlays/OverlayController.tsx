@@ -4467,7 +4467,6 @@ export default function OverlayController() {
             requestId={typeof data?.requestId === "string" ? data.requestId : null}
             label={typeof data?.label === "string" ? data.label : null}
             pending={data?.pending === true}
-            subtitle={typeof data?.subtitle === "string" ? data.subtitle : null}
             // Undefined when unset so the window's chat-matched size defaults
             // apply; a per-kind override arrives as a number or "70vh".
             width={

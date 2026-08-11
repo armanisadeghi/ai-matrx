@@ -356,7 +356,11 @@ export function NodePanel({
           requestId={briefWriter.run.requestId ?? null}
           label="Drafting brief"
           pending={briefWriter.busy && !briefWriter.run.requestId}
-          subtitle={`${node.route ?? node.label} — saved to this page as it arrives`}
+          // Measured, not guessed: a finished `page_brief` (angle + ~9 points
+          // + must-not-cover + concerns) fills ~90% of the viewport. At the
+          // 80vh default it scrolls for no reason; taller than this and the
+          // window stops being a floating panel over the page.
+          height="90vh"
         />
       ) : null}
       {deepen.nodeId === node.id &&
@@ -370,7 +374,6 @@ export function NodePanel({
               : "Deepening — brief + sources"
           }
           pending={deepeningThisNode && !deepen.run.requestId}
-          subtitle={node.route ?? node.label}
         />
       ) : null}
 

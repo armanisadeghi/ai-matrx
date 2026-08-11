@@ -25,7 +25,10 @@
 
 import React from "react";
 
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import {
+  LiveRunDisplay,
+  useLiveRunStatus,
+} from "@/features/agents/components/live-run/LiveRunDisplay";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
 /**
@@ -38,15 +41,15 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
  * right in chat. So this window is sized from the reading column outward, not
  * picked by eye.
  *
- * Chrome between the window edge and the text:
- *   frame border 2 + WindowPanel body `p-1.5` 12 + our own `px-3` 24 = 38px.
- * 720 usable + 38 chrome = 758 → 760, for ~722px of reading width.
+ * Chrome between the window edge and the text is only the frame itself:
+ *   frame border 2 + WindowPanel body `p-1.5` 12 = 14px.
+ * There is deliberately NO padding of our own — see the body comment below.
  *
  * Never hardcode a smaller number here to make a screenshot fit. If ONE kind
  * genuinely needs a different box, pass `width` / `height` at the callsite
  * (see below) — the default stays the chat-matched baseline.
  */
-const LIVE_RUN_CHROME_X = 38;
+const LIVE_RUN_CHROME_X = 14;
 const CHAT_READING_WIDTH = 720;
 const LIVE_RUN_WIDTH = CHAT_READING_WIDTH + LIVE_RUN_CHROME_X;
 
@@ -70,9 +73,6 @@ export interface LiveRunWindowProps {
   label?: string | null;
   /** The run has been launched but no stream has connected yet. */
   pending?: boolean;
-  /** Optional line under the title — where the result will land. */
-  subtitle?: string | null;
-
   /**
    * Per-kind size override. Only pass these once you have WATCHED that kind
    * render and seen the default box be wrong — a kind whose output is three
@@ -91,14 +91,26 @@ export default function LiveRunWindow({
   requestId = null,
   label = null,
   pending = false,
-  subtitle = null,
   width = LIVE_RUN_WIDTH,
   height = LIVE_RUN_HEIGHT,
 }: LiveRunWindowProps) {
+  const { statusText } = useLiveRunStatus(
+    conversationId,
+    requestId,
+    pending,
+  );
+
+  // The phase rides in the frame's OWN title bar. It is not a second row, not
+  // a subtitle strip, and not a status bar inside the body — the window
+  // already has exactly one place for "what is happening", so it goes there.
+  const title = statusText
+    ? `${label ?? "AI is working"} — ${statusText}`
+    : (label ?? "AI is working");
+
   return (
     <WindowPanel
       id={`live-run-window-${windowInstanceId}`}
-      title={label ?? "AI is working"}
+      title={title}
       overlayId="liveRunWindow"
       minWidth={380}
       minHeight={320}
@@ -106,24 +118,21 @@ export default function LiveRunWindow({
       height={height}
       onClose={onClose}
     >
-      <div className="flex h-full w-full flex-col overflow-hidden bg-background">
-        {subtitle ? (
-          <p className="border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
-            {subtitle}
-          </p>
-        ) : null}
-        <div className="min-h-0 flex-1 overflow-hidden px-3 py-2">
-          <LiveRunDisplay
-            conversationId={conversationId}
-            requestId={requestId}
-            label={label ?? undefined}
-            pending={pending}
-            // The window frame owns the height; the display must fill it
-            // rather than apply its own inline max-height cap.
-            className="h-full"
-            bodyClassName="max-h-none h-full overflow-y-auto"
-          />
-        </div>
+      {/* 🚨 ONE layer. The WindowPanel body is the frame; the kind component is
+          the content. Do NOT add a background here (it fights the component's
+          own `bg-card` and produces the two-tone box), and do NOT add padding
+          (the body already has `p-1.5`, and every kind component brings its
+          own internal spacing). Anything added between these two lines shows
+          up as a band of dead space the user can see. */}
+      <div className="h-full min-h-0 overflow-hidden">
+        <LiveRunDisplay
+          conversationId={conversationId}
+          requestId={requestId}
+          pending={pending}
+          variant="bare"
+          className="h-full"
+          bodyClassName="max-h-none h-full overflow-y-auto"
+        />
       </div>
     </WindowPanel>
   );
