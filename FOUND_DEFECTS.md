@@ -13,6 +13,35 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D158 — The public-media-URL guard was SCHEMA-BLIND and silently protected nothing on 3 anon-facing columns (2026-08-11) — FIXED
+
+`mtx_public_url_guard_trigger()` matched its registry on `TG_TABLE_NAME` alone. Two
+registry rows still carried **pre-reorg** table names — `aga_apps` (the table is now
+`app.definition`) and `wf_template` (now `workflow.template`). Both triggers were
+attached and firing; the lookup matched zero rows; the guard was a **silent no-op** on
+`app.definition.preview_image_url`, `app.definition.favicon_url` and
+`workflow.template.preview_image_url` — all three read by anonymous or non-owner
+viewers (`/p/[slug]` public app pages; published workflow templates, whose non-owners
+cannot re-mint a creator's signed URL).
+
+A guard that reports nothing is indistinguishable from a guard that finds nothing —
+which is exactly why this survived. Fixed by keying on `(schema_name, table_name)`;
+bare names like `definition` and `template` exist in several schemas, so renaming the
+rows alone would have left the guard able to fire on the wrong table. Verified with a
+live test write on `app.definition.preview_image_url`: heal queue 0 → 1, then reverted.
+Migration: `migrations/mtx_public_url_guard_schema_aware.sql`.
+
+**Open, needs Arman (not an agent decision):** `workbench.notes.content` holds 15 rows
+(9 ours) with embedded own-signed image URLs. A note is anon-shareable — the registry
+exposes `content` in `note.public_columns` and `app/(public)/s/[token]/SharedResourceView.tsx:238`
+renders it with no session, so an anonymous recipient cannot re-mint. **Zero of those
+notes are currently shared**, so there is no live exposure; the mismatch is latent. It
+was NOT auto-healed because the only durable ref for a private embedded image is a
+permanently public URL, and publishing a user's private asset to make a scan pass is a
+data-exposure incident. Two legitimate resolutions: publish those specific assets, or
+add token-scoped minting to the share lane. Detection is live and repeatable:
+`pnpm check:media-durability` (`scripts/media-durability/FEATURE.md`).
+
 ### D155 — Google's grounded stream DROPS a span of the answer (proven at the SSE chunk level) (2026-08-11)
 
 **Not ours, and not our schema. Proven on the wire.** When Google Search

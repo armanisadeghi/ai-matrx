@@ -70,6 +70,12 @@ if $STRICT; then
         # block every release until the campaign lands. Promote to --strict when
         # the scoreboard reaches zero.
         "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15"
+        # MEDIA DURABILITY stays ADVISORY in both modes. It reports a stored
+        # expiring URL only where the consumer contract demands durability
+        # (anon-visible share projections + guard-registered columns); the one
+        # open item needs a publish decision from Arman, not a code fix, so
+        # hard-failing would block every release on a question no agent may answer.
+        "Media durability (mismatch class)|pnpm check:media-durability"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -106,6 +112,7 @@ else
         # open it. Advisory by design (Arman: no check blocks a build); the
         # ranked scoreboard lives at /administration/reporting/dead-ends.
         "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15"
+        "Media durability (mismatch class)|pnpm check:media-durability"
     )
 fi
 

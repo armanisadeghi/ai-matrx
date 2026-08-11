@@ -1,0 +1,298 @@
+{
+  "$comment": [
+    "THE CLASSIFICATION. An expiring signed URL is NOT a defect — it is the correct,",
+    "intended mechanism in many places. The defect is the MISMATCH between a URL's",
+    "lifetime and its consumer's contract. Every entry below is a column where a",
+    "stored signed URL is CORRECT, with the reason and the reading code path that",
+    "makes it correct. A hit in any column NOT listed here is a new mismatch and the",
+    "checker screams about it.",
+    "",
+    "Adding an entry here is a judgement, not a silencer. Write the real reason.",
+    "If you cannot name the consumer and why expiry is fine for it, it is not",
+    "intentional — fix the writer instead."
+  ],
+  "intentional": [
+    {
+      "target": "public.mtx_media_heal_queue.bad_value",
+      "reason": "The queue's entire job is to hold the offending URL until it is healed. The expiring string IS the payload.",
+      "consumer": "migrations/mtx_public_media_url_guard.sql — the heal worker reads bad_value to know what to replace."
+    },
+    {
+      "target": "public.api_request_log.error",
+      "reason": "Audit log. Records verbatim what a request failed with, including whatever URL was in play at that moment.",
+      "consumer": "admin log surfaces; never dereferenced as media."
+    },
+    {
+      "target": "public.app_log.message",
+      "reason": "Application log line. The URL is evidence of what happened, not a media reference.",
+      "consumer": "admin log surfaces; never dereferenced as media."
+    },
+    {
+      "target": "public.system_error.error_text",
+      "reason": "Error capture. Rewriting a captured error would falsify the record.",
+      "consumer": "Error Inspector (lib/diagnostics/) — rendered as text."
+    },
+    {
+      "target": "public.system_error.traceback",
+      "reason": "Error capture — same as error_text.",
+      "consumer": "Error Inspector — rendered as text."
+    },
+    {
+      "target": "public.system_error.context",
+      "reason": "Error capture — same as error_text.",
+      "consumer": "Error Inspector — rendered as text."
+    },
+    {
+      "target": "public.system_write_failure.payload",
+      "reason": "Records the exact payload a failed write attempted, so it can be replayed or diagnosed. Mutating it destroys the evidence.",
+      "consumer": "admin failure triage."
+    },
+    {
+      "target": "public.system_write_failure.traceback",
+      "reason": "Failure capture — same as payload.",
+      "consumer": "admin failure triage."
+    },
+    {
+      "target": "history.row_versions.row_data",
+      "reason": "Row-history snapshot: a verbatim record of what the row held at a point in time. Rewriting history is the opposite of an audit trail.",
+      "consumer": "history/diff surfaces — rendered as data, never as live media."
+    },
+    {
+      "target": "chat.request_snapshot.request_payload",
+      "reason": "Verbatim snapshot of what was sent to the model. Its value is that it is unaltered.",
+      "consumer": "request replay / debugging surfaces."
+    },
+    {
+      "target": "chat.request_snapshot.response_payload",
+      "reason": "Verbatim snapshot of what the model returned.",
+      "consumer": "request replay / debugging surfaces."
+    },
+    {
+      "target": "chat.request_snapshot.unified_payload",
+      "reason": "Verbatim normalized snapshot of the same exchange.",
+      "consumer": "request replay / debugging surfaces."
+    },
+    {
+      "target": "chat.request.tool_calls_details",
+      "reason": "Record of the tool calls issued on a request.",
+      "consumer": "request debugging surfaces."
+    },
+    {
+      "target": "chat.agent_run.result",
+      "reason": "Execution record of a finished run — what the run produced at the time.",
+      "consumer": "run history; live media renders through the file handler, not this column."
+    },
+    {
+      "target": "chat.agent_run_stage.output",
+      "reason": "Per-stage execution record.",
+      "consumer": "run history."
+    },
+    {
+      "target": "chat.agent_run_stage.error",
+      "reason": "Per-stage failure record.",
+      "consumer": "run history."
+    },
+    {
+      "target": "chat.tool_call.arguments",
+      "reason": "Verbatim arguments a tool was invoked with.",
+      "consumer": "tool-call visualization — rendered as data."
+    },
+    {
+      "target": "chat.tool_call.output",
+      "reason": "Verbatim tool result at execution time. Mostly third-party URLs the tool fetched.",
+      "consumer": "tool-call visualization — rendered as data."
+    },
+    {
+      "target": "chat.tool_call.execution_events",
+      "reason": "Verbatim event stream of the tool execution.",
+      "consumer": "tool-call visualization."
+    },
+    {
+      "target": "chat.tool_call.output_preview",
+      "reason": "Truncated copy of the verbatim tool result.",
+      "consumer": "tool-call visualization."
+    },
+    {
+      "target": "chat.tool_trace.args",
+      "reason": "Verbatim trace of tool arguments.",
+      "consumer": "tool trace surfaces."
+    },
+    {
+      "target": "chat.tool_trace.result_preview",
+      "reason": "Verbatim trace of the tool result.",
+      "consumer": "tool trace surfaces."
+    },
+    {
+      "target": "chat.coding_session_entry.payload",
+      "reason": "Owner-only mirror of raw coding-agent provider entries. Stored verbatim by contract.",
+      "consumer": "coding_session_bridge — projected to messages, not dereferenced as media."
+    },
+    {
+      "target": "chat.conversation.variables",
+      "reason": "Captured variable values for a conversation; the hits are third-party URLs supplied as inputs.",
+      "consumer": "conversation replay."
+    },
+    {
+      "target": "chat.message.model_context",
+      "reason": "Verbatim record of the context assembled for the model on that turn.",
+      "consumer": "context inspection surfaces."
+    },
+    {
+      "target": "workflow.node_events.payload",
+      "reason": "Workflow execution event record.",
+      "consumer": "workflow run timeline — rendered as data."
+    },
+    {
+      "target": "workflow.node_outcome.output",
+      "reason": "Per-node execution record of what that node produced.",
+      "consumer": "workflow run timeline; media renders through the file handler from file_id."
+    },
+    {
+      "target": "workflow.run.output",
+      "reason": "Workflow run execution record.",
+      "consumer": "workflow run timeline."
+    },
+    {
+      "target": "tool.test_sample.raw_stream_events",
+      "reason": "Captured test fixture — a frozen recording of a real stream. Editing it invalidates the fixture.",
+      "consumer": "tool renderer test bench."
+    },
+    {
+      "target": "tool.test_sample.final_payload",
+      "reason": "Captured test fixture — same as raw_stream_events.",
+      "consumer": "tool renderer test bench."
+    },
+    {
+      "target": "admin.feature_docs.content",
+      "reason": "DOCUMENTATION PROSE, not media. These rows are FEATURE.md/CLAUDE.md text that literally describes this defect class ('?X-Amz-Signature=…&Expires=…'). Verified by sampling: the matches are inside fenced examples, not renderable image references.",
+      "consumer": "/admin/docs/<slug> — rendered as markdown text."
+    },
+    {
+      "target": "research.rs_media.url",
+      "reason": "THIRD-PARTY media discovered on the open web (100% non-ours). The URL is the observed datum — what we found at that address. Not ours to re-mint or publish.",
+      "consumer": "research source review — rendered as an external reference."
+    },
+    {
+      "target": "research.rs_media.thumbnail_url",
+      "reason": "Third-party thumbnail from a scraped page — same as url.",
+      "consumer": "research source review."
+    },
+    {
+      "target": "research.rs_media.metadata",
+      "reason": "Third-party scrape metadata.",
+      "consumer": "research source review."
+    },
+    {
+      "target": "research.rs_source.raw_search_result",
+      "reason": "Verbatim third-party search-API response. Its value is being unaltered.",
+      "consumer": "research source review."
+    },
+    {
+      "target": "research.rs_keyword.raw_api_response",
+      "reason": "Verbatim third-party keyword-API response.",
+      "consumer": "keyword surfaces."
+    },
+    {
+      "target": "research.rs_content.content",
+      "reason": "Verbatim scraped page content from a third-party site.",
+      "consumer": "research content review."
+    },
+    {
+      "target": "research.rs_content.extracted_links",
+      "reason": "Links extracted from third-party scraped content.",
+      "consumer": "research content review."
+    },
+    {
+      "target": "research.rs_content.extracted_images",
+      "reason": "Images extracted from third-party scraped content.",
+      "consumer": "research content review."
+    },
+    {
+      "target": "research.rs_topic.outputs",
+      "reason": "Owner-only research run outputs. NOT in the topic's anon share projection (public_columns = id,name,description,status,created_at), and every media render goes through the file handler, which re-mints from the recoverable file_id.",
+      "consumer": "features/research — media via buildMediaSource/useFileSrc."
+    },
+    {
+      "target": "scraper.scrape_parsed_page.content",
+      "reason": "Verbatim third-party scraped page.",
+      "consumer": "scraper review surfaces."
+    },
+    {
+      "target": "seo.raw_payload.payload",
+      "reason": "Verbatim third-party SEO provider response.",
+      "consumer": "SEO data surfaces."
+    },
+    {
+      "target": "api.html_extractions.html_content",
+      "reason": "Verbatim third-party HTML captured for extraction.",
+      "consumer": "extraction surfaces."
+    },
+    {
+      "target": "extend.wbx_capture.soup",
+      "reason": "Verbatim third-party page capture from the browser extension.",
+      "consumer": "extension capture review."
+    },
+    {
+      "target": "graveyard.ai_runs.messages",
+      "reason": "Retired table in the graveyard schema — no live consumer by definition.",
+      "consumer": "none (graveyard = retired)."
+    },
+    {
+      "target": "graveyard.compiled_recipe.compiled_recipe",
+      "reason": "Retired table — no live consumer.",
+      "consumer": "none (graveyard)."
+    },
+    {
+      "target": "graveyard.data_broker.default_value",
+      "reason": "Retired table — no live consumer.",
+      "consumer": "none (graveyard)."
+    },
+    {
+      "target": "graveyard.message.content",
+      "reason": "Retired table — no live consumer.",
+      "consumer": "none (graveyard)."
+    },
+    {
+      "target": "graveyard.note_versions.content",
+      "reason": "Retired table — no live consumer.",
+      "consumer": "none (graveyard)."
+    }
+  ],
+  "mitigated": [
+    {
+      "target": "chat.message.content",
+      "reason": "Stores our own expiring URLs inside message bodies, but EVERY reading path re-mints: markdown images through ImageBlock -> useRemintableSrc -> recognizeOurFileUrl, and media blocks through buildMediaSource, which recovers the file_id from the URL and hands the handler a durable file_id source. No user-visible break. NOT auto-healed because message bodies are the conversation record — rewriting them edits what was said, which is Arman's call, not an agent's.",
+      "consumer": "components/mardown-display/blocks/images/ImageBlock.tsx:33, components/mardown-display/blocks/buildMediaSource.ts:54",
+      "open": true
+    },
+    {
+      "target": "agent.slot_exemplar.reference_output",
+      "reason": "Holds our own expiring URLs, but the only render path recovers the file_id first and renders <InlineMediaRef>, which mints fresh.",
+      "consumer": "features/admin/agent-slots/SlotTestBench.tsx:114",
+      "open": true
+    },
+    {
+      "target": "extend.wbx_screenshot.file_url",
+      "reason": "An expiring convenience copy stored ALONGSIDE the durable file_id on the same row. No consumer depends on it resolving — the extension builds its URL from file_id and downloads bytes by file_id.",
+      "consumer": "matrx-extend src/features/screenshots/ScreenshotsView.tsx:394,431 (uses row.file_id, not file_url)",
+      "open": true
+    },
+    {
+      "target": "workflow.node_data_slot.value",
+      "reason": "Workflow node I/O carrying our own expiring URLs for generated office documents. Rendered through the file handler, which re-mints from the recoverable file_id.",
+      "consumer": "features/workflows node I/O rendering via the file handler.",
+      "open": true
+    }
+  ],
+  "mismatch_open": [
+    {
+      "target": "workbench.notes.content",
+      "reason": "THE ONE REAL MISMATCH. A note is anon-shareable: platform.shareable_resource_registry exposes `content` in note.public_columns, and app/(public)/s/[token]/SharedResourceView.tsx:238 renders it through MarkdownRenderer with no session. An anonymous recipient cannot re-mint, so an embedded own-signed image goes dark once the signature expires. NOT auto-healed: the only durable ref for a private embedded image is a permanently public URL, and publishing a user's private asset to make a scan pass is a data-exposure incident. Needs Arman's decision — publish those assets, or add token-scoped minting to the share lane.",
+      "consumer": "app/(public)/s/[token]/SharedResourceView.tsx:41 (MarkdownRenderer) / :238",
+      "rows_affected": 15,
+      "rows_ours": 9,
+      "currently_shared": 0,
+      "open": true
+    }
+  ]
+}
