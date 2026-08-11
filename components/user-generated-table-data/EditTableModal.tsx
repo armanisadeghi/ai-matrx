@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { supabase } from "@/utils/supabase/client";
-import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
+import { updateTableMetadata } from "@/features/data-tables/service";
+import { isServiceFailure } from "@/features/data-tables/types";
 import {
   Dialog,
   DialogContent,
@@ -68,24 +68,19 @@ export default function EditTableModal({
       setLoading(true);
       setError(null);
 
-      // Call the RPC function
-      const { data, error } = await supabase.rpc("update_user_table_metadata", {
-        p_table_id: tableId,
-        p_table_name: tableName,
-        p_description: description,
-        p_is_public: isPublic,
+      // ONE path for table metadata — the same service call the surface's
+      // `table_description` write target uses, so a hand edit and an agent
+      // edit can never disagree about what a metadata write does.
+      const result = await updateTableMetadata({
+        tableId,
+        tableName,
+        description,
+        isPublic,
       });
 
-      if (error) {
-        console.error("Supabase RPC error:", error);
-        throw error;
-      }
-
-      try {
-        unwrapUserTableMutation(data ?? null);
-      } catch (e) {
-        console.error("API response error:", data);
-        throw e instanceof Error ? e : new Error("Failed to update table");
+      if (isServiceFailure(result)) {
+        console.error("Table metadata update failed:", result.error);
+        throw new Error(result.error);
       }
 
       // Call success callback
