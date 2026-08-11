@@ -51,6 +51,7 @@ import { VoiceDebugPanel } from "@/features/voice-agent/components/VoiceDebugPan
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { cn } from "@/lib/utils";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
+import { useScribeLiveWriteHandlers } from "../../hooks/useScribeLiveWriteHandlers";
 
 /**
  * DB surface name for the Scribe Live voice surface. Imported from the
@@ -189,6 +190,14 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     });
   };
 
+  // ─── Surface write targets (working_document_content / append) ──────────
+  // Closes the write half for TURN-BASED agents launched from the header
+  // Agents popover: the realtime mutator tools imported above serve only the
+  // voice agent inside the xAI turn loop. Both land through the same canonical
+  // thunk the editor's autosave uses. See the hook for why there is
+  // deliberately no live-session guard here.
+  const getSurfaceWriteHandlers = useScribeLiveWriteHandlers(sessionId);
+
   // Keep the injected document fresh. The orchestrator reads instructions
   // from the slice at session start (`session.update`), so the next time the
   // user taps the mic the agent sees the latest document.
@@ -231,6 +240,7 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     <SurfaceRuntimeProvider
       surfaceName={SCRIBE_LIVE_SURFACE}
       getScope={getSurfaceScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     <div className="relative flex h-full flex-col overflow-hidden">
       <VoiceEdgeRibbon status={liveStatus} />

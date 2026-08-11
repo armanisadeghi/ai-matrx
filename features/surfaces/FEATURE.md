@@ -315,7 +315,43 @@ internal platform use — never a washed-down user variant beside a private one:
   surface also gained flat `selected_task_*` read twins for the evidence loop,
   emitted from the SAVED record — a staged panel edit does not echo back
   through them, and both the manifest and the intro say so out loud rather
-  than letting an agent read a stale value as confirmation).
+  than letting an agent read a stale value as confirmation), and
+  `matrx-user/transcript-scribe-live` (2 ask-policy ENTITY targets over the ONE
+  artifact the Live tab exists to build — `working_document_content` (full
+  replace) and `append_working_document` (the replace/append pair, where append
+  is documented as the default because replace overwrites the user's work).
+  Handlers in
+  [`features/transcript-studio/hooks/useScribeLiveWriteHandlers.ts`](../transcript-studio/hooks/useScribeLiveWriteHandlers.ts),
+  registered on `ScribeLiveScreen`'s existing provider, both landing through
+  `updateWorkingDocumentContentThunk` — the same thunk the editor's debounced
+  autosave fires on every keystroke. **THE reference for a surface that already
+  had a bespoke agent path serving a DIFFERENT agent population.** This tab
+  already let the client-side VOICE agent mutate the document through realtime
+  client tools (`scribe_working_doc_append` / `_append_heading`), but those live
+  inside the xAI turn loop and are reachable only by the agent the user is
+  TALKING to; an agent launched from the header Agents popover is an ordinary
+  turn-based run with no realtime socket, so it could already READ
+  `working_document_content` and had no way to write a word of it back. These
+  targets close that half of the loop for the second population, and add full
+  replacement, which the realtime mutators deliberately never offered.
+  **`entity`, not `draft`, and deliberately no phase guard** — the mirror image
+  of the sibling `matrx-user/chat-voice`. There is no draft/save bar here, only
+  an autosaving editor, so `draft` would be a lie; and where chat-voice REFUSES
+  mid-session because its config is consumed once at connect, this document is
+  MEANT to change mid-session — `useWorkingDocumentDraft` explicitly merges
+  remote edits in whenever the user is not actively typing, so a live-session
+  guard would break the collaboration loop rather than protect it. The document
+  row is resolved from the store at CALL time (`selectWorkingDocument`, which
+  filters on `kind === "working_document"`), because `applySurfaceWrite`
+  resolves the handler BEFORE showing the confirm dialog and an append built on
+  a body captured in a render closure would silently drop whatever the user or
+  the voice agent wrote while the dialog sat open. A session with no working
+  document yet refuses loudly rather than creating one. Identity
+  (`working_document_id`, `session_id`, `live_agent_id`,
+  `voice_conversation_id`), the derived `working_document_word_count`, the
+  microphone and connection state, and the spoken transcript with its per-turn
+  and interruption record are all undeclared — the last of those because
+  writing it would forge what was actually said).
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as
@@ -477,6 +513,7 @@ Surfaces are no longer read-only. A manifest may declare **`writeTargets`** (`Su
 
 ## Change Log
 
+- **2026-08-11 — Scribe Live working document agent-writable; THE reference for a surface that already had a bespoke agent path serving a DIFFERENT agent population.** `matrx-user/transcript-scribe-live` declares 2 `applyPolicy:"ask"` / `mode:"entity"` targets over the one artifact the Live tab exists to build: `working_document_content` (full replace) and `append_working_document` (add a block). Handlers in `features/transcript-studio/hooks/useScribeLiveWriteHandlers.ts`, registered on `ScribeLiveScreen`'s existing `SurfaceRuntimeProvider`; both dispatch `updateWorkingDocumentContentThunk`, the same thunk `useWorkingDocumentDraft`'s debounced autosave fires on the user's own keystrokes and the same one the realtime mutators call. **Why these targets are not redundant with the tools already there:** the Live tab already let the CLIENT-SIDE VOICE agent mutate this document (`scribe_working_doc_append` / `_append_heading` in `realtimeWorkingDocTools.ts`), but those are reachable only from inside the xAI realtime turn loop — the agent the user is talking to. An agent launched from the header Agents popover is an ordinary turn-based run with no realtime socket: it could already READ `working_document_content` and had no way to write a word of it back. These close that half of the loop for that second population, and add full REPLACEMENT, which the realtime mutators deliberately never offered. **Two doctrine calls worth copying, both the mirror image of the sibling `matrx-user/chat-voice`.** (1) `entity`, not `draft`: the working document has no draft/save bar, only an autosaving editor, so there is no staging layer to land in and `draft` would be a lie. (2) NO phase guard: where chat-voice refuses every write while a session is live (its voice and instructions are consumed once, at connect), this document is MEANT to change mid-session — `useWorkingDocumentDraft` explicitly merges remote edits in whenever the user is not actively typing, so refusing here would break the collaboration loop rather than protect it. The document row is resolved from the store at CALL time via `selectWorkingDocument` (which filters `kind === "working_document"`), because `applySurfaceWrite` resolves the handler BEFORE showing the confirm dialog and an append built on a body captured in a render closure would silently drop whatever the user or the voice agent wrote while the dialog sat open; a session with no working document refuses loudly rather than creating one. Undeclared by design: identity (`working_document_id`, `session_id`, `live_agent_id`, `voice_conversation_id`), the derived `working_document_word_count`, microphone/connection state (device state — muting someone's mic is not a copy edit), and the spoken transcript with its per-turn and interruption record (writing it would forge what was actually said — the `voice-pad` input-vs-output line). Live-verified with a real agent run on `/transcripts/scribe/:sessionId`: the ask dialog carried the manifest description verbatim plus the entity suffix "This is saved immediately", Apply landed the append through the handler, the Working Document header updated on screen, and the row was confirmed in Postgres (`studio_documents` `kind='working_document'`, written 15:29:57Z) — while the session's other document row (`kind='cleanup_custom'`) was correctly left untouched, which is the check that proves the handler targets the right artifact. `check:surface-drift` (140 surfaces, 3,417 values) clean; `type-check` clean apart from the 11 pre-existing `features/brokers/*` errors. **Harness note for the next agent on this route:** the Scribe shell renders inside a narrow column, so the header's "Agents for this page" trigger and the message composer are both present but zero-size/hidden — Playwright's `click`/`fill` time out and a direct DOM `click()` plus a native-setter `input` dispatch are required. DB mirror (`ui.ui_surface_write_target`) still pending a manifest sync.
 - **2026-08-11 — Analysis Studio agent-writable.** `matrx-user/analysis-studio` now exposes ask-policy writes for annotation labels, extracted text, and focused annotation. `StudioShell` registers handlers that reuse the existing annotation update path and reject missing or stale annotation ids, invalid label/category combinations, concurrent writes, geometry, redaction, deletion, and other human-only disclosure or pointer decisions.
 - **2026-08-11 — Context Items agent-writable.** `matrx-user/context-items` now exposes five ask-policy targets through `ContextItemsWriteTargets`, mounted with the existing Context Items hub. Writes reuse the surface's canonical state paths and preserve identity, lifecycle, and undeclared operations as human-only.
 
