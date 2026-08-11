@@ -7,8 +7,12 @@
  * client-side rollup by referring domain with rank/spam and anchor samples.
  */
 
+import { useState } from "react";
 import Link from "next/link";
+import { BrainCircuit, ExternalLink, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   CondensedFieldGrid,
@@ -23,7 +27,14 @@ import {
 } from "@/features/marketing/data/page-links";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { MarketingPage } from "@/features/marketing/types";
-import { humanizeAssessmentValue } from "@/features/marketing/components/backlinks/lib/enrichment";
+import { BacklinkEnrichmentDetail } from "@/features/marketing/components/backlinks/BacklinkEnrichmentDetail";
+import {
+  backlinkAnalysisActionState,
+  humanizeAssessmentValue,
+  parseBacklinkAssessment,
+} from "@/features/marketing/components/backlinks/lib/enrichment";
+import { useBacklinkAnalysis } from "@/features/marketing/components/backlinks/useBacklinkAnalysis";
+import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
 
 function ratioLabel(part: number, whole: number): string {
   if (whole === 0) return "—";
@@ -49,6 +60,20 @@ function maxDate(values: Array<string | null>): string | null {
 export function PageBacklinksCard({ page }: { page: MarketingPage }) {
   const { site, sitePath } = useMarketingSite();
   const backlinks = usePageBacklinks(site.id, page.id);
+  const [selectedRow, setSelectedRow] = useState<BacklinkObservationRow | null>(
+    null,
+  );
+  const {
+    analysisDisabled,
+    analysisRuns,
+    analyzeBacklink,
+    dismissAnalysisRun,
+    refreshBacklinkReads,
+  } = useBacklinkAnalysis({
+    siteId: site.id,
+    organizationId: site.organization_id,
+    onRefresh: () => backlinks.refetch(),
+  });
 
   const snapshot = backlinks.data?.snapshot ?? null;
   const observations = backlinks.data?.observations ?? [];
@@ -164,69 +189,128 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
               : []),
           ]}
         />
-        {domains.length > 0 ? (
+        {observations.length > 0 ? (
           <div className="rounded-md border border-border/60">
-            <p className="border-b border-border/60 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Top referring domains
-            </p>
+            <div className="flex items-center justify-between gap-3 border-b border-border/60 px-3 py-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Backlink records
+              </p>
+              <Link
+                href={`${sitePath}/backlinks?tab=links`}
+                className="text-[11px] font-medium text-primary hover:underline"
+              >
+                View all in Backlinks
+              </Link>
+            </div>
             <ul className="divide-y divide-border/60">
-              {domains.slice(0, 10).map((domain) => (
-                <li key={domain.domain} className="px-3 py-2">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span
-                      className="min-w-0 flex-1 basis-40 truncate font-mono text-xs text-foreground"
-                      title={domain.domain}
-                    >
-                      {domain.domain}
-                    </span>
-                    <span className="text-[11px] tabular-nums text-muted-foreground">
-                      ×{domain.backlinks}
-                    </span>
-                    {domain.domainRank !== null ? (
-                      <Badge variant="outline" className="text-[10px]">
-                        rank {domain.domainRank}
-                      </Badge>
-                    ) : null}
-                    {domain.spamScore !== null && domain.spamScore >= 30 ? (
-                      <Badge variant="destructive" className="text-[10px]">
-                        spam {domain.spamScore}
-                      </Badge>
-                    ) : domain.spamScore !== null ? (
-                      <Badge variant="secondary" className="text-[10px]">
-                        spam {domain.spamScore}
-                      </Badge>
-                    ) : null}
-                    {domain.dofollowBacklinks > 0 ? (
-                      <Badge variant="success" className="text-[10px]">
-                        dofollow {domain.dofollowBacklinks}
-                      </Badge>
-                    ) : null}
-                    {domain.ourScore !== null ? (
-                      <Badge variant="outline" className="text-[10px]">
-                        our score {domain.ourScore}
-                      </Badge>
-                    ) : null}
-                  </div>
-                  {domain.anchors.length > 0 ? (
-                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                      {domain.anchors
-                        .map((anchor) => `“${anchor}”`)
-                        .join(" · ")}
-                    </p>
-                  ) : null}
-                  {domain.action ? (
-                    <p className="mt-0.5 text-[11px] text-primary">
-                      {humanizeAssessmentValue(domain.action)}
-                      {domain.relevance
-                        ? ` · ${humanizeAssessmentValue(domain.relevance)} relevance`
-                        : ""}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-              {domains.length > 10 ? (
+              {observations.slice(0, 10).map((row) => {
+                const assessment = parseBacklinkAssessment(
+                  row.resolved_assessment,
+                );
+                const running = analysisRuns[row.id]?.status === "running";
+                const action = backlinkAnalysisActionState(
+                  row.enrichment_status,
+                  running,
+                  analysisDisabled,
+                );
+                return (
+                  <li key={row.id} className="p-2">
+                    <div className="flex items-start gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRow(row)}
+                        className="min-w-0 flex-1 rounded p-1 text-left hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-semibold text-foreground">
+                            {row.source_domain ?? "Referring page"}
+                          </span>
+                          <Badge variant="outline" className="text-[10px]">
+                            {humanizeAssessmentValue(row.enrichment_status)}
+                          </Badge>
+                          {row.domain_rank !== null ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              rank {row.domain_rank}
+                            </Badge>
+                          ) : null}
+                          {row.spam_score !== null && row.spam_score >= 30 ? (
+                            <Badge
+                              variant="destructive"
+                              className="text-[10px]"
+                            >
+                              spam {row.spam_score}
+                            </Badge>
+                          ) : row.spam_score !== null ? (
+                            <Badge variant="secondary" className="text-[10px]">
+                              spam {row.spam_score}
+                            </Badge>
+                          ) : null}
+                          {row.is_dofollow ? (
+                            <Badge variant="success" className="text-[10px]">
+                              dofollow
+                            </Badge>
+                          ) : null}
+                          {assessment.overallScore !== null ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              our score {assessment.overallScore}
+                            </Badge>
+                          ) : null}
+                        </span>
+                        <span className="mt-1 block break-all font-mono text-[11px] leading-4 text-primary">
+                          {row.source_url}
+                        </span>
+                        {row.anchor_text ? (
+                          <span className="mt-0.5 block break-words text-[11px] text-muted-foreground">
+                            Anchor: “{row.anchor_text}”
+                          </span>
+                        ) : null}
+                        {assessment.action ? (
+                          <span className="mt-0.5 block text-[11px] text-primary">
+                            {humanizeAssessmentValue(assessment.action)}
+                            {assessment.relevanceVerdict
+                              ? ` · ${humanizeAssessmentValue(assessment.relevanceVerdict)} relevance`
+                              : ""}
+                          </span>
+                        ) : null}
+                      </button>
+                      <div className="flex shrink-0 flex-col gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1 px-2 text-[11px]"
+                          disabled={action.disabled}
+                          title={action.title}
+                          onClick={() => {
+                            setSelectedRow(row);
+                            void analyzeBacklink(row);
+                          }}
+                        >
+                          {running ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <BrainCircuit className="h-3 w-3" />
+                          )}
+                          {action.label}
+                        </Button>
+                        <a
+                          href={row.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-1 text-[10px] text-primary hover:underline"
+                        >
+                          Source <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+              {observations.length > 10 || backlinks.data?.truncated ? (
                 <li className="px-3 py-2 text-[11px] text-muted-foreground">
-                  +{domains.length - 10} more domains in the copied data.
+                  Showing 10 of {observations.length}
+                  {backlinks.data?.truncated ? "+" : ""} backlink records. The
+                  complete list is available in the Backlinks workspace.
                 </li>
               ) : null}
             </ul>
@@ -255,8 +339,31 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
       copy={copy}
       collapsible
       anchor="page_backlinks"
+      action={{ label: "View all", href: `${sitePath}/backlinks?tab=links` }}
     >
       {body}
+      {selectedRow ? (
+        <DataRowWindow
+          isOpen
+          windowId={`page-backlink-${selectedRow.id}`}
+          title={`Backlink from ${selectedRow.source_domain ?? "external page"}`}
+          width={820}
+          height={720}
+          onClose={() => setSelectedRow(null)}
+          viewContent={
+            <BacklinkEnrichmentDetail
+              row={selectedRow}
+              sitePath={sitePath}
+              onSaved={() => void refreshBacklinkReads()}
+              onAnalyze={() => void analyzeBacklink(selectedRow)}
+              running={analysisRuns[selectedRow.id]?.status === "running"}
+              analysisDisabled={analysisDisabled}
+              analysisRun={analysisRuns[selectedRow.id]}
+              onDismissAnalysisRun={() => dismissAnalysisRun(selectedRow.id)}
+            />
+          }
+        />
+      ) : null}
     </SectionCard>
   );
 }

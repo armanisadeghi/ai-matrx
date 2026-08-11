@@ -1,0 +1,304 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
+import { marketingKeys } from "@/features/marketing/data/hooks";
+import {
+  enrichSiteBacklinks,
+  SeoApiError,
+} from "@/features/marketing/seo/dataforseo/client";
+import type { SeoStreamEvent } from "@/features/marketing/seo/dataforseo/types";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
+import { toast } from "@/lib/toast";
+import { supabase } from "@/utils/supabase/client";
+import {
+  applyBacklinkEnrichmentEvent,
+  failBacklinkEnrichmentRun,
+  startBacklinkEnrichmentRun,
+  type BacklinkEnrichmentRunState,
+} from "./lib/enrichment-run";
+
+function errorMessage(error: unknown): string {
+  if (error instanceof SeoApiError) {
+    return typeof error.detail === "string"
+      ? error.detail
+      : JSON.stringify(error.detail);
+  }
+  return error instanceof Error ? error.message : String(error);
+}
+
+interface ApplyEventOptions {
+  /** One exact row owns every event in a single-record request. */
+  targetedBacklinkId?: string | null;
+  /** The stream announces this once; later per-link events inherit it. */
+  commandRunId?: string | null;
+}
+
+/**
+ * The one client controller for costly backlink analysis.
+ *
+ * Every backlink surface uses this controller so auth, force semantics,
+ * duplicate-click protection, per-record streaming, persisted-row refresh,
+ * and terminal messaging cannot drift between the main table and page cards.
+ */
+export function useBacklinkAnalysis({
+  siteId,
+  organizationId,
+  onRefresh,
+}: {
+  siteId: string;
+  organizationId: string;
+  /** Optional surface-specific read outside the canonical backlink key tree. */
+  onRefresh?: () => void | Promise<unknown>;
+}) {
+  const queryClient = useQueryClient();
+  const serviceTargets = useAppSelector(selectApiServiceTargets);
+  const seoTarget = serviceTargets.find(
+    (target) => target.service === "aidream",
+  );
+  const seoTargetUrl = seoTarget?.url;
+  const [analysisRuns, setAnalysisRuns] = useState<
+    Record<string, BacklinkEnrichmentRunState>
+  >({});
+  const runningIds = useRef(new Set<string>());
+  const batchRunningRef = useRef(false);
+  const [batchAnalyzing, setBatchAnalyzing] = useState(false);
+  const onRefreshRef = useRef(onRefresh);
+  useEffect(() => {
+    onRefreshRef.current = onRefresh;
+  }, [onRefresh]);
+
+  const refreshBacklinkReads = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: [...marketingKeys.site(siteId), "backlinks"],
+    });
+    await onRefreshRef.current?.();
+  }, [queryClient, siteId]);
+
+  const beginAnalysisRuns = useCallback(
+    (
+      backlinkIds: string[],
+      labelFor: (backlinkId: string, index: number) => string,
+    ) => {
+      setAnalysisRuns((current) => {
+        const next = { ...current };
+        backlinkIds.forEach((backlinkId, index) => {
+          next[backlinkId] = startBacklinkEnrichmentRun(
+            labelFor(backlinkId, index),
+          );
+        });
+        return next;
+      });
+    },
+    [],
+  );
+
+  const applyAnalysisEvent = useCallback(
+    (event: SeoStreamEvent, options: ApplyEventOptions = {}) => {
+      const backlinkIds = options.targetedBacklinkId
+        ? [options.targetedBacklinkId]
+        : event.backlink_id
+          ? [event.backlink_id]
+          : (event.backlink_ids ?? []);
+      if (backlinkIds.length > 0) {
+        setAnalysisRuns((current) => {
+          const next = { ...current };
+          backlinkIds.forEach((backlinkId, index) => {
+            const sourceUrl =
+              event.source_url ?? event.source_urls?.[index] ?? null;
+            const initialRun =
+              next[backlinkId] ??
+              startBacklinkEnrichmentRun(
+                sourceUrl ? `Analyze ${sourceUrl}` : "Analyze backlink",
+              );
+            const initial =
+              options.commandRunId && !initialRun.runId
+                ? { ...initialRun, runId: options.commandRunId }
+                : initialRun;
+            next[backlinkId] = applyBacklinkEnrichmentEvent(initial, event);
+          });
+          return next;
+        });
+      }
+      if (
+        event.kind === "seo.backlink_enriched" ||
+        event.kind === "seo.backlink_enrichment_failed" ||
+        event.kind === "seo.backlink_enrichment_completed"
+      ) {
+        void refreshBacklinkReads();
+      }
+    },
+    [refreshBacklinkReads],
+  );
+
+  const failAnalysisRun = useCallback((backlinkId: string, message: string) => {
+    setAnalysisRuns((current) => {
+      const run = current[backlinkId];
+      return run
+        ? {
+            ...current,
+            [backlinkId]: failBacklinkEnrichmentRun(run, message),
+          }
+        : current;
+    });
+  }, []);
+
+  const dismissAnalysisRun = useCallback((backlinkId: string) => {
+    setAnalysisRuns((current) => {
+      const remaining = { ...current };
+      delete remaining[backlinkId];
+      return remaining;
+    });
+  }, []);
+
+  const analyzeBacklink = useCallback(
+    async (row: BacklinkObservationRow) => {
+      if (runningIds.current.has(row.id)) return;
+      if (!seoTargetUrl) {
+        toast.error(
+          "No AI Dream server is configured for the selected environment.",
+        );
+        return;
+      }
+      runningIds.current.add(row.id);
+      beginAnalysisRuns(
+        [row.id],
+        () => `Analyze ${row.source_domain ?? row.source_url}`,
+      );
+
+      let commandRunId: string | null = null;
+      const onEvent = (event: SeoStreamEvent) => {
+        if (event.kind === "seo.command_run" && event.run_id) {
+          commandRunId = event.run_id;
+        }
+        applyAnalysisEvent(event, {
+          targetedBacklinkId: row.id,
+          commandRunId,
+        });
+      };
+
+      try {
+        const session = await supabase.auth.getSession();
+        if (session.error) throw session.error;
+        const token = session.data.session?.access_token;
+        if (!token) throw new Error("Sign in before analyzing backlink data.");
+        const result = await enrichSiteBacklinks(
+          seoTargetUrl,
+          token,
+          siteId,
+          {
+            organization_id: organizationId,
+            limit: 1,
+            force: true,
+            backlink_ids: [row.id],
+          },
+          onEvent,
+        );
+        await refreshBacklinkReads();
+        if (result.failed > 0) {
+          toast.warning("Backlink analysis finished with a failure.");
+        } else {
+          toast.success("Backlink source-page analysis completed.");
+        }
+      } catch (error) {
+        const message = errorMessage(error);
+        failAnalysisRun(row.id, message);
+        toast.error(message);
+      } finally {
+        runningIds.current.delete(row.id);
+      }
+    },
+    [
+      applyAnalysisEvent,
+      beginAnalysisRuns,
+      failAnalysisRun,
+      organizationId,
+      refreshBacklinkReads,
+      seoTargetUrl,
+      siteId,
+    ],
+  );
+
+  const analyzeNext = useCallback(
+    async (limit: number) => {
+      if (batchRunningRef.current) return;
+      if (!seoTargetUrl) {
+        toast.error(
+          "No AI Dream server is configured for the selected environment.",
+        );
+        return;
+      }
+      batchRunningRef.current = true;
+      setBatchAnalyzing(true);
+      let commandRunId: string | null = null;
+      const onEvent = (event: SeoStreamEvent) => {
+        if (event.kind === "seo.command_run" && event.run_id) {
+          commandRunId = event.run_id;
+        }
+        applyAnalysisEvent(event, { commandRunId });
+      };
+
+      try {
+        const session = await supabase.auth.getSession();
+        if (session.error) throw session.error;
+        const token = session.data.session?.access_token;
+        if (!token) throw new Error("Sign in before analyzing backlink data.");
+        const result = await enrichSiteBacklinks(
+          seoTargetUrl,
+          token,
+          siteId,
+          {
+            organization_id: organizationId,
+            limit,
+            // Batches are due-only. Exact record actions above deliberately
+            // use force=true so Re-analyze means what it says.
+            force: false,
+          },
+          onEvent,
+        );
+        await refreshBacklinkReads();
+        if (result.failed > 0) {
+          toast.warning(
+            `Backlink analysis finished with ${result.completed} completed and ${result.failed} failed.`,
+          );
+        } else {
+          toast.success(
+            result.completed > 0
+              ? `Analyzed ${result.completed} source page${result.completed === 1 ? "" : "s"}.`
+              : "No due source pages remained to analyze.",
+          );
+        }
+      } catch (error) {
+        toast.error(errorMessage(error));
+      } finally {
+        batchRunningRef.current = false;
+        setBatchAnalyzing(false);
+      }
+    },
+    [
+      applyAnalysisEvent,
+      organizationId,
+      refreshBacklinkReads,
+      seoTargetUrl,
+      siteId,
+    ],
+  );
+
+  return {
+    seoTarget,
+    analysisDisabled: !seoTargetUrl,
+    analysisRuns,
+    batchAnalyzing,
+    analyzeBacklink,
+    analyzeNext,
+    beginAnalysisRuns,
+    applyAnalysisEvent,
+    failAnalysisRun,
+    dismissAnalysisRun,
+    refreshBacklinkReads,
+  };
+}
+
+export { errorMessage as backlinkAnalysisErrorMessage };

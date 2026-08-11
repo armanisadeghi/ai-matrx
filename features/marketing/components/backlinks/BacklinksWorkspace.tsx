@@ -95,24 +95,15 @@ import {
   type DataForSeoCadence,
 } from "@/features/marketing/data/integrations-schema";
 import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
-import {
-  refreshSiteBacklinks,
-  enrichSiteBacklinks,
-  SeoApiError,
-} from "@/features/marketing/seo/dataforseo/client";
+import { refreshSiteBacklinks } from "@/features/marketing/seo/dataforseo/client";
 import type {
   BacklinkRefreshProfile,
   BacklinkRefreshReceipt,
-  SeoStreamEvent,
 } from "@/features/marketing/seo/dataforseo/types";
 import {
-  applyBacklinkEnrichmentEvent,
-  failBacklinkEnrichmentRun,
-  startBacklinkEnrichmentRun,
-  type BacklinkEnrichmentRunState,
-} from "@/features/marketing/components/backlinks/lib/enrichment-run";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
+  backlinkAnalysisErrorMessage,
+  useBacklinkAnalysis,
+} from "@/features/marketing/components/backlinks/useBacklinkAnalysis";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
@@ -121,15 +112,6 @@ function compactNumber(value: number | null | undefined): string {
   return value === null || value === undefined
     ? "—"
     : Intl.NumberFormat("en", { notation: "compact" }).format(value);
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof SeoApiError) {
-    return typeof error.detail === "string"
-      ? error.detail
-      : JSON.stringify(error.detail);
-  }
-  return error instanceof Error ? error.message : String(error);
 }
 
 /**
@@ -290,25 +272,25 @@ export function BacklinksWorkspace() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isNavigating, startNavigation] = useTransition();
-  const serviceTargets = useAppSelector(selectApiServiceTargets);
-  // Backlink discovery + enrichment are work commands. The browser reads
-  // persisted rows directly from Supabase, but actual work belongs on aidream
-  // (the standalone SEO package service is not an AI/crawler host).
-  const seoTarget = serviceTargets.find(
-    (target) => target.service === "aidream",
-  );
-
   const workspace = useBacklinkWorkspace(site.id);
   const trend = useBacklinkTrend(site.id);
   const backlinks = useLatestBacklinks(site.id, OVERVIEW_ROWS_STATE);
 
   const [profile, setProfile] = useState<BacklinkRefreshProfile>("bootstrap");
   const [refreshing, setRefreshing] = useState(false);
-  const [batchEnriching, setBatchEnriching] = useState(false);
   const [enrichmentBatchSize, setEnrichmentBatchSize] = useState(5);
-  const [analysisRuns, setAnalysisRuns] = useState<
-    Record<string, BacklinkEnrichmentRunState>
-  >({});
+  const {
+    seoTarget,
+    analysisDisabled,
+    analysisRuns,
+    batchAnalyzing,
+    analyzeBacklink,
+    analyzeNext,
+    dismissAnalysisRun,
+  } = useBacklinkAnalysis({
+    siteId: site.id,
+    organizationId: site.organization_id,
+  });
   const [receipt, setReceipt] = useState<BacklinkRefreshReceipt | null>(null);
   // Remount key for the receipt card so each completed refresh re-opens it.
   const [receiptRun, setReceiptRun] = useState(0);
@@ -367,7 +349,7 @@ export function BacklinksWorkspace() {
           : "Automatic backlink refresh disabled.",
       );
     } catch (error) {
-      toast.error(errorMessage(error));
+      toast.error(backlinkAnalysisErrorMessage(error));
     } finally {
       setSavingSchedule(false);
     }
@@ -411,139 +393,11 @@ export function BacklinksWorkspace() {
       });
       toast.success(`Backlink ${profile} refresh completed.`);
     } catch (error) {
-      toast.error(errorMessage(error));
+      toast.error(backlinkAnalysisErrorMessage(error));
     } finally {
       setRefreshing(false);
     }
   };
-
-  const refreshBacklinkReads = () =>
-    queryClient.invalidateQueries({
-      queryKey: [...marketingKeys.site(site.id), "backlinks"],
-    });
-
-  const enrich = async ({
-    backlinkIds,
-    label,
-  }: {
-    backlinkIds?: string[];
-    label: string;
-  }) => {
-    if (!seoTarget?.url) {
-      toast.error(
-        "No AI Dream server is configured for the selected environment.",
-      );
-      return;
-    }
-    const targetedBacklinkId =
-      backlinkIds?.length === 1 ? backlinkIds[0] : null;
-    if (targetedBacklinkId) {
-      setAnalysisRuns((current) => ({
-        ...current,
-        [targetedBacklinkId]: startBacklinkEnrichmentRun(label),
-      }));
-    } else {
-      setBatchEnriching(true);
-    }
-
-    let commandRunId: string | null = null;
-    const handleEnrichmentEvent = (event: SeoStreamEvent) => {
-      if (event.kind === "seo.command_run" && event.run_id) {
-        commandRunId = event.run_id;
-      }
-      const runBacklinkIds = targetedBacklinkId
-        ? [targetedBacklinkId]
-        : event.backlink_id
-          ? [event.backlink_id]
-          : (event.backlink_ids ?? []);
-      if (runBacklinkIds.length > 0) {
-        setAnalysisRuns((current) => {
-          const next = { ...current };
-          runBacklinkIds.forEach((backlinkId, index) => {
-            const sourceUrl =
-              event.source_url ?? event.source_urls?.[index] ?? null;
-            const initialRun =
-              next[backlinkId] ??
-              startBacklinkEnrichmentRun(
-                sourceUrl ? `Analyze ${sourceUrl}` : "Analyze backlink",
-              );
-            const initial =
-              commandRunId && !initialRun.runId
-                ? { ...initialRun, runId: commandRunId }
-                : initialRun;
-            next[backlinkId] = applyBacklinkEnrichmentEvent(initial, event);
-          });
-          return next;
-        });
-      }
-      if (event.kind.startsWith("seo.backlink_")) {
-        void refreshBacklinkReads();
-      }
-    };
-
-    try {
-      const session = await supabase.auth.getSession();
-      if (session.error) throw session.error;
-      const token = session.data.session?.access_token;
-      if (!token) throw new Error("Sign in before enriching backlink data.");
-      const result = await enrichSiteBacklinks(
-        seoTarget.url,
-        token,
-        site.id,
-        {
-          organization_id: site.organization_id,
-          limit: backlinkIds?.length ?? enrichmentBatchSize,
-          // A targeted click means "run this exact link now", including a
-          // completed or dead-letter link. Batches stay due-only.
-          force: Boolean(backlinkIds?.length),
-          backlink_ids: backlinkIds,
-        },
-        handleEnrichmentEvent,
-      );
-      await refreshBacklinkReads();
-      if (result.failed > 0) {
-        toast.warning(
-          `Backlink analysis finished with ${result.completed} completed and ${result.failed} failed.`,
-        );
-      } else {
-        toast.success(
-          result.completed > 0
-            ? `Analyzed ${result.completed} source page${result.completed === 1 ? "" : "s"}.`
-            : "No due source pages remained to analyze.",
-        );
-      }
-    } catch (error) {
-      const message = errorMessage(error);
-      if (targetedBacklinkId) {
-        setAnalysisRuns((current) => {
-          const run = current[targetedBacklinkId];
-          return run
-            ? {
-                ...current,
-                [targetedBacklinkId]: failBacklinkEnrichmentRun(run, message),
-              }
-            : current;
-        });
-      }
-      toast.error(message);
-    } finally {
-      if (!targetedBacklinkId) setBatchEnriching(false);
-    }
-  };
-
-  const dismissAnalysisRun = (backlinkId: string) => {
-    setAnalysisRuns((current) => {
-      const remaining = { ...current };
-      delete remaining[backlinkId];
-      return remaining;
-    });
-  };
-
-  const analyzeBacklink = (row: BacklinkObservationRow) =>
-    enrich({
-      backlinkIds: [row.id],
-      label: `Analyze ${row.source_domain ?? row.source_url}`,
-    });
 
   if (workspace.isLoading) {
     return <LoadingSurface label="Loading backlink intelligence…" />;
@@ -1004,12 +858,10 @@ export function BacklinksWorkspace() {
               size="sm"
               variant="outline"
               className="gap-1.5"
-              disabled={batchEnriching || refreshing}
-              onClick={() =>
-                void enrich({ label: `Analyze next ${enrichmentBatchSize}` })
-              }
+              disabled={batchAnalyzing || refreshing}
+              onClick={() => void analyzeNext(enrichmentBatchSize)}
             >
-              {batchEnriching ? (
+              {batchAnalyzing ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <BrainCircuit className="h-3.5 w-3.5" />
@@ -1239,7 +1091,7 @@ export function BacklinksWorkspace() {
                 onAnalyze={(row) => void analyzeBacklink(row)}
                 analysisRuns={analysisRuns}
                 onDismissAnalysisRun={dismissAnalysisRun}
-                analysisDisabled={refreshing}
+                analysisDisabled={analysisDisabled}
               />
             </div>
           ) : tab === "insights" ? (
@@ -1249,7 +1101,7 @@ export function BacklinksWorkspace() {
                 onAnalyze={(row) => void analyzeBacklink(row)}
                 analysisRuns={analysisRuns}
                 onDismissAnalysisRun={dismissAnalysisRun}
-                analysisDisabled={refreshing}
+                analysisDisabled={analysisDisabled}
               />
             </div>
           ) : tab === "domains" ? (
