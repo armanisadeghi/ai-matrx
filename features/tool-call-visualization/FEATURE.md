@@ -2,7 +2,7 @@
 
 **Status:** `consolidated — canonical home for all tool-call UI`
 **Tier:** `1` — tools are first-class product surface, not auxiliary output
-**Last updated:** `2026-07-16`
+**Last updated:** `2026-08-11`
 
 ---
 
@@ -148,6 +148,24 @@ interface ToolRendererProps {
 
 ---
 
+## Collaboration `agent_call` — the ONE renderer that owns stream content
+
+`agent_call` with `history_mode: "snapshot" | "fork"` (aidream's conversation-aware collaboration; contract in that tool's module docstring) is the single case where a renderer displays **stream text**, not just tool args/output. Read this before touching `renderers/agent-call/` or `sub_agent` handling.
+
+**Why it is special.** The child agent streams its tokens on the **parent's wire**, and `ChunkPayload` is `{ text }` — there is no per-chunk attribution. Those tokens are also never persisted to the parent conversation (they live in the child's), so rendering them inline would show text live that vanishes on reload.
+
+**The one anchor** is the `sub_agent` operation's block range, captured in the slice (never re-derived):
+- `trackOperationInit` stamps `blockAnchor` = `renderBlockOrder.length` and `toolCallId` = the request's most recent non-terminal `agent_call` entry.
+- `trackOperationCompletion` stamps `blockEnd`.
+- `selectUnifiedSlots` **hides** every block in that range from the transcript (marking it consumed so the media forward-scan and trailing sweeps skip it).
+- `selectAgentCallChildStream(requestId, callId)` returns that range's text + the INIT metadata (`label`, `conversation_id`) for the card to render.
+
+`CollabCallCard` (dispatched from `AgentCallInline`, all statuses but `error`) shows the header, the mode chip (snapshot = "reading a copy", fork = "working in a branched copy"), `messages_included`, the live child stream while running, the answer summary once complete, `EntityRef` doors to the source + child conversations (fork labels the child "Branched copy of …"), and the `remember` write-back state. Titles resolve through `useConversationTitle` (module-cached + in-flight-deduped; a title the user can't see falls back to a neutral label — never a raw UUID).
+
+**Guards:** `renderers/agent-call/__tests__/collab.test.ts` (output-contract parse) and `features/agents/redux/execution-system/active-requests/__tests__/collab-child-stream.test.ts` (the hide + attribute behavior, through the real reducers and walker).
+
+---
+
 ## Contract versions
 
 The `tool_ui_components` table carries a `contract_version` column:
@@ -208,6 +226,7 @@ Historical planning and analysis docs from the pre-consolidation era have been a
 
 ## Change log
 
+- `2026-08-11` — claude: **Collaboration `agent_call` renders as its own card (new § above).** `history_mode` "snapshot"/"fork" calls now get `CollabCallCard` instead of the generic args/result dump: header naming the specialist and the conversation it reviewed, mode chip, `messages_included`, the live child token stream inside the card, collapsed answer summary once complete, Door Law links to the source + child conversations, and the `remember` write-back state (queued → which conversation will see it; failed → a loud inline error). The load-bearing half is the child-stream attribution: `sub_agent` INIT/COMPLETION now stamp a `blockAnchor`/`blockEnd`/`toolCallId` range on the operation entry, `selectUnifiedSlots` hides that range from the transcript (the child's tokens never persist to the parent conversation, so showing them live made the transcript change on reload), and the new `selectAgentCallChildStream` hands the same text to the owning card. The registry entry gained collaboration phase labels + a `getHeaderSubtitle` so the FOLDED line still says who answered and what they said. Guarded by 15 tests; the hide behavior was confirmed to fail without the fix.
 - `2026-08-10` — claude: **Tool detail page is now agent-WRITABLE for authored metadata (`matrx-admin/tool-registry` write targets).** `ToolViewPage` registers `getWriteHandlers` for the manifest's three new `entity`/`ask` targets — `tool_description`, `tool_category`, `tool_tags` — validating against the new `admin/mcp-tools/tool-metadata.ts` (bounds + throwing validators, the SAME constants the manifest interpolates into the prose an agent reads) and writing through the new `admin/mcp-tools/tool-definition.service.ts`, a typed wrapper over the `requireAdmin()`-gated `PUT /api/admin/tools/[id]`. That route is the only write path: `tool.definition` is SELECT-only under RLS. The page's Active switch was refactored onto the same wrapper, so its inline `fetch` is gone and there is one door. `McpToolsManager` (the catalogue mount of the same surface) deliberately registers NO handlers — browse state only. Everything capability-shaped (`is_active`, `admin_only`, gating, exemptions, visibility, tier), the tool's name, its parameter/output schemas, its annotations, its version fields, and MCP provenance stay human-only; see the `writeTargets` block in `features/surfaces/manifests/admin-tool-registry.manifest.ts` for the full reasoning. Live-verified with a real agent run on `describe_demo` (test values restored afterwards).
 - `2026-08-09` — claude: **D115 fixed — in-session repaint of DB tool renderers + kind components, via the invalidation-registry INVERSION (no import edge).** The reverted v0.4.198/199 repaint is reimplemented per the ruled pattern: `toolStateEffects` gains two effects that fire NAMES through the tiny zero-import `lib/invalidation/invalidation-registry.ts` — `toolcomp_*` writes → `tool-viz:db-renderers` (targeted by `tool_name` when the call/result names it, invalidate-all when only a `component_id` comes back), `kindcomp_*` writes → `content-ir:kind-components`. `toolRendererCache.ts` registers its callback at chunk init (drops positive/negative/meta/in-flight + bumps a monotonic per-tool version); new `useToolRendererVersion` re-resolves mounted `DbToolRendererImpl` (old compile keeps rendering until the fresh one lands — no blank flash) and `useDbToolMeta` (collapsed label). content-ir's `component-registry.ts` registers `refreshKindComponents(0)`; its existing per-kind repaint + `updated_at`-keyed compile cache do the rest. **NEVER add an import — static or `await import()` — from `toolStateEffects` into content-ir or `db-renderer`**: that exact edge cost +14GB build RSS and 12 OOM'd builds (D115); `__tests__/tool-viz-repaint-invalidation.test.ts` has a source-guard test that goes red on any such edge. Known sibling gap: `features/workflow-emit/emitRendererCache.ts` has no invalidation consumer.
 - `2026-08-08` — The MCP tool UI review surface now has a real H1/H2 hierarchy, touch-safe mobile tabs and test actions, fully readable wrapping sample labels, and named icon-only controls. The canonical `ToolResultCard` also wraps its title/subtitle and keeps its Open menu at a 44px mobile target, so renderer operation identity stays readable without a one-off SEO override.

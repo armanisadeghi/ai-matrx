@@ -155,6 +155,26 @@ streamed persists as normal history** (no truncation, so no marker is needed).
   hard-cancellation path (task cancelled mid-provider-call — shutdown or a
   `detach_on_disconnect=False` caller), where text really is truncated.
 
+## Server-side producers — the inbox is not only a client queue
+
+Server features write into the same table, with the same drain and guarantees.
+Live today: **`source='agent_collab'`** — aidream's `agent_call` `remember=true`
+enqueues the child agent's answer into the SOURCE conversation
+(`kind='system_message'`, `delivery='turn_end'`, provenance under
+`metadata.agent_collab`). Three client rules follow, all shipped 2026-08-11
+(details + rationale in `features/agents/components/chat/FEATURE.md` Flow 6):
+
+- **Render them as collaboration notes, not queued messages** — no edit, no
+  "Deliver now"; withdraw stays. They show even when `is_visible_to_user` is
+  false: the note stays out of the transcript, but the user must be able to see
+  that one is waiting.
+- **`hydrateInbox` runs on EVERY conversation load.** A server producer
+  enqueues into an idle conversation and the self-drain exclusion holds the row
+  for the NEXT run — the old "skip when the latest turn completed" gate made
+  exactly those notes invisible.
+- **A delivered note is a user-role row the user never typed.** Group and
+  render it as a collaboration note, never a user bubble.
+
 ## FE client checklist — SHIPPED 2026-07-29/30
 
 - [x] Composer **enabled while streaming**; `smartExecute` applies the three
