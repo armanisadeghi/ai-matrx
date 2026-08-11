@@ -11044,6 +11044,108 @@
         }
       }
     },
+    "/seo/sites/{site_id}/ai-visibility/analyze": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Analyze Site Ai Visibility",
+        "description": "Ask one exact query across every selected answer engine, capture the\npages they cite, and stream the per-provider decision analysis. Responses,\nclaims, citations, and decision signals persist as durable evidence.",
+        "operationId": "analyze_site_ai_visibility_seo_sites__site_id__ai_visibility_analyze_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiVisibilityAnalyzeBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/competitor-autopsy": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Run Site Competitor Autopsy",
+        "description": "Find the competitors that truly overlap, read the exact pages earning\ntheir visibility, and stream the strategist's ranked opportunity autopsy.\nCompetitor identities and opportunities persist durably.",
+        "operationId": "run_site_competitor_autopsy_seo_sites__site_id__competitor_autopsy_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompetitorAutopsyBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/sites/{site_id}/backlinks/enrich": {
       "post": {
         "tags": [
@@ -17422,66 +17524,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -49960,6 +50002,239 @@
         ],
         "title": "AiCatalogReloadSummary"
       },
+      "AiVisibilityAnalyzeBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Query"
+          },
+          "engines": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "chat_gpt",
+                    "claude",
+                    "gemini",
+                    "perplexity"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engines"
+          },
+          "country_iso": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country Iso",
+            "default": "US"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "AiVisibilityAnalyzeBody",
+        "description": "One exact buyer question, asked across the answer engines at once.\n\n``engines`` is the canonical engine-token Literal (the ``AI_ANSWER_OPERATIONS``\nkeys) so the generated client gets a real union rather than bare ``string``."
+      },
+      "AiVisibilityProviderResult": {
+        "properties": {
+          "engine": {
+            "type": "string",
+            "title": "Engine"
+          },
+          "model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Name"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "response_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Id"
+          },
+          "provider_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Run Id"
+          },
+          "answer_text": {
+            "type": "string",
+            "title": "Answer Text",
+            "default": ""
+          },
+          "target_mentioned": {
+            "type": "boolean",
+            "title": "Target Mentioned",
+            "default": false
+          },
+          "target_cited": {
+            "type": "boolean",
+            "title": "Target Cited",
+            "default": false
+          },
+          "citation_count": {
+            "type": "integer",
+            "title": "Citation Count",
+            "default": 0
+          },
+          "analysis": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Analysis"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "engine",
+          "status"
+        ],
+        "title": "AiVisibilityProviderResult"
+      },
+      "AiVisibilityResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "ai_visibility.analyze",
+            "title": "Result Kind",
+            "default": "ai_visibility.analyze"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "engines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Engines"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/AiVisibilityProviderResult"
+            },
+            "type": "array",
+            "title": "Providers"
+          },
+          "summary": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "query"
+        ],
+        "title": "AiVisibilityResult"
+      },
       "AidreamCollectionCreateRequest": {
         "properties": {
           "provider": {
@@ -63585,6 +63860,315 @@
         "title": "CompensationOut",
         "description": "Per-claim compensation block.\n\n`compensation` is the total PD payout. `weekly_payment` is the actual\nrate per week (= weekly_earnings × LC §4658(d) adjustment if any).\n`pd_adjustment_pct` is +15 / -15 / 0 with `pd_adjustment_reason`\nexplaining why. `life_pension_weekly` is populated only when the\nfinal rating is ≥ 70% (LC §4659)."
       },
+      "CompetitorAssessment": {
+        "properties": {
+          "competitor_id": {
+            "type": "string",
+            "title": "Competitor Id"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "relevance_score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Relevance Score"
+          },
+          "threat_level": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Threat Level"
+          },
+          "why_they_win": {
+            "type": "string",
+            "title": "Why They Win"
+          },
+          "defensibility": {
+            "type": "string",
+            "title": "Defensibility"
+          },
+          "key_page_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Page Urls"
+          },
+          "evidence_summary": {
+            "type": "string",
+            "title": "Evidence Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "competitor_id",
+          "domain",
+          "name",
+          "relevance_score",
+          "threat_level",
+          "why_they_win",
+          "defensibility",
+          "key_page_urls",
+          "evidence_summary"
+        ],
+        "title": "CompetitorAssessment"
+      },
+      "CompetitorAutopsyBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "competitor_domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 25,
+            "title": "Competitor Domains"
+          },
+          "location_code": {
+            "type": "integer",
+            "title": "Location Code",
+            "default": 2840
+          },
+          "language_code": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Language Code",
+            "default": "en"
+          },
+          "max_competitors": {
+            "type": "integer",
+            "maximum": 15,
+            "minimum": 1,
+            "title": "Max Competitors",
+            "default": 5
+          },
+          "pages_per_competitor": {
+            "type": "integer",
+            "maximum": 10,
+            "minimum": 1,
+            "title": "Pages Per Competitor",
+            "default": 3
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CompetitorAutopsyBody"
+      },
+      "CompetitorAutopsyResult": {
+        "properties": {
+          "result_kind": {
+            "type": "string",
+            "const": "competitors.opportunity_autopsy",
+            "title": "Result Kind",
+            "default": "competitors.opportunity_autopsy"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "artifact_id": {
+            "type": "string",
+            "title": "Artifact Id"
+          },
+          "artifact": {
+            "$ref": "#/components/schemas/CompetitorOpportunityArtifact"
+          },
+          "competitors_persisted": {
+            "type": "integer",
+            "title": "Competitors Persisted"
+          },
+          "opportunities_persisted": {
+            "type": "integer",
+            "title": "Opportunities Persisted"
+          },
+          "provider_run_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Provider Run Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "run_id",
+          "artifact_id",
+          "artifact",
+          "competitors_persisted",
+          "opportunities_persisted"
+        ],
+        "title": "CompetitorAutopsyResult"
+      },
+      "CompetitorOpportunityArtifact": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "competitor_opportunity_autopsy_v1",
+            "title": "Kind",
+            "default": "competitor_opportunity_autopsy_v1"
+          },
+          "strategist_version": {
+            "type": "string",
+            "title": "Strategist Version"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "site_domain": {
+            "type": "string",
+            "title": "Site Domain"
+          },
+          "executive_verdict": {
+            "type": "string",
+            "title": "Executive Verdict"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "evidence_coverage": {
+            "$ref": "#/components/schemas/aidream__services__seo__competitor_autopsy__EvidenceCoverage"
+          },
+          "competitors": {
+            "items": {
+              "$ref": "#/components/schemas/CompetitorAssessment"
+            },
+            "type": "array",
+            "title": "Competitors"
+          },
+          "opportunities": {
+            "items": {
+              "$ref": "#/components/schemas/OpportunityAssessment"
+            },
+            "type": "array",
+            "title": "Opportunities"
+          },
+          "already_have_percentage": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Already Have Percentage"
+          },
+          "upgrade_page_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Upgrade Page Ids"
+          },
+          "create_pages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Create Pages"
+          },
+          "internal_link_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Internal Link Actions"
+          },
+          "backlink_targets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Backlink Targets"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "strategist_version",
+          "site_id",
+          "site_domain",
+          "executive_verdict",
+          "summary",
+          "evidence_coverage",
+          "competitors",
+          "opportunities",
+          "already_have_percentage",
+          "upgrade_page_ids",
+          "create_pages",
+          "internal_link_actions",
+          "backlink_targets",
+          "error"
+        ],
+        "title": "CompetitorOpportunityArtifact"
+      },
       "CompileDeskRequest": {
         "properties": {
           "organization_id": {
@@ -69086,61 +69670,6 @@
         "type": "object",
         "title": "DetectorRunInfo"
       },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
-      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -72062,53 +72591,6 @@
           "key_spec"
         ],
         "title": "EscrowWrappingKeyResponse"
-      },
-      "EvidenceCoverage": {
-        "properties": {
-          "backlinks_reviewed": {
-            "type": "integer",
-            "title": "Backlinks Reviewed",
-            "default": 0
-          },
-          "domains_reviewed": {
-            "type": "integer",
-            "title": "Domains Reviewed",
-            "default": 0
-          },
-          "competitor_intersections_reviewed": {
-            "type": "integer",
-            "title": "Competitor Intersections Reviewed",
-            "default": 0
-          },
-          "ai_citations_reviewed": {
-            "type": "integer",
-            "title": "Ai Citations Reviewed",
-            "default": 0
-          },
-          "brand_facts_reviewed": {
-            "type": "integer",
-            "title": "Brand Facts Reviewed",
-            "default": 0
-          },
-          "rag_hits_reviewed": {
-            "type": "integer",
-            "title": "Rag Hits Reviewed",
-            "default": 0
-          },
-          "captured_pages_reviewed": {
-            "type": "integer",
-            "title": "Captured Pages Reviewed",
-            "default": 0
-          },
-          "excluded_low_quality_inputs": {
-            "type": "integer",
-            "title": "Excluded Low Quality Inputs",
-            "default": 0
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "EvidenceCoverage"
       },
       "EvidenceReference": {
         "properties": {
@@ -88918,6 +89400,172 @@
         ],
         "title": "OperationsByLinkResponse"
       },
+      "OpportunityAssessment": {
+        "properties": {
+          "opportunity_key": {
+            "type": "string",
+            "title": "Opportunity Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "opportunity_type": {
+            "type": "string",
+            "enum": [
+              "upgrade_page",
+              "create_page",
+              "create_supporting_content",
+              "internal_linking",
+              "backlink_acquisition",
+              "schema",
+              "consolidation",
+              "technical",
+              "monitor"
+            ],
+            "title": "Opportunity Type"
+          },
+          "competitor_domain": {
+            "type": "string",
+            "title": "Competitor Domain"
+          },
+          "competitor_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Competitor Url"
+          },
+          "target_page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Page Id"
+          },
+          "target_page_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Page Url"
+          },
+          "primary_keyword": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Keyword"
+          },
+          "supporting_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Supporting Keywords"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict"
+          },
+          "why_competitor_wins": {
+            "type": "string",
+            "title": "Why Competitor Wins"
+          },
+          "current_advantage": {
+            "type": "string",
+            "title": "Current Advantage"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "priority": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Priority"
+          },
+          "impact": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Impact"
+          },
+          "effort": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Effort"
+          },
+          "confidence": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Confidence"
+          },
+          "evidence": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "dependencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Dependencies"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "opportunity_key",
+          "title",
+          "opportunity_type",
+          "competitor_domain",
+          "competitor_url",
+          "target_page_id",
+          "target_page_url",
+          "primary_keyword",
+          "supporting_keywords",
+          "verdict",
+          "why_competitor_wins",
+          "current_advantage",
+          "action",
+          "priority",
+          "impact",
+          "effort",
+          "confidence",
+          "evidence",
+          "dependencies"
+        ],
+        "title": "OpportunityAssessment"
+      },
       "OpsSummaryResponse": {
         "properties": {
           "total_issue_classes": {
@@ -98682,7 +99330,7 @@
             "title": "Executive Verdict"
           },
           "evidence_coverage": {
-            "$ref": "#/components/schemas/EvidenceCoverage"
+            "$ref": "#/components/schemas/aidream__services__seo__reputation_intelligence__EvidenceCoverage"
           },
           "cases": {
             "items": {
@@ -99070,7 +99718,7 @@
             "default": 0
           },
           "evidence_coverage": {
-            "$ref": "#/components/schemas/EvidenceCoverage"
+            "$ref": "#/components/schemas/aidream__services__seo__reputation_intelligence__EvidenceCoverage"
           },
           "brief": {
             "$ref": "#/components/schemas/ReputationBrief"
@@ -103666,10 +104314,16 @@
               {
                 "oneOf": [
                   {
+                    "$ref": "#/components/schemas/AiVisibilityResult"
+                  },
+                  {
                     "$ref": "#/components/schemas/BacklinkEnrichmentResult"
                   },
                   {
                     "$ref": "#/components/schemas/AuthorityRouterResult"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CompetitorAutopsyResult"
                   },
                   {
                     "$ref": "#/components/schemas/KeywordResearchResult"
@@ -103699,8 +104353,10 @@
                 "discriminator": {
                   "propertyName": "result_kind",
                   "mapping": {
+                    "ai_visibility.analyze": "#/components/schemas/AiVisibilityResult",
                     "authority.route": "#/components/schemas/AuthorityRouterResult",
                     "backlinks.enrich": "#/components/schemas/BacklinkEnrichmentResult",
+                    "competitors.opportunity_autopsy": "#/components/schemas/CompetitorAutopsyResult",
                     "keywords.relationship_research": "#/components/schemas/KeywordResearchResult",
                     "keywords.volume_refresh": "#/components/schemas/KeywordVolumeRefreshResult",
                     "pages.analyze": "#/components/schemas/PageAnalysisResult",
@@ -121477,6 +122133,95 @@
           "source_id"
         ],
         "title": "IngestRequest"
+      },
+      "aidream__services__seo__competitor_autopsy__EvidenceCoverage": {
+        "properties": {
+          "competitors_analyzed": {
+            "type": "integer",
+            "title": "Competitors Analyzed"
+          },
+          "competitor_pages_crawled": {
+            "type": "integer",
+            "title": "Competitor Pages Crawled"
+          },
+          "own_pages_compared": {
+            "type": "integer",
+            "title": "Own Pages Compared"
+          },
+          "keywords_compared": {
+            "type": "integer",
+            "title": "Keywords Compared"
+          },
+          "backlink_domains_compared": {
+            "type": "integer",
+            "title": "Backlink Domains Compared"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "competitors_analyzed",
+          "competitor_pages_crawled",
+          "own_pages_compared",
+          "keywords_compared",
+          "backlink_domains_compared",
+          "limitations"
+        ],
+        "title": "EvidenceCoverage"
+      },
+      "aidream__services__seo__reputation_intelligence__EvidenceCoverage": {
+        "properties": {
+          "backlinks_reviewed": {
+            "type": "integer",
+            "title": "Backlinks Reviewed",
+            "default": 0
+          },
+          "domains_reviewed": {
+            "type": "integer",
+            "title": "Domains Reviewed",
+            "default": 0
+          },
+          "competitor_intersections_reviewed": {
+            "type": "integer",
+            "title": "Competitor Intersections Reviewed",
+            "default": 0
+          },
+          "ai_citations_reviewed": {
+            "type": "integer",
+            "title": "Ai Citations Reviewed",
+            "default": 0
+          },
+          "brand_facts_reviewed": {
+            "type": "integer",
+            "title": "Brand Facts Reviewed",
+            "default": 0
+          },
+          "rag_hits_reviewed": {
+            "type": "integer",
+            "title": "Rag Hits Reviewed",
+            "default": 0
+          },
+          "captured_pages_reviewed": {
+            "type": "integer",
+            "title": "Captured Pages Reviewed",
+            "default": 0
+          },
+          "excluded_low_quality_inputs": {
+            "type": "integer",
+            "title": "Excluded Low Quality Inputs",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "EvidenceCoverage"
       },
       "matrx_scheduler__api__schemas__DeletedResponse": {
         "properties": {

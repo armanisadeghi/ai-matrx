@@ -4297,6 +4297,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/ai-visibility/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Site Ai Visibility
+         * @description Ask one exact query across every selected answer engine, capture the
+         *     pages they cite, and stream the per-provider decision analysis. Responses,
+         *     claims, citations, and decision signals persist as durable evidence.
+         */
+        post: operations["analyze_site_ai_visibility_seo_sites__site_id__ai_visibility_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/competitor-autopsy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Site Competitor Autopsy
+         * @description Find the competitors that truly overlap, read the exact pages earning
+         *     their visibility, and stream the strategist's ranked opportunity autopsy.
+         *     Competitor identities and opportunities persist durably.
+         */
+        post: operations["run_site_competitor_autopsy_seo_sites__site_id__competitor_autopsy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/backlinks/enrich": {
         parameters: {
             query?: never;
@@ -6699,30 +6743,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18332,6 +18352,108 @@ export interface components {
             quarantined_rows: components["schemas"]["QuarantinedRowSummary"][];
         };
         /**
+         * AiVisibilityAnalyzeBody
+         * @description One exact buyer question, asked across the answer engines at once.
+         *
+         *     ``engines`` is the canonical engine-token Literal (the ``AI_ANSWER_OPERATIONS``
+         *     keys) so the generated client gets a real union rather than bare ``string``.
+         */
+        AiVisibilityAnalyzeBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Query */
+            query: string;
+            /** Engines */
+            engines?: ("chat_gpt" | "claude" | "gemini" | "perplexity")[] | null;
+            /**
+             * Country Iso
+             * @default US
+             */
+            country_iso?: string;
+            /** City */
+            city?: string | null;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
+        /** AiVisibilityProviderResult */
+        AiVisibilityProviderResult: {
+            /** Engine */
+            engine: string;
+            /** Model Name */
+            model_name?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "completed" | "failed";
+            /** Response Id */
+            response_id?: string | null;
+            /** Provider Run Id */
+            provider_run_id?: string | null;
+            /**
+             * Answer Text
+             * @default
+             */
+            answer_text?: string;
+            /**
+             * Target Mentioned
+             * @default false
+             */
+            target_mentioned?: boolean;
+            /**
+             * Target Cited
+             * @default false
+             */
+            target_cited?: boolean;
+            /**
+             * Citation Count
+             * @default 0
+             */
+            citation_count?: number;
+            /** Analysis */
+            analysis?: {
+                [key: string]: unknown;
+            };
+            /** Error */
+            error?: string | null;
+        };
+        /** AiVisibilityResult */
+        AiVisibilityResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "ai_visibility.analyze";
+            /** Site Id */
+            site_id: string;
+            /** Query */
+            query: string;
+            /** Engines */
+            engines?: string[];
+            /** Providers */
+            providers?: components["schemas"]["AiVisibilityProviderResult"][];
+            /** Summary */
+            summary?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
          * AidreamCollectionCreateRequest
          * @description Same body as the standalone app, but organization_id may be omitted —
          *     aidream resolves the caller's personal org (never NULL).
@@ -23380,6 +23502,132 @@ export interface components {
             /** Life Pension Weekly */
             life_pension_weekly?: number | null;
         };
+        /** CompetitorAssessment */
+        CompetitorAssessment: {
+            /** Competitor Id */
+            competitor_id: string;
+            /** Domain */
+            domain: string;
+            /** Name */
+            name: string;
+            /** Relevance Score */
+            relevance_score: number;
+            /**
+             * Threat Level
+             * @enum {string}
+             */
+            threat_level: "critical" | "high" | "medium" | "low";
+            /** Why They Win */
+            why_they_win: string;
+            /** Defensibility */
+            defensibility: string;
+            /** Key Page Urls */
+            key_page_urls: string[];
+            /** Evidence Summary */
+            evidence_summary: string;
+        };
+        /** CompetitorAutopsyBody */
+        CompetitorAutopsyBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Competitor Domains */
+            competitor_domains?: string[];
+            /**
+             * Location Code
+             * @default 2840
+             */
+            location_code?: number;
+            /**
+             * Language Code
+             * @default en
+             */
+            language_code?: string;
+            /**
+             * Max Competitors
+             * @default 5
+             */
+            max_competitors?: number;
+            /**
+             * Pages Per Competitor
+             * @default 3
+             */
+            pages_per_competitor?: number;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
+        /** CompetitorAutopsyResult */
+        CompetitorAutopsyResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "competitors.opportunity_autopsy";
+            /** Site Id */
+            site_id: string;
+            /** Run Id */
+            run_id: string;
+            /** Artifact Id */
+            artifact_id: string;
+            artifact: components["schemas"]["CompetitorOpportunityArtifact"];
+            /** Competitors Persisted */
+            competitors_persisted: number;
+            /** Opportunities Persisted */
+            opportunities_persisted: number;
+            /** Provider Run Ids */
+            provider_run_ids?: string[];
+        };
+        /** CompetitorOpportunityArtifact */
+        CompetitorOpportunityArtifact: {
+            /**
+             * Kind
+             * @default competitor_opportunity_autopsy_v1
+             * @constant
+             */
+            __kind?: "competitor_opportunity_autopsy_v1";
+            /** Strategist Version */
+            strategist_version: string;
+            /** Site Id */
+            site_id: string;
+            /** Site Domain */
+            site_domain: string;
+            /** Executive Verdict */
+            executive_verdict: string;
+            /** Summary */
+            summary: string;
+            evidence_coverage: components["schemas"]["aidream__services__seo__competitor_autopsy__EvidenceCoverage"];
+            /** Competitors */
+            competitors: components["schemas"]["CompetitorAssessment"][];
+            /** Opportunities */
+            opportunities: components["schemas"]["OpportunityAssessment"][];
+            /** Already Have Percentage */
+            already_have_percentage: number;
+            /** Upgrade Page Ids */
+            upgrade_page_ids: string[];
+            /** Create Pages */
+            create_pages: string[];
+            /** Internal Link Actions */
+            internal_link_actions: string[];
+            /** Backlink Targets */
+            backlink_targets: string[];
+            /** Error */
+            error: string | null;
+        };
         /**
          * CompileDeskRequest
          * @description Compile one Expertise Pack into a working desk (agents + workflow).
@@ -25428,33 +25676,6 @@ export interface components {
             /** Error */
             error?: string | null;
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -26575,49 +26796,6 @@ export interface components {
             public_key_spki_b64: string;
             /** Key Spec */
             key_spec: string;
-        };
-        /** EvidenceCoverage */
-        EvidenceCoverage: {
-            /**
-             * Backlinks Reviewed
-             * @default 0
-             */
-            backlinks_reviewed?: number;
-            /**
-             * Domains Reviewed
-             * @default 0
-             */
-            domains_reviewed?: number;
-            /**
-             * Competitor Intersections Reviewed
-             * @default 0
-             */
-            competitor_intersections_reviewed?: number;
-            /**
-             * Ai Citations Reviewed
-             * @default 0
-             */
-            ai_citations_reviewed?: number;
-            /**
-             * Brand Facts Reviewed
-             * @default 0
-             */
-            brand_facts_reviewed?: number;
-            /**
-             * Rag Hits Reviewed
-             * @default 0
-             */
-            rag_hits_reviewed?: number;
-            /**
-             * Captured Pages Reviewed
-             * @default 0
-             */
-            captured_pages_reviewed?: number;
-            /**
-             * Excluded Low Quality Inputs
-             * @default 0
-             */
-            excluded_low_quality_inputs?: number;
         };
         /** EvidenceReference */
         EvidenceReference: {
@@ -33066,6 +33244,56 @@ export interface components {
             /** Operations */
             operations: components["schemas"]["OperationView"][];
         };
+        /** OpportunityAssessment */
+        OpportunityAssessment: {
+            /** Opportunity Key */
+            opportunity_key: string;
+            /** Title */
+            title: string;
+            /**
+             * Opportunity Type
+             * @enum {string}
+             */
+            opportunity_type: "upgrade_page" | "create_page" | "create_supporting_content" | "internal_linking" | "backlink_acquisition" | "schema" | "consolidation" | "technical" | "monitor";
+            /** Competitor Domain */
+            competitor_domain: string;
+            /** Competitor Url */
+            competitor_url: string | null;
+            /** Target Page Id */
+            target_page_id: string | null;
+            /** Target Page Url */
+            target_page_url: string | null;
+            /** Primary Keyword */
+            primary_keyword: string | null;
+            /** Supporting Keywords */
+            supporting_keywords: string[];
+            /** Verdict */
+            verdict: string;
+            /** Why Competitor Wins */
+            why_competitor_wins: string;
+            /** Current Advantage */
+            current_advantage: string;
+            /** Action */
+            action: string;
+            /** Priority */
+            priority: number;
+            /**
+             * Impact
+             * @enum {string}
+             */
+            impact: "high" | "medium" | "low";
+            /**
+             * Effort
+             * @enum {string}
+             */
+            effort: "high" | "medium" | "low";
+            /** Confidence */
+            confidence: number;
+            /** Evidence */
+            evidence: string[];
+            /** Dependencies */
+            dependencies: string[];
+        };
         /** OpsSummaryResponse */
         OpsSummaryResponse: {
             /** Total Issue Classes */
@@ -36901,7 +37129,7 @@ export interface components {
             site_domain: string;
             /** Executive Verdict */
             executive_verdict: string;
-            evidence_coverage: components["schemas"]["EvidenceCoverage"];
+            evidence_coverage: components["schemas"]["aidream__services__seo__reputation_intelligence__EvidenceCoverage"];
             /** Cases */
             cases?: components["schemas"]["ReputationCase"][];
             /** Publication Opportunities */
@@ -37038,7 +37266,7 @@ export interface components {
              * @default 0
              */
             publication_opportunities?: number;
-            evidence_coverage: components["schemas"]["EvidenceCoverage"];
+            evidence_coverage: components["schemas"]["aidream__services__seo__reputation_intelligence__EvidenceCoverage"];
             brief: components["schemas"]["ReputationBrief"];
         };
         /** RequestRecord */
@@ -38938,7 +39166,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
+            result?: (components["schemas"]["AiVisibilityResult"] | components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["CompetitorAutopsyResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
         };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
@@ -45543,6 +45771,64 @@ export interface components {
              * @default false
              */
             run_enrich?: boolean;
+        };
+        /** EvidenceCoverage */
+        aidream__services__seo__competitor_autopsy__EvidenceCoverage: {
+            /** Competitors Analyzed */
+            competitors_analyzed: number;
+            /** Competitor Pages Crawled */
+            competitor_pages_crawled: number;
+            /** Own Pages Compared */
+            own_pages_compared: number;
+            /** Keywords Compared */
+            keywords_compared: number;
+            /** Backlink Domains Compared */
+            backlink_domains_compared: number;
+            /** Limitations */
+            limitations: string[];
+        };
+        /** EvidenceCoverage */
+        aidream__services__seo__reputation_intelligence__EvidenceCoverage: {
+            /**
+             * Backlinks Reviewed
+             * @default 0
+             */
+            backlinks_reviewed?: number;
+            /**
+             * Domains Reviewed
+             * @default 0
+             */
+            domains_reviewed?: number;
+            /**
+             * Competitor Intersections Reviewed
+             * @default 0
+             */
+            competitor_intersections_reviewed?: number;
+            /**
+             * Ai Citations Reviewed
+             * @default 0
+             */
+            ai_citations_reviewed?: number;
+            /**
+             * Brand Facts Reviewed
+             * @default 0
+             */
+            brand_facts_reviewed?: number;
+            /**
+             * Rag Hits Reviewed
+             * @default 0
+             */
+            rag_hits_reviewed?: number;
+            /**
+             * Captured Pages Reviewed
+             * @default 0
+             */
+            captured_pages_reviewed?: number;
+            /**
+             * Excluded Low Quality Inputs
+             * @default 0
+             */
+            excluded_low_quality_inputs?: number;
         };
         /** DeletedResponse */
         matrx_scheduler__api__schemas__DeletedResponse: {
@@ -53261,6 +53547,76 @@ export interface operations {
             };
         };
     };
+    analyze_site_ai_visibility_seo_sites__site_id__ai_visibility_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiVisibilityAnalyzeBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_site_competitor_autopsy_seo_sites__site_id__competitor_autopsy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompetitorAutopsyBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     enrich_site_backlinks_seo_sites__site_id__backlinks_enrich_post: {
         parameters: {
             query?: never;
@@ -57492,41 +57848,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

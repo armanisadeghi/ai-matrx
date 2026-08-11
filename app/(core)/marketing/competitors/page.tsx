@@ -1,9 +1,19 @@
-// Reserved Marketing route. Body, copy, and status come from the shared
-// placeholder — see features/marketing/components/MarketingComingSoon.tsx.
-// The promise is tracked as `marketing.competitors` in lib/coming-soon/registry.ts.
+import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { MarketingComingSoon } from "@/features/marketing/components/MarketingComingSoon";
+import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
+import CompetitorAutopsyWorkspace from "@/features/marketing/competitors/CompetitorAutopsyWorkspace";
 
-export default function Page() {
-  return <MarketingComingSoon comingSoonId="marketing.competitors" />;
+export const metadata: Metadata = {
+  title: "Competitors",
+  description:
+    "Find the competitors that truly overlap, read the pages earning their visibility, and turn them into ranked opportunities.",
+};
+
+export default function MarketingCompetitorsPage() {
+  return (
+    <Suspense fallback={<LoadingSurface label="Loading competitors…" />}>
+      <CompetitorAutopsyWorkspace />
+    </Suspense>
+  );
 }

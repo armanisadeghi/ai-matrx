@@ -463,8 +463,6 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "Whether AI assistants cite you — prompt-set monitoring, share of answer, source gaps.",
         iconName: "MessageSquareQuote",
-        status: "coming-soon",
-        comingSoonId: "marketing.ai-visibility",
       },
     ],
   },
@@ -547,8 +545,6 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "Tracked rivals, share of voice, keyword and content gaps, and their movement.",
         iconName: "Swords",
-        status: "coming-soon",
-        comingSoonId: "marketing.competitors",
       },
       {
         label: "Brand Monitoring",

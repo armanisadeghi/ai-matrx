@@ -71,8 +71,20 @@ function Score({ value }: { value: number | null }) {
   );
 }
 
-function hasAnalysis(value: Record<string, unknown> | null | undefined) {
-  return Boolean(value && Object.keys(value).length > 0);
+/** True when a non-empty analysis object landed.
+ *
+ * Takes `unknown` on purpose: the live stream supplies a typed
+ * `Record<string, unknown>`, but the persisted row supplies a `Json` column
+ * that is legitimately any JSON value. Narrowing here — rather than asserting
+ * a shape at the callsite — is what keeps an array or a scalar from reading as
+ * "Analyzed". */
+function hasAnalysis(value: unknown): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length > 0
+  );
 }
 
 function ProviderCard({

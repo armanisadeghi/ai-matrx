@@ -128,15 +128,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/local route"],
   },
-  "marketing.ai-visibility": {
-    id: "marketing.ai-visibility",
-    label: "AI Visibility",
-    owner: "marketing",
-    promise:
-      "Monitor whether AI assistants cite your brand: prompt-set tracking, share of answer, competitor mentions, and the source gaps that cause omissions.",
-    stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/ai-visibility route"],
-  },
   "marketing.content-studio": {
     id: "marketing.content-studio",
     label: "Content Studio",
@@ -181,15 +172,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "Prospect link and PR targets, run sequenced contact, and track earned placements back to the pages they point at.",
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/outreach route"],
-  },
-  "marketing.competitors": {
-    id: "marketing.competitors",
-    label: "Competitors",
-    owner: "marketing",
-    promise:
-      "Track named rivals for share of voice, keyword and content gaps, backlink velocity, and week-over-week movement.",
-    stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/competitors route"],
   },
   "marketing.monitoring": {
     id: "marketing.monitoring",
