@@ -29,3 +29,16 @@ canonical owned-page links, and row-level workflow actions. The Backlink Intelli
 competitor tab links here with the current site preselected. `AssistStrip` uses the
 `matrx-user/marketing-competitors` surface, whose runtime scope includes the selected
 site, loaded competitors and opportunities, latest persisted artifact, and active run.
+
+## Change log
+
+- 2026-08-11 — Claude: **the route this doc already claimed now exists.** `Status: live` was
+  aspirational: `CompetitorAutopsyWorkspace` had no page anywhere and `/marketing/competitors`
+  rendered `MarketingComingSoon`, so nothing here was reachable. The route now renders the
+  workspace and the `marketing.competitors` coming-soon entry + nav flag are deleted. Live
+  verification against production then found two backend defects that made every run fail after
+  paying for provider work — competitor discovery requested the `COMPETITORS` capability, which
+  makes the DataForSEO adapter demand a canonical normalizer `labs.google.competitors_domain`
+  has never had, and the persisted row wrote `discovery_source='dataforseo'` against a check
+  constraint that admits only `provider|declared|manual|backlink|serp`. Both fixed in aidream
+  (`services/seo/competitor_autopsy.py`).
