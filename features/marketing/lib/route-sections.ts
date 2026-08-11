@@ -127,6 +127,14 @@ export const MARKETING_SITE_SECTIONS = [
     letter: "Ln",
   },
   {
+    slug: "authority",
+    name: "Authority",
+    titlePrefix: "Authority Router",
+    description:
+      "Route backlink and internal authority toward strategically important pages with exact, evidence-grounded link recommendations.",
+    letter: "Ar",
+  },
+  {
     slug: "backlinks",
     name: "Backlinks",
     titlePrefix: "Backlinks",
@@ -141,6 +149,14 @@ export const MARKETING_SITE_SECTIONS = [
     description:
       "Track site interventions, implementation evidence, and measured outcomes.",
     letter: "Ch",
+  },
+  {
+    slug: "reputation",
+    name: "Reputation",
+    titlePrefix: "Digital PR & Reputation",
+    description:
+      "Review evidence-backed publication opportunities and reputation handling decisions.",
+    letter: "Pr",
   },
   {
     slug: "keywords",
@@ -171,6 +187,13 @@ export const MARKETING_SITE_SECTIONS = [
     titlePrefix: "Integrations",
     description: "Configure this site's marketing data providers.",
     letter: "In",
+  },
+  {
+    slug: "cost",
+    name: "Cost",
+    titlePrefix: "Site Cost",
+    description: "Review cost attribution for this site.",
+    letter: "Sc",
   },
   {
     slug: "access",

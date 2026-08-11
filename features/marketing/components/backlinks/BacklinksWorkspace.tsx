@@ -12,12 +12,14 @@
  */
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BrainCircuit,
   ExternalLink,
   Loader2,
+  Newspaper,
   RefreshCw,
   Save,
   Settings2,
@@ -43,6 +45,7 @@ import {
   projectDimensionRow,
 } from "@/features/marketing/components/backlinks/format";
 import { Button } from "@/components/ui/button";
+import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -265,7 +268,7 @@ function TopTenCard({
 }
 
 export function BacklinksWorkspace() {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -761,6 +764,13 @@ export function BacklinksWorkspace() {
             </div>
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            <AuthorityRouterDoor sitePath={sitePath} compact />
+            <Button asChild size="sm" variant="outline" className="gap-1.5">
+              <Link href={`${sitePath}/reputation`}>
+                <Newspaper className="h-3.5 w-3.5" />
+                Reputation
+              </Link>
+            </Button>
             <CopyButtons
               size="icon"
               label={`Backlinks page (${site.domain})`}

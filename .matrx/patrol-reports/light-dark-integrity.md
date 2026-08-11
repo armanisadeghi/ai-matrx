@@ -1,119 +1,131 @@
 # P4 Light/Dark Integrity Patrol
 
 - **Run date:** 2026-08-11 (America/Los_Angeles)
-- **Run kind:** first/full pass plus readiness completion and Tier-M tail batch
-- **Tier:** M for one exact shared-surface repair
-- **Baseline revision entering run:** `2f0b035c948a30e194f5b9695c67c02a4fa89224`
-- **Outcome:** 1 finding, 1 fixed, 0 open
+- **Run kind:** first/full-pass correction, exception-governance hardening, and
+  one rejected/fully-reverted Tier-M repair attempt
+- **Outcome:** 3 confirmed defect lines remain open; 52 proposed exception
+  files / 109 lines remain open; 0 fixed; 0 exceptions approved
+- **Readiness:** doctrine, skill, detector, and schedule are ready; product
+  mutation is paused until the approved browser/preview harness can certify the
+  open UI fixes, and the historical sweep remains reopened
 
-## Scope scanned
+## Why the earlier report was corrected
 
-No prior P4 report existed, so the run scanned every `.tsx` file, verified the
-P4 ledger, and established the first full baseline. The completed patrol skill
-now provides the approved decision tree and detector:
+The first report said 138 unpaired lines were legitimate exclusions. That was
+not acceptable: agents had inferred intent and the polished summary made an
+incomplete sweep look clean. Its detector was also property-agnostic: any
+`dark:` class on a line could hide an unrelated raw color, such as
+`text-black dark:bg-zinc-900`. The corrected detector uncovered eleven
+additional review lines across six files.
+
+Every candidate was reopened and independently reclassified. The durable
+replacement is now enforced at every level:
+
+- the system doctrine and operator template say agents propose and Arman approves;
+- all 10 patrol automations contain the Human Exception Contract;
+- fleet health alerts when a patrol prompt is missing that contract;
+- P4 has a typed approval ledger, currently empty;
+- pairing is property- and state-variant-specific;
+- every approval is an exact file/line/token-set match with exactly one source
+  annotation, and approved exceptions remain separately reported;
+- a proposal without a stable UI route cannot be approved.
+
+## Scope and baseline
+
+The correction repeated the required full scan rather than relying on git churn:
 
 ```bash
 node .claude/skills/light-dark-integrity/scripts/detect-light-dark.mjs --json
 ```
 
-- 6,938 `.tsx` files scanned.
-- 312 files / 754 lines contain `bg-white` or `text-black`.
-- 615 matching lines contain a same-line `dark:` token.
-- 139 matching lines require contextual review. The entering baseline contained
-  one defect and 138 exclusions. After repair, the same line remains visible as
-  an intentional explicit dark-surface variant, so all 139 current candidates
-  are now verified pairings/variants or registered exception classes.
+Entering scan: 6,940 `.tsx` files; 312 files / 754 matching lines; 604 lines
+with a property-specific same-line dark pair; 150 lines requiring contextual
+review.
 
-The next run compares structural novelty against this report, always includes
-new P4 ledger entries, and performs the next full pass on run 4.
+Independent line-by-line review classified those 150 lines as:
 
-## Finding and fix
+- **109 lines / 52 files:** proposed fixed-palette exceptions, all still open;
+- **38 lines:** compliant explicit/multiline branches, overridden fallbacks, comments, or
+  non-rendered/no-consumer code; these are not allowlisted;
+- **3 lines / 2 files:** real light/dark defects, still open after the attempted
+  repair batch was rejected and fully reverted.
 
-**Fixed — `components/errors/ErrorBoundaryView.tsx` shared CopyButton.** The
-button rendered on both neutral theme surfaces and a permanently dark stack
-trace, but all call sites inherited `hover:bg-white/10`. That hover disappeared
-on neutral light surfaces, while a blind semantic substitution would have
-damaged the fixed dark surface.
+Final baseline: 6,940 `.tsx` files; 312 files / 754 matching lines; 604
+property-specific pairs; 150 remaining review candidates; 0 approved
+exceptions; 0 invalid exception records. `--strict` correctly exits nonzero
+while proposals and defects remain open.
 
-The shared primitive now defaults to semantic theme chrome
-(`hover:bg-accent`, `text-muted-foreground`, `hover:text-foreground`). Its
-stack-trace call site explicitly selects the established dark-surface variant
-(`text-zinc-400`, `hover:text-white`, `hover:bg-white/10`). Clipboard behavior,
-layout, imports, responsive classes, and chunking are unchanged.
+The complete human review list, with exact source lines, URLs, UI states, and
+normal-fix effects, is in
+`.matrx/patrol-reports/light-dark-integrity-exception-review.md`.
 
-## Triage and false positives
+## Rejected and fully reverted Tier-M attempt
 
-The other 138 contextual candidates were excluded only after component and
-call-site review. The repaired line remains a visible 139th candidate because
-the detector never suppresses explicit surface variants:
+The attempted two-file batch used the skill's exact semantic substitutions:
 
-- print/export output;
-- HTML/iframe/page-preview mattes;
-- media, camera, crop, canvas, image, video, and gradient overlays;
-- fixed visual specimens, games, loaders, and immersive authored designs;
-- explicit theme props/conditionals and multiline pairs;
-- comments, fixtures, samples, and non-rendered strings;
-- deliberately verified contrast exceptions.
+1. `CandidateProfileView.tsx`: `bg-white/{20,10}` →
+   `bg-foreground/{20,10}` for two loading skeleton bars.
+2. `RoomHeader.tsx`: `active:bg-white/5 border-white/[0.06]` →
+   `active:bg-accent/50 border-border` for the mobile action-sheet row.
 
-The detector intentionally does not suppress these. It emits possible hints
-and requires review every time. The 33 file-level no-`dark:` baseline is:
+The adversarial certifier rejected the batch because it uncovered detector
+false negatives and could not complete the mandatory actual-surface browser
+proof in the isolated browser environment. The detector was repaired, but the
+UI batch was fully reverted rather than shipped “mostly.” Both defects remain
+open in `.matrx/PATROL_SIGHTINGS.md` for a session with the approved preview
+harness.
 
-```text
-app/(core)/podcast/studio/run-a/_components/AssetGallery.tsx
-app/(core)/podcast/studio/run-f/_components/AssetGallery.tsx
-app/(core)/podcast/studio/run-reimagine/[id]/_components/StageCanvas.tsx
-app/(dev)/demos/tool-viz/in-action/page.dev.tsx
-app/(public)/free/games/tic-tac-toe/page.tsx
-components/coming-soon/CominSoonTemplate.tsx
-components/loaders/MatxLoader.tsx
-components/mardown-display/blocks/flashcards/FlashcardMobileView.tsx
-components/mardown-display/blocks/images/ImageBlock.tsx
-components/mardown-display/blocks/links/LinkComponentWithFetch.tsx
-components/matrx/Tooltip.tsx
-components/official/card-and-grid/IosWidget.tsx
-components/ui/canvas-reveal-effect-impl.tsx
-features/agent-apps/components/QuickHtmlShareModal.tsx
-features/agents/components/context-items/bodies/MediaBody.tsx
-features/agents/components/context-items/bodies/WebpageBody.tsx
-features/applet/home/app-display/ModernGlass.tsx
-features/education/notes/LiveCaptureButton.tsx
-features/file-analysis/components/BboxPreview.tsx
-features/files/blocks/image/UnifiedImageBlockRenderer.tsx
-features/files/blocks/video/UnifiedVideoBlockRenderer.tsx
-features/files/components/core/FilePreview/previewers/HtmlPreview.tsx
-features/html-pages/components/HtmlInlinePreview.tsx
-features/image-studio/components/CropPreview.tsx
-features/image-studio/components/InitialCropPanel.tsx
-features/marketing/content-plan/setup/components/SetupBridgeSection.tsx
-features/pdf/scanner/components/CaptureView.tsx
-features/podcasts/components/player/PodcastAudioPlayer.tsx
-features/podcasts/components/player/PodcastEpisodePage.tsx
-features/podcasts/components/player/PodcastShowPage.tsx
-features/podcasts/generator/components/AssetCard.tsx
-features/podcasts/generator/components/ProductionTeaser.tsx
-features/war-room/components/room/RoomHeader.tsx
-```
+## Human exception review
 
-## Certification and validation
+- **Approved:** 0
+- **Pending:** 52 files / 109 lines
+- **Reviewable by production URL or existing harness:** 51
+- **Blocked:** 1 — `features/applet/home/app-display/ModernGlass.tsx` has no
+  stable/current render path and requires a Tier-C review harness before approval.
 
-- **Adversarial certifier:** CERTIFIED.
-- The certifier reran focused ESLint, detector syntax/full scan, doctrine,
-  tsconfig hygiene, skill validation, and diff checks.
-- The generic error boundary has no deterministic demo route and the approved
-  browser harness was unavailable. The certifier used the strongest
-  non-mutating alternative: verified all call sites, token definitions,
-  identical viewport geometry, and unchanged clipboard behavior.
-- `pnpm check:ui-primitives` completed with 18 pre-existing warnings, none in
+Representative production examples for Arman to inspect:
+
+- `https://aimatrx.com/free/games/tic-tac-toe` — fixed-dark authored game board;
+- `https://demos.aimatrx.com/demos/model-activity-indicators` — select MatxLoader;
+- `https://manage.aimatrx.com/administration/ui/official-components/content-editor`
+  — open an HTML preview to judge a deliberately light document matte;
+- `https://aimatrx.com/images/convert` — upload an image and enter crop mode;
+- `https://aimatrx.com/tools/scanner` — enter capture mode to judge camera chrome;
+- `https://aimatrx.com/_apps/app-builder/apps/create` — inspect yellow, amber,
+  and lime action-button labels in both themes.
+
+## Validation and certification
+
+- Detector regression suite: 4/4 pass (wrong-property and standalone-dark
+  pairing, exact-line approval, duplicate annotations, and duplicate-ledger
+  rejection).
+- Detector JSON scan: pass; 0 invalid exception records.
+- Detector strict mode: expected failure because 150 contextual candidates
+  remain and no exception has been approved.
+- Detector ESLint: pass.
+- `pnpm check:doctrine`: pass.
+- `pnpm check:ui-primitives`: completes with 18 pre-existing warnings, none in
   this batch.
-- `pnpm type-check` remains red with 78 pre-existing broker, marketing,
-  generated-schema, and missing-`vitest` errors; none involves the P4 batch.
-- `pnpm check:doctrine`, `pnpm check:migrations`, focused ESLint, detector
-  syntax/full scan, skill validation, and both repositories' diff checks pass.
+- Focused ESLint reaches only pre-existing React hook/static-component errors in
+  the two legacy files; neither changed line is implicated.
+- `pnpm type-check`: remains red on pre-existing generated-type drift and
+  missing `vitest`; no error names a changed P4 line.
+- **UI-batch adversarial certifier:** REJECTED — found property-agnostic detector
+  false negatives and insufficient one-to-one approval validation. Both were
+  repaired and locked with focused tests; required actual-surface visual proof
+  was unavailable, so the UI batch was fully reverted.
+- **Detector/process recertifier:** CERTIFIED — independently reconciled all
+  52 proposals to 109 unique detector lines and exact unpaired token sets;
+  reran the 4/4 regression suite, full scan, strict-mode failure, adversarial
+  ledger/annotation cases, and confirmed zero product-UI diff.
+- **Report-only exception review:** certification not applicable; no exception
+  was approved or changed.
 
 ## Cadence health and candidates
 
-There is only one P4 run in the preceding month, so no longer cadence is
-proposed. No repeated rejected batches exist. No unregistered product-pattern
-candidate emerged. The separate automation-failure visibility gap discovered
-during this run is now covered by the systemwide Loud Degradation Contract and
-the daily `Pattern Patrol Fleet Health` backstop.
+This is still P4's first day of runs, so a longer cadence is not proposed. No
+batch has been rejected repeatedly, mutation is not paused, and no recurring
+unregistered pattern was found. The sweep remains partial until Arman resolves
+the pending exception proposals; the automation cadence itself is unchanged.
+
+ARMAN, WE NEED YOU: approve or reject every listed P4 exception.

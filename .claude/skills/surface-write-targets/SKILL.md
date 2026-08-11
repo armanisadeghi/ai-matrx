@@ -158,3 +158,44 @@ server-side; the client tool works either way.
   offered no write tool at all, which looks exactly like a broken target.
   (Scraper's live mount is the `scraperWindow` floating panel, not
   `/scraper`.)
+- **Collisions land MID-FLIGHT, not just before you start.** The trap above
+  says check before you write and again before you commit — the second check
+  is the one that fires. `connections-skills` passed a clean STEP ZERO (no
+  branch, no `agent.review_queue` row, no `writeTargets` on main) and a
+  complete competing design was merged to main while the live-agent
+  verification was still running. When that happens the landed design wins
+  even if yours is finished and verified: revert your competing files rather
+  than reconciling them, and keep only what is genuinely additive. Budget for
+  it — a surface you scouted is not a surface you hold.
+
+### Verification-harness traps (these silently fake a PASS or a FAIL)
+
+- **Pass a real FUNCTION to `page.evaluate`, never a string.** A string like
+  `"() => {...}"` evaluates to a function object rather than being called, so
+  the poll returns nothing and you conclude "no confirm dialog appeared" while
+  five appeared and blocked the run. Cost four full agent runs on
+  `connections-skills`.
+- **Match dialog buttons on `textContent`, not `innerText`.** `innerText`
+  needs layout and comes back `""` for the portal'd radix `AlertDialog`'s
+  Apply / Keep as is buttons in headless Chromium — the text is plainly in
+  `document.body`, so the dialog looks present and unclickable at once. Same
+  for finding a list row by its label.
+- **The confirm's smallest common ancestor is the FOOTER, not the dialog.**
+  Walking up from the Apply button until you find "Keep as is" lands on the
+  button row, so your evidence log captures two button labels and none of the
+  description you are trying to prove. Take `closest('[role="alertdialog"]')`
+  for the text.
+- **`input[placeholder*="search" i]` is ambiguous on shell pages** — on
+  `/agent-connections` it matches the SIDEBAR's section filter, not the list
+  search. A dirty-editor guard test that types into the wrong box makes the
+  editor stay clean and the write get ACCEPTED, which reads exactly like a
+  broken guard. Identify a field by an EXACT value match and then assert the
+  state you meant to create (Save button enabled) before trusting the probe.
+- **`getScope()` is sampled when the user presses ▶.** A second message in the
+  same agent conversation carries the FIRST run's scope snapshot, so an agent
+  that writes and then re-reads within one thread reports its own writes as
+  missing. Start a fresh run to prove a read twin — that is the design, not a
+  stale twin, and it is worth saying so before someone "fixes" it.
+- **A 404 on a route that worked ten minutes ago is usually a corrupt `.next`**
+  after the dev server was killed mid-compile, not your code. `rm -rf .next`
+  and restart before you go looking for a bug you did not write.

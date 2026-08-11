@@ -192,4 +192,3 @@ REVOKE ALL PRIVILEGES ON TABLE web.v_page_list FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON TABLE web.v_page_list TO authenticated, service_role;
 
 COMMIT;
-

@@ -52,6 +52,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import type {
@@ -282,6 +283,84 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop — what an agent may WRITE into a Scribe Live tab.
+ *
+ * THE BAR. This surface holds exactly ONE artifact a person authors: the
+ * session's working document. Everything else it declares is identity, live
+ * connection state, or the record of what was said. So the target list is the
+ * document and nothing else, in the replace/append pair `agent-builder`
+ * established for prose that is expensive to re-send.
+ *
+ * WHAT THESE ADD, given the realtime tools that already exist. The Live tab
+ * ALREADY lets the client-side VOICE agent mutate this document
+ * (`scribe_working_doc_append` / `_append_heading`, registered in
+ * `../../transcript-studio/components/scribe/realtimeWorkingDocTools.ts`). Those
+ * run inside the xAI realtime turn loop and are reachable only by the agent the
+ * user is TALKING to. An agent launched from the header Agents popover is an
+ * ordinary turn-based run with no realtime socket: it could already READ
+ * `working_document_content` and had no way to write a word of it back. These
+ * targets close that half of the loop for that second agent population, through
+ * the same canonical thunk — and they add full REPLACEMENT, which the realtime
+ * mutators deliberately never offered.
+ *
+ * What is deliberately NOT here:
+ *   • `working_document_id`, `session_id`, `live_agent_id`,
+ *     `voice_conversation_id` — identity and lineage.
+ *   • `working_document_word_count` — derived from the body; writing it would
+ *     be asserting a fact rather than changing one.
+ *   • Everything in `connection` and `transcript`. Connection status, mic mute
+ *     and the connection error are live DEVICE and session state — muting
+ *     someone's microphone is not a copy edit, and starting or ending the
+ *     conversation is not a value. The transcript, its per-turn record, the
+ *     interruption count and the utterance values are the RECORD of what was
+ *     actually said; writing them would forge it, the same input-vs-output line
+ *     `voice-pad` drew around `transcript_entries`.
+ *
+ * NO PHASE GUARD, and that is the interesting contrast with the sibling voice
+ * surface. `matrx-user/chat-voice` REFUSES its writes while a session is live,
+ * because the voice and instructions there are consumed once, at connect. Here
+ * the opposite is true: the working document is meant to change mid-session —
+ * that IS the collaboration loop. `useWorkingDocumentDraft` merges remote edits
+ * in whenever the user is not actively typing, and the live agent re-reads the
+ * document into its instructions on the next session. A live-session guard
+ * would break the feature rather than protect it.
+ *
+ * MODE + POLICY. `entity` + `ask`: the working document has no draft/save bar
+ * of its own — only an autosaving editor — so there is no staging layer to land
+ * in and `draft` would be a lie. Both handlers persist through
+ * `updateWorkingDocumentContentThunk`, the same thunk the editor's debounced
+ * autosave and the realtime mutators already call, and the confirm dialog names
+ * the document before anything is written. Handlers in
+ * `features/transcript-studio/hooks/useScribeLiveWriteHandlers.ts`.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "working_document_content",
+    label: "Working document",
+    description:
+      "REPLACES the entire body of this session's working document with the markdown you pass. This is a full replacement, not a merge: read `working_document_content` first and include everything you want kept, or use `append_working_document` when you only mean to add. Pass plain multi-line markdown with real line breaks — do not JSON-encode it or escape the newlines. Saved immediately through the same path the document editor's autosave uses, and it appears in the editor as soon as the user is not mid-keystroke. Refused when the session has no working document yet. Prefer appending unless the user actually asked for a rewrite — this one overwrites work.",
+    valueType: "string",
+    updatesValue: "working_document_content",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "working_document",
+    sortOrder: 100,
+  },
+  {
+    name: "append_working_document",
+    label: "Added to working document",
+    description:
+      "APPENDS the markdown you pass to the end of this session's working document, separated by a blank line. Nothing already in the document is touched or re-sent — pass only the new text, headings included if you want them. This is the safe default for 'write that down', 'add a section on X', or capturing something the user just said; use `working_document_content` only when the whole document is being rewritten. Plain multi-line markdown, not JSON. Saved immediately through the document's canonical save path. Refused when the session has no working document yet.",
+    valueType: "string",
+    updatesValue: "working_document_content",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "working_document",
+    sortOrder: 110,
+  },
+];
+
 export const transcriptScribeLiveManifest: SurfaceManifest = {
   surfaceName: TRANSCRIPT_SCRIBE_LIVE_SURFACE,
   readiness: "partial",
@@ -294,6 +373,8 @@ You are on Scribe Live: the hands-free voice tab of a transcription studio sessi
 Treat working_document_content as the durable source of truth for what the user has built so far; it is the persisted studio_documents body, and it is the same text the live voice agent already has in its instructions. working_document_word_count is the cheap way to tell whether the session has barely started or is well along. Do not confuse this document with the session's recorded transcript segments — those belong to the Record tab and are not on this surface.
 The Transcript group is the SPOKEN conversation, not the recordings: transcript_text is the whole exchange as prose, last_user_utterance is the thing to act on for "do that with what I just said", and active_turn is partial and still arriving — never treat its text as final. A turn marked "interrupted" was cut off because the user spoke over the assistant, so its text is genuine but unfinished.
 Because the transcript comes from speech recognition, expect disfluencies, homophones, and missing punctuation. Interpret generously; never quote it back as if it were written text.
+
+You can also WRITE the working document — and only the working document. append_working_document adds a block to the end and is the right choice for almost everything ("write that down", "add a section on X", capturing what the user just said); working_document_content replaces the whole body and should be reserved for an actual rewrite the user asked for, because it overwrites their work. Read the document before you replace it. Both save immediately through the same path the editor's autosave uses, so the user sees the change in place — there is no staging step, which is why you are asked to confirm first. Writing while the conversation is live is expected here, not a problem. Everything else is read-only to you: the microphone and connection state are the user's device, and the spoken transcript is the record of what was said — do not try to write either.
 </surface_intro>`,
   groups,
   // Baselines: `content` carries the working document (the artifact a generic
@@ -305,6 +386,7 @@ Because the transcript comes from speech recognition, expect disfluencies, homop
     pickBaseline("content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**

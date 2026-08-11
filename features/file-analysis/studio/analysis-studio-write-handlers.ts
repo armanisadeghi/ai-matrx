@@ -67,6 +67,12 @@ export interface StudioFocusAnnotationWrite {
   annotation_id: string;
 }
 
+/** Wire value for the `annotation_redact` target. */
+export interface AnnotationRedactWrite {
+  redact: boolean;
+  annotation_id?: string;
+}
+
 export interface AnalysisStudioWriteDeps {
   /** Every annotation loaded for the open file (active + not). */
   annotations: AnnotationOut[];
@@ -81,10 +87,17 @@ export interface AnalysisStudioWriteDeps {
     annotationId: string,
     body: AnnotationUpdateBody,
   ) => Promise<AnnotationOut>;
-  /** The studio's own selection setter (canvas clicks use it too). */
-  selectAnnotation: (annotationId: string | null) => void;
-  /** The studio's own page setter (thumbnail clicks use it too). */
-  goToPage: (pageNumber: number) => void;
+  /**
+   * Select an annotation AND jump to its page in ONE commit.
+   *
+   * Deliberately one callback rather than the shell's separate
+   * `handleSelectAnnotation` + `handlePageChange`: those each rebuild the
+   * query string from the same `searchParams` snapshot, so calling both in a
+   * single tick — which is exactly what a write handler does — made the
+   * second `router.replace` start from the pre-change URL and drop the first
+   * one's param. The canvas looked right; a reload lost the selection.
+   */
+  focusAnnotation: (annotationId: string, pageNumber: number) => void;
   /** Shared across handlers: true while an annotation write is in flight. */
   writeInFlight: { current: boolean };
 }
@@ -279,8 +292,28 @@ export function buildAnalysisStudioWriteHandlers(
       // a request anyone means to make.
       requiredString(obj, "annotation_id", target);
       const annotation = resolveAnnotation(obj, deps, target);
-      deps.selectAnnotation(annotation.id);
-      deps.goToPage(annotation.page_number);
+      deps.focusAnnotation(annotation.id, annotation.page_number);
+    },
+
+    annotation_redact: async (value: unknown) => {
+      const target = "annotation_redact";
+      const obj = asRecord(value, target);
+      const annotation = resolveAnnotation(obj, deps, target);
+      const redact = obj.redact;
+      if (typeof redact !== "boolean") {
+        throw new Error(
+          `${target}: redact must be true or false. Pass true to mark the region for the redaction pass, false to clear the mark.`,
+        );
+      }
+
+      await withWriteLock(deps, target, async () => {
+        const saved = await deps.updateAnnotation(annotation.id, { redact });
+        if ((saved.redact ?? false) !== redact) {
+          throw new Error(
+            `${target}: the region is still ${saved.redact ? "marked" : "unmarked"} — the change did not land.`,
+          );
+        }
+      });
     },
   };
 }

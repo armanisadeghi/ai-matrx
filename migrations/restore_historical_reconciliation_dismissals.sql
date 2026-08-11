@@ -28,4 +28,3 @@ SET
   )
 FROM affected
 WHERE page.id = affected.id;
-

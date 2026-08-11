@@ -879,7 +879,7 @@ function TemplateEditor({
       dispatch(patchDraft({ fileId, patch: { chunkSize: null } }));
       return;
     }
-    const next = Math.max(1, n);
+    const next = Math.max(MIN_CHUNK_SIZE, n);
     const overlap = Math.max(0, Math.min(next - 1, draft.chunkOverlap));
     dispatch(
       patchDraft({
@@ -1145,15 +1145,19 @@ function TemplateEditor({
               )}
             </Field>
 
-            {/* Chunk size + overlap */}
+            {/* Chunk size + overlap. Bounds come from the SAME constants the
+                `extraction_template_draft` write handler validates an agent's
+                chunk_size against, and that the manifest interpolates into its
+                contract prose — so raising the cap can never move the agent's
+                limit while leaving the user's input stuck at the old one. */}
             <div className="grid grid-cols-2 gap-2">
               <Field label="Chunk size" required hint="Pages per call">
                 <Input
                   value={draft.chunkSize ?? ""}
                   onChange={(e) => handleChunkSizeChange(e.target.value)}
                   type="number"
-                  min={1}
-                  max={50}
+                  min={MIN_CHUNK_SIZE}
+                  max={MAX_CHUNK_SIZE}
                   placeholder="12"
                   className="h-7 text-[11px]"
                 />

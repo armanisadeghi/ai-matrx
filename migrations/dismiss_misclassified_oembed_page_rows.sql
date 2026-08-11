@@ -44,4 +44,3 @@ SET
   )
 FROM repair_candidates AS candidate
 WHERE page.id = candidate.id;
-

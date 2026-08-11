@@ -556,6 +556,23 @@ agent can be locked to one of them. \`using_clean_text\` tells you whether the t
 you got is AI-cleaned or raw OCR — expect OCR artifacts when it is false.
 Reader state (\`current_page\`, \`visible_panes\`, \`find_query\`) tells you what the
 user is actually looking at right now.
+
+You can also WRITE here, through apply_surface_write, but only into the Content
+extractors panel in the right inspector — the reusable extraction TEMPLATE the
+user composes before running an agent chunk-by-chunk over this document.
+\`extraction_template_draft\` stages its name, page range, chunk size and
+overlap; \`extraction_output_columns\` stages the Results table definition. Both
+only STAGE into the editor — the human still presses Update/Save, and then Run,
+which is the button that actually spends model budget over the whole document.
+Read \`extraction_template_editor\` FIRST: both targets are refused unless
+\`editing\` is true (the user clicked New or Edit) and refused while
+\`run_in_flight\` is true. Read \`extraction_template_draft\` /
+\`extraction_output_columns\` before writing — the draft target replaces each key
+you send, and the columns target replaces the WHOLE list. Nothing about a run is
+writable: the extracted text, the chunk counts, the run ids and the results are
+the record of what the extractor produced, and deleting run data stays the
+user's call. The way you change those is by changing the template and letting
+the user re-run it.
 </surface_intro>`,
   groups,
   writeTargets,

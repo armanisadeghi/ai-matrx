@@ -15,6 +15,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -177,11 +178,103 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the live editor buffer (2026-08-11).
+ *
+ * Same trio as `matrx-user/code-editor`, because the shape of "write code into
+ * the buffer the user is looking at" is the same: `replace_selection` is the
+ * precise one (and REFUSES when nothing is highlighted rather than guessing a
+ * range), `insert_at_cursor` adds without destroying anything, and `content`
+ * is the blunt whole-buffer rewrite kept because "rewrite this module" is a
+ * real ask. The names differ in one place: this surface's whole-buffer read
+ * value is `content`, not `current_file_content`, and the target is named
+ * after the value it updates so the evidence loop reads cleanly.
+ *
+ * TWO THINGS ARE NOT THE SAME HERE, and they change the prose rather than the
+ * design:
+ *
+ *  1. NOTHING ON THIS SURFACE PERSISTS. The window is registered
+ *     `ephemeral: true`, its files live in component state
+ *     (`useCodeEditorWindowState` in-memory mode — no `fileIds`, so no
+ *     code_files rows and no auto-save middleware), and there is no Save
+ *     control anywhere in the UI. So `mode: "draft"` is right — the write is
+ *     staged, never persisted — but the usual draft sentence ("the user still
+ *     saves") would be a lie in the other direction: there is nothing to save
+ *     TO. The descriptions say what is actually true — the code lands in a
+ *     scratch buffer the user reads, copies, or hands back to their IDE, and
+ *     a reload discards it. The seam's `draft` confirm line ("nothing is saved
+ *     until you save") stays literally true here — nothing IS saved — but it
+ *     implies a Save this surface does not have, so the descriptions do not
+ *     lean on it. `entity` was rejected outright: "This is saved immediately"
+ *     would be flatly false (the `mermaid-editor` / `podcast-run`
+ *     mode-as-truth-claim test, run in the opposite direction). `ui` was
+ *     rejected too — it is the one branch that appends nothing, but calling a
+ *     whole code buffer "ephemeral view state" understates the write and
+ *     invites a later reader to relax it to `applyPolicy: "auto"`.
+ *  2. THE UNDO STACK IS NOT FREE HERE. This editor is uncontrolled: React
+ *     state flows back down as `initialCode`, and `SmallCodeEditorImpl`'s sync
+ *     effect applies an out-of-band change with `model.setValue()`, which
+ *     discards undo history. So the handlers do NOT write through React state
+ *     — they edit the Monaco model directly with `pushEditOperations` between
+ *     undo stops, which fires the change event that feeds the SAME
+ *     `handleContentChange` the user's typing feeds. State converges, the
+ *     `setValue` branch never trips (the model already holds the new text),
+ *     and ⌘Z reverses an agent edit exactly like it reverses a paste.
+ *
+ * Deliberately NOT a target: `editor_title`. It reads like an easy fourth, but
+ * the title is an opener-supplied prop the window shell renders — there is no
+ * canonical write path for it and no user gesture that renames this window, so
+ * a handler would have to invent state nobody else writes. Also undeclared:
+ * diagnostics and the git/workspace values (a report of where the code came
+ * from, not an input), the multi-file lifecycle (create / rename / delete /
+ * close a file), and anything that hands the code back to the opener. The
+ * safety story is that an agent edit is a buffer edit — visible, undoable, and
+ * discarded on reload unless the human does something with it.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "replace_selection",
+    label: "Selected code",
+    description:
+      "REPLACES the code the user has highlighted in the editor with the code you pass — nothing outside the selection is touched. Prefer this whenever the user is asking about code they have selected. Pass a plain text string of raw code only: no markdown fences, no commentary, no JSON, indented to match where it lands. REFUSED when nothing is selected — ask the user to highlight the code rather than guessing a range. Applied as one undoable edit into the live buffer.",
+    valueType: "string",
+    updatesValue: "selection",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "editor_state",
+    sortOrder: 100,
+  },
+  {
+    name: "insert_at_cursor",
+    label: "Inserted code",
+    description:
+      "INSERTS the code you pass at the cursor, or immediately AFTER the selection when the user has one — nothing existing is removed or resent. Use this to add a function, a test, or an import instead of rewriting what is already there. Pass a plain text string of raw code only, with no markdown fences; include your own leading or trailing newlines when the insertion needs its own line. Applied as one undoable edit into the live buffer.",
+    valueType: "string",
+    updatesValue: "content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "editor_state",
+    sortOrder: 110,
+  },
+  {
+    name: "content",
+    label: "Primary content",
+    description:
+      "REPLACES THE ENTIRE ACTIVE BUFFER with the string you pass. This is a full replacement, not a merge: read `content` first and include every line that should survive, or use `replace_selection` / `insert_at_cursor` when you only mean to change part of it. Pass a plain text string of raw code only, with no markdown fences. Must be non-empty — emptying the buffer is a human action. Applied as ONE undoable edit, so the user can reverse it with undo. This editor is a scratch buffer: the code stays in the window until the user copies it out or hands it back to their IDE, and a reload discards it.",
+    valueType: "string",
+    updatesValue: "content",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "editor_state",
+    sortOrder: 120,
+  },
+];
+
 export const smartCodeEditorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/smart-code-editor",
-  readiness: "stub",
+  readiness: "verified",
   readinessNote:
-    "Values authored from a code audit of SmartCodeEditorWindow props; no runtime emitter yet — nothing emits this scope.",
+    "Scope + write targets emitted live by the `SurfaceRuntimeProvider` in `SmartCodeEditor` (the shared core behind both the floating window and `SmartCodeEditorModal`). Content and selection are read from the Monaco model at trigger time. The older standalone `MultiFileSmartCodeEditorWindow` is a separate component and does not mount this surface.",
   overlayId: "smartCodeEditorWindow",
   label: "Smart Code Editor",
   intro: `<surface_intro>
@@ -192,6 +285,7 @@ You are on the Smart Code Editor — a floating agentic code editor. content is 
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 export function createSmartCodeEditorScope(values: {

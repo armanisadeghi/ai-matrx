@@ -189,7 +189,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_page_annotations",
     label: "Annotations on current page",
     description:
-      "Active annotations on the page in view as `{ id, label, label_category, extracted_text }`, in load order. Empty array when the current page is unannotated.",
+      "Active annotations on the page in view as `{ id, label, label_category, extracted_text, redact }`, in load order. `redact` is true when the region is already flagged for the user's redaction pass. Empty array when the current page is unannotated.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 600,
@@ -200,7 +200,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "annotations",
     label: "All annotations",
     description:
-      "Every active annotation on the document as `{ id, page_number, label, label_category, extracted_text }`. Can be large on a heavily marked-up document — bindable only, kept out of automatic context.",
+      "Every active annotation on the document as `{ id, page_number, label, label_category, extracted_text, redact }`. `redact` is true when the region is already flagged for the user's redaction pass — read it before marking, so a sweep does not re-mark what is already done. Can be large on a heavily marked-up document — bindable only, kept out of automatic context.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 6000,
@@ -315,8 +315,6 @@ const surfaceSpecific: SurfaceValue[] = [
  *    pointer gesture against a rendered document. An agent cannot see the
  *    page; a "corrected" bbox would be a guess that silently re-points the
  *    region at different text.
- *  - `redact` — marking a region for redaction is a disclosure decision, not
- *    a copy edit. It stays on the human's context menu.
  *  - delete / `status` — destructive, and the panel already asks.
  *  - annotation ids, `file_id`, page identity — identity, never authored.
  *  - `document_summary` — derived output (`{file_id, filename, mime_type,
@@ -334,6 +332,34 @@ const surfaceSpecific: SurfaceValue[] = [
  *    rectangle, on page 7" is otherwise unsayable: it does exactly what the
  *    user's own click on an Annotations-panel row does (select + jump to the
  *    annotation's page) and persists nothing.
+ *
+ * ── `annotation_redact` REVERSES a documented exclusion — a human should
+ *    confirm which reading wins (registered in `agent.review_queue`).
+ *
+ * The first version of this block ruled `redact` out on the grounds that
+ * "marking a region for redaction is a disclosure decision, not a copy edit."
+ * That is a real argument and it is recorded here rather than quietly
+ * deleted. The case for declaring it anyway:
+ *
+ *  - **Marking is not redacting.** `redact: true` writes a FLAG. Nothing is
+ *    removed from the document, nothing is disclosed or un-disclosed; the
+ *    user still runs the redaction pass from the Redact tab, and that pass
+ *    is what changes the PDF. The disclosure decision stays exactly where it
+ *    was — this target only proposes what the pass should cover.
+ *  - **It is the same gesture as the two content targets.** All three go
+ *    through `useAnnotations().update`; the redaction mark is literally the
+ *    region context menu's own "Mark for redaction" item, which is no more
+ *    privileged than the "Extract text here" item that writes
+ *    `extracted_text`. Declaring one and not the other is hard to defend on
+ *    the write path alone.
+ *  - **The sweep is the point.** "Go through this contract and mark every
+ *    SSN, account number and date of birth" is the single highest-value
+ *    agent action on a PII document, and it is unreachable one right-click
+ *    at a time. Each call still raises its own ask dialog.
+ *
+ * If the original reading wins, delete this target and its handler — the
+ * emitter's `redact` read twin is worth keeping either way, since an agent
+ * that can SEE what is already marked stops proposing duplicates.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
@@ -371,6 +397,18 @@ const writeTargets: SurfaceWriteTarget[] = [
     applyPolicy: "ask",
     group: "studio_view",
     sortOrder: 250,
+  },
+  {
+    name: "annotation_redact",
+    label: "Annotation redaction mark",
+    description:
+      'Mark or unmark ONE existing annotation for redaction — the region named by `annotation_id`, or the selected one when you omit it. Value: `{ redact: boolean, annotation_id?: string }`; true marks it, false clears the mark. This is the region context menu\'s own "Mark for redaction" toggle. It does NOT redact the document — it flags the region so the user\'s redaction pass (the Redact tab) covers it; the user still runs that pass. Read `redact` on the `annotations` value first so a sweep does not re-mark what is already marked. Saved immediately through the same annotation update the context menu uses — there is no draft to save afterwards. Rejected when `redact` is not a boolean, when nothing is selected and you passed no id, when the id is not an active annotation on this document, or while another annotation write is still in flight.',
+    valueType: "object",
+    updatesValue: "annotations",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "studio_annotations",
+    sortOrder: 320,
   },
 ];
 
@@ -471,6 +509,7 @@ export function createAnalysisStudioScope(values: {
     label: string;
     label_category: string;
     extracted_text: string;
+    redact: boolean;
   }>;
   annotations: Array<{
     id: string;
@@ -478,6 +517,7 @@ export function createAnalysisStudioScope(values: {
     label: string;
     label_category: string;
     extracted_text: string;
+    redact: boolean;
   }>;
   annotation_categories: Record<string, number>;
   // alwaysAvailable: false → optional

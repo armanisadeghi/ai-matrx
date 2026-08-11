@@ -69,6 +69,15 @@ import { toast } from "@/components/ui/use-toast";
 import TableReferenceModal from "./TableReferenceModal";
 import ColumnHeaderMenu from "./ColumnHeaderMenu";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  buildDataTablesScope,
+  type DataTableScopeInput,
+} from "@/features/data-tables/agent-context/buildDataTablesScope";
+import {
+  useDataTableWriteHandlers,
+  type DataTableWriteLiveState,
+} from "@/features/data-tables/hooks/useDataTableWriteHandlers";
 
 interface TableDataRow {
   id: string;
@@ -200,7 +209,23 @@ interface UserTableViewerProps {
    * header already owns is exactly the duplication the header rules forbid.
    */
   onTablesChange?: (tables: UserTable[]) => void;
+  /**
+   * Mount the `matrx-user/data-tables` surface runtime (live agent scope + the
+   * `table_description` / `cell_value` write targets) around this viewer.
+   *
+   * OPT-IN ON PURPOSE, and it must stay that way. This component is also
+   * rendered inside overlays that belong to OTHER surfaces — `DatasetOverlay`
+   * (tool-call visualisation), `ViewTableModal` (markdown display) and the
+   * `UserTableWindow` panel — and the surface registry resolves deepest-first
+   * while `listLiveWriteTargets()` walks the whole mounted stack. An
+   * unconditional provider here would therefore shadow the host page's surface
+   * AND offer this surface's write targets on someone else's page. Only the
+   * `/data/[id]` route (`DataTableDetailClient`) turns it on.
+   */
+  emitSurfaceScope?: boolean;
 }
+
+const DATA_TABLES_SURFACE_NAME = "matrx-user/data-tables" as const;
 
 const UserTableViewer = ({
   tableId,
@@ -210,6 +235,7 @@ const UserTableViewer = ({
   toolbarTrailing,
   onTableInfoChange,
   onTablesChange,
+  emitSurfaceScope = false,
 }: UserTableViewerProps) => {
   const router = useRouter();
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
@@ -1395,6 +1421,60 @@ const UserTableViewer = ({
     }
   };
 
+  // ─── Surface runtime (matrx-user/data-tables) ─────────────────────────────
+  //
+  // Both refs are reassigned by the grid root's callback ref during commit
+  // (below, once displayRows is known). That matters for the write handlers:
+  // `applySurfaceWrite` resolves the handler closure BEFORE the user answers
+  // the confirm dialog, so anything a handler reads off its render closure can
+  // be stale by the time Apply is pressed — on a grid, that is the difference
+  // between validating against the rows the user is looking at now and the
+  // rows they were looking at a page ago. Reading through a
+  // commit-synchronously advanced ref is what makes `cell_value`'s coordinate
+  // check trustworthy without mutating refs during render.
+  const surfaceScopeRef = React.useRef<DataTableScopeInput | null>(null);
+  const surfaceWriteRef = React.useRef<DataTableWriteLiveState | null>(null);
+
+  const surfaceWriteHandlers = useDataTableWriteHandlers(surfaceWriteRef, {
+    onDescriptionSaved: (description) => {
+      // Same shape the metadata modals produce, so the header label and the
+      // read twin (`table_description`) refresh without refetching the table.
+      setTableInfo((prev) => (prev ? { ...prev, description } : prev));
+    },
+    onCellSaved: () => {
+      setAllSortedData(null);
+      setFullDatasetCache(null);
+      void loadTableData(
+        currentPage,
+        limit,
+        sortField,
+        sortDirection,
+        searchTerm,
+      );
+    },
+  });
+
+  const getSurfaceScope = React.useCallback(
+    () =>
+      buildDataTablesScope(
+        surfaceScopeRef.current ?? {
+          // Pre-first-paint of the grid: identity only. Every other value is
+          // genuinely absent, and the manifest promises "empty when …" rather
+          // than a fabricated shape.
+          tableId,
+          isReadOnly: null,
+          fields: [],
+          visibleRows: [],
+          totalCount: 0,
+          searchTerm: "",
+          fullDataset: null,
+          openCell: null,
+          openRow: null,
+        },
+      ),
+    [tableId],
+  );
+
   if (loading && !tableInfo)
     return (
       <div className="space-y-4 p-2">
@@ -1468,12 +1548,62 @@ const UserTableViewer = ({
     hasColumnFilters && loadingFullDataset && !fullDatasetCache;
   const showLoadingRow = loading || filteringInProgress;
 
-  return (
+  // ─── Publish live surface state (synchronous, every render) ───────────────
+  //
+  // `displayRows` — not `data` — is what the user can actually see once column
+  // filters are on, and it is therefore the blast-radius bound `cell_value`
+  // validates against: an agent may only write a cell that is on screen.
+  //
+  // Permission is deliberately null (= "unknown, refuse") until BOTH the table
+  // row and the signed-in user have loaded, because `isReadOnly` computes to
+  // false in that gap and false means "writable". The same applies while the
+  // shared-editor grant is still in flight: a shared editor briefly reads as
+  // read-only, which refuses a write it could have allowed. Refusing early is
+  // the safe direction; allowing early is not.
+  const surfacePermissionKnown = tableInfo !== null && currentUserId !== null;
+  const surfaceOpenCell =
+    showTextModal && expandedRowId && expandedFieldKey
+      ? {
+          rowId: expandedRowId,
+          fieldName: expandedFieldKey,
+          value: expandedText ?? "",
+        }
+      : null;
+
+  const surfaceWriteSnapshot: DataTableWriteLiveState = {
+    tableId,
+    isReadOnly: surfacePermissionKnown ? isReadOnly : null,
+    fields,
+    visibleRows: displayRows,
+  };
+  const surfaceScopeSnapshot: DataTableScopeInput = {
+    tableId,
+    tableName: tableInfo?.table_name,
+    tableDescription: tableInfo?.description,
+    isReadOnly: surfacePermissionKnown ? isReadOnly : null,
+    fields,
+    visibleRows: displayRows,
+    totalCount: effectiveTotalCount,
+    searchTerm,
+    fullDataset: fullDatasetCache,
+    openCell: surfaceOpenCell,
+    openRow:
+      showEditModal && selectedRowId
+        ? { rowId: selectedRowId, data: selectedRowData }
+        : null,
+  };
+
+  const body = (
     // fillHeight: a three-band column (chrome / grid / pagination) where only
     // the grid scrolls, so the table uses every pixel the route gives it and
     // the pagination bar sits on the bottom edge instead of floating in the
     // middle above dead space.
     <div
+      ref={(node) => {
+        if (!node) return;
+        surfaceWriteRef.current = surfaceWriteSnapshot;
+        surfaceScopeRef.current = surfaceScopeSnapshot;
+      }}
       className={
         fillHeight
           ? "flex h-full min-h-0 flex-col gap-2 p-2"
@@ -2159,6 +2289,23 @@ const UserTableViewer = ({
         />
       </MatrxDynamicPanelHost>
     </div>
+  );
+
+  // Only the `/data/[id]` route opts in (see `emitSurfaceScope`). The loading
+  // and "no table found" early returns above deliberately mount no provider:
+  // there is genuinely nothing to emit yet, and a surface that promises values
+  // it does not have is the read lie this wiring exists to remove.
+  if (!emitSurfaceScope) return body;
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={DATA_TABLES_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={!isReadOnly}
+      getWriteHandlers={() => surfaceWriteHandlers}
+    >
+      {body}
+    </SurfaceRuntimeProvider>
   );
 };
 

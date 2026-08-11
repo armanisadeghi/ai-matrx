@@ -12317,126 +12317,6 @@
         }
       }
     },
-    "/content-plan/nodes/{node_id}/draft-brief": {
-      "post": {
-        "tags": [
-          "Content Plan",
-          "Content Plan"
-        ],
-        "summary": "Draft Brief",
-        "description": "Draft ONE page's brief against its neighbours.\n\nThe result is written to `plan.node.metadata.ai_brief_draft` the instant it\narrives — a disconnect, a refresh, or a user who never presses Save loses\nnothing. Client CRUD still reads the node straight from Supabase.",
-        "operationId": "draft_brief_content_plan_nodes__node_id__draft_brief_post",
-        "parameters": [
-          {
-            "name": "node_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Node Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/DraftBriefBody"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Body"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/content-plan/nodes/{node_id}/accept-brief-draft": {
-      "post": {
-        "tags": [
-          "Content Plan",
-          "Content Plan"
-        ],
-        "summary": "Accept Brief",
-        "description": "Promote the node's persisted AI draft onto its live `brief`.",
-        "operationId": "accept_brief_content_plan_nodes__node_id__accept_brief_draft_post",
-        "parameters": [
-          {
-            "name": "node_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Node Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/ScopedBody"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Body"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AcceptBriefResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/content-plan/sites/{site_id}/reconcile": {
       "post": {
         "tags": [
@@ -46173,27 +46053,6 @@
   },
   "components": {
     "schemas": {
-      "AcceptBriefResult": {
-        "properties": {
-          "node_id": {
-            "type": "string",
-            "title": "Node Id"
-          },
-          "brief": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Brief"
-          }
-        },
-        "type": "object",
-        "required": [
-          "node_id",
-          "brief"
-        ],
-        "title": "AcceptBriefResult"
-      },
       "ActionApplyResult": {
         "properties": {
           "type": {
@@ -46906,15 +46765,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -47115,32 +46974,32 @@
           },
           "max_attempts": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Max Attempts",
             "description": "Maximum execution attempts allowed for each item.",
             "default": 3
           },
           "lease_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 30.0,
+            "maximum": 86400,
+            "minimum": 30,
             "title": "Lease Seconds",
             "description": "Seconds an item claim remains valid without renewal.",
             "default": 900
           },
           "max_concurrency": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Concurrency",
             "description": "Maximum assignment items executed concurrently by this run.",
             "default": 5
           },
           "retry_delay_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 0.0,
+            "maximum": 86400,
+            "minimum": 0,
             "title": "Retry Delay Seconds",
             "description": "Delay before a retryable item becomes claimable again.",
             "default": 0
@@ -48377,16 +48236,16 @@
           },
           "max_iterations": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Iterations",
             "description": "Maximum agent reasoning/tool-loop iterations.",
             "default": 100
           },
           "max_retries_per_iteration": {
             "type": "integer",
-            "maximum": 10.0,
-            "minimum": 0.0,
+            "maximum": 10,
+            "minimum": 0,
             "title": "Max Retries Per Iteration",
             "description": "Maximum provider retries allowed within one agent iteration.",
             "default": 2
@@ -48502,15 +48361,15 @@
           },
           "max_runtime_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 1.0,
+            "maximum": 86400,
+            "minimum": 1,
             "title": "Max Runtime Seconds",
             "default": 600
           },
           "max_concurrent": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Concurrent",
             "default": 1
           }
@@ -49053,8 +48912,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           },
@@ -49085,8 +48944,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -50145,8 +50004,8 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Window Days",
             "default": 28
           },
@@ -50320,7 +50179,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -50698,7 +50557,7 @@
         "properties": {
           "input_tokens": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Input Tokens"
           }
         },
@@ -51648,7 +51507,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "description": "Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.",
             "default": 262144
@@ -52269,37 +52128,37 @@
           },
           "total_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Total Items",
             "description": "Total materialized items in the session."
           },
           "pending_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Pending Items",
             "description": "Items still waiting to be claimed."
           },
           "running_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Running Items",
             "description": "Items currently leased or executing."
           },
           "completed_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Completed Items",
             "description": "Items that completed successfully."
           },
           "failed_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failed Items",
             "description": "Items that reached terminal failure."
           },
           "cancelled_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Cancelled Items",
             "description": "Items cancelled without execution completion."
           },
@@ -52359,8 +52218,8 @@
         "properties": {
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -53078,7 +52937,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -53098,7 +52957,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -53152,8 +53011,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 25
           },
@@ -53353,8 +53212,8 @@
           },
           "detail_limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Detail Limit",
             "default": 1000
           },
@@ -53387,8 +53246,8 @@
           },
           "enrichment_limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Enrichment Limit",
             "default": 25
           }
@@ -53903,22 +53762,22 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Window Days",
             "default": 28
           },
           "max_query_fanout": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Max Query Fanout",
             "default": 50
           },
           "max_calls": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Calls",
             "default": 100
           },
@@ -54008,8 +53867,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Level",
             "default": 3
           },
@@ -54026,7 +53885,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -54051,7 +53910,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -54244,8 +54103,8 @@
           },
           "signed_url_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Url Ttl",
             "default": 3600
           },
@@ -54726,7 +54585,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -55496,8 +55355,8 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "maximum": 30000.0,
-            "minimum": 1000.0,
+            "maximum": 30000,
+            "minimum": 1000,
             "title": "Timeout Ms",
             "default": 25000
           },
@@ -55583,8 +55442,8 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "maximum": 30000.0,
-            "minimum": 1000.0,
+            "maximum": 30000,
+            "minimum": 1000,
             "title": "Timeout Ms",
             "default": 25000
           },
@@ -57119,8 +56978,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100000.0,
-                "minimum": 1.0
+                "maximum": 100000,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -60339,8 +60198,8 @@
           },
           "max_turns": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Turns",
             "default": 20
           },
@@ -60348,8 +60207,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1000.0,
-                "exclusiveMinimum": 0.0
+                "maximum": 1000,
+                "exclusiveMinimum": 0
               },
               {
                 "type": "null"
@@ -62479,8 +62338,8 @@
           },
           "writer_lease_seconds": {
             "type": "integer",
-            "maximum": 3600.0,
-            "minimum": 30.0,
+            "maximum": 3600,
+            "minimum": 30,
             "title": "Writer Lease Seconds",
             "default": 300
           },
@@ -62488,7 +62347,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -62498,8 +62357,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 250
           },
@@ -63333,8 +63192,8 @@
           },
           "variant_count": {
             "type": "integer",
-            "maximum": 8.0,
-            "minimum": 2.0,
+            "maximum": 8,
+            "minimum": 2,
             "title": "Variant Count",
             "default": 5
           }
@@ -65057,7 +64916,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -65208,7 +65067,7 @@
           "estimated_cost_usd": {
             "type": "number",
             "title": "Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -65626,8 +65485,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -68676,15 +68535,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -68762,8 +68621,8 @@
           },
           "ttl_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 60.0,
+            "maximum": 86400,
+            "minimum": 60,
             "title": "Ttl Seconds",
             "description": "JWT expiry. Default 2h, min 60s, max 24h.",
             "default": 7200
@@ -68945,15 +68804,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -69667,8 +69526,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Limit",
             "default": 2000
           }
@@ -70358,62 +70217,12 @@
         ],
         "title": "DomainUpsertRequest"
       },
-      "DraftBriefBody": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id"
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id"
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id"
-          },
-          "guidance": {
-            "type": "string",
-            "title": "Guidance",
-            "default": ""
-          },
-          "accept": {
-            "type": "boolean",
-            "title": "Accept",
-            "default": false
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "DraftBriefBody"
-      },
       "DrainRequest": {
         "properties": {
           "limit": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -70824,8 +70633,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Count",
             "default": 1
           }
@@ -71210,15 +71019,15 @@
           },
           "review_every_n": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Review Every N",
             "default": 10
           },
           "max_examples_per_review": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Examples Per Review",
             "default": 25
           },
@@ -71303,8 +71112,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500.0,
-                "minimum": 1.0
+                "maximum": 500,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -71316,8 +71125,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100.0,
-                "minimum": 1.0
+                "maximum": 100,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -72409,8 +72218,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 3
           },
@@ -73187,7 +72996,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -75394,7 +75203,7 @@
           },
           "attempt_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Attempt Count",
             "default": 0
           },
@@ -75432,7 +75241,7 @@
           },
           "chunk_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Chunk Count",
             "default": 0
           },
@@ -76107,8 +75916,8 @@
           },
           "max_hits_per_page": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Hits Per Page",
             "default": 5
           }
@@ -76342,15 +76151,15 @@
         "properties": {
           "x": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "X",
             "description": "0=left, 1=right"
           },
           "y": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Y",
             "description": "0=top, 1=bottom"
           }
@@ -76932,8 +76741,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -77118,8 +76927,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 4.0,
-            "minimum": 1.0,
+            "maximum": 4,
+            "minimum": 1,
             "title": "Count",
             "description": "Number of images to generate.",
             "default": 1
@@ -77182,8 +76991,8 @@
           },
           "max_nodes": {
             "type": "integer",
-            "maximum": 150.0,
-            "minimum": 10.0,
+            "maximum": 150,
+            "minimum": 10,
             "title": "Max Nodes",
             "default": 40
           },
@@ -77861,8 +77670,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90.0,
-                "minimum": 1.0
+                "maximum": 90,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -78283,8 +78092,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Quality",
             "description": "Encoder quality from 1 to 100 for lossy output formats.",
             "default": 90
@@ -78944,8 +78753,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Count",
             "description": "Number of random assignments to materialize."
           },
@@ -79130,8 +78939,8 @@
           },
           "chunk_words": {
             "type": "integer",
-            "maximum": 8000.0,
-            "minimum": 500.0,
+            "maximum": 8000,
+            "minimum": 500,
             "title": "Chunk Words",
             "description": "Words per extraction chunk.",
             "default": 2500
@@ -81030,8 +80839,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 200
           }
@@ -83109,8 +82918,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
@@ -84336,8 +84145,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           }
@@ -85202,7 +85011,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -85213,8 +85022,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -85779,7 +85588,7 @@
           "cost": {
             "type": "number",
             "title": "Cost",
-            "default": 0.0
+            "default": 0
           },
           "input_tokens": {
             "type": "integer",
@@ -86307,29 +86116,29 @@
         "properties": {
           "chunk_count": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Chunk Count",
             "default": 10
           },
           "chunk_delay_ms": {
             "type": "integer",
-            "maximum": 60000.0,
-            "minimum": 0.0,
+            "maximum": 60000,
+            "minimum": 0,
             "title": "Chunk Delay Ms",
             "default": 200
           },
           "heartbeat_interval_ms": {
             "type": "integer",
-            "maximum": 60000.0,
-            "minimum": 1000.0,
+            "maximum": 60000,
+            "minimum": 1000,
             "title": "Heartbeat Interval Ms",
             "default": 10000
           },
           "max_lifetime_ms": {
             "type": "integer",
-            "maximum": 600000.0,
-            "minimum": 1000.0,
+            "maximum": 600000,
+            "minimum": 1000,
             "title": "Max Lifetime Ms",
             "default": 120000
           },
@@ -89292,16 +89101,16 @@
           },
           "fill_opacity": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Fill Opacity",
             "default": 0.18
           },
           "stroke_width": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Stroke Width",
-            "default": 2.0
+            "default": 2
           },
           "label": {
             "anyOf": [
@@ -89316,9 +89125,9 @@
           },
           "font_size": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Font Size",
-            "default": 10.0
+            "default": 10
           }
         },
         "type": "object",
@@ -90784,7 +90593,7 @@
           },
           "use_ocr_threshold": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Use Ocr Threshold",
             "default": 100
           }
@@ -90889,12 +90698,12 @@
         "properties": {
           "output_page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Output Page"
           },
           "source_page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Source Page"
           }
         },
@@ -90909,12 +90718,12 @@
         "properties": {
           "start": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Start"
           },
           "end": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "End"
           }
         },
@@ -90957,8 +90766,8 @@
           },
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -90990,14 +90799,14 @@
           },
           "source_page_count": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Source Page Count"
           },
           "source_size_bytes": {
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -91007,7 +90816,7 @@
           },
           "source_bytes_fetched": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Source Bytes Fetched",
             "default": 0
           },
@@ -93022,8 +92831,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20.0,
-                "minimum": 1.0
+                "maximum": 20,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -93115,7 +92924,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -93128,7 +92937,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -93585,8 +93394,8 @@
           },
           "n": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "N",
             "default": 5
           }
@@ -93665,12 +93474,12 @@
           },
           "width": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Width"
           },
           "height": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Height"
           },
           "format": {
@@ -93686,8 +93495,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Quality",
             "description": "Ignored for png",
             "default": 85
@@ -93918,7 +93727,7 @@
           "heartbeat_interval_s": {
             "type": "number",
             "title": "Heartbeat Interval S",
-            "default": 15.0
+            "default": 15
           },
           "debug": {
             "type": "boolean",
@@ -94769,8 +94578,8 @@
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence_refs": {
@@ -95056,8 +94865,8 @@
         "properties": {
           "overall_confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Overall Confidence"
           },
           "accepted_cases": {
@@ -95183,8 +94992,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -95536,8 +95345,8 @@
           },
           "cadence_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Cadence Days",
             "default": 7
           },
@@ -95733,8 +95542,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90.0,
-                "minimum": 1.0
+                "maximum": 90,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -96307,8 +96116,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence"
           },
           "run_id": {
@@ -96648,15 +96457,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           },
@@ -96676,7 +96485,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "x0": {
@@ -96739,7 +96548,7 @@
           },
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -96929,7 +96738,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -97490,8 +97299,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 300.0,
-            "minimum": 8.0,
+            "maximum": 300,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -97509,8 +97318,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -97580,14 +97389,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "dpi": {
             "type": "integer",
-            "maximum": 600.0,
-            "minimum": 8.0,
+            "maximum": 600,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -97605,8 +97414,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -97658,8 +97467,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 400.0,
-            "minimum": 36.0,
+            "maximum": 400,
+            "minimum": 36,
             "title": "Dpi",
             "default": 144
           },
@@ -97769,14 +97578,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "max_side": {
             "type": "integer",
-            "maximum": 2048.0,
-            "minimum": 16.0,
+            "maximum": 2048,
+            "minimum": 16,
             "title": "Max Side",
             "default": 256
           },
@@ -97793,8 +97602,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 80
           }
@@ -98089,8 +97898,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 2000.0,
-            "minimum": 1.0,
+            "maximum": 2000,
+            "minimum": 1,
             "title": "Limit",
             "default": 100
           },
@@ -98510,32 +98319,32 @@
           },
           "priority": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Priority"
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Evidence Quality"
           },
           "risk_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Risk Score"
           },
           "opportunity_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Opportunity Score"
           },
           "recommended_action": {
@@ -98791,8 +98600,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -99024,8 +98833,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Limit",
             "default": 2000
           }
@@ -99354,8 +99163,8 @@
           },
           "max_chars": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Max Chars",
             "default": 5000
           }
@@ -99826,8 +99635,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -99946,7 +99755,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -99957,8 +99766,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -100579,7 +100388,7 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "total_input_tokens": {
             "type": "integer",
@@ -100823,8 +100632,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50.0,
-                "minimum": 1.0
+                "maximum": 50,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -100836,8 +100645,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20.0,
-                "minimum": 1.0
+                "maximum": 20,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -101595,8 +101404,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -101604,8 +101413,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 256.0,
-                "minimum": 1.0
+                "maximum": 256,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -101654,7 +101463,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800.0
+            "default": 1800
           }
         },
         "type": "object",
@@ -101729,7 +101538,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800.0
+            "default": 1800
           },
           "idempotency_key": {
             "anyOf": [
@@ -102515,47 +102324,6 @@
         "title": "ScopeContext",
         "description": "Snapshot of who is asking and at what scope."
       },
-      "ScopedBody": {
-        "properties": {
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id"
-          },
-          "project_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Id"
-          },
-          "task_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Task Id"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "ScopedBody",
-        "description": "Base for every body on this router.\n\nThe FE's `callApi` injects the ambient scope (organization_id / project_id /\ntask_id) into EVERY request body. A bare `extra=\"forbid\"` model therefore\n422s the moment the user has an active org selected — these fields must be\nACCEPTED and ignored (scope here comes from the path + the request's user\ncontext, never the body). `extra=\"forbid\"` stays, so real typos still fail\nloudly."
-      },
       "ScoreSourcesRequest": {
         "properties": {
           "source_ids": {
@@ -102773,8 +102541,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -102789,8 +102557,8 @@
           },
           "max_page_read": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Max Page Read",
             "default": 10
           },
@@ -102870,8 +102638,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -102889,8 +102657,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 30.0,
-            "minimum": 10.0,
+            "maximum": 30,
+            "minimum": 10,
             "title": "Total Results Per Keyword",
             "default": 10
           },
@@ -102979,8 +102747,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Total Results Per Keyword",
             "default": 5
           },
@@ -104272,8 +104040,8 @@
           },
           "event_spacing_ms": {
             "type": "integer",
-            "maximum": 5000.0,
-            "minimum": 0.0,
+            "maximum": 5000,
+            "minimum": 0,
             "title": "Event Spacing Ms",
             "description": "Milliseconds to wait between simulated events.",
             "default": 250
@@ -105627,7 +105395,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -105638,8 +105406,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -106485,7 +106253,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -106493,10 +106261,10 @@
           },
           "expand_pad_pt": {
             "type": "number",
-            "maximum": 20.0,
-            "minimum": 0.0,
+            "maximum": 20,
+            "minimum": 0,
             "title": "Expand Pad Pt",
-            "default": 1.0
+            "default": 1
           }
         },
         "type": "object",
@@ -107838,7 +107606,7 @@
           "confidence": {
             "type": "number",
             "title": "Confidence",
-            "default": 0.0
+            "default": 0
           },
           "reason": {
             "type": "string",
@@ -108008,15 +107776,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -111517,8 +111285,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -111586,7 +111354,7 @@
           "total_estimated_cost_usd": {
             "type": "number",
             "title": "Total Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "page_analyses": {
             "$ref": "#/components/schemas/CostBreakdownItem"
@@ -115151,8 +114919,8 @@
           },
           "next_n": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Next N",
             "default": 5
           }
@@ -117548,18 +117316,18 @@
           "x": {
             "type": "number",
             "title": "X",
-            "default": 0.0
+            "default": 0
           },
           "y": {
             "type": "number",
             "title": "Y",
-            "default": 0.0
+            "default": 0
           },
           "zoom": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Zoom",
-            "default": 1.0
+            "default": 1
           }
         },
         "type": "object",
@@ -119196,12 +118964,12 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "avg_run_cost_usd": {
             "type": "number",
             "title": "Avg Run Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "runs_per_day": {
             "items": {
@@ -119354,8 +119122,8 @@
           },
           "max_results": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Results",
             "default": 25
           },
@@ -119414,8 +119182,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50.0,
-                "minimum": 1.0
+                "maximum": 50,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -119427,8 +119195,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1440.0,
-                "minimum": 1.0
+                "maximum": 1440,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -120301,8 +120069,8 @@
           },
           "max_hits": {
             "type": "integer",
-            "maximum": 2000.0,
-            "minimum": 1.0,
+            "maximum": 2000,
+            "minimum": 1,
             "title": "Max Hits",
             "default": 200
           },
@@ -120448,8 +120216,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
@@ -120513,8 +120281,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "description": "If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.",
             "default": 1

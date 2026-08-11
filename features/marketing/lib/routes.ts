@@ -77,6 +77,11 @@ export const marketingRoutes = {
     brandId
       ? `/marketing/brands/${brandId}/sites/${siteId}${sub}`
       : `/marketing/sites/${siteId}${sub}`,
+  /** Site-wide internal authority flow: backlinks → crawl graph → priority pages. */
+  siteAuthority: (brandId: string | null | undefined, siteId: string) =>
+    brandId
+      ? `/marketing/brands/${brandId}/sites/${siteId}/authority`
+      : `/marketing/sites/${siteId}/authority`,
   /**
    * One canonical page's workspace. THE DOOR LAW's most-linked marketing
    * destination: every surface that resolves a `page_id` (GSC breakdowns, dig

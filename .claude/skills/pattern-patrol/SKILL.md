@@ -50,6 +50,12 @@ system doc). The repo-specific facts it needs:
   Contract. Begin with `AUTOMATION DEGRADED — ACTION REQUIRED`; when Arman must
   act, end with `ARMAN, WE NEED YOU: <one specific next action>.` Counts alone
   are never an adequate warning.
+- **Human-owned exceptions:** agents may propose an exception but never clear,
+  suppress, allowlist, or approve one. Every proposal stays an open finding,
+  includes a production review URL, and ends with `EXCEPTION APPROVAL REQUIRED`
+  plus `ARMAN, WE NEED YOU`. After explicit approval, record a durable approval
+  id/reason/reference in the patrol's typed allowlist and beside the source;
+  detectors report approved exceptions separately instead of hiding them.
 
 ## Duty 2 — logging a sighting (you're on another mission)
 
@@ -82,5 +88,6 @@ patterns.
 - Reporting a clean run as wasted effort — zero findings is the system working.
 - Marking a registry status ✅ that isn't (the registry must never lie).
 - Giving a polished normal-looking summary for a degraded or incomplete run.
+- Treating “looks intentional” or “false positive” as approval to suppress it.
 - Growing this skill with per-patrol content — that belongs in the registry row
   or the pattern's own skill.

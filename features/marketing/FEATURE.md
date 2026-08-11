@@ -4,6 +4,35 @@
 **Tier:** 1  
 **Last updated:** 2026-08-11
 
+## Internal Authority Router
+
+`/marketing/brands/[brandId]/sites/[siteId]/authority` is the site-wide
+authority-flow workspace. It combines the existing backlink intelligence,
+crawler link graph/Link Score, GSC demand and SEO Juice, page roles, keyword
+mapping, content plans, and cannibalization evidence. It never computes a
+second PageRank or stores a parallel recommendation system.
+
+The server first creates a deterministic allowlist of missing source→target
+edges. The versioned `seo.internal_authority_router` agent is constrained to
+those exact IDs/URLs and streams `seo_authority_route_analysis` through the
+normal server stream. `useAuthorityRouter` adopts that foreign stream into the
+canonical Content IR pipeline; `LiveRunDisplay` renders progressively parsed
+content while the typed durable `authority.route` result is stored on
+`seo.collection_run` and read directly from Supabase after reload.
+
+The workspace provides a graph, ranked route cards, evidence table, explicit
+source/target/live-page doors, warnings, confidence and cannibalization risk.
+“Add to link plan” updates both existing page-plan directions through
+`updatePageDesiredValues`: source `outbound_links` and target `inbound_links`.
+The current link compliance UI therefore understands approvals immediately;
+the observed `web.link_edge` graph remains immutable until a later crawl.
+
+The reusable `AuthorityRouterDoor` is mounted in the site Backlinks workspace,
+the site Links workspace, and each page's Backlinks/Internal links cards so the
+underlying evidence never dead-ends. The nested
+`matrx-user/marketing-authority` surface exposes the loaded verdict, pages,
+candidate allowlist, and recommendations to platform agents without refetching.
+
 ## The feature is multi-pillar — websites are ONE pillar
 
 Marketing owns **eight peer pillars**, declared ONCE in
@@ -120,6 +149,20 @@ Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) 
 - `.../findings` and `.../findings/[findingId]` — durable finding register, lifecycle detail, and immutable result evidence. **Written for a non-SEO:** rows lead with the catalogue label (never the raw key) and carry the analyzer's own "what's wrong" sentence; detail leads with `components/analysis/FindingRemedyCard.tsx` (the fix, above the evidence) and every row reaches the page workspace, the live URL, and its evidence. See THE FINDING FALLBACK LAW in Invariants before touching either.
 - `.../links` — site link graph (default), outbound-links report (`?view=external`), and link-edge table (`?view=table`). The graph (`components/inspection/link-graph/`) reuses the kg-graph cytoscape engine; the External view is the domain-grouped outbound rollup (`ExternalLinksView` over `buildExternalLinkReport`); URL labels are root-stripped everywhere on this page. Visual captures have exactly two homes: the page workspace (current capture per kind + history) and the crawl session — there is deliberately NO site-level screenshot gallery (a 3,000-page site would show 12,000 captures).
 - `.../backlinks` — provider discovery plus first-party source-page intelligence as a tabbed workspace (Overview · Backlinks · Referring domains · Anchors · Top pages · Competitors · Insights, `?tab=` URL state). Every stable source-page → target-page row can carry cached page content, page/topic classification, source-target relevance, contextual and anchor quality, editorial nature, controllability, risk, a concrete next action, and separate deterministic/AI/human evidence. The referring-domain tab is the platform's own known-site directory and opinion layer—not a restatement of provider authority. Provider **Refresh** is discovery-only; source-page work is deliberately controlled with a 1/5/10/25 **Analyze next** selector or each row's **Analyze/Re-analyze** action in the Backlinks and Insights tables. Every row opens the same canonical complete-record component in the drawer and WindowPanel: exact source page, containing site, exact target page, link mechanics, provider facts, capture content, errors, assessments, human ruling, lifecycle, and the unabridged stored row. Starting a single analysis promotes that record into its WindowPanel and streams only that link's run there; independent links can run concurrently and there is no page-shifting global progress slab. The page workspace's Backlinks card follows the same contract: it shows exact source-page records rather than inert domain rollups, can expand from its compact preview to every loaded record in place, each record opens the canonical WindowPanel, and its per-record Analyze/Re-analyze action starts that exact expensive job while streaming inside the opened record. Its View all door preserves context by opening the professional table already filtered to the target page. Analysis, score, relevance, source type, controllability, and recommended action all have direct-database sorting/filtering across the full result set. The Insights lenses include strongest/new/lost/broken plus first-party risk review, high-priority actions, strong relevance, and controllable links. Reads go directly to RLS-protected `seo`; provider/crawler/AI work goes to the selected aidream target at `/seo/sites/...`. Remaining provider expansions (competitor intersections, bulk portfolio metrics, agent-tool actions) live in `aidream/docs/handoffs/backlink-intelligence-backend.md`.
+- `.../reputation` — the dedicated Digital PR & Reputation decision workspace.
+  It composes enriched backlink/source-page evidence, first-party domain opinions,
+  competitor intersections, AI visibility citations and claims, confirmed brand
+  facts/assets, and ACL-scoped expert knowledge. The browser reads the latest active
+  `digital_pr_reputation_brief_v1` Content IR instance and `seo.reputation_case`
+  lifecycle rows directly from Supabase; case decisions use only the guarded
+  `seo.update_reputation_case` RPC. Analysis calls aidream because it performs crawl,
+  RAG, and AI work. Its normal agent chunks are adopted by the execution system and
+  rendered by `MarkdownStream`, so streamed conversation remains canonical Content IR.
+  The brief states coverage, exclusions, and limitations; weak or unresolvable AI
+  output never appears as a case or outreach recommendation. Cases link to their exact
+  source, target page, and backlink record, and every detected problem has a lifecycle
+  action. Entry doors exist in the site directory, backlinks toolbar, enrichment detail,
+  and referring-domain opportunity detail.
 - `.../integrations` — verified Google Search Console/GA4 property bindings, reusable Google/YouTube account connections, app-managed PageSpeed, and custom provider bindings.
 - `.../crawls/[crawlId]/snapshots` and `.../links` — run-scoped capture and link evidence.
 - `.../access` and `.../settings` — site-root sharing and crawl/site configuration.
