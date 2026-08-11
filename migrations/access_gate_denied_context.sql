@@ -20,7 +20,7 @@
 -- record they cannot open may see kind + name + owner + org, so they know what
 -- they are asking for and whom to ask. Anonymous callers get the kind only and
 -- are invited to sign in. Per-entity opt-out lives in ONE place —
--- `platform.entity_types.deny_preview` — editable through the existing
+-- `platform.entity_types.allow_preview` — editable through the existing
 -- `admin_upsert_entity_type` RPC. There is no second policy system.
 --
 -- Reuses rather than reimplements: `platform.entity_title` (unfiltered title
@@ -65,15 +65,19 @@ declare
   v_cur_table      text;
 begin
   if p_type is null or p_id is null then
+    -- An unregistered token is a bug in the CALLING surface, not evidence
+    -- about the user's record. `unresolvable` lets the client say so instead
+    -- of reporting "this doesn't exist".
     return jsonb_build_object('exists', false, 'deleted', false,
-                              'level', 'none', 'disclosure', 'none');
+                              'level', 'none', 'disclosure', 'none',
+                              'unresolvable', true);
   end if;
 
   -- Resolve the token through the entity registry. An unregistered token is a
   -- programming error on the calling surface, not a user-facing state: we say
   -- "we can't identify this" rather than inventing a kind.
   select et.token, et.label, et.schema_name, et.table_name,
-         coalesce(et.deny_preview, true)   as deny_preview,
+         coalesce(et.allow_preview, true)   as allow_preview,
          coalesce(et.has_soft_delete, false) as has_soft_delete
     into v_meta
   from platform.entity_types et
@@ -82,8 +86,12 @@ begin
   limit 1;
 
   if v_meta.token is null then
+    -- An unregistered token is a bug in the CALLING surface, not evidence
+    -- about the user's record. `unresolvable` lets the client say so instead
+    -- of reporting "this doesn't exist".
     return jsonb_build_object('exists', false, 'deleted', false,
-                              'level', 'none', 'disclosure', 'none');
+                              'level', 'none', 'disclosure', 'none',
+                              'unresolvable', true);
   end if;
 
   select * into v_attrs
@@ -138,7 +146,7 @@ begin
 
   if v_uid is null then
     v_disclosure := 'anonymous';   -- kind only, plus "sign in"
-  elsif not v_meta.deny_preview then
+  elsif not v_meta.allow_preview then
     v_disclosure := 'kind_only';   -- per-entity opt-out
   else
     v_disclosure := 'full';        -- kind + name + owner + org
@@ -250,7 +258,8 @@ begin
   if v_uid is not null then
     select jsonb_build_object(
              'id', ar.id, 'status', ar.status,
-             'level', ar.requested_level, 'created_at', ar.created_at
+             'level', ar.requested_level, 'created_at', ar.created_at,
+             'decision_note', ar.decision_note
            )
       into v_request_json
     from iam.access_requests ar
@@ -291,7 +300,7 @@ $function$;
 comment on function public.access_denied_context(text, uuid) is
   'Human-readable context for a record the caller cannot open: kind, name, owner, '
   'organization, nearest reachable ancestor, and the caller''s own access request. '
-  'Disclosure is governed by platform.entity_types.deny_preview; anonymous callers '
+  'Disclosure is governed by platform.entity_types.allow_preview; anonymous callers '
   'get the kind only. Never returns row content.';
 
 revoke all on function public.access_denied_context(text, uuid) from public;

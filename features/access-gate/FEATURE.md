@@ -90,7 +90,7 @@ is the same class of lie this feature exists to kill.
 | `public.access_denied_context(type, id)` | THE resolver. Returns kind, title, owner, org, nearest reachable ancestor, the caller's own request. **Never row content.** |
 | `iam.access_requests` | The ask ledger. Requester sees their own rows via RLS; the decider's inbox comes from the RPC (no per-row access resolution — the 2026-08-08 component-access precedent). |
 | `access_request_create / list / decide / report / withdraw` | The verb family. |
-| `platform.entity_types.deny_preview` | Per-kind disclosure kill switch. ONE place. |
+| `platform.entity_types.allow_preview` | Per-kind disclosure switch. ONE place. `true` (default) = name+owner+org; `false` = kind only. Flip with `admin_set_entity_type_preview` (super-admin). |
 
 ## Invariants
 
@@ -98,6 +98,14 @@ is the same class of lie this feature exists to kill.
   name + owner + org. **Anonymous callers learn nothing about a non-public row —
   not even that it exists.** That closes an enumeration oracle; the signed-out
   screen reads identically either way.
+- **A title that is derived from private content is content, not identity.**
+  `conversation` (title generated FROM the messages) and `web_page` (its "title"
+  IS the private URL) are `allow_preview = false`. Apply the same test before
+  registering anything new: would naming it to a stranger reveal what's inside?
+- **Never assert a delivery, a deletion, or an absence you did not verify.**
+  An unregistered token surfaces as an error, not "this doesn't exist" — a
+  registry bug on our side must never be reported as the user's data being gone.
+  The panel says "we couldn't message them" when zero DMs landed.
 - **Recipients (owner ruling, 2026-08-11):** the owner **and** the org's
   owners/admins when the org is shared. First to act wins, so a request never
   dies with one person. A personal workspace routes to the owner only — no
@@ -110,7 +118,10 @@ is the same class of lie this feature exists to kill.
 - **One open request per person per record** — enforced by a partial unique
   index, so a second click is a no-op and never a second DM.
 - **Delivery never fails the ask.** The row is the durable fact; the DM is how it
-  gets noticed. A failed DM leaves the request in the inbox.
+  gets noticed — and today the DM is the ONLY surface, so a delivery that lands
+  nowhere leaves a row nobody can see. That is why zero-delivery is surfaced to
+  the requester instead of hidden, and why the inbox page below is the next
+  thing to build, not a nice-to-have.
 - Writes go through the RPC family only. Never insert `iam.permissions` or
   `iam.access_requests` from the client.
 
@@ -124,14 +135,20 @@ the loop closes in the surface the requester already reads.
 
 ## Open
 
-- **The sweep.** The primitive is live and consumed by the marketing site layout;
-  the other ~339 raw-error sites are not converted yet. Next: a
-  `pnpm check:access-errors` scoreboard + per-feature waves.
-- No `/settings/access-requests` inbox page yet — the DM carries the whole flow
-  today. Add it when someone has enough pending requests to need a list.
+- **The sweep.** `pnpm check:access-errors` (advisory, in the release gates)
+  measures it: **543 human-facing surfaces** still guess — 149 hand over raw
+  PostgREST text, 355 assert a deletion they cannot know, 39 assert a permission.
+  Ranked worst-feature-first; `--write` refreshes `scripts/access-errors/report.json`.
+  Marketing's record surfaces are converted; education / files+rag / `app/(core)`
+  are queued as separate tasks.
+- **No `/settings/access-requests` inbox page yet, and `listAccessRequests` has
+  zero consumers.** The DM is therefore not the primary surface, it is the only
+  one — a request whose DM fails, or one created without a signed-in sender, is
+  a durable row with no way to see it. Build the page.
 - `app/forbidden.tsx` + `requireAccess(..., { forbid: true })` for server routes.
 
 ## Change Log
+
 
 - **2026-08-11** — Built and shipped. DB resolver + request ledger + RPC family +
   the surface + DM approval chips. Verified end to end in the browser (ask →
@@ -139,3 +156,11 @@ the loop closes in the surface the requester already reads.
   (strangers get an empty inbox, zero rows via RLS, a humane refusal on decide;
   duplicate asks are idempotent; anonymous callers get no enumeration signal).
   Fixed one dead end found by that verification (`/users/{id}` did not exist).
+- **2026-08-11** — Adversarial pass (could not break authorization) found seven
+  defects, all fixed and re-verified live: the disclosure flag was named
+  BACKWARDS (`deny_preview=true` meant maximum disclosure) and had no write
+  path; conversation titles and private page URLs leaked to any signed-in
+  stranger; an unregistered token was reported as "doesn't exist"; a concurrent
+  second ask toasted a raw Postgres constraint name; "they've been messaged" was
+  asserted unverified; a declined ask dead-ended; a recipient could answer their
+  own request and a deleted target could still be granted.

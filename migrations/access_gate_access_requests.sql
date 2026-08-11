@@ -65,19 +65,19 @@ create index if not exists access_requests_requester
 -- place decides how much a denied user may be told about a kind of record;
 -- there is no second policy system.
 alter table platform.entity_types
-  add column if not exists deny_preview boolean not null default true;
+  add column if not exists allow_preview boolean not null default true;
 
-comment on column platform.entity_types.deny_preview is
-  'When false, access_denied_context reveals only the entity KIND for this token '
-  '- never its title, owner, or organization. Default true (kind + name + owner '
-  '+ org), per the 2026-08-11 disclosure ruling.';
+comment on column platform.entity_types.allow_preview is
+  'When TRUE (default), access_denied_context may tell a signed-in user who cannot '
+  'open a row its title, owner and organization. When FALSE, only the entity KIND '
+  'is revealed. Flip it with admin_set_entity_type_preview.';
 
 -- Register the entity so the registry and access resolver can speak about it
 -- by token like every other first-class row.
 insert into platform.entity_types
   (token, schema_name, table_name, label, is_active, is_listed, is_component,
    has_soft_delete, is_versioned, default_visibility, title_column,
-   content_role, category, deny_preview)
+   content_role, category, allow_preview)
 values
   ('access_request', 'iam', 'access_requests', 'Access Request', true, false,
    false, true, false, 'personal', null, 'utility', 'System', false)

@@ -176,11 +176,28 @@ begin
   -- widen anything in the target's organization.
   v_org := public.current_personal_org_id();
 
-  insert into iam.access_requests
-    (organization_id, created_by, resource_type, resource_id, requested_level, message)
-  values
-    (v_org, v_uid, p_resource_type, p_resource_id, v_level, nullif(btrim(p_message), ''))
-  returning id into v_id;
+  -- The SELECT above is not a lock, so two tabs can both reach here. The
+  -- partial unique index is the real arbiter; losing that race means the ask
+  -- already landed, which is exactly the `already` answer — not an error, and
+  -- never a raw constraint name in a toast.
+  begin
+    insert into iam.access_requests
+      (organization_id, created_by, resource_type, resource_id, requested_level, message)
+    values
+      (v_org, v_uid, p_resource_type, p_resource_id, v_level, nullif(btrim(p_message), ''))
+    returning id into v_id;
+  exception when unique_violation then
+    select ar.id into v_id
+    from iam.access_requests ar
+    where ar.resource_type = p_resource_type
+      and ar.resource_id = p_resource_id
+      and ar.created_by = v_uid
+      and ar.status = 'pending'
+      and ar.deleted_at is null
+    limit 1;
+    return jsonb_build_object('request_id', v_id, 'status', 'pending',
+                              'already', true, 'recipients', '[]'::jsonb);
+  end;
 
   select coalesce(jsonb_agg(jsonb_build_object(
            'user_id', r.user_id,
@@ -299,6 +316,8 @@ declare
   v_uid    uuid := (select auth.uid());
   v_req    record;
   v_level  public.permission_level;
+  v_meta   record;
+  v_attrs  record;
 begin
   if v_uid is null then
     raise exception 'Sign in first.' using errcode = '42501';
@@ -315,6 +334,14 @@ begin
   if v_req.id is null then
     raise exception 'That request no longer exists.' using errcode = '02000';
   end if;
+
+  -- Nobody answers their own ask. Today an org admin asking for a row in their
+  -- own org is refused earlier by iam.has_access, but that is a coincidence of
+  -- the resolver, not a rule of this function.
+  if v_req.created_by = v_uid then
+    raise exception 'You cannot answer your own request.' using errcode = '42501';
+  end if;
+
   if v_req.status <> 'pending' then
     return jsonb_build_object('id', v_req.id, 'status', v_req.status,
                               'already', true);
@@ -324,6 +351,21 @@ begin
   end if;
 
   if p_decision = 'grant' then
+    -- The target can be deleted between the ask and the answer. Granting on a
+    -- dead row writes a permission that points at nothing.
+    select et.schema_name, et.table_name into v_meta
+    from platform.entity_types et where et.token = v_req.resource_type;
+
+    if v_meta.schema_name is not null then
+      select * into v_attrs
+      from platform.entity_row_access_attrs(v_meta.schema_name, v_meta.table_name,
+                                            v_req.resource_id);
+      if not coalesce(v_attrs.o_found, false) then
+        raise exception 'That item no longer exists, so access cannot be granted.'
+          using errcode = '02000';
+      end if;
+    end if;
+
     v_level := coalesce(nullif(p_level, ''), v_req.requested_level)::public.permission_level;
 
     -- Write the grant directly. `share_resource_with_user` requires the CALLER
