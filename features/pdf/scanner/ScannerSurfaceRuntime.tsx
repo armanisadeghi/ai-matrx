@@ -27,11 +27,12 @@ import { createScannerScope } from "@/features/surfaces/manifests/scanner.manife
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
+import {
+  SCAN_PAGE_LABEL_MAX_LENGTH,
+  SCAN_TITLE_MAX_LENGTH,
+} from "./types";
 import type { UseScanSaveFlowResult } from "./useScanSaveFlow";
 import type { UseScanSessionResult } from "./useScanSession";
-
-/** Titles and page labels are chips and filenames, not prose. */
-const MAX_LABEL_CHARS = 120;
 
 /**
  * `setLabel` / `setItemLabel` are React state setters — they return void and
@@ -51,8 +52,14 @@ async function settle(landed: () => boolean, describeFailure: () => string) {
   }
 }
 
-/** Single-line, bounded string — shared by both targets. */
-function assertLabelString(value: unknown, what: string): string {
+/**
+ * Single-line, bounded string — shared by both targets, with the bound passed
+ * in per target from `./types`. The limits are NOT re-typed here: the manifest
+ * quotes them in its contract prose and these handlers enforce them, so a
+ * literal in this file is exactly how what the agent is TOLD and what the page
+ * ACCEPTS drift apart.
+ */
+function assertLabelString(value: unknown, what: string, max: number): string {
   if (typeof value !== "string") {
     throw new Error(
       `${what} expects a string. Got ${Array.isArray(value) ? "an array" : value === null ? "null" : typeof value}.`,
@@ -61,9 +68,9 @@ function assertLabelString(value: unknown, what: string): string {
   if (/[\r\n]/.test(value)) {
     throw new Error(`${what} must be a single line — newlines are not allowed.`);
   }
-  if (value.length > MAX_LABEL_CHARS) {
+  if (value.length > max) {
     throw new Error(
-      `${what} must be at most ${MAX_LABEL_CHARS} characters. Got ${value.length}.`,
+      `${what} must be at most ${max} characters. Got ${value.length}.`,
     );
   }
   return value;
@@ -185,7 +192,11 @@ export function ScannerSurfaceRuntime({
       /** Same setter the desktop title input's `onChange` calls. */
       scan_title: async (value) => {
         assertWritableSession(sessionRef.current, flowRef.current, "scan_title");
-        const next = assertLabelString(value, "scan_title").trim();
+        const next = assertLabelString(
+          value,
+          "scan_title",
+          SCAN_TITLE_MAX_LENGTH,
+        ).trim();
         if (!next) {
           throw new Error(
             "scan_title expects a non-empty title — Save falls back to a timestamp on its own, so an empty value is never worth applying.",
@@ -238,7 +249,11 @@ export function ScannerSurfaceRuntime({
           }
           return [
             itemId,
-            assertLabelString(label, `scan_page_labels["${itemId}"]`).trim(),
+            assertLabelString(
+              label,
+              `scan_page_labels["${itemId}"]`,
+              SCAN_PAGE_LABEL_MAX_LENGTH,
+            ).trim(),
           ] as const;
         });
         for (const [itemId, label] of patch) {

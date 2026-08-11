@@ -171,6 +171,32 @@ Dev-login → `/war-room/all`. Create a room; add threads. **Stage mode:** the l
 
 ## Change Log
 
+- 2026-08-11 — **The THREAD surface is agent-writable too (4 ask-policy
+  targets).** `matrx-user/war-room-thread` declares `thread_note_content` /
+  `append_to_thread_note` (DRAFT — replace/append over the note anchored to
+  the thread) and `thread_task_title` / `thread_task_status` (ENTITY — the
+  anchored task). Handlers in
+  `components/thread/useWarRoomThreadWriteHandlers.ts`, registered on the
+  provider `ThreadAgentPanel` already mounted, so the write half sits exactly
+  where the read half is emitted. They dispatch the SAME `updateNoteContent`
+  the notes editor's `onChange` fires and the SAME `updateTaskFieldThunk`
+  `ThreadTaskTab` dispatches — no parallel write path, no raw supabase.
+  **Why the handlers are NOT in the tab bodies:** `ThreadTabContent` is a
+  `switch`, so only one tab body is mounted at a time — handlers registered in
+  `ThreadNotesTab` / `ThreadTaskTab` would vanish the moment the agent tab was
+  the one on screen, which is precisely when an agent runs. Targets resolve
+  their row through the same `selectActiveNoteId` / `selectThreadTaskId` that
+  `buildWarRoomThreadScope` used for the read twin; a thread with no note (or
+  no task anchor) refuses loudly rather than creating one. **Notes load
+  lazily**, so both note handlers call `fetchNoteContent` before writing and
+  then read the buffer back — a thread whose Notes tab was never opened has no
+  record in the notes slice at all, and without the hydrate the reducer has
+  nothing to patch and `autoSaveMiddleware` bails, so the agent would be told
+  "applied" for a write that never reached the note. Recording, transcripts,
+  the conversation, thread position/pin and the resource attachment sets stay
+  human. The thread TITLE is deliberately absent: it is already writable as
+  `active_thread_title` on the room surface (see the entry below), and a
+  second declaration would be a second write path into the same row.
 - 2026-08-10 — **The room surface is now agent-WRITABLE (4 targets).**
   `matrx-user/war-room` declares `room_name`, `room_description`,
   `active_thread_title` and `add_threads` — all `mode: "entity"`,

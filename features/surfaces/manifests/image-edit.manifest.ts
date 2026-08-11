@@ -12,6 +12,37 @@
  * FILE DOCTRINE: the image is identified by its durable `cld_files` UUID
  * (`image_file_id`) when it exists; url-sourced edits (e.g. an unsaved AI
  * result) have none until saved. Never emit signed URLs.
+ *
+ * WRITE DOCTRINE — why this surface has NO `writeTargets` (assessed 2026-08-11,
+ * read this before scoping another pass at it):
+ *
+ * The obvious candidate is the AI EDIT PROMPT ("remove the background and warm
+ * the tone") — authored prose an agent writes better than a human, and the
+ * exact shape `matrx-user/image-generate` shipped as `generation_request`.
+ * `promptText` / `setPromptText` ARE real component state in `EditAiToolbar`,
+ * so a handler would "work". It is still NOT a target, because the control it
+ * writes into does not exist in this build: the whole prompt popover renders
+ * behind `{IMAGE_STUDIO_BACKEND_CAPABILITIES.promptEdit && (…)}`, and
+ * `promptEdit` is `false` (`features/image-studio/constants/backend-capabilities.ts`
+ * — a hardcoded `as const`, no env override; `handlePrompt` separately
+ * early-returns "coming soon"). Staging a prompt there would land in state the
+ * user cannot see, edit, or run — a confirm dialog the user approves and
+ * nothing visibly happens. The same gate hides "Suggest" (`editSuggestions`).
+ *
+ * What remains rendered is not authored content: the Adjust popover's
+ * brightness/contrast/saturation/sharpness are numeric pixel knobs (the
+ * mechanical-toggle class the judgment bar excludes), and mask painting, the
+ * versions rail, Reset, and the Filerobot canvas are destructive or
+ * user-gesture surfaces. Running any AI op spends real money on image models,
+ * so execution was never a target regardless — the same line
+ * `image-generate` draws at Generate.
+ *
+ * WHEN `promptEdit` FLIPS TRUE, this surface earns exactly one composite
+ * `edit_request` target — `{ prompt }`, staged (`mode: "draft"`,
+ * `applyPolicy: "ask"`) into `EditAiToolbar` via `useSurfaceWriteHandlers`
+ * (the state lives in that child, not in `EditModeShell`) — and the user still
+ * presses Apply. Note the shell also mounts as a MODAL from other surfaces, so
+ * whatever is declared here is reachable from those callers too.
  */
 
 import type {
