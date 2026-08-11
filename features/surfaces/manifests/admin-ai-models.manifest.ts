@@ -10,9 +10,13 @@
  * What an agent bound here may safely do: read the model list and the open
  * model's public registry facts (name, maker, context window, max tokens,
  * capabilities, ratings, deprecation/primary/premium flags, release date), and
- * from those write descriptions, audit capability coverage, spot stale or
- * duplicate entries, and propose registry edits. It must NOT assume a proposal
- * has been applied — writes go through the admin's own panel.
+ * from those audit capability coverage, spot stale or duplicate entries, and
+ * propose registry edits. It may also APPLY two authored-copy edits to the
+ * open model — its description and its human display name — via `writeTargets`
+ * below, each behind an in-place confirm. Everything else it can only propose:
+ * capabilities, limits, ratings, standing flags and fallback routing go
+ * through the admin's own panel, and it must NOT assume a proposal there has
+ * been applied.
  *
  * SECURITY — this surface sits next to real credential material, so the
  * boundary is explicit. This manifest declares NO secrets, API keys, tokens,
@@ -43,7 +47,12 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  MODEL_COMMON_NAME_MAX_CHARS,
+  MODEL_DESCRIPTION_MAX_CHARS,
+} from "@/features/ai-models/model-metadata";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const ADMIN_AI_MODELS_SURFACE_NAME = "matrx-admin/ai-models";
@@ -428,6 +437,116 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the AUTHORED COPY on the open model row, and nothing else.
+ *
+ * WHERE THEY LIVE: `AiModelDetailPanel` registers the handlers via
+ * `useSurfaceWriteHandlers`, not `AiModelsContainer`. The container mounts the
+ * provider and owns the catalogue + the browse state, but the DETAIL PANE owns
+ * the form state, the save path, and the `saving` flag a write has to respect.
+ * Both are inside the SAME provider — unlike `schedules` or `shapes`, the
+ * detail pane here is a child of the list mount, not a second surface mount —
+ * so this is one surface with one set of targets, registered from the
+ * component that can actually honour them. Nothing is registered against the
+ * list itself: the list owns only browse state, which is not writable here.
+ *
+ * MODE: both targets are `mode: "entity"` + `applyPolicy: "ask"`. `draft` is
+ * the preferred mode elsewhere and is genuinely the wrong fit here. The panel
+ * DOES have draft state, but it is a whole-row form with one Save that also
+ * carries the capability and governance fields; staging a description into it
+ * would leave the admin's Save button holding an agent's edit mixed in with
+ * their own, and a stale form would then clobber it. Instead each handler
+ * validates, writes the ONE column through `aiModelService.update` — the exact
+ * call `handleSave` makes — and then patches the field into both `formData`
+ * and `baseline` so the panel shows what landed and the form does not go
+ * dirty. The ask dialog IS the review step; `auto` would be an agent silently
+ * rewriting the model registry every product surface reads.
+ *
+ * REFUSALS THE HANDLERS MAKE, beyond value validation: no model open, the
+ * panel in create-new mode (`is_creating_model` — there is no row to update
+ * yet, and the create flow is the admin's), a save already in flight, and a
+ * dirty Raw JSON tab (that tab saves the WHOLE row, so an unsaved edit there
+ * would overwrite whatever the agent just wrote). Each throws with the reason.
+ *
+ * A GAP THIS WORK CLOSED, stated plainly: `description` had NO human editor
+ * anywhere in the admin console. It is a real column, it is rendered to USERS
+ * as the secondary line of every model picker row (`lab/ModelListDropdown`),
+ * and this manifest already declared it as a read value — but the Details form
+ * had no field for it and the Raw JSON tab STRIPPED it as an unknown column.
+ * An entity write to a field the admin cannot then correct in the UI is a
+ * one-way door (the `tool_group` lesson from `admin-tool-registry`). Rather
+ * than declare the target anyway or drop the surface's only prose field, the
+ * same change that added this target added the Description textarea to
+ * `AiModelForm` and put `description` in the panel's column whitelist. The
+ * correction path exists first; the target follows it.
+ *
+ * DELIBERATELY NOT WRITABLE, and this must stay that way:
+ *   • `model_context_window`, `model_max_tokens`, `model_capabilities` — what
+ *     the platform believes the model CAN DO. These are not opinions; they are
+ *     enforced limits and a capability map the settings engine and every model
+ *     picker read. A wrong context window silently truncates or over-sends for
+ *     every caller on the model. Capabilities additionally have their own JSON
+ *     editor with error reporting — an agent should propose a diff there.
+ *   • `model_is_deprecated`, `model_is_primary`, `model_is_premium`,
+ *     `model_visibility` — governance. Deprecation IS the activation signal on
+ *     this table (there is no `is_active` column), primary decides what
+ *     pickers surface by default, and premium is an entitlement gate. This is
+ *     the exact line `admin-tool-registry` drew at `tool_is_active` /
+ *     `tool_gating`, and it matters the same way: one flipped flag changes
+ *     what every agent on the platform gets served. The panel keeps its human
+ *     switches.
+ *   • `model_fallback_ids` and the retry ceiling — substitution routing. These
+ *     decide which OTHER model answers when a caller is over a limit, is a
+ *     guest, or keeps failing. Repointing them is a dispatch change wearing a
+ *     configuration costume, and the value is a UUID an agent would be
+ *     guessing at.
+ *   • `model_cost_rating` / `model_speed_rating` — cost-shaped. They render as
+ *     the $-tier and speed dots users choose models by, so they steer spend
+ *     and expectation across the product even though they are not prices. Real
+ *     pricing lives on `ai.offering` and is admin-secret; neither belongs to
+ *     an agent.
+ *   • `model_name` — IDENTITY, and the hardest no. It is the provider-facing
+ *     id sent on the wire and the key the provider-cache lookup matches on
+ *     (`ProviderDataTab` finds the cache entry by `m.id === model.name`). A
+ *     wrong one breaks every call site at once. A model's api name is a fact
+ *     to be looked up, never authored.
+ *   • `model_id`, `model_maker` (`provider_id`) — identity and provenance.
+ *   • `model_release_date` — a fact, not copy: it is looked up from the
+ *     provider, not written, and like `description` before this change it has
+ *     no editor in the panel. Both reasons apply; either alone is enough.
+ *   • `model_updated_at` — accounting, written by the database.
+ *   • Deleting or duplicating a model, and every sibling admin route
+ *     (endpoints, apis, offerings, settings, aliases). Destructive stays
+ *     human, always; the siblings have no emitter and no surface at all.
+ *
+ * The bounds quoted in the descriptions below and the checks the handlers run
+ * are the SAME constants, from `features/ai-models/model-metadata.ts`.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "model_description",
+    label: "Model description",
+    description: `Replaces the open model's registry description — the prose a USER reads under the model's name when picking a model, so write it as a choosing aid: what this model is good at, how it differs from its siblings, and when to reach for something else. This is a FULL replacement, not a merge: read \`model_description\` first and include anything you mean to keep. Plain text, up to ${MODEL_DESCRIPTION_MAX_CHARS} characters after trimming; the empty string CLEARS the description, which is a legitimate value because the column is nullable. Do NOT restate the numbers the picker already shows on its own (context window, max tokens, cost and speed ratings) — those are separate fields and are not writable here. PERSISTS IMMEDIATELY on apply, through the same \`aiModelService.update\` call the panel's Save button makes, so the confirm dialog is the review. Refused while the panel is creating a new model, while a save is in flight, or while the Raw JSON tab has unsaved edits.`,
+    valueType: "string",
+    updatesValue: "model_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_model",
+    sortOrder: 100,
+  },
+  {
+    name: "model_common_name",
+    label: "Common name",
+    description: `Replaces the open model's human display name — the label shown throughout the product wherever the model appears (pickers, the admin table, agent settings). Write the maker's own marketing name as a person would say it ("Claude Sonnet 4.6", "GPT-5 mini"), NOT the wire id: the provider-facing id is a separate field and is not writable here. A single-line string, 1-${MODEL_COMMON_NAME_MAX_CHARS} characters after trimming, no newlines or tabs. The empty string is REJECTED rather than treated as a way to clear the label, because every picker falls back to the raw provider model id when it is blank. PERSISTS IMMEDIATELY on apply, through the same \`aiModelService.update\` call the panel's Save button makes. Refused while the panel is creating a new model, while a save is in flight, or while the Raw JSON tab has unsaved edits.`,
+    valueType: "string",
+    updatesValue: "model_common_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_model",
+    sortOrder: 110,
+  },
+];
+
 export const adminAiModelsManifest: SurfaceManifest = {
   surfaceName: ADMIN_AI_MODELS_SURFACE_NAME,
   readiness: "partial",
@@ -442,7 +561,7 @@ The admin browses every registered model (schema ai, table model_definition) wit
 
 How to read the values: model_ids / models_summary / provider_names describe the CATALOGUE; active_tab_label, search_query, active_filters and sort_state describe the admin's current cut of it; every model_* value describes the ONE model open in the detail panel and is absent when nothing is selected. Note that models have no is_active column — model_is_deprecated is the activation signal, and model_is_primary / model_is_premium do the tiering.
 
-What you may safely do: read the catalogue and the open model's public facts, then write descriptions, audit capability coverage, find stale duplicates or missing deprecations, and propose registry edits. You never write the registry yourself — the admin applies changes in the panel.
+What you may safely do: read the catalogue and the open model's public facts, audit capability coverage, find stale duplicates or missing deprecations, and propose registry edits. Two fields on the OPEN model you may actually write, each behind a confirm the admin sees: its description and its common (display) name — the authored copy a person reads. Everything else you can only propose. Capabilities, context window, max tokens, ratings, the deprecated/primary/premium flags, visibility and fallback routing all change what the platform DOES with this model for every caller on it, so the admin applies those in the panel. The model's provider-facing name is a dispatch key, not a label — never propose editing it as if it were copy.
 
 Secrecy boundary, and it is strict: serving-vendor identity, endpoint base URLs, auth references, BYOK secret keys, and real-dollar pricing are admin-secret and are NOT present in this scope. Do not ask for them, do not guess them, and never repeat a credential of any kind.
 </surface_intro>`,
@@ -451,6 +570,7 @@ Secrecy boundary, and it is strict: serving-vendor identity, endpoint base URLs,
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** Compact registry row emitted by the admin list. */
