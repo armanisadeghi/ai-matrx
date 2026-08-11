@@ -13,6 +13,10 @@ The package has two very different maturity levels:
   owns NDJSON framing, UTF-8 boundary handling, read-ahead, compact event
   expansion, cancellation, and loud malformed/unknown-line hooks. It is twinned
   into `aidream/apps/shared/matrx-agents` and consumed by Workflow Studio.
+- `src/presentation/result.ts` is the canonical Creator-facing visibility
+  boundary for settled agent results. It removes provider-private reasoning
+  blocks and signature material without mutating the execution/checkpoint
+  value, and is twinned into AI Dream for Studio result rendering and exports.
 - The Redux barrels are still a façade over `matrx-frontend/features/agents`.
   Their `@/` imports make them unusable outside this repository. The adapter
   registry is a target contract, not proof that the live thunks use it.
@@ -103,6 +107,10 @@ parallel parser or lifecycle.
   package-owned implementation module.
 - New stream syntax starts in `src/stream/ndjson.ts`, then is synced; never patch
   a consuming app's parser independently.
+- Provider reasoning/signature material stays in execution persistence for
+  replay, but every Creator-facing result renderer, JSON tab, and export first
+  applies `projectAgentResultForDisplay`. Never hand-roll a host-specific
+  filter and never feed the projected value back into execution.
 
 ## Verification
 

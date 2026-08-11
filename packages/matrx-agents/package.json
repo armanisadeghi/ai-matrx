@@ -11,6 +11,7 @@
     "./redux/selectors": "./src/redux/selectors.ts",
     "./redux/hooks": "./src/redux/hooks.ts",
     "./stream/ndjson": "./src/stream/ndjson.ts",
+    "./presentation/result": "./src/presentation/result.ts",
     "./adapters/auth": "./src/adapters/auth.ts",
     "./adapters/callback-manager": "./src/adapters/callback-manager.ts",
     "./adapters/fetch": "./src/adapters/fetch.ts",
