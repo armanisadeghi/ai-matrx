@@ -437,6 +437,21 @@ const surfaceSpecific: SurfaceValue[] = [
 //   NO — `working_document` / `scratchpad`. Lean refs here; their bodies ride
 //   their own surfaces and belong to those surfaces' write targets.
 //
+//   NO — `variable_values` (added to this list 2026-08-11). It reads as the
+//   tempting case — resolved agent-variable values look like fill-in-the-blank
+//   authored content, and they are NOT capability governance (a variable is
+//   substituted into a prompt; it does not change what a run may REACH). It
+//   still fails an earlier test: THIS surface owns no editor for it. Every
+//   component that dispatches `setUserVariableValue` (`AgentVariablesInline`,
+//   `BoundVariableChips`, the `variable-input-variations/*` family,
+//   `ChatAssistantVariableInputs`) lives outside `components/chat/`, and
+//   `ChatRoomClient` only ever READS the value via `selectResolvedVariables`
+//   to publish it — the read half even marks it bindable-only. A target here
+//   would stage into state no one on this page can see or correct, which is
+//   the "declared target with no canonical write path on this mount" trap.
+//   It earns a target on whichever surface actually mounts a variable editor,
+//   not on this one.
+//
 // PER-MOUNT POSTURE: `matrx-user/chat` has exactly ONE `SurfaceRuntimeProvider`
 // — `ChatRoomClient`, which backs all three routes (/chat/new via
 // ChatNewClient's landingContent, /chat/a/[agentId], /chat/[conversationId])
