@@ -429,7 +429,56 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
   Redux slice (server data via React Query, view state in the URL — same
   pattern as `features/marketing`). No barrels.
 
+### A planned page must always be able to become a real page
+
+**The node panel's "The real page" section ALWAYS renders** (`NodeRealityCard`
++ the pure `lib/page-reality.ts` verdict). It used to be `{cmsPage ? … : null}`,
+so the state that matters most — *this page has not been built yet* — showed
+nothing at all, and the only route from a finished brief to a real page was a
+bulk rung three views away in Setup.
+
+Seven states, each carrying its own next action: `no-cms-site` → Setup ·
+`not-built` → **Create the page** · `empty` → **Write the content** ·
+`unpublished` / `draft-pending` → **Publish** · `stale` → **Rewrite from the
+brief** · `live` → nothing to do. The verdict is DERIVED on every read from the
+plan node plus the FULL CMS row (the plan-wide overlay summary carries no
+content, and content LENGTH is the only way to tell an empty shell from an
+authored draft) — never stamped on a column.
+
+Three rules learned the hard way, all live-verified on datadestruction.com:
+
+- **Ancestors come along.** A deep URL is a real page tree on the CMS side, not
+  a path string; realizing `/industry/telecom-…` while nothing serves
+  `/industry` is refused. `buildChainToRealize` sends the unbuilt ancestor chain
+  root-first in ONE `cms-align` call (already-built ancestors excluded — an
+  existing route fails the whole batch).
+- **Publish goes through the BRIDGE** (`cms-publish` with `page_ids`), never
+  `CmsPageService.publishDraft`: only the bridge advances the plan node to
+  `published`. The CMS path alone puts a page live and leaves the plan claiming
+  it was never built.
+- **The server's refusal stays on screen**, not just in a toast — and when it is
+  `cms_write_policy_denied`, the card offers the fix. `agent_write_policy`
+  defaults to `blocked` and only Setup rung 1 seeds `full`, so every site linked
+  before that seed refuses every build action. (aidream's guard reads the site
+  through the ORM's cached row, so a policy change is not seen until the cache
+  expires — tracked separately.)
+
+No new server capability was added: `cms-align` always took a node-id array,
+`cms-fill/preview` always took one `node_id` + `write: true`, and `cms-publish`
+always took `page_ids`. The defect was a surface ignoring what it had.
+
 ## Change log
+
+- 2026-08-11 — Claude: **a planned page can become a real page from the node
+  panel.** New `lib/page-reality.ts` (pure verdict + ancestor chain + policy
+  matcher, 21 tests), `hooks/useNodeReality.ts`, `components/NodeRealityCard.tsx`;
+  `bridgePublish` gained `pageIds`. Section above records the invariants.
+  Deliberately NOT `useMutation` — its observer never ran `onError`/`onSettled`
+  here (measured: a 403 left the button spinning forever with the reason
+  invisible), and these are one-shot imperative calls. The minutes-long
+  authoring run narrates approximate stages at a fixed height rather than
+  spinning. Live-verified end to end: created 3 pages (page + 2 parents), then
+  authored the page from its brief.
 
 - 2026-08-11 — Codex: **Content-plan rows are window-first and never block the
   table.** The table now opens the complete `NodePanel` in its draggable,

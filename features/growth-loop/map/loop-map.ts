@@ -195,8 +195,8 @@ export const STAGES: LoopStage[] = [
             },
             human: {
                 state: "live",
-                note: "Setup bridge rungs drive reconcile then align with confirmation.",
-                ref: "ai-matrx/features/marketing/content-plan/setup/components/SetupBridgeSection.tsx",
+                note: "Per-PAGE build from the node panel (sends the unbuilt ancestor chain in one call), plus the whole-site Setup rungs.",
+                ref: "ai-matrx/features/marketing/content-plan/components/NodeRealityCard.tsx",
             },
             ai: {
                 state: "live",
@@ -245,8 +245,8 @@ export const STAGES: LoopStage[] = [
             },
             human: {
                 state: "live",
-                note: "Publish button on the CMS page editor.",
-                ref: "ai-matrx/features/cms/hooks/useCmsPages.ts#publishDraft",
+                note: "Publish one page from the plan's node panel (bridge path, advances plan status) or from the CMS page editor.",
+                ref: "ai-matrx/features/marketing/content-plan/components/NodeRealityCard.tsx",
             },
             ai: {
                 state: "live",
@@ -450,7 +450,11 @@ export const EDGES: LoopEdge[] = [
                 note: "realize creates the page at the right route but produces an EMPTY draft — plan.profile.template_map is never read.",
                 ref: "cms_reconciler.py#_realize_batch",
             },
-            human: { state: "live", note: "Make-it-real rungs with dry-run.", ref: "SetupBridgeSection.tsx" },
+            human: {
+                state: "live",
+                note: "Node panel 'The real page' always states the verdict and carries its next action; Setup rungs do the whole site with dry-run.",
+                ref: "NodeRealityCard.tsx",
+            },
             ai: { state: "live", note: "content_plan tool.", ref: "aidream/aidream/tools" },
         },
     },
@@ -461,7 +465,11 @@ export const EDGES: LoopEdge[] = [
         label: "content",
         pipes: {
             code: { state: "live", note: "Durable job/item queue with cancel + status.", ref: "cms_fill.py" },
-            human: { state: "live", note: "Preview one page, then start the fill.", ref: "SetupBridgeSection.tsx" },
+            human: {
+                state: "live",
+                note: "'Write the content' authors ONE page from its brief in the node panel; Setup previews one page then fans out.",
+                ref: "NodeRealityCard.tsx",
+            },
             ai: { state: "live", note: "_author_page.", ref: "cms_fill.py#_author_page" },
         },
     },
@@ -472,7 +480,11 @@ export const EDGES: LoopEdge[] = [
         label: "goes live",
         pipes: {
             code: { state: "live", note: "publish_many over linked nodes.", ref: "content_plan.py POST /cms-publish" },
-            human: { state: "live", note: "Publish button.", ref: "useCmsPages.ts#publishDraft" },
+            human: {
+                state: "live",
+                note: "Publish one page from the node panel through the BRIDGE (advances the plan node); CMS editor publishes the page alone.",
+                ref: "NodeRealityCard.tsx",
+            },
             ai: { state: "live", note: "cms_page publish, policy-gated.", ref: "aidream/aidream/services/cms/access.py" },
         },
     },
