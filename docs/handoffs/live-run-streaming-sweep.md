@@ -54,6 +54,21 @@ Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L*
 
 ---
 
+## Coverage — what this sweep did NOT cover
+
+**Multi-step AI pipelines were not systematically audited.** This sweep searched
+for a spinner next to a single agent/pipeline call. Pipelines that show a step
+counter, a stage list, a progress bar, or POLL the DB for completion were not
+swept — and Arman's rule covers every step of them, not just the last one.
+Two confirmed offenders found while checking:
+`features/transcription-cleanup/components/CleanupPad.tsx` (7 spinners over
+record → auto-clean → refine-with-N-agents) and
+`features/pdf/scanner/components/ProcessingView.tsx` (the "AI clean" step is a
+DB poll for per-page counts). **A dedicated chip owns finishing that sweep.**
+
+Every section below is chipped to a focused session. The chips are the delivery
+mechanism — this doc is only the target list.
+
 ## Remaining work — ranked by pain × reach
 
 ### 1. Marketing crawler commands — the whole family discards its NDJSON stream — A + D, M each
