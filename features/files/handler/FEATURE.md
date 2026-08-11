@@ -12,6 +12,14 @@ The universal file handler. Every codepath that touches a file — owned `cld_fi
 
 This feature is the **single source of resistance** for file flows: direct construction of media blocks and direct object-store SDK calls are forbidden. Metadata reads go directly to Postgres through the authenticated client; bytes, signing, and processing go through the canonical Files service.
 
+**Credential-file exception (2026-08-11):** Vault attachments are not ordinary
+cloud files and must never enter `cld_files` or expose an object-store URL.
+Their bytes stay inside the credential encryption boundary. The one sanctioned
+frontend transport is `features/files/vault/vaultAttachmentTransport.ts`, which
+posts bytes directly to aidream's Vault API and performs no-store downloads;
+the Vault feature owns only metadata and user intent. This is a specialized
+canonical byte boundary, not permission to hand-build another file flow.
+
 ---
 
 ## Entry points

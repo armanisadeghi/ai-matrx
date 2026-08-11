@@ -13,12 +13,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
+  addVaultAttachment,
   addVaultField,
   addVaultGrant,
   assignVaultItem,
   createVaultItem,
+  deleteVaultAttachment,
   deleteVaultField,
   deleteVaultItem,
+  downloadVaultAttachment,
   fetchCredentialDefinitions,
   fetchVaultAudit,
   fetchVaultGrants,
@@ -27,9 +30,11 @@ import {
   giveVaultItemOwnership,
   importVaultEnv,
   removeVaultGrant,
+  replaceVaultAttachment,
   rotateVaultItem,
   setVaultAccessMode,
   transferVaultItem,
+  updateVaultAttachment,
   updateVaultFieldMetadata,
   updateVaultFieldValue,
   updateVaultGrant,
@@ -39,6 +44,7 @@ import { toPrincipalIn } from "./types";
 import type {
   CredentialDefinition,
   VaultAccessMode,
+  VaultAttachmentUpdateRequest,
   VaultAssignRequest,
   VaultAssignResponse,
   VaultAuditEntry,
@@ -87,13 +93,54 @@ export function useVaultDefinitions() {
 
 export interface VaultActions {
   createItem: (body: VaultItemCreateRequest) => Promise<VaultItem>;
+  createItemWithAttachments: (
+    body: VaultItemCreateRequest,
+    attachments: {
+      file: File;
+      label: string;
+      description?: string;
+      handling: string;
+    }[],
+  ) => Promise<VaultItem>;
   importEnv: (envText: string, inject: boolean) => Promise<number>;
-  updateItem: (itemId: string, body: VaultItemUpdateRequest) => Promise<VaultItem>;
+  updateItem: (
+    itemId: string,
+    body: VaultItemUpdateRequest,
+  ) => Promise<VaultItem>;
   deleteItem: (itemId: string) => Promise<void>;
+  addAttachment: (
+    itemId: string,
+    file: File,
+    metadata: { label: string; description?: string; handling: string },
+  ) => Promise<void>;
+  updateAttachment: (
+    itemId: string,
+    attachmentId: string,
+    body: VaultAttachmentUpdateRequest,
+  ) => Promise<void>;
+  replaceAttachment: (
+    itemId: string,
+    attachmentId: string,
+    file: File,
+  ) => Promise<void>;
+  deleteAttachment: (itemId: string, attachmentId: string) => Promise<void>;
+  downloadAttachment: (
+    itemId: string,
+    attachmentId: string,
+    fileName: string,
+  ) => Promise<void>;
   addField: (itemId: string, field: VaultFieldIn) => Promise<void>;
-  updateFieldValue: (itemId: string, fieldId: string, value: string) => Promise<void>;
+  updateFieldValue: (
+    itemId: string,
+    fieldId: string,
+    value: string,
+  ) => Promise<void>;
   deleteField: (itemId: string, fieldId: string) => Promise<void>;
-  setInject: (itemId: string, fieldId: string, inject: boolean) => Promise<void>;
+  setInject: (
+    itemId: string,
+    fieldId: string,
+    inject: boolean,
+  ) => Promise<void>;
   updateFieldMeta: (
     itemId: string,
     fieldId: string,
@@ -123,10 +170,7 @@ export interface VaultActions {
   fork: (itemId: string, to: VaultPrincipal) => Promise<void>;
 }
 
-export function useVault(
-  scope: VaultScope,
-  opts?: { orgAdmin?: boolean },
-) {
+export function useVault(scope: VaultScope, opts?: { orgAdmin?: boolean }) {
   const orgAdmin = opts?.orgAdmin ?? false;
   // Primitive deps so the effect doesn't re-run on every object identity.
   const scopeKind = scope.kind;
@@ -184,7 +228,7 @@ export function useVault(
   }, [currentScope, orgAdmin]);
 
   const run = useCallback(
-    async <T,>(success: string | null, op: () => Promise<T>): Promise<T> => {
+    async <T>(success: string | null, op: () => Promise<T>): Promise<T> => {
       setBusy(true);
       try {
         const result = await op();
@@ -205,6 +249,30 @@ export function useVault(
   const actions: VaultActions = {
     createItem: (body) =>
       run(`Saved ${body.display_name}`, () => createVaultItem(body)),
+    createItemWithAttachments: (body, attachments) =>
+      run(`Saved ${body.display_name}`, async () => {
+        const item = await createVaultItem(body);
+        try {
+          for (const attachment of attachments) {
+            await addVaultAttachment(item.id, attachment.file, attachment);
+          }
+        } catch (uploadError) {
+          try {
+            await deleteVaultItem(item.id);
+          } catch (cleanupError) {
+            const cleanupMessage =
+              cleanupError instanceof Error
+                ? cleanupError.message
+                : String(cleanupError);
+            throw new Error(
+              `The file upload failed and the empty credential could not be removed: ${cleanupMessage}`,
+              { cause: uploadError },
+            );
+          }
+          throw uploadError;
+        }
+        return item;
+      }),
     importEnv: (envText, inject) =>
       run(null, async () => {
         if (!principal) {
@@ -228,6 +296,24 @@ export function useVault(
       run("Credential updated", () => updateVaultItem(itemId, body)),
     deleteItem: (itemId) =>
       run("Credential deleted", () => deleteVaultItem(itemId)),
+    addAttachment: (itemId, file, metadata) =>
+      run(`Added ${file.name}`, async () => {
+        await addVaultAttachment(itemId, file, metadata);
+      }),
+    updateAttachment: (itemId, attachmentId, body) =>
+      run("File details updated", async () => {
+        await updateVaultAttachment(itemId, attachmentId, body);
+      }),
+    replaceAttachment: (itemId, attachmentId, file) =>
+      run(`Replaced with ${file.name}`, async () => {
+        await replaceVaultAttachment(itemId, attachmentId, file);
+      }),
+    deleteAttachment: (itemId, attachmentId) =>
+      run("File deleted", async () => {
+        await deleteVaultAttachment(itemId, attachmentId);
+      }),
+    downloadAttachment: (itemId, attachmentId, fileName) =>
+      run(null, () => downloadVaultAttachment(itemId, attachmentId, fileName)),
     addField: (itemId, field) =>
       run(`Added field ${field.field_key}`, async () => {
         await addVaultField(itemId, field);

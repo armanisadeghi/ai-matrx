@@ -92,7 +92,15 @@ interface VaultCreateDialogProps {
   principal: VaultPrincipal;
   definitions: CredentialDefinition[];
   busy: boolean;
-  onCreate: (body: VaultItemCreateRequest) => Promise<VaultItem>;
+  onCreate: (
+    body: VaultItemCreateRequest,
+    attachments?: {
+      file: File;
+      label: string;
+      description?: string;
+      handling: string;
+    }[],
+  ) => Promise<VaultItem>;
   onAssign: (body: VaultAssignRequest) => Promise<VaultAssignResponse>;
 }
 
@@ -123,6 +131,8 @@ const BASIC_PURPOSE_DESCRIPTIONS: Readonly<Record<string, string>> = {
   api_key: "Save one API key or access token for a service.",
   [ENV_VALUE_DEFINITION_KEY]:
     "Save a named value that workflows or sandboxes can use.",
+  secure_file:
+    "Encrypt a credential file such as a signing key, certificate, or recovery export.",
 };
 
 function purposeDescription(definition: CredentialDefinition): string | null {
@@ -159,8 +169,16 @@ export function VaultCreateDialog({
     }
   };
 
-  const submitCreate = async (body: VaultItemCreateRequest) => {
-    await onCreate(body);
+  const submitCreate = async (
+    body: VaultItemCreateRequest,
+    attachments?: {
+      file: File;
+      label: string;
+      description?: string;
+      handling: string;
+    }[],
+  ) => {
+    await onCreate(body, attachments);
     close(false);
   };
 
@@ -205,12 +223,20 @@ export function VaultCreateDialog({
             />
           ) : (
             <div className="space-y-3">
-              <ModeToggle mode={mode} onChange={setMode} />
+              {!(
+                step.kind === "form" &&
+                step.definition.payload.attachment_only === true
+              ) && <ModeToggle mode={mode} onChange={setMode} />}
 
               {step.kind === "pick" && (
                 <DefinitionPicker
                   definitions={definitions}
-                  onPick={(definition) => setStep({ kind: "form", definition })}
+                  onPick={(definition) => {
+                    if (definition.payload.attachment_only === true) {
+                      setMode("self");
+                    }
+                    setStep({ kind: "form", definition });
+                  }}
                   onCustom={() => setStep({ kind: "custom" })}
                 />
               )}
@@ -488,6 +514,7 @@ function DefinitionPicker({
     WEBSITE_LOGIN_DEFINITION_KEY,
     "api_key",
     ENV_VALUE_DEFINITION_KEY,
+    "secure_file",
   ]
     .map((key) => definitions.find((definition) => definition.key === key))
     .filter((definition): definition is CredentialDefinition =>
@@ -716,7 +743,15 @@ function DefinitionForm({
   principal: VaultPrincipal;
   mode: CreateMode;
   busy: boolean;
-  onCreate: (body: VaultItemCreateRequest) => Promise<void>;
+  onCreate: (
+    body: VaultItemCreateRequest,
+    attachments?: {
+      file: File;
+      label: string;
+      description?: string;
+      handling: string;
+    }[],
+  ) => Promise<void>;
   onAssign: (body: VaultAssignRequest) => Promise<void>;
 }) {
   const byKey = useMemo(
@@ -743,6 +778,7 @@ function DefinitionForm({
   const showDestination = Boolean(loginUrlDef) || isWebsiteLogin;
   const showNotes = Boolean(notesDef) || isWebsiteLogin;
   const showNotEncrypted = showNotes || extraMetaDefs.length > 0;
+  const attachmentOnly = definition.payload.attachment_only === true;
 
   const [displayName, setDisplayName] = useState(definition.payload.label);
   const [description, setDescription] = useState("");
@@ -768,6 +804,11 @@ function DefinitionForm({
   const [shownFieldKeys, setShownFieldKeys] = useState<Set<string>>(
     () => new Set(),
   );
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [attachmentLabel, setAttachmentLabel] = useState("");
+  const [attachmentPurpose, setAttachmentPurpose] = useState("");
+  const [attachmentHandling, setAttachmentHandling] =
+    useState<VaultHandling>("revealable");
 
   const setDraft = (index: number, patch: Partial<FieldDraft>) =>
     setDrafts((current) =>
@@ -791,6 +832,14 @@ function DefinitionForm({
     else if (!EMAIL_RE.test(email))
       problems.push("Enter the recipient's full email address.");
   }
+  if (attachmentOnly && assigning) {
+    problems.push(
+      "Create protected files in your own vault first, then give ownership if needed.",
+    );
+  }
+  if (attachmentOnly && !attachmentFile) problems.push("Choose a file.");
+  if (attachmentOnly && !attachmentLabel.trim())
+    problems.push("A file label is required.");
   for (const draft of drafts) {
     if (isGeneratedField(draft.def.field_key)) continue;
     const label = draft.def.label;
@@ -825,7 +874,9 @@ function DefinitionForm({
     urls.length > 0 ||
     Boolean(notes.trim()) ||
     Object.values(metaValues).some((v) => v.trim());
-  if (!hasAnyValue && !generating) problems.push("Enter at least one value.");
+  if (!hasAnyValue && !generating && !attachmentOnly) {
+    problems.push("Enter at least one value.");
+  }
 
   const buildFields = (): VaultFieldIn[] =>
     drafts
@@ -881,17 +932,29 @@ function DefinitionForm({
       return;
     }
 
-    await onCreate({
-      principal: toPrincipalIn(principal),
-      display_name: displayName.trim(),
-      description: description.trim() || null,
-      definition_key: definitionKey,
-      definition_version: 1,
-      provider_key: providerKey,
-      fields: buildFields(),
-      source: "manual",
-      ...buildMetadata(),
-    });
+    await onCreate(
+      {
+        principal: toPrincipalIn(principal),
+        display_name: displayName.trim(),
+        description: description.trim() || null,
+        definition_key: definitionKey,
+        definition_version: 1,
+        provider_key: providerKey,
+        fields: buildFields(),
+        source: "manual",
+        ...buildMetadata(),
+      },
+      attachmentOnly && attachmentFile
+        ? [
+            {
+              file: attachmentFile,
+              label: attachmentLabel.trim(),
+              description: attachmentPurpose.trim() || undefined,
+              handling: attachmentHandling,
+            },
+          ]
+        : undefined,
+    );
   };
 
   return (
@@ -913,6 +976,81 @@ function DefinitionForm({
             <li key={hint}>{hint}</li>
           ))}
         </ul>
+      )}
+
+      {attachmentOnly && (
+        <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <div>
+            <p className="text-sm font-semibold">Protected file</p>
+            <p className="text-xs text-muted-foreground">
+              The file bytes are encrypted. Its label and purpose help you
+              recognize it later.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor={`new-secure-file-${definition.key}`}>File</Label>
+              <Input
+                id={`new-secure-file-${definition.key}`}
+                type="file"
+                onChange={(event) => {
+                  const next = event.target.files?.[0] ?? null;
+                  setAttachmentFile(next);
+                  if (next && !attachmentLabel) setAttachmentLabel(next.name);
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Maximum 25 MB.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor={`new-secure-file-label-${definition.key}`}>
+                Label
+              </Label>
+              <Input
+                id={`new-secure-file-label-${definition.key}`}
+                value={attachmentLabel}
+                onChange={(event) => setAttachmentLabel(event.target.value)}
+                placeholder="Apple developer signing key"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor={`new-secure-file-purpose-${definition.key}`}>
+                Purpose
+              </Label>
+              <Input
+                id={`new-secure-file-purpose-${definition.key}`}
+                value={attachmentPurpose}
+                onChange={(event) => setAttachmentPurpose(event.target.value)}
+                placeholder="Used to sign App Store Connect API requests"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Who can download it</Label>
+              <Select
+                value={attachmentHandling}
+                onValueChange={(value) =>
+                  setAttachmentHandling(value as VaultHandling)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="visible">
+                    {HANDLING_LABELS.visible}
+                  </SelectItem>
+                  <SelectItem value="revealable">
+                    {HANDLING_LABELS.revealable}
+                  </SelectItem>
+                  <SelectItem value="sealed">
+                    {HANDLING_LABELS.sealed}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
       )}
 
       {assigning && (
@@ -1054,139 +1192,145 @@ function DefinitionForm({
         </div>
       )}
 
-      <div className="space-y-3 rounded-md border border-border p-3">
-        {drafts.map((draft, index) => (
-          <div key={draft.def.field_key} className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Label htmlFor={`vault-field-${draft.def.field_key}`}>
-                {draft.def.label}
-              </Label>
-              {!(draft.def.required ?? true) && (
-                <span className="text-xs text-muted-foreground">optional</span>
+      {!attachmentOnly && (
+        <div className="space-y-3 rounded-md border border-border p-3">
+          {drafts.map((draft, index) => (
+            <div key={draft.def.field_key} className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Label htmlFor={`vault-field-${draft.def.field_key}`}>
+                  {draft.def.label}
+                </Label>
+                {!(draft.def.required ?? true) && (
+                  <span className="text-xs text-muted-foreground">
+                    optional
+                  </span>
+                )}
+                <Badge variant="outline" className="font-normal">
+                  {
+                    HANDLING_LABELS[
+                      (draft.def.handling ??
+                        "revealable") as NonNullable<VaultHandling>
+                    ]
+                  }
+                </Badge>
+              </div>
+              {draft.def.description && (
+                <p className="text-xs text-muted-foreground">
+                  {draft.def.description}
+                </p>
               )}
-              <Badge variant="outline" className="font-normal">
-                {
-                  HANDLING_LABELS[
-                    (draft.def.handling ??
-                      "revealable") as NonNullable<VaultHandling>
-                  ]
-                }
-              </Badge>
-            </div>
-            {draft.def.description && (
-              <p className="text-xs text-muted-foreground">
-                {draft.def.description}
-              </p>
-            )}
-            {isGeneratedField(draft.def.field_key) ? (
-              <p className="rounded border border-dashed border-border p-2 text-xs text-muted-foreground">
-                Matrx will generate this value on the server and store it on the
-                recipient&apos;s item. You will never see it.
-              </p>
-            ) : (
-              <>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Input
-                    id={`vault-field-${draft.def.field_key}`}
-                    type={
-                      (draft.def.handling ?? "revealable") === "visible" ||
-                      shownFieldKeys.has(draft.def.field_key)
-                        ? "text"
-                        : "password"
-                    }
-                    value={draft.value}
-                    onChange={(e) => setDraft(index, { value: e.target.value })}
-                    placeholder={draft.def.placeholder_example ?? ""}
-                    className="min-w-48 flex-1 font-mono"
-                    autoComplete="off"
-                  />
-                  {(draft.def.handling ?? "revealable") !== "visible" && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-9"
-                      onClick={() =>
-                        setShownFieldKeys((current) => {
-                          const next = new Set(current);
-                          if (next.has(draft.def.field_key)) {
-                            next.delete(draft.def.field_key);
-                          } else {
-                            next.add(draft.def.field_key);
-                          }
-                          return next;
-                        })
+              {isGeneratedField(draft.def.field_key) ? (
+                <p className="rounded border border-dashed border-border p-2 text-xs text-muted-foreground">
+                  Matrx will generate this value on the server and store it on
+                  the recipient&apos;s item. You will never see it.
+                </p>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      id={`vault-field-${draft.def.field_key}`}
+                      type={
+                        (draft.def.handling ?? "revealable") === "visible" ||
+                        shownFieldKeys.has(draft.def.field_key)
+                          ? "text"
+                          : "password"
                       }
-                      aria-label={`${shownFieldKeys.has(draft.def.field_key) ? "Hide" : "Show"} ${draft.def.label}`}
-                    >
-                      {shownFieldKeys.has(draft.def.field_key) ? (
-                        <EyeOff className="mr-1.5 h-4 w-4" />
-                      ) : (
-                        <Eye className="mr-1.5 h-4 w-4" />
-                      )}
-                      {shownFieldKeys.has(draft.def.field_key)
-                        ? "Hide"
-                        : "Show"}
-                    </Button>
-                  )}
-                  {draft.def.field_key === GENERATED_FIELD_KEY && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-9"
-                      onClick={() => {
-                        setDraft(index, { value: generateVaultPassword() });
-                        setShownFieldKeys((current) => {
-                          const next = new Set(current);
-                          next.add(draft.def.field_key);
-                          return next;
-                        });
-                      }}
-                    >
-                      <RefreshCw className="mr-1.5 h-4 w-4" />
-                      Generate
-                    </Button>
-                  )}
-                </div>
-                {definition.key === ENV_VALUE_DEFINITION_KEY ? (
-                  <div className="flex flex-wrap items-center gap-3 rounded-md bg-muted/30 p-2">
-                    <FieldRuntimeSettings
-                      draft={draft}
-                      onChange={(patch) => setDraft(index, patch)}
-                      placeholder="DATA_FOR_SEO_EMAIL"
+                      value={draft.value}
+                      onChange={(e) =>
+                        setDraft(index, { value: e.target.value })
+                      }
+                      placeholder={draft.def.placeholder_example ?? ""}
+                      className="min-w-48 flex-1 font-mono"
+                      autoComplete="off"
                     />
+                    {(draft.def.handling ?? "revealable") !== "visible" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9"
+                        onClick={() =>
+                          setShownFieldKeys((current) => {
+                            const next = new Set(current);
+                            if (next.has(draft.def.field_key)) {
+                              next.delete(draft.def.field_key);
+                            } else {
+                              next.add(draft.def.field_key);
+                            }
+                            return next;
+                          })
+                        }
+                        aria-label={`${shownFieldKeys.has(draft.def.field_key) ? "Hide" : "Show"} ${draft.def.label}`}
+                      >
+                        {shownFieldKeys.has(draft.def.field_key) ? (
+                          <EyeOff className="mr-1.5 h-4 w-4" />
+                        ) : (
+                          <Eye className="mr-1.5 h-4 w-4" />
+                        )}
+                        {shownFieldKeys.has(draft.def.field_key)
+                          ? "Hide"
+                          : "Show"}
+                      </Button>
+                    )}
+                    {draft.def.field_key === GENERATED_FIELD_KEY && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9"
+                        onClick={() => {
+                          setDraft(index, { value: generateVaultPassword() });
+                          setShownFieldKeys((current) => {
+                            const next = new Set(current);
+                            next.add(draft.def.field_key);
+                            return next;
+                          });
+                        }}
+                      >
+                        <RefreshCw className="mr-1.5 h-4 w-4" />
+                        Generate
+                      </Button>
+                    )}
                   </div>
-                ) : (
-                  <details
-                    className="rounded-md border border-border bg-muted/20 px-3 py-2"
-                    open={
-                      draft.inject || Boolean(draft.envKey) ? true : undefined
-                    }
-                  >
-                    <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
-                      Advanced field settings
-                    </summary>
-                    <div className="mt-3">
+                  {definition.key === ENV_VALUE_DEFINITION_KEY ? (
+                    <div className="flex flex-wrap items-center gap-3 rounded-md bg-muted/30 p-2">
                       <FieldRuntimeSettings
                         draft={draft}
                         onChange={(patch) => setDraft(index, patch)}
-                        placeholder="OPTIONAL_RUNTIME_KEY"
+                        placeholder="DATA_FOR_SEO_EMAIL"
                       />
                     </div>
-                  </details>
-                )}
-              </>
-            )}
-          </div>
-        ))}
-        {drafts.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            This definition declares no encrypted fields — everything it holds
-            is plaintext metadata.
-          </p>
-        )}
-      </div>
+                  ) : (
+                    <details
+                      className="rounded-md border border-border bg-muted/20 px-3 py-2"
+                      open={
+                        draft.inject || Boolean(draft.envKey) ? true : undefined
+                      }
+                    >
+                      <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                        Advanced field settings
+                      </summary>
+                      <div className="mt-3">
+                        <FieldRuntimeSettings
+                          draft={draft}
+                          onChange={(patch) => setDraft(index, patch)}
+                          placeholder="OPTIONAL_RUNTIME_KEY"
+                        />
+                      </div>
+                    </details>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+          {drafts.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              This definition declares no encrypted fields — everything it holds
+              is plaintext metadata.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Not encrypted — the twin of VaultItemDetail's NotEncryptedSection */}
       {showNotEncrypted && (

@@ -3474,6 +3474,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/items/{item_id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Attachment */
+        post: operations["add_attachment_vault_items__item_id__attachments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/attachments/{attachment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Attachment */
+        delete: operations["delete_attachment_vault_items__item_id__attachments__attachment_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Attachment */
+        patch: operations["update_attachment_vault_items__item_id__attachments__attachment_id__patch"];
+        trace?: never;
+    };
+    "/vault/items/{item_id}/attachments/{attachment_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace Attachment */
+        put: operations["replace_attachment_vault_items__item_id__attachments__attachment_id__file_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/attachments/{attachment_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Attachment */
+        get: operations["download_attachment_vault_items__item_id__attachments__attachment_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/items/{item_id}/reveal": {
         parameters: {
             query?: never;
@@ -6271,6 +6340,26 @@ export interface paths {
         head?: never;
         /** Patch Enrollment */
         patch: operations["patch_enrollment_hindsight_enrollments__enrollment_id__patch"];
+        trace?: never;
+    };
+    "/hindsight/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Hindsight Costs
+         * @description Platform-wide Hindsight spend — what this system costs to run.
+         */
+        get: operations["hindsight_costs_hindsight_costs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/hindsight/enrollments/{enrollment_id}/review": {
@@ -20074,6 +20163,20 @@ export interface components {
             /** Resource Ref */
             resource_ref: string;
         };
+        /** Body_add_attachment_vault_items__item_id__attachments_post */
+        Body_add_attachment_vault_items__item_id__attachments_post: {
+            /** File */
+            file: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Handling
+             * @default revealable
+             */
+            handling?: string;
+        };
         /** Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post */
         Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post: {
             /** File */
@@ -20140,6 +20243,11 @@ export interface components {
              * @description Destination cld_files.file_path
              */
             file_path: string;
+        };
+        /** Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put */
+        Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put: {
+            /** File */
+            file: string;
         };
         /** Body_transcribe_upload_audio_transcribe_post */
         Body_transcribe_upload_audio_transcribe_post: {
@@ -26312,6 +26420,11 @@ export interface components {
             lens_config?: {
                 [key: string]: unknown;
             };
+            /**
+             * Backfill Days
+             * @default 14
+             */
+            backfill_days?: number;
         };
         /** EnrollmentUpdateRequest */
         EnrollmentUpdateRequest: {
@@ -43420,6 +43533,80 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * VaultAttachmentOut
+         * @description Safe attachment metadata. File bytes only cross the dedicated
+         *     no-store download response and ciphertext never crosses this API.
+         */
+        VaultAttachmentOut: {
+            /** Id */
+            id: string;
+            /** Credential Item Id */
+            credential_item_id: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description?: string | null;
+            /** File Name */
+            file_name: string;
+            /**
+             * Media Type
+             * @default application/octet-stream
+             */
+            media_type?: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /**
+             * Handling
+             * @default revealable
+             * @enum {string}
+             */
+            handling?: "visible" | "revealable" | "sealed";
+            /**
+             * Value Version
+             * @default 1
+             */
+            value_version?: number;
+            /** Last Used At */
+            last_used_at?: string | null;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** VaultAttachmentUpdateRequest */
+        VaultAttachmentUpdateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Clear Description
+             * @default false
+             */
+            clear_description?: boolean;
+            /** File Name */
+            file_name?: string | null;
+            /** Handling */
+            handling?: ("visible" | "revealable" | "sealed") | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** VaultAuditEntry */
         VaultAuditEntry: {
             /** Id */
@@ -43773,7 +43960,7 @@ export interface components {
             /** Display Name */
             display_name: string;
             /** Fields */
-            fields: components["schemas"]["FieldIn"][];
+            fields?: components["schemas"]["FieldIn"][];
             /**
              * Definition Key
              * @default custom
@@ -43874,6 +44061,8 @@ export interface components {
             updated_at: string;
             /** Fields */
             fields?: components["schemas"]["VaultFieldOut"][];
+            /** Attachments */
+            attachments?: components["schemas"]["VaultAttachmentOut"][];
             capabilities?: components["schemas"]["VaultCapabilities"];
         } & {
             [key: string]: unknown;
@@ -51526,6 +51715,173 @@ export interface operations {
             };
         };
     };
+    add_attachment_vault_items__item_id__attachments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_add_attachment_vault_items__item_id__attachments_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultAttachmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_attachment_vault_items__item_id__attachments__attachment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_attachment_vault_items__item_id__attachments__attachment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultAttachmentUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultAttachmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_attachment_vault_items__item_id__attachments__attachment_id__file_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultAttachmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_attachment_vault_items__item_id__attachments__attachment_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                attachment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     reveal_vault_items__item_id__reveal_post: {
         parameters: {
             query?: never;
@@ -56506,6 +56862,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hindsight_costs_hindsight_costs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };

@@ -364,6 +364,7 @@ export const credentialDefinitionSchema = loose({
   docs_url: z.string().nullable().optional(),
   setup_hints: z.array(z.string()).optional(),
   fields: z.array(credentialFieldSchema).optional(),
+  attachment_only: z.boolean().optional(),
   mutually_exclusive: z.array(z.array(z.string())).optional(),
   import_adapters: z.array(z.enum(["env", "json", "pem", "kv"])).optional(),
   expiring: z.boolean().optional(),
@@ -394,10 +395,16 @@ export const credentialDefinitionSchema = loose({
       message: "provider_key requires base_definition_key (presets specialize a base)",
     });
   }
-  if (!isPreset && fields.length === 0) {
+  if (!isPreset && fields.length === 0 && payload.attachment_only !== true) {
     ctx.addIssue({
       code: "custom",
-      message: "a base definition (no base_definition_key) must declare fields",
+      message: "a base definition must declare fields or attachment_only=true",
+    });
+  }
+  if (isPreset && payload.attachment_only === true) {
+    ctx.addIssue({
+      code: "custom",
+      message: "attachment_only is valid only on a base definition",
     });
   }
   const known = new Set(keys);

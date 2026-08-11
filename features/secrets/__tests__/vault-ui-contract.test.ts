@@ -64,7 +64,7 @@ describe("shared vault UI contract", () => {
     expect(workspaceSource).toContain("VAULT_LABELS.credentialType");
   });
 
-  test("starts creation with the four basic purposes", () => {
+  test("starts creation with the basic purposes, including protected files", () => {
     const createSource = readFileSync(
       join(process.cwd(), "features/secrets/components/VaultCreateDialog.tsx"),
       "utf8",
@@ -74,7 +74,28 @@ describe("shared vault UI contract", () => {
     expect(createSource).toContain("WEBSITE_LOGIN_DEFINITION_KEY");
     expect(createSource).toContain('"api_key"');
     expect(createSource).toContain("ENV_VALUE_DEFINITION_KEY");
+    expect(createSource).toContain("attachment_only");
+    expect(createSource).toContain("Protected file");
     expect(createSource).toContain("Custom credential");
     expect(createSource).toContain("Browse all");
+  });
+
+  test("renders attachments as labeled files and never selects their ciphertext", () => {
+    const detailSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultItemDetail.tsx"),
+      "utf8",
+    );
+    const typesSource = readFileSync(
+      join(process.cwd(), "features/secrets/types.ts"),
+      "utf8",
+    );
+
+    expect(detailSource).toContain("Protected files");
+    expect(detailSource).toContain("Type and size");
+    expect(detailSource).toContain("Who can download it");
+    expect(typesSource).toContain("VAULT_ATTACHMENT_COLUMNS");
+    expect(
+      typesSource.match(/VAULT_ATTACHMENT_COLUMNS[\s\S]*?as const/)?.[0],
+    ).not.toContain("value_encrypted");
   });
 });

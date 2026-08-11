@@ -14,6 +14,8 @@ import {
   ArrowLeftRight,
   Building2,
   Check,
+  Download,
+  FileKey2,
   GitFork,
   Globe,
   History,
@@ -24,6 +26,7 @@ import {
   Plus,
   Trash2,
   TriangleAlert,
+  Upload,
   UserPlus,
   Users,
   X,
@@ -78,6 +81,7 @@ import {
   type CredentialDefinition,
   type UriMatchMode,
   type VaultAccessMode,
+  type VaultAttachment,
   type VaultField,
   type VaultHandling,
   type VaultItem,
@@ -307,6 +311,13 @@ export function VaultItemDetail({
         />
       )}
 
+      <AttachmentsSection
+        item={item}
+        busy={busy}
+        actions={actions}
+        editMode={editingCredential}
+      />
+
       {/* Destination — after the credential, because for an API key it is a
           footnote and only for a website login is it part of the identity. */}
       <DestinationSection
@@ -425,6 +436,392 @@ export function VaultItemDetail({
           await actions.deleteItem(item.id);
           setConfirmDelete(false);
           onClose();
+        }}
+      />
+    </div>
+  );
+}
+
+function readableBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AttachmentsSection({
+  item,
+  busy,
+  actions,
+  editMode,
+}: {
+  item: VaultItem;
+  busy: boolean;
+  actions: VaultActions;
+  editMode: boolean;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [label, setLabel] = useState("");
+  const [description, setDescription] = useState("");
+  const [handling, setHandling] = useState<VaultHandling>("revealable");
+
+  const add = async () => {
+    if (!file || !label.trim()) return;
+    await actions.addAttachment(item.id, file, {
+      label: label.trim(),
+      description: description.trim() || undefined,
+      handling,
+    });
+    setFile(null);
+    setLabel("");
+    setDescription("");
+    setHandling("revealable");
+  };
+
+  return (
+    <section className="space-y-2" aria-labelledby={`vault-files-${item.id}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h3
+            id={`vault-files-${item.id}`}
+            className="text-sm font-semibold text-foreground"
+          >
+            Protected files
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Credential files are encrypted with this item and follow its access.
+          </p>
+        </div>
+        <Badge variant="outline">{item.attachments.length}</Badge>
+      </div>
+
+      {item.attachments.length === 0 && !editMode && (
+        <div className="rounded-lg border border-dashed border-border px-4 py-5 text-center">
+          <FileKey2 className="mx-auto mb-2 h-5 w-5 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">
+            No credential files are stored with this item.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {item.attachments.map((attachment) => (
+          <AttachmentRow
+            key={attachment.id}
+            item={item}
+            attachment={attachment}
+            busy={busy}
+            actions={actions}
+            editMode={editMode}
+          />
+        ))}
+      </div>
+
+      {editMode && item.capabilities.can_edit && (
+        <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <p className="text-xs font-semibold">Add a protected file</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor={`attachment-file-${item.id}`}>File</Label>
+              <Input
+                id={`attachment-file-${item.id}`}
+                type="file"
+                onChange={(event) => {
+                  const next = event.target.files?.[0] ?? null;
+                  setFile(next);
+                  if (next && !label) setLabel(next.name);
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Maximum 25 MB. The original bytes are encrypted.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor={`attachment-label-${item.id}`}>Label</Label>
+              <Input
+                id={`attachment-label-${item.id}`}
+                value={label}
+                onChange={(event) => setLabel(event.target.value)}
+                placeholder="Apple developer signing key"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                A human name that explains what the file is.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor={`attachment-purpose-${item.id}`}>Purpose</Label>
+              <Input
+                id={`attachment-purpose-${item.id}`}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Used to sign App Store Connect API requests"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Who can download it</Label>
+              <Select
+                value={handling}
+                onValueChange={(value) => setHandling(value as VaultHandling)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="visible">
+                    {HANDLING_LABELS.visible}
+                  </SelectItem>
+                  <SelectItem value="revealable">
+                    {HANDLING_LABELS.revealable}
+                  </SelectItem>
+                  <SelectItem value="sealed">
+                    {HANDLING_LABELS.sealed}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              disabled={busy || !file || !label.trim()}
+              onClick={() => void add()}
+            >
+              {busy ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="mr-2 h-4 w-4" />
+              )}
+              Encrypt and add file
+            </Button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AttachmentRow({
+  item,
+  attachment,
+  busy,
+  actions,
+  editMode,
+}: {
+  item: VaultItem;
+  attachment: VaultAttachment;
+  busy: boolean;
+  actions: VaultActions;
+  editMode: boolean;
+}) {
+  const [label, setLabel] = useState(attachment.label);
+  const [description, setDescription] = useState(attachment.description ?? "");
+  const [fileName, setFileName] = useState(attachment.file_name);
+  const [handling, setHandling] = useState<VaultHandling>(
+    attachment.handling as VaultHandling,
+  );
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmSeal, setConfirmSeal] = useState(false);
+  const canDownload =
+    attachment.handling !== "sealed" &&
+    (attachment.handling === "visible"
+      ? item.capabilities.can_use
+      : item.capabilities.can_reveal);
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex items-start justify-between gap-3">
+        <dl className="grid min-w-0 flex-1 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-[7rem_minmax(0,1fr)]">
+          <dt className="font-medium text-muted-foreground">Label</dt>
+          <dd className="break-words font-medium text-foreground">
+            {attachment.label}
+          </dd>
+          <dt className="font-medium text-muted-foreground">File</dt>
+          <dd className="break-all text-foreground">{attachment.file_name}</dd>
+          <dt className="font-medium text-muted-foreground">Type and size</dt>
+          <dd className="text-foreground">
+            {attachment.media_type || "Unknown type"} ·{" "}
+            {readableBytes(attachment.size_bytes)}
+          </dd>
+          <dt className="font-medium text-muted-foreground">Protection</dt>
+          <dd className="text-foreground">
+            {HANDLING_LABELS[attachment.handling as VaultHandling]}
+          </dd>
+          {attachment.description && (
+            <>
+              <dt className="font-medium text-muted-foreground">Purpose</dt>
+              <dd className="whitespace-pre-wrap break-words text-foreground">
+                {attachment.description}
+              </dd>
+            </>
+          )}
+        </dl>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy || !canDownload}
+          title={
+            attachment.handling === "sealed"
+              ? "Sealed files are available only to trusted automation"
+              : undefined
+          }
+          onClick={() =>
+            void actions.downloadAttachment(
+              item.id,
+              attachment.id,
+              attachment.file_name,
+            )
+          }
+        >
+          {attachment.handling === "sealed" ? (
+            <Lock className="mr-1.5 h-3.5 w-3.5" />
+          ) : (
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          {attachment.handling === "sealed" ? "Sealed" : "Download"}
+        </Button>
+      </div>
+
+      {editMode && item.capabilities.can_edit && (
+        <div className="mt-3 grid gap-2 border-t border-border pt-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label>Label</Label>
+            <Input
+              value={label}
+              onChange={(event) => setLabel(event.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Purpose</Label>
+            <Input
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Downloaded filename</Label>
+            <Input
+              value={fileName}
+              onChange={(event) => setFileName(event.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Who can download it</Label>
+            <Select
+              value={handling}
+              disabled={attachment.handling === "sealed"}
+              onValueChange={(value) => setHandling(value as VaultHandling)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="visible">
+                  {HANDLING_LABELS.visible}
+                </SelectItem>
+                <SelectItem value="revealable">
+                  {HANDLING_LABELS.revealable}
+                </SelectItem>
+                <SelectItem value="sealed">{HANDLING_LABELS.sealed}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label htmlFor={`replace-${attachment.id}`}>
+              Replace file contents
+            </Label>
+            <Input
+              id={`replace-${attachment.id}`}
+              type="file"
+              disabled={busy}
+              onChange={(event) => {
+                const next = event.target.files?.[0];
+                if (next)
+                  void actions.replaceAttachment(item.id, attachment.id, next);
+              }}
+            />
+          </div>
+          <div className="flex flex-wrap justify-end gap-2 sm:col-span-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={
+                busy ||
+                !label.trim() ||
+                !fileName.trim() ||
+                (label === attachment.label &&
+                  description === (attachment.description ?? "") &&
+                  fileName === attachment.file_name &&
+                  handling === attachment.handling)
+              }
+              onClick={() => {
+                if (handling === "sealed" && attachment.handling !== "sealed") {
+                  setConfirmSeal(true);
+                  return;
+                }
+                void actions.updateAttachment(item.id, attachment.id, {
+                  label: label.trim(),
+                  description: description.trim() || undefined,
+                  clear_description: !description.trim(),
+                  file_name: fileName.trim(),
+                  handling,
+                });
+              }}
+            >
+              Save file details
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={busy}
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Delete file
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete protected file"
+        description={
+          <>
+            Delete <b>{attachment.label}</b>? The encrypted file will be removed
+            from this credential.
+          </>
+        }
+        confirmLabel="Delete file"
+        variant="destructive"
+        busy={busy}
+        onConfirm={async () => {
+          await actions.deleteAttachment(item.id, attachment.id);
+          setConfirmDelete(false);
+        }}
+      />
+      <ConfirmDialog
+        open={confirmSeal}
+        onOpenChange={setConfirmSeal}
+        title="Seal protected file"
+        description={
+          <>
+            Seal <b>{attachment.label}</b>? No person will ever be able to
+            download it again. Only trusted server automation can use its bytes,
+            and this cannot be undone.
+          </>
+        }
+        confirmLabel="Seal permanently"
+        variant="destructive"
+        busy={busy}
+        onConfirm={async () => {
+          await actions.updateAttachment(item.id, attachment.id, {
+            label: label.trim(),
+            description: description.trim() || undefined,
+            clear_description: !description.trim(),
+            file_name: fileName.trim(),
+            handling: "sealed",
+          });
+          setConfirmSeal(false);
         }}
       />
     </div>

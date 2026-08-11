@@ -28,7 +28,25 @@ type ApiSchemas = components["schemas"];
 
 export type VaultItemWire = ApiSchemas["VaultItemOut"];
 export type VaultFieldWire = ApiSchemas["VaultFieldOut"];
+export type VaultAttachmentWire = ApiSchemas["VaultAttachmentOut"];
 export type VaultCapabilities = ApiSchemas["VaultCapabilities"];
+
+export type VaultAttachment = Pick<
+  VaultAttachmentWire,
+  | "id"
+  | "credential_item_id"
+  | "label"
+  | "file_name"
+  | "media_type"
+  | "size_bytes"
+  | "handling"
+  | "value_version"
+  | "created_at"
+  | "updated_at"
+> & {
+  description: string | null;
+  last_used_at: string | null;
+};
 
 /** Wire field with server defaults materialized (see `normalizeWireField`).
  *  Built with `Pick` (not `Omit`) because the generated wire types carry a
@@ -71,6 +89,7 @@ export type VaultItem = Pick<
   non_secret_fields: NonSecretField[];
   browser_fill_enabled: boolean;
   fields: VaultField[];
+  attachments: VaultAttachment[];
   capabilities: VaultCapabilities;
 };
 
@@ -126,6 +145,7 @@ export function normalizeWireItem(wire: VaultItemWire): VaultItem {
     non_secret_fields: normalizeNonSecretFields(wire.non_secret_fields),
     browser_fill_enabled: wire.browser_fill_enabled ?? false,
     fields: (wire.fields ?? []).map(normalizeWireField),
+    attachments: (wire.attachments ?? []).map(normalizeWireAttachment),
     capabilities: wire.capabilities ?? {
       can_use: false,
       can_edit: false,
@@ -134,10 +154,21 @@ export function normalizeWireItem(wire: VaultItemWire): VaultItem {
     },
   };
 }
+export function normalizeWireAttachment(
+  wire: VaultAttachmentWire,
+): VaultAttachment {
+  return {
+    ...wire,
+    description: wire.description ?? null,
+    last_used_at: wire.last_used_at ?? null,
+  };
+}
 export type VaultPrincipalIn = ApiSchemas["PrincipalIn"];
 export type VaultFieldIn = ApiSchemas["FieldIn"];
 export type VaultItemCreateRequest = ApiSchemas["VaultItemCreateRequest"];
 export type VaultItemUpdateRequest = ApiSchemas["VaultItemUpdateRequest"];
+export type VaultAttachmentUpdateRequest =
+  ApiSchemas["VaultAttachmentUpdateRequest"];
 export type VaultImportEnvRequest = ApiSchemas["VaultImportEnvRequest"];
 export type VaultFieldMetadataRequest = ApiSchemas["VaultFieldMetadataRequest"];
 export type VaultGrantee = ApiSchemas["GranteeIn"];
@@ -172,7 +203,7 @@ export const PROMOTABLE_URL_FIELD_KEYS = [
   "portal_url",
 ] as const;
 
-export type VaultHandling = VaultFieldIn["handling"];
+export type VaultHandling = NonNullable<VaultFieldIn["handling"]>;
 export type VaultAccessMode = VaultShareRequest["access_mode"];
 
 // ── Principal (frontend view descriptor) ──────────────────────────────────
@@ -243,6 +274,8 @@ export function scopeToPrincipal(scope: VaultScope): VaultPrincipal | null {
 type CredentialItemsRow =
   Database["users"]["Tables"]["credential_items"]["Row"];
 type UserSecretsRow = Database["users"]["Tables"]["user_secrets"]["Row"];
+type CredentialAttachmentsRow =
+  Database["users"]["Tables"]["credential_attachments"]["Row"];
 
 /** Masked item metadata columns the browser may select. NEVER `select *`.
  *  The destination-login columns are plaintext BY DESIGN and safe to list. */
@@ -253,6 +286,11 @@ export const CREDENTIAL_ITEM_COLUMNS =
  *  never select it, never `select *` on `users.user_secrets`. */
 export const VAULT_FIELD_COLUMNS =
   "id, credential_item_id, field_key, key, handling, editable, inject_into_sandbox, value_hint, value_version, is_active, description, created_at, updated_at" as const;
+
+/** Attachment metadata only. Encrypted file bytes are deliberately absent and
+ *  are not selectable by browser roles even if a caller changes this list. */
+export const VAULT_ATTACHMENT_COLUMNS =
+  "id, credential_item_id, label, description, file_name, media_type, size_bytes, handling, value_version, last_used_at, created_at, updated_at" as const;
 
 export type CredentialItemMaskedRow = Pick<
   CredentialItemsRow,
@@ -291,6 +329,22 @@ export type VaultFieldMaskedRow = Pick<
   | "value_version"
   | "is_active"
   | "description"
+  | "created_at"
+  | "updated_at"
+>;
+
+export type VaultAttachmentMaskedRow = Pick<
+  CredentialAttachmentsRow,
+  | "id"
+  | "credential_item_id"
+  | "label"
+  | "description"
+  | "file_name"
+  | "media_type"
+  | "size_bytes"
+  | "handling"
+  | "value_version"
+  | "last_used_at"
   | "created_at"
   | "updated_at"
 >;

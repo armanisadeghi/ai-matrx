@@ -14,17 +14,26 @@
  */
 import { createClient } from "@/utils/supabase/client";
 import {
-  credentialDefinitionSchema,
-} from "@/features/admin/applications/catalogs/schemas";
+  downloadVaultAttachment as downloadVaultAttachmentBytes,
+  replaceVaultAttachment as replaceVaultAttachmentBytes,
+  uploadVaultAttachment,
+} from "@/features/files/vault/vaultAttachmentTransport";
+import { credentialDefinitionSchema } from "@/features/admin/applications/catalogs/schemas";
 import {
   CREDENTIAL_ITEM_COLUMNS,
+  VAULT_ATTACHMENT_COLUMNS,
   VAULT_FIELD_COLUMNS,
   normalizeNonSecretFields,
   normalizeWireField,
   normalizeWireItem,
+  normalizeWireAttachment,
   toPrincipalIn,
   type CredentialDefinition,
   type CredentialItemMaskedRow,
+  type VaultAttachment,
+  type VaultAttachmentMaskedRow,
+  type VaultAttachmentUpdateRequest,
+  type VaultAttachmentWire,
   type VaultAccessMode,
   type VaultAssignRequest,
   type VaultAssignResponse,
@@ -46,6 +55,7 @@ import {
   type VaultRevealResponse,
   type VaultScope,
   type VaultTransferResponse,
+  type VaultHandling,
 } from "./types";
 
 // ── aidream /api/vault client ─────────────────────────────────────────────
@@ -96,7 +106,9 @@ async function vaultFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return (await resp.json()) as T;
 }
 
-export function createVaultItem(body: VaultItemCreateRequest): Promise<VaultItem> {
+export function createVaultItem(
+  body: VaultItemCreateRequest,
+): Promise<VaultItem> {
   return vaultFetch<VaultItemWire>("/items", {
     method: "POST",
     body: JSON.stringify(body),
@@ -135,6 +147,59 @@ export function deleteVaultItem(itemId: string): Promise<void> {
   });
 }
 
+export function addVaultAttachment(
+  itemId: string,
+  file: File,
+  metadata: { label: string; description?: string; handling: string },
+): Promise<VaultAttachment> {
+  return uploadVaultAttachment<VaultAttachmentWire>(
+    itemId,
+    file,
+    metadata,
+  ).then(normalizeWireAttachment);
+}
+
+export function updateVaultAttachment(
+  itemId: string,
+  attachmentId: string,
+  body: VaultAttachmentUpdateRequest,
+): Promise<VaultAttachment> {
+  return vaultFetch<VaultAttachmentWire>(
+    `/items/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    { method: "PATCH", body: JSON.stringify(body) },
+  ).then(normalizeWireAttachment);
+}
+
+export function replaceVaultAttachment(
+  itemId: string,
+  attachmentId: string,
+  file: File,
+): Promise<VaultAttachment> {
+  return replaceVaultAttachmentBytes<VaultAttachmentWire>(
+    itemId,
+    attachmentId,
+    file,
+  ).then(normalizeWireAttachment);
+}
+
+export function deleteVaultAttachment(
+  itemId: string,
+  attachmentId: string,
+): Promise<void> {
+  return vaultFetch<void>(
+    `/items/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export function downloadVaultAttachment(
+  itemId: string,
+  attachmentId: string,
+  fileName: string,
+): Promise<void> {
+  return downloadVaultAttachmentBytes(itemId, attachmentId, fileName);
+}
+
 export function addVaultField(
   itemId: string,
   field: VaultFieldIn,
@@ -170,7 +235,10 @@ export function updateVaultFieldMetadata(
   ).then(normalizeWireField);
 }
 
-export function deleteVaultField(itemId: string, fieldId: string): Promise<void> {
+export function deleteVaultField(
+  itemId: string,
+  fieldId: string,
+): Promise<void> {
   return vaultFetch<void>(
     `/items/${encodeURIComponent(itemId)}/fields/${encodeURIComponent(fieldId)}`,
     { method: "DELETE" },
@@ -204,10 +272,13 @@ export function rotateVaultItem(
   itemId: string,
   values: Record<string, string>,
 ): Promise<VaultItem> {
-  return vaultFetch<VaultItemWire>(`/items/${encodeURIComponent(itemId)}/rotate`, {
-    method: "POST",
-    body: JSON.stringify({ values }),
-  }).then(normalizeWireItem);
+  return vaultFetch<VaultItemWire>(
+    `/items/${encodeURIComponent(itemId)}/rotate`,
+    {
+      method: "POST",
+      body: JSON.stringify({ values }),
+    },
+  ).then(normalizeWireItem);
 }
 
 /**
@@ -223,10 +294,13 @@ export function setVaultAccessMode(
   accessMode: VaultAccessMode,
   grantees: VaultGrantee[] = [],
 ): Promise<VaultItem> {
-  return vaultFetch<VaultItemWire>(`/items/${encodeURIComponent(itemId)}/share`, {
-    method: "PUT",
-    body: JSON.stringify({ access_mode: accessMode, grantees }),
-  }).then(normalizeWireItem);
+  return vaultFetch<VaultItemWire>(
+    `/items/${encodeURIComponent(itemId)}/share`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ access_mode: accessMode, grantees }),
+    },
+  ).then(normalizeWireItem);
 }
 
 // ── Grants: one recipient at a time ───────────────────────────────────────
@@ -261,7 +335,10 @@ export function updateVaultGrant(
 }
 
 /** Revoke ONE recipient — immediate for list, reveal, and execution. */
-export function removeVaultGrant(itemId: string, grantId: string): Promise<void> {
+export function removeVaultGrant(
+  itemId: string,
+  grantId: string,
+): Promise<void> {
   return vaultFetch<void>(
     `/items/${encodeURIComponent(itemId)}/grants/${encodeURIComponent(grantId)}`,
     { method: "DELETE" },
@@ -275,10 +352,13 @@ export function transferVaultItem(
   itemId: string,
   to: VaultPrincipal,
 ): Promise<VaultItem> {
-  return vaultFetch<VaultItemWire>(`/items/${encodeURIComponent(itemId)}/transfer`, {
-    method: "POST",
-    body: JSON.stringify({ to_principal: toPrincipalIn(to) }),
-  }).then(normalizeWireItem);
+  return vaultFetch<VaultItemWire>(
+    `/items/${encodeURIComponent(itemId)}/transfer`,
+    {
+      method: "POST",
+      body: JSON.stringify({ to_principal: toPrincipalIn(to) }),
+    },
+  ).then(normalizeWireItem);
 }
 
 /**
@@ -292,7 +372,10 @@ export function giveVaultItemOwnership(
 ): Promise<VaultTransferResponse> {
   return vaultFetch<VaultTransferResponse>(
     `/items/${encodeURIComponent(itemId)}/transfer`,
-    { method: "POST", body: JSON.stringify({ recipient_email: recipientEmail }) },
+    {
+      method: "POST",
+      body: JSON.stringify({ recipient_email: recipientEmail }),
+    },
   );
 }
 
@@ -314,10 +397,13 @@ export function forkVaultItem(
   itemId: string,
   to: VaultPrincipal,
 ): Promise<VaultItem> {
-  return vaultFetch<VaultItemWire>(`/items/${encodeURIComponent(itemId)}/fork`, {
-    method: "POST",
-    body: JSON.stringify({ to_principal: toPrincipalIn(to) }),
-  }).then(normalizeWireItem);
+  return vaultFetch<VaultItemWire>(
+    `/items/${encodeURIComponent(itemId)}/fork`,
+    {
+      method: "POST",
+      body: JSON.stringify({ to_principal: toPrincipalIn(to) }),
+    },
+  ).then(normalizeWireItem);
 }
 
 export function fetchVaultAudit(
@@ -361,11 +447,21 @@ function deriveCapabilities(
   opts: { orgAdmin: boolean; manageGrantItemIds: ReadonlySet<string> },
 ): VaultCapabilities {
   if (item.user_id === uid) {
-    return { can_use: true, can_edit: true, can_reveal: true, can_manage: true };
+    return {
+      can_use: true,
+      can_edit: true,
+      can_reveal: true,
+      can_manage: true,
+    };
   }
   if (item.organization_id) {
     if (opts.orgAdmin) {
-      return { can_use: true, can_edit: true, can_reveal: true, can_manage: true };
+      return {
+        can_use: true,
+        can_edit: true,
+        can_reveal: true,
+        can_manage: true,
+      };
     }
     const canManageGrant = opts.manageGrantItemIds.has(item.id);
     return {
@@ -439,7 +535,9 @@ export async function fetchVaultItems(
     itemsQuery = itemsQuery.eq("organization_id", scope.organizationId);
   } else if (scope.kind === "shared") {
     // Items I was granted — deliberately EXCLUDING my own, which live in Mine.
-    itemsQuery = itemsQuery.in("id", sharedItemIds ?? []).neq("user_id", user.id);
+    itemsQuery = itemsQuery
+      .in("id", sharedItemIds ?? [])
+      .neq("user_id", user.id);
   } else {
     itemsQuery = itemsQuery.eq("user_id", user.id);
   }
@@ -460,10 +558,20 @@ export async function fetchVaultItems(
     .order("field_key", { ascending: true });
   if (fieldsError) throw new Error(fieldsError.message);
 
+  const { data: attachmentRows, error: attachmentsError } = await supabase
+    .schema("users")
+    .from("credential_attachments")
+    .select(VAULT_ATTACHMENT_COLUMNS)
+    .in("credential_item_id", itemIds)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+  if (attachmentsError) throw new Error(attachmentsError.message);
+
   // My own grants refine capabilities for rows I don't own (self-read policy).
   let manageGrantItemIds = new Set<string>();
   const needsGrantRefine =
-    scope.kind === "shared" || (scope.kind === "organization" && !opts?.orgAdmin);
+    scope.kind === "shared" ||
+    (scope.kind === "organization" && !opts?.orgAdmin);
   if (needsGrantRefine) {
     const { data: grantRows, error: grantsError } = await supabase
       .schema("users")
@@ -485,6 +593,18 @@ export async function fetchVaultItems(
     const list = fieldsByItem.get(row.credential_item_id) ?? [];
     list.push(normalizeField(row));
     fieldsByItem.set(row.credential_item_id, list);
+  }
+
+  const attachmentsByItem = new Map<string, VaultAttachment[]>();
+  for (const row of (attachmentRows ?? []) as VaultAttachmentMaskedRow[]) {
+    const list = attachmentsByItem.get(row.credential_item_id) ?? [];
+    list.push(
+      normalizeWireAttachment({
+        ...row,
+        handling: row.handling as VaultHandling,
+      }),
+    );
+    attachmentsByItem.set(row.credential_item_id, list);
   }
 
   return items.map((item) => ({
@@ -509,6 +629,7 @@ export async function fetchVaultItems(
     created_at: item.created_at,
     updated_at: item.updated_at,
     fields: fieldsByItem.get(item.id) ?? [],
+    attachments: attachmentsByItem.get(item.id) ?? [],
     capabilities: deriveCapabilities(item, user.id, {
       orgAdmin: opts?.orgAdmin ?? false,
       manageGrantItemIds,
@@ -518,7 +639,9 @@ export async function fetchVaultItems(
 
 // ── Catalog definitions (public.catalog_entries, kind=credential_definition) ─
 
-export async function fetchCredentialDefinitions(): Promise<CredentialDefinition[]> {
+export async function fetchCredentialDefinitions(): Promise<
+  CredentialDefinition[]
+> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("catalog_entries")

@@ -8783,6 +8783,266 @@
         }
       }
     },
+    "/vault/items/{item_id}/attachments": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Add Attachment",
+        "operationId": "add_attachment_vault_items__item_id__attachments_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_attachment_vault_items__item_id__attachments_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultAttachmentOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/attachments/{attachment_id}": {
+      "patch": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Update Attachment",
+        "operationId": "update_attachment_vault_items__item_id__attachments__attachment_id__patch",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Attachment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultAttachmentUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultAttachmentOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Delete Attachment",
+        "operationId": "delete_attachment_vault_items__item_id__attachments__attachment_id__delete",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Attachment Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/attachments/{attachment_id}/file": {
+      "put": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Replace Attachment",
+        "operationId": "replace_attachment_vault_items__item_id__attachments__attachment_id__file_put",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Attachment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultAttachmentOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/attachments/{attachment_id}/download": {
+      "get": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Download Attachment",
+        "operationId": "download_attachment_vault_items__item_id__attachments__attachment_id__download_get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "attachment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Attachment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vault/items/{item_id}/reveal": {
       "post": {
         "tags": [
@@ -12301,6 +12561,126 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/nodes/{node_id}/draft-brief": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Draft Brief",
+        "description": "Draft ONE page's brief against its neighbours.\n\nThe result is written to `plan.node.metadata.ai_brief_draft` the instant it\narrives — a disconnect, a refresh, or a user who never presses Save loses\nnothing. Client CRUD still reads the node straight from Supabase.",
+        "operationId": "draft_brief_content_plan_nodes__node_id__draft_brief_post",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DraftBriefBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/nodes/{node_id}/accept-brief-draft": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Accept Brief",
+        "description": "Promote the node's persisted AI draft onto its live `brief`.",
+        "operationId": "accept_brief_content_plan_nodes__node_id__accept_brief_draft_post",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ScopedBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptBriefResult"
+                }
               }
             }
           },
@@ -16149,6 +16529,30 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/costs": {
+      "get": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Hindsight Costs",
+        "description": "Platform-wide Hindsight spend — what this system costs to run.",
+        "operationId": "hindsight_costs_hindsight_costs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Hindsight Costs Hindsight Costs Get"
                 }
               }
             }
@@ -46053,6 +46457,27 @@
   },
   "components": {
     "schemas": {
+      "AcceptBriefResult": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "brief": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Brief"
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id",
+          "brief"
+        ],
+        "title": "AcceptBriefResult"
+      },
       "ActionApplyResult": {
         "properties": {
           "type": {
@@ -53858,6 +54283,41 @@
         ],
         "title": "BingSiteBindingRequest"
       },
+      "Body_add_attachment_vault_items__item_id__attachments_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "handling": {
+            "type": "string",
+            "title": "Handling",
+            "default": "revealable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "label"
+        ],
+        "title": "Body_add_attachment_vault_items__item_id__attachments_post"
+      },
       "Body_assets_pdf_compress_multipart_assets_pdf_compress_multipart_post": {
         "properties": {
           "file": {
@@ -54012,6 +54472,20 @@
           "file_path"
         ],
         "title": "Body_put_file_cloud_files_put_put"
+      },
+      "Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put"
       },
       "Body_transcribe_upload_audio_transcribe_post": {
         "properties": {
@@ -70217,6 +70691,56 @@
         ],
         "title": "DomainUpsertRequest"
       },
+      "DraftBriefBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "guidance": {
+            "type": "string",
+            "title": "Guidance",
+            "default": ""
+          },
+          "accept": {
+            "type": "boolean",
+            "title": "Accept",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DraftBriefBody"
+      },
       "DrainRequest": {
         "properties": {
           "limit": {
@@ -71046,6 +71570,13 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Lens Config"
+          },
+          "backfill_days": {
+            "type": "integer",
+            "maximum": 365,
+            "minimum": 0,
+            "title": "Backfill Days",
+            "default": 14
           }
         },
         "type": "object",
@@ -102324,6 +102855,47 @@
         "title": "ScopeContext",
         "description": "Snapshot of who is asking and at what scope."
       },
+      "ScopedBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ScopedBody",
+        "description": "Base for every body on this router.\n\nThe FE's `callApi` injects the ambient scope (organization_id / project_id /\ntask_id) into EVERY request body. A bare `extra=\"forbid\"` model therefore\n422s the moment the user has an active org selected — these fields must be\nACCEPTED and ignored (scope here comes from the path + the request's user\ncontext, never the body). `extra=\"forbid\"` stays, so real typos still fail\nloudly."
+      },
       "ScoreSourcesRequest": {
         "properties": {
           "source_ids": {
@@ -115528,6 +116100,190 @@
         "title": "VaultAssignResponse",
         "description": "Safe identity + confirmation ONLY. A generated password never appears\nhere, not even as a hint."
       },
+      "VaultAttachmentOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "credential_item_id": {
+            "type": "string",
+            "title": "Credential Item Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type",
+            "default": "application/octet-stream"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "handling": {
+            "type": "string",
+            "enum": [
+              "visible",
+              "revealable",
+              "sealed"
+            ],
+            "title": "Handling",
+            "default": "revealable"
+          },
+          "value_version": {
+            "type": "integer",
+            "title": "Value Version",
+            "default": 1
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "credential_item_id",
+          "label",
+          "file_name",
+          "size_bytes",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "VaultAttachmentOut",
+        "description": "Safe attachment metadata. File bytes only cross the dedicated\nno-store download response and ciphertext never crosses this API."
+      },
+      "VaultAttachmentUpdateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "clear_description": {
+            "type": "boolean",
+            "title": "Clear Description",
+            "default": false
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "handling": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "visible",
+                  "revealable",
+                  "sealed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handling"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "VaultAttachmentUpdateRequest"
+      },
       "VaultAuditEntry": {
         "properties": {
           "id": {
@@ -116327,7 +117083,6 @@
               "$ref": "#/components/schemas/FieldIn"
             },
             "type": "array",
-            "minItems": 1,
             "title": "Fields"
           },
           "definition_key": {
@@ -116378,8 +117133,7 @@
         "additionalProperties": true,
         "type": "object",
         "required": [
-          "display_name",
-          "fields"
+          "display_name"
         ],
         "title": "VaultItemCreateRequest"
       },
@@ -116549,6 +117303,13 @@
             },
             "type": "array",
             "title": "Fields"
+          },
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/VaultAttachmentOut"
+            },
+            "type": "array",
+            "title": "Attachments"
           },
           "capabilities": {
             "$ref": "#/components/schemas/VaultCapabilities"

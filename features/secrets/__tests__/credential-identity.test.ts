@@ -40,6 +40,7 @@ const item: VaultItem = {
   non_secret_fields: [],
   browser_fill_enabled: false,
   fields: [field],
+  attachments: [],
   capabilities: {
     can_use: true,
     can_edit: true,

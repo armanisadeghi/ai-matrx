@@ -10,6 +10,12 @@
 
 ONE definition-driven vault for both principals — personal and organization — covering env values, API keys, logins, tokens, service accounts, and multi-field credential bundles. A **credential item** (`users.credential_items`) owns one or more encrypted **fields** (`users.user_secrets`); non-secret **definitions and provider presets** come from Remote Catalogs (`public.catalog_entries`, kind `credential_definition`, app `matrx`, 120+ active).
 
+Items may also own multiple encrypted **protected files**
+(`users.credential_attachments`) such as signing keys, certificates, and
+recovery exports. Attachment metadata is shown as explicit labeled values
+(label, filename, purpose, type/size, protection); bytes never enter list JSON,
+Redux, storage, URLs, or logs.
+
 ## The one workspace
 
 `components/VaultWorkspace.tsx` is the ONLY vault UI. It receives a `VaultPrincipal` (`{type:'user'}` or `{type:'organization', organizationId}`); which actions render is decided by each item's `capabilities` (`can_use` / `can_edit` / `can_reveal` / `can_manage`) — never by principal-specific component forks. Surfaces:
@@ -41,6 +47,12 @@ Field metadata (inject flag, env alias set/clear, description, `is_active`, hand
 
 1. **Masked metadata → DIRECT Supabase.** Items + fields + catalog definitions are read via supabase-js with the **explicit column lists** `CREDENTIAL_ITEM_COLUMNS` / `VAULT_FIELD_COLUMNS` (`types.ts`). `users.user_secrets.value_encrypted` is unreadable by client roles — **never `select *` on these tables.** Scope is declared per THE VIEW LAW — see Scopes below; RLS provides owner reads, org-member masked reads, personal-grantee reads, and self-reads on `user_secret_grants`.
 2. **Everything value-bearing or mutating → aidream `/api/vault/*`** (`vault-service.ts`): create/update/delete items and fields, import-env, reveal, resolve, rotate, share, transfer, fork, audit. The legacy `/api/user-secrets` + `/api/organization-secrets` routes are server-side aliases only — this FE must never call them.
+
+Attachments keep the same split: `CREDENTIAL_ATTACHMENT_COLUMNS` reads only
+safe metadata directly from Supabase; `features/files/vault/vaultAttachmentTransport.ts`
+is the one browser byte path to aidream multipart upload/replace and no-store
+download. It is deliberately separate from ordinary cloud-file storage because
+the bytes stay inside the credential encryption boundary.
 
 Capabilities on the direct list are projected client-side (`deriveCapabilities` in `vault-service.ts`, mirroring aidream `item_capabilities`); the server re-checks every mutation and its responses carry authoritative capabilities.
 
@@ -138,8 +150,12 @@ Personal and organization credentials render through the same
   and login URLs when applicable). Encrypted fields are shown in the detail
   pane, avoiding a card-grid wall of reveal controls.
 - New credential starts with four plain-purpose choices: Website login, API
-  key, Environment value, and Custom credential. The full catalog remains
+  key, Environment value, Secure file, and Custom credential. The full catalog remains
   searchable behind **Browse all**.
+- Protected files live in the same single Edit credential mode. Users can add
+  multiple files, edit label/purpose/download filename/protection, replace
+  bytes, download, and delete. Sealing is confirmed as a permanent one-way
+  action; sealed files have no human download affordance.
 - Website-login password fields offer browser-local cryptographic generation
   plus explicit Show/Hide. Generated values remain only in the transient create
   form, exactly like a typed value, and are never logged or persisted outside
@@ -196,6 +212,11 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-11** — Added first-class Vault file attachments and the Secure file
+  create purpose. Initial creation uploads atomically from the user's point of
+  view (a failed upload removes the empty item), while existing items support
+  labeled multi-file management through the canonical file byte transport.
 
 - **2026-07-28** — Removed the obsolete pre-deployment warning after the Vault API and organization-aware browser-login matching shipped through aidream.
 - **2026-07-28** — Added the full-route three-pane password-manager workspace,

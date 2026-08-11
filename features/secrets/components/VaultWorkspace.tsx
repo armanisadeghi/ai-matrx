@@ -533,7 +533,11 @@ export function VaultWorkspace({
           principal={principal}
           definitions={definitions}
           busy={vault.busy}
-          onCreate={vault.actions.createItem}
+          onCreate={(body, attachments) =>
+            attachments?.length
+              ? vault.actions.createItemWithAttachments(body, attachments)
+              : vault.actions.createItem(body)
+          }
           onAssign={vault.actions.assign}
         />
         <VaultEnvImportDialog
@@ -756,7 +760,11 @@ export function VaultWorkspace({
         principal={principal}
         definitions={definitions}
         busy={vault.busy}
-        onCreate={vault.actions.createItem}
+        onCreate={(body, attachments) =>
+          attachments?.length
+            ? vault.actions.createItemWithAttachments(body, attachments)
+            : vault.actions.createItem(body)
+        }
         onAssign={vault.actions.assign}
       />
 
