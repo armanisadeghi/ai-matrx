@@ -605,6 +605,11 @@ export function GeneratorForm({
               dir={isRtl ? "rtl" : undefined}
               autoGrow
               minHeight={sourceKind === "topic" ? 84 : 168}
+              // ProTextarea's contract: autoGrow ALWAYS gets a maxHeight, or
+              // the field grows to its measured scrollHeight with nothing
+              // stopping it — an empty topic box was rendering 904px tall and
+              // pushing the whole form off screen.
+              maxHeight={sourceKind === "topic" ? 240 : 420}
               className="text-base"
             />
           ) : activeSource.control === "urls" ? (

@@ -18,7 +18,8 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import MarkdownStream from "@/components/MarkdownStream";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,6 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { Input } from "@/components/ui/input";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectAccumulatedText,
   selectConversationRequestIds,
   selectFirstExtractedObject,
   selectJsonExtractionComplete,
@@ -47,20 +47,31 @@ import { useKindRequest } from "./useKindRequest";
  * The result, rendered LIVE from the streaming request — the whole point of
  * this dialog. As the agent streams, `selectFirstExtractedObject` yields an
  * incrementally-growing object, so each option pops in the instant its JSON
- * closes; the user can pick one the moment it appears, mid-stream. Before the
- * first parseable object, the raw generated text shows so SOMETHING moves from
- * the first token — never a dead spinner.
+ * closes; the user can pick one the moment it appears, mid-stream.
+ *
+ * Before the first parseable object, the pre-result stream renders through THE
+ * CANONICAL PIPELINE (`MarkdownStream` by `requestId`) — never a hand-rolled
+ * read of the accumulated text. That is not a style preference: accumulated
+ * text INCLUDES the model's chain-of-thought, so printing it raw dumps the
+ * agent's private reasoning onto the user's screen as literal text. The
+ * canonical renderer routes reasoning into its collapsed trace and shows the
+ * answer as the answer.
+ *
+ * `onReady` reports whether a usable value exists, so the host can never blank
+ * a result the user is already looking at.
  */
 function LiveKindResult({
   conversationId,
   expectedKind,
   uiOptions,
   onPick,
+  onHasValueChange,
 }: {
   conversationId: string;
   expectedKind: string;
   uiOptions?: KindComponentUiOptions;
   onPick: (value: unknown) => void;
+  onHasValueChange?: (hasValue: boolean) => void;
 }) {
   // Resolve the live request from the conversation. `createRequest` dispatches
   // early inside execution — so this id appears WHILE the agent is streaming,
@@ -80,11 +91,9 @@ function LiveKindResult({
     () => selectJsonExtractionComplete(requestId),
     [requestId],
   );
-  const textSel = useMemo(() => selectAccumulatedText(requestId), [requestId]);
 
   const snapshot = useAppSelector(objectSel);
   const complete = useAppSelector(completeSel);
-  const streamingText = useAppSelector(textSel);
 
   const liveContent = useMemo(() => {
     const value = snapshot?.value;
@@ -96,19 +105,29 @@ function LiveKindResult({
     return JSON.stringify(stamped);
   }, [snapshot, expectedKind]);
 
-  // First tokens are streaming but no option has closed yet — show the live
-  // text so the surface feels alive from the very first character.
+  useEffect(() => {
+    onHasValueChange?.(Boolean(liveContent));
+  }, [liveContent, onHasValueChange]);
+
+  // First tokens are streaming but no option has closed yet — render the live
+  // stream through the canonical pipeline so the surface feels alive from the
+  // first character WITHOUT leaking chain-of-thought as raw text.
   if (!liveContent) {
     return (
       <div className="py-2">
         <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-          Thinking…
+          Working on your ideas…
         </div>
-        {streamingText ? (
-          <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground/80">
-            {streamingText}
-          </p>
+        {requestId ? (
+          <div className="max-h-48 overflow-y-auto">
+            <MarkdownStream
+              requestId={requestId}
+              isStreamActive
+              hideCopyButton
+              className="text-xs"
+            />
+          </div>
         ) : null}
       </div>
     );
@@ -180,6 +199,15 @@ export function KindRequestDialog({
   const { run, isRunning, error, conversationId, reset } = useKindRequest();
   const [phase, setPhase] = useState<Phase>("input");
   const [values, setValues] = useState<Record<string, string>>({});
+  /**
+   * Whether the live stream has produced something the user can actually pick.
+   * THE RULE: a result the user is looking at is never taken away. A late
+   * failure from the run promise (which resolves long after the first options
+   * render) may only ADD a notice beside the result — it may not send the user
+   * back to the form and delete a paid model call's output.
+   */
+  const [hasLiveValue, setHasLiveValue] = useState(false);
+  const [runFailed, setRunFailed] = useState(false);
 
   // Seed field defaults whenever the dialog opens; reset transient state.
   useEffect(() => {
@@ -188,6 +216,8 @@ export function KindRequestDialog({
     for (const f of fields) seeded[f.name] = f.defaultValue ?? "";
     setValues(seeded);
     setPhase("input");
+    setHasLiveValue(false);
+    setRunFailed(false);
     reset();
   }, [open, fields, reset]);
 
@@ -201,6 +231,8 @@ export function KindRequestDialog({
   const submit = () => {
     if (!canSubmit) return;
     setPhase("running");
+    setHasLiveValue(false);
+    setRunFailed(false);
     // Warm the component registry so the streamed result routes to its real db
     // component, not the generic viewer, on first render.
     void refreshKindComponents();
@@ -212,9 +244,18 @@ export function KindRequestDialog({
       variables: { ...(fixedVariables ?? {}), ...values },
       expectedKind,
     }).catch(() => {
-      // useKindRequest already captured the message into `error`.
-      setPhase("input");
+      // useKindRequest already captured the message into `error`. Flag the
+      // failure — the render below decides what it means: with options on
+      // screen it is a footnote, with nothing on screen it returns the form.
+      setRunFailed(true);
     });
+  };
+
+  const retry = () => {
+    setPhase("input");
+    setHasLiveValue(false);
+    setRunFailed(false);
+    reset();
   };
 
   const handlePick = (value: unknown) => {
@@ -224,7 +265,21 @@ export function KindRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
+      {/* Sized for the RESULT, not the form: this dialog spends most of its
+          life showing a set of rich option cards the user reads and compares.
+          A 2xl box made five ideas a scroll-tunnel. */}
+      <DialogContent
+        className="max-h-[88dvh] overflow-y-auto sm:max-w-4xl lg:max-w-5xl"
+        // A stray click on the backdrop must not delete a finished result the
+        // user paid for and hasn't chosen from yet. Once options are on
+        // screen, closing takes an explicit X / Esc.
+        onPointerDownOutside={(e) => {
+          if (hasLiveValue) e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          if (hasLiveValue) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -235,14 +290,34 @@ export function KindRequestDialog({
           ) : null}
         </DialogHeader>
 
-        {phase === "running" ? (
+        {phase === "running" && (runFailed ? hasLiveValue : true) ? (
           conversationId ? (
-            <LiveKindResult
-              conversationId={conversationId}
-              expectedKind={expectedKind}
-              uiOptions={uiOptions}
-              onPick={handlePick}
-            />
+            <>
+              <LiveKindResult
+                conversationId={conversationId}
+                expectedKind={expectedKind}
+                uiOptions={uiOptions}
+                onPick={handlePick}
+                onHasValueChange={setHasLiveValue}
+              />
+              {runFailed ? (
+                <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+                  <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    The agent stopped before finishing the full set. What it did
+                    produce is above and still usable — pick one, or
+                    <button
+                      type="button"
+                      onClick={retry}
+                      className="ml-1 underline underline-offset-2 hover:no-underline"
+                    >
+                      try again
+                    </button>
+                    .
+                  </span>
+                </div>
+              ) : null}
+            </>
           ) : (
             // Sub-second gap between submit and the launch returning an id.
             <div className="flex items-center gap-1.5 py-4 text-xs font-medium text-muted-foreground">

@@ -163,6 +163,17 @@ export type CapturedErrorSource =
    * `pnpm check:scroll-chain`.
    */
   | "layout-scroll-chain"
+  /**
+   * A headless agent run (`runHeadlessAgentJson`) finished without a usable
+   * structured result — the caller got an error instead of data, and a paid
+   * model call was thrown away. Every firing is a real defect: the agent's
+   * instructions and the kind it targets have drifted apart, the model
+   * produced only reasoning and no answer, or the extraction path lost the
+   * object it had already committed. The capture carries the diagnostics
+   * (answer-text length, extracted types, request status) needed to tell
+   * those apart without re-running the agent.
+   */
+  | "agent-json-result"
   /** Unsaved user work existed only in a browser buffer after repeated save failure or identity drift. */
   | "unsaved-work";
 

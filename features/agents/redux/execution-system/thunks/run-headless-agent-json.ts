@@ -14,7 +14,11 @@
  *  - polling `selectJsonExtractionComplete` with fast-fail on a stream error
  *  - a bounded settle window after the stream ends (never burns the full
  *    timeout when the stream is already over and no JSON is coming)
- *  - a fuzzy-parse fallback over the full response text
+ *  - ONE result-resolution rule shared by every exit path (`resolveRunData`):
+ *    extracted object → extracted value of any type → fuzzy parse of the
+ *    request's answer text → fuzzy parse of the conversation's. A run whose
+ *    object is already in Redux (and therefore already on the user's screen)
+ *    can never be reported as "produced nothing".
  *  - instance cleanup (`destroyInstanceIfAllowed`) unless the caller keeps the
  *    conversation alive for live streaming UI
  *
@@ -27,8 +31,11 @@ import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { extractFirstJson } from "@/utils/json/extract-json";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
+  selectAnswerText,
   selectConversationRequestIds,
+  selectExtractedJson,
   selectFirstExtractedObject,
   selectJsonExtractionComplete,
   selectRequestError,
@@ -84,6 +91,14 @@ export interface HeadlessAgentJsonOptions {
    * cleanup). Default false — the instance is destroyed in all outcomes.
    */
   keepInstance?: boolean;
+  /**
+   * Show the model's chain-of-thought if a surface renders this run's stream.
+   * Default FALSE, and it should stay that way: a headless JSON run's product
+   * is the structured value. Nobody asked this agent to think out loud, and a
+   * user who clicked "get me some ideas" must never be shown the model's
+   * private reasoning. Only a builder/debugging surface flips this on.
+   */
+  showReasoning?: boolean;
   /** Fires with the conversation id BEFORE the stream runs (live UI handle). */
   onConversationCreated?: (conversationId: string) => void;
   /** Fires once the run's request id is known (progress / task tracking). */
@@ -190,6 +205,7 @@ export async function runHeadlessAgentJson(
           allowChat: false,
           showVariablePanel: false,
           showPreExecutionGate: false,
+          hideReasoning: opts.showReasoning !== true,
         },
       }),
     ).unwrap();
@@ -230,19 +246,36 @@ export async function runHeadlessAgentJson(
       timeoutMs,
       pollMs,
       settleMs,
+      surfaceKey: opts.surfaceKey,
+      agentRef: opts.agentId ?? opts.slotKey ?? "unknown",
       msgs,
     });
   } catch (err: unknown) {
-    const message =
+    // The thrown detail is for US, not for the user: a launch/transport
+    // failure's message ("Unknown error running the agent", "Failed to fetch")
+    // tells a subject-matter expert nothing and reads as a dead end. Capture
+    // the technical text, show the feature's own copy.
+    const detail =
       err instanceof Error ? err.message : "Unknown error running the agent";
     const fullResponse = conversationId
       ? selectLatestAnswerText(conversationId)(getState())
       : "";
+    captureError({
+      source: "agent-json-result",
+      message: `Headless agent run threw before producing a result: ${detail}`,
+      conversationId: conversationId ?? undefined,
+      raw: {
+        surfaceKey: opts.surfaceKey,
+        agent: opts.agentId ?? opts.slotKey ?? "unknown",
+        detail,
+        answerTextLength: fullResponse.length,
+      },
+    });
     return {
       success: false,
       data: null,
       fullResponse,
-      error: message,
+      error: msgs.streamError,
       conversationId: conversationId ?? undefined,
     };
   } finally {
@@ -250,6 +283,89 @@ export async function runHeadlessAgentJson(
       dispatch(destroyInstanceIfAllowed(conversationId));
     }
   }
+}
+
+/**
+ * THE ONE RULE for deciding what a finished run produced. Every exit path —
+ * extraction finalized, stream ended without finalizing, ceiling elapsed —
+ * asks THIS, in this order:
+ *
+ *  1. the first extracted OBJECT committed to Redux
+ *  2. the first extracted JSON of ANY type (a top-level array is a real,
+ *     usable answer — the old code declared "no structured result" for it)
+ *  3. a fuzzy parse of the request's own answer text
+ *  4. a fuzzy parse of the conversation's latest answer text
+ *
+ * Why it matters: the live UI renders straight off `extractedJson`, so a run
+ * whose object is sitting in Redux is one the USER HAS ALREADY SEEN. Any exit
+ * path that ignores that state tells the user "the agent produced nothing"
+ * while its output is on their screen — and throws away a paid model call.
+ * Checking a single narrower source in one branch is exactly the bug this
+ * function exists to make unrepeatable.
+ */
+function resolveRunData(
+  getState: () => RootState,
+  requestId: string,
+  conversationId: string,
+): { data: unknown | null; via: string } {
+  const state = getState();
+
+  const obj = selectFirstExtractedObject(requestId)(state);
+  if (obj?.value != null) return { data: obj.value, via: "extracted-object" };
+
+  const any = selectExtractedJson(requestId)(state)?.find(
+    (r) => r.value != null,
+  );
+  if (any?.value != null) return { data: any.value, via: `extracted-${any.type}` };
+
+  const requestText = selectAnswerText(requestId)(state);
+  const fromRequest = fuzzyFallback(requestText);
+  if (fromRequest != null) return { data: fromRequest, via: "fuzzy-request" };
+
+  const convoText = selectLatestAnswerText(conversationId)(state);
+  const fromConvo = fuzzyFallback(convoText);
+  if (fromConvo != null) return { data: fromConvo, via: "fuzzy-conversation" };
+
+  return { data: null, via: "none" };
+}
+
+/**
+ * Loud recovery: a run that ends with nothing usable burned a paid model call
+ * and hands the user a failure. Capture the evidence needed to tell the three
+ * causes apart (agent/kind drift, answer-free reasoning-only response, or a
+ * lost extraction) without re-running the agent.
+ */
+function reportNoResult(
+  getState: () => RootState,
+  args: {
+    requestId: string;
+    conversationId: string;
+    surfaceKey: string;
+    agentRef: string;
+    reason: "extraction-complete" | "stream-ended" | "timeout";
+    message: string;
+  },
+): void {
+  const state = getState();
+  const answerText = selectAnswerText(args.requestId)(state);
+  const extracted = selectExtractedJson(args.requestId)(state);
+  captureError({
+    source: "agent-json-result",
+    message: `Headless agent run produced no usable structured result (${args.reason})`,
+    requestId: args.requestId,
+    conversationId: args.conversationId,
+    raw: {
+      surfaceKey: args.surfaceKey,
+      agent: args.agentRef,
+      userMessage: args.message,
+      requestStatus: selectRequestStatus(args.requestId)(state) ?? "unknown",
+      extractionComplete: selectJsonExtractionComplete(args.requestId)(state),
+      answerTextLength: answerText.length,
+      answerTextSample: answerText.slice(0, 800),
+      extractedCount: extracted?.length ?? 0,
+      extractedTypes: (extracted ?? []).map((r) => r.type),
+    },
+  });
 }
 
 async function waitForExtraction(
@@ -260,6 +376,8 @@ async function waitForExtraction(
     timeoutMs: number;
     pollMs: number;
     settleMs: number;
+    surfaceKey: string;
+    agentRef: string;
     msgs: { streamError: string; noJson: string; timeout: string };
   },
 ): Promise<HeadlessAgentJsonResult> {
@@ -273,48 +391,61 @@ async function waitForExtraction(
     fullResponse: selectLatestAnswerText(conversationId)(getState()),
   });
 
+  const settle = (
+    reason: "extraction-complete" | "stream-ended" | "timeout",
+    message: string,
+  ): HeadlessAgentJsonResult => {
+    const { data } = resolveRunData(getState, requestId, conversationId);
+    if (data != null) return { success: true, data, ...base() };
+    reportNoResult(getState, {
+      requestId,
+      conversationId,
+      surfaceKey: args.surfaceKey,
+      agentRef: args.agentRef,
+      reason,
+      message,
+    });
+    return { success: false, data: null, error: message, ...base() };
+  };
+
   while (Date.now() - start < args.timeoutMs) {
     const state = getState();
 
     if (selectJsonExtractionComplete(requestId)(state)) {
-      const snapshot = selectFirstExtractedObject(requestId)(state);
-      const data = snapshot?.value ?? fuzzyFallback(base().fullResponse);
-      if (data == null) {
-        return { success: false, data: null, error: msgs.noJson, ...base() };
-      }
-      return { success: true, data, ...base() };
+      return settle("extraction-complete", msgs.noJson);
     }
 
     const status = selectRequestStatus(requestId)(state);
 
     if (status === "error") {
-      // Fast-fail — but surface any PARTIAL object extracted before the
+      // Fast-fail — but surface any PARTIAL value extracted before the
       // failure so soft consumers (hints, tips) can still use it.
       const reqError = selectRequestError(requestId)(state);
-      const partial = selectFirstExtractedObject(requestId)(state)?.value ?? null;
+      const { data } = resolveRunData(getState, requestId, conversationId);
       return {
         success: false,
-        data: partial,
+        data,
         error: reqError?.user_message ?? reqError?.message ?? msgs.streamError,
         ...base(),
       };
     }
 
     // Stream over, extraction never finalized: give Redux a bounded settle
-    // window, then fuzzy-parse the text instead of burning the full timeout.
+    // window, then resolve from whatever the run actually produced instead of
+    // burning the full timeout.
     if (status !== undefined && TERMINAL_STATUSES.has(status)) {
       terminalAt ??= Date.now();
       if (Date.now() - terminalAt > args.settleMs) {
-        const data = fuzzyFallback(base().fullResponse);
-        if (data != null) return { success: true, data, ...base() };
-        return { success: false, data: null, error: msgs.noJson, ...base() };
+        return settle("stream-ended", msgs.noJson);
       }
     }
 
     await sleep(args.pollMs);
   }
 
-  return { success: false, data: null, error: msgs.timeout, ...base() };
+  // Ceiling elapsed — a slow run that already produced its object is a
+  // SUCCESS, not a timeout. Only report the timeout when nothing landed.
+  return settle("timeout", msgs.timeout);
 }
 
 function fuzzyFallback(fullResponse: string): unknown | null {

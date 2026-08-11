@@ -82,10 +82,17 @@ export function useKindRequest(): UseKindRequest {
       variables: input.variables,
       timeoutMs: EXTRACTION_TIMEOUT_MS,
       pollIntervalMs: POLL_INTERVAL_MS,
+      // User-facing copy: our user is a subject-matter expert, not an
+      // engineer. "No structured result" describes our parser, not their
+      // situation — say what happened and what to do next.
       failureMessages: {
-        streamError: "The agent failed before returning a result.",
-        noJson: "The agent finished but produced no structured result.",
-        timeout: "Timed out waiting for the agent to respond.",
+        streamError: "Something went wrong while generating. Please try again.",
+        noJson:
+          "The AI stopped before it produced anything usable. Try again — " +
+          "adding a little more detail to your description usually helps.",
+        timeout:
+          "That took longer than expected and we stopped waiting. Try again — " +
+          "keep this tab open while it works.",
       },
       coerce: (value) => ({
         value,

@@ -61,6 +61,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "markdown-delimiters": "Runaway delimiter in rendered markdown",
   assists: "Assist chip action failure",
   "layout-scroll-chain": "Content clipped — scroll chain broken",
+  "agent-json-result": "Agent run produced no usable structured result",
   "unsaved-work": "Unsaved user work at risk",
 };
 
