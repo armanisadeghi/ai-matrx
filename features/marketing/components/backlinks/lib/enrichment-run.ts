@@ -82,6 +82,22 @@ function eventMessage(event: SeoStreamEvent): string | null {
   }
 }
 
+/**
+ * The run said it ended but sent no result payload, so the counters are all we
+ * have. Success is claimed ONLY when everything we expected actually settled —
+ * a batch of 5 that ends with 2 done and no failures is `partial`, never a
+ * green "completed" over copy that reads "2 of 5".
+ */
+function finishStatusWithoutResult(
+  run: BacklinkEnrichmentRunState,
+): BacklinkEnrichmentRunStatus {
+  if (run.failed > 0) return run.completed > 0 ? "partial" : "failed";
+  const settled = run.completed + run.failed;
+  // candidateCount 0 means there was nothing to do — that IS a clean finish.
+  if (run.candidateCount > 0 && settled < run.candidateCount) return "partial";
+  return "completed";
+}
+
 export function applyBacklinkEnrichmentEvent(
   current: BacklinkEnrichmentRunState,
   event: SeoStreamEvent,
@@ -114,11 +130,7 @@ export function applyBacklinkEnrichmentEvent(
         : "failed"
       : "completed"
     : runLevelFinish
-      ? current.failed > 0
-        ? current.completed > 0
-          ? "partial"
-          : "failed"
-        : "completed"
+      ? finishStatusWithoutResult(current)
       : current.scope === "single"
         ? event.kind === "seo.backlink_enriched"
           ? "completed"

@@ -152,7 +152,7 @@ describe("backlink enrichment live progress", () => {
     expect(run.status).toBe("completed");
   });
 
-  it("settles a batch that finishes without a result payload", () => {
+  it("calls a short-settled batch partial, not completed, when it finishes with no result payload", () => {
     let run = startBacklinkEnrichmentRun("Analyze next 2", "batch");
     run = applyBacklinkEnrichmentEvent(run, {
       kind: "seo.backlink_enrichment_started",
@@ -162,6 +162,41 @@ describe("backlink enrichment live progress", () => {
       kind: "seo.backlink_enriched",
       backlink_id: "a",
       source_url: "https://a.example/page",
+    });
+    run = applyBacklinkEnrichmentEvent(run, {
+      kind: "seo.backlink_enrichment_finished",
+    });
+
+    // 1 of 2 settled and no failures — a green "completed" here would contradict
+    // the counters the panel prints right next to it.
+    expect(run.status).toBe("partial");
+  });
+
+  it("completes a batch that finishes with every candidate settled", () => {
+    let run = startBacklinkEnrichmentRun("Analyze next 2", "batch");
+    run = applyBacklinkEnrichmentEvent(run, {
+      kind: "seo.backlink_enrichment_started",
+      candidate_count: 2,
+    });
+    for (const id of ["a", "b"]) {
+      run = applyBacklinkEnrichmentEvent(run, {
+        kind: "seo.backlink_enriched",
+        backlink_id: id,
+        source_url: `https://${id}.example/page`,
+      });
+    }
+    run = applyBacklinkEnrichmentEvent(run, {
+      kind: "seo.backlink_enrichment_finished",
+    });
+
+    expect(run.status).toBe("completed");
+  });
+
+  it("treats a finish with nothing to do as a clean finish", () => {
+    let run = startBacklinkEnrichmentRun("Analyze next 5", "batch");
+    run = applyBacklinkEnrichmentEvent(run, {
+      kind: "seo.backlink_enrichment_started",
+      candidate_count: 0,
     });
     run = applyBacklinkEnrichmentEvent(run, {
       kind: "seo.backlink_enrichment_finished",
