@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 
 const EXTERNAL_HREF_RE = /^(https?:|mailto:|tel:)/;
 
@@ -143,6 +144,9 @@ export function EntityModeHeader({
   const [sheetOpen, setSheetOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const activeMode = activeModeHref
+    ? modes?.find((mode) => mode.href === activeModeHref)
+    : resolveActiveRouteMode(modes ?? [], pathname);
   const hasSheet = Boolean(
     (modes && modes.length) || (actions && actions.length),
   );
@@ -255,16 +259,7 @@ export function EntityModeHeader({
           <BottomSheetBody>
             {modes?.map((m) => {
               const Icon = m.icon;
-              const isActive = activeModeHref
-                ? m.href === activeModeHref
-                : m.href === pathname ||
-                  (pathname.startsWith(m.href) &&
-                    !modes.some(
-                      (o) =>
-                        o.href !== m.href &&
-                        o.href.length > m.href.length &&
-                        pathname.startsWith(o.href),
-                    ));
+              const isActive = m.href === activeMode?.href;
               return (
                 <button
                   key={m.href}

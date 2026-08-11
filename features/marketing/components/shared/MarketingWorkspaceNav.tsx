@@ -7,18 +7,21 @@ import {
   Landmark,
   Plug,
   SearchCheck,
+  TrendingUp,
 } from "lucide-react";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-const WORKSPACE_ROUTES = [
-  { name: "Brands", href: "/marketing/brands", icon: Landmark },
-  { name: "Sites", href: "/marketing/sites", icon: Globe2 },
-  { name: "Search", href: "/marketing/search-console", icon: SearchCheck },
-  { name: "Connections", href: "/marketing/connections", icon: Plug },
-  { name: "Batches", href: "/marketing/batches", icon: Boxes },
-  { name: "Cost", href: "/marketing/cost", icon: CircleDollarSign },
+export const MARKETING_WORKSPACE_ROUTES = [
+  { name: "Brands", href: marketingRoutes.brands(), icon: Landmark },
+  { name: "Sites", href: marketingRoutes.sites(), icon: Globe2 },
+  { name: "Search", href: marketingRoutes.searchConsole(), icon: SearchCheck },
+  { name: "Ranks", href: marketingRoutes.ranks(), icon: TrendingUp },
+  { name: "Connections", href: marketingRoutes.connections(), icon: Plug },
+  { name: "Batches", href: marketingRoutes.batches(), icon: Boxes },
+  { name: "Cost", href: marketingRoutes.cost(), icon: CircleDollarSign },
 ];
 
 export function MarketingWorkspaceNav() {
-  return <RouteModeNav items={WORKSPACE_ROUTES} />;
+  return <RouteModeNav items={MARKETING_WORKSPACE_ROUTES} />;
 }
