@@ -70,6 +70,12 @@ if $STRICT; then
         # block every release until the campaign lands. Promote to --strict when
         # the scoreboard reaches zero.
         "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15"
+        # ACCESS ERRORS stays ADVISORY in both modes, same reasoning as the Door
+        # Law above: the primitive (features/access-gate) shipped 2026-08-11 with
+        # a known ~540-surface conversion backlog behind it. Hard-failing would
+        # block every release until that sweep lands. Promote to --strict when
+        # the count reaches zero.
+        "Access errors (surfaces that guess why a read failed)|pnpm exec tsx scripts/access-errors/check-access-errors.ts"
         # MEDIA DURABILITY stays ADVISORY in both modes. It reports a stored
         # expiring URL only where the consumer contract demands durability
         # (anon-visible share projections + guard-registered columns); the one
@@ -112,6 +118,9 @@ else
         # open it. Advisory by design (Arman: no check blocks a build); the
         # ranked scoreboard lives at /administration/reporting/dead-ends.
         "No dead ends (Door Law)|pnpm exec tsx scripts/dead-ends/check-dead-ends.ts --limit=15"
+        # Every surface still guessing why a read failed — see the strict list
+        # above for why this is advisory. Fix = <AccessGate/>.
+        "Access errors (surfaces that guess why a read failed)|pnpm exec tsx scripts/access-errors/check-access-errors.ts"
         "Media durability (mismatch class)|pnpm check:media-durability"
     )
 fi
