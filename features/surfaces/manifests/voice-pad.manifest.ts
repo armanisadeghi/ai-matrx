@@ -58,6 +58,26 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 200,
     sortOrder: 320,
   },
+  {
+    name: "is_recording",
+    label: "Recording",
+    description:
+      "True while the microphone is open and capturing. Always populated. Both write targets are refused while this is true — check it before offering to rewrite the pad. Note it can be true with `live_transcript` still empty: that is the window between the user pressing record and the first words coming back.",
+    valueType: "boolean",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    sortOrder: 330,
+  },
+  {
+    name: "is_transcribing",
+    label: "Transcribing",
+    description:
+      "True while a stopped recording is still being turned into text — the dictation has finished but its words have not landed in `transcript_entries` yet. Always populated. Both write targets are refused while this is true.",
+    valueType: "boolean",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    sortOrder: 340,
+  },
 ];
 
 /**
@@ -99,6 +119,37 @@ const surfaceSpecific: SurfaceValue[] = [
  * fires on every keystroke, so the change is visible in the pad immediately
  * and nothing is persisted anywhere until the user acts on it.
  *
+ * THE GUARD, and why it reads state at call time. Both handlers refuse while
+ * a dictation is in flight, because a write sets `draftText` and a non-null
+ * draft is what the textarea renders — while `handleTranscriptionComplete`
+ * only pushes finished speech into `entries`. A write landing mid-dictation
+ * therefore leaves the user reading the agent's text with the words they just
+ * spoke missing from the box they are looking at. The guard checks
+ * `is_recording` and `is_transcribing` rather than `live_transcript`, which
+ * is empty in both of the windows that matter (before the first streamed
+ * chunk, and while a stopped recording is still being transcribed); both
+ * flags are declared as read values above so an agent can see the refusal
+ * coming instead of discovering it. And every value a handler decides on is
+ * read AT CALL TIME — mic state from refs, the pad buffer from the store —
+ * because `applySurfaceWrite` resolves handlers BEFORE it awaits the confirm
+ * dialog. A closure snapshot would let a mic that went live while the dialog
+ * sat open through the guard, and would make a SECOND `append_draft_text` in
+ * the same turn compute its base from text the first append had already
+ * superseded — silently dropping it. This is the `chat-voice` /
+ * `image-studio` guard doctrine.
+ *
+ * What call-time reads deliberately do NOT fix: a `draft_text` and an
+ * `append_draft_text` staged in the SAME turn. The seam applies them in an
+ * order the agent does not choose, and a whole-buffer replacement landing
+ * second discards the append no matter which base that append read — the
+ * targets' contracts are individually correct and the combination is still
+ * wrong. Observed live on 2026-08-11: a run asked for "rewrite, then append"
+ * had the APPEND dialog raised first and its text overwritten by the rewrite,
+ * while the agent reported both as staged. That is a sequencing hazard, not a
+ * handler bug, so it is fixed where the agent can act on it — both
+ * descriptions now tell the model to rewrite in one turn and append in the
+ * next, and say several appends in one turn are fine.
+ *
  * MOUNTS: `VoicePad` (`components/official-candidate/voice-pad/components/
  * VoicePad.tsx`, overlay `voicePad`) is the only component that mounts a
  * `SurfaceRuntimeProvider` for this surface, so it is the only mount that
@@ -116,7 +167,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "draft_text",
     label: "Draft text",
     description:
-      "REPLACES the pad's entire working text with the string you pass — it lands in the pad's textarea exactly as given, as if the user had selected all and retyped it. This is the cleaned-up-dictation target: read `content` first (that is the text the user is looking at, draft or entries joined) and pass back the full rewritten version, since nothing you omit is kept. Plain text only, not JSON or an object. An empty or whitespace-only string is refused — clearing the pad is the user's own button, not a write. The original dictation stays untouched in `transcript_entries` beside your rewrite, so the user can always compare. Refused while the microphone is live.",
+      "REPLACES the pad's entire working text with the string you pass — it lands in the pad's textarea exactly as given, as if the user had selected all and retyped it. This is the cleaned-up-dictation target: read `content` first (that is the text the user is looking at, draft or entries joined) and pass back the full rewritten version, since nothing you omit is kept. Plain text only, not JSON or an object. An empty or whitespace-only string is refused — clearing the pad is the user's own button, not a write. The original dictation stays untouched in `transcript_entries` beside your rewrite, so the user can always compare. Refused while a dictation is in flight (`is_recording` or `is_transcribing` true) — check those before you offer. Do NOT stage this in the same turn as `append_draft_text`: this replaces the WHOLE buffer, the two are applied in an order you do not control, and a replacement landing second would discard the append. Rewrite in one turn, then append in the next.",
     valueType: "string",
     updatesValue: "draft_text",
     mode: "draft",
@@ -127,7 +178,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "append_draft_text",
     label: "Added draft text",
     description:
-      "APPENDS the string you pass to the END of the pad's current working text, separated by a blank line. Nothing already in the pad is touched or re-sent — pass ONLY the new text. Use this to add a closing thought, a summary, or action items to a dictation; use `draft_text` when the whole buffer is being rewritten. When the user has not edited the pad yet, the existing dictation is carried into the draft first, so appending never drops what was already there. Plain text only, not JSON or an object; an empty or whitespace-only string is refused. Refused while the microphone is live.",
+      "APPENDS the string you pass to the END of the pad's current working text, separated by a blank line. Nothing already in the pad is touched or re-sent — pass ONLY the new text. Use this to add a closing thought, a summary, or action items to a dictation; use `draft_text` when the whole buffer is being rewritten. When the user has not edited the pad yet, the existing dictation is carried into the draft first, so appending never drops what was already there. Plain text only, not JSON or an object; an empty or whitespace-only string is refused. Refused while a dictation is in flight (`is_recording` or `is_transcribing` true) — check those before you offer. Do NOT stage this in the same turn as `draft_text`: the two are applied in an order you do not control, and a replacement landing after this append would discard it — rewrite in one turn, then append in the next. Several appends in a single turn are fine; each builds on the one before it.",
     valueType: "string",
     updatesValue: "draft_text",
     mode: "draft",
@@ -148,6 +199,8 @@ You are on the Voice Pad — a small floating dictation window. The user speaks;
 
 You can also WRITE the cleaned-up text back into the pad. Two targets, both landing in the same editable buffer the user types in: draft_text REPLACES the whole buffer, append_draft_text ADDS to the end of it. Read content before you replace it — a replacement keeps nothing you leave out.
 
+Both writes are refused while a dictation is in flight — check is_recording and is_transcribing before you offer one, since applying mid-dictation would leave the user reading your text with the words they just spoke missing from the pad.
+
 What you may not write is the RECORD of what was said: transcript_entries and live_transcript are what the microphone actually heard, and they stay read-only so the user always has the untouched original beside your rewrite. Never present a cleanup as if it were the transcript. Starting or stopping the recording, clearing the pad, and sending the text onward are the user's own actions — do those in your answer, not through a write.
 </surface_intro>`,
   values: mergeBaselineValues(
@@ -162,6 +215,8 @@ export function createVoicePadScope(values: {
   transcript_entries?: Array<{ id: string; text: string }>;
   draft_text?: string;
   live_transcript?: string;
+  is_recording?: boolean;
+  is_transcribing?: boolean;
   selection?: string;
   context?: Record<string, unknown>;
 }): SurfaceScopePayload {
