@@ -1375,10 +1375,14 @@ export const selectAgentCallChildStream = (requestId: string, callId: string) =>
         conversation_id?: unknown;
       };
       return {
+        // Only "success" is a real answer — "failed" AND "cancelled" both mean
+        // the specialist did not finish (InitCompletionStatus has no
+        // "completed"; assuming it did is how a cancelled child would have
+        // been presented as a delivered result).
         status: completedOp
-          ? completedOp.status === "failed"
-            ? "failed"
-            : "done"
+          ? completedOp.status === "success"
+            ? "done"
+            : "failed"
           : "running",
         label: typeof meta.label === "string" ? meta.label : null,
         childConversationId:

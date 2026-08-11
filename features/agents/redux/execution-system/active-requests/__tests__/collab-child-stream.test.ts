@@ -141,7 +141,7 @@ function runCollabCall(opts: { complete: boolean }) {
         requestId: REQ,
         operationId: OP,
         operation: "sub_agent",
-        status: "completed",
+        status: "success",
         result: {},
         timestamp: 3,
       }),
@@ -198,6 +198,47 @@ test("while the child is still running its range stays open and hidden", () => {
   expect(stream!.text).toBe("CHILD-ANSWER-ONE CHILD-ANSWER-TWO");
   expect(visibleText(store)).not.toContain("CHILD-ANSWER");
 });
+
+test.each(["failed", "cancelled"] as const)(
+  "a %s child is never presented as a delivered answer",
+  (status) => {
+    const ctx = setup();
+    const { dispatch, store } = ctx;
+    dispatch(
+      upsertToolLifecycle({
+        requestId: REQ,
+        callId: CALL,
+        toolName: "agent_call",
+        status: "started",
+        arguments: { history_mode: "snapshot" },
+      }),
+    );
+    dispatch(
+      trackOperationInit({
+        requestId: REQ,
+        operationId: OP,
+        operation: "sub_agent",
+        metadata: { label: "Reviewer", conversation_id: CHILD_CONV },
+        timestamp: 2,
+      }),
+    );
+    dispatch(
+      trackOperationCompletion({
+        requestId: REQ,
+        operationId: OP,
+        operation: "sub_agent",
+        status,
+        result: {},
+        timestamp: 3,
+      }),
+    );
+
+    expect(
+      selectAgentCallChildStream(REQ, CALL)(store.getState() as AnyState)!
+        .status,
+    ).toBe("failed");
+  },
+);
 
 test("an unrelated call id gets no child stream", () => {
   const { store } = runCollabCall({ complete: true });
