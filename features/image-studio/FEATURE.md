@@ -273,6 +273,27 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
+- **2026-08-11** — Hardened the Convert write targets: the crop anchor's
+  fit gate is now ENFORCED, not just documented. `conversion_settings` accepted
+  `resize_position` under any fit, but `CropControls` renders the anchor picker
+  only under `CROPPING_IMAGE_FIT` (`cover`) — so an anchor sent while the fit
+  was `contain`/`inside` was staged behind a control the user could not see in
+  the confirm dialog and could not correct afterwards, which is the one thing a
+  draft target must not do. The handler now resolves the fit the call lands
+  under (the `resize_fit` in the same patch, else the live one) and refuses the
+  incoherent pair outright, naming both; the target description says the rule is
+  enforced instead of implying it is advice. That constant existed for exactly
+  this and was previously unused outside the component. The live fit is read
+  through a `fitRef` for the reason the existing `isProcessingRef` documents —
+  an agent may stage the fit in one call and the anchor in the next within a
+  single turn, and every handler closure is resolved before the user confirms
+  the first dialog. Also: `selected_presets` now refuses while a conversion is
+  in flight, matching `conversion_settings` (the run captured the old list, and
+  `total_variant_count` is derived from it), and the `resize_fit` READ value's
+  description is interpolated from `IMAGE_FIT_OPTIONS` — it had always
+  advertised two fit modes (`cover`/`contain`) while the UI rendered three, so
+  `inside` was invisible to every agent that read this surface.
+
 - **2026-08-10** — The Convert studio is agent-writable. `ImageStudioShell`
   now passes `getWriteHandlers` to the `SurfaceRuntimeProvider` it already
   mounted, registering the two targets `matrx-user/image-studio` declares:

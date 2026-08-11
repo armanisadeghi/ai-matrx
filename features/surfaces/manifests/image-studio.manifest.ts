@@ -24,6 +24,8 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import {
+  CROPPING_IMAGE_FIT,
+  IMAGE_FIT_OPTIONS,
   IMAGE_FITS,
   IMAGE_POSITION_ANCHORS,
   LOSSLESS_OUTPUT_FORMAT,
@@ -156,8 +158,9 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     name: "resize_fit",
     label: "Resize fit",
-    description:
-      'How images fill each preset frame: "cover" (crop) or "contain" (letterbox). Always present.',
+    description: `How images fill each preset frame: ${IMAGE_FIT_OPTIONS.map(
+      (o) => `"${o.id}" (${o.blurb})`,
+    ).join(" ")} Always present.`,
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 7,
@@ -370,6 +373,7 @@ const writeTargets: SurfaceWriteTarget[] = [
       "Value: an array of preset id strings, e.g. [\"og-image\", \"favicon-32\"].",
       "REPLACES THE FULL SET — include every preset you want kept, not just the new ones. Read selected_preset_ids for what is ticked right now, and available_presets for the ids that exist. An empty array clears the selection.",
       "An id that is not in the catalog is rejected by name — nothing is silently dropped.",
+      "Refused while a conversion is already running — the run in flight captured the old selection.",
       "Staged only: no image is converted until the user presses Generate.",
     ].join(" "),
     valueType: "array",
@@ -389,7 +393,8 @@ const writeTargets: SurfaceWriteTarget[] = [
       `output_quality — a whole number from ${OUTPUT_QUALITY_BOUNDS.min} to ${OUTPUT_QUALITY_BOUNDS.max}. Lower means smaller files. Ignored by ${LOSSLESS_OUTPUT_FORMAT}, which is always lossless.`,
       'background_color — a 6-digit hex string like "#ffffff", used to fill transparency when converting to a format without an alpha channel (JPEG, AVIF).',
       `resize_fit — how each image fills the preset frame, one of: ${IMAGE_FITS.join(" | ")}.`,
-      `resize_position — the crop anchor, which only applies with the "cover" fit: one of ${IMAGE_POSITION_ANCHORS.join(" | ")}. "attention" and "entropy" let the encoder choose the region itself. A precise focal point can only be set by dragging the live preview, so it is not writable here.`,
+      `resize_position — the crop anchor: one of ${IMAGE_POSITION_ANCHORS.join(" | ")}. "attention" and "entropy" let the encoder choose the region itself. A precise focal point can only be set by dragging the live preview, so it is not writable here.`,
+      `resize_position applies ONLY under the "${CROPPING_IMAGE_FIT}" fit — the only one that crops, and the only one whose anchor picker is on screen. This is ENFORCED, not advice: if the fit this call resolves to (the resize_fit you send, else the one already set) is anything else, the whole call is REFUSED and nothing changes, rather than staging an anchor behind a control the user cannot see. Send { resize_fit: "${CROPPING_IMAGE_FIT}", resize_position } together to switch the fit and set the anchor in one call.`,
       "Refused while a conversion is already running.",
       "Staged only: no image is converted until the user presses Generate.",
     ].join(" "),

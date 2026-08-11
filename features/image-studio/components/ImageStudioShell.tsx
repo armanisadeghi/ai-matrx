@@ -59,6 +59,7 @@ import {
 import { slugifyFilename } from "../utils/slugify-filename";
 import { getPresetById } from "../presets";
 import {
+  CROPPING_IMAGE_FIT,
   IMAGE_FITS,
   IMAGE_POSITION_ANCHORS,
   LOSSLESS_OUTPUT_FORMAT,
@@ -324,6 +325,12 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
   // snapshot by the time the user clicks Apply.
   const isProcessingRef = useRef(studio.isProcessing);
   isProcessingRef.current = studio.isProcessing;
+  // Same reason, for the crop anchor's gate below: an agent may stage the fit
+  // in one call and the anchor in the next within a single turn, so the gate
+  // has to resolve against the fit as it stands WHEN APPLIED, not the one
+  // captured when the closure was built.
+  const fitRef = useRef(studio.fit);
+  fitRef.current = studio.fit;
 
   // Both handlers validate and THROW on a bad shape; the writeback seam
   // (`applySurfaceWrite`) turns the throw into a safe error envelope the
@@ -335,6 +342,14 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
   const getSurfaceWriteHandlers = useCallback(
     () => ({
       selected_presets: (value: unknown) => {
+        // Same guard, same reason, as `conversion_settings` below: the run in
+        // flight captured the OLD preset list, and `total_variant_count` is
+        // derived from this one — restaging it mid-run would leave the panel
+        // promising a variant count nobody is producing.
+        if (isProcessingRef.current)
+          throw new Error(
+            "A conversion is already running. selected_presets cannot be written while variants are being generated — wait for it to finish, then write the next selection.",
+          );
         if (!Array.isArray(value))
           throw new Error(
             'selected_presets expects an array of preset id strings, e.g. ["og-image", "favicon-32"]. It REPLACES the full selection — read selected_preset_ids first and include everything you want kept.',
@@ -453,6 +468,24 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
           )
             throw new Error(
               `conversion_settings.resize_position expects one of: ${IMAGE_POSITION_ANCHORS.join(" | ")}. A precise focal point is set by dragging the live preview and cannot be written.`,
+            );
+          // The anchor picker is rendered ONLY under the cropping fit —
+          // `CropControls` hides the 3x3 grid entirely for the others, because
+          // they never crop and so never consult an anchor. Staging one anyway
+          // would put a value behind a control the user cannot see in the
+          // confirm dialog and cannot correct afterwards, which is the one
+          // thing a draft target must never do. Resolve the fit this call ends
+          // up under — the one it sets, else the live one — and refuse the
+          // incoherent pair outright rather than half-applying it.
+          const resolvedFit =
+            "resize_fit" in patch
+              ? (patch.resize_fit as ImageFit)
+              : fitRef.current;
+          if (resolvedFit !== CROPPING_IMAGE_FIT)
+            throw new Error(
+              `conversion_settings.resize_position only applies under the "${CROPPING_IMAGE_FIT}" fit, but this call resolves to "${resolvedFit}"${
+                "resize_fit" in patch ? "" : " (the fit currently set on the page)"
+              }, which does not crop — its anchor picker is not on screen, so nothing was changed. Send { resize_fit: "${CROPPING_IMAGE_FIT}", resize_position } together to switch the fit and set the anchor in one call.`,
             );
           const next = patch.resize_position as ImagePositionAnchor;
           apply.push(() => studio.setPosition(next));
