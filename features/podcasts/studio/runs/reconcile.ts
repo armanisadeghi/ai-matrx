@@ -83,6 +83,40 @@ export function hasDeliverableEpisode(r: ReconcileResult): boolean {
 }
 
 /**
+ * Fold the server's ancillary report into a slot list, preserving anything that
+ * already rendered.
+ *
+ * Two statuses arrive and they mean different things to the user:
+ *  - `pending`  — still rendering. Carries `action: "none"`, deliberately: a
+ *    regenerate button on work that is still in flight invites the user to pay
+ *    for the same image twice.
+ *  - `failed`   — carries `action: "regenerate"`, and renders as its own
+ *    retryable card beside a perfectly finished episode.
+ *
+ * A slot that already has a url is never downgraded — the server's view of
+ * "expected" must not erase something the user can already see.
+ */
+export function mergeAncillarySlots<
+  T extends { index: number; kind: "image" | "video"; url: string | null; status: string },
+>(existing: T[], pending: ReconcileAncillary[], kind: "image" | "video"): T[] {
+  const mine = pending.filter((p) => p.kind === kind);
+  if (mine.length === 0) return existing;
+  const bySlot = new Map(existing.map((s) => [s.index, s]));
+  for (const p of mine) {
+    const current = bySlot.get(p.slot);
+    if (current?.url) continue; // already delivered — leave it alone
+    const status = p.status === "failed" ? "failed" : "pending";
+    bySlot.set(p.slot, {
+      ...(current ?? { index: p.slot, kind, prompt: "", url: null }),
+      index: p.slot,
+      kind,
+      status,
+    } as T);
+  }
+  return [...bySlot.values()].sort((a, b) => a.index - b.index);
+}
+
+/**
  * Ask the server to reconcile a run. Never throws — a reconcile is a RECOVERY
  * path, and a recovery path that explodes leaves the user exactly where the
  * dead end was. Returns null when the answer is unusable (endpoint not

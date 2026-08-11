@@ -57,6 +57,7 @@ import { deriveRecoveryState, type RecoveryState } from "./recovery";
 import { trueLiveness } from "./run-truth";
 import {
   hasDeliverableEpisode,
+  mergeAncillarySlots,
   reconcileRun,
   type ReconcileResult,
 } from "./reconcile";
@@ -416,6 +417,12 @@ export function useStudioRun(runId: string): UseStudioRun {
       const deliverable = hasDeliverableEpisode(rec);
       setState((s) => ({
         ...s,
+        // Ancillary slots the server says are still coming / have failed. A
+        // pending cover has no asset row yet (rows are written when a stage
+        // FINISHES), so without this the page would claim nothing is pending
+        // while three paid renders are in flight, then pop them in later.
+        images: mergeAncillarySlots(s.images, rec.ancillary_pending, "image"),
+        videos: mergeAncillarySlots(s.videos, rec.ancillary_pending, "video"),
         status: deliverable
           ? "done"
           : rec.outcome === "failed"

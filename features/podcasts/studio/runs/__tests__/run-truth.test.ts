@@ -3,6 +3,7 @@ import { describe, expect, it } from "@jest/globals";
 import { deriveRecoveryState } from "../recovery";
 import { detailToRunState } from "../mapping";
 import { trueLiveness, trueSummaryLiveness } from "../run-truth";
+import { mergeAncillarySlots } from "../reconcile";
 import type { RunDetail, RunSummary } from "../run-types";
 
 /**
@@ -163,5 +164,52 @@ describe("trueSummaryLiveness", () => {
         summary({ stage_progress: { done: 13, failed: 1, total: 14 } }),
       ),
     ).toBe("stalled");
+  });
+});
+
+describe("mergeAncillarySlots", () => {
+  const slot = (index: number, url: string | null, status: string) => ({
+    index,
+    kind: "image" as const,
+    prompt: "",
+    url,
+    status,
+  });
+
+  it("adds slots the server says are still rendering", () => {
+    const merged = mergeAncillarySlots(
+      [slot(0, "https://cdn/a.jpg", "done")],
+      [
+        { stage_key: "image_1", kind: "image", slot: 1, status: "pending", action: "none" },
+        { stage_key: "image_2", kind: "image", slot: 2, status: "failed", action: "regenerate" },
+      ],
+      "image",
+    );
+    expect(merged.map((s) => [s.index, s.status])).toEqual([
+      [0, "done"],
+      [1, "pending"],
+      [2, "failed"],
+    ]);
+  });
+
+  it("never downgrades a slot the user can already see", () => {
+    const merged = mergeAncillarySlots(
+      [slot(1, "https://cdn/b.jpg", "done")],
+      [{ stage_key: "image_1", kind: "image", slot: 1, status: "pending", action: "none" }],
+      "image",
+    );
+    expect(merged[0].status).toBe("done");
+    expect(merged[0].url).toBe("https://cdn/b.jpg");
+  });
+
+  it("ignores the other media kind", () => {
+    const existing = [slot(0, null, "pending")];
+    expect(
+      mergeAncillarySlots(
+        existing,
+        [{ stage_key: "video_0", kind: "video", slot: 0, status: "failed", action: "regenerate" }],
+        "image",
+      ),
+    ).toBe(existing);
   });
 });
