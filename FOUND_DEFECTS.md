@@ -13,49 +13,111 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D155 — Gemini grounding DROPS a span of the answer text, corrupting structured output (2026-08-11)
+### D155 — Google's grounded stream DROPS a span of the answer (proven at the SSE chunk level) (2026-08-11)
 
-**Reproduced live, 4/12 runs on `gemini-3.6-flash`.** When Google Search
-grounding is on, the model's answer text comes back with a span silently
-removed at an array start: `"key_points": [` plus most of its first element
-vanish, leaving `"key_points":.",` followed by the surviving elements. The JSON
-is unparseable. Rates measured 2026-08-11 with `response_json_schema` bound:
+**Not ours, and not our schema. Proven on the wire.** When Google Search
+grounding is on, the SSE stream has a HOLE: consecutive chunks arrive
+individually well-formed but with a contiguous span missing between them, so
+the concatenation is unparseable JSON.
 
-| tools | malformed |
+The decisive artifact — raw `streamGenerateContent?alt=sse` over httpx, no
+google.genai SDK, no matrx-ai, no aidream:
+
+```
+chunk #10 = '.",\n      "key_points":'
+chunk #11 = '",\n        "Staging daily fiber increases gradually to avoid gut distress'
+```
+
+`[` plus the entire first array element never arrived. Same at
+non-streaming: the corruption sits INSIDE a single `parts[0].text` on the raw
+HTTP body (`answer_parts=1`, `total_parts=1`). Nothing downstream can be
+responsible.
+
+**Isolation matrix (raw HTTP, gemini-3.6-flash unless noted):**
+
+| cell | corrupt |
 |---|---|
-| `googleSearch` + `urlContext` | 3/6 |
-| `googleSearch` only | 1/6 |
+| `$ref` schema + Search | 6/16 |
+| INLINED schema + Search (no `$defs`/`$ref`) | 4/16 |
+| **NO schema at all** + Search | 6/16 |
+| `$ref` schema, **no tools** | **0/16** (and 0/8 earlier) |
+| streaming + Search | 2/16 |
+| streaming + Search + urlContext | 2/16 |
+| gemini-3.5-flash + Search | 5/16 |
+| gemini-pro-latest + Search | 1/12 |
+| one high-load round, streaming + Search + urlContext | **7/12** |
 
-This is Google-side — reproduced against the raw `google.genai` SDK with none
-of our code in the path (non-streaming `generate_content`; `r.text` equals the
-joined parts, so it is not our assembly).
+Reading: **grounding is necessary and sufficient.** Schema shape is NOT the
+cause (no-schema corrupts at the same rate — and that is the config the
+original incident ran under, since `output_schema` was NULL then). Model choice
+is not a fix (all three affected). Rate is highly variable, 8%–58%.
 
-**Why it looks like "the agent returned nothing".** `utils/json/extract-json.ts`
-`extractFirstJson` cannot recover the payload (verified against the real
-incident text), so `run-headless-agent-json` settles `noJson` and
-`KindRequestDialog` shows the user reasoning and no result — even though a
-complete 6.6 KB answer is sitting in `chat.message.content`.
+**TWO EARLIER CLAIMS OF MINE WERE WRONG — corrected here.** (1) "urlContext
+tripled the rate (3/6 vs 1/6)" was small-sample noise; at N=16 streaming it is
+2/16 either way, so **turning urlContext off is NOT a mitigation** and that
+advice is withdrawn. (2) My "reproduced against the raw SDK" evidence compared
+`r.text` to the joined parts only on a CLEAN run, so it never actually
+distinguished Google from a join artifact. It does now.
 
-Worked example: `chat.request c665e986-a1ca-4796-a61e-89204caad0b7`
-(message `21c2d9cc-ff90-4a32-8831-11fa2407f219`) — 7 content blocks, 6
-`thinking` + one 6,665-char `text` block of `topic_ideas` JSON, corrupt at
-`"key_points"`. `finish_reason: "stop"`, `tool_calls_count: 0` (correct —
-`googleSearch` is a Google-side built-in, never an orchestrated function call),
-`candidates_token_count` 1736 **plus** `thoughts_token_count` 1488 (they are
-separate totals, so the answer was fully generated and billed).
+**No aidream bug found.** Our stack faithfully carries the corruption it is
+given; the incident's signature matches raw Google output exactly.
 
-**Fix — decide before building** (needs Arman; it spends money on a retry):
+**Why the user sees nothing:** `extractFirstJson` cannot recover it (verified
+against the real incident text), so `run-headless-agent-json` settles `noJson`
+and `KindRequestDialog` shows reasoning and no result — while the partial
+answer sits in `chat.message.content`. Incident: `chat.request
+c665e986-a1ca-4796-a61e-89204caad0b7`, message `21c2d9cc-…`.
 
-1. **Retry trigger is NOT "empty answer".** A guard keyed on missing text would
-   never have fired here. The correct trigger is *a run with a declared
-   `output_schema` whose answer text fails to parse* — that is a hard,
-   checkable signal, unlike a prose run where malformation is invisible.
-2. Server-side, one retry, in aidream's execution path; the retry is a repeat
-   of a paid grounded call, so it needs a visible receipt, not a silent redo.
-3. Cheaper mitigation to evaluate first: `internal_url_context` tripled the
-   rate here (3/6 vs 1/6) and buys little for a search-grounded ideation agent
-   — turning it off on `agent.definition 2edcbd85-…` may cut most of the loss
-   for free. Not done unilaterally: it changes a live agent's capabilities.
+**Repair is the WRONG response — retry is the right one.** The hole swallows
+real content (a whole bullet or idea), so any "JSON repair" silently returns an
+answer with data missing and no signal that it happened. Retry works because
+the failure is random. **Trigger: a run with a declared `output_schema` whose
+answer text fails to parse** — a hard, checkable signal. NOT "empty answer",
+which would never have fired here because there WAS text. Open decision for
+Arman: a retry repeats a paid grounded call, so it needs a visible receipt.
+
+### D157 — We emit `const` for `__kind`; Gemini ignores it. Use a single-value `enum` (2026-08-11)
+
+`makeKindJsonSchemaProperty` (features/content-ir/convert/openai-schema-converter.ts)
+emits `const: <slug>` in strict mode and `enum: [<slug>]` otherwise. The binder
+always exports strict, so every kind-bound agent gets the `const` form.
+
+**Measured live, gemini-3.6-flash, 12 runs per cell, same kind:**
+
+| discriminator | emitted the correct `__kind` |
+|---|---|
+| `const: "topic_ideas"` | **1/12** |
+| `const` + Search grounding | **0/12** |
+| `enum: ["topic_ideas"]` | **12/12** |
+
+With `const` the model invents a value (`PodcastTopicIdeas`,
+`podcast_ideas_response`, `TopicIdeasResult`, `RenterFinanceIdeas`, …). That is
+worse than emitting no discriminator: `useKindRequest.readKind` prefers the
+model's `__kind` over the caller's `expectedKind`, so an invented value routes
+to a kind that does not exist and renders through the generic viewer.
+
+**The fix is one line** — always return `enum: [kindSlug]`; the two are
+identical in JSON Schema and OpenAI strict accepts a single-value `enum`, so
+nothing is lost for providers that DID honour `const`. `strict` keeps governing
+`additionalProperties:false` and the required list.
+
+**The blast radius is why it is not committed yet.** Changing the emitter
+changes `emitted_block_schema` and therefore `emitted_fingerprint`: 59 live
+`kind_definition` rows carry a `const` `__kind`, and 4 tests go red — 2 are
+plain expectation updates, 2 pin fingerprint constants applied by migrations
+(`kind_task_list_full.sql`, `kind_video_prompt_options_full.sql`), which is
+exactly the code↔DB drift guard. Doing it properly = emitter + 2 expectations +
+regenerate the 59 stored block schemas/fingerprints via `planKindMigration` +
+update the 2 migration-parity constants. Note `emitted_block_schema` has NO
+runtime reader (it is written by create-shape / the planner / the migrate
+script and never read back), so the stale rows are not a live correctness
+problem — but leaving code and DB disagreeing would defeat the guard.
+
+Currently live and affected: of 102 agents with an `output_schema`, 4 bind a
+`__kind` export, all on Gemini. Two use `enum` (Flashcard Generator ×2 — fine)
+and two use `const` (YouTube Video Transcription Analysis, Schema Markup
+Auditor) — those two are saved only by their system prompts teaching `__kind`.
+`topic_ideas` sidesteps it by binding the plain `emitted_json_schema`.
 
 ### D156 — Python-owned kinds are FIELDLESS to the frontend (140 active rows) (2026-08-11)
 
