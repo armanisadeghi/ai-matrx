@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import CompetitorAutopsyWorkspace from "@/features/marketing/competitors/CompetitorAutopsyWorkspace";
 
@@ -12,8 +13,17 @@ export const metadata: Metadata = {
 
 export default function MarketingCompetitorsPage() {
   return (
-    <Suspense fallback={<LoadingSurface label="Loading competitors…" />}>
-      <CompetitorAutopsyWorkspace />
-    </Suspense>
+    <>
+      <PageHeader>
+        <div className="flex w-full min-w-0 items-center">
+          <h1 className="truncate text-sm font-medium text-foreground">
+            Competitors
+          </h1>
+        </div>
+      </PageHeader>
+      <Suspense fallback={<LoadingSurface label="Loading competitors…" />}>
+        <CompetitorAutopsyWorkspace />
+      </Suspense>
+    </>
   );
 }

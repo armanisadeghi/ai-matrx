@@ -26,17 +26,51 @@ export interface CompetitorRunState {
   error?: string;
 }
 
+/**
+ * Event kind → the sentence a non-technical user reads.
+ *
+ * This must cover EVERY kind the run can emit, including the nested
+ * page-analysis events (`seo.analyze_page_*`, emitted by page_agents.py when
+ * the autopsy compares an owned page) and the provider `_limited` events. An
+ * unmapped kind is never shown raw — see `stageLabel`. Shipping the raw kind
+ * put "seo.analyze_page_completed — complete" on screen for a user who has
+ * never heard of a page agent.
+ */
 const STAGES: Record<string, string> = {
   "seo.competitor_discovery_started": "Finding the competitors that truly overlap",
   "seo.competitor_discovery_completed": "Competitor discovery complete",
+  "seo.competitor_discovery_limited": "Limited competitor data — continuing with what we have",
   "seo.competitors_persisted": "Competitor identities saved",
+  "seo.competitor_backlinks_started": "Comparing who links to them",
+  "seo.competitor_backlinks_completed": "Link comparison complete",
+  "seo.competitor_backlinks_limited": "Limited link data — continuing without it",
   "seo.relevant_pages_started": "Finding the pages responsible for their visibility",
   "seo.relevant_pages_completed": "Winning pages identified",
+  "seo.relevant_pages_limited": "Limited page data — continuing with what we have",
   "seo.competitor_page_crawl_started": "Reading a competitor page",
+  "seo.competitor_page_crawl_failed": "One competitor page could not be read",
   "seo.competitor_page_analyzed": "Page evidence analyzed",
+  // Nested owned-page analysis (page_agents.py) — these surface inside an
+  // autopsy run and used to leak their raw kind names to the user.
+  "seo.analyze_page_started": "Reviewing one of your pages",
+  "seo.analyze_page_inputs_gathered": "Your page evidence gathered",
+  "seo.analyze_page_agent_completed": "Your page reviewed",
+  "seo.analyze_page_completed": "Your page review complete",
+  "seo.analyze_page_persisted": "Your page review saved",
   "seo.competitor_autopsy_persisted": "Recommendations saved",
   "seo.competitor_autopsy_completed": "Autopsy complete",
+  // Durable-command envelope events.
+  "seo.command_run": "Durable run saved",
+  "seo.run_in_progress": "Rejoining the run already in progress",
+  "seo.run_snapshot": "Catching up on this run",
+  "seo.command_failed": "The autopsy stopped",
 };
+
+/** Never show a raw event kind. An unmapped kind keeps the last human
+ *  sentence rather than exposing platform vocabulary. */
+function stageLabel(kind: string, current: string | undefined): string | undefined {
+  return STAGES[kind] ?? current;
+}
 
 export function useCompetitorAutopsy(siteId: string | null) {
   const dispatch = useAppDispatch();
@@ -106,7 +140,11 @@ export function useCompetitorAutopsy(siteId: string | null) {
             if (kind === "seo.command_run" && commandRunId) {
               setRun((current) => ({ ...current, runId: commandRunId }));
             }
-            if (kind) setRun((current) => ({ ...current, stage: STAGES[kind] ?? kind }));
+            if (kind)
+              setRun((current) => ({
+                ...current,
+                stage: stageLabel(kind, current.stage),
+              }));
             if (kind === "seo.competitor_autopsy_completed") {
               setRun((current) => ({ ...current, status: "done", stage: "Autopsy complete" }));
             }

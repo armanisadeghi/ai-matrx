@@ -15,6 +15,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
+import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -30,6 +31,7 @@ import {
   formatDate,
 } from "@/features/marketing/components/shared/MarketingUi";
 import type { MarketingSite } from "@/features/marketing/types";
+import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { cn } from "@/lib/utils";
 
 import {
@@ -138,9 +140,19 @@ function ProviderCard({
       </header>
       <div className="flex flex-1 flex-col gap-3 p-3">
         {answer ? (
-          <p className="line-clamp-5 whitespace-pre-wrap text-xs leading-relaxed text-foreground/90">
-            {answer}
-          </p>
+          // Provider answers ARE markdown. Rendered as raw text they put
+          // literal `**asterisks**` on screen. BasicMarkdownContent is the
+          // canonical renderer for stored markdown and is already in this
+          // route's graph (LiveRunDisplay → MarkdownStream), so this costs no
+          // extra bundle weight. Bounded + faded rather than line-clamped:
+          // line-clamp cannot clamp the block children markdown produces.
+          <div className="relative max-h-32 overflow-hidden text-xs leading-relaxed text-foreground/90">
+            <BasicMarkdownContent content={answer} showCopyButton={false} />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-card to-transparent"
+            />
+          </div>
         ) : (
           <p className="text-xs text-muted-foreground">
             This provider’s answer will appear here as soon as it returns.
@@ -282,8 +294,10 @@ export function AiVisibilityWorkspace({
       filter: "text",
       width: 360,
       cell: (row) => (
+        // A table cell shows WORDS, not a rendered document — the provider's
+        // `**markers**` are formatting, not part of the wording being quoted.
         <q className="block min-w-72 whitespace-normal text-xs text-muted-foreground">
-          {row.evidence_text}
+          {markdownToPlainText(row.evidence_text)}
         </q>
       ),
     },

@@ -161,6 +161,12 @@ const STAGES: Record<string, string> = {
   "seo.ai_visibility_analysis_failed": "One specialist analysis failed",
   "seo.ai_visibility_synthesis_completed": "Cross-provider verdict ready",
   "seo.ai_visibility_completed": "Analysis complete",
+  // Durable-command envelope events. Unmapped kinds keep the previous sentence
+  // (never the raw kind), but a rejoined or resumed run deserves its own line.
+  "seo.command_run": "Durable run saved",
+  "seo.run_in_progress": "Rejoining the run already in progress",
+  "seo.run_snapshot": "Catching up on this run",
+  "seo.command_failed": "The analysis stopped",
 };
 
 export function useAiVisibility(siteId: string, organizationId: string) {

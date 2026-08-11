@@ -2,6 +2,7 @@ import { PresentationData } from "./Slideshow";
 import { resolveDeckTheme } from "./presets";
 import { palette } from "./SlideView";
 import type { JsonObject } from "@/types/json";
+import { markdownToPlainText } from "@/lib/markdown/plain-text";
 
 // Google Slides `presentations.batchUpdate` request objects — heterogeneous
 // (createSlide/createShape/insertText/updateTextStyle/...), no local type
@@ -160,13 +161,6 @@ export const exportToHTML = async (
 };
 
 /**
- * Helper to strip markdown bold syntax and extract text
- */
-const stripMarkdown = (text: string): string => {
-    return text.replace(/\*\*(.*?)\*\*/g, '$1');
-};
-
-/**
  * Helper to parse markdown text with bold formatting for PowerPoint
  * Returns array of text segments with formatting
  */
@@ -304,7 +298,7 @@ export const exportToPowerPoint = async (
                 const bulletPoints = (slideData.bullets ?? []).map((bullet: string) => {
                     const segments = parseMarkdownForPPT(bullet);
                     return {
-                        text: stripMarkdown(bullet), // For simple bullets
+                        text: markdownToPlainText(bullet), // For simple bullets
                         options: {
                             bullet: { code: '2022' }, // Bullet character
                             color: '1F2937',
@@ -725,7 +719,7 @@ export const exportToGoogleSlides = async (
                 });
 
                 // Add bullets
-                const bulletText = (slide.bullets ?? []).map((b: string) => stripMarkdown(b)).join('\n');
+                const bulletText = (slide.bullets ?? []).map((b: string) => markdownToPlainText(b)).join('\n');
                 requests.push({
                     createShape: {
                         objectId: bulletsBoxId,

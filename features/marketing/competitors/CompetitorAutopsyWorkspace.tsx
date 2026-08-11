@@ -268,7 +268,10 @@ export default function CompetitorAutopsyWorkspace() {
 
       <section className="overflow-hidden rounded-2xl border bg-gradient-to-br from-background via-background to-primary/[0.06] shadow-sm">
         <div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_440px] lg:p-7">
-          <div className="space-y-5">
+          {/* Centered, not top-anchored: the run form on the right is taller
+              than the heading + tiles, which left a large dead void under this
+              column. */}
+          <div className="flex flex-col justify-center gap-5">
             <div className="flex items-start gap-3">
               <div className="rounded-xl bg-primary/10 p-2.5 text-primary"><Swords className="size-5" /></div>
               <div>
@@ -313,7 +316,14 @@ export default function CompetitorAutopsyWorkspace() {
         </div>
       </section>
 
-      <LiveRunDisplay requestId={run.requestId} pending={run.status === "running" && !run.requestId} label={run.stage ?? "Competitor autopsy"} bodyClassName="max-h-[34rem]" />
+      {/* Only while the run is live. The strategist's output is pure structured
+          JSON, so the canonical renderer has no text to show and parks on its
+          "Processing…" shimmer — which, left mounted after completion, sat under
+          a finished "Autopsy complete" run forever. The verdict card and the
+          tables below ARE the finished output. */}
+      {run.status === "running" ? (
+        <LiveRunDisplay requestId={run.requestId} pending={!run.requestId} label={run.stage ?? "Competitor autopsy"} bodyClassName="max-h-[34rem]" />
+      ) : null}
       {run.error ? <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{run.error}</div> : null}
 
       {latestArtifact?.executive_verdict ? (
