@@ -13,6 +13,31 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D162 — Two more slot agents carry an `output_schema` that NEVER reaches the provider (2026-08-11)
+
+Same trap found and fixed on `seo.keyword_researcher` during the output-kind
+binding pass: `matrx_ai.client_host.agent_source.definition_to_agent_config` lifts
+`output_schema` into `config.response_format` **only** `if … config.response_format
+is None`, so anything in `settings.response_format` wins and the agent's real schema
+is silently discarded. Live 2026-08-11, both still broken:
+
+| slot | agent | `settings.response_format` | `output_schema.name` | declared `output_kind` |
+|---|---|---|---|---|
+| `research.structured_page_summary` | Structured Research Page Summary | `{"type":"json_object"}` | `research_page_summary` | `research_page_analysis` |
+| `research.cross_cutting_tags` | Cross-Cutting Tag Generator | `{"type":"json_schema"}` | `suggested_tags_schema` | `research_cross_cutting_tags` |
+
+`research.cross_cutting_tags` is the worse of the two: `{"type":"json_schema"}` with
+no schema attached is a bare placeholder, and Anthropic's translator
+(`_build_anthropic_output_format`) finds no usable schema and **downgrades to
+prompt-only**, logging the adjustment — so the agent is running unconstrained while
+the DB shows it bound.
+
+Note both agents' `output_schema.name` also disagrees with the slot's declared
+`output_kind`, so the fix is not purely mechanical: per agent, decide whether to
+bind the declared kind (the `agent_bind_*.sql` recipe) or to correct the slot's
+`output_kind` to match the bespoke schema it actually emits. Each needs its own
+live before/after run — and D160's 10-minute cache wait applies.
+
 ### D160 — An agent definition edited in the DB is served STALE for ~10 min, so "bound and verified" can be a lie (2026-08-11)
 
 Agent execution loads the definition through the Matrx ORM's **per-process**
