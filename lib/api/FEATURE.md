@@ -178,9 +178,10 @@ agent-slot bench runs) blows both — the caller MUST pass `connectTimeoutMs`
 [`features/marketing/search-console/data-classification.ts`](../../features/marketing/search-console/data-classification.ts).
 
 **The ceiling above ours is Cloudflare's ~100s**, and it is not ours to raise:
-past it the edge severs the connection. Chunk the work so ONE request is one
-unit of server-side work (the classifier sends 40 ids — aidream's own batch
-size) rather than raising a timeout the edge will ignore.
+past it the edge severs the connection. Chunk the work by the CLOCK, not by the
+server's cap: the classifier sends 20 ids because a 40-keyword batch measured
+87.8s against production (2026-08-11) — raising a timeout the edge will ignore
+fixes nothing.
 
 🚨 **`network_error` / "Failed to fetch" does NOT prove the request never
 arrived.** Cloudflare replaces an origin 502/504 (and its own 524) with a

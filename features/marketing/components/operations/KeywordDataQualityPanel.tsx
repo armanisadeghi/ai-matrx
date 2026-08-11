@@ -24,6 +24,13 @@ import { extractErrorMessage } from "@/utils/errors";
 import { SEO_COMPUTE_CONNECT_TIMEOUT_MS } from "@/features/marketing/search-console/data-classification";
 
 const CLASSIFY_PATH = "/seo/keywords/classify";
+/**
+ * The server accepts 200, but it classifies them 40 at a time INSIDE one
+ * synchronous request — 40 measured 87.8s live on 2026-08-11, so 200 would run
+ * ~7 minutes and Cloudflare would sever it at ~100s with a CORS-less error page
+ * the browser can only report as "Failed to fetch". Offer what can finish.
+ */
+const CLASSIFY_RUN_LIMIT = 40;
 const ASSIGN_TOPICS_PATH = "/seo/keywords/assign-topics";
 
 interface ClassifyResult {
@@ -44,7 +51,7 @@ interface AssignTopicsResult {
 
 function ClassifyCard() {
   const dispatch = useAppDispatch();
-  const [limit, setLimit] = useState(50);
+  const [limit, setLimit] = useState(CLASSIFY_RUN_LIMIT);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<ClassifyResult | null>(null);
 
@@ -80,22 +87,26 @@ function ClassifyCard() {
       <div className="grid gap-3 p-3">
         <p className="text-xs text-muted-foreground">
           Runs the Keyword Classifier over the oldest unclassified keywords (universal
-          plane, not site-scoped), in batches of ≤40, filling all 13 intrinsic
-          columns + envelope. Capped at 200 keywords per run.
+          plane, not site-scoped), filling all 13 intrinsic columns + envelope. The
+          route is synchronous and a 40-keyword batch takes ~90s, so one run is capped
+          at {CLASSIFY_RUN_LIMIT} keywords — anything larger is severed by the CDN at
+          ~100s before it can answer. Run it repeatedly to work through a backlog.
         </p>
         <div className="flex items-end gap-3">
           <div className="grid gap-1.5">
             <Label htmlFor="classify-limit" className="text-xs">
-              Limit (≤200)
+              Limit (≤{CLASSIFY_RUN_LIMIT})
             </Label>
             <Input
               id="classify-limit"
               type="number"
               min={1}
-              max={200}
+              max={CLASSIFY_RUN_LIMIT}
               value={limit}
               onChange={(event) =>
-                setLimit(Math.max(1, Math.min(200, Number(event.target.value) || 1)))
+                setLimit(
+                  Math.max(1, Math.min(CLASSIFY_RUN_LIMIT, Number(event.target.value) || 1)),
+                )
               }
               className="w-28"
             />

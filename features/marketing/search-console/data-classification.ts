@@ -28,6 +28,8 @@ import type {
   GscTrafficClass,
 } from "@/features/marketing/search-console/types";
 import type { ClassRuleMatchKind } from "@/features/marketing/search-console/lib/class-rules";
+import type { LayeredFilterRule } from "@/components/official/matrx-data-table/layered-filters";
+import type { Json } from "@/types/database.types";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -40,11 +42,29 @@ function assertData<T>(data: T | null, error: { message: string } | null): T {
   return data;
 }
 
+export const GSC_CLASS_REVIEW_SORTS = [
+  "impressions",
+  "clicks",
+  "ctr",
+  "query",
+  "traffic_class",
+  "class_source",
+  "intent_class",
+] as const;
+
+export type GscClassReviewSort = (typeof GSC_CLASS_REVIEW_SORTS)[number];
+
+export function isGscClassReviewSort(
+  value: string,
+): value is GscClassReviewSort {
+  return GSC_CLASS_REVIEW_SORTS.some((sort) => sort === value);
+}
+
 export interface GscClassReviewQuery {
   trafficClasses: GscTrafficClass[] | null;
   sources: GscClassSource[] | null;
   search: string;
-  sort: "impressions" | "clicks" | "ctr" | "query";
+  sort: GscClassReviewSort;
   sortDir: "asc" | "desc";
   page: number;
   pageSize: number;
@@ -55,6 +75,8 @@ export interface GscClassReviewQuery {
   confirmed?: boolean | null;
   /** Exact saved brand alias — uses the canonical brand matcher server-side. */
   brandAlias?: string | null;
+  /** Ordered AND rules shared by the advanced builder and column controls. */
+  filters?: LayeredFilterRule[];
 }
 
 export interface GscClassReviewPage {
@@ -67,6 +89,15 @@ function reviewParams(
   range: GscDateRange,
   query: GscClassReviewQuery,
 ) {
+  const filters: Json | undefined = query.filters?.length
+    ? query.filters.map((rule) => ({
+        id: rule.id,
+        field: rule.field,
+        operator: rule.operator,
+        value: rule.value,
+        valueTo: rule.valueTo ?? null,
+      }))
+    : undefined;
   return {
     p_site_id: siteId,
     p_start: range.start,
@@ -84,6 +115,7 @@ function reviewParams(
       : undefined,
     p_confirmed: query.confirmed ?? undefined,
     p_brand_alias: query.brandAlias?.trim() || undefined,
+    p_filters: filters,
   };
 }
 
@@ -319,25 +351,26 @@ export interface AiClassifyResult {
 }
 
 /**
- * One request = ONE server-side LLM batch. aidream's `classify_keywords`
- * runs `ceil(len / 40)` sequential provider calls INSIDE one request
- * (`CLASSIFY_BATCH_SIZE = 40`), and the route is synchronous — it answers only
- * when the last batch lands. Sending the server's 200-id cap therefore stacks
- * five provider round-trips into a single request that no client can wait out:
- * Cloudflare severs the connection at ~100s and substitutes its own error page
- * (no CORS headers), which a browser can only report as
- * `TypeError: Failed to fetch`. Matching the server's batch size keeps every
- * request inside that ceiling and makes `onProgress` mean something.
+ * How many ids ONE request may carry — set by the clock, not by the server's
+ * cap. aidream's `classify_keywords` is synchronous and runs `ceil(len / 40)`
+ * sequential provider calls INSIDE the request, and **a full 40-keyword batch
+ * measured 87.8s against production on 2026-08-11**. Cloudflare severs a
+ * request at ~100s and answers with its own error page (no CORS headers),
+ * which a browser can only report as `TypeError: Failed to fetch` — so 40 is
+ * already at the wall and the old 200-id chunk (~7 minutes) could never
+ * return. 20 lands near 45s: inside both ceilings, with `onProgress` moving
+ * twice as often. Raise this only with a fresh measurement.
  */
-const AI_CLASSIFY_CHUNK = 40;
+const AI_CLASSIFY_CHUNK = 20;
 
 /**
  * Header budget for the SEO compute routes. `callApi` defaults to 15s connect
- * / 30s total, which a route that waits on a provider call always blows (a
- * single keyword measured ~4s end-to-end on 2026-08-11). 90s sits just under
- * Cloudflare's ~100s cut — past that the edge, not the timeout, decides.
+ * / 30s total, which a route that waits on a provider call always blows. 95s
+ * sits just under Cloudflare's ~100s cut: past that the edge kills the request
+ * anyway, and we would rather report an honest "Connection timed out" than let
+ * the caller receive the edge's opaque failure.
  */
-export const SEO_COMPUTE_CONNECT_TIMEOUT_MS = 90_000;
+export const SEO_COMPUTE_CONNECT_TIMEOUT_MS = 95_000;
 
 /**
  * Run the universal AI classifier (`seo.keyword_classifier` agent slot) over

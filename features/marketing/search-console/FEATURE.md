@@ -255,13 +255,21 @@ class into it (`Classify →` / `Review →`,
 `/marketing/sites/[siteId]/...` shim keeps such links brand-free).
 
 - **Read:** `seo.gsc_keyword_class_review`
-  ([`migrations/seo_keyword_classification_ui.sql`](../../../migrations/seo_keyword_classification_ui.sql))
+  ([`migrations/seo_keyword_class_layered_filters.sql`](../../../migrations/seo_keyword_class_layered_filters.sql))
   — every GSC-active keyword for a 28-day window with class, class_source,
   clicks/impressions (volume is what makes review meaningful), AI intent,
   and the valuation row's override/notes. Winning-run dedup per THE
   ACCURACY CONTRACT; server-paged/sorted/filtered (class + source accept
   arrays because the table's select filters are multi-choice — a filter the
-  server can't serve must not render).
+  server can't serve must not render). The ordinary keyword search stays the
+  primary control; Advanced adds up to 20 ordered AND layers over keyword,
+  class/source, impressions, clicks, CTR percentage, AI intent, notes, ruling
+  origin, and confirmation state. Whole-word include/exclude semantics support
+  workflows such as `ITAD` minus `what` / `how` / `meaning`; numeric column
+  ranges and advanced rules use the same server evaluator, so a 10–100 clicks
+  range filters the entire dataset. Every visible data column sorts and filters.
+  URL parameter `layers` preserves rule order; Clear all owns search, column
+  filters, and layers together.
 - **Write:** `seo.gsc_set_keyword_class` is THE one human write path
   (single + bulk share it; bulk carries ONE shared notes field). It writes
   the explicit `traffic_class` column AND the semantic columns exactly as
@@ -313,9 +321,10 @@ class into it (`Classify →` / `Review →`,
     `gsc_set_keyword_class` server-side (one mapping, one home).
   - **Classify with AI** — the EXISTING universal classifier
     (`seo.keyword_classifier` slot via aidream
-    `POST /seo/keywords/classify`, **40-id chunks = ONE server batch**, with an
-    explicit 90s header budget: the route is synchronous and Cloudflare cuts a
-    request at ~100s — see `lib/api/FEATURE.md` § Long synchronous compute;
+    `POST /seo/keywords/classify`, **20-id chunks with a 95s header budget**: the
+    route is synchronous and a 40-keyword batch measured 87.8s live, while
+    Cloudflare cuts a request at ~100s — see `lib/api/FEATURE.md` § Long
+    synchronous compute;
     admin-gated server-side): selection or filtered-unclassified batch; results land
     as `intent_class` = "AI intent" provenance, overridable like any
     machine signal. The Site Intake Wizard (`intake/`) stays the
@@ -517,6 +526,24 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-11 — Classification layered search + complete table controls: kept
+  the fast keyword search, added compact ordered AND rules with removable
+  chips/reorder/clear, wired whole-word exclusions and numeric ranges through
+  the live review RPC, enabled sort/filter for every visible data column, and
+  moved the narrow Class column directly after selection and before Keyword.
+  Keyword names now open the canonical Keyword Intelligence window. Live SQL
+  verification: ITAD minus what/how/meaning returned 230 matches with zero
+  forbidden-word rows; clicks 10–100 returned 10 rows, all inside range.
+- 2026-08-11 — Brand alias preview/inspection correctness: extracted the
+  canonical normalized-alias match-strength primitive and kept the classifier,
+  draft preview, and saved-alias table filter on that one definition. Draft
+  previews now show only current-window keywords not already covered by the
+  site's identity; re-entering a saved alias says Already covered and returns
+  zero new matches. Clicking an alias's Matches count clears contradictory
+  class/source/search filters, closes the side panel, and shows the exact
+  effective matches (including token-subset/unspaced matches and genericity
+  demotion) behind a visible, clearable alias-filter banner. Verified against
+  IOPBM and the generic Data Destruction alias.
 - 2026-08-11 — **"Classify with AI" never worked.** The `seo.keyword_classifier`
   slot refused its pinned agent on every call (agent declared no structured
   `output_schema`, slot contract requires the `results` key), aidream answered

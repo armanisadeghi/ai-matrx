@@ -2,13 +2,14 @@
  * The AI-classify request must survive the two ceilings above it.
  *
  * aidream's `/seo/keywords/classify` is SYNCHRONOUS and runs one provider call
- * per 40 ids INSIDE the request. Two defaults conspire against that:
- * `callApi` gives up after 15s of waiting for headers, and Cloudflare severs
- * the connection at ~100s and answers with a CORS-less error page a browser can
- * only report as `TypeError: Failed to fetch` (2026-08-11 incident).
+ * per 40 ids INSIDE the request — 40 keywords measured 87.8s live on
+ * 2026-08-11. Two defaults conspire against that: `callApi` gives up after 15s
+ * of waiting for headers, and Cloudflare severs the connection at ~100s and
+ * answers with a CORS-less error page a browser can only report as
+ * `TypeError: Failed to fetch` (that is exactly the reported incident).
  *
- * So this pins the two things that keep a real run reachable: ONE server batch
- * per request, and an explicit header budget under the edge ceiling.
+ * So this pins the two things that keep a real run reachable: a chunk that
+ * finishes inside the edge ceiling, and a header budget that outlives it.
  */
 
 const callApiMock = jest.fn();
@@ -44,7 +45,7 @@ const dispatch = ((thunk: unknown) =>
     : thunk) as unknown as Parameters<typeof classifyKeywordsWithAi>[0];
 
 describe("classifyKeywordsWithAi", () => {
-  it("sends one server batch (40 ids) per request, never the 200-id cap", async () => {
+  it("sends a chunk that can finish inside the edge ceiling, never the 200-id cap", async () => {
     callApiMock.mockClear();
     const ids = Array.from({ length: 95 }, (_, i) => `kw-${i}`);
 
@@ -54,7 +55,7 @@ describe("classifyKeywordsWithAi", () => {
       ([config]) =>
         (config as { body: { keyword_ids: string[]; limit: number } }).body,
     );
-    expect(bodies.map((body) => body.keyword_ids.length)).toEqual([40, 40, 15]);
+    expect(bodies.map((body) => body.keyword_ids.length)).toEqual([20, 20, 20, 20, 15]);
     // Every id is sent exactly once — chunking must not drop or duplicate work.
     expect(bodies.flatMap((body) => body.keyword_ids)).toEqual(ids);
     // `limit` always matches the chunk, so the server never widens the batch.
