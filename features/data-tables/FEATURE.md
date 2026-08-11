@@ -465,6 +465,38 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-11 — claude: **`matrx-user/data-tables` (`/data/[id]`) got its FIRST
+  surface emitter and 2 ask-policy entity write targets.** This is the third
+  surface backed by this feature, and it is distinct from `matrx-user/workbooks`
+  (`/workbooks`) and `matrx-user/documents` (`/documents/[id]`) — different
+  routes, different page components, no shared target names. The manifest had
+  declared 14 values with `readiness: "stub"` and had NO runtime at all, so the
+  emitter came first: `agent-context/buildDataTablesScope.ts`, with the provider
+  mounted by `UserTableViewer` behind a new opt-in `emitSurfaceScope` prop that
+  only `DataTableDetailClient` passes. **That gate is load-bearing** — the viewer
+  is also rendered inside `DatasetOverlay`, `ViewTableModal` and
+  `UserTableWindow`, which belong to other surfaces, and the surface registry
+  resolves deepest-first while `listLiveWriteTargets()` walks the whole stack, so
+  an unconditional provider would hijack the host page. `selected_range` was
+  deleted from the manifest (this grid has no multi-cell selection concept, so
+  nothing could ever emit it) and `is_read_only` added, because both handlers
+  gate on it. The targets: `table_description`, and `cell_value` which writes ONE
+  cell from an explicit `{row_id, field_name, value}` object. Two service changes
+  support them — `updateTableMetadata()` was added to `service.ts` as a typed
+  wrapper over the pre-existing `update_user_table_metadata` RPC (whose
+  all-`COALESCE` contract is what lets a description-only write leave the table's
+  name alone), and **`EditTableModal` + `TableSettingsModal` were migrated onto
+  it**, retiring two raw `supabase.rpc` call sites so table metadata has exactly
+  one path (a slice of the P2 plan above). `EditableCell`'s private `normalize`
+  was exported as `normalizeCellValue` so the cell handler coerces identically to
+  the user's own inline typing — though the handler REFUSES what that helper
+  forgives (NaN, unparseable JSON), since someone mid-keystroke and an agent
+  submitting a final value deserve different strictness. `cell_value` also
+  refuses any row not on the page currently on screen, which is the blast-radius
+  guarantee: the cell an agent writes is one the user watches change.
+  Live-verified end to end on a throwaway table; SQL confirmed a single-cell
+  write left every other field byte-identical and the untouched rows at version
+  1. Full rationale and the declined fields in `features/surfaces/FEATURE.md`.
 - 2026-08-10 — claude: **Workbooks surface is agent-writable (3 ask-policy write
   targets on the `/workbooks/[id]` route only).** `workbook_name` and
   `workbook_description` persist immediately through `workbook-service` — the

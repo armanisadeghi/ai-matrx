@@ -73,6 +73,11 @@ export default function DataTableDetailClient({
           tableId={tableId}
           fillHeight
           hideHeader
+          // This route is the ONE mount that emits `matrx-user/data-tables`
+          // (live agent scope + the table_description / cell_value write
+          // targets). The viewer is also rendered inside overlays owned by
+          // other surfaces, so the provider is opt-in — see the prop's docs.
+          emitSurfaceScope
           onTableInfoChange={(info) => {
             setTableInfo(info);
             setRenamedTo(null);

@@ -139,3 +139,69 @@ export async function changeFieldType(
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as unknown as ChangeFieldTypeResponse };
 }
+
+// ─── update_user_table_metadata ──────────────────────────────────────────────
+
+export type UpdateTableMetadataArgs = {
+  tableId: string;
+  /** Omit to leave unchanged. */
+  tableName?: string;
+  /** Omit to leave unchanged. */
+  description?: string;
+  /** Omit to leave unchanged. */
+  isPublic?: boolean;
+};
+
+export type UpdatedTableMetadata = {
+  id: string;
+  table_name: string;
+  description: string | null;
+  version: number | null;
+  is_public: boolean | null;
+  updated_at: string;
+};
+
+/**
+ * Typed wrapper for the pre-existing `update_user_table_metadata` RPC — the
+ * table-level metadata twin of `upsertCell`.
+ *
+ * THE COALESCE CONTRACT, and why it matters: every argument except the id is
+ * `COALESCE(p_x, x)` server-side, so an OMITTED field is left alone rather
+ * than nulled. That is what makes a description-only write safe — it cannot
+ * blank the table's name or flip its visibility as a side effect. Pass only
+ * what you intend to change.
+ *
+ * Requires owner or editor access; the RPC raises 42501 otherwise, which
+ * surfaces here as a failure envelope.
+ *
+ * This is the ONE path for table metadata: `EditTableModal`,
+ * `TableSettingsModal` and the surface `table_description` write target all go
+ * through it, so a UI edit and an agent edit can never disagree.
+ */
+export async function updateTableMetadata(
+  args: UpdateTableMetadataArgs,
+): Promise<ServiceResult<UpdatedTableMetadata>> {
+  const { data, error } = await supabase.rpc("update_user_table_metadata", {
+    p_table_id: args.tableId,
+    ...(args.tableName !== undefined ? { p_table_name: args.tableName } : {}),
+    ...(args.description !== undefined
+      ? { p_description: args.description }
+      : {}),
+    ...(args.isPublic !== undefined ? { p_is_public: args.isPublic } : {}),
+  });
+  if (error) return { success: false, error: error.message };
+
+  // The RPC returns its own {success,error} envelope inside a jsonb payload.
+  const envelope = data as unknown as {
+    success?: boolean;
+    error?: string;
+    table?: UpdatedTableMetadata;
+  } | null;
+  if (!envelope || envelope.success !== true || !envelope.table) {
+    return {
+      success: false,
+      error: envelope?.error ?? "Table not found or update failed",
+    };
+  }
+  return { success: true, data: envelope.table };
+}
