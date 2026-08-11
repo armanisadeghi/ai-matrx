@@ -432,12 +432,7 @@ export interface CreateBrandAssetInput {
    * "stock" = saved from a licensed-free stock provider (Unsplash).
    */
   source?:
-    | "discovered"
-    | "uploaded"
-    | "manual"
-    | "generated"
-    | "research"
-    | "stock";
+    "discovered" | "uploaded" | "manual" | "generated" | "research" | "stock";
 }
 
 export interface UpdateBrandAssetInput {
@@ -613,6 +608,8 @@ export interface PageDesiredValues {
   inbound_links?: PlannedLinkEntry[];
   /** Links this page SHOULD carry (target URL + planned anchor). */
   outbound_links?: PlannedLinkEntry[];
+  /** Durable human rejects from the site authority router (candidate keys). */
+  authority_router_dismissed?: string[];
   structured_data_notes?: string;
   /** Freeform plan notes for areas without a structured plan yet — each key
    *  is one card's slice (PagePlanNoteCard), same clobber-safe merge path. */

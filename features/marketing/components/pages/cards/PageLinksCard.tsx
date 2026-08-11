@@ -24,10 +24,7 @@ import {
   CircleAlert,
 } from "lucide-react";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
-import {
-  jsonExportItem,
-  rowsToCsv,
-} from "@/components/agent-copy/export";
+import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
 import { Badge } from "@/components/ui/badge";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { cn } from "@/lib/utils";
@@ -52,6 +49,7 @@ import {
 } from "@/features/marketing/data/page-links";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { MarketingPage } from "@/features/marketing/types";
+import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
 
 function ComplianceBadge({
   acceptable,
@@ -106,8 +104,7 @@ function LinkPartnerList({
             key={group.url}
             className={cn(
               "px-3 py-2",
-              needsFix &&
-                "bg-amber-500/10 ring-1 ring-inset ring-amber-500/25",
+              needsFix && "bg-amber-500/10 ring-1 ring-inset ring-amber-500/25",
             )}
           >
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -399,7 +396,10 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
       ["Inbound links needing fixes", inboundReport.summary.unacceptableLinks],
       ["Outbound target URLs", outboundGroups.length],
       ["Outbound edges", outboundRows.length],
-      ["Outbound links needing fixes", outboundReport.summary.unacceptableLinks],
+      [
+        "Outbound links needing fixes",
+        outboundReport.summary.unacceptableLinks,
+      ],
       ["Broken outbound targets", brokenOutbound.length],
     ],
     attributes: {
@@ -468,7 +468,10 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
     );
   } else if (inbound.isError) {
     body = (
-      <QueryError error={inbound.error} onRetry={() => void inbound.refetch()} />
+      <QueryError
+        error={inbound.error}
+        onRetry={() => void inbound.refetch()}
+      />
     );
   } else if (outbound.isError) {
     body = (
@@ -495,8 +498,8 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
                 <p className="text-xs font-semibold text-foreground">
                   {inboundReport.summary.acceptablePercent?.toFixed(1)}%
                   acceptable ·{" "}
-                  {inboundReport.summary.unacceptablePercent?.toFixed(1)}%
-                  need fixes
+                  {inboundReport.summary.unacceptablePercent?.toFixed(1)}% need
+                  fixes
                 </p>
                 <p className="truncate text-[11px] text-muted-foreground">
                   {inboundReport.summary.acceptableLinks} of{" "}
@@ -540,7 +543,8 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 border-b border-border/60 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               <ArrowDownLeft className="h-3 w-3" />
-              Inbound · {inboundGroups.length} pages ({inboundRows.length} links)
+              Inbound · {inboundGroups.length} pages ({inboundRows.length}{" "}
+              links)
             </p>
             {view === "url" ? (
               <LinkPartnerList
@@ -597,6 +601,7 @@ export function PageLinksCard({ page }: { page: MarketingPage }) {
       collapsible
       anchor="page_links"
     >
+      <AuthorityRouterDoor sitePath={sitePath} className="mb-3" />
       {body}
     </SectionCard>
   );

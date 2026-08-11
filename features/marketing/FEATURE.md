@@ -4,6 +4,35 @@
 **Tier:** 1  
 **Last updated:** 2026-08-11
 
+## Internal Authority Router
+
+`/marketing/brands/[brandId]/sites/[siteId]/authority` is the site-wide
+authority-flow workspace. It combines the existing backlink intelligence,
+crawler link graph/Link Score, GSC demand and SEO Juice, page roles, keyword
+mapping, content plans, and cannibalization evidence. It never computes a
+second PageRank or stores a parallel recommendation system.
+
+The server first creates a deterministic allowlist of missing source→target
+edges. The versioned `seo.internal_authority_router` agent is constrained to
+those exact IDs/URLs and streams `seo_authority_route_analysis` through the
+normal server stream. `useAuthorityRouter` adopts that foreign stream into the
+canonical Content IR pipeline; `LiveRunDisplay` renders progressively parsed
+content while the typed durable `authority.route` result is stored on
+`seo.collection_run` and read directly from Supabase after reload.
+
+The workspace provides a graph, ranked route cards, evidence table, explicit
+source/target/live-page doors, warnings, confidence and cannibalization risk.
+“Add to link plan” updates both existing page-plan directions through
+`updatePageDesiredValues`: source `outbound_links` and target `inbound_links`.
+The current link compliance UI therefore understands approvals immediately;
+the observed `web.link_edge` graph remains immutable until a later crawl.
+
+The reusable `AuthorityRouterDoor` is mounted in the site Backlinks workspace,
+the site Links workspace, and each page's Backlinks/Internal links cards so the
+underlying evidence never dead-ends. The nested
+`matrx-user/marketing-authority` surface exposes the loaded verdict, pages,
+candidate allowlist, and recommendations to platform agents without refetching.
+
 ## The feature is multi-pillar — websites are ONE pillar
 
 Marketing owns **eight peer pillars**, declared ONCE in

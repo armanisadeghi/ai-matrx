@@ -58,6 +58,7 @@ import { LinkGraphView } from "@/features/marketing/components/inspection/link-g
 import { SiteLinkComplianceView } from "@/features/marketing/components/inspection/link-plan/SiteLinkComplianceView";
 import { displayUrl } from "@/features/marketing/components/inspection/link-graph/model";
 import { cn } from "@/lib/utils";
+import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
 
 function humanLinkEdgeRow(row: InspectionLinkRow): string {
   return humanLines([
@@ -68,7 +69,10 @@ function humanLinkEdgeRow(row: InspectionLinkRow): string {
     ["Anchor", row.anchor_text],
     ["Rel", row.rel],
     ["Position", row.position],
-    ["Recorded", formatCompactDate(row.snapshot?.captured_at ?? row.created_at)],
+    [
+      "Recorded",
+      formatCompactDate(row.snapshot?.captured_at ?? row.created_at),
+    ],
   ]);
 }
 
@@ -369,7 +373,8 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
         id: "link_totals",
         title: "Link totals",
         description: "Aggregate counts over the cached link-graph edges.",
-        build: () => linkTotals ?? { note: "Graph view has not loaded edges yet." },
+        build: () =>
+          linkTotals ?? { note: "Graph view has not loaded edges yet." },
       },
       {
         id: "external_domains",
@@ -399,7 +404,10 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
             ? { query: table.state, rows: tableRows }
             : level === "compact"
               ? { query: table.state, rows: tableRows.slice(0, 25) }
-              : { total_recorded: links.data?.total ?? 0, loaded_rows: tableRows.length },
+              : {
+                  total_recorded: links.data?.total ?? 0,
+                  loaded_rows: tableRows.length,
+                },
       });
     }
     return sections;
@@ -407,9 +415,13 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
 
   const pageHuman = () =>
     [
-      crawlId ? `Crawl link edges — session ${crawlId}` : `Site link graph — ${site.domain}`,
+      crawlId
+        ? `Crawl link edges — session ${crawlId}`
+        : `Site link graph — ${site.domain}`,
       linkTotals
-        ? Object.entries(linkTotals).map(([k, v]) => `${k}: ${v}`).join("\n")
+        ? Object.entries(linkTotals)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("\n")
         : "Link graph not loaded yet.",
       externalDomainsTop.length
         ? `Top external domains:\n${externalDomainsTop.map((d) => `- ${d.domain}: ${d.links} links`).join("\n")}`
@@ -468,7 +480,11 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
           ) : null}
           <CopyButtons
             size="icon"
-            label={crawlId ? `Crawl link edges (${crawlId})` : `Site link graph (${site.domain})`}
+            label={
+              crawlId
+                ? `Crawl link edges (${crawlId})`
+                : `Site link graph (${site.domain})`
+            }
             human={pageHuman}
             json={pageFullData}
             agent={pageAgentPayload}
@@ -486,25 +502,30 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
             )
               .filter((option) => option.id !== "plan" || !crawlId)
               .map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                aria-pressed={view === option.id}
-                onClick={() => setView(option.id)}
-                className={cn(
-                  "inline-flex h-6 items-center gap-1 rounded px-2 text-xs font-medium transition-colors",
-                  view === option.id
-                    ? "bg-accent text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <option.icon className="h-3 w-3" />
-                {option.label}
-              </button>
-            ))}
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={view === option.id}
+                  onClick={() => setView(option.id)}
+                  className={cn(
+                    "inline-flex h-6 items-center gap-1 rounded px-2 text-xs font-medium transition-colors",
+                    view === option.id
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <option.icon className="h-3 w-3" />
+                  {option.label}
+                </button>
+              ))}
           </div>
         </div>
       </section>
+      {!crawlId ? (
+        <div className="shrink-0 border-b border-border px-3 py-2 sm:px-4">
+          <AuthorityRouterDoor sitePath={sitePath} />
+        </div>
+      ) : null}
       <div className="min-h-0 flex-1">
         {view === "graph" ? (
           <LinkGraphView
@@ -516,7 +537,10 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
         ) : view === "plan" ? (
           <SiteLinkComplianceView />
         ) : links.isError ? (
-          <QueryError error={links.error} onRetry={() => void links.refetch()} />
+          <QueryError
+            error={links.error}
+            onRetry={() => void links.refetch()}
+          />
         ) : (
           <MatrxDataTable<InspectionLinkRow>
             data={links.data?.rows ?? []}
@@ -606,7 +630,10 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
         view="links"
         getViewSummary={() =>
           links.data
-            ? { loaded_rows: links.data.rows.length, total_rows: links.data.total }
+            ? {
+                loaded_rows: links.data.rows.length,
+                total_rows: links.data.total,
+              }
             : undefined
         }
       >
@@ -641,9 +668,7 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
             liveRows.length > 0 ? liveRows.map(projectLinkRow) : undefined,
           link_rows_total: onTable ? links.data?.total : undefined,
           link_rows_loaded: onTable ? liveRows.length : undefined,
-          active_filters: onTable
-            ? tableFilterValues(table.state)
-            : undefined,
+          active_filters: onTable ? tableFilterValues(table.state) : undefined,
           links_view_state: onTable ? tableViewState(table.state) : undefined,
         });
       }}

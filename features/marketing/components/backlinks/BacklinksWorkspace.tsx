@@ -43,6 +43,7 @@ import {
   projectDimensionRow,
 } from "@/features/marketing/components/backlinks/format";
 import { Button } from "@/components/ui/button";
+import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -265,7 +266,7 @@ function TopTenCard({
 }
 
 export function BacklinksWorkspace() {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -761,6 +762,7 @@ export function BacklinksWorkspace() {
             </div>
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            <AuthorityRouterDoor sitePath={sitePath} compact />
             <CopyButtons
               size="icon"
               label={`Backlinks page (${site.domain})`}

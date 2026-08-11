@@ -34,6 +34,7 @@ import {
   parseBacklinkAssessment,
 } from "@/features/marketing/components/backlinks/lib/enrichment";
 import { useBacklinkAnalysis } from "@/features/marketing/components/backlinks/useBacklinkAnalysis";
+import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
 
 function ratioLabel(part: number, whole: number): string {
   if (whole === 0) return "—";
@@ -373,6 +374,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
       anchor="page_backlinks"
       action={{ label: "View all", href: pageBacklinksHref }}
     >
+      <AuthorityRouterDoor sitePath={sitePath} className="mb-3" />
       {body}
       {selectedRow ? (
         <DataRowWindow

@@ -21,6 +21,7 @@ import {
   Map,
   Network,
   Plug,
+  Route,
   ScanSearch,
   Settings,
   ShieldCheck,
@@ -85,6 +86,7 @@ function sectionSuffix(
     "analysis",
     "findings",
     "links",
+    "authority",
     "backlinks",
     "keywords",
     "ranks",
@@ -250,6 +252,11 @@ export function MarketingSiteLayoutClient({
             name: "Links",
             href: `${base}/links`,
             icon: Link2,
+          },
+          {
+            name: "Authority",
+            href: `${base}/authority`,
+            icon: Route,
           },
           {
             name: "Backlinks",

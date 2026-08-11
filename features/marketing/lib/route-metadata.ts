@@ -158,6 +158,12 @@ const SITE_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
       "Deterministic site-wide audit rollup: indexability, SERP metadata, social cards, headings, and URL quality.",
     letter: "Au",
   },
+  authority: {
+    titlePrefix: "Authority Router",
+    description:
+      "Route backlink and internal authority toward strategically important pages with exact, evidence-grounded link recommendations.",
+    letter: "Ar",
+  },
   backlinks: {
     titlePrefix: "Backlinks",
     description:
