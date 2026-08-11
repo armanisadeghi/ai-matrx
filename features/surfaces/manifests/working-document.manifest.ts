@@ -9,7 +9,25 @@
  * (see `_conversation-document.manifest.ts`) but binds its own agents.
  *
  * Emitted at trigger time by `useWorkingDocumentSurfaceScope`; wired into the
- * editor's `UnifiedAgentContextMenu` in `WorkingDocumentEditor`.
+ * editor's `UnifiedAgentContextMenu` in `WorkingDocumentEditor`, which also
+ * mounts this surface's `SurfaceRuntimeProvider` (scope + write handlers).
+ *
+ * WRITE TARGETS — why the SAME four as `matrx-user/scratchpad`:
+ * This is the surface where agent authorship is the POINT: the cloud agent
+ * already writes this document from the chat outside, every round, via
+ * `ctx_patch`. What these targets add is the inside half — the agent the user
+ * runs from within the editor can now land what it drafted instead of printing
+ * it for a copy-paste, which is the same 360 loop the `markdown-studio`,
+ * `markdown-editor` and `code-editor` adopters shipped.
+ *
+ * They are shared verbatim with the scratchpad rather than duplicated because
+ * ONE editor (`WorkingDocumentEditor`) renders both surfaces and ONE handler
+ * block services them; two copies of the same four targets would drift from that
+ * one implementation, and a target whose handler drifted away is a loud runtime
+ * defect by design. The read/write asymmetry between the two surfaces is about
+ * the CLOUD agent out in the chat, not about an agent running inside the text —
+ * see the scratchpad manifest's docblock, which argues the same point from the
+ * restricted side.
  */
 
 import type { SurfaceManifest } from "@/features/surfaces/types";
@@ -17,6 +35,7 @@ import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import {
   CONVERSATION_DOCUMENT_GROUPS,
   CONVERSATION_DOCUMENT_VALUES,
+  CONVERSATION_DOCUMENT_WRITE_TARGETS,
   createConversationDocumentScope,
 } from "./_conversation-document.manifest";
 
@@ -35,6 +54,7 @@ The conversation is a REFERENCE, not your content: conversation_id links back to
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     CONVERSATION_DOCUMENT_VALUES,
   ),
+  writeTargets: CONVERSATION_DOCUMENT_WRITE_TARGETS,
 };
 
 /** Type-safe scope helper. Delegates to the shared conversation-document helper. */
