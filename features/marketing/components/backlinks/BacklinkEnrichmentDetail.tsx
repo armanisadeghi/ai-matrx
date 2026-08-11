@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   BrainCircuit,
+  Camera,
   ExternalLink,
   Loader2,
   Newspaper,
@@ -19,6 +20,7 @@ import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/back
 import {
   backlinkAnalysisActionState,
   backlinkCaptureForUi,
+  backlinkScreenshotFileId,
   hasBacklinkAssessment,
   humanizeAssessmentValue,
   jsonRecord,
@@ -38,6 +40,7 @@ import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { toast } from "@/lib/toast";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
+import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 
 function fact(label: string, value: ReactNode) {
   return (
@@ -134,6 +137,7 @@ export function BacklinkEnrichmentDetail({
   const assessment = parseBacklinkAssessment(row.resolved_assessment);
   const hasAssessment = hasBacklinkAssessment(row.resolved_assessment);
   const capture = backlinkCaptureForUi(row.source_capture);
+  const screenshotFileId = backlinkScreenshotFileId(capture);
   const hasCapture = Object.keys(capture).length > 0;
   const existingHuman = jsonRecord(row.human_ruling);
   const lastError = jsonRecord(row.last_error);
@@ -348,6 +352,11 @@ export function BacklinkEnrichmentDetail({
       ["Served from cache", yesNo(jsonBoolean(capture.from_cache))],
       ["Captured title", jsonText(capture.title)],
       ["Final captured URL", jsonText(capture.final_url)],
+      ["Link screenshot", screenshotFileId ? "Captured" : "Not captured"],
+      [
+        "Target link highlighted",
+        yesNo(jsonBoolean(capture.screenshot_highlighted)),
+      ],
       ["Scraped", formatDate(jsonText(capture.scraped_at))],
     ],
     attributes: { backlink_id: row.id, site_id: row.site_id },
@@ -431,6 +440,26 @@ export function BacklinkEnrichmentDetail({
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
+            <Button asChild type="button" size="sm" variant="outline">
+              <a
+                href={row.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open source page
+              </a>
+            </Button>
+            <Button asChild type="button" size="sm" variant="outline">
+              <a
+                href={row.target_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open target page
+              </a>
+            </Button>
             <Button asChild type="button" size="sm" variant="outline">
               <Link
                 href={`${sitePath}/reputation`}
@@ -804,6 +833,36 @@ export function BacklinkEnrichmentDetail({
           ? section(
               "Captured source-page evidence",
               <div className="grid gap-3">
+                {screenshotFileId ? (
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-semibold text-foreground">
+                          Link evidence screenshot
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          The matching link is highlighted and centered when the
+                          source page exposes it to the browser.
+                        </p>
+                      </div>
+                      <Camera className="h-4 w-4 shrink-0 text-primary" />
+                    </div>
+                    <CaptureThumb
+                      fileId={screenshotFileId}
+                      alt={`Highlighted backlink on ${row.source_domain ?? "the source page"}`}
+                      aspectClassName="aspect-video"
+                      footer={
+                        <div className="flex items-center justify-between gap-2 border-t border-border px-2.5 py-2 text-[11px]">
+                          <span className="font-medium">Open full screenshot</span>
+                          <span className="text-muted-foreground">
+                            {jsonNumber(capture.screenshot_width) ?? "—"} ×{" "}
+                            {jsonNumber(capture.screenshot_height) ?? "—"}
+                          </span>
+                        </div>
+                      }
+                    />
+                  </div>
+                ) : null}
                 <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
                   {fact(
                     "Capture succeeded",
@@ -828,7 +887,6 @@ export function BacklinkEnrichmentDetail({
                     "Capture content truncated",
                     yesNo(jsonBoolean(capture.content_truncated)),
                   )}
-                  {fact("Cache key", jsonText(capture.cache_key))}
                 </div>
                 {jsonText(capture.title) ? (
                   <div>
@@ -857,6 +915,12 @@ export function BacklinkEnrichmentDetail({
                     {jsonText(capture.failure_reason)}
                   </p>
                 ) : null}
+                {jsonText(capture.screenshot_failure_reason) ? (
+                  <p className="rounded border border-warning/30 bg-warning/5 p-2 text-xs text-warning-foreground">
+                    Screenshot unavailable:{" "}
+                    {jsonText(capture.screenshot_failure_reason)}
+                  </p>
+                ) : null}
                 {captureExcerpt ? (
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -868,7 +932,7 @@ export function BacklinkEnrichmentDetail({
                   </div>
                 ) : null}
               </div>,
-              "The exact cached page evidence used by the analysis. The entire stored excerpt is visible below.",
+              "The captured page evidence used by the analysis, plus a human-review screenshot when browser capture succeeded.",
               captureCopy,
             )
           : null}

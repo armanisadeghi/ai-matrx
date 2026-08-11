@@ -23,6 +23,16 @@ export function backlinkCaptureForUi(
   return capture;
 }
 
+/** Canonical file identity for a stored human-review backlink screenshot. */
+export function backlinkScreenshotFileId(
+  value: Json | null | undefined,
+): string | null {
+  const candidate = jsonRecord(value).screenshot_file_id;
+  return typeof candidate === "string" && candidate.length > 0
+    ? candidate
+    : null;
+}
+
 function text(value: Json | undefined): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }

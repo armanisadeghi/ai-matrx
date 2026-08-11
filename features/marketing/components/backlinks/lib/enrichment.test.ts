@@ -1,6 +1,7 @@
 import {
   backlinkAnalysisActionState,
   backlinkCaptureForUi,
+  backlinkScreenshotFileId,
   hasBacklinkAssessment,
   parseBacklinkAssessment,
   providerExtras,
@@ -62,6 +63,13 @@ describe("backlink enrichment narrowers", () => {
         title: "Useful resource",
       }),
     ).toEqual({ success: true, title: "Useful resource" });
+  });
+
+  it("resolves the canonical screenshot file identity", () => {
+    expect(
+      backlinkScreenshotFileId({ screenshot_file_id: "file-1" }),
+    ).toBe("file-1");
+    expect(backlinkScreenshotFileId({ screenshot_file_id: 42 })).toBeNull();
   });
 
   it("uses one controlled single-link action contract everywhere", () => {

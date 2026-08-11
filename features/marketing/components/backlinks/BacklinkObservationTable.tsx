@@ -13,6 +13,7 @@
 
 import {
   BrainCircuit,
+  Camera,
   ExternalLink,
   Image as ImageIcon,
   Link2,
@@ -34,6 +35,7 @@ import {
 import { parseObservationExtras } from "@/features/marketing/components/backlinks/lib/extras";
 import {
   backlinkAnalysisActionState,
+  backlinkScreenshotFileId,
   humanizeAssessmentValue,
   parseBacklinkAssessment,
   providerExtras,
@@ -69,6 +71,7 @@ import type { BacklinkEnrichmentRunState } from "@/features/marketing/components
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
+import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 
 /**
  * One honest empty line per lens — a lens finding nothing is usually GOOD
@@ -101,6 +104,7 @@ export function BacklinkObservationTable({
   analysisDisabled?: boolean;
 }) {
   const { sitePath } = useMarketingSite();
+  const openFilePreview = useOpenFilePreviewWindow();
   const lensFallback = lens ? LENS_DEFAULT_SORT[lens] : null;
   const table = useMarketingTableState({
     defaultSort: lensFallback
@@ -166,27 +170,44 @@ export function BacklinkObservationTable({
         const extras = parseObservationExtras(
           providerExtras(row.provider_evidence),
         );
+        const screenshotFileId = backlinkScreenshotFileId(row.source_capture);
         return (
-          <a
-            href={row.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={row.source_url}
-            onClick={(event) => event.stopPropagation()}
-            className="group block min-w-44 max-w-72"
-          >
-            <span className="flex items-center gap-1 truncate text-xs font-medium text-foreground group-hover:text-primary group-hover:underline">
-              <span className="truncate">
-                {row.source_domain ?? urlPath(row.source_url)}
+          <div className="min-w-44 max-w-72">
+            <a
+              href={row.source_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={row.source_url}
+              onClick={(event) => event.stopPropagation()}
+              className="group block"
+            >
+              <span className="flex items-center gap-1 truncate text-xs font-medium text-foreground group-hover:text-primary group-hover:underline">
+                <span className="truncate">
+                  {row.source_domain ?? urlPath(row.source_url)}
+                </span>
+                <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
               </span>
-              <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
-            </span>
-            {extras.pageFromTitle ? (
-              <span className="block truncate text-[11px] text-muted-foreground">
-                {extras.pageFromTitle}
-              </span>
+              {extras.pageFromTitle ? (
+                <span className="block truncate text-[11px] text-muted-foreground">
+                  {extras.pageFromTitle}
+                </span>
+              ) : null}
+            </a>
+            {screenshotFileId ? (
+              <button
+                type="button"
+                className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openFilePreview({ fileId: screenshotFileId });
+                }}
+                title="Open highlighted link screenshot"
+              >
+                <Camera className="h-3 w-3" />
+                View captured link
+              </button>
             ) : null}
-          </a>
+          </div>
         );
       },
     },
@@ -470,7 +491,7 @@ export function BacklinkObservationTable({
       header: headerWithTooltip("PR", PAGE_RANK_EXPLAINER),
       filter: false,
       align: "right",
-      cell: (row) => <RankCell value={row.source_rank} />,
+      cell: (row) => <RankCell value={row.source_rank} zeroLabel="Not ranked" />,
     },
     {
       id: "domain_rank",
@@ -478,7 +499,7 @@ export function BacklinkObservationTable({
       header: headerWithTooltip("DR", DOMAIN_RANK_EXPLAINER),
       filter: false,
       align: "right",
-      cell: (row) => <RankCell value={row.domain_rank} />,
+      cell: (row) => <RankCell value={row.domain_rank} zeroLabel="Not ranked" />,
     },
     {
       id: "spam_score",

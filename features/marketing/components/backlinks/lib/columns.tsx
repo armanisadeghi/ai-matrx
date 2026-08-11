@@ -34,9 +34,22 @@ export function SpamCell({ score }: { score: number | null }) {
 }
 
 /** A 0–1000 DataForSEO rank number. */
-export function RankCell({ value }: { value: number | null }) {
+export function RankCell({
+  value,
+  zeroLabel,
+}: {
+  value: number | null;
+  zeroLabel?: string;
+}) {
   return value === null ? (
     <span className="text-xs text-muted-foreground">—</span>
+  ) : value === 0 && zeroLabel ? (
+    <span
+      className="whitespace-nowrap text-[11px] text-muted-foreground"
+      title="The provider returned a real value of 0; this metric is not missing."
+    >
+      {zeroLabel}
+    </span>
   ) : (
     <span className="text-xs tabular-nums text-foreground">{value}</span>
   );

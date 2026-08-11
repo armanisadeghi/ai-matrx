@@ -141,7 +141,7 @@ export function spamTone(score: number | null | undefined): SpamTone | null {
  * number renders so a three-digit rank is never a mystery again.
  */
 export const RANK_SCALE_EXPLAINER =
-  "DataForSEO Rank, 0–1000 (logarithmic). Roughly comparable to DR/DA × 10 — higher is more authoritative.";
+  "DataForSEO Rank, 0–1000 (logarithmic). Roughly comparable to DR/DA × 10 — higher is more authoritative. A provider value of 0 means not ranked; it is not missing data.";
 
 export const DOMAIN_RANK_EXPLAINER = `Authority of the linking domain. ${RANK_SCALE_EXPLAINER}`;
 export const PAGE_RANK_EXPLAINER = `Authority of the exact linking page. ${RANK_SCALE_EXPLAINER}`;
