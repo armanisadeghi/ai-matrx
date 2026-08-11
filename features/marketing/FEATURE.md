@@ -348,6 +348,12 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-11 — Reputation and AI Visibility now watch their own runs. Both
+  surfaces mount the canonical `LiveRunDisplay` on their adopted `requestId`,
+  so the model's output streams into the page from the first token instead of
+  sitting behind a spinner until a chunk-gated block appeared. Keyword research
+  already rendered its adopted stream through the canonical pipeline (with a
+  durable-artifact fallback for rejoined runs) and was left alone.
 - 2026-08-11 — Codex: **Backlink screenshots and rank semantics are reviewable.**
   The canonical backlink drawer/WindowPanel renders the stored link-evidence image
   through `CaptureThumb`, so the standard file viewer supplies full-size, share,
