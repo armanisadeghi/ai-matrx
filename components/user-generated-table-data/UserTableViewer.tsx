@@ -1423,15 +1423,15 @@ const UserTableViewer = ({
 
   // ─── Surface runtime (matrx-user/data-tables) ─────────────────────────────
   //
-  // Both refs are reassigned DURING RENDER (below, once displayRows is known),
-  // never in an effect. That matters for the write handlers:
+  // Both refs are reassigned by the grid root's callback ref during commit
+  // (below, once displayRows is known). That matters for the write handlers:
   // `applySurfaceWrite` resolves the handler closure BEFORE the user answers
   // the confirm dialog, so anything a handler reads off its render closure can
   // be stale by the time Apply is pressed — on a grid, that is the difference
   // between validating against the rows the user is looking at now and the
   // rows they were looking at a page ago. Reading through a
-  // synchronously-advanced ref is what makes `cell_value`'s coordinate check
-  // trustworthy.
+  // commit-synchronously advanced ref is what makes `cell_value`'s coordinate
+  // check trustworthy without mutating refs during render.
   const surfaceScopeRef = React.useRef<DataTableScopeInput | null>(null);
   const surfaceWriteRef = React.useRef<DataTableWriteLiveState | null>(null);
 
@@ -1570,13 +1570,13 @@ const UserTableViewer = ({
         }
       : null;
 
-  surfaceWriteRef.current = {
+  const surfaceWriteSnapshot: DataTableWriteLiveState = {
     tableId,
     isReadOnly: surfacePermissionKnown ? isReadOnly : null,
     fields,
     visibleRows: displayRows,
   };
-  surfaceScopeRef.current = {
+  const surfaceScopeSnapshot: DataTableScopeInput = {
     tableId,
     tableName: tableInfo?.table_name,
     tableDescription: tableInfo?.description,
@@ -1599,6 +1599,11 @@ const UserTableViewer = ({
     // the pagination bar sits on the bottom edge instead of floating in the
     // middle above dead space.
     <div
+      ref={(node) => {
+        if (!node) return;
+        surfaceWriteRef.current = surfaceWriteSnapshot;
+        surfaceScopeRef.current = surfaceScopeSnapshot;
+      }}
       className={
         fillHeight
           ? "flex h-full min-h-0 flex-col gap-2 p-2"
