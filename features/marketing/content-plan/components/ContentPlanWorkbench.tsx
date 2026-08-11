@@ -130,6 +130,13 @@ export function ContentPlanWorkbench({
     siteId,
     cmsLink.data?.linked ? cmsLink.data.cmsSiteId : null,
   );
+  // The RESOLVED link, not the page map's echo of it: a linked site with zero
+  // pages yet still has a website, and the node panel must say "not built"
+  // rather than "no website" while the map is empty or still loading.
+  const resolvedCmsSiteId =
+    (cmsLink.data?.linked ? cmsLink.data.cmsSiteId : null) ??
+    cmsPages.map?.cmsSiteId ??
+    null;
 
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
@@ -421,7 +428,7 @@ export function ContentPlanWorkbench({
                   onDeleted={onDeleted}
                   deepen={deepen}
                   cmsPage={cmsPages.pagesByNodeId.get(node.id) ?? null}
-                  cmsSiteId={cmsPages.map?.cmsSiteId ?? null}
+                  cmsSiteId={resolvedCmsSiteId}
                   hosted
                 />
               )}
@@ -483,7 +490,7 @@ export function ContentPlanWorkbench({
                       onDeleted={() => setSelectedNodeId(null)}
                       deepen={deepen}
                       cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
-                      cmsSiteId={cmsPages.map?.cmsSiteId ?? null}
+                      cmsSiteId={resolvedCmsSiteId}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center p-6">
@@ -529,7 +536,7 @@ export function ContentPlanWorkbench({
               onDeleted={() => setSelectedNodeId(null)}
               deepen={deepen}
               cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
-              cmsSiteId={cmsPages.map?.cmsSiteId ?? null}
+              cmsSiteId={resolvedCmsSiteId}
               hosted
             />
           </SidePanelSurface>

@@ -312,7 +312,7 @@ function parsePublish(data: Record<string, unknown>): BridgePublishResult {
 export async function bridgePublish(
   dispatch: AppDispatch,
   siteId: string,
-  options: { dryRun: boolean; cmsSite?: string },
+  options: { dryRun: boolean; cmsSite?: string; pageIds?: string[] },
 ): Promise<BridgePublishResult> {
   const result = await dispatch(
     callApi({
@@ -321,6 +321,9 @@ export async function bridgePublish(
       pathParams: { site_id: siteId },
       body: {
         cms_site: options.cmsSite ?? null,
+        // Naming pages narrows the run to exactly those; omitted = every
+        // pending page on the site (the Setup rung's whole-site publish).
+        page_ids: options.pageIds ?? null,
         only_plan_linked: false,
         dry_run: options.dryRun,
         sync_status: true,
