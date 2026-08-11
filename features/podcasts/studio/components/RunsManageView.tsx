@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudioRuns } from "@/features/podcasts/studio/runs/useStudioRuns";
 import { isNonTerminal, type RunSummary } from "@/features/podcasts/studio/runs/run-types";
+import { trueSummaryLiveness } from "@/features/podcasts/studio/runs/run-truth";
 import { RunHistoryCard } from "./RunHistoryCard";
 
 type FilterKey = "all" | "active" | "completed" | "failed" | "draft";
@@ -27,17 +28,20 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 ];
 
 function matches(run: RunSummary, key: FilterKey): boolean {
+  // Filter on the TRUE status (see runs/run-truth.ts) — a run whose episode
+  // exists belongs under Completed even if its status column never got written.
+  const liveness = trueSummaryLiveness(run);
   switch (key) {
     case "all":
       return true;
     case "active":
-      return isNonTerminal(run.liveness);
+      return isNonTerminal(liveness);
     case "completed":
-      return run.liveness === "completed";
+      return liveness === "completed";
     case "failed":
-      return run.liveness === "failed";
+      return liveness === "failed";
     case "draft":
-      return run.liveness === "draft";
+      return liveness === "draft";
   }
 }
 
@@ -54,10 +58,11 @@ export function RunsManageView() {
       draft: 0,
     };
     for (const r of runs) {
-      if (isNonTerminal(r.liveness)) c.active += 1;
-      else if (r.liveness === "completed") c.completed += 1;
-      else if (r.liveness === "failed") c.failed += 1;
-      else if (r.liveness === "draft") c.draft += 1;
+      const liveness = trueSummaryLiveness(r);
+      if (isNonTerminal(liveness)) c.active += 1;
+      else if (liveness === "completed") c.completed += 1;
+      else if (liveness === "failed") c.failed += 1;
+      else if (liveness === "draft") c.draft += 1;
     }
     return c;
   }, [runs]);

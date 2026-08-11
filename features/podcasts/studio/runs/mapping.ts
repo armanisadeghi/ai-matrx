@@ -15,6 +15,7 @@ import { formatStageLabel } from "@/features/podcasts/generator/constants";
 import type { PcStudioRun, PcStudioRunStatus } from "@/features/podcasts/types";
 import type { PcStudioRunUpdate } from "./service";
 import type { RunAsset, RunDetail, RunLiveness } from "./run-types";
+import { trueLiveness } from "./run-truth";
 
 function statusToRun(status: PcStudioRunStatus): PodcastRunState["status"] {
   if (status === "completed") return "done";
@@ -146,10 +147,10 @@ export function detailToRunState(detail: RunDetail): PodcastRunState {
   // marked 'failed' by the pre-fix backend that aborted the whole run on one
   // moderation-rejected image. This heals those records on read; per-asset
   // failures still render as retryable "Couldn't render" cards below.
-  const producedEpisode =
-    Boolean(detail.audio_url) || Boolean(detail.episode_id);
-  const rawStatus = livenessToRunStatus(detail.liveness);
-  const status = rawStatus === "error" && producedEpisode ? "done" : rawStatus;
+  // `trueLiveness` carries that rule for every non-terminal state, not just
+  // "failed": a run whose socket dropped after create_audio is DONE, and the
+  // page must show the episode instead of claiming it was interrupted.
+  const status = livenessToRunStatus(trueLiveness(detail));
   const { done, total } = detail.stage_progress;
   const stages: StageRow[] = detail.stages.map((s) => ({
     stage: s.stage_key,

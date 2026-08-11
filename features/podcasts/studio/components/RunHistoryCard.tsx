@@ -25,6 +25,7 @@ import {
   type RunLiveness,
   type RunSummary,
 } from "@/features/podcasts/studio/runs/run-types";
+import { trueSummaryLiveness } from "@/features/podcasts/studio/runs/run-truth";
 
 function StatusChip({ liveness }: { liveness: RunLiveness }) {
   const base =
@@ -53,8 +54,9 @@ function StatusChip({ liveness }: { liveness: RunLiveness }) {
 
 function progressLabel(run: RunSummary): string | null {
   const { done, total, failed } = run.stage_progress;
-  if (run.liveness === "completed") return null;
-  if (run.liveness === "draft") return "Not started";
+  const liveness = trueSummaryLiveness(run);
+  if (liveness === "completed") return null;
+  if (liveness === "draft") return "Not started";
   if (total > 0) {
     const base = `${done}/${total} steps`;
     return failed > 0 ? `${base} · ${failed} failed` : base;
@@ -65,8 +67,11 @@ function progressLabel(run: RunSummary): string | null {
 export function RunHistoryCard({ run }: { run: RunSummary }) {
   // Completed + published → straight to the episode (most useful). Otherwise the
   // run detail / recovery page (Wave 2 makes interrupted runs resumable there).
+  // TRUE status (runs/run-truth.ts) — a finished run whose status column was
+  // never written still gets its episode chip and its episode link.
+  const liveness = trueSummaryLiveness(run);
   const href =
-    run.liveness === "completed" && run.episode_slug
+    liveness === "completed" && run.episode_slug
       ? `/podcast/${run.episode_slug}`
       : `/podcast/studio/run/${run.run_id}`;
   const cover = run.cover_file_id ?? run.cover_url ?? null;
@@ -86,7 +91,7 @@ export function RunHistoryCard({ run }: { run: RunSummary }) {
           fallbackIcon={<Mic className="h-7 w-7 text-primary/50" />}
         />
         <span className="absolute right-2 top-2">
-          <StatusChip liveness={run.liveness} />
+          <StatusChip liveness={liveness} />
         </span>
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">

@@ -5,6 +5,7 @@
 // so the view never dead-ends: every non-terminal state offers an action.
 
 import type { RunDetail, RunLiveness } from "./run-types";
+import { trueLiveness } from "./run-truth";
 
 export interface RecoveryState {
   kind: RunLiveness;
@@ -20,9 +21,14 @@ export function deriveRecoveryState(detail: RunDetail | null): RecoveryState {
   if (!detail) {
     return { kind: "stalled", canResume: false, canRerun: false, showBanner: false };
   }
-  const kind = detail.liveness;
-  const canResume = !!detail.recovery?.resumable;
-  const canRerun = !!detail.recovery?.can_rerun_from_source;
+  // TRUE CURRENT STATUS, not the stamped one: a run holding its finished audio
+  // is complete even if the socket died before anything wrote that down. Never
+  // offer Resume / Re-run over an episode that already exists — a re-run is the
+  // most expensive action in the product, and the banner is what invites it.
+  const kind = trueLiveness(detail);
+  const canResume = kind === "completed" ? false : !!detail.recovery?.resumable;
+  const canRerun =
+    kind === "completed" ? false : !!detail.recovery?.can_rerun_from_source;
   const showBanner =
     kind === "stalled" || kind === "failed" || kind === "cancelled" || kind === "draft";
   return { kind, canResume, canRerun, showBanner };

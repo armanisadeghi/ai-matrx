@@ -104,6 +104,27 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-11 — **A finished episode is never shown as "interrupted": run status
+  is DERIVED from the deliverable, not read from a column somebody forgot to
+  write.** Run `68605dd6-e282-4d82-b04f-2a5c6286a10b` generated its script, six
+  covers, two videos and its finished audio (create_audio completed, CDN URL
+  written), then the streaming connection dropped seconds later. Nothing wrote
+  the terminal status, so `agent_run.status` stayed `processing`, the server
+  computed `liveness: "stalled"` from the stale heartbeat, and the run page
+  offered **Resume** and **Re-run from source** over an episode that already
+  existed — inviting the single most expensive action in the product because a
+  socket closed. `runs/run-truth.ts` now owns the one rule (`trueLiveness` /
+  `trueSummaryLiveness`): audio or an episode id means COMPLETED, whatever the
+  row says; `cancelled` and `draft` describe what the USER did and no artifact
+  overrides them; a failed stage is never laundered into success. The detail
+  page (`mapping.detailToRunState`), the recovery banner (`recovery.ts`), the
+  history card and the manage list all read it, so they cannot disagree about
+  whether an episode exists. Pinned by `runs/__tests__/run-truth.test.ts` (11
+  cases). **Still open, server-side (aidream owns both):** the run row never
+  reaches a terminal status when the stream drops, and `total_cost` stays `0`
+  with `usage_settled: false` on every stage — real spend across Gemini, GPT,
+  FLUX, Kling and TTS reported as free. Neither is fixable from this repo.
+
 - 2026-08-11 — **Early runs keep a stable composition canvas and activity
   reflects real tool lifecycle.** `PodcastCompositionPlaceholder` mirrors the
   finished identity, production card, cover, and video regions before metadata
