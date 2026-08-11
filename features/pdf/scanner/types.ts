@@ -12,15 +12,23 @@
 // The scan's title and its per-page names are the only AUTHORED fields on
 // this surface (everything else is captured/uploaded evidence), and both are
 // agent-writable. The limits live HERE rather than as literals inside the
-// handlers: the surface manifest interpolates them into its write-target
-// contract prose and `useScannerWriteHandlers` enforces them, so what the
-// agent is TOLD and what the page ACCEPTS cannot drift apart.
+// handlers: the `matrx-user/scanner` manifest quotes them in its write-target
+// contract prose and `ScannerSurfaceRuntime`'s handlers enforce them, so what
+// the agent is TOLD and what the page ACCEPTS cannot drift apart.
 
 /** Max characters for `scan_title` — it becomes the saved PDF's filename. */
 export const SCAN_TITLE_MAX_LENGTH = 120;
 
-/** Max characters for one page's display label (`ScanItem.label`). */
-export const SCAN_PAGE_LABEL_MAX_LENGTH = 80;
+/**
+ * Max characters for one page's display label (`ScanItem.label`).
+ *
+ * 120, matching the title: both bounds are quoted verbatim in the manifest's
+ * `scan_page_labels` contract, and the handler that enforces them is the one
+ * an agent actually hits. This constant read 80 while the live handler
+ * enforced 120 — the drift this block exists to prevent, from a superseded
+ * handler draft that named this file's only other reader.
+ */
+export const SCAN_PAGE_LABEL_MAX_LENGTH = 120;
 
 export type QuadPoint = [number, number];
 
