@@ -30,18 +30,25 @@
  * `CanvasPane.tsx`, so this shell stays purely about layout / placement.
  */
 
-import React, { useCallback, useEffect, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectCanvasIsOpen,
+  selectCanvasItems,
+  selectCanvasRenderMode,
   selectCurrentCanvasItem,
+  selectCurrentItemId,
   selectSecondaryCanvasItem,
+  selectSecondaryCanvasItemId,
   selectCanvasSplitRatio,
   selectCanvasWidth,
   closeCanvas,
   setCanvasWidth,
   setCanvasSplitRatio,
 } from "@/features/canvas/redux/canvasSlice";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { CANVAS_SURFACE_NAME } from "@/features/surfaces/manifests/canvas.manifest";
+import { buildCanvasScope } from "@/features/canvas/lib/canvas-scope";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   ResizablePanelGroup,
@@ -66,6 +73,31 @@ export function CanvasSideSheetImpl() {
   const splitRatio = useAppSelector(selectCanvasSplitRatio);
   const storedWidth = useAppSelector(selectCanvasWidth);
   const isMobile = useIsMobile();
+
+  // Surface emitter ────────────────────────────────────────────────────────
+  // `getScope` runs at Run time, not on render, so it reads the canvas slice
+  // straight off the store rather than closing over rendered state — the user
+  // can switch or close an item between mount and launch. `isMobile` is React
+  // state (not Redux), so an effect keeps its latest committed value in a ref.
+  const store = useAppStore();
+  const isMobileRef = useRef(isMobile);
+
+  useEffect(() => {
+    isMobileRef.current = isMobile;
+  }, [isMobile]);
+
+  const getCanvasScope = useCallback(() => {
+    const state = store.getState();
+    const secondaryItemId = selectSecondaryCanvasItemId(state);
+    return buildCanvasScope({
+      items: selectCanvasItems(state),
+      currentItemId: selectCurrentItemId(state),
+      secondaryItemId,
+      renderMode: selectCanvasRenderMode(state),
+      // Mirrors `showSplit` below — mobile drops the split entirely.
+      isSplit: !!secondaryItemId && !isMobileRef.current,
+    });
+  }, [store]);
 
   // Width-resize from the left edge ────────────────────────────────────────
   const [isResizing, setIsResizing] = useState(false);
@@ -126,128 +158,133 @@ export function CanvasSideSheetImpl() {
   const showSplit = !!secondaryItem && !isMobile;
 
   return (
-    <Sheet
-      open={isOpen}
-      modal={isMobile}
-      onOpenChange={(open) => !open && handleClose()}
+    <SurfaceRuntimeProvider
+      surfaceName={CANVAS_SURFACE_NAME}
+      getScope={getCanvasScope}
     >
-      <SheetContent
-        side="right"
-        hideCloseButton
-        hideOverlay={!isMobile}
-        // Two-layer chrome:
-        //   1. outer SheetContent: positions on the right, owns width, owns
-        //      the z-index that puts the canvas above modals (10000).
-        //   2. inner glass card: bg + border + shadow — read as one
-        //      continuous floating surface against the page.
-        // No backdrop blur on the page — the canvas overlays without dimming.
-        className={cn(
-          "p-0 gap-0 overflow-visible border-l-0 bg-transparent shadow-none",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out",
-        )}
-        style={{
-          width: isMobile ? "100%" : `${width}px`,
-          maxWidth: isMobile ? "100%" : `${width}px`,
-          height: isMobile ? "100dvh" : "100dvh",
-          zIndex: 10000,
-        }}
-        onPointerDownOutside={(e) => {
-          // Don't close from arbitrary clicks elsewhere — too easy to lose
-          // the canvas accidentally while interacting with other UI.
-          e.preventDefault();
-        }}
+      <Sheet
+        open={isOpen}
+        modal={isMobile}
+        onOpenChange={(open) => !open && handleClose()}
       >
-        <SheetTitle className="sr-only">{canvasTitle}</SheetTitle>
+        <SheetContent
+          side="right"
+          hideCloseButton
+          hideOverlay={!isMobile}
+          // Two-layer chrome:
+          //   1. outer SheetContent: positions on the right, owns width, owns
+          //      the z-index that puts the canvas above modals (10000).
+          //   2. inner glass card: bg + border + shadow — read as one
+          //      continuous floating surface against the page.
+          // No backdrop blur on the page — the canvas overlays without dimming.
+          className={cn(
+            "p-0 gap-0 overflow-visible border-l-0 bg-transparent shadow-none",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+          )}
+          style={{
+            width: isMobile ? "100%" : `${width}px`,
+            maxWidth: isMobile ? "100%" : `${width}px`,
+            height: isMobile ? "100dvh" : "100dvh",
+            zIndex: 10000,
+          }}
+          onPointerDownOutside={(e) => {
+            // Don't close from arbitrary clicks elsewhere — too easy to lose
+            // the canvas accidentally while interacting with other UI.
+            e.preventDefault();
+          }}
+        >
+          <SheetTitle className="sr-only">{canvasTitle}</SheetTitle>
 
-        {/* Left-edge resize handle — only on desktop. Sits OUTSIDE the
+          {/* Left-edge resize handle — only on desktop. Sits OUTSIDE the
             visual card so the hit target extends slightly into the page. */}
-        {!isMobile && (
-          <div
-            onMouseDown={(e) => {
-              e.preventDefault();
-              setIsResizing(true);
-            }}
-            className={cn(
-              "group absolute top-0 bottom-0 left-0 z-30 w-2 -translate-x-1/2",
-              "cursor-col-resize flex items-center justify-center",
-            )}
-            aria-label="Resize canvas width"
-            role="separator"
-          >
+          {!isMobile && (
             <div
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsResizing(true);
+              }}
               className={cn(
-                "w-1 h-12 rounded-full transition-colors",
-                isResizing
-                  ? "bg-primary"
-                  : "bg-border group-hover:bg-primary/70",
+                "group absolute top-0 bottom-0 left-0 z-30 w-2 -translate-x-1/2",
+                "cursor-col-resize flex items-center justify-center",
               )}
-            />
-          </div>
-        )}
+              aria-label="Resize canvas width"
+              role="separator"
+            >
+              <div
+                className={cn(
+                  "w-1 h-12 rounded-full transition-colors",
+                  isResizing
+                    ? "bg-primary"
+                    : "bg-border group-hover:bg-primary/70",
+                )}
+              />
+            </div>
+          )}
 
-        {/* Visual card. Padding outside the card so the rounded corners feel
+          {/* Visual card. Padding outside the card so the rounded corners feel
             inset from the viewport edge — matches the floating chat header
             language. Mobile: edge-to-edge (no padding, no rounding). */}
-        <div className={cn("h-full")}>
-          <div
-            className={cn(
-              "h-full w-full flex flex-col overflow-hidden",
-              "bg-card text-card-foreground",
-              isMobile
-                ? "border-l border-border"
-                : "rounded-l-xl border-l border-border shadow-[0_8px_32px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]",
-            )}
-          >
-            {showSplit ? (
-              <ResizablePanelGroup
-                orientation="vertical"
-                // v4: Layout is a {panelId: flexGrow} map (not number[]) and
-                // the settle-time callback is onLayoutChanged. Normalize to a
-                // percentage so the stored ratio is stable regardless of how
-                // flexGrow values are scaled.
-                onLayoutChanged={(layout) => {
-                  const top = layout[CANVAS_TOP_PANEL_ID];
-                  const bottom = layout[CANVAS_BOTTOM_PANEL_ID];
-                  if (
-                    Number.isFinite(top) &&
-                    Number.isFinite(bottom) &&
-                    top + bottom > 0
-                  ) {
-                    dispatch(
-                      setCanvasSplitRatio(
-                        Math.round((top / (top + bottom)) * 100),
-                      ),
-                    );
-                  }
-                }}
-              >
-                <ResizablePanel
-                  id={CANVAS_TOP_PANEL_ID}
-                  defaultSize={splitRatio}
-                  minSize={20}
-                  style={{ overflow: "hidden", height: "100%" }}
+          <div className={cn("h-full")}>
+            <div
+              className={cn(
+                "h-full w-full flex flex-col overflow-hidden",
+                "bg-card text-card-foreground",
+                isMobile
+                  ? "border-l border-border"
+                  : "rounded-l-xl border-l border-border shadow-[0_8px_32px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]",
+              )}
+            >
+              {showSplit ? (
+                <ResizablePanelGroup
+                  orientation="vertical"
+                  // v4: Layout is a {panelId: flexGrow} map (not number[]) and
+                  // the settle-time callback is onLayoutChanged. Normalize to a
+                  // percentage so the stored ratio is stable regardless of how
+                  // flexGrow values are scaled.
+                  onLayoutChanged={(layout) => {
+                    const top = layout[CANVAS_TOP_PANEL_ID];
+                    const bottom = layout[CANVAS_BOTTOM_PANEL_ID];
+                    if (
+                      Number.isFinite(top) &&
+                      Number.isFinite(bottom) &&
+                      top + bottom > 0
+                    ) {
+                      dispatch(
+                        setCanvasSplitRatio(
+                          Math.round((top / (top + bottom)) * 100),
+                        ),
+                      );
+                    }
+                  }}
                 >
-                  <CanvasPane paneRole="top" />
-                </ResizablePanel>
-                {/* Cursor override: the wrapper hard-codes col-resize for
+                  <ResizablePanel
+                    id={CANVAS_TOP_PANEL_ID}
+                    defaultSize={splitRatio}
+                    minSize={20}
+                    style={{ overflow: "hidden", height: "100%" }}
+                  >
+                    <CanvasPane paneRole="top" />
+                  </ResizablePanel>
+                  {/* Cursor override: the wrapper hard-codes col-resize for
                     horizontal groups. In a vertical group the handle runs
                     horizontally so the user expects row-resize. */}
-                <ResizableHandle style={{ cursor: "row-resize" }} />
-                <ResizablePanel
-                  id={CANVAS_BOTTOM_PANEL_ID}
-                  defaultSize={100 - splitRatio}
-                  minSize={15}
-                  style={{ overflow: "hidden", height: "100%" }}
-                >
-                  <CanvasPane paneRole="bottom" />
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            ) : (
-              <CanvasPane paneRole="single" />
-            )}
+                  <ResizableHandle style={{ cursor: "row-resize" }} />
+                  <ResizablePanel
+                    id={CANVAS_BOTTOM_PANEL_ID}
+                    defaultSize={100 - splitRatio}
+                    minSize={15}
+                    style={{ overflow: "hidden", height: "100%" }}
+                  >
+                    <CanvasPane paneRole="bottom" />
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              ) : (
+                <CanvasPane paneRole="single" />
+              )}
+            </div>
           </div>
-        </div>
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
+    </SurfaceRuntimeProvider>
   );
 }

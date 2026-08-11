@@ -544,9 +544,11 @@ export const selectCanvasCount = (state: WithCanvas) =>
 export const selectCanvasWidth = (state: WithCanvas) =>
   state.canvas?.canvasWidth ?? 400;
 
-// Get canvas render mode
-export const selectCanvasRenderMode = (state: WithCanvas) =>
-  state.canvas?.renderMode ?? "panel";
+// Get canvas render mode. Falls back to the slice's own initial value —
+// "panel" was never a CanvasRenderMode, so the old fallback widened the
+// return type to string and could hand consumers a mode that does not exist.
+export const selectCanvasRenderMode = (state: WithCanvas): CanvasRenderMode =>
+  state.canvas?.renderMode ?? "auto";
 
 // Export types
 export type { CanvasItem };
