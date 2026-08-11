@@ -1,0 +1,55 @@
+-- APPLIED to Matrx Main (txzxabzwovsujtloxrus) 2026-08-11. Record, not mechanism.
+--
+-- Two corrections to web.site_audit_rollup / web.site_audit_trend, applied in
+-- place via DO blocks over pg_get_functiondef so the rest of each body stayed
+-- byte-identical to what shipped in web_site_audit_rollup_server_side.sql.
+--
+-- 1. CALL the shared rule, do not copy it.
+--
+--    The functions called web.is_machine_resource_url for the URL half but
+--    INLINED the content-type half as `content_type_last <> 'html'`, under a
+--    comment asserting the copy was "identical to web.v_page_list.is_resource".
+--    It was not: hours earlier that half had moved into
+--    web.is_resource_content_type so that 'other' — which the crawler stores
+--    when detection gives up, most often on a REAL HTML page — stops counting
+--    as a resource. The copy re-hid the same 97 allgreenrecycling.com pages the
+--    move had just restored.
+--
+--    Both halves are now calls. Guarded from here on by
+--    aidream scripts/check_page_class_mirrors.py, which diffs the LIVE catalog
+--    against matrx_utils.web_page_class and screams on any inlined copy. It
+--    found a third copy (web.v_site_kpis) on its first run.
+--
+-- 2. Skip alias pages.
+--
+--    An alias is the SAME DOCUMENT under a second URL — the live cases are
+--    http:// twins of https:// pages. 47 exist (32 on allgreenrecycling.com,
+--    10 on titaniumsuccess.com). Counting both inflated the page count and
+--    reported every finding on that document twice.
+--
+--    The platform had already decided this everywhere else: v_page_list exposes
+--    is_canonical, and matrx-scraper's analysis gate skips aliases explicitly
+--    (summary.pages_skipped_alias). The audit rollup was the one surface that
+--    disagreed about what "a page" is. Mirrored in the jest spec
+--    (features/marketing/lib/audit-rollup.ts, AuditSourceRow.canonicalPageId).
+--
+--    Effect: allgreenrecycling.com 4,424 -> 4,393 pages; titaniumsuccess.com
+--    399 -> 389; vasaro.com 2,656 -> 2,655.
+
+-- (1) — applied as: replace
+--   (p.content_type_last IS NOT NULL AND p.content_type_last <> 'html')
+-- with
+--   web.is_resource_content_type(p.content_type_last)
+-- in both function bodies.
+
+-- (2) — applied as: append to each function's page CTE WHERE clause
+--   AND (p.canonical_page_id IS NULL OR p.canonical_page_id = p.id)
+
+-- Both DO blocks RAISE EXCEPTION when the expected text is absent rather than
+-- guessing, so a future re-shape of these functions fails loudly instead of
+-- silently skipping the correction.
+
+-- Supersedes the is_resource expression in
+-- web_site_audit_rollup_server_side.sql. See also
+-- web_unknown_content_type_is_not_a_resource.sql (aidream-side record of
+-- web.is_resource_content_type itself).
