@@ -151,11 +151,16 @@ plan CRUD through it.
    (status multi + type multi + keyword coverage + needs-reviewer, counts on
    every option, active-count badge, clear-all), sibling-level sort (tree
    order / label / priority / status pipeline order / recently updated —
-   never flattens the hierarchy), expand/collapse all, the
+   never flattens the hierarchy), expand/collapse all (Home is a permanent
+   non-collapsible root, so a full collapse keeps Home plus every first-tier
+   page visible), the
    Pillars/Clusters/All level control (Pillars = the top-level overview,
    computed from VISUAL depth so pillar-as-root plans work), collapsed rows
    carry a descendant-count badge, and a live "N pages" / "M of N" count.
-   Home + pillar labels render semibold. While a search/filter is active the
+   Home + pillar labels render semibold. The command bar uses stable search
+   and depth-control bands; the top-level drop target appears only during a
+   drag, leaving Home as the first tree row. Subtle indent guides keep deep
+   branches legible. While a search/filter is active the
    collapse set is bypassed so every match is visible; all of it is
    client-side over the already-loaded plan.
 1b. **Table view** (`PlanNodesTable.tsx`, `?view=table`): every planned URL
@@ -418,6 +423,14 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
 
 ## Change log
 
+- 2026-08-11 — Codex: **Tree collapse now respects the site root.** Home is a
+  permanent, non-collapsible first row; Collapse all and the depth presets
+  keep it open, so the fully collapsed view shows every first-tier page.
+  Refined the explorer chrome after live review: a stable two-band toolbar
+  gives search real width, top-level creation moved into that toolbar, the
+  root drop target appears only during a drag, and subtle indent guides make
+  deep branches easier to scan. Pure collapse-target regression tests cover
+  the Home invariant.
 - 2026-08-11 — Claude: **Setup's three whole-plan AI runs survive a refresh.**
   Plan review, keyword strategy and E-E-A-T attachments were held in `useState`
   only, so a reload or a navigation destroyed runs that cost a full research

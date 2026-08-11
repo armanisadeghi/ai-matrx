@@ -7,10 +7,12 @@
  * full list-management toolbar (PlanTreeToolbar): search (label/route/slug,
  * ancestors kept but dimmed), status/type/keyword/reviewer filters,
  * sibling-level sort, expand/collapse all, and the Pillars/Clusters/All
- * level control (Pillars = the top-level overview). Drag a row and drop it
- * ONTO another row to reparent (one `parent_id` write; the DB recomputes the
- * whole subtree's routes/labels — the client renders what comes back, it
- * never computes). Drop on the "root" strip to make a node top-level.
+ * level control (Pillars = the top-level overview). Home is a permanent,
+ * non-collapsible root; a full collapse leaves its first-tier pages visible.
+ * Drag a row and drop it ONTO another row to reparent (one `parent_id` write;
+ * the DB recomputes the whole subtree's routes/labels — the client renders
+ * what comes back, it never computes). While dragging, drop on the root strip
+ * to make a node top-level.
  * Cycle / cross-site / duplicate-slug violations are DB errors surfaced
  * verbatim by the caller. Pure list logic: ../lib/tree-view.ts.
  */
@@ -202,7 +204,8 @@ export function PlanTree({
     setCollapsed(collapseTargetsForLevel(buildPlanTree(nodes), level));
   };
   const expandAll = () => setCollapsed(new Set());
-  const collapseAll = () => setCollapsed(collapseAllTargets(buildPlanTree(nodes)));
+  const collapseAll = () =>
+    setCollapsed(collapseAllTargets(buildPlanTree(nodes)));
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(String(event.active.id));
@@ -258,15 +261,18 @@ export function PlanTree({
           onExpandAll={expandAll}
           onCollapseAll={collapseAll}
           onLevel={applyLevel}
+          onAddRoot={() => onAddChild(null)}
         />
-        <RootDropStrip onAddRoot={() => onAddChild(null)} />
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        {activeId ? <RootDropStrip /> : null}
+        <div
+          className="scrollbar-thin min-h-0 flex-1 overflow-y-auto py-0.5"
+          role="tree"
+          aria-label="Content plan pages"
+        >
           {rows.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <p className="text-sm font-medium text-foreground">
-                {nodes.length === 0
-                  ? "No nodes planned yet"
-                  : "No pages match"}
+                {nodes.length === 0 ? "No nodes planned yet" : "No pages match"}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {nodes.length === 0
@@ -288,7 +294,11 @@ export function PlanTree({
                 cmsPage={cmsPageById?.get(row.node.id) ?? null}
                 dragging={row.node.id === activeId}
                 onSelect={() => onSelect(row.node.id)}
-                onToggle={() => toggleCollapse(row.node.id)}
+                onToggle={() => {
+                  if (row.node.node_type !== "home") {
+                    toggleCollapse(row.node.id);
+                  }
+                }}
                 onAddChild={() => onAddChild(row.node.id)}
               />
             ))
@@ -306,27 +316,17 @@ export function PlanTree({
   );
 }
 
-function RootDropStrip({ onAddRoot }: { onAddRoot: () => void }) {
+function RootDropStrip() {
   const { isOver, setNodeRef } = useDroppable({ id: "plan-tree-root" });
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "flex items-center justify-between border-b border-border px-2 py-1",
-        isOver && "bg-accent",
+        "flex h-7 shrink-0 items-center justify-center border-b border-primary/30 bg-primary/5 px-2 text-[11px] font-medium text-primary transition-colors",
+        isOver && "bg-primary/15",
       )}
     >
-      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        Site root — drop here for top level
-      </span>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 px-1.5 text-xs"
-        onClick={onAddRoot}
-      >
-        <Plus className="mr-1 h-3 w-3" /> Root node
-      </Button>
+      Drop here to move to the top level
     </div>
   );
 }
@@ -354,7 +354,11 @@ function TreeRow({
   /** Present when the Reality overlay says this route is live on the site. */
   liveMatch: { url: string } | null;
   /** Present when a CMS page realizes this node (WF-11 overlay). */
-  cmsPage: { route: string | null; isPublished: boolean; liveUrl: string | null } | null;
+  cmsPage: {
+    route: string | null;
+    isPublished: boolean;
+    liveUrl: string | null;
+  } | null;
   dragging: boolean;
   onSelect: () => void;
   onToggle: () => void;
@@ -371,16 +375,23 @@ function TreeRow({
   // heavier than clusters/articles at every state.
   const topLevelType =
     row.node.node_type === "home" || row.node.node_type === "pillar";
+  const isHome = row.node.node_type === "home";
 
   return (
     <div
       ref={setDropRef}
+      role="treeitem"
+      aria-level={row.depth + 1}
+      aria-selected={selected}
+      aria-expanded={
+        row.hasChildren && !isHome ? (collapsed ? false : true) : undefined
+      }
       className={cn(
         // Two-line row: full label on line 1, full route on line 2 — page
         // names and routes are the content of this tool, never truncated.
         // Selection is unmistakable: primary wash + 2px left rail + heavier
         // label weight. Hover stays visibly distinct from selected.
-        "group flex items-start gap-1 border-l-2 py-1 pr-1 transition-colors",
+        "group relative flex min-h-9 items-start gap-1 border-l-2 py-1 pr-1 transition-colors",
         selected
           ? "border-l-primary bg-primary/10"
           : "border-l-transparent hover:bg-accent/50",
@@ -389,29 +400,39 @@ function TreeRow({
           "bg-primary/10 outline outline-1 -outline-offset-1 outline-primary/40",
         dragging && "opacity-40",
       )}
-      style={{ paddingLeft: `${row.depth * 16 + 2}px` }}
+      style={{ paddingLeft: `${row.depth * 14 + (isHome ? 4 : 2)}px` }}
     >
-      <button
-        type="button"
-        aria-label={collapsed ? "Expand" : "Collapse"}
-        className={cn(
-          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground",
-          !row.hasChildren && "invisible",
-        )}
-        onClick={onToggle}
-      >
-        {collapsed ? (
-          <ChevronRight className="h-3.5 w-3.5" />
-        ) : (
-          <ChevronDown className="h-3.5 w-3.5" />
-        )}
-      </button>
+      {Array.from({ length: row.depth }, (_unused, index) => (
+        <span
+          key={index}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 w-px bg-border/45"
+          style={{ left: `${index * 14 + 9}px` }}
+        />
+      ))}
+      {!isHome ? (
+        <button
+          type="button"
+          aria-label={collapsed ? "Expand" : "Collapse"}
+          className={cn(
+            "relative z-[1] mt-0.5 flex h-5 w-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground",
+            !row.hasChildren && "invisible",
+          )}
+          onClick={onToggle}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )}
+        </button>
+      ) : null}
       <div
         ref={setDragRef}
         {...attributes}
         {...listeners}
         className={cn(
-          "flex min-w-0 flex-1 cursor-grab items-start gap-1.5",
+          "relative z-[1] flex min-w-0 flex-1 cursor-grab items-start gap-1.5",
           // Non-matching ancestors of a search/filter hit: kept for
           // coherence, visibly secondary, still fully interactive.
           dimmed && "opacity-50",

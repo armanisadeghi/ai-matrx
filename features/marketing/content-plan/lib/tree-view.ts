@@ -159,9 +159,10 @@ export function sortPlanTreeSiblings(
 // ─── Collapse levels ───────────────────────────────────────────────────────
 
 /**
- * Level presets: "pillars" is THE top-level overview (home + pillars only,
- * every pillar collapsed with a count badge); "clusters" opens one level
- * deeper; "all" expands everything.
+ * Level presets: "pillars" is THE top-level overview (home + first-tier
+ * pages, with every expandable first-tier page collapsed); "clusters" opens
+ * one level deeper; "all" expands everything. Home is the permanent tree
+ * root and is never a collapse target.
  */
 export type TreeLevel = "pillars" | "clusters" | "all";
 
@@ -183,7 +184,8 @@ export function collapseTargetsForLevel(
   const scan = (siblings: PlanNodeTreeItem[], depth: number) => {
     for (const item of siblings) {
       if (item.node.node_type === "pillar") {
-        pillarDepth = pillarDepth === null ? depth : Math.min(pillarDepth, depth);
+        pillarDepth =
+          pillarDepth === null ? depth : Math.min(pillarDepth, depth);
       }
       if (item.node.node_type === "cluster") {
         clusterDepth =
@@ -202,7 +204,11 @@ export function collapseTargetsForLevel(
 
   const collect = (siblings: PlanNodeTreeItem[], depth: number) => {
     for (const item of siblings) {
-      if (item.children.length > 0 && depth >= threshold) {
+      if (
+        item.node.node_type !== "home" &&
+        item.children.length > 0 &&
+        depth >= threshold
+      ) {
         targets.add(item.node.id);
       }
       collect(item.children, depth + 1);
@@ -212,12 +218,17 @@ export function collapseTargetsForLevel(
   return targets;
 }
 
-/** Collapse everything that has children (roots-only view). */
+/**
+ * Collapse every expandable branch except Home. Home is the permanent root,
+ * so the fully-collapsed view still shows every page directly beneath it.
+ */
 export function collapseAllTargets(items: PlanNodeTreeItem[]): Set<string> {
   const targets = new Set<string>();
   const walk = (siblings: PlanNodeTreeItem[]) => {
     for (const item of siblings) {
-      if (item.children.length > 0) targets.add(item.node.id);
+      if (item.node.node_type !== "home" && item.children.length > 0) {
+        targets.add(item.node.id);
+      }
       walk(item.children);
     }
   };
