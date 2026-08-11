@@ -465,6 +465,27 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-11 — claude: **Documents surface is agent-writable (2 ask-policy write
+  targets on the `/documents/[id]` route only).** `document_name` and
+  `document_description` — the two human-authored columns on `udt_documents` —
+  persist immediately through `document-service`: the existing `renameDocument`
+  plus a new `updateDocumentDescription` sibling, so neither handler hand-rolls
+  a `.from("udt_documents")` write. Adding that setter keeps this file's
+  standing contract with `workbook-service`, whose `updateWorkbookDescription`
+  landed the same way one day earlier; the two services stay field-for-field
+  symmetric. `commitRename` was refactored into one `applyRename(name)` shared
+  by the header field's blur/Enter commit and the write handler, so an agent
+  rename takes exactly the user's path — the blur caller still swallows,
+  the agent caller throws into an error envelope. Handlers read the row through
+  a ref advanced synchronously as each write lands, because the writeback seam
+  resolves every handler before the first confirm resolves. `mode: "entity"`
+  because this route has no Save bar. The `/documents` library route registers
+  no handlers on purpose (no addressable subject on a roster). Deliberately not
+  writable: `version` (concurrency counter), owner/org ids, `source` /
+  `original_file_id` (provenance), timestamps, `is_public`, and the Univer-owned
+  document body. Live-verified with a real agent run; manifest docblock in
+  `features/surfaces/manifests/documents.manifest.ts` carries the full
+  ruled-out reasoning.
 - 2026-08-10 — claude: **Workbooks surface is agent-writable (3 ask-policy write
   targets on the `/workbooks/[id]` route only).** `workbook_name` and
   `workbook_description` persist immediately through `workbook-service` — the
