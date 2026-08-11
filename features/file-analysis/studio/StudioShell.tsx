@@ -129,6 +129,29 @@ export function StudioShell({ fileId }: StudioShellProps) {
     [pushUrl],
   );
 
+  /**
+   * Select an annotation AND jump to its page in ONE commit — the seam the
+   * `studio_focus_annotation` write target uses.
+   *
+   * Calling `handleSelectAnnotation` then `handlePageChange` back to back
+   * looks equivalent and is not: both rebuild the query string from the SAME
+   * `searchParams` snapshot, so the second `router.replace` starts from the
+   * pre-change URL and drops the first one's param. A user never hits it —
+   * their clicks are separate events, one render apart, so `searchParams` has
+   * re-read by the time the second fires — but an agent write does both in a
+   * single tick, which left `?page=N` on the URL with the `?annotation=` it
+   * had just set silently missing. The canvas looked right until a reload
+   * threw the selection away. One pushUrl, one truth.
+   */
+  const handleFocusAnnotation = useCallback(
+    (annotationId: string, pageNumber: number) => {
+      setSelectedAnnotationId(annotationId);
+      setPageNumber(pageNumber);
+      pushUrl({ annotation: annotationId, page: pageNumber });
+    },
+    [pushUrl],
+  );
+
   // ── Regions: derived from annotations ──
   const regions: PdfRegion[] = useMemo(() => {
     return annotations
@@ -179,6 +202,10 @@ export function StudioShell({ fileId }: StudioShellProps) {
       label: a.label,
       label_category: a.label_category,
       extracted_text: a.extracted_text ?? "",
+      // The read twin of the `annotation_redact` write target. Without it an
+      // agent asked to "mark the rest of the PII for redaction" cannot see
+      // which regions are already marked, and re-marks what is already done.
+      redact: a.redact ?? false,
     });
 
     return createAnalysisStudioScope({
@@ -215,6 +242,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
             label: rest.label,
             label_category: rest.label_category,
             extracted_text: rest.extracted_text ?? "",
+            redact: rest.redact ?? false,
           };
         }),
       annotations: active.map(asRow),
@@ -238,8 +266,10 @@ export function StudioShell({ fileId }: StudioShellProps) {
       labels: catalogLabels,
       categories: catalogCategories,
       updateAnnotation,
-      selectAnnotation: handleSelectAnnotation,
-      goToPage: handlePageChange,
+      // ONE commit for select + jump: see `handleFocusAnnotation` on why the
+      // two separate setters clobbered each other's query param when a write
+      // target called both in the same tick.
+      focusAnnotation: handleFocusAnnotation,
       writeInFlight: annotationWriteInFlight,
     });
 
