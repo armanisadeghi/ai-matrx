@@ -488,6 +488,18 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-11 — Claude: **no bare spinner survives on a multi-second run in
+  Setup's "Make it real" rungs.** Every rung except Stop (a single fast write)
+  now narrates approximate stages + elapsed seconds from ONE shared module,
+  `hooks/useRunStage.ts` — stage tables, `stageLabel`, and the `useElapsedSeconds`
+  ticker, lifted out of `NodeRealityCard` so the node panel and Setup share one
+  implementation (the fill-preview rung reuses `WRITE_STAGES` verbatim: it calls
+  the very same endpoint). `RunRow` guarantees zero page shift structurally —
+  the buttons keep their exact box (`invisible`) and the stage line is laid over
+  them, so a two-line row cannot collapse to one when a run starts. Progress
+  display only: dry-run gates, verbatim server errors, and the restart-agnostic
+  fill-job hydration are untouched. Live-verified against datadestruction.com.
+
 - 2026-08-11 — Claude: **a planned page can become a real page from the node
   panel.** New `lib/page-reality.ts` (pure verdict + ancestor chain + policy
   matcher, 21 tests), `hooks/useNodeReality.ts`, `components/NodeRealityCard.tsx`;

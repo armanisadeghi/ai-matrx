@@ -105,16 +105,29 @@ export const PUBLISH_STAGES: readonly RunStage[] = [
 /**
  * Ticking elapsed seconds for a stage line. `null` = nothing is running.
  *
- * The interval only exists while a run does, so an idle panel does no work.
+ * The interval only exists while a run does, so an idle panel does no work, and
+ * each tick recomputes from the wall clock rather than counting its own firings
+ * — a throttled background tab therefore reports the true elapsed time.
  */
 export function useElapsedSeconds(startedAt: number | null): number {
-    const [now, setNow] = useState(() => Date.now());
+    // The sample carries the run it was taken FOR, so a new run reads zero
+    // until its own first tick instead of inheriting the last run's total.
+    // (Reading the clock lives in the interval callback — never in render, and
+    // never as a setState in an effect body: both are compiler-lint errors.)
+    const [sample, setSample] = useState<{ runAt: number; seconds: number }>({
+        runAt: 0,
+        seconds: 0,
+    });
     useEffect(() => {
         if (startedAt === null) return;
-        setNow(Date.now());
-        const timer = window.setInterval(() => setNow(Date.now()), 1000);
+        const timer = window.setInterval(() => {
+            setSample({
+                runAt: startedAt,
+                seconds: Math.max(0, Math.floor((Date.now() - startedAt) / 1000)),
+            });
+        }, 1000);
         return () => window.clearInterval(timer);
     }, [startedAt]);
-    if (startedAt === null) return 0;
-    return Math.max(0, Math.floor((now - startedAt) / 1000));
+    if (startedAt === null || sample.runAt !== startedAt) return 0;
+    return sample.seconds;
 }
