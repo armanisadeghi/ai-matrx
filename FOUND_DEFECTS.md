@@ -23,12 +23,21 @@ Measured live 2026-08-11 activating `seo_package`: both dual-gate legs passed,
 the flip failed. The dry-run report is still correct and useful — only `--apply`
 is dead.
 
-The RPC is the right target, but it raises `no authenticated user` under the
-service key the script uses (`auth.uid()` is null), so the fix is not a
-one-liner swap: either give the script a user JWT, or add a service-role branch
-to `content_ir.set_kind_activation` that still runs the gate. Until then the
-only working activation path is the UI (`/shapes/[kind]` owner control, or the
-`kind_activate` agent tool).
+ROOT CAUSE of the escape hatch failing: `guard_kind_is_active_write` exempts
+`current_user <> 'service_role'`, but the trigger function is `security
+definer`, so inside it `current_user` is the function OWNER, never the caller —
+the service-role branch can never be true. Use `session_user` or
+`current_setting('request.jwt.claim.role')`.
+
+The RPC is the right target for the script, but it raises `no authenticated
+user` under the service key (`auth.uid()` is null). Fix the guard's role check,
+or sign the script in as a user. **Working path today** (used to activate
+`seo_package` on 2026-08-11): sign in with `supabase-js` using the publishable
+key + real credentials, then
+`.schema("content_ir").rpc("set_kind_activation", {...})` — the gate runs
+server-side and reports its verdict. Note the `/shapes/[kind]` owner control is
+NOT a fallback for platform kinds: `ShapeOwnerEditor` renders only for kinds the
+viewer owns, and system-org shapes are read-only there.
 
 ### D165 — the Redux execution system cannot carry a `context_anchor` (2026-08-11)
 
