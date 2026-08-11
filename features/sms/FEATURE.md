@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-07-20`
+**Last updated:** `2026-08-11`
 
 ---
 
@@ -60,9 +60,10 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 ### Outbound delivery
 
 1. A server-side caller sends through `lib/sms/send.ts` using an explicit assigned number or the configured Messaging Service.
-2. The message is logged immediately with its Twilio SID and initial status.
-3. The send route reports Twilio's initial state as accepted/pending, never as confirmed delivery.
-4. Twilio posts later delivery states to `/api/webhooks/twilio/status`; the handler advances status monotonically and records carrier errors.
+2. `formatSmsBody` adds the canonical `AI Matrx:` product-brand prefix before Twilio receives or the database logs the message.
+3. The message is logged immediately with its Twilio SID and initial status.
+4. The send route reports Twilio's initial state as accepted/pending, never as confirmed delivery.
+5. Twilio posts later delivery states to `/api/webhooks/twilio/status`; the handler advances status monotonically and records carrier errors.
 
 ---
 
@@ -71,6 +72,8 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - Phone ownership verification is not consent by itself; the explicit disclosure must also be accepted.
 - `sms_notification_preferences` never manufactures a consent row. Enabling requires an existing verified, opted-in record for the same user and number.
 - The public SMS page, privacy policy, terms URL, settings disclosure, and recorded consent metadata describe one program and must stay aligned.
+- `siteConfig.legalOperatorName` is the single legal identity for AI Matrx public policies and carrier registration; the SMS program names both that operator and the AI Matrx product.
+- Every outbound body passes through `formatSmsBody`; callers do not hand-roll or omit the `AI Matrx:` brand prefix.
 - Every message recipient must have applicable consent unless the message is a system/administrative exception with its own lawful basis.
 - STOP-like keywords and the web settings control both produce a durable opt-out record.
 - Twilio accepting an API request is not proof of delivery; delivery status comes from the status webhook.
@@ -79,4 +82,5 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-08-11` — Aligned the public SMS program and site policies to the registered legal operator, versioned the revised consent, and branded every outbound body before send and logging.
 - `2026-07-20` — Added a public, carrier-reviewable consent path and SMS terms; moved enrollment into production Messaging settings; versioned the verified consent record; prevented preferences from creating unverified consent; and made the test surface distinguish Twilio acceptance from confirmed delivery.
