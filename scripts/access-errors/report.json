@@ -1,0 +1,3344 @@
+{
+  "generatedAt": "2026-08-11",
+  "total": 545,
+  "byKind": {
+    "raw-supabase-message": 149,
+    "claims-deleted": 357,
+    "claims-denied": 39
+  },
+  "byFeature": {
+    "lib": 65,
+    "app/(core)": 46,
+    "features/marketing": 41,
+    "features/education": 38,
+    "features/agents": 34,
+    "features/files": 32,
+    "features/rag": 18,
+    "features/scope-system": 16,
+    "features/administration": 14,
+    "app/(dev)": 13,
+    "features/applet": 13,
+    "components": 11,
+    "features/notes": 11,
+    "features/organizations": 11,
+    "features/skills": 11,
+    "features/code-editor": 9,
+    "features/legal": 9,
+    "features/surfaces": 9,
+    "features/admin": 8,
+    "features/kg-suggestions": 8,
+    "features/scopes": 8,
+    "app/(public)": 7,
+    "features/industries": 7,
+    "features/canvas": 6,
+    "features/content-ir": 6,
+    "features/message-templates": 6,
+    "features/secrets": 6,
+    "features/voice-agent": 6,
+    "app/(transitional)": 5,
+    "features/code": 5,
+    "features/data-tables": 4,
+    "features/pdf-extractor": 4,
+    "features/sharing": 4,
+    "features/text-diff": 4,
+    "features/tool-call-visualization": 4,
+    "app/(admin)": 3,
+    "app/oauth": 3,
+    "features/audio": 3,
+    "features/flashcards": 3,
+    "features/projects": 3,
+    "features/agent-apps": 2,
+    "features/agent-connections": 2,
+    "features/agent-context": 2,
+    "features/entitlements": 2,
+    "features/expertise": 2,
+    "features/image-studio": 2,
+    "features/page-extraction": 2,
+    "features/podcasts": 2,
+    "features/transcript-studio": 2,
+    "features/war-room": 2,
+    "app/auth": 1,
+    "features/agent-comparison": 1,
+    "features/agent-shortcuts": 1,
+    "features/context-menu-v3": 1,
+    "features/growth-loop": 1,
+    "features/pdf": 1,
+    "features/recipes": 1,
+    "features/research": 1,
+    "features/tasks": 1,
+    "features/transcripts": 1,
+    "features/user-lists": 1
+  },
+  "findings": [
+    {
+      "file": "app/(admin)/administration/agents/system-agents/agents/[id]/v/[version]/page.tsx",
+      "line": 16,
+      "kind": "claims-deleted",
+      "snippet": "if (isNaN(versionNum)) return { title: \"Not Found\" };"
+    },
+    {
+      "file": "app/(admin)/administration/reporting/events/page.tsx",
+      "line": 67,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "app/(admin)/administration/utilities/utils/text-cleaner/utilities/errorProcessors.ts",
+      "line": 548,
+      "kind": "claims-deleted",
+      "snippet": "const propertyPattern = /Property '(.+?)' does not exist on type '(.+?)'/;"
+    },
+    {
+      "file": "app/(core)/agent-apps/templates/[mode]/page.tsx",
+      "line": 29,
+      "kind": "claims-deleted",
+      "snippet": "if (!option) return { title: \"Template Not Found\" };"
+    },
+    {
+      "file": "app/(core)/agents/[id]/v/[version]/page.tsx",
+      "line": 14,
+      "kind": "claims-deleted",
+      "snippet": "if (isNaN(versionNum)) return { title: \"Not Found\" };"
+    },
+    {
+      "file": "app/(core)/agents/shortcuts/edit/[id]/page.tsx",
+      "line": 93,
+      "kind": "claims-deleted",
+      "snippet": "entityLabel=\"Not found\""
+    },
+    {
+      "file": "app/(core)/cms/[siteId]/SiteLayoutClient.tsx",
+      "line": 277,
+      "kind": "claims-denied",
+      "snippet": "? \"You don't have access to this site\""
+    },
+    {
+      "file": "app/(core)/data/[id]/not-found.tsx",
+      "line": 16,
+      "kind": "claims-deleted",
+      "snippet": "The table you're looking for doesn't exist or you don't have"
+    },
+    {
+      "file": "app/(core)/education/subjects/quick-math/[id]/page.tsx",
+      "line": 16,
+      "kind": "claims-deleted",
+      "snippet": "title: \"Math Problem Not Found - AI Matrx Education\","
+    },
+    {
+      "file": "app/(core)/invitations/organization/accept/[token]/page.tsx",
+      "line": 78,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Invitation not found or has already been used\");"
+    },
+    {
+      "file": "app/(core)/invitations/organization/accept/[token]/page.tsx",
+      "line": 84,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Invitation not found or has already been used\");"
+    },
+    {
+      "file": "app/(core)/invitations/organization/accept/[token]/page.tsx",
+      "line": 241,
+      "kind": "claims-deleted",
+      "snippet": "{error || \"Invitation not found\"}"
+    },
+    {
+      "file": "app/(core)/invitations/project/accept/[token]/page.tsx",
+      "line": 60,
+      "kind": "claims-deleted",
+      "snippet": "setError('Invitation not found or has already been used');"
+    },
+    {
+      "file": "app/(core)/invitations/project/accept/[token]/page.tsx",
+      "line": 66,
+      "kind": "claims-deleted",
+      "snippet": "setError('Invitation not found or has already been used');"
+    },
+    {
+      "file": "app/(core)/invitations/project/accept/[token]/page.tsx",
+      "line": 84,
+      "kind": "claims-deleted",
+      "snippet": "setError('Project not found');"
+    },
+    {
+      "file": "app/(core)/lists/[id]/page.tsx",
+      "line": 65,
+      "kind": "claims-deleted",
+      "snippet": "if (!list) return { title: \"List Not Found\" };"
+    },
+    {
+      "file": "app/(core)/marketing/sites/[siteId]/[...rest]/page.tsx",
+      "line": 44,
+      "kind": "claims-deleted",
+      "snippet": "error={site.error ?? new Error(\"Site not found\")}"
+    },
+    {
+      "file": "app/(core)/marketing/sites/[siteId]/page.tsx",
+      "line": 37,
+      "kind": "claims-deleted",
+      "snippet": "error={site.error ?? new Error(\"Site not found\")}"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/OrgResourceLayout.tsx",
+      "line": 50,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/OrgResourceLayout.tsx",
+      "line": 58,
+      "kind": "claims-denied",
+      "snippet": "\"Access denied. You must be a member to view organization resources.\","
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/OrgResourceLayout.tsx",
+      "line": 98,
+      "kind": "claims-deleted",
+      "snippet": "{!organization ? \"Organization Not Found\" : \"Access Denied\"}"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/OrgResourceLayout.tsx",
+      "line": 101,
+      "kind": "claims-denied",
+      "snippet": "{error || \"You don't have permission to access this resource.\"}"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/context-items/page.tsx",
+      "line": 34,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/[typeId]/[scopeId]/[itemId]/page.tsx",
+      "line": 35,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/[typeId]/[scopeId]/context-items/page.tsx",
+      "line": 34,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/[typeId]/[scopeId]/edit/page.tsx",
+      "line": 34,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/[typeId]/[scopeId]/page.tsx",
+      "line": 34,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/[typeId]/context-items/[itemId]/edit/page.tsx",
+      "line": 34,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/[typeId]/context-items/[itemId]/page.tsx",
+      "line": 34,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/[typeId]/context-items/page.tsx",
+      "line": 33,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/[typeId]/edit/page.tsx",
+      "line": 33,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/[typeId]/page.tsx",
+      "line": 33,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/page.tsx",
+      "line": 36,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/scopes/page.tsx",
+      "line": 64,
+      "kind": "claims-deleted",
+      "snippet": "{error ?? \"Organization not found\"}"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/settings/page.tsx",
+      "line": 31,
+      "kind": "claims-deleted",
+      "snippet": "setResolveError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/settings/page.tsx",
+      "line": 83,
+      "kind": "claims-deleted",
+      "snippet": "\"This organization doesn't exist or you don't have access.\"}"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/settings/scopes/page.tsx",
+      "line": 27,
+      "kind": "claims-deleted",
+      "snippet": "setResolveError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/settings/scopes/page.tsx",
+      "line": 83,
+      "kind": "claims-deleted",
+      "snippet": "\"This organization doesn't exist or you don't have access.\"}"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/shortcuts/OrgShortcutsLayoutClient.tsx",
+      "line": 81,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/shortcuts/OrgShortcutsLayoutClient.tsx",
+      "line": 87,
+      "kind": "claims-denied",
+      "snippet": "setError(\"Access denied. You must be a member of this organization.\");"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/shortcuts/OrgShortcutsLayoutClient.tsx",
+      "line": 125,
+      "kind": "claims-deleted",
+      "snippet": "{!organization ? \"Organization Not Found\" : \"Access Denied\"}"
+    },
+    {
+      "file": "app/(core)/organizations/[orgId]/shortcuts/OrgShortcutsLayoutClient.tsx",
+      "line": 128,
+      "kind": "claims-denied",
+      "snippet": "{error ?? \"You don't have permission to access this resource.\"}"
+    },
+    {
+      "file": "app/(core)/podcast/[slug]/blog/page.tsx",
+      "line": 59,
+      "kind": "claims-deleted",
+      "snippet": "if (!result) return { title: \"Article Not Found\" };"
+    },
+    {
+      "file": "app/(core)/podcast/[slug]/feed.xml/route.ts",
+      "line": 91,
+      "kind": "claims-deleted",
+      "snippet": "return new Response('Podcast not found', {"
+    },
+    {
+      "file": "app/(core)/podcast/[slug]/page.tsx",
+      "line": 80,
+      "kind": "claims-deleted",
+      "snippet": "return { title: \"Episode Not Found\" };"
+    },
+    {
+      "file": "app/(core)/research/topics/[topicId]/layout.tsx",
+      "line": 25,
+      "kind": "claims-deleted",
+      "snippet": "title: \"Topic Not Found\","
+    },
+    {
+      "file": "app/(core)/research/topics/[topicId]/layout.tsx",
+      "line": 34,
+      "kind": "claims-deleted",
+      "snippet": "title: \"Topic Not Found\","
+    },
+    {
+      "file": "app/(core)/sandbox/[id]/page.tsx",
+      "line": 102,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Sandbox instance not found\");"
+    },
+    {
+      "file": "app/(core)/sandbox/[id]/page.tsx",
+      "line": 349,
+      "kind": "claims-deleted",
+      "snippet": "{error || \"This sandbox does not exist.\"}"
+    },
+    {
+      "file": "app/(dev)/demos/api-tests/tool-testing/hooks/useSaveSample.ts",
+      "line": 57,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(err.message ?? `HTTP ${response.status}`);"
+    },
+    {
+      "file": "app/(dev)/demos/api-tests/tool-testing/hooks/useToolTestContext.ts",
+      "line": 117,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(body.message ?? `HTTP ${res.status}`);"
+    },
+    {
+      "file": "app/(dev)/demos/lists-junk/[id]/page.dev.tsx",
+      "line": 39,
+      "kind": "claims-deleted",
+      "snippet": "if (!list) return { title: \"List Not Found\" };"
+    },
+    {
+      "file": "app/(dev)/demos/lists-junk/v1/[id]/page.dev.tsx",
+      "line": 80,
+      "kind": "claims-deleted",
+      "snippet": "if (!list) return { title: \"List not found | AI Matrx\" };"
+    },
+    {
+      "file": "app/(dev)/demos/local-tools/_lib/useAppInstances.ts",
+      "line": 80,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "app/(dev)/demos/local-tools/_lib/useAppInstances.ts",
+      "line": 310,
+      "kind": "raw-supabase-message",
+      "snippet": "if (err) throw new Error(err.message);"
+    },
+    {
+      "file": "app/(dev)/demos/local-tools/_lib/useMatrxLocal.ts",
+      "line": 441,
+      "kind": "claims-deleted",
+      "snippet": "message: `Matrx Local not found on ports ${LOCAL_ENGINE_SCAN_LABEL}`,"
+    },
+    {
+      "file": "app/(dev)/demos/tests/_maps/components/SearchControl.tsx",
+      "line": 84,
+      "kind": "claims-deleted",
+      "snippet": "alert('Location not found. Please try a different search term.');"
+    },
+    {
+      "file": "app/(dev)/demos/tests/dynamic-gateway-concept/hooks/useDynamicGateway.ts",
+      "line": 85,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Handler not found: ${key}`);"
+    },
+    {
+      "file": "app/(dev)/demos/tests/modals/table-modal-test/page.dev.tsx",
+      "line": 47,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Component ${component.name} not found in componentMap.`);"
+    },
+    {
+      "file": "app/(dev)/demos/tests/oauth/page.dev.tsx",
+      "line": 118,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Provider ${providerId} not found in configuration`);"
+    },
+    {
+      "file": "app/(dev)/demos/tests/slack/components/SlackManager.tsx",
+      "line": 127,
+      "kind": "claims-deleted",
+      "snippet": "setError('Channel not found. Please select a valid channel.');"
+    },
+    {
+      "file": "app/(dev)/demos/tool-viz/rag-tools/page.dev.tsx",
+      "line": 240,
+      "kind": "claims-deleted",
+      "snippet": "errorMessage: \"chunk missing not found\","
+    },
+    {
+      "file": "app/(public)/c/[handle]/page.tsx",
+      "line": 30,
+      "kind": "claims-deleted",
+      "snippet": "return { title: \"Creator not found · AI Matrx\", robots: { index: false }, metadataBase };"
+    },
+    {
+      "file": "app/(public)/free/zip-code-heatmap/[id]/page.tsx",
+      "line": 60,
+      "kind": "claims-deleted",
+      "snippet": "setError('Heatmap not found');"
+    },
+    {
+      "file": "app/(public)/free/zip-code-heatmap/[id]/page.tsx",
+      "line": 68,
+      "kind": "claims-deleted",
+      "snippet": "setError('Heatmap not found');"
+    },
+    {
+      "file": "app/(public)/free/zip-code-heatmap/[id]/page.tsx",
+      "line": 78,
+      "kind": "claims-denied",
+      "snippet": "setError('You do not have permission to view this heatmap');"
+    },
+    {
+      "file": "app/(public)/free/zip-code-heatmap/[id]/page.tsx",
+      "line": 116,
+      "kind": "claims-deleted",
+      "snippet": "<CardDescription>{error || 'Heatmap not found'}</CardDescription>"
+    },
+    {
+      "file": "app/(public)/p/[slug]/page.tsx",
+      "line": 54,
+      "kind": "claims-deleted",
+      "snippet": "if (!agentAppMeta) return { title: \"App Not Found\" };"
+    },
+    {
+      "file": "app/(public)/p/e/[resourceType]/[id]/page.tsx",
+      "line": 25,
+      "kind": "claims-deleted",
+      "snippet": "return { title: \"Not found · AI Matrx\", robots: { index: false } };"
+    },
+    {
+      "file": "app/(transitional)/_applets/[category]/page.tsx",
+      "line": 59,
+      "kind": "claims-deleted",
+      "snippet": "title: 'Category Not Found',"
+    },
+    {
+      "file": "app/(transitional)/_apps/custom/[slug]/[appletSlug]/layout.tsx",
+      "line": 15,
+      "kind": "claims-deleted",
+      "snippet": "title: \"Applet not found\","
+    },
+    {
+      "file": "app/(transitional)/_apps/custom/[slug]/layout.tsx",
+      "line": 16,
+      "kind": "claims-deleted",
+      "snippet": "title: \"App not found\","
+    },
+    {
+      "file": "app/(transitional)/_apps/debug/admin/[slug]/[appletSlug]/layout.tsx",
+      "line": 15,
+      "kind": "claims-deleted",
+      "snippet": "title: \"App not found\","
+    },
+    {
+      "file": "app/(transitional)/_flashcard/constants.ts",
+      "line": 324,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Data with name '${dataName}' does not exist.`);"
+    },
+    {
+      "file": "app/auth/callback/admin/route.ts",
+      "line": 176,
+      "kind": "claims-denied",
+      "snippet": "\"Access denied. This login is restricted to administrators only.\","
+    },
+    {
+      "file": "app/oauth/consent/ConsentClient.tsx",
+      "line": 157,
+      "kind": "claims-denied",
+      "snippet": "msg.includes(\"unauthorized request origin\") ||"
+    },
+    {
+      "file": "app/oauth/consent/ConsentClient.tsx",
+      "line": 161,
+      "kind": "claims-denied",
+      "snippet": "title: \"Origin not authorized\","
+    },
+    {
+      "file": "app/oauth/consent/ConsentClient.tsx",
+      "line": 171,
+      "kind": "claims-deleted",
+      "snippet": "if (msg.includes(\"expired\") || msg.includes(\"not found\") || status === 404) {"
+    },
+    {
+      "file": "components/debug/ResourceDebugIndicator.tsx",
+      "line": 160,
+      "kind": "claims-deleted",
+      "snippet": "console.error(\"Instance not found\");"
+    },
+    {
+      "file": "components/hierarchy-filter/useHierarchyFilter.ts",
+      "line": 28,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "components/image/cloud/resolveCloudFileUrl.ts",
+      "line": 64,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Cloud file not found in store: ${fileId}`);"
+    },
+    {
+      "file": "components/image/cloud/resolveCloudFileUrl.ts",
+      "line": 111,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Cloud file not found in store: ${fileId}`);"
+    },
+    {
+      "file": "components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx",
+      "line": 698,
+      "kind": "claims-deleted",
+      "snippet": "\"[MarkdownStream] replaceBlockContent: original substring not found in content.\","
+    },
+    {
+      "file": "components/mardown-display/markdown-classification/processors/processor-registry.ts",
+      "line": 256,
+      "kind": "claims-deleted",
+      "snippet": "console.warn(`Processor with ID \"${processorId}\" not found`);"
+    },
+    {
+      "file": "components/mardown-display/markdown-classification/processors/processor-registry.ts",
+      "line": 313,
+      "kind": "claims-deleted",
+      "snippet": "console.warn(`Config with ID \"${configId}\" not found for processor \"${processorId}\"`);"
+    },
+    {
+      "file": "components/official/matrx-data-table/MatrxUuidCell.tsx",
+      "line": 159,
+      "kind": "claims-denied",
+      "snippet": "toast.error(\"You don't have access to open this record\");"
+    },
+    {
+      "file": "components/user-generated-table-data/ExportTableModal.tsx",
+      "line": 75,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(fieldsError.message || \"Failed to fetch table fields\");"
+    },
+    {
+      "file": "components/user-generated-table-data/ExportTableModal.tsx",
+      "line": 90,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message || \"Failed to fetch filtered data\");"
+    },
+    {
+      "file": "components/user-generated-table-data/TableCards.tsx",
+      "line": 250,
+      "kind": "claims-deleted",
+      "snippet": "description: `\"${tableToDelete.table_name}\" has been deleted successfully`,"
+    },
+    {
+      "file": "features/admin/agent-review/service.ts",
+      "line": 16,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/admin/agent-review/service.ts",
+      "line": 31,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/admin/agent-slots/service.ts",
+      "line": 486,
+      "kind": "claims-deleted",
+      "snippet": "if (!found) throw new Error(`Bench result ${resultId} was not found.`);"
+    },
+    {
+      "file": "features/admin/applications/catalogs/components/CatalogEntryEditor.tsx",
+      "line": 344,
+      "kind": "claims-deleted",
+      "snippet": "error?.message ?? `Entry ${app}/${kindValue}/${keyValue} not found`,"
+    },
+    {
+      "file": "features/admin/applications/config/components/AppConfigEditor.tsx",
+      "line": 187,
+      "kind": "claims-deleted",
+      "snippet": "description: error?.message ?? `Row for \"${app}\" not found`,"
+    },
+    {
+      "file": "features/admin/relationships/components/RelationshipRulesClient.tsx",
+      "line": 104,
+      "kind": "claims-deleted",
+      "snippet": "toast.error(`Rule not found: ${initialEditKey}`);"
+    },
+    {
+      "file": "features/admin/shared/useAdminEmails.ts",
+      "line": 25,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
+    },
+    {
+      "file": "features/admin/users/server/organizationMembershipAdmin.ts",
+      "line": 127,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Membership change failed\");"
+    },
+    {
+      "file": "features/administration/canonicalization/service/canonicalizationService.ts",
+      "line": 42,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/hindsight/components/EnrollDialog.tsx",
+      "line": 138,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/hindsight/components/EnrollDialog.tsx",
+      "line": 156,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/hindsight/components/EnrollmentDetailPanel.tsx",
+      "line": 92,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/kg-cost/service/kgCostService.ts",
+      "line": 122,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/kg-cost/service/kgCostService.ts",
+      "line": 137,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/kg-cost/service/kgCostService.ts",
+      "line": 149,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/kg-cost/service/kgCostService.ts",
+      "line": 164,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/kg-cost/service/kgCostService.ts",
+      "line": 178,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/kg-inspector/service/kgInspectorService.ts",
+      "line": 88,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/kg-inspector/service/kgInspectorService.ts",
+      "line": 105,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/kg-inspector/service/kgInspectorService.ts",
+      "line": 121,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/administration/local-storage/LocalStorageAdmin.tsx",
+      "line": 286,
+      "kind": "claims-deleted",
+      "snippet": ": { success: false, message: `Cookie not found: ${name}` };"
+    },
+    {
+      "file": "features/administration/local-storage/LocalStorageAdmin.tsx",
+      "line": 309,
+      "kind": "claims-deleted",
+      "snippet": ": { success: false, message: `Storage item not found: ${fullKey}` };"
+    },
+    {
+      "file": "features/agent-apps/services/auto-create-draft.ts",
+      "line": 141,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Failed to save app draft\");"
+    },
+    {
+      "file": "features/agent-apps/services/auto-create-draft.ts",
+      "line": 253,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Failed to finalize app\");"
+    },
+    {
+      "file": "features/agent-comparison/modes/variations/redux/thunks.ts",
+      "line": 390,
+      "kind": "claims-deleted",
+      "snippet": "if (!col) throw new Error(\"Variation not found\");"
+    },
+    {
+      "file": "features/agent-connections/coding-sessions/service.ts",
+      "line": 61,
+      "kind": "raw-supabase-message",
+      "snippet": "if (authError) throw new Error(authError.message);"
+    },
+    {
+      "file": "features/agent-connections/coding-sessions/service.ts",
+      "line": 65,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/agent-context/redux/scope/scopeTypesSlice.ts",
+      "line": 225,
+      "kind": "claims-deleted",
+      "snippet": "/** True once `fetchScopeTypes(orgId)` has completed — lets callers tell \"loading\" from \"not found\". */"
+    },
+    {
+      "file": "features/agent-context/redux/scope/scopesSlice.ts",
+      "line": 235,
+      "kind": "claims-deleted",
+      "snippet": "/** True once `fetchScopes({org_id, type_id})` (root) has completed — distinguishes \"loading\" from \"not found\". */"
+    },
+    {
+      "file": "features/agent-shortcuts/components/ShortcutDirectResolver.tsx",
+      "line": 54,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Shortcut not found or you do not have access.\");"
+    },
+    {
+      "file": "features/agents/hooks/useMcpTools.ts",
+      "line": 122,
+      "kind": "claims-deleted",
+      "snippet": "if (!tool) throw new Error(`MCP tool not found: ${toolName}`);"
+    },
+    {
+      "file": "features/agents/hooks/useModelControls.ts",
+      "line": 232,
+      "kind": "claims-deleted",
+      "snippet": "console.error(\"Model not found:\", {"
+    },
+    {
+      "file": "features/agents/hooks/useModelControls.ts",
+      "line": 241,
+      "kind": "claims-deleted",
+      "snippet": "error: `Model not found: ${selectedModelId}`,"
+    },
+    {
+      "file": "features/agents/import/agent-import-validation.ts",
+      "line": 615,
+      "kind": "claims-deleted",
+      "snippet": "message: `Tool \\`${t}\\` was not found in the registry.`,"
+    },
+    {
+      "file": "features/agents/import/agent-import-validation.ts",
+      "line": 628,
+      "kind": "claims-deleted",
+      "snippet": "message: `Tool \\`${name}\\` was not found in the registry.`,"
+    },
+    {
+      "file": "features/agents/redux/agent-apps/thunks.ts",
+      "line": 92,
+      "kind": "claims-deleted",
+      "snippet": "error: error?.message ?? \"App not found\","
+    },
+    {
+      "file": "features/agents/redux/agent-apps/thunks.ts",
+      "line": 96,
+      "kind": "claims-deleted",
+      "snippet": "throw error ? pgErrorToError(error) : new Error(\"App not found\");"
+    },
+    {
+      "file": "features/agents/redux/execution-system/instance-context/sync-canvas-item-context.thunk.ts",
+      "line": 129,
+      "kind": "claims-deleted",
+      "snippet": "return rejectWithValue({ message: \"canvas item not found\" });"
+    },
+    {
+      "file": "features/agents/redux/execution-system/message-crud/delete-message.thunk.ts",
+      "line": 76,
+      "kind": "claims-deleted",
+      "snippet": "message: `Message ${messageId} not found in conversation ${conversationId}`,"
+    },
+    {
+      "file": "features/agents/redux/execution-system/message-crud/edit-message.thunk.ts",
+      "line": 65,
+      "kind": "claims-deleted",
+      "snippet": "\"[editMessage] prevRecord not found\","
+    },
+    {
+      "file": "features/agents/redux/execution-system/message-crud/edit-message.thunk.ts",
+      "line": 69,
+      "kind": "claims-deleted",
+      "snippet": "message: `Message ${messageId} not found in conversation ${conversationId}`,"
+    },
+    {
+      "file": "features/agents/redux/execution-system/message-crud/fork-and-resubmit-from-message.thunk.ts",
+      "line": 72,
+      "kind": "claims-deleted",
+      "snippet": "message: `Message ${messageId} not found in conversation ${conversationId}`,"
+    },
+    {
+      "file": "features/agents/redux/execution-system/message-crud/overwrite-and-resend.thunk.ts",
+      "line": 85,
+      "kind": "claims-deleted",
+      "snippet": "message: `Message ${messageId} not found in conversation ${conversationId}`,"
+    },
+    {
+      "file": "features/agents/redux/execution-system/message-crud/set-message-reaction.thunk.ts",
+      "line": 74,
+      "kind": "claims-deleted",
+      "snippet": "message: `Message ${messageId} not found in conversation ${conversationId}`,"
+    },
+    {
+      "file": "features/agents/redux/execution-system/message-crud/soft-delete-conversation.thunk.ts",
+      "line": 61,
+      "kind": "claims-deleted",
+      "snippet": "message: `Conversation ${conversationId} not found or already deleted`,"
+    },
+    {
+      "file": "features/agents/redux/execution-system/selectors/aggregate.selectors.ts",
+      "line": 354,
+      "kind": "claims-deleted",
+      "snippet": "reasons: [\"Instance not found\"],"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/conversation-bundle.ts",
+      "line": 159,
+      "kind": "claims-deleted",
+      "snippet": "new Error(`Conversation ${conversationId} not found`),"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/conversation-bundle.ts",
+      "line": 259,
+      "kind": "claims-deleted",
+      "snippet": "new Error(`Conversation ${conversationId} not found`),"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/create-instance.thunk.ts",
+      "line": 339,
+      "kind": "claims-deleted",
+      "snippet": "if (!shortcut) throw new Error(`Shortcut ${shortcutId} not found`);"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/create-instance.thunk.ts",
+      "line": 747,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Conversation ${currentConversationId} not found`);"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/create-instance.thunk.ts",
+      "line": 907,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Conversation ${currentConversationId} not found`);"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/create-instance.thunk.ts",
+      "line": 1072,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Conversation ${currentConversationId} not found`);"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/execute-instance.thunk.ts",
+      "line": 406,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Conversation ${conversationId} not found`);"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/execute-manual-instance.thunk.ts",
+      "line": 560,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Conversation ${conversationId} not found`);"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts",
+      "line": 592,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Shortcut ${shortcutId} not found in Redux`);"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/resume-instance.thunk.ts",
+      "line": 134,
+      "kind": "claims-deleted",
+      "snippet": "return rejectWithValue(`Conversation ${conversationId} not found`);"
+    },
+    {
+      "file": "features/agents/redux/execution-system/thunks/run-ai-stream.ts",
+      "line": 439,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Conversation not found: ${serverMessage}`);"
+    },
+    {
+      "file": "features/agents/slots/components/SlotOverrideEditor.tsx",
+      "line": 167,
+      "kind": "claims-deleted",
+      "snippet": "message: \"Agent not found, or you don't have access to it.\","
+    },
+    {
+      "file": "features/agents/slots/overrides.ts",
+      "line": 171,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`agent slot \"${slotKey}\" not found — declare it server-side first`);"
+    },
+    {
+      "file": "features/agents/slots/service.server.ts",
+      "line": 43,
+      "kind": "claims-deleted",
+      "snippet": "`agent slot \"${slotKey}\" not found — it must be declared server-side and seeded (see agent-slots FEATURE.md)`,"
+    },
+    {
+      "file": "features/agents/slots/service.ts",
+      "line": 81,
+      "kind": "claims-deleted",
+      "snippet": "`agent slot \"${slotKey}\" not found — it must be declared server-side and seeded (see agent-slots FEATURE.md)`,"
+    },
+    {
+      "file": "features/agents/slots/service.ts",
+      "line": 204,
+      "kind": "claims-deleted",
+      "snippet": "`[agent-slots] slot \"${key}\" not found — it must be declared server-side and seeded (see agent-slots FEATURE.md)`,"
+    },
+    {
+      "file": "features/agents/war-room-master-tools/handlers/read-resource.handler.ts",
+      "line": 140,
+      "kind": "claims-deleted",
+      "snippet": "hint: \"The document does not exist or is not accessible.\","
+    },
+    {
+      "file": "features/agents/war-room-tools/handlers/update-thread.handler.ts",
+      "line": 33,
+      "kind": "claims-deleted",
+      "snippet": "return { ok: false, message: \"Tile not found.\" };"
+    },
+    {
+      "file": "features/applet/builder/modules/app-builder/AppBuilder.tsx",
+      "line": 264,
+      "kind": "claims-deleted",
+      "snippet": "description: \"App has been deleted successfully.\","
+    },
+    {
+      "file": "features/applet/builder/modules/applet-builder/AppletBuilder.tsx",
+      "line": 350,
+      "kind": "claims-deleted",
+      "snippet": "description: \"Applet has been deleted successfully.\","
+    },
+    {
+      "file": "features/applet/builder/modules/container-builder/GroupBuilder.tsx",
+      "line": 280,
+      "kind": "claims-deleted",
+      "snippet": "description: \"Group has been deleted successfully.\","
+    },
+    {
+      "file": "features/applet/builder/modules/container-builder/container-comparison/ContainerComparisonModal.tsx",
+      "line": 88,
+      "kind": "claims-deleted",
+      "snippet": "console.error(\"Container not found in applet\");"
+    },
+    {
+      "file": "features/applet/builder/modules/smart-parts/applets/SmartAppletList.tsx",
+      "line": 126,
+      "kind": "claims-deleted",
+      "snippet": "description: `\"${applet.name}\" has been deleted successfully.`,"
+    },
+    {
+      "file": "features/applet/builder/modules/smart-parts/apps/SmartAppList.tsx",
+      "line": 228,
+      "kind": "claims-deleted",
+      "snippet": "description: `\"${app.name}\" has been deleted successfully.`,"
+    },
+    {
+      "file": "features/applet/contepts/BrokerDebugger.tsx",
+      "line": 103,
+      "kind": "claims-deleted",
+      "snippet": "{fieldEntry?.brokerId || \"Not found\"}"
+    },
+    {
+      "file": "features/applet/hooks/useAppletSave.ts",
+      "line": 19,
+      "kind": "claims-deleted",
+      "snippet": "console.error('Cannot save: No applet ID or applet not found');"
+    },
+    {
+      "file": "features/applet/services/appletAgentSource.ts",
+      "line": 52,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Agent \"${agentId}\" not found or has no execution payload`);"
+    },
+    {
+      "file": "features/applet/styles/StyledComponents.tsx",
+      "line": 501,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Color '${color}' not found for usage '${usage}'`);"
+    },
+    {
+      "file": "features/applet/styles/StyledComponents.tsx",
+      "line": 551,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Component type '${type}' not found`);"
+    },
+    {
+      "file": "features/applet/styles/StyledComponents.tsx",
+      "line": 561,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Color '${color}' not found for component type '${type}'`);"
+    },
+    {
+      "file": "features/applet/styles/StyledComponents.tsx",
+      "line": 577,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Icon '${icon}' not found`);"
+    },
+    {
+      "file": "features/audio/components/devices/MediaDevicesPanel.tsx",
+      "line": 117,
+      "kind": "claims-denied",
+      "snippet": "toast.error(\"Microphone access denied\", {"
+    },
+    {
+      "file": "features/audio/components/devices/MediaDevicesPanel.tsx",
+      "line": 132,
+      "kind": "claims-denied",
+      "snippet": "toast.error(\"Camera access denied\", {"
+    },
+    {
+      "file": "features/audio/services/audioChunkJournal.ts",
+      "line": 279,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/canvas/components/CanvasArtifactDebugPanel.tsx",
+      "line": 155,
+      "kind": "claims-deleted",
+      "snippet": "? \"UUID set but row not found in DB\""
+    },
+    {
+      "file": "features/canvas/hooks/useCanvasItem.ts",
+      "line": 126,
+      "kind": "claims-deleted",
+      "snippet": "if (!r) setError(\"Artifact not found\");"
+    },
+    {
+      "file": "features/canvas/materialization/attachBlockAsEditableContext.ts",
+      "line": 286,
+      "kind": "claims-deleted",
+      "snippet": "steps.push(\"existing id not found in DB — will upsert\");"
+    },
+    {
+      "file": "features/canvas/materialization/ensureArtifactPersisted.ts",
+      "line": 155,
+      "kind": "claims-deleted",
+      "snippet": "errors.push(`artifactId ${input.artifactId} not found in DB — will upsert`);"
+    },
+    {
+      "file": "features/canvas/materialization/unbindArtifact.ts",
+      "line": 199,
+      "kind": "claims-deleted",
+      "snippet": "errors.push(`Artifact ${artifactId} not found`);"
+    },
+    {
+      "file": "features/canvas/services/canvasArtifactService.ts",
+      "line": 572,
+      "kind": "claims-deleted",
+      "snippet": "conversationErr ?? \"conversation not found\","
+    },
+    {
+      "file": "features/code-editor/agent-code-editor/hooks/useSmartCodeEditor.ts",
+      "line": 174,
+      "kind": "claims-deleted",
+      "snippet": "msg += `This usually means the AI is trying to edit code that doesn't exist or has changed.\\n`;"
+    },
+    {
+      "file": "features/code-editor/agent-code-editor/utils/parseCodeEdits.ts",
+      "line": 309,
+      "kind": "claims-deleted",
+      "snippet": "errorMsg += `❌ SEARCH pattern not found in code\\n\\n`;"
+    },
+    {
+      "file": "features/code-editor/agent-code-editor/utils/parseCodeEdits.ts",
+      "line": 336,
+      "kind": "claims-deleted",
+      "snippet": "errorMsg += `❌ First line not found anywhere in the code\\n`;"
+    },
+    {
+      "file": "features/code-editor/agent-code-editor/utils/parseCodeEdits.ts",
+      "line": 337,
+      "kind": "claims-deleted",
+      "snippet": "errorMsg += `💡 The AI might be editing code that doesn't exist in this file\\n`;"
+    },
+    {
+      "file": "features/code-editor/hooks/useAICodeEditor.ts",
+      "line": 337,
+      "kind": "claims-deleted",
+      "snippet": "errorMsg += `This usually means the AI is trying to edit code that doesn't exist or has changed.\\n`;"
+    },
+    {
+      "file": "features/code-editor/utils/ContextVersionManager.ts",
+      "line": 215,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Version ${versionNumber} not found`);"
+    },
+    {
+      "file": "features/code-editor/utils/parseCodeEdits.ts",
+      "line": 348,
+      "kind": "claims-deleted",
+      "snippet": "errorMsg += `❌ SEARCH pattern not found in code\\n\\n`;"
+    },
+    {
+      "file": "features/code-editor/utils/parseCodeEdits.ts",
+      "line": 379,
+      "kind": "claims-deleted",
+      "snippet": "errorMsg += `❌ First line not found anywhere in the code\\n`;"
+    },
+    {
+      "file": "features/code-editor/utils/parseCodeEdits.ts",
+      "line": 380,
+      "kind": "claims-deleted",
+      "snippet": "errorMsg += `💡 The AI might be editing code that doesn't exist in this file\\n`;"
+    },
+    {
+      "file": "features/code/adapters/MockFilesystemAdapter.ts",
+      "line": 83,
+      "kind": "claims-deleted",
+      "snippet": "if (!node) throw new Error(`File not found: ${path}`);"
+    },
+    {
+      "file": "features/code/agent-context/useApplyFsChangesToOpenTabs.ts",
+      "line": 229,
+      "kind": "claims-deleted",
+      "snippet": "toast.warning(`\"${tab.name}\" was deleted`, {"
+    },
+    {
+      "file": "features/code/hooks/useOpenLibraryFile.ts",
+      "line": 51,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Code file ${codeFileId} not found`);"
+    },
+    {
+      "file": "features/code/hooks/useReloadTab.ts",
+      "line": 36,
+      "kind": "claims-deleted",
+      "snippet": "return { tabId, ok: false, error: \"Tab not found\" };"
+    },
+    {
+      "file": "features/code/library-sources/adapters/html-pages.ts",
+      "line": 97,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`HTML page not found: ${rowId}`);"
+    },
+    {
+      "file": "features/content-ir/admin/shape-doctor-server.ts",
+      "line": 117,
+      "kind": "claims-deleted",
+      "snippet": "`Frozen detector literal ${f.literal} not found in ${f.file} — the detector census is blind for it (run pnpm check:shapes for the CLI red).`,"
+    },
+    {
+      "file": "features/content-ir/kinds/troubleshooting-guide.ts",
+      "line": 618,
+      "kind": "claims-denied",
+      "snippet": "symptom: \"Intermittent 401 Unauthorized responses\","
+    },
+    {
+      "file": "features/content-ir/registry/schema-source-flexible-data.ts",
+      "line": 203,
+      "kind": "claims-deleted",
+      "snippet": "throw new FlexibleDataError(`flexible_data row \"${id}\" was not found.`);"
+    },
+    {
+      "file": "features/content-ir/studio/kind-content-block-service.ts",
+      "line": 52,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
+    },
+    {
+      "file": "features/content-ir/studio/shape-authoring-service.ts",
+      "line": 574,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
+    },
+    {
+      "file": "features/content-ir/surfaces/research-legacy-text.ts",
+      "line": 43,
+      "kind": "claims-deleted",
+      "snippet": "/** Parser fallbacks that mean \"not found\" — never canonical data. */"
+    },
+    {
+      "file": "features/context-menu-v3/utils/widget-handle.ts",
+      "line": 155,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(\"search_text not found in surface content\");"
+    },
+    {
+      "file": "features/data-tables/components/DocumentHistoryViewer.tsx",
+      "line": 81,
+      "kind": "claims-deleted",
+      "snippet": "description: fetchErr?.message ?? \"snapshot not found\","
+    },
+    {
+      "file": "features/data-tables/components/VersionHistoryViewer.tsx",
+      "line": 118,
+      "kind": "claims-deleted",
+      "snippet": "\"The row was deleted, so this snapshot will be re-inserted as a new row (with a fresh history).\","
+    },
+    {
+      "file": "features/data-tables/components/WorkbookHistoryViewer.tsx",
+      "line": 89,
+      "kind": "claims-deleted",
+      "snippet": "description: fetchErr?.message ?? \"snapshot not found\","
+    },
+    {
+      "file": "features/data-tables/service.ts",
+      "line": 203,
+      "kind": "claims-deleted",
+      "snippet": "error: envelope?.error ?? \"Table not found or update failed\","
+    },
+    {
+      "file": "features/education/assessment/components/AssessmentDetail.tsx",
+      "line": 84,
+      "kind": "claims-denied",
+      "snippet": "setError(\"This assessment could not be found or you don't have access.\");"
+    },
+    {
+      "file": "features/education/assessment/components/AssessmentDetail.tsx",
+      "line": 115,
+      "kind": "claims-deleted",
+      "snippet": "{error ?? \"Not found\"}"
+    },
+    {
+      "file": "features/education/assessment/components/edit/AssessmentEdit.tsx",
+      "line": 68,
+      "kind": "claims-deleted",
+      "snippet": "setError(res.error ?? \"Not found\");"
+    },
+    {
+      "file": "features/education/assessment/components/edit/AssessmentEdit.tsx",
+      "line": 99,
+      "kind": "claims-deleted",
+      "snippet": "text={error ?? \"Not found\"}"
+    },
+    {
+      "file": "features/education/assessment/components/results/AssessmentResults.tsx",
+      "line": 79,
+      "kind": "claims-deleted",
+      "snippet": "setError(aw.error ?? \"Assessment not found\");"
+    },
+    {
+      "file": "features/education/assessment/components/results/AssessmentResults.tsx",
+      "line": 81,
+      "kind": "claims-deleted",
+      "snippet": "setError(r.error ?? \"Result not found\");"
+    },
+    {
+      "file": "features/education/assessment/components/results/AssessmentResults.tsx",
+      "line": 119,
+      "kind": "claims-deleted",
+      "snippet": "<p className=\"text-sm font-medium text-foreground\">{error ?? \"Not found\"}</p>"
+    },
+    {
+      "file": "features/education/assessment/data/assessmentService.ts",
+      "line": 313,
+      "kind": "claims-deleted",
+      "snippet": "return fail(\"duplicate\", src.error ?? \"source not found\");"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 202,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 212,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 218,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 228,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 236,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 244,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 258,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 270,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 283,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 296,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 314,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 331,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 345,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 360,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/classes/service.ts",
+      "line": 372,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/creators/service.ts",
+      "line": 36,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/creators/service.ts",
+      "line": 44,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/creators/service.ts",
+      "line": 58,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/creators/service.ts",
+      "line": 84,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/creators/service.ts",
+      "line": 92,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/engage/components/multiplayer/MultiplayerGameImpl.tsx",
+      "line": 72,
+      "kind": "claims-deleted",
+      "snippet": "setLoadError(res.error ?? \"Room not found or already ended.\");"
+    },
+    {
+      "file": "features/education/library/actions.ts",
+      "line": 50,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/library/actions.ts",
+      "line": 66,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/library/actions.ts",
+      "line": 79,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/education/media/audio/resolveAudioSource.ts",
+      "line": 54,
+      "kind": "claims-deleted",
+      "snippet": "return { data: null, error: res.error ?? \"Deck not found\" };"
+    },
+    {
+      "file": "features/education/media/service.ts",
+      "line": 120,
+      "kind": "claims-deleted",
+      "snippet": "if (!data) return { data: null, error: \"Not found\" };"
+    },
+    {
+      "file": "features/education/onboard/components/SummaryDetail.tsx",
+      "line": 46,
+      "kind": "claims-deleted",
+      "snippet": "if (res.error || !res.data) setError(res.error ?? \"Summary not found\");"
+    },
+    {
+      "file": "features/education/onboard/components/SummaryDetail.tsx",
+      "line": 65,
+      "kind": "claims-deleted",
+      "snippet": "{error ?? \"Summary not found\"}"
+    },
+    {
+      "file": "features/education/study/components/SessionDetailView.tsx",
+      "line": 115,
+      "kind": "claims-deleted",
+      "snippet": "setError(res.error ?? \"Session not found\");"
+    },
+    {
+      "file": "features/education/study/service/studyService.ts",
+      "line": 450,
+      "kind": "claims-deleted",
+      "snippet": "if (!targetRow) return fail(\"overrideAttempt\", \"Attempt not found\");"
+    },
+    {
+      "file": "features/entitlements/stripe/connect.ts",
+      "line": 232,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message); // 500 → Stripe retries; the upsert above is idempotent"
+    },
+    {
+      "file": "features/entitlements/stripe/connect.ts",
+      "line": 262,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
+    },
+    {
+      "file": "features/expertise/components/desks/PackDesksPage.tsx",
+      "line": 35,
+      "kind": "claims-deleted",
+      "snippet": "if (!p) setError(\"This pack doesn't exist, or you don't have access.\");"
+    },
+    {
+      "file": "features/expertise/components/detail/PackDetailPage.tsx",
+      "line": 200,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"This pack doesn't exist, or you don't have access to it.\");"
+    },
+    {
+      "file": "features/files/api/permissions.ts",
+      "line": 43,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/files/api/permissions.ts",
+      "line": 64,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/files/api/permissions.ts",
+      "line": 86,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/files/blocks/image/utils/print-image.ts",
+      "line": 100,
+      "kind": "claims-deleted",
+      "snippet": "fail(new Error(\"print-image: image element not found\"));"
+    },
+    {
+      "file": "features/files/components/core/FilePreview/FilePreview.tsx",
+      "line": 237,
+      "kind": "claims-deleted",
+      "snippet": ": \"File not found.\";"
+    },
+    {
+      "file": "features/files/components/surfaces/PreviewPane.tsx",
+      "line": 222,
+      "kind": "claims-deleted",
+      "snippet": "? \"File not found\""
+    },
+    {
+      "file": "features/files/handler/errors.ts",
+      "line": 58,
+      "kind": "claims-denied",
+      "snippet": "message = \"You do not have access to this file\","
+    },
+    {
+      "file": "features/files/handler/errors.ts",
+      "line": 67,
+      "kind": "claims-deleted",
+      "snippet": "constructor(message = \"File not found\", opts?: { fileId?: string }) {"
+    },
+    {
+      "file": "features/files/hooks/useEnsureCloudFile.ts",
+      "line": 64,
+      "kind": "claims-deleted",
+      "snippet": "\"[files] useEnsureCloudFile FAILED to fetch file (RLS/permission or DB error, NOT a real 'not found'):\","
+    },
+    {
+      "file": "features/files/redux/thunks.ts",
+      "line": 548,
+      "kind": "claims-deleted",
+      "snippet": "`Cannot create folder: parent folder ${arg.parentId} not found in local state.`,"
+    },
+    {
+      "file": "features/files/redux/thunks.ts",
+      "line": 610,
+      "kind": "claims-deleted",
+      "snippet": "if (!folder) throw new Error(`Folder not found: ${arg.folderId}`);"
+    },
+    {
+      "file": "features/files/redux/thunks.ts",
+      "line": 664,
+      "kind": "claims-deleted",
+      "snippet": "`Cannot move folder: new parent ${newParentId} not found in local state.`,"
+    },
+    {
+      "file": "features/files/redux/thunks.ts",
+      "line": 1088,
+      "kind": "claims-deleted",
+      "snippet": "if (!record) throw new Error(`File not found: ${fileId}`);"
+    },
+    {
+      "file": "features/files/redux/thunks.ts",
+      "line": 1148,
+      "kind": "claims-deleted",
+      "snippet": "if (!record) throw new Error(`File not found: ${fileId}`);"
+    },
+    {
+      "file": "features/files/redux/thunks.ts",
+      "line": 1243,
+      "kind": "claims-deleted",
+      "snippet": "if (!record) throw new Error(`File not found: ${fileId}`);"
+    },
+    {
+      "file": "features/files/redux/virtual-thunks.ts",
+      "line": 401,
+      "kind": "claims-deleted",
+      "snippet": "if (!record) throw new Error(`File not found: ${id}`);"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/NotesInlinePreview.tsx",
+      "line": 92,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Note not found.\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/aga-apps.ts",
+      "line": 117,
+      "kind": "claims-deleted",
+      "snippet": "if (error || !data) throw new Error(`Agent App not found: ${id}`);"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/aga-apps.ts",
+      "line": 141,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error?.message ?? \"Agent App save failed (conflict?)\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/aga-apps.ts",
+      "line": 159,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error || !data) throw new Error(error?.message ?? \"Rename failed\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/code-files.ts",
+      "line": 206,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Code file not found: ${id}`);"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/code-files.ts",
+      "line": 245,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message || \"Code file save failed\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/code-files.ts",
+      "line": 342,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error?.message ?? \"Folder create failed\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/code-files.ts",
+      "line": 364,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error?.message ?? \"Code file create failed\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/notes.ts",
+      "line": 175,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Note not found: ${id}`);"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/notes.ts",
+      "line": 206,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error?.message ?? \"Note write failed\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/notes.ts",
+      "line": 228,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error?.message ?? \"Note rename failed\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/notes.ts",
+      "line": 254,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error?.message ?? \"Note move failed\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/notes.ts",
+      "line": 292,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error?.message ?? \"Folder create failed\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/notes.ts",
+      "line": 323,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error?.message ?? \"Note create failed\");"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/tool-ui-components.ts",
+      "line": 186,
+      "kind": "claims-deleted",
+      "snippet": "throw new VirtualSourceError(\"not_found\", \"read\", `Tool UI not found: ${id}`);"
+    },
+    {
+      "file": "features/files/virtual-sources/adapters/tool-ui-components.ts",
+      "line": 223,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error?.message ?? \"Tool UI save failed (conflict?)\");"
+    },
+    {
+      "file": "features/flashcards/components/editor/EditSetView.tsx",
+      "line": 130,
+      "kind": "claims-deleted",
+      "snippet": "setError(res.error ?? \"Flashcard set not found\");"
+    },
+    {
+      "file": "features/flashcards/components/set-detail/SetDetailView.tsx",
+      "line": 231,
+      "kind": "claims-deleted",
+      "snippet": "setError(res.error ?? \"Flashcard set not found\");"
+    },
+    {
+      "file": "features/flashcards/data/fcService.ts",
+      "line": 190,
+      "kind": "claims-deleted",
+      "snippet": "error: \"Set not found or you don't have access to it\","
+    },
+    {
+      "file": "features/growth-loop/map/loop-map.ts",
+      "line": 729,
+      "kind": "claims-deleted",
+      "snippet": "\"plan.profile.template_map carries the concept/variant library, but realize creates a blank draft with only a page type. 'Template pages' as a concept does not "
+    },
+    {
+      "file": "features/image-studio/hooks/useBase64Decoder.ts",
+      "line": 227,
+      "kind": "claims-denied",
+      "snippet": "const detail = err instanceof Error ? err.message : \"permission denied\";"
+    },
+    {
+      "file": "features/image-studio/hooks/useImageStudio.ts",
+      "line": 1069,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(\"Preview uploaded but its file id was not found\");"
+    },
+    {
+      "file": "features/industries/service.ts",
+      "line": 49,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/industries/service.ts",
+      "line": 61,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/industries/service.ts",
+      "line": 80,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/industries/service.ts",
+      "line": 106,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/industries/service.ts",
+      "line": 122,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/industries/service.ts",
+      "line": 136,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/industries/service.ts",
+      "line": 147,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/kg-suggestions/service/kgSuggestionAckService.ts",
+      "line": 24,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/kg-suggestions/service/kgSuggestionAckService.ts",
+      "line": 44,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/kg-suggestions/service/kgSuggestionsService.ts",
+      "line": 157,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/kg-suggestions/service/kgSuggestionsService.ts",
+      "line": 246,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/kg-suggestions/service/kgSuggestionsService.ts",
+      "line": 292,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/kg-suggestions/service/kgSuggestionsService.ts",
+      "line": 305,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/kg-suggestions/service/kgSuggestionsService.ts",
+      "line": 534,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/kg-suggestions/service/kgSuggestionsService.ts",
+      "line": 558,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/legal/wc/pd-ratings/SavedCaseLoader.tsx",
+      "line": 65,
+      "kind": "claims-deleted",
+      "snippet": "return <ErrorState message=\"Case not found.\" />;"
+    },
+    {
+      "file": "features/legal/wc/pd-ratings/api/claims.ts",
+      "line": 61,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/legal/wc/pd-ratings/api/claims.ts",
+      "line": 77,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/legal/wc/pd-ratings/components/workspace/LookupError.tsx",
+      "line": 31,
+      "kind": "claims-denied",
+      "snippet": "? \"You don't have access to this endpoint. Sign in or check your session.\""
+    },
+    {
+      "file": "features/legal/wc/pd-ratings/state/useSaveCase.ts",
+      "line": 90,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(detail?.message ?? result.error.message);"
+    },
+    {
+      "file": "features/legal/wc/pd-ratings/state/useSaveCase.ts",
+      "line": 167,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(detail?.message ?? patchResult.error.message);"
+    },
+    {
+      "file": "features/legal/wc/pd-ratings/state/useSaveCase.ts",
+      "line": 182,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(detail?.message ?? delResult.error.message);"
+    },
+    {
+      "file": "features/legal/wc/pd-ratings/state/useSaveCase.ts",
+      "line": 199,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(detail?.message ?? patch.error.message);"
+    },
+    {
+      "file": "features/legal/wc/pd-ratings/state/useSaveCase.ts",
+      "line": 213,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(detail?.message ?? created.error.message);"
+    },
+    {
+      "file": "features/marketing/change-tracking/SeoChangeTrackingWorkspace.tsx",
+      "line": 1441,
+      "kind": "claims-deleted",
+      "snippet": "error={bundle.error ?? new Error(\"Change not found\")}"
+    },
+    {
+      "file": "features/marketing/change-tracking/data.ts",
+      "line": 87,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/components/analysis/FindingDetail.tsx",
+      "line": 183,
+      "kind": "claims-deleted",
+      "snippet": "error={detail.error ?? new Error(\"Finding not found\")}"
+    },
+    {
+      "file": "features/marketing/components/backlinks/BacklinkObservationTable.tsx",
+      "line": 99,
+      "kind": "claims-deleted",
+      "snippet": "controllable: \"We have not found a link you can edit yourself yet.\","
+    },
+    {
+      "file": "features/marketing/components/brands/BrandWorkspace.tsx",
+      "line": 401,
+      "kind": "claims-deleted",
+      "snippet": "error={brand.error ?? new Error(\"Brand not found\")}"
+    },
+    {
+      "file": "features/marketing/components/crawls/CrawlLogsTable.tsx",
+      "line": 108,
+      "kind": "claims-deleted",
+      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
+    },
+    {
+      "file": "features/marketing/components/crawls/CrawlReportWorkspace.tsx",
+      "line": 914,
+      "kind": "claims-deleted",
+      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
+    },
+    {
+      "file": "features/marketing/components/crawls/CrawlReportsIndex.tsx",
+      "line": 61,
+      "kind": "claims-deleted",
+      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
+    },
+    {
+      "file": "features/marketing/components/crawls/CrawlSummary.tsx",
+      "line": 67,
+      "kind": "claims-deleted",
+      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
+    },
+    {
+      "file": "features/marketing/components/crawls/CrawlUrlsTable.tsx",
+      "line": 165,
+      "kind": "claims-deleted",
+      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
+    },
+    {
+      "file": "features/marketing/components/inspection/CrawlSnapshotsInspectionTable.tsx",
+      "line": 159,
+      "kind": "claims-deleted",
+      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
+    },
+    {
+      "file": "features/marketing/components/inspection/LinksInspectionTable.tsx",
+      "line": 352,
+      "kind": "claims-deleted",
+      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
+    },
+    {
+      "file": "features/marketing/components/pages/PageWorkspace.tsx",
+      "line": 372,
+      "kind": "claims-deleted",
+      "snippet": "error={workspace.error ?? new Error(\"Page not found\")}"
+    },
+    {
+      "file": "features/marketing/components/pages/SnapshotCompare.tsx",
+      "line": 155,
+      "kind": "claims-deleted",
+      "snippet": "error={failed.error ?? new Error(\"Snapshot not found\")}"
+    },
+    {
+      "file": "features/marketing/components/pages/SnapshotDetail.tsx",
+      "line": 34,
+      "kind": "claims-deleted",
+      "snippet": "error={snapshot.error ?? new Error(\"Snapshot not found\")}"
+    },
+    {
+      "file": "features/marketing/components/pages/cards/PageTargetPerformanceCard.tsx",
+      "line": 364,
+      "kind": "claims-deleted",
+      "snippet": "notFoundLabel=\"Site not found in the checked results.\""
+    },
+    {
+      "file": "features/marketing/components/shared/RecordUnavailableNotice.tsx",
+      "line": 49,
+      "kind": "claims-deleted",
+      "snippet": "? `This ${error.entity} was deleted`"
+    },
+    {
+      "file": "features/marketing/components/shared/RecordUnavailableNotice.tsx",
+      "line": 55,
+      "kind": "claims-denied",
+      "snippet": ": `It may have been deleted, or it may belong to an organization you don't have access to. Nothing here proves it is gone.`}"
+    },
+    {
+      "file": "features/marketing/components/sitemaps/SitemapDetail.tsx",
+      "line": 133,
+      "kind": "claims-deleted",
+      "snippet": "error={sitemap.error ?? new Error(\"Sitemap not found\")}"
+    },
+    {
+      "file": "features/marketing/content-plan/components/NodePanel.tsx",
+      "line": 237,
+      "kind": "claims-deleted",
+      "snippet": "\"This page does not exist on the website yet — apply build_page first.\","
+    },
+    {
+      "file": "features/marketing/content-plan/components/NodePanel.tsx",
+      "line": 246,
+      "kind": "claims-deleted",
+      "snippet": "\"This page does not exist on the website yet — apply build_page first.\","
+    },
+    {
+      "file": "features/marketing/content-plan/components/NodePanel.tsx",
+      "line": 589,
+      "kind": "claims-deleted",
+      "snippet": "{/* ALWAYS rendered — \"this page does not exist yet\" is the state that"
+    },
+    {
+      "file": "features/marketing/content-plan/hooks/useNodeReality.ts",
+      "line": 218,
+      "kind": "claims-deleted",
+      "snippet": "if (!pageId) throw new Error(\"This page does not exist yet.\");"
+    },
+    {
+      "file": "features/marketing/content-plan/lib/page-reality.ts",
+      "line": 146,
+      "kind": "claims-deleted",
+      "snippet": "headline: \"This page does not exist on the website yet.\","
+    },
+    {
+      "file": "features/marketing/content-plan/setup/components/SetupView.tsx",
+      "line": 1779,
+      "kind": "claims-deleted",
+      "snippet": "body=\"This link points at a site you cannot see (or that was deleted). Pick another from the header, or go back to the plans list.\""
+    },
+    {
+      "file": "features/marketing/data/access-service.ts",
+      "line": 50,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/data/access-service.ts",
+      "line": 74,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/data/access-service.ts",
+      "line": 94,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/data/media-library.ts",
+      "line": 192,
+      "kind": "claims-deleted",
+      "snippet": "if (!current.data) throw new Error(\"Site not found.\");"
+    },
+    {
+      "file": "features/marketing/data/reputation-queries.ts",
+      "line": 13,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/data/service.ts",
+      "line": 227,
+      "kind": "claims-denied",
+      "snippet": "`You don't have permission to ${what}, or it was already deleted. Viewing is open to everyone; changing it needs editor access.`,"
+    },
+    {
+      "file": "features/marketing/lib/finding-remedies.ts",
+      "line": 274,
+      "kind": "claims-deleted",
+      "snippet": "`${pageLabel(ctx)} returns a \"not found\" error.`,"
+    },
+    {
+      "file": "features/marketing/search-console/data-class-rules.ts",
+      "line": 21,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/search-console/data-classification.ts",
+      "line": 41,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/search-console/data-dig.ts",
+      "line": 27,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/search-console/data-insights.ts",
+      "line": 32,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/search-console/data-launch.ts",
+      "line": 32,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/search-console/data-launch.ts",
+      "line": 96,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(\"Page not found or not editable (RLS).\");"
+    },
+    {
+      "file": "features/marketing/search-console/data.ts",
+      "line": 32,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/seo/ai-visibility/data.ts",
+      "line": 6,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/marketing/seo/keyword/KeywordUsageChips.tsx",
+      "line": 57,
+      "kind": "claims-deleted",
+      "snippet": ": `Keyword NOT found in ${field.label.toLowerCase()}`"
+    },
+    {
+      "file": "features/message-templates/services/message-templates-service.ts",
+      "line": 81,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Failed to fetch templates\");"
+    },
+    {
+      "file": "features/message-templates/services/message-templates-service.ts",
+      "line": 129,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message || \"Failed to fetch template\");"
+    },
+    {
+      "file": "features/message-templates/services/message-templates-service.ts",
+      "line": 161,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Failed to create template\");"
+    },
+    {
+      "file": "features/message-templates/services/message-templates-service.ts",
+      "line": 188,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Failed to update template\");"
+    },
+    {
+      "file": "features/message-templates/services/message-templates-service.ts",
+      "line": 202,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Failed to delete template\");"
+    },
+    {
+      "file": "features/message-templates/services/message-templates-service.ts",
+      "line": 221,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message || \"Failed to fetch tags\");"
+    },
+    {
+      "file": "features/notes/components/NoteContentEditor.tsx",
+      "line": 632,
+      "kind": "claims-deleted",
+      "snippet": "`note_folder expects an existing folder. \"${folder}\" does not exist — choose one of: ${allFolders.join(\" | \")}.`,"
+    },
+    {
+      "file": "features/notes/redux/autoSaveMiddleware.ts",
+      "line": 282,
+      "kind": "claims-denied",
+      "snippet": "\"You don't have permission to save this note.\","
+    },
+    {
+      "file": "features/notes/redux/thunks.ts",
+      "line": 158,
+      "kind": "claims-deleted",
+      "snippet": "if (!data) throw new Error(\"Note not found\");"
+    },
+    {
+      "file": "features/notes/redux/thunks.ts",
+      "line": 204,
+      "kind": "claims-deleted",
+      "snippet": "if (!data) throw new Error(\"Note not found\");"
+    },
+    {
+      "file": "features/notes/redux/thunks.ts",
+      "line": 318,
+      "kind": "claims-denied",
+      "snippet": "const friendly = \"You don't have permission to save this note.\";"
+    },
+    {
+      "file": "features/notes/redux/thunks.ts",
+      "line": 536,
+      "kind": "claims-deleted",
+      "snippet": "if (!record) throw new Error(\"Note not found in state\");"
+    },
+    {
+      "file": "features/notes/service/notesService.ts",
+      "line": 345,
+      "kind": "claims-denied",
+      "snippet": "throw new Error(\"You don't have permission to save this note.\");"
+    },
+    {
+      "file": "features/notes/service/notesService.ts",
+      "line": 375,
+      "kind": "claims-denied",
+      "snippet": "throw new Error(\"You don't have permission to delete this note.\");"
+    },
+    {
+      "file": "features/notes/service/notesService.ts",
+      "line": 396,
+      "kind": "claims-denied",
+      "snippet": "\"You don't have permission to permanently delete this note.\","
+    },
+    {
+      "file": "features/notes/service/notesService.ts",
+      "line": 437,
+      "kind": "claims-deleted",
+      "snippet": "throw fetchError || new Error(\"Note not found\");"
+    },
+    {
+      "file": "features/notes/utils/writeErrors.ts",
+      "line": 34,
+      "kind": "claims-denied",
+      "snippet": "\"You don't have permission to delete this note.\";"
+    },
+    {
+      "file": "features/organizations/admin/components/MemberDetailView.tsx",
+      "line": 76,
+      "kind": "claims-deleted",
+      "snippet": "{error ?? \"Member not found.\"}"
+    },
+    {
+      "file": "features/organizations/admin/components/MemberResourcesView.tsx",
+      "line": 56,
+      "kind": "claims-deleted",
+      "snippet": "{error ?? \"Member not found.\"}"
+    },
+    {
+      "file": "features/organizations/admin/components/OrgAdminBoundary.tsx",
+      "line": 43,
+      "kind": "claims-deleted",
+      "snippet": "{error ?? \"This organization doesn't exist or you don't have access.\"}"
+    },
+    {
+      "file": "features/organizations/admin/hooks.ts",
+      "line": 39,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "features/organizations/admin/hooks.ts",
+      "line": 48,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Organization not found\");"
+    },
+    {
+      "file": "features/organizations/components/OrgResourceDetail.tsx",
+      "line": 158,
+      "kind": "claims-deleted",
+      "snippet": "{!entry ? \"Unknown resource\" : \"Organization not found\"}"
+    },
+    {
+      "file": "features/organizations/components/OrgResourceDetail.tsx",
+      "line": 162,
+      "kind": "claims-deleted",
+      "snippet": "? \"This resource kind doesn't exist.\""
+    },
+    {
+      "file": "features/organizations/components/OrgResourceDetail.tsx",
+      "line": 163,
+      "kind": "claims-deleted",
+      "snippet": ": \"This organization doesn't exist or has been removed.\"}"
+    },
+    {
+      "file": "features/organizations/components/OrgWorkspace.tsx",
+      "line": 126,
+      "kind": "claims-deleted",
+      "snippet": "if (!cancelled) setError(\"Organization not found\");"
+    },
+    {
+      "file": "features/organizations/components/OrgWorkspace.tsx",
+      "line": 230,
+      "kind": "claims-deleted",
+      "snippet": "{error || \"This organization doesn't exist or has been removed.\"}"
+    },
+    {
+      "file": "features/organizations/service.ts",
+      "line": 397,
+      "kind": "claims-deleted",
+      "snippet": "err.message.includes(\"does not exist\")"
+    },
+    {
+      "file": "features/page-extraction/api/jobs.ts",
+      "line": 77,
+      "kind": "claims-deleted",
+      "snippet": "if (!src) throw new Error(\"Template not found\");"
+    },
+    {
+      "file": "features/page-extraction/data-review/data.ts",
+      "line": 247,
+      "kind": "claims-deleted",
+      "snippet": "if (!job) throw new Error(\"Dataset not found\");"
+    },
+    {
+      "file": "features/pdf-extractor/state/thunks.ts",
+      "line": 62,
+      "kind": "claims-deleted",
+      "snippet": "if (rpcError.message?.includes(\"document not found\")) {"
+    },
+    {
+      "file": "features/pdf-extractor/state/thunks.ts",
+      "line": 68,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/pdf-extractor/studio/hooks/usePdfStudioDocs.ts",
+      "line": 114,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(err.message);"
+    },
+    {
+      "file": "features/pdf-extractor/studio/renameStudioDocument.ts",
+      "line": 30,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/pdf/scanner/components/QuadEditor.tsx",
+      "line": 384,
+      "kind": "claims-deleted",
+      "snippet": "/** Full-frame quad for an image — the detector's \"not found\" fallback. */"
+    },
+    {
+      "file": "features/podcasts/studio/components/ShowManageClient.tsx",
+      "line": 295,
+      "kind": "claims-deleted",
+      "snippet": "<EntityModeHeader backHref=\"/podcast/studio\" entityLabel=\"Podcast not found\" />"
+    },
+    {
+      "file": "features/podcasts/studio/components/StudioRunView.tsx",
+      "line": 151,
+      "kind": "claims-deleted",
+      "snippet": "entityLabel=\"Run not found\""
+    },
+    {
+      "file": "features/projects/agent-context/projectWriteHandlers.ts",
+      "line": 114,
+      "kind": "claims-denied",
+      "snippet": "`${target}: you don't have permission to change this project's settings.`,"
+    },
+    {
+      "file": "features/projects/components/ProjectCopyForAiButton.tsx",
+      "line": 36,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(\"Project not found\");"
+    },
+    {
+      "file": "features/projects/service.ts",
+      "line": 373,
+      "kind": "claims-deleted",
+      "snippet": "if (err?.code === \"42P01\" || err?.message?.includes(\"does not exist\"))"
+    },
+    {
+      "file": "features/rag/api/fork.ts",
+      "line": 25,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/rag/components/data-stores/DataStoresPage.tsx",
+      "line": 744,
+      "kind": "claims-deleted",
+      "snippet": "{detail.error ?? \"Data store not found\"}"
+    },
+    {
+      "file": "features/rag/components/library/LibraryDocDetailSheet.tsx",
+      "line": 178,
+      "kind": "raw-supabase-message",
+      "snippet": "if (updateError) throw new Error(updateError.message);"
+    },
+    {
+      "file": "features/rag/components/library/LibraryDocDetailSheet.tsx",
+      "line": 201,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/rag/components/library/LibraryDocDetailSheet.tsx",
+      "line": 218,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/rag/components/library/LibraryDocDetailSheet.tsx",
+      "line": 1116,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/rag/components/library/LibraryDocDetailSheet.tsx",
+      "line": 1261,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/rag/components/library/LibraryPage.tsx",
+      "line": 202,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/rag/components/library/LibraryPage.tsx",
+      "line": 330,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/rag/components/library/LibraryPage.tsx",
+      "line": 337,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/rag/components/library/LibraryTrashSheet.tsx",
+      "line": 109,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/rag/components/library/LibraryTrashSheet.tsx",
+      "line": 133,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/rag/hooks/useDataStoreGrants.ts",
+      "line": 66,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/rag/hooks/useDataStores.ts",
+      "line": 256,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(\"data_store not found\");"
+    },
+    {
+      "file": "features/rag/hooks/useLibrary.ts",
+      "line": 258,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/rag/hooks/useLibrary.ts",
+      "line": 345,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/rag/hooks/useLibrary.ts",
+      "line": 429,
+      "kind": "raw-supabase-message",
+      "snippet": "if (rpcError) throw new Error(rpcError.message);"
+    },
+    {
+      "file": "features/rag/hooks/useLibrary.ts",
+      "line": 432,
+      "kind": "claims-deleted",
+      "snippet": "setError(\"Document not found\");"
+    },
+    {
+      "file": "features/recipes/recipe-source/RecipeSelectionList.tsx",
+      "line": 378,
+      "kind": "claims-deleted",
+      "snippet": "description: `Version ${specificVersion} does not exist for this recipe`,"
+    },
+    {
+      "file": "features/research/admin/service.ts",
+      "line": 121,
+      "kind": "claims-deleted",
+      "snippet": "if (!template) throw new Error(\"Template not found\");"
+    },
+    {
+      "file": "features/scope-system/components/ContextItemEditView.tsx",
+      "line": 79,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Scope type not found\""
+    },
+    {
+      "file": "features/scope-system/components/ContextItemEditView.tsx",
+      "line": 91,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Context item not found\""
+    },
+    {
+      "file": "features/scope-system/components/ContextItemHub.tsx",
+      "line": 105,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Scope type not found\""
+    },
+    {
+      "file": "features/scope-system/components/ContextItemHub.tsx",
+      "line": 117,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Context item not found\""
+    },
+    {
+      "file": "features/scope-system/components/ContextItemsHub.tsx",
+      "line": 360,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Scope type not found\""
+    },
+    {
+      "file": "features/scope-system/components/ScopeContextItemsHub.tsx",
+      "line": 103,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Scope type not found\""
+    },
+    {
+      "file": "features/scope-system/components/ScopeContextItemsHub.tsx",
+      "line": 115,
+      "kind": "claims-deleted",
+      "snippet": "title={`${scopeType.label_singular} not found`}"
+    },
+    {
+      "file": "features/scope-system/components/ScopeDetailEditor.tsx",
+      "line": 143,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Scope type not found\""
+    },
+    {
+      "file": "features/scope-system/components/ScopeDetailEditor.tsx",
+      "line": 155,
+      "kind": "claims-deleted",
+      "snippet": "title={`${scopeType.label_singular} not found`}"
+    },
+    {
+      "file": "features/scope-system/components/ScopeEditView.tsx",
+      "line": 107,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Scope type not found\""
+    },
+    {
+      "file": "features/scope-system/components/ScopeEditView.tsx",
+      "line": 119,
+      "kind": "claims-deleted",
+      "snippet": "title={`${scopeType.label_singular} not found`}"
+    },
+    {
+      "file": "features/scope-system/components/ScopeItemDetail.tsx",
+      "line": 118,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Scope type not found\""
+    },
+    {
+      "file": "features/scope-system/components/ScopeItemDetail.tsx",
+      "line": 130,
+      "kind": "claims-deleted",
+      "snippet": "title={`${scopeType.label_singular} not found`}"
+    },
+    {
+      "file": "features/scope-system/components/ScopeItemDetail.tsx",
+      "line": 142,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Context item not found\""
+    },
+    {
+      "file": "features/scope-system/components/ScopeTypeEditView.tsx",
+      "line": 67,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Scope type not found\""
+    },
+    {
+      "file": "features/scope-system/components/ScopesList.tsx",
+      "line": 267,
+      "kind": "claims-deleted",
+      "snippet": "title=\"Scope type not found\""
+    },
+    {
+      "file": "features/scopes/components/associations/AttachedItemsSheet.tsx",
+      "line": 252,
+      "kind": "claims-deleted",
+      "snippet": "title=\"This item was deleted or is no longer shared with you. Detach it with the X.\""
+    },
+    {
+      "file": "features/scopes/registry/entityContentAdapters.ts",
+      "line": 114,
+      "kind": "claims-deleted",
+      "snippet": "if (!data) return { ok: false, error: \"Not found or not accessible\" };"
+    },
+    {
+      "file": "features/scopes/service/rpcResult.ts",
+      "line": 54,
+      "kind": "claims-deleted",
+      "snippet": "if (code === \"PGRST116\") return { code: \"not_found\", message: \"Not found\" };"
+    },
+    {
+      "file": "features/scopes/service/rpcResult.ts",
+      "line": 56,
+      "kind": "claims-denied",
+      "snippet": "return { code: \"forbidden_org\", message: \"Permission denied\" };"
+    },
+    {
+      "file": "features/scopes/service/scopesService.ts",
+      "line": 516,
+      "kind": "claims-deleted",
+      "snippet": "if (!scope) return err(\"not_found\", \"Scope not found\");"
+    },
+    {
+      "file": "features/scopes/service/scopesService.ts",
+      "line": 1019,
+      "kind": "claims-denied",
+      "snippet": "code === \"unauthorized\""
+    },
+    {
+      "file": "features/scopes/service/scopesService.ts",
+      "line": 1020,
+      "kind": "claims-denied",
+      "snippet": "? \"unauthorized\""
+    },
+    {
+      "file": "features/scopes/types.ts",
+      "line": 621,
+      "kind": "claims-denied",
+      "snippet": "| \"unauthorized\""
+    },
+    {
+      "file": "features/secrets/vault-service.ts",
+      "line": 516,
+      "kind": "raw-supabase-message",
+      "snippet": "if (myGrantsError) throw new Error(myGrantsError.message);"
+    },
+    {
+      "file": "features/secrets/vault-service.ts",
+      "line": 546,
+      "kind": "raw-supabase-message",
+      "snippet": "if (itemsError) throw new Error(itemsError.message);"
+    },
+    {
+      "file": "features/secrets/vault-service.ts",
+      "line": 559,
+      "kind": "raw-supabase-message",
+      "snippet": "if (fieldsError) throw new Error(fieldsError.message);"
+    },
+    {
+      "file": "features/secrets/vault-service.ts",
+      "line": 568,
+      "kind": "raw-supabase-message",
+      "snippet": "if (attachmentsError) throw new Error(attachmentsError.message);"
+    },
+    {
+      "file": "features/secrets/vault-service.ts",
+      "line": 582,
+      "kind": "raw-supabase-message",
+      "snippet": "if (grantsError) throw new Error(grantsError.message);"
+    },
+    {
+      "file": "features/secrets/vault-service.ts",
+      "line": 654,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/sharing/emailService.ts",
+      "line": 167,
+      "kind": "claims-deleted",
+      "snippet": "return { success: false, error: \"User email not found\" };"
+    },
+    {
+      "file": "features/sharing/emailService.ts",
+      "line": 179,
+      "kind": "claims-deleted",
+      "snippet": "return { success: false, error: \"Resource details not found\" };"
+    },
+    {
+      "file": "features/sharing/service/accessSummary.ts",
+      "line": 167,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/sharing/service/accessSummary.ts",
+      "line": 190,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/skills/components/SkillDetailEditor.tsx",
+      "line": 374,
+      "kind": "claims-deleted",
+      "snippet": "<Header onBack={onBack} title=\"Skill not found\" subtitle={skillId} />"
+    },
+    {
+      "file": "features/skills/redux/skillsThunks.ts",
+      "line": 142,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
+    },
+    {
+      "file": "features/skills/redux/skillsThunks.ts",
+      "line": 169,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
+    },
+    {
+      "file": "features/skills/redux/skillsThunks.ts",
+      "line": 202,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
+    },
+    {
+      "file": "features/skills/redux/skillsThunks.ts",
+      "line": 284,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/skills/redux/skillsThunks.ts",
+      "line": 335,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/skills/redux/skillsThunks.ts",
+      "line": 388,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/skills/redux/skillsThunks.ts",
+      "line": 600,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/skills/redux/skillsThunks.ts",
+      "line": 715,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/skills/redux/skillsThunks.ts",
+      "line": 757,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/skills/redux/skillsThunks.ts",
+      "line": 975,
+      "kind": "claims-deleted",
+      "snippet": "if (!skillId || !current) throw new Error(\"resource not found in state\");"
+    },
+    {
+      "file": "features/surfaces/components/bind/GlobalBindAgentGuard.tsx",
+      "line": 89,
+      "kind": "claims-deleted",
+      "snippet": "if (!counterpart) throw new Error(\"Agent not found\");"
+    },
+    {
+      "file": "features/surfaces/manifests/analysis-studio.manifest.ts",
+      "line": 266,
+      "kind": "claims-deleted",
+      "snippet": "\"Inherited from PDF Extractor's scope picker, which does not exist in Analysis Studio — always empty on this surface.\","
+    },
+    {
+      "file": "features/surfaces/manifests/canvas.manifest.ts",
+      "line": 176,
+      "kind": "claims-deleted",
+      "snippet": "\"Values re-authored against the live pane (2026-08-11) — the previous set declared diagram-node vocabulary (`selected_node_id`, `selected_nodes`, `current_text_"
+    },
+    {
+      "file": "features/surfaces/manifests/chat-voice.manifest.ts",
+      "line": 240,
+      "kind": "claims-denied",
+      "snippet": "\"The last transport/token/microphone failure as { code, message } (e.g. mic-permission-denied, connect-timeout, token-unauthorized). Absent when there is no out"
+    },
+    {
+      "file": "features/surfaces/manifests/extractor-chunker.manifest.ts",
+      "line": 215,
+      "kind": "claims-deleted",
+      "snippet": "\"Inherited from PDF Extractor's scope picker, which does not exist in a chunked run — never populated here.\","
+    },
+    {
+      "file": "features/surfaces/manifests/scanner.manifest.ts",
+      "line": 290,
+      "kind": "claims-deleted",
+      "snippet": "\"Inherited from PDF Extractor's scope picker, which does not exist in the scanner — always empty here.\","
+    },
+    {
+      "file": "features/surfaces/manifests/scraper.manifest.ts",
+      "line": 414,
+      "kind": "claims-deleted",
+      "snippet": "`Stages WHAT the workspace will scrape and in which mode. Value is a partial patch object: { mode?: ${SCRAPE_MODE_ENUM_TEXT}, url?: string, keyword?: string } —"
+    },
+    {
+      "file": "features/surfaces/manifests/settings.manifest.ts",
+      "line": 62,
+      "kind": "claims-deleted",
+      "snippet": "'Registry id of the open settings tab (dot-notation, e.g. \"ai.textGeneration\"). Empty on the /user-settings index landing (no tab selected) or when the URL name"
+    },
+    {
+      "file": "features/surfaces/services/bind-agent-to-surface.service.ts",
+      "line": 261,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Agent not found or inaccessible: ${agentId}`);"
+    },
+    {
+      "file": "features/tasks/components/TaskCopyForAiButton.tsx",
+      "line": 43,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(\"Task not found\");"
+    },
+    {
+      "file": "features/text-diff/lib/applyDiff.ts",
+      "line": 31,
+      "kind": "claims-deleted",
+      "snippet": "error: matchResult.error || 'Pattern not found'"
+    },
+    {
+      "file": "features/text-diff/lib/matchText.ts",
+      "line": 134,
+      "kind": "claims-deleted",
+      "snippet": "error: 'Search pattern not found in text'"
+    },
+    {
+      "file": "features/text-diff/lib/parseDiff.ts",
+      "line": 336,
+      "kind": "claims-deleted",
+      "snippet": "`Diff ${i + 1}: Search pattern not found in text (${diff.search.substring(0, 50)}...)`"
+    },
+    {
+      "file": "features/text-diff/service/versionService.ts",
+      "line": 184,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(\"One or both versions not found\");"
+    },
+    {
+      "file": "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx",
+      "line": 586,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx",
+      "line": 605,
+      "kind": "raw-supabase-message",
+      "snippet": "throw new Error(error.message);"
+    },
+    {
+      "file": "features/tool-call-visualization/admin/mcp-tools/ToolComponentPreview.tsx",
+      "line": 279,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "features/tool-call-visualization/renderers/knowledge-browse/KnowledgeEntityInline.tsx",
+      "line": 122,
+      "kind": "claims-deleted",
+      "snippet": "subtitleParts.push(\"not found in the knowledge graph\");"
+    },
+    {
+      "file": "features/transcript-studio/components/scribe/ScribeLiveScreen.tsx",
+      "line": 220,
+      "kind": "claims-denied",
+      "snippet": "toast.error(\"Microphone access denied\", {"
+    },
+    {
+      "file": "features/transcript-studio/redux/transcriptBridge.thunks.ts",
+      "line": 81,
+      "kind": "claims-deleted",
+      "snippet": "const error = \"Session not found.\";"
+    },
+    {
+      "file": "features/transcripts/service/transcriptsService.ts",
+      "line": 443,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(\"Original transcript not found\");"
+    },
+    {
+      "file": "features/user-lists/components/ListItemsTableView.tsx",
+      "line": 170,
+      "kind": "claims-deleted",
+      "snippet": "{/* `/lists-v2` DOES NOT EXIST — the real index is `/lists`. This Back"
+    },
+    {
+      "file": "features/voice-agent/audio/audioCapture.ts",
+      "line": 215,
+      "kind": "claims-denied",
+      "snippet": "? \"Microphone access denied — check browser permissions.\""
+    },
+    {
+      "file": "features/voice-agent/components/VoiceAgentSurface.tsx",
+      "line": 199,
+      "kind": "claims-denied",
+      "snippet": "toast.error(\"Microphone access denied\", {"
+    },
+    {
+      "file": "features/voice-agent/components/VoiceAgentSurface.tsx",
+      "line": 207,
+      "kind": "claims-denied",
+      "snippet": "} else if (code === \"token-unauthorized\" || code === \"unauthorized\") {"
+    },
+    {
+      "file": "features/voice-agent/transport/tokenManager.ts",
+      "line": 23,
+      "kind": "claims-denied",
+      "snippet": "code: \"fetch-failed\" | \"unauthorized\" | \"service-unavailable\" | \"malformed\";"
+    },
+    {
+      "file": "features/voice-agent/transport/tokenManager.ts",
+      "line": 94,
+      "kind": "claims-denied",
+      "snippet": "if (code === \"unauthorized\" || code === \"service-unavailable\") {"
+    },
+    {
+      "file": "features/voice-agent/transport/tokenManager.ts",
+      "line": 136,
+      "kind": "claims-denied",
+      "snippet": "? \"unauthorized\""
+    },
+    {
+      "file": "features/war-room/redux/thunks.ts",
+      "line": 407,
+      "kind": "claims-deleted",
+      "snippet": "toast.error(\"War Room not found\");"
+    },
+    {
+      "file": "features/war-room/service.ts",
+      "line": 144,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`[war-room] updateSession: room ${id} not found`);"
+    },
+    {
+      "file": "lib/cartesia/accessToken.ts",
+      "line": 107,
+      "kind": "claims-denied",
+      "snippet": "m.includes(\"unauthorized\") ||"
+    },
+    {
+      "file": "lib/idb/store-manager.ts",
+      "line": 76,
+      "kind": "claims-deleted",
+      "snippet": "if (!existing) throw new Error('Record not found');"
+    },
+    {
+      "file": "lib/idb/stores/audio-store.ts",
+      "line": 152,
+      "kind": "claims-deleted",
+      "snippet": "if (!recordingResult.data) return { data: null, error: new Error('Recording not found') };"
+    },
+    {
+      "file": "lib/integrity/checks.ts",
+      "line": 167,
+      "kind": "claims-deleted",
+      "snippet": "\"row that does not exist (or was hard-deleted). Breaks tree rendering.\","
+    },
+    {
+      "file": "lib/integrity/checks.ts",
+      "line": 236,
+      "kind": "claims-deleted",
+      "snippet": "\"docproc.processed_documents row that does not exist. The PDF surface \" +"
+    },
+    {
+      "file": "lib/integrity/server.ts",
+      "line": 25,
+      "kind": "raw-supabase-message",
+      "snippet": "if (error) throw new Error(error.message);"
+    },
+    {
+      "file": "lib/redux/app-builder/service/customAppService.ts",
+      "line": 363,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Custom app config with id ${id} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/service/customAppletService.ts",
+      "line": 356,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Custom applet config with id ${id} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/service/customAppletService.ts",
+      "line": 654,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Component group ${groupId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/service/customAppletService.ts",
+      "line": 662,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Applet ${appletId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/service/fieldComponentService.ts",
+      "line": 226,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Field component with id ${id} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/service/fieldContainerService.ts",
+      "line": 120,
+      "kind": "claims-deleted",
+      "snippet": "`Field component ${fieldId} not found in the field_components library`,"
+    },
+    {
+      "file": "lib/redux/app-builder/service/fieldContainerService.ts",
+      "line": 131,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Component group ${groupId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/service/fieldContainerService.ts",
+      "line": 395,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Component group with id ${id} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/appBuilderSlice.ts",
+      "line": 24,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`App with ID ${id} not found in state`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/appBuilderSlice.ts",
+      "line": 368,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`App with ID ${id} not found in state`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/appletBuilderSlice.ts",
+      "line": 25,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Applet with ID ${id} not found in state`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/appletBuilderSlice.ts",
+      "line": 322,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Container with ID ${containerId} not found in applet ${appletId}`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/appletBuilderSlice.ts",
+      "line": 375,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Applet with ID ${id} not found in state`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/containerBuilderSlice.ts",
+      "line": 27,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Container with ID ${id} not found in state`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/containerBuilderSlice.ts",
+      "line": 90,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Container with ID ${id} not found in state`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/containerBuilderSlice.ts",
+      "line": 175,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Field with ID ${fieldId} not found in container ${containerId}`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/containerBuilderSlice.ts",
+      "line": 194,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Field with ID ${fieldId} not found in container ${containerId}`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/fieldBuilderSlice.ts",
+      "line": 31,
+      "kind": "claims-deleted",
+      "snippet": "console.warn(`Field with ID ${id} not found in state`);"
+    },
+    {
+      "file": "lib/redux/app-builder/slices/fieldBuilderSlice.ts",
+      "line": 648,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Field with ID ${id} not found in state`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appBuilderThunks.ts",
+      "line": 224,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`App with ID ${appId} not found on server`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appBuilderThunks.ts",
+      "line": 252,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`App with ID ${appId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appBuilderThunks.ts",
+      "line": 295,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`App with ID ${appId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
+      "line": 81,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Applet with ID ${appletId} not found on server`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
+      "line": 84,
+      "kind": "claims-deleted",
+      "snippet": "`Applet with ID ${appletId} not found on server`,"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
+      "line": 115,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Applet with ID ${appletId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
+      "line": 142,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Applet with ID ${appletId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
+      "line": 192,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Applet with ID ${id} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
+      "line": 238,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(\"Container not found in applet after adding\");"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
+      "line": 257,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(\"Applet not found\");"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
+      "line": 283,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Applet with ID ${appletId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
+      "line": 290,
+      "kind": "claims-deleted",
+      "snippet": "`Container with ID ${containerId} not found in applet ${appletId}`,"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/appletBuilderThunks.ts",
+      "line": 303,
+      "kind": "claims-deleted",
+      "snippet": "`Container with ID ${containerId} not found after recompilation`,"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 46,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 160,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Container with ID ${id} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 270,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 278,
+      "kind": "claims-deleted",
+      "snippet": "`Field with ID ${fieldId} not found in container ${containerId}`,"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 361,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 388,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 463,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 471,
+      "kind": "claims-deleted",
+      "snippet": "`Field with ID ${fieldId} not found in container ${containerId}`,"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 507,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Container with ID ${containerId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 515,
+      "kind": "claims-deleted",
+      "snippet": "`Field with ID ${fieldId} not found in container ${containerId}`,"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/containerBuilderThunks.ts",
+      "line": 588,
+      "kind": "claims-deleted",
+      "snippet": "`Container with ID ${containerId} not found on server`,"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/fieldBuilderThunks.ts",
+      "line": 38,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Field with ID ${fieldId} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/fieldBuilderThunks.ts",
+      "line": 184,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Field with ID ${id} not found`);"
+    },
+    {
+      "file": "lib/redux/app-builder/thunks/fieldBuilderThunks.ts",
+      "line": 285,
+      "kind": "claims-deleted",
+      "snippet": "console.error(`Field with ID ${fieldId} not found on server`);"
+    },
+    {
+      "file": "lib/redux/app-runner/validations/appRunnerValidations.ts",
+      "line": 45,
+      "kind": "claims-deleted",
+      "snippet": "message: `App references applet ID ${listItem.appletId} which doesn't exist`,"
+    },
+    {
+      "file": "lib/redux/slices/agent-settings/agentSettingsSlice.ts",
+      "line": 231,
+      "kind": "claims-deleted",
+      "snippet": "throw new Error(`Agent ${agentId} not found (source: ${source})`);"
+    },
+    {
+      "file": "lib/redux/slices/agent-settings/agentSettingsSlice.ts",
+      "line": 314,
+      "kind": "claims-deleted",
+      "snippet": "return rejectWithValue(`Model ${newModelId} not found in registry`);"
+    },
+    {
+      "file": "lib/redux/slices/agent-settings/agentSettingsSlice.ts",
+      "line": 319,
+      "kind": "claims-deleted",
+      "snippet": "return rejectWithValue(`Agent ${agentId} not found in agentSettings`);"
+    },
+    {
+      "file": "lib/redux/slices/agent-settings/agentSettingsSlice.ts",
+      "line": 388,
+      "kind": "claims-deleted",
+      "snippet": "return rejectWithValue(`Agent ${agentId} not found`);"
+    },
+    {
+      "file": "lib/redux/slices/textDiffSlice.ts",
+      "line": 108,
+      "kind": "claims-deleted",
+      "snippet": "state.error = `Diff ${diffId} not found in pending`;"
+    },
+    {
+      "file": "lib/redux/slices/textDiffSlice.ts",
+      "line": 146,
+      "kind": "claims-deleted",
+      "snippet": "state.error = `Diff ${diffId} not found in pending`;"
+    },
+    {
+      "file": "lib/sandbox/orchestrator-routing.ts",
+      "line": 148,
+      "kind": "claims-deleted",
+      "snippet": "return { ok: false, status: 404, error: \"Sandbox instance not found\" };"
+    },
+    {
+      "file": "lib/services/agent-feedback.service.ts",
+      "line": 103,
+      "kind": "claims-deleted",
+      "snippet": "`the agent service account ${AGENT_SERVICE_ACCOUNT_EMAIL} was not found`,"
+    },
+    {
+      "file": "lib/services/agent-feedback.service.ts",
+      "line": 218,
+      "kind": "claims-deleted",
+      "snippet": "return { success: false, error: \"Feedback item not found\" };"
+    },
+    {
+      "file": "lib/services/guest-oauth-transfer.ts",
+      "line": 137,
+      "kind": "claims-deleted",
+      "snippet": "\"[guest-oauth-transfer] LOUD: mapped auth_user_id not found — stale guest row:\","
+    },
+    {
+      "file": "lib/services/guest-promotion.ts",
+      "line": 122,
+      "kind": "claims-deleted",
+      "snippet": "\"[guest-promotion] LOUD: mapped auth_user_id not found — stale guest row:\","
+    },
+    {
+      "file": "lib/services/system-dm.ts",
+      "line": 53,
+      "kind": "claims-deleted",
+      "snippet": "throw convError ?? new Error(\"DM conversation not found\");"
+    }
+  ]
+}
