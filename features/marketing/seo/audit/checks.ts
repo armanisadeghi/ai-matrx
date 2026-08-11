@@ -42,6 +42,24 @@ export const CONTENT_OK_WORDS = 300;
 export const CONTENT_WARN_WORDS = 200;
 export const CONTENT_FAIL_WORDS = 100;
 
+// `url_design_quality` — the deduction formula from its live catalogue row.
+export const URL_DESIGN_MAX_LENGTH = 115;
+export const URL_DESIGN_MAX_PARAMS = 2;
+export const URL_DESIGN_LONG_PENALTY = 15;
+export const URL_DESIGN_MANY_PARAMS_PENALTY = 15;
+export const URL_DESIGN_UPPERCASE_PENALTY = 10;
+export const URL_DESIGN_UNDERSCORE_PENALTY = 10;
+export const URL_DESIGN_NON_ASCII_PENALTY = 10;
+export const URL_DESIGN_SESSION_PARAM_PENALTY = 25;
+export const URL_DESIGN_SESSION_PARAM_NAMES: ReadonlySet<string> = new Set([
+  "aspsessionid",
+  "jsessionid",
+  "phpsessid",
+  "session",
+  "sessionid",
+  "sid",
+]);
+
 /** Missing image alt escalates from warn to fail at either bound. */
 export const IMAGE_ALT_FAIL_RATIO = 0.5;
 export const IMAGE_ALT_FAIL_COUNT = 10;
@@ -888,6 +906,86 @@ function chainUrls(ev: PageEvidence): string[] {
   return (ev.redirectChain ?? [])
     .filter((hop): hop is RedirectHop => Boolean(hop && hop.url))
     .map((hop) => String(hop.url));
+}
+
+// --- URL design ------------------------------------------------------------
+
+export function checkUrlDesignQuality(ev: PageEvidence): CheckOutcome {
+  const parts = urlSplit(ev.url);
+  const params = Array.from(new URLSearchParams(parts.query).entries());
+  const designedPart = parts.query ? `${parts.path}?${parts.query}` : parts.path;
+  const normalizedParamNames = new Set(
+    params.map(([name]) => name.toLowerCase().replace(/[^a-z0-9]/g, "")),
+  );
+  const problems: string[] = [];
+  let penalty = 0;
+  const urlLength = Array.from(ev.url).length;
+  const hasUppercase = Array.from(designedPart).some(
+    (character) =>
+      character.toUpperCase() === character &&
+      character.toLowerCase() !== character,
+  );
+  const hasUnderscores = designedPart.includes("_");
+  const hasNonAscii = Array.from(ev.url).some(
+    (character) => (character.codePointAt(0) ?? 0) > 127,
+  );
+  const sessionParams = Array.from(normalizedParamNames)
+    .filter((name) => URL_DESIGN_SESSION_PARAM_NAMES.has(name))
+    .sort();
+
+  if (urlLength > URL_DESIGN_MAX_LENGTH) {
+    penalty += URL_DESIGN_LONG_PENALTY;
+    problems.push(`longer than ${URL_DESIGN_MAX_LENGTH} characters`);
+  }
+  if (params.length > URL_DESIGN_MAX_PARAMS) {
+    penalty += URL_DESIGN_MANY_PARAMS_PENALTY;
+    problems.push(`has ${params.length} query parameters`);
+  }
+  if (hasUppercase) {
+    penalty += URL_DESIGN_UPPERCASE_PENALTY;
+    problems.push("contains uppercase letters");
+  }
+  if (hasUnderscores) {
+    penalty += URL_DESIGN_UNDERSCORE_PENALTY;
+    problems.push("contains underscores");
+  }
+  if (hasNonAscii) {
+    penalty += URL_DESIGN_NON_ASCII_PENALTY;
+    problems.push("contains non-ASCII characters");
+  }
+  if (sessionParams.length > 0) {
+    penalty += URL_DESIGN_SESSION_PARAM_PENALTY;
+    problems.push(
+      `contains a session identifier (${sessionParams.join(", ")})`,
+    );
+  }
+
+  const score = Math.max(1, 100 - penalty);
+  const evidence: Record<string, unknown> = {
+    url_length: urlLength,
+    parameter_count: params.length,
+    has_uppercase: hasUppercase,
+    has_underscores: hasUnderscores,
+    has_non_ascii: hasNonAscii,
+    session_params: sessionParams,
+  };
+  if (problems.length === 0) {
+    return outcome(
+      "pass",
+      100,
+      "This URL is short, readable, and free of tracking-state clutter.",
+      0,
+      evidence,
+    );
+  }
+  return outcome(
+    "warn",
+    score,
+    `This URL ${problems.join("; ")} — simpler, stable URLs are easier for people ` +
+      "and search engines to understand.",
+    problems.length,
+    evidence,
+  );
 }
 
 // --- Title -----------------------------------------------------------------
@@ -3630,6 +3728,7 @@ export const PAGE_CHECKS: Record<
   string,
   (ev: PageEvidence) => CheckOutcome
 > = {
+  url_design_quality: checkUrlDesignQuality,
   title_presence: checkTitlePresence,
   title_length: checkTitleLength,
   meta_description_presence: checkMetaDescriptionPresence,

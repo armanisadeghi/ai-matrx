@@ -3,6 +3,7 @@
   "source": "packages/matrx-scraper/matrx_scraper/seo_audit.py::run_page_checks",
   "generator": "packages/matrx-scraper/scripts/generate_page_checks_parity_fixture.py",
   "check_names": [
+    "url_design_quality",
     "title_presence",
     "title_length",
     "meta_description_presence",
@@ -323,6 +324,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -696,6 +712,1350 @@
       }
     },
     {
+      "name": "url_design_multiple_deductions",
+      "why": "Every catalogue deduction accumulates exactly once, including a normalized session-identifier parameter name.",
+      "evidence": {
+        "url": "https://example.com/Über_Long_Path/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?a=1&b=2&c=3&PHPSESSID=abc",
+        "title": "SEO Basics: A Practical Guide for Teams",
+        "title_metrics": {
+          "pixel_width": 370,
+          "character_count": 39,
+          "desktop_ok": true,
+          "mobile_ok": true,
+          "seo_length_ok": true,
+          "too_short": false,
+          "issues": [],
+          "title_ok": true
+        },
+        "description": "A practical, example-led introduction to technical SEO for product teams who ship changes every week and need the basics right.",
+        "description_metrics": {
+          "pixel_width": 750,
+          "character_count": 127,
+          "desktop_ok": true,
+          "mobile_ok": true,
+          "seo_length_ok": true,
+          "too_short": false,
+          "issues": [],
+          "description_ok": true
+        },
+        "meta_robots": "index, follow",
+        "canonical_url": "https://example.com/guides/seo-basics",
+        "canonical_matches": true,
+        "noindex": false,
+        "nofollow": false,
+        "h1_count": 1,
+        "headings": [
+          {
+            "level": 1,
+            "text": "SEO Basics"
+          },
+          {
+            "level": 2,
+            "text": "Why it matters"
+          },
+          {
+            "level": 3,
+            "text": "Titles and descriptions"
+          },
+          {
+            "level": 2,
+            "text": "Where to start"
+          }
+        ],
+        "word_count": 1200,
+        "text_bytes": 18000,
+        "schema_types": [
+          "Article"
+        ],
+        "image_count": 8,
+        "images_missing_alt": 0,
+        "image_items": [
+          {
+            "src": "https://cdn.example.com/photo-0.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-0-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 0",
+            "width": 600,
+            "height": 400,
+            "loading": null,
+            "featured": true
+          },
+          {
+            "src": "https://cdn.example.com/photo-1.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-1-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 1",
+            "width": 600,
+            "height": 400,
+            "loading": null,
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-2.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-2-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 2",
+            "width": 600,
+            "height": 400,
+            "loading": null,
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-3.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-3-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 3",
+            "width": 600,
+            "height": 400,
+            "loading": "lazy",
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-4.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-4-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 4",
+            "width": 600,
+            "height": 400,
+            "loading": "lazy",
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-5.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-5-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 5",
+            "width": 600,
+            "height": 400,
+            "loading": "lazy",
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-6.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-6-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 6",
+            "width": 600,
+            "height": 400,
+            "loading": "lazy",
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-7.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-7-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 7",
+            "width": 600,
+            "height": 400,
+            "loading": "lazy",
+            "featured": false
+          }
+        ],
+        "http_status": 200,
+        "redirect_chain": [],
+        "mixed_content": [],
+        "response_headers": {
+          "strict-transport-security": "max-age=63072000"
+        },
+        "http_variant_probe": {
+          "status": 301,
+          "location": "https://example.com/guides/seo-basics"
+        },
+        "response_bytes": 120000,
+        "response_time_ms": 320,
+        "ttfb_ms": 180,
+        "pagination": {},
+        "hreflang": [
+          {
+            "lang": "en",
+            "href": "https://example.com/guides/seo-basics"
+          },
+          {
+            "lang": "es",
+            "href": "https://example.com/es/guias/seo-basico"
+          },
+          {
+            "lang": "x-default",
+            "href": "https://example.com/guides/seo-basics"
+          }
+        ],
+        "structured_data": {
+          "parse_errors": [],
+          "json_ld_raw": [
+            "{\"@type\":\"Article\"}"
+          ],
+          "blocks": [
+            {
+              "source": "json-ld",
+              "types": [
+                "Article"
+              ],
+              "data": {
+                "@type": "Article",
+                "headline": "SEO Basics",
+                "image": "https://cdn.example.com/share.png",
+                "author": {
+                  "@type": "Person",
+                  "name": "A. Writer"
+                },
+                "datePublished": "2026-01-05",
+                "dateModified": "2026-02-02",
+                "publisher": {
+                  "@type": "Organization",
+                  "name": "Example"
+                }
+              }
+            }
+          ]
+        },
+        "head_captured": true,
+        "lang": "en",
+        "og": {
+          "og:title": "SEO Basics",
+          "og:description": "A practical introduction to technical SEO.",
+          "og:image": "https://cdn.example.com/share.png",
+          "og:url": "https://example.com/guides/seo-basics",
+          "og:type": "article"
+        },
+        "twitter": {
+          "twitter:card": "summary_large_image"
+        },
+        "head_meta": {
+          "viewport": "width=device-width, initial-scale=1",
+          "refresh": null
+        },
+        "lab_performance": {
+          "strategy": "mobile",
+          "observed_at": null,
+          "lcp_ms": 1800.0,
+          "tbt_ms": 120.0,
+          "cls": 0.03,
+          "delivery_savings_ms": 120.0,
+          "delivery_audits": {
+            "unused-javascript": 90.0,
+            "unminified-css": 30.0
+          },
+          "cache_static_bytes": 500000.0,
+          "cache_short_ttl_resources": []
+        }
+      },
+      "expected": {
+        "url_design_quality": {
+          "status": "warn",
+          "score": 15,
+          "reasoning": "This URL longer than 115 characters; has 4 query parameters; contains uppercase letters; contains underscores; contains non-ASCII characters; contains a session identifier (phpsessid) — simpler, stable URLs are easier for people and search engines to understand.",
+          "issue_count": 6,
+          "evidence": {
+            "url_length": 151,
+            "parameter_count": 4,
+            "has_uppercase": true,
+            "has_underscores": true,
+            "has_non_ascii": true,
+            "session_params": [
+              "phpsessid"
+            ]
+          },
+          "remediation": null
+        },
+        "title_presence": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Title present: \"SEO Basics: A Practical Guide for Teams\".",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "title_length": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Title length is within limits (39 chars, 370px).",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "meta_description_presence": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Meta description present.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "meta_description_length": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Meta description length is within limits (127 chars, 750px).",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "h1_presence": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Exactly one H1.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "heading_hierarchy": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Clean heading outline across 4 headings.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "thin_content": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "1200 words of visible text.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "content_depth": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "1200 words — full depth for an article.",
+          "issue_count": 0,
+          "evidence": {
+            "page_type": "article",
+            "word_count": 1200
+          },
+          "remediation": null
+        },
+        "text_html_ratio": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "15.0% of the page is readable text.",
+          "issue_count": 0,
+          "evidence": {
+            "text_bytes": 18000,
+            "html_bytes": 120000,
+            "ratio": 0.15
+          },
+          "remediation": null
+        },
+        "image_alt_presence": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "All 8 images carry alt text.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "image_dimension_attrs": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "8 of 8 images declare width and height.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "image_lazy_loading": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Lazy-loading policy is correct in both directions across 8 images.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "image_modern_format": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "8 of 8 raster images are already WebP/AVIF.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "image_oversized": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "All 8 measurable images are sized for their slot (worst case 1.3x, within retina headroom).",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "broken_images": {
+          "status": "n_a",
+          "score": null,
+          "reasoning": "None of this page's 8 images have been status-checked — the crawl fetches pages, not their images, so whether they load is unverified.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "viewport_meta": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Responsive viewport declared (\"width=device-width, initial-scale=1\").",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "html_lang_validity": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Language declared as \"en\", a valid code. (Whether the writing is actually in that language is not measured from a crawl.)",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "og_image_validity": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Share image declared as a full web address (https://cdn.example.com/share.png). Its pixel size is not measured here — that needs the image file itself.",
+          "issue_count": 0,
+          "evidence": {
+            "og_image": "https://cdn.example.com/share.png"
+          },
+          "remediation": null
+        },
+        "social_meta_completeness": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Share preview is complete: all five Open Graph tags plus a Twitter card (\"summary_large_image\"), and og:url agrees with the canonical URL.",
+          "issue_count": 0,
+          "evidence": {
+            "missing_og_tags": [],
+            "twitter_card": "summary_large_image",
+            "og_url": "https://example.com/guides/seo-basics",
+            "canonical_url": "https://example.com/guides/seo-basics"
+          },
+          "remediation": null
+        },
+        "meta_robots_conflicts": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Robots directives are clean (\"index, follow\").",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "canonical_presence": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "rel=canonical present: https://example.com/guides/seo-basics",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "canonical_conflicts": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Canonical is self-referential — no conflict.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "meta_refresh_redirect": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This page does not redirect itself through a meta refresh tag.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "broken_page_4xx": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "HTTP 200 — not a client error.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "server_error_5xx": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "HTTP 200 — not a server error.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "redirect_chain": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "No redirects — the URL serves content directly.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "redirect_loop": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "No redirect chain to loop.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "temporary_redirect_usage": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "No redirect — the URL serves content directly.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "soft_404_detection": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This page answers HTTP 200 and serves real content.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "pagination_markup": {
+          "status": "n_a",
+          "score": null,
+          "reasoning": "This page is not part of a next/previous page series, so there is nothing to check.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "mixed_content": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "No insecure http:// resources on this page.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "https_enforcement": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Served over HTTPS, and the http:// variant redirects permanently (HTTP 301).",
+          "issue_count": 0,
+          "evidence": {
+            "http_variant": {
+              "status": 301,
+              "location": "https://example.com/guides/seo-basics"
+            }
+          },
+          "remediation": null
+        },
+        "page_weight": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "HTML document is 120,000 bytes.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "ttfb_server_response": {
+          "status": "pass",
+          "score": 98,
+          "reasoning": "The server sent the first byte in 180 ms — comfortably inside the 800 ms bar for a good server response.",
+          "issue_count": 0,
+          "evidence": {
+            "ttfb_ms": 180
+          },
+          "remediation": null
+        },
+        "structured_data_validity": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Structured data parses cleanly and every rich-result type in use (Article) declares its required and recommended properties.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "hreflang_validity": {
+          "status": "fail",
+          "score": 45,
+          "reasoning": "This page's hreflang set names 3 language version(s) but never names ITSELF. A cluster without a self-reference is invalid, and search engines ignore the whole set.",
+          "issue_count": 1,
+          "evidence": {
+            "declared": [
+              "https://example.com/guides/seo-basics",
+              "https://example.com/es/guias/seo-basico",
+              "https://example.com/guides/seo-basics"
+            ]
+          },
+          "remediation": null
+        },
+        "cwv_lcp": {
+          "status": "pass",
+          "score": 93,
+          "reasoning": "The main content of this page appears in 1.8s (on a phone) — inside Google's 2.5 second target.",
+          "issue_count": 0,
+          "evidence": {
+            "lcp_ms": 1800.0,
+            "strategy": "mobile"
+          },
+          "remediation": null
+        },
+        "cwv_inp_tbt": {
+          "status": "pass",
+          "score": 94,
+          "reasoning": "While loading, this page ignores taps and clicks for only 120ms (on a phone) — comfortably responsive.",
+          "issue_count": 0,
+          "evidence": {
+            "tbt_ms": 120.0,
+            "strategy": "mobile"
+          },
+          "remediation": null
+        },
+        "cwv_cls": {
+          "status": "pass",
+          "score": 97,
+          "reasoning": "This page holds still as it loads (layout shift 0.030, on a phone) — under Google's 0.1 limit.",
+          "issue_count": 0,
+          "evidence": {
+            "cls": 0.03,
+            "strategy": "mobile"
+          },
+          "remediation": null
+        },
+        "asset_delivery": {
+          "status": "pass",
+          "score": 95,
+          "reasoning": "How this page's files are delivered costs it about 120ms (on a phone) — nothing worth chasing.",
+          "issue_count": 0,
+          "evidence": {
+            "total_savings_ms": 120.0,
+            "audits": {
+              "unused-javascript": 90.0,
+              "unminified-css": 30.0
+            },
+            "strategy": "mobile"
+          },
+          "remediation": null
+        },
+        "caching_policy": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Visitors' browsers keep this page's images, styling and code for a month or more, so returning visits reuse them instead of re-downloading them.",
+          "issue_count": 0,
+          "evidence": {
+            "static_bytes": 500000.0,
+            "well_cached_bytes": 500000.0,
+            "short_ttl_urls": [],
+            "strategy": "mobile"
+          },
+          "remediation": null
+        }
+      }
+    },
+    {
+      "name": "url_design_repeated_session_parameter",
+      "why": "A repeated session parameter is one design defect, not one penalty per repeated value.",
+      "evidence": {
+        "url": "https://example.com/page?sid=one&sid=two",
+        "title": "SEO Basics: A Practical Guide for Teams",
+        "title_metrics": {
+          "pixel_width": 370,
+          "character_count": 39,
+          "desktop_ok": true,
+          "mobile_ok": true,
+          "seo_length_ok": true,
+          "too_short": false,
+          "issues": [],
+          "title_ok": true
+        },
+        "description": "A practical, example-led introduction to technical SEO for product teams who ship changes every week and need the basics right.",
+        "description_metrics": {
+          "pixel_width": 750,
+          "character_count": 127,
+          "desktop_ok": true,
+          "mobile_ok": true,
+          "seo_length_ok": true,
+          "too_short": false,
+          "issues": [],
+          "description_ok": true
+        },
+        "meta_robots": "index, follow",
+        "canonical_url": "https://example.com/guides/seo-basics",
+        "canonical_matches": true,
+        "noindex": false,
+        "nofollow": false,
+        "h1_count": 1,
+        "headings": [
+          {
+            "level": 1,
+            "text": "SEO Basics"
+          },
+          {
+            "level": 2,
+            "text": "Why it matters"
+          },
+          {
+            "level": 3,
+            "text": "Titles and descriptions"
+          },
+          {
+            "level": 2,
+            "text": "Where to start"
+          }
+        ],
+        "word_count": 1200,
+        "text_bytes": 18000,
+        "schema_types": [
+          "Article"
+        ],
+        "image_count": 8,
+        "images_missing_alt": 0,
+        "image_items": [
+          {
+            "src": "https://cdn.example.com/photo-0.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-0-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 0",
+            "width": 600,
+            "height": 400,
+            "loading": null,
+            "featured": true
+          },
+          {
+            "src": "https://cdn.example.com/photo-1.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-1-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 1",
+            "width": 600,
+            "height": 400,
+            "loading": null,
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-2.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-2-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 2",
+            "width": 600,
+            "height": 400,
+            "loading": null,
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-3.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-3-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 3",
+            "width": 600,
+            "height": 400,
+            "loading": "lazy",
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-4.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-4-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 4",
+            "width": 600,
+            "height": 400,
+            "loading": "lazy",
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-5.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-5-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 5",
+            "width": 600,
+            "height": 400,
+            "loading": "lazy",
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-6.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-6-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 6",
+            "width": 600,
+            "height": 400,
+            "loading": "lazy",
+            "featured": false
+          },
+          {
+            "src": "https://cdn.example.com/photo-7.webp",
+            "srcset": [
+              "https://cdn.example.com/photo-7-800.webp"
+            ],
+            "srcset_widths": [
+              800
+            ],
+            "picture_formats": [],
+            "sizes": null,
+            "alt": "Photo 7",
+            "width": 600,
+            "height": 400,
+            "loading": "lazy",
+            "featured": false
+          }
+        ],
+        "http_status": 200,
+        "redirect_chain": [],
+        "mixed_content": [],
+        "response_headers": {
+          "strict-transport-security": "max-age=63072000"
+        },
+        "http_variant_probe": {
+          "status": 301,
+          "location": "https://example.com/guides/seo-basics"
+        },
+        "response_bytes": 120000,
+        "response_time_ms": 320,
+        "ttfb_ms": 180,
+        "pagination": {},
+        "hreflang": [
+          {
+            "lang": "en",
+            "href": "https://example.com/guides/seo-basics"
+          },
+          {
+            "lang": "es",
+            "href": "https://example.com/es/guias/seo-basico"
+          },
+          {
+            "lang": "x-default",
+            "href": "https://example.com/guides/seo-basics"
+          }
+        ],
+        "structured_data": {
+          "parse_errors": [],
+          "json_ld_raw": [
+            "{\"@type\":\"Article\"}"
+          ],
+          "blocks": [
+            {
+              "source": "json-ld",
+              "types": [
+                "Article"
+              ],
+              "data": {
+                "@type": "Article",
+                "headline": "SEO Basics",
+                "image": "https://cdn.example.com/share.png",
+                "author": {
+                  "@type": "Person",
+                  "name": "A. Writer"
+                },
+                "datePublished": "2026-01-05",
+                "dateModified": "2026-02-02",
+                "publisher": {
+                  "@type": "Organization",
+                  "name": "Example"
+                }
+              }
+            }
+          ]
+        },
+        "head_captured": true,
+        "lang": "en",
+        "og": {
+          "og:title": "SEO Basics",
+          "og:description": "A practical introduction to technical SEO.",
+          "og:image": "https://cdn.example.com/share.png",
+          "og:url": "https://example.com/guides/seo-basics",
+          "og:type": "article"
+        },
+        "twitter": {
+          "twitter:card": "summary_large_image"
+        },
+        "head_meta": {
+          "viewport": "width=device-width, initial-scale=1",
+          "refresh": null
+        },
+        "lab_performance": {
+          "strategy": "mobile",
+          "observed_at": null,
+          "lcp_ms": 1800.0,
+          "tbt_ms": 120.0,
+          "cls": 0.03,
+          "delivery_savings_ms": 120.0,
+          "delivery_audits": {
+            "unused-javascript": 90.0,
+            "unminified-css": 30.0
+          },
+          "cache_static_bytes": 500000.0,
+          "cache_short_ttl_resources": []
+        }
+      },
+      "expected": {
+        "url_design_quality": {
+          "status": "warn",
+          "score": 75,
+          "reasoning": "This URL contains a session identifier (sid) — simpler, stable URLs are easier for people and search engines to understand.",
+          "issue_count": 1,
+          "evidence": {
+            "url_length": 40,
+            "parameter_count": 2,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": [
+              "sid"
+            ]
+          },
+          "remediation": null
+        },
+        "title_presence": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Title present: \"SEO Basics: A Practical Guide for Teams\".",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "title_length": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Title length is within limits (39 chars, 370px).",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "meta_description_presence": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Meta description present.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "meta_description_length": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Meta description length is within limits (127 chars, 750px).",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "h1_presence": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Exactly one H1.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "heading_hierarchy": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Clean heading outline across 4 headings.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "thin_content": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "1200 words of visible text.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "content_depth": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "1200 words — full depth for an article.",
+          "issue_count": 0,
+          "evidence": {
+            "page_type": "article",
+            "word_count": 1200
+          },
+          "remediation": null
+        },
+        "text_html_ratio": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "15.0% of the page is readable text.",
+          "issue_count": 0,
+          "evidence": {
+            "text_bytes": 18000,
+            "html_bytes": 120000,
+            "ratio": 0.15
+          },
+          "remediation": null
+        },
+        "image_alt_presence": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "All 8 images carry alt text.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "image_dimension_attrs": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "8 of 8 images declare width and height.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "image_lazy_loading": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Lazy-loading policy is correct in both directions across 8 images.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "image_modern_format": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "8 of 8 raster images are already WebP/AVIF.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "image_oversized": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "All 8 measurable images are sized for their slot (worst case 1.3x, within retina headroom).",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "broken_images": {
+          "status": "n_a",
+          "score": null,
+          "reasoning": "None of this page's 8 images have been status-checked — the crawl fetches pages, not their images, so whether they load is unverified.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "viewport_meta": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Responsive viewport declared (\"width=device-width, initial-scale=1\").",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "html_lang_validity": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Language declared as \"en\", a valid code. (Whether the writing is actually in that language is not measured from a crawl.)",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "og_image_validity": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Share image declared as a full web address (https://cdn.example.com/share.png). Its pixel size is not measured here — that needs the image file itself.",
+          "issue_count": 0,
+          "evidence": {
+            "og_image": "https://cdn.example.com/share.png"
+          },
+          "remediation": null
+        },
+        "social_meta_completeness": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Share preview is complete: all five Open Graph tags plus a Twitter card (\"summary_large_image\"), and og:url agrees with the canonical URL.",
+          "issue_count": 0,
+          "evidence": {
+            "missing_og_tags": [],
+            "twitter_card": "summary_large_image",
+            "og_url": "https://example.com/guides/seo-basics",
+            "canonical_url": "https://example.com/guides/seo-basics"
+          },
+          "remediation": null
+        },
+        "meta_robots_conflicts": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Robots directives are clean (\"index, follow\").",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "canonical_presence": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "rel=canonical present: https://example.com/guides/seo-basics",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "canonical_conflicts": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Canonical is self-referential — no conflict.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "meta_refresh_redirect": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This page does not redirect itself through a meta refresh tag.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "broken_page_4xx": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "HTTP 200 — not a client error.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "server_error_5xx": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "HTTP 200 — not a server error.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "redirect_chain": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "No redirects — the URL serves content directly.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "redirect_loop": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "No redirect chain to loop.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "temporary_redirect_usage": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "No redirect — the URL serves content directly.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "soft_404_detection": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This page answers HTTP 200 and serves real content.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "pagination_markup": {
+          "status": "n_a",
+          "score": null,
+          "reasoning": "This page is not part of a next/previous page series, so there is nothing to check.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "mixed_content": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "No insecure http:// resources on this page.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "https_enforcement": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Served over HTTPS, and the http:// variant redirects permanently (HTTP 301).",
+          "issue_count": 0,
+          "evidence": {
+            "http_variant": {
+              "status": 301,
+              "location": "https://example.com/guides/seo-basics"
+            }
+          },
+          "remediation": null
+        },
+        "page_weight": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "HTML document is 120,000 bytes.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "ttfb_server_response": {
+          "status": "pass",
+          "score": 98,
+          "reasoning": "The server sent the first byte in 180 ms — comfortably inside the 800 ms bar for a good server response.",
+          "issue_count": 0,
+          "evidence": {
+            "ttfb_ms": 180
+          },
+          "remediation": null
+        },
+        "structured_data_validity": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Structured data parses cleanly and every rich-result type in use (Article) declares its required and recommended properties.",
+          "issue_count": 0,
+          "evidence": null,
+          "remediation": null
+        },
+        "hreflang_validity": {
+          "status": "fail",
+          "score": 45,
+          "reasoning": "This page's hreflang set names 3 language version(s) but never names ITSELF. A cluster without a self-reference is invalid, and search engines ignore the whole set.",
+          "issue_count": 1,
+          "evidence": {
+            "declared": [
+              "https://example.com/guides/seo-basics",
+              "https://example.com/es/guias/seo-basico",
+              "https://example.com/guides/seo-basics"
+            ]
+          },
+          "remediation": null
+        },
+        "cwv_lcp": {
+          "status": "pass",
+          "score": 93,
+          "reasoning": "The main content of this page appears in 1.8s (on a phone) — inside Google's 2.5 second target.",
+          "issue_count": 0,
+          "evidence": {
+            "lcp_ms": 1800.0,
+            "strategy": "mobile"
+          },
+          "remediation": null
+        },
+        "cwv_inp_tbt": {
+          "status": "pass",
+          "score": 94,
+          "reasoning": "While loading, this page ignores taps and clicks for only 120ms (on a phone) — comfortably responsive.",
+          "issue_count": 0,
+          "evidence": {
+            "tbt_ms": 120.0,
+            "strategy": "mobile"
+          },
+          "remediation": null
+        },
+        "cwv_cls": {
+          "status": "pass",
+          "score": 97,
+          "reasoning": "This page holds still as it loads (layout shift 0.030, on a phone) — under Google's 0.1 limit.",
+          "issue_count": 0,
+          "evidence": {
+            "cls": 0.03,
+            "strategy": "mobile"
+          },
+          "remediation": null
+        },
+        "asset_delivery": {
+          "status": "pass",
+          "score": 95,
+          "reasoning": "How this page's files are delivered costs it about 120ms (on a phone) — nothing worth chasing.",
+          "issue_count": 0,
+          "evidence": {
+            "total_savings_ms": 120.0,
+            "audits": {
+              "unused-javascript": 90.0,
+              "unminified-css": 30.0
+            },
+            "strategy": "mobile"
+          },
+          "remediation": null
+        },
+        "caching_policy": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "Visitors' browsers keep this page's images, styling and code for a month or more, so returning visits reuse them instead of re-downloading them.",
+          "issue_count": 0,
+          "evidence": {
+            "static_bytes": 500000.0,
+            "well_cached_bytes": 500000.0,
+            "short_ttl_urls": [],
+            "strategy": "mobile"
+          },
+          "remediation": null
+        }
+      }
+    },
+    {
       "name": "missing_title",
       "why": "title_presence fails; title_length must go n_a, never pass.",
       "evidence": {
@@ -963,6 +2323,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "fail",
           "score": 5,
@@ -1615,6 +2990,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -2255,6 +3645,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -2900,6 +4305,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -3551,6 +4971,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -4200,6 +5635,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -4849,6 +6299,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -5498,6 +6963,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -6147,6 +7627,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -6796,6 +8291,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -7449,6 +8959,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -8098,6 +9623,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -8747,6 +10287,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -9396,6 +10951,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -10045,6 +11615,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -10694,6 +12279,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -11345,6 +12945,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -11994,6 +13609,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -12645,6 +14275,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -13294,6 +14939,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -13943,6 +15603,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -14597,6 +16272,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -15251,6 +16941,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -15907,6 +17612,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -16558,6 +18278,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -17209,6 +18944,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -17865,6 +19615,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -18545,6 +20310,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -19211,6 +20991,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -19873,6 +21668,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -20537,6 +22347,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -21193,6 +23018,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -21854,6 +23694,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -22511,6 +24366,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -23162,6 +25032,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -23811,6 +25696,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -24460,6 +26360,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -25112,6 +27027,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -25766,6 +27696,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -26408,6 +28353,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -27040,6 +29000,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -27689,6 +29664,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -28338,6 +30328,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -28987,6 +30992,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -29640,6 +31660,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -30293,6 +32328,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -30942,6 +32992,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -31591,6 +33656,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -32248,6 +34328,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -32901,6 +34996,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -33528,6 +35638,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -34153,6 +36278,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -34802,6 +36942,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -35455,6 +37610,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -36116,6 +38286,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -36771,6 +38956,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -37420,6 +39620,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -38071,6 +40286,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -38722,6 +40952,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -39371,6 +41616,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -40021,6 +42281,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -40670,6 +42945,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -41319,6 +43609,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -41963,6 +44268,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -42614,6 +44934,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -43263,6 +45598,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -43915,6 +46265,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -44567,6 +46932,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -45231,6 +47611,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -45905,6 +48300,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -46561,6 +48971,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -47215,6 +49640,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -47868,6 +50308,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -48521,6 +50976,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -49174,6 +51644,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -49823,6 +52308,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -50469,6 +52969,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -51115,6 +53630,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 36,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -51746,6 +54276,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -52390,6 +54935,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -53035,6 +55595,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -53704,6 +56279,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -54339,6 +56929,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -54984,6 +57589,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -55636,6 +58256,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -56286,6 +58921,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -56936,6 +59586,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -57594,6 +60259,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -58253,6 +60933,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -58900,6 +61595,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -59552,6 +62262,21 @@
         }
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -60184,6 +62909,21 @@
         "lab_performance": null
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "pass",
           "score": 100,
@@ -60601,6 +63341,21 @@
         "lab_performance": null
       },
       "expected": {
+        "url_design_quality": {
+          "status": "pass",
+          "score": 100,
+          "reasoning": "This URL is short, readable, and free of tracking-state clutter.",
+          "issue_count": 0,
+          "evidence": {
+            "url_length": 37,
+            "parameter_count": 0,
+            "has_uppercase": false,
+            "has_underscores": false,
+            "has_non_ascii": false,
+            "session_params": []
+          },
+          "remediation": null
+        },
         "title_presence": {
           "status": "fail",
           "score": 5,
