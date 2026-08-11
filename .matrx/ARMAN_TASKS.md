@@ -9,6 +9,41 @@ _Last updated: 2026-07-22_
 
 ## Active (ranked — quickest wins first)
 
+### 0-NEW. Decide the policy: agents sharing ONE working tree silently destroy each other's work (a decision + maybe one setting)
+
+**Two agents hit this in one afternoon, from opposite directions, 2026-08-11.** Nothing
+warned either of us, and nothing failed loudly.
+
+- **matrx-frontend:** four separate uncommitted edits of mine were discarded by other
+  sessions' `checkout`/`reset`/`stash` operations — twice in a row. One of them was worse
+  than lost work: `mtx_media_durability_health()` briefly existed **live in the database
+  with no migration file recording it**, because the file holding it was reverted after
+  the function was applied. That is the exact drift state the migration ledger exists to
+  prevent.
+- **aidream:** the podcast session ran `git stash` in the shared tree while another agent
+  had uncommitted work there, sweeping four of that agent's files into its stash. Popped
+  and recovered intact, and disclosed — but only because they noticed.
+
+**Why it can't be fixed by being careful.** `git stash`, `git checkout --`, `git reset`,
+and `git pull --rebase` are all routine, all destructive to *someone else's* uncommitted
+work, and none of them can tell whose work they're touching. "Commit immediately" helps
+and is what we now do, but it cannot cover the seconds between writing a file and
+committing it — which is exactly where all six losses happened.
+
+**The fix that worked** (adopted by both sessions, unprompted): do the work in a throwaway
+`git worktree` at `origin/main`, commit and push from there, then remove it. The shared
+working tree is never touched, and another agent's in-flight merge can't block your push.
+It costs one command and it made the problem go away completely.
+
+**The decision for you:** should this be the standing rule for agents in these repos —
+i.e. worth writing into the root `CLAUDE.md` (and/or enforced by a hook the way the
+one-dev-server rule is)? An agent can adopt it for itself, but only you can make it the
+norm, and the failure is invisible until someone notices missing work.
+
+Filed jointly by the two sessions that hit it. Concrete instance: matrx-frontend D158
+work; aidream podcast media-durability work.
+
+
 ### 0a. Run the agent-machine setup on your OTHER Macs (~5 min each, mostly one command)
 Done on the 16GB Mac 2026-08-09; **every other machine and account still needs it**, or agents there will crash the box with a second dev server and be unable to drive the desktop app.
 

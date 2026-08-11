@@ -149,6 +149,23 @@ same run so no live row is touched) across six cases — array with one signed e
 among durable ones, all-durable array, empty array, SQL NULL, scalar signed, scalar
 durable: all pass.
 
+### The guard's health check is ONE authority, callable from any repo
+
+`public.mtx_media_durability_health()` lives in the **database**, not in this repo. That
+is deliberate: the thing it guards — `mtx_public_url_guard_trigger()` — is shared by
+matrx-frontend and aidream, so a second implementation on the server side would be two
+authorities that can disagree about whether the guard is intact.
+
+**aidream (or any repo) should CALL it, not reimplement it.** One authority, many callers.
+`select * from public.mtx_media_durability_health()` returns `(check_name, ok, detail)`;
+fail the caller's release gate on any `ok = false`.
+
+Calling it from aidream's own release path is worth doing and is **not** duplication —
+it's coverage. This repo's gate only runs when someone runs *this* repo's gates, so an
+aidream-only deploy could otherwise regress the shared trigger with nothing asserting it.
+The failure mode being covered is precisely a silent one: the array branch was already
+lost in production once (above) and no error was raised.
+
 ### The healer is NOT pg_cron anymore (2026-08-11)
 
 The original migration's comment promised "a pg_cron + pg_net + backend publish endpoint
