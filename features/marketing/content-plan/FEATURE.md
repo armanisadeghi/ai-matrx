@@ -463,6 +463,25 @@ Three rules learned the hard way, all live-verified on datadestruction.com:
   through the ORM's cached row, so a policy change is not seen until the cache
   expires — tracked separately.)
 
+Three ways this told lies, all found by an adversarial pass and now
+regression-tested — read them before touching the verdict:
+
+- **Unknown content is not empty.** Only the FULL CMS row carries a body; the
+  plan-wide summary does not. Treating "not fetched yet" as empty reported a
+  live 900-word page as blank and offered to author over it.
+- **Drift is measured from the LATER of the page's write and its publish, with a
+  grace window.** Publishing writes the page and THEN advances the plan node's
+  status, so a naive `node.updated_at > page.updated_at` marks every page you
+  just published as "behind plan".
+- **`stale` offers the CMS door, not a rewrite.** aidream's `_fillable` excludes
+  published pages, so "Rewrite from the brief" on a live page could only ever
+  fail. When the server can re-author a published page into its draft, flip that
+  action back.
+
+**A live page is never published by accident.** `publish_page` refuses `empty`
+and `retired` — without that guard an agent chaining `build_page` →
+`publish_page` puts a blank page on the public web.
+
 No new server capability was added: `cms-align` always took a node-id array,
 `cms-fill/preview` always took one `node_id` + `write: true`, and `cms-publish`
 always took `page_ids`. The defect was a surface ignoring what it had.
