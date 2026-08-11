@@ -34,7 +34,6 @@ import {
   parseBacklinkAssessment,
 } from "@/features/marketing/components/backlinks/lib/enrichment";
 import { useBacklinkAnalysis } from "@/features/marketing/components/backlinks/useBacklinkAnalysis";
-import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
 
 function ratioLabel(part: number, whole: number): string {
   if (whole === 0) return "—";
@@ -60,9 +59,7 @@ function maxDate(values: Array<string | null>): string | null {
 export function PageBacklinksCard({ page }: { page: MarketingPage }) {
   const { site, sitePath } = useMarketingSite();
   const backlinks = usePageBacklinks(site.id, page.id);
-  const [selectedRow, setSelectedRow] = useState<BacklinkObservationRow | null>(
-    null,
-  );
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [showAllRecords, setShowAllRecords] = useState(false);
   const {
     analysisDisabled,
@@ -78,6 +75,9 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
 
   const snapshot = backlinks.data?.snapshot ?? null;
   const observations = backlinks.data?.observations ?? [];
+  const selectedRow = selectedRowId
+    ? (observations.find((row) => row.id === selectedRowId) ?? null)
+    : null;
   const domains = rollupReferringDomains(observations);
   const liveCount = observations.filter((row) => row.state !== "lost").length;
   const dofollowKnown = observations.filter(
@@ -223,7 +223,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                     <div className="flex items-start gap-2">
                       <button
                         type="button"
-                        onClick={() => setSelectedRow(row)}
+                        onClick={() => setSelectedRowId(row.id)}
                         className="min-w-0 flex-1 rounded p-1 text-left hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
                         <span className="flex flex-wrap items-center gap-1.5">
@@ -287,7 +287,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                           disabled={action.disabled}
                           title={action.title}
                           onClick={() => {
-                            setSelectedRow(row);
+                            setSelectedRowId(row.id);
                             void analyzeBacklink(row);
                           }}
                         >
@@ -377,7 +377,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
           title={`Backlink from ${selectedRow.source_domain ?? "external page"}`}
           width={820}
           height={720}
-          onClose={() => setSelectedRow(null)}
+          onClose={() => setSelectedRowId(null)}
           viewContent={
             <BacklinkEnrichmentDetail
               row={selectedRow}
