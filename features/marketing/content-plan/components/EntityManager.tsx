@@ -168,12 +168,11 @@ export function EntityManager({
 
   const rows = entities.data ?? [];
 
-  // The draft the write handlers read. Mirrored in a ref (and written
-  // through it) so a `save_entity_draft` arriving in the same agent turn as
+  // The draft the write handlers read. Written through a ref so a
+  // `save_entity_draft` arriving in the same agent turn as
   // an `entity_draft` stage saves what was just staged, not the render-old
   // value — the agent's two tool calls are not separated by a React commit.
   const draftRef = useRef(draft);
-  draftRef.current = draft;
 
   const setDraftState = (next: EntityDraft | null) => {
     draftRef.current = next;
