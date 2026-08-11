@@ -8,6 +8,7 @@ import {
   BrainCircuit,
   ExternalLink,
   Loader2,
+  Newspaper,
   Save,
 } from "lucide-react";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
@@ -194,23 +195,30 @@ export function BacklinkEnrichmentDetail({
               </span>
             </div>
           </div>
-          {onAnalyze ? (
-            <Button
-              type="button"
-              size="sm"
-              className="shrink-0"
-              disabled={analysisAction.disabled}
-              title={analysisAction.title}
-              onClick={onAnalyze}
-            >
-              {running || analysisAction.inProgress ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <BrainCircuit className="h-3.5 w-3.5" />
-              )}
-              {analysisAction.label}
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Button asChild type="button" size="sm" variant="outline">
+              <Link href={`${sitePath}/reputation`}>
+                <Newspaper className="h-3.5 w-3.5" />
+                Reputation
+              </Link>
             </Button>
-          ) : null}
+            {onAnalyze ? (
+              <Button
+                type="button"
+                size="sm"
+                disabled={analysisAction.disabled}
+                title={analysisAction.title}
+                onClick={onAnalyze}
+              >
+                {running || analysisAction.inProgress ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <BrainCircuit className="h-3.5 w-3.5" />
+                )}
+                {analysisAction.label}
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         {analysisRun ? (

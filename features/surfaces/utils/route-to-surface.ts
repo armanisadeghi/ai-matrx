@@ -244,6 +244,7 @@ const MARKETING_SITE_VERTICAL_SURFACES: Readonly<Record<string, string>> = {
   findings: "matrx-user/marketing-findings",
   links: "matrx-user/marketing-links",
   backlinks: "matrx-user/marketing-backlinks",
+  reputation: "matrx-user/marketing-reputation",
   ranks: "matrx-user/marketing-ranks",
   coverage: "matrx-user/marketing-coverage",
   sitemaps: "matrx-user/marketing-sitemaps",

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, Globe2, Loader2, Save } from "lucide-react";
+import Link from "next/link";
+import { ExternalLink, Globe2, Loader2, Newspaper, Save } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -17,6 +18,7 @@ import type { ReferringDomainProfileRow } from "@/features/marketing/data/backli
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
+import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 
 const VERDICTS = [
   "valuable",
@@ -43,6 +45,7 @@ function DomainDetail({
   row: ReferringDomainProfileRow;
   onSaved: () => void;
 }) {
+  const { sitePath } = useMarketingSite();
   const existing = jsonRecord(row.human_ruling);
   const [verdict, setVerdict] = useState(
     typeof existing.verdict === "string"
@@ -73,14 +76,22 @@ function DomainDetail({
   };
   return (
     <div className="h-full overflow-y-auto p-3">
-      <a
-        href={`https://${row.normalized_domain}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-      >
-        Open site <ExternalLink className="h-3.5 w-3.5" />
-      </a>
+      <div className="flex flex-wrap items-center gap-3">
+        <a
+          href={`https://${row.normalized_domain}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
+          Open site <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+        <Link
+          href={`${sitePath}/reputation?tab=publications`}
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
+          Review PR opportunities <Newspaper className="h-3.5 w-3.5" />
+        </Link>
+      </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
         <div className="rounded border border-border p-2">
           Our score

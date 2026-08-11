@@ -12,12 +12,14 @@
  */
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BrainCircuit,
   ExternalLink,
   Loader2,
+  Newspaper,
   RefreshCw,
   Save,
   Settings2,
@@ -763,6 +765,12 @@ export function BacklinksWorkspace() {
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <AuthorityRouterDoor sitePath={sitePath} compact />
+            <Button asChild size="sm" variant="outline" className="gap-1.5">
+              <Link href={`${sitePath}/reputation`}>
+                <Newspaper className="h-3.5 w-3.5" />
+                Reputation
+              </Link>
+            </Button>
             <CopyButtons
               size="icon"
               label={`Backlinks page (${site.domain})`}
