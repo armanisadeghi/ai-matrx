@@ -104,6 +104,51 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-11 — **The Run page is agent-writable, and its reads now tell the
+  truth.** `matrx-user/podcast-run` declares three ask-policy `entity` write
+  targets, all on the FINISHED episode: `episode_title` and
+  `episode_description` through `useStudioRun.applyEpisodeMetadata` → the
+  canonical `podcastService.updateEpisode` (handlers in
+  `studio/components/PodcastRunWriteTargets.tsx`), and `episode_chapters`
+  through `podcastService.saveEpisodeChapters`, registered by
+  `EpisodeChaptersPanel` itself because that panel owns the episode row and
+  the chapter list. No raw supabase in the write path. Nothing that SPENDS
+  money is writable: generating, resuming, re-running from source,
+  regenerating an image or video slot, and adding an asset all stay behind
+  the human press, matching `podcast-studio` (an agent fills the composer;
+  the human hits Generate). The audio, the composed video, every media slot,
+  the script, and the whole progress + diagnostics half stay read-only
+  because they are the record of what the pipeline ACTUALLY did — writing a
+  stage status or a run error would forge that record. Publishing and the
+  slug stay human. `episode_title` is NOT a second title path: the page had
+  already run the `podcast.title_optimizer` slot and let the user click "Use"
+  on a ranked option, and the target lands through that same
+  `updateEpisode` call — the difference is only who chooses.
+  `episode_chapters` replaces the whole ordered list, so a matching
+  `episode_chapters` READ value was added as its twin, specifically so an
+  agent can reuse the existing `start_hint` timestamps: they are aligned to
+  the rendered audio and cannot be re-derived. Re-segmenting from scratch is
+  still the panel's Regenerate button. Every handler refuses while the run is
+  still producing or before the episode row exists. Landing this also forced
+  a real fix to the READ side: the page rebuilds from the RUN record
+  (`detailToRunState` / `rowToRunState` in `studio/runs/mapping.ts` read
+  `detail.title` / `row.title` — the metadata the pipeline generated) while
+  every edit, human or agent, lands on `pc_episodes`. The two diverge the
+  moment anyone edits, so after a reload the hero showed a title the episode
+  no longer had — already true for the Title options panel's own "Use" and
+  for admin episode-form edits, but intolerable once `episode_title` and
+  `episode_description` became the values an agent checks its own work
+  against. It surfaced live rather than in review: after a confirmed write,
+  the agent, asked to change the title again, quoted the STALE title back.
+  `useStudioRun` now overlays the persisted `pc_episodes` row once the
+  episode is known and the stream is done writing it. Verified on a real
+  finished run: two targets asked and applied in one message with the hero
+  updating in place and `pc_episodes` matching exactly, all three chapter
+  titles rewritten with every `start_hint` and summary preserved, "Keep as
+  is" declining cleanly, `run_status` and `episode_slug` refused because they
+  are not in the injected tool spec, and a bad `start_hint` returning the
+  handler's own error with no chapters changed. The DB mirror
+  (`ui.ui_surface_write_target`) is still pending a manifest sync.
 - 2026-08-10 — **Fake "This run was interrupted" banner killed.** Root cause
   was server-side: `agent_run.last_heartbeat_at` was bumped only on stage
   commits, so any multi-minute video/audio render exceeded the 180s liveness
