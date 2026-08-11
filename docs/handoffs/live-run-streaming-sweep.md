@@ -28,11 +28,11 @@ defect as a spinner**.
 
 | Class | Meaning | Count |
 |---|---|---|
-| **A** | Spinner-only, stream handle already available (`requestId` / `conversationId` / ignored `onEvent`) | **31 surfaces** |
+| **A** | Spinner-only, stream handle already available (`requestId` / `conversationId` / ignored `onEvent`) | **31 surfaces** (Transcript Studio's 4 fixed 2026-08-11) |
 | **B** | Spinner-only, no stream handle yet — needs `adoptForeignStream` or a `useRunAgent`→`useLiveAgentRun` migration first | **5** |
 | **C** | Page-shifting live-run block (live output above the page's own content) | **3** |
 | **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **12** (11 overlap A) |
-| **E** | Needs a content-IR kind before it can stream well — **title options AND the SEO package shipped 2026-08-11**; chapters + slide deck remain (the deck needs no new kind) | **2** |
+| **E** | Needs a content-IR kind before it can stream well — **title options, the SEO package, and the slide deck all shipped 2026-08-11**; only podcast chapters remain | **1** |
 
 Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L** ≈ a day+.
 
@@ -64,7 +64,7 @@ mechanism — this doc is only the target list.
 
 ---
 
-## Multi-step pipelines — swept 2026-08-11, three fixed
+## Multi-step pipelines — swept 2026-08-11
 
 The original sweep looked for a spinner beside a SINGLE agent call. This pass
 covered the class it missed: pipelines with a step counter, a stage list, a
@@ -82,7 +82,7 @@ for step-or-progress UI — **zero hits**, which is why this class hid from the
 first sweep: the offenders poll a pipeline the client never launched, so they
 carry no agent-run import at all. That is the signature to search on next time.
 
-### Fixed (commit `ddfe1cd4d`)
+### Fixed
 
 | Surface | Was | Now |
 |---|---|---|
@@ -198,25 +198,25 @@ output. Each is the two-line `useLiveAgentRun` + `<LiveRunDisplay>` migration.
 
 Route family: `/education/flashcards/*`, `/education/fastfire`.
 
-### 4. Research Outputs Studio — slides card — A + E, M
+### 4. Research Outputs Studio — DONE 2026-08-11
 
-**SEO card: DONE 2026-08-11.** New `seo_package` kind (+ child `faq_item`) and
-`SeoPackageBlock`; the run moved to `useLiveAgentRun({ slotKey })` +
-`LiveRunWindowController`, the agent emits the envelope, and persisted assets
-replay through `KindInstanceRender`. See `features/research/FEATURE.md`.
+Both cards ship. **SEO package**: new `seo_package` kind + `SeoPackageBlock`.
+**Slide deck**: the EXISTING `presentation_deck` kind — no new kind; the agent
+was rewritten to emit the envelope (schema-bounded: `theme.preset`,
+string-valued `extra`, no `stat` layouts) and the card stopped hand-rendering
+`<Slideshow>`. Each runs `useLiveAgentRun({ slotKey })` into
+`LiveRunWindowController` and replays its persisted asset through
+`KindInstanceRender`. See `features/research/FEATURE.md`.
 
-**Slides card: still open.** `GeneratingNote` remains its spinner. The payload is
-already the EXISTING `presentation_deck` kind — no new kind needed, just the same
-migration the SEO card took. Copy `SeoOutputCard` verbatim.
-Route: `/research/topics/[topicId]/outputs`.
+**D165 is FIXED** (landed with the slide deck): `contextAnchor` +
+`organizationId` are top-level `ManagedAgentOptions`, threaded through
+`launchAgentExecution` → create-instance → the conversation record →
+`assembleRequest`. A class-A migration keeps its durable-entity anchor by passing
+the same two values the one-shot runner took — **pass them**, don't silently drop
+them.
 
-Also on this file: `AnalysisList.tsx:703` truncates its live stream to 200
-characters — unfix it while here.
-
-**Toll every migration on this list now pays (D165):** the Redux execution system
-has no `context_anchor`, so moving a surface off `useSlotRunner` / `useRunAgent`
-DROPS its durable-entity anchor. Land D165 first if that anchor is load-bearing
-for the surface you are migrating.
+Still open on this file: `AnalysisList.tsx:703` truncates its live stream to 200
+characters.
 
 ### 5. Podcasts — three generators, silent by design — B (+E for two), S–M each
 
@@ -325,13 +325,13 @@ Each of the six was read in code. Verdicts:
 |---|---|
 | Podcast articles (blog / show notes) — `useEpisodeArticles.ts` | **Text — no kind.** The agent returns markdown, already held in `drafts`. Fix is the §6 class-B migration plus `MarkdownStream`, nothing more. |
 | Flashcard quiz items — `makeQuizItems.ts` | **Not applicable — removed from the sweep.** It is the optional FALLBACK distractor source for sets too small to have sibling cards; the result feeds `buildQuizQuestions` and is never rendered. Genuinely headless plumbing. |
-| Research slide deck — `OutputsStudio.tsx:1069` | **Kind already exists.** The agent returns `{ title, slides[] }` — exactly `presentation_deck` (`features/content-ir/kinds/presentation-deck.ts` → Slideshow). No new kind; bind it. → chip |
+| Research slide deck — `OutputsStudio.tsx` | **DONE 2026-08-11.** The kind already existed, so this was a MIGRATION: agent v3 emits the `presentation_deck` / `presentation_slide` envelope (schema-bounded — `theme.preset`, string-valued `extra`, no `stat` layouts, because `extra` is `record<string>`), the slot declares `output_kind` and is `use_latest` so no repin was needed, and the card runs live into the floating window. Verified on a real run: 12 slides, `Minimal` preset, no page shift. |
 | Research SEO package — `OutputsStudio.tsx:1215` | **DONE 2026-08-11.** Kind `seo_package` (+ child `faq_item`) authored, activated through `content_ir.set_kind_activation`, and consumed. The character-limit UX moved onto the kind component and gained a VERDICT (too long / too short / inside the window) instead of a bare count. |
 | Podcast chapters — `useEpisodeChapters.ts:49` | **Kind.** Timestamped segments persisted to `pc_episodes.chapters`, used to seek the player. Check `timeline.ts` for reuse first. → chip |
 | Podcast title options — `useEpisodeTitleOptions.ts:70` | **DONE 2026-08-11.** Kind `episode_title_options` shipped end to end (schema + component + dual gate, agent v4, live posture, real-run verification). It went further than the precedent: the apply is a surface WRITE, not an agent launch, and the target is a component constant rather than payload data — see `features/content-ir/FEATURE.md`. |
 
-Two focused sessions remain as chips (slide deck, chapters); **title options and
-the SEO package shipped 2026-08-11**. Each carries the full end-to-end contract: schema, agent
+One focused session remains as a chip (podcast chapters); **title options, the
+SEO package, and the slide deck all shipped 2026-08-11**. Each carries the full end-to-end contract: schema, agent
 instruction rewrite via `agent_author`, every usage repinned, kind + component +
 dual-gate example, live posture, real end-to-end test. **Do not start one of
 these inline in a sweep session** — that is how a half-authored kind ships.

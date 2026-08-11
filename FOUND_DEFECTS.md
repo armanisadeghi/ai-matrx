@@ -13,6 +13,26 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D167 — Transcript Studio never loads its own `studio_runs` rows, so a refresh forgets every pass (2026-08-11)
+
+Nothing in `features/transcript-studio/` dispatches `runsLoaded`, and there is no
+`listAgentRuns` in `service/studioService.ts` — the reducer and the DB table exist,
+the read does not. Consequences, both live today:
+
+- **Column status is in-memory only.** Reload `/transcripts/studio` and every
+  column header forgets that a pass ever ran or failed; "last run failed" is
+  unreachable after a refresh, so a failing agent is invisible on return.
+- **The live-run door dies with the tab.** The 2026-08-11 FLOATING LAW work binds
+  each pass's `conversationId` onto its run row and exposes it through
+  `<WatchRunButton>`; after a reload there are no run rows, so a pass that is
+  still finishing server-side cannot be reattached. Class D in
+  [`docs/handoffs/live-run-streaming-sweep.md`](docs/handoffs/live-run-streaming-sweep.md).
+
+**Fix:** add `listAgentRuns(sessionId)` beside the other studio list services and
+dispatch `runsLoaded` where the session's segments load, then reopen the window for
+any row still `running` with a `conversation_id`. Found while fixing the sweep's §3;
+pre-existing, not introduced by it.
+
 ### D166 — `scripts/shape/activate-kinds.ts --apply` can no longer activate anything (2026-08-11)
 
 The activation gate trigger added by `migrations/content_ir_kind_activation_rpc.sql`
