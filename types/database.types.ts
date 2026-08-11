@@ -44878,6 +44878,34 @@ export type Database = {
           last_backfill_at: string
         }[]
       }
+      gsc_brand_alias_match_strength: {
+        Args: {
+          p_joined: string
+          p_normalized_phrase: string
+          p_probe: string
+          p_toks: string[]
+        }
+        Returns: number
+      }
+      gsc_brand_alias_preview: {
+        Args: {
+          p_alias: string
+          p_end: string
+          p_limit?: number
+          p_site_id: string
+          p_start: string
+        }
+        Returns: Json
+      }
+      gsc_brand_alias_spec: {
+        Args: { p_alias: string }
+        Returns: {
+          joined: string
+          probe: string
+          raw_name: string
+          toks: string[]
+        }[]
+      }
       gsc_brand_aliases: {
         Args: { p_site_id: string }
         Returns: {
@@ -44973,6 +45001,7 @@ export type Database = {
       }
       gsc_keyword_class_review: {
         Args: {
+          p_brand_alias?: string
           p_classes?: string[]
           p_confirmed?: boolean
           p_end: string

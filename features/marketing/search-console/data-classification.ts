@@ -28,8 +28,6 @@ import type {
   GscTrafficClass,
 } from "@/features/marketing/search-console/types";
 import type { ClassRuleMatchKind } from "@/features/marketing/search-console/lib/class-rules";
-import type { LayeredFilterRule } from "@/components/official/matrx-data-table/layered-filters";
-import type { Json } from "@/types/database.types";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -42,29 +40,11 @@ function assertData<T>(data: T | null, error: { message: string } | null): T {
   return data;
 }
 
-export const GSC_CLASS_REVIEW_SORTS = [
-  "impressions",
-  "clicks",
-  "ctr",
-  "query",
-  "traffic_class",
-  "class_source",
-  "intent_class",
-] as const;
-
-export type GscClassReviewSort = (typeof GSC_CLASS_REVIEW_SORTS)[number];
-
-export function isGscClassReviewSort(
-  value: string,
-): value is GscClassReviewSort {
-  return GSC_CLASS_REVIEW_SORTS.some((sort) => sort === value);
-}
-
 export interface GscClassReviewQuery {
   trafficClasses: GscTrafficClass[] | null;
   sources: GscClassSource[] | null;
   search: string;
-  sort: GscClassReviewSort;
+  sort: "impressions" | "clicks" | "ctr" | "query";
   sortDir: "asc" | "desc";
   page: number;
   pageSize: number;
@@ -75,8 +55,6 @@ export interface GscClassReviewQuery {
   confirmed?: boolean | null;
   /** Exact saved brand alias — uses the canonical brand matcher server-side. */
   brandAlias?: string | null;
-  /** Ordered AND rules shared by the advanced builder and column controls. */
-  filters?: LayeredFilterRule[];
 }
 
 export interface GscClassReviewPage {
@@ -89,15 +67,6 @@ function reviewParams(
   range: GscDateRange,
   query: GscClassReviewQuery,
 ) {
-  const filters: Json | undefined = query.filters?.length
-    ? query.filters.map((rule) => ({
-        id: rule.id,
-        field: rule.field,
-        operator: rule.operator,
-        value: rule.value,
-        valueTo: rule.valueTo ?? null,
-      }))
-    : undefined;
   return {
     p_site_id: siteId,
     p_start: range.start,
@@ -115,7 +84,6 @@ function reviewParams(
       : undefined,
     p_confirmed: query.confirmed ?? undefined,
     p_brand_alias: query.brandAlias?.trim() || undefined,
-    p_filters: filters,
   };
 }
 
