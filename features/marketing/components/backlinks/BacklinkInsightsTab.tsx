@@ -35,6 +35,7 @@ import {
 } from "@/features/marketing/components/backlinks/lib/vocab";
 import { BacklinkAnchorProfile } from "@/features/marketing/components/backlinks/BacklinkAnchorProfile";
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
+import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
 
 const ANCHOR_PROFILE_KEY = "anchor-profile";
 
@@ -54,7 +55,17 @@ const LENS_ICONS: Record<BacklinkLensKey, LucideIcon> = {
   controllable: PencilLine,
 };
 
-export function BacklinkInsightsTab({ siteId }: { siteId: string }) {
+export function BacklinkInsightsTab({
+  siteId,
+  onAnalyze,
+  runningBacklinkId,
+  analysisDisabled,
+}: {
+  siteId: string;
+  onAnalyze?: (row: BacklinkObservationRow) => void;
+  runningBacklinkId?: string | null;
+  analysisDisabled?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -121,6 +132,9 @@ export function BacklinkInsightsTab({ siteId }: { siteId: string }) {
             siteId={siteId}
             lens={active}
             key={active}
+            onAnalyze={onAnalyze}
+            runningBacklinkId={runningBacklinkId}
+            analysisDisabled={analysisDisabled}
           />
         )}
       </div>

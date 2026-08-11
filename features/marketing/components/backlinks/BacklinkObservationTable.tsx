@@ -11,7 +11,15 @@
  * server-side; the empty state then names the lens honestly.
  */
 
-import { ExternalLink, Image as ImageIcon, Link2, Unlink } from "lucide-react";
+import {
+  BrainCircuit,
+  ExternalLink,
+  Image as ImageIcon,
+  Link2,
+  Loader2,
+  Unlink,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import {
@@ -72,9 +80,15 @@ const LENS_EMPTY_LINE: Record<BacklinkLensKey, string> = {
 export function BacklinkObservationTable({
   siteId,
   lens = null,
+  onAnalyze,
+  runningBacklinkId = null,
+  analysisDisabled = false,
 }: {
   siteId: string;
   lens?: BacklinkLensKey | null;
+  onAnalyze?: (row: BacklinkObservationRow) => void;
+  runningBacklinkId?: string | null;
+  analysisDisabled?: boolean;
 }) {
   const { sitePath } = useMarketingSite();
   const lensFallback = lens ? LENS_DEFAULT_SORT[lens] : null;
@@ -265,6 +279,33 @@ export function BacklinkObservationTable({
             {special.map((attribute) => (
               <MutedChip key={attribute}>{attribute}</MutedChip>
             ))}
+          </span>
+        );
+      },
+    },
+    {
+      id: "enrichment_status",
+      accessorKey: "enrichment_status",
+      header: "Analysis",
+      filter: false,
+      cell: (row) => {
+        const error =
+          row.last_error &&
+          typeof row.last_error === "object" &&
+          !Array.isArray(row.last_error) &&
+          "message" in row.last_error &&
+          typeof row.last_error.message === "string"
+            ? row.last_error.message
+            : undefined;
+        return (
+          <span title={error} className="whitespace-nowrap">
+            <StatusBadge value={row.enrichment_status} />
+            {row.enrichment_attempt_count > 0 ? (
+              <span className="ml-1 text-[10px] text-muted-foreground">
+                {row.enrichment_attempt_count} try
+                {row.enrichment_attempt_count === 1 ? "" : "s"}
+              </span>
+            ) : null}
           </span>
         );
       },
@@ -512,6 +553,43 @@ export function BacklinkObservationTable({
               />
             ),
           }}
+          rowActions={
+            onAnalyze
+              ? (row) => {
+                  const running = runningBacklinkId === row.id;
+                  const inProgress =
+                    row.enrichment_status === "capturing" ||
+                    row.enrichment_status === "analyzing";
+                  const rerun =
+                    row.enrichment_status === "completed" ||
+                    row.enrichment_status === "dead_letter";
+                  return (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1 px-2 text-[11px]"
+                      disabled={analysisDisabled || inProgress}
+                      title={
+                        inProgress
+                          ? "This source page is already being analyzed"
+                          : rerun
+                            ? "Capture and analyze this source page again"
+                            : "Capture and analyze this source page now"
+                      }
+                      onClick={() => onAnalyze(row)}
+                    >
+                      {running || inProgress ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <BrainCircuit className="h-3 w-3" />
+                      )}
+                      {rerun ? "Re-analyze" : "Analyze"}
+                    </Button>
+                  );
+                }
+              : undefined
+          }
           window={{
             title: (row) => row.source_domain ?? row.source_url,
           }}

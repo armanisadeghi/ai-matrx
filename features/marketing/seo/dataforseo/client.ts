@@ -2,11 +2,13 @@ import type {
   BacklinkRefreshBody,
   BacklinkRefreshReceipt,
   BacklinkEnrichmentResult,
+  BacklinkEnrichmentBody,
   CollectionCreateBody,
   CollectionReceipt,
   DataForSeoOperationsResponse,
   JsonValue,
   RunEvidence,
+  SeoStreamEvent,
 } from "./types";
 
 export class SeoApiError extends Error {
@@ -60,6 +62,7 @@ async function seoStreamTerminal<T>(
   body: Record<string, unknown>,
   terminalKind: string,
   project: (data: Record<string, unknown>) => T | null,
+  onEvent?: (event: SeoStreamEvent) => void,
 ): Promise<T> {
   const response = await fetch(`${normalizedBaseUrl(serverUrl)}${path}`, {
     method: "POST",
@@ -90,6 +93,7 @@ async function seoStreamTerminal<T>(
       envelope.data && typeof envelope.data === "object"
         ? (envelope.data as Record<string, unknown>)
         : envelope;
+    if (typeof data.kind === "string") onEvent?.(data as SeoStreamEvent);
     if (data.kind === terminalKind) result = project(data);
     if (data.kind === "seo.command_failed" || envelope.event === "error") {
       streamError = JSON.stringify(data.error ?? data);
@@ -174,7 +178,8 @@ export function enrichSiteBacklinks(
   serverUrl: string,
   accessToken: string,
   siteId: string,
-  body: { organization_id: string; limit: number; force: boolean },
+  body: BacklinkEnrichmentBody,
+  onEvent?: (event: SeoStreamEvent) => void,
 ): Promise<BacklinkEnrichmentResult> {
   return seoStreamTerminal(
     serverUrl,
@@ -183,5 +188,6 @@ export function enrichSiteBacklinks(
     { ...body },
     "seo.backlink_enrichment_completed",
     (data) => (data.result as BacklinkEnrichmentResult | undefined) ?? null,
+    onEvent,
   );
 }

@@ -144,3 +144,27 @@ export interface BacklinkEnrichmentResult {
   skipped: number;
   queue: Record<string, number>;
 }
+
+export interface SeoStreamEvent {
+  kind: string;
+  run_id?: string;
+  backlink_id?: string;
+  backlink_ids?: string[];
+  source_url?: string;
+  source_urls?: string[];
+  candidate_count?: number;
+  stage?: string;
+  message?: string;
+  retryable?: boolean;
+  overall_score?: number | null;
+  action?: string | null;
+  result?: BacklinkEnrichmentResult;
+  [key: string]: unknown;
+}
+
+export interface BacklinkEnrichmentBody {
+  organization_id: string;
+  limit: number;
+  force: boolean;
+  backlink_ids?: string[];
+}

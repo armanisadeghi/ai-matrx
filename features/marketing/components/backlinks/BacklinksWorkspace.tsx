@@ -74,6 +74,7 @@ import { marketingKeys } from "@/features/marketing/data/hooks";
 import { BacklinkKpiBand } from "@/features/marketing/components/backlinks/BacklinkKpiBand";
 import { BacklinkTrendChart } from "@/features/marketing/components/backlinks/BacklinkTrendChart";
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
+import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
 import { BacklinkDimensionTable } from "@/features/marketing/components/backlinks/BacklinkDimensionTable";
 import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/BacklinkInsightsTab";
 import { ReferringDomainIntelligenceTable } from "@/features/marketing/components/backlinks/ReferringDomainIntelligenceTable";
@@ -84,7 +85,10 @@ import {
   type BacklinkTabKey,
 } from "@/features/marketing/components/backlinks/lib/vocab";
 import { parseDimensionExtras } from "@/features/marketing/components/backlinks/lib/extras";
-import type { BacklinkDimensionRow } from "@/features/marketing/data/backlinks-types";
+import type {
+  BacklinkDimensionRow,
+  BacklinkObservationRow,
+} from "@/features/marketing/data/backlinks-types";
 import {
   buildSiteIntegrations,
   parseSiteIntegrations,
@@ -100,7 +104,14 @@ import {
 import type {
   BacklinkRefreshProfile,
   BacklinkRefreshReceipt,
+  SeoStreamEvent,
 } from "@/features/marketing/seo/dataforseo/types";
+import {
+  applyBacklinkEnrichmentEvent,
+  failBacklinkEnrichmentRun,
+  startBacklinkEnrichmentRun,
+  type BacklinkEnrichmentRunState,
+} from "@/features/marketing/components/backlinks/lib/enrichment-run";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
 import { cn } from "@/lib/utils";
@@ -295,6 +306,12 @@ export function BacklinksWorkspace() {
   const [profile, setProfile] = useState<BacklinkRefreshProfile>("bootstrap");
   const [refreshing, setRefreshing] = useState(false);
   const [enriching, setEnriching] = useState(false);
+  const [enrichmentBatchSize, setEnrichmentBatchSize] = useState(5);
+  const [runningBacklinkId, setRunningBacklinkId] = useState<string | null>(
+    null,
+  );
+  const [enrichmentRun, setEnrichmentRun] =
+    useState<BacklinkEnrichmentRunState | null>(null);
   const [receipt, setReceipt] = useState<BacklinkRefreshReceipt | null>(null);
   // Remount key for the receipt card so each completed refresh re-opens it.
   const [receiptRun, setReceiptRun] = useState(0);
@@ -361,7 +378,9 @@ export function BacklinksWorkspace() {
 
   const refresh = async () => {
     if (!seoTarget?.url) {
-      toast.error("No AI Dream server is configured for the selected environment.");
+      toast.error(
+        "No AI Dream server is configured for the selected environment.",
+      );
       return;
     }
     setRefreshing(true);
@@ -380,7 +399,10 @@ export function BacklinksWorkspace() {
           detail_limit: schedule.detailLimit,
           force_refresh: true,
           request_id: crypto.randomUUID(),
-          enrichment_limit: 25,
+          // Discovery and source-page analysis are separately controlled jobs.
+          // The user can inspect the new links, then choose a bounded batch or
+          // one exact row instead of paying for a hidden post-refresh drain.
+          enrichment_limit: 0,
         },
       );
       setReceipt(nextReceipt);
@@ -398,36 +420,78 @@ export function BacklinksWorkspace() {
     }
   };
 
-  const enrich = async () => {
+  const refreshBacklinkReads = () =>
+    queryClient.invalidateQueries({
+      queryKey: [...marketingKeys.site(site.id), "backlinks"],
+    });
+
+  const handleEnrichmentEvent = (event: SeoStreamEvent) => {
+    setEnrichmentRun((current) =>
+      current ? applyBacklinkEnrichmentEvent(current, event) : current,
+    );
+    if (event.kind.startsWith("seo.backlink_")) {
+      void refreshBacklinkReads();
+    }
+  };
+
+  const enrich = async ({
+    backlinkIds,
+    label,
+  }: {
+    backlinkIds?: string[];
+    label: string;
+  }) => {
     if (!seoTarget?.url) {
-      toast.error("No AI Dream server is configured for the selected environment.");
+      toast.error(
+        "No AI Dream server is configured for the selected environment.",
+      );
       return;
     }
     setEnriching(true);
+    setRunningBacklinkId(backlinkIds?.[0] ?? null);
+    setEnrichmentRun(startBacklinkEnrichmentRun(label));
     try {
       const session = await supabase.auth.getSession();
       if (session.error) throw session.error;
       const token = session.data.session?.access_token;
       if (!token) throw new Error("Sign in before enriching backlink data.");
-      const result = await enrichSiteBacklinks(seoTarget.url, token, site.id, {
-        organization_id: site.organization_id,
-        limit: 25,
-        force: false,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: [...marketingKeys.site(site.id), "backlinks"],
-      });
+      const result = await enrichSiteBacklinks(
+        seoTarget.url,
+        token,
+        site.id,
+        {
+          organization_id: site.organization_id,
+          limit: backlinkIds?.length ?? enrichmentBatchSize,
+          // A targeted click means "run this exact link now", including a
+          // completed or dead-letter link. Batches stay due-only.
+          force: Boolean(backlinkIds?.length),
+          backlink_ids: backlinkIds,
+        },
+        handleEnrichmentEvent,
+      );
+      await refreshBacklinkReads();
       toast.success(
         result.completed > 0
           ? `Analyzed ${result.completed} source page${result.completed === 1 ? "" : "s"}.`
           : "No due source pages remained to analyze.",
       );
     } catch (error) {
-      toast.error(errorMessage(error));
+      const message = errorMessage(error);
+      setEnrichmentRun((current) =>
+        current ? failBacklinkEnrichmentRun(current, message) : current,
+      );
+      toast.error(message);
     } finally {
       setEnriching(false);
+      setRunningBacklinkId(null);
     }
   };
+
+  const analyzeBacklink = (row: BacklinkObservationRow) =>
+    enrich({
+      backlinkIds: [row.id],
+      label: `Analyze ${row.source_domain ?? row.source_url}`,
+    });
 
   if (workspace.isLoading) {
     return <LoadingSurface label="Loading backlink intelligence…" />;
@@ -864,19 +928,41 @@ export function BacklinksWorkspace() {
               )}
               Refresh
             </Button>
+            <Select
+              value={String(enrichmentBatchSize)}
+              onValueChange={(value) => setEnrichmentBatchSize(Number(value))}
+              disabled={enriching || refreshing}
+            >
+              <SelectTrigger
+                size="sm"
+                className="w-20"
+                aria-label="Source pages per analysis run"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 5, 10, 25].map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {size} page{size === 1 ? "" : "s"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               size="sm"
               variant="outline"
               className="gap-1.5"
               disabled={enriching || refreshing}
-              onClick={() => void enrich()}
+              onClick={() =>
+                void enrich({ label: `Analyze next ${enrichmentBatchSize}` })
+              }
             >
               {enriching ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <BrainCircuit className="h-3.5 w-3.5" />
               )}
-              Analyze source pages
+              Analyze next {enrichmentBatchSize}
             </Button>
             <Button
               size="icon"
@@ -893,6 +979,13 @@ export function BacklinksWorkspace() {
             </Button>
           </div>
         </div>
+
+        {enrichmentRun ? (
+          <BacklinkEnrichmentRunPanel
+            run={enrichmentRun}
+            onDismiss={() => setEnrichmentRun(null)}
+          />
+        ) : null}
 
         {settingsOpen ? (
           <div className="shrink-0 px-3 pt-2 sm:px-4">
@@ -1096,11 +1189,21 @@ export function BacklinksWorkspace() {
             </div>
           ) : tab === "links" ? (
             <div className="flex min-h-0 flex-1 flex-col">
-              <BacklinkObservationTable siteId={site.id} />
+              <BacklinkObservationTable
+                siteId={site.id}
+                onAnalyze={(row) => void analyzeBacklink(row)}
+                runningBacklinkId={runningBacklinkId}
+                analysisDisabled={enriching || refreshing}
+              />
             </div>
           ) : tab === "insights" ? (
             <div className="flex min-h-0 flex-1 flex-col">
-              <BacklinkInsightsTab siteId={site.id} />
+              <BacklinkInsightsTab
+                siteId={site.id}
+                onAnalyze={(row) => void analyzeBacklink(row)}
+                runningBacklinkId={runningBacklinkId}
+                analysisDisabled={enriching || refreshing}
+              />
             </div>
           ) : tab === "domains" ? (
             <div className="flex min-h-0 flex-1 flex-col">
