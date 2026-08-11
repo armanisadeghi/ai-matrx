@@ -1,18 +1,25 @@
 "use client";
 
 /**
- * PageBriefBlock — renderer for the `page_brief` kind.
+ * PageBriefBlock — THE renderer for the `page_brief` kind. There is no other.
+ *
+ * 🚨 THE CANONICAL COMPONENT LAW (see `features/content-ir/FEATURE.md`).
+ * A registered shape gets exactly ONE component. If you need part of a brief
+ * somewhere, import the PART exported below — `PageBriefAngle`,
+ * `PageBriefPoints`, `PageBriefMustNotCover`, `PageBriefConcerns`. If you need
+ * it editable, use `editable` + `onBriefChange`. If you need a verb on it, pass
+ * `actions`. **Do not build a second brief renderer.** One was built
+ * (`BriefEditor.tsx`, deleted 2026-08-11) and it immediately diverged: it
+ * crushed full-paragraph directives into one-line textareas while this
+ * component rendered the same data correctly in the window beside it.
  *
  * Streaming-first by construction: every field is optional at render time
  * because mid-stream it genuinely is. The component mounts the instant the
- * discriminator parses, and the angle, brief, must-not-cover, concerns, and
- * word-count sections appear as their values close — a partially arrived
- * brief is a normal, readable state, never a spinner and never raw JSON.
+ * discriminator parses, and each section appears as its value closes — a
+ * partially arrived brief is a normal, readable state, never a spinner and
+ * never raw JSON.
  *
- * Consumes the bridge serverData from
- * features/content-ir/kinds/page-brief.ts. Rendered wherever the pipeline
- * routes the kind — today the content plan's "Draft brief" run in the generic
- * live-run window, and chat.
+ * Consumes the bridge serverData from `features/content-ir/kinds/page-brief.ts`.
  */
 
 import type { ReactNode } from "react";
@@ -20,13 +27,34 @@ import {
   Compass,
   FileText,
   Loader2,
+  Plus,
   ShieldAlert,
+  Trash2,
   TriangleAlert,
 } from "lucide-react";
 import type { PageBriefData } from "@/features/content-ir/kinds/page-brief";
+import { cn } from "@/lib/utils";
 
 export interface PageBriefBlockProps {
   serverData?: unknown;
+  /**
+   * Edit the brief points in place — add, remove, rewrite. Requires
+   * `onBriefChange`. The other three fields are the RUN's output, not the
+   * user's document, so they stay read-only.
+   */
+  editable?: boolean;
+  onBriefChange?: (lines: string[]) => void;
+  /**
+   * Verbs that act on THIS brief ("Use this brief", "Apply"), rendered in the
+   * component's own header. The action belongs on the component, never on a
+   * bespoke card beside it. A DB-loaded/sandboxed kind component reaches
+   * capabilities through the kind-component action registry instead
+   * (`features/content-ir/react/actions/kind-action-registry.ts`).
+   */
+  actions?: ReactNode;
+  /** Copy for the empty state when the brief has no points and is editable. */
+  emptyHint?: string;
+  className?: string;
 }
 
 function strings(value: unknown): string[] {
@@ -57,50 +85,232 @@ export function readPageBriefData(serverData: unknown): PageBriefData | null {
   };
 }
 
-function ListSection({
+// ---------------------------------------------------------------------------
+// PARTS — importable on their own so a surface can render one section without
+// re-implementing it. This is the ONLY sanctioned way to render part of a
+// shape.
+// ---------------------------------------------------------------------------
+
+function SectionShell({
   icon,
   title,
+  tone = "default",
+  headerExtra,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  tone?: "default" | "primary";
+  headerExtra?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "animate-in fade-in rounded-lg border p-3",
+        tone === "primary"
+          ? "border-primary/30 bg-primary/5"
+          : "border-border bg-card",
+      )}
+    >
+      <div className="flex items-center gap-1.5">
+        {icon}
+        <span
+          className={cn(
+            "text-xs font-semibold uppercase tracking-wide",
+            tone === "primary" ? "text-primary" : "text-muted-foreground",
+          )}
+        >
+          {title}
+        </span>
+        {headerExtra ? <div className="ml-auto">{headerExtra}</div> : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+export function PageBriefAngle({ angle }: { angle: string | null }) {
+  if (!angle) return null;
+  return (
+    <SectionShell
+      icon={<Compass className="h-3.5 w-3.5 text-primary" />}
+      title="Angle"
+      tone="primary"
+    >
+      <p className="mt-1 text-sm leading-relaxed text-foreground">{angle}</p>
+    </SectionShell>
+  );
+}
+
+/**
+ * The brief itself. Read-only by default; `editable` turns each point into a
+ * field that GROWS WITH ITS CONTENT.
+ *
+ * 🚨 `field-sizing-content` + `min-h-*`, never `rows={1}`. A brief point is a
+ * full sentence or a paragraph; a fixed one-row textarea shows the user four
+ * words of their own directive and hides the rest behind a scroll nub. That
+ * exact bug is why the bespoke duplicate of this component was deleted.
+ */
+export function PageBriefPoints({
+  lines,
+  editable = false,
+  onChange,
+  emptyHint,
+}: {
+  lines: string[];
+  editable?: boolean;
+  onChange?: (next: string[]) => void;
+  emptyHint?: string;
+}) {
+  const canEdit = editable && typeof onChange === "function";
+
+  const setLine = (index: number, value: string) =>
+    onChange?.(lines.map((line, position) => (position === index ? value : line)));
+  const removeLine = (index: number) =>
+    onChange?.(lines.filter((_, position) => position !== index));
+
+  return (
+    <SectionShell
+      icon={<FileText className="h-3.5 w-3.5 text-muted-foreground" />}
+      title="The brief"
+      headerExtra={
+        canEdit ? (
+          <button
+            type="button"
+            onClick={() => onChange?.([...lines, ""])}
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Plus className="h-3 w-3" />
+            Add point
+          </button>
+        ) : null
+      }
+    >
+      {lines.length === 0 ? (
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          {emptyHint ?? "Waiting for the first instruction…"}
+        </p>
+      ) : canEdit ? (
+        <ul className="mt-1.5 space-y-1.5">
+          {lines.map((line, index) => (
+            <li key={index} className="flex items-start gap-1.5">
+              <span className="mt-2 w-4 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+                {index + 1}
+              </span>
+              <textarea
+                value={line}
+                onChange={(event) => setLine(index, event.target.value)}
+                placeholder="What this page must cover…"
+                className="min-h-9 flex-1 resize-y rounded-md border border-input bg-transparent px-2 py-1.5 text-sm leading-relaxed text-foreground shadow-xs transition-[color,box-shadow] outline-none [field-sizing:content] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              />
+              <button
+                type="button"
+                onClick={() => removeLine(index)}
+                aria-label={`Remove point ${index + 1}`}
+                className="mt-1 shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ol className="mt-1.5 list-decimal space-y-1 pl-5">
+          {lines.map((line, index) => (
+            <li
+              key={`${index}-${line.slice(0, 24)}`}
+              className="animate-in fade-in text-sm leading-relaxed text-foreground"
+            >
+              {line}
+            </li>
+          ))}
+        </ol>
+      )}
+    </SectionShell>
+  );
+}
+
+function ReadOnlyList({
+  icon,
+  title,
+  hint,
   lines,
   tone,
 }: {
   icon: ReactNode;
   title: string;
+  hint?: string;
   lines: string[];
   tone: "default" | "warning";
 }) {
   if (lines.length === 0) return null;
   return (
-    <div className="animate-in fade-in rounded-lg border border-border bg-card p-3">
-      <div className="flex items-center gap-1.5">
-        {icon}
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {title}
-        </span>
-      </div>
-      <ul className="mt-1.5 space-y-1">
+    <SectionShell icon={icon} title={title}>
+      {hint ? (
+        <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>
+      ) : null}
+      <ul className="mt-1.5 list-disc space-y-1 pl-4">
         {lines.map((line, index) => (
           <li
             key={`${index}-${line.slice(0, 24)}`}
-            className={
+            className={cn(
+              "text-sm leading-relaxed",
               tone === "warning"
-                ? "text-sm text-amber-700 dark:text-amber-400"
-                : "text-sm text-foreground"
-            }
+                ? "text-amber-700 dark:text-amber-400"
+                : "text-foreground",
+            )}
           >
             {line}
           </li>
         ))}
       </ul>
-    </div>
+    </SectionShell>
   );
 }
 
-export default function PageBriefBlock({ serverData }: PageBriefBlockProps) {
+export function PageBriefMustNotCover({ lines }: { lines: string[] }) {
+  return (
+    <ReadOnlyList
+      icon={<ShieldAlert className="h-3.5 w-3.5 text-muted-foreground" />}
+      title="Must not cover"
+      hint="Covering these here is the cannibalization the plan exists to prevent."
+      lines={lines}
+      tone="default"
+    />
+  );
+}
+
+export function PageBriefConcerns({ lines }: { lines: string[] }) {
+  return (
+    <ReadOnlyList
+      icon={
+        <TriangleAlert className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+      }
+      title="Concerns"
+      lines={lines}
+      tone="warning"
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The parent — composes the parts. Nothing here that a part could own.
+// ---------------------------------------------------------------------------
+
+export default function PageBriefBlock({
+  serverData,
+  editable = false,
+  onBriefChange,
+  actions,
+  emptyHint,
+  className,
+}: PageBriefBlockProps) {
   const data = readPageBriefData(serverData);
   if (!data) return null;
 
   return (
-    <div className="my-2 space-y-2">
+    <div className={cn("my-2 space-y-2", className)}>
       <div className="flex flex-wrap items-center gap-2">
         <FileText className="h-4 w-4 text-primary" />
         <span className="text-sm font-semibold text-foreground">Page brief</span>
@@ -115,64 +325,25 @@ export default function PageBriefBlock({ serverData }: PageBriefBlockProps) {
             Writing
           </span>
         )}
-        {data.suggestedWordCount !== null && (
-          <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
-            ~{data.suggestedWordCount.toLocaleString()} words
-          </span>
-        )}
-      </div>
-
-      {data.angle && (
-        <div className="animate-in fade-in rounded-lg border border-primary/30 bg-primary/5 p-3">
-          <div className="flex items-center gap-1.5">
-            <Compass className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-primary">
-              Angle
+        <div className="ml-auto flex items-center gap-2">
+          {data.suggestedWordCount !== null && (
+            <span className="text-[10px] tabular-nums text-muted-foreground">
+              ~{data.suggestedWordCount.toLocaleString()} words
             </span>
-          </div>
-          <p className="mt-1 text-sm text-foreground">{data.angle}</p>
+          )}
+          {actions}
         </div>
-      )}
-
-      <div className="rounded-lg border border-border bg-card p-3">
-        <div className="flex items-center gap-1.5">
-          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            The brief
-          </span>
-        </div>
-        {data.brief.length > 0 ? (
-          <ol className="mt-1.5 list-decimal space-y-1 pl-5">
-            {data.brief.map((line, index) => (
-              <li
-                key={`${index}-${line.slice(0, 24)}`}
-                className="animate-in fade-in text-sm text-foreground"
-              >
-                {line}
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            Waiting for the first instruction…
-          </p>
-        )}
       </div>
 
-      <ListSection
-        icon={<ShieldAlert className="h-3.5 w-3.5 text-muted-foreground" />}
-        title="Must not cover"
-        lines={data.mustNotCover}
-        tone="default"
+      <PageBriefAngle angle={data.angle} />
+      <PageBriefPoints
+        lines={data.brief}
+        editable={editable}
+        onChange={onBriefChange}
+        emptyHint={emptyHint}
       />
-      <ListSection
-        icon={
-          <TriangleAlert className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-        }
-        title="Concerns"
-        lines={data.concerns}
-        tone="warning"
-      />
+      <PageBriefMustNotCover lines={data.mustNotCover} />
+      <PageBriefConcerns lines={data.concerns} />
     </div>
   );
 }
