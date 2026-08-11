@@ -1,5 +1,12 @@
 -- APPLIED to Matrx Main (txzxabzwovsujtloxrus) 2026-08-11. Record, not mechanism.
 --
+-- STILL AUTHORITATIVE for `web.is_machine_resource_url` (the live function is
+-- this definition). The v_page_list body below was superseded the same day by
+-- `web_page_list_evidence_and_resource_classification.sql`, which carries this
+-- exact is_resource expression forward alongside is_canonical /
+-- has_page_evidence and marks the view security_invoker. Read that file for the
+-- current view; read this one for the classifier.
+--
 -- The URL-shape half of the page-vs-machine-resource rule.
 --
 -- WHY: `is_resource` was the crawler's content_type verdict alone. That verdict
