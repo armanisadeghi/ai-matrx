@@ -18,7 +18,8 @@ node .claude/skills/light-dark-integrity/scripts/detect-light-dark.mjs
 ```
 
 Pass explicit `.tsx` paths to scan a structural-novelty scope. Use `--json`
-for a machine-readable report. A candidate is not automatically a defect.
+for a machine-readable report and `--strict` to fail on pending or invalid
+exceptions. A candidate is not automatically a defect, compliant, or exempt.
 
 The detector reports every source line containing `bg-white` or `text-black`,
 whether a `dark:` token exists on that line, and a possible exception hint.
@@ -32,14 +33,17 @@ Choose exactly one surface class:
 1. **Theme surface** — page, panel, card, row, menu, popover, dialog, input, or
    control whose appearance must follow the active theme. Raw white/black is a
    defect unless an explicit paired design is necessary.
-2. **Fixed/on-color surface** — chrome over a photo, video, gradient, canvas,
-   crop handle, camera, code block, or other surface whose local contrast is
-   independent of the app theme. Preserve the intentional raw color.
+2. **Proposed fixed/on-color exception** — chrome over a photo, video,
+   gradient, canvas, crop handle, camera, code block, or other surface whose
+   local contrast may be independent of the app theme. Propose it to Arman;
+   never preserve or clear it on agent judgment alone.
 3. **Non-app output** — print rules, HTML/iframe matte, exported image/PDF,
-   email, or an authored visual specimen. Preserve the output's own palette.
+   email, or an authored visual specimen. If the raw palette is deliberate,
+   propose it to Arman unless the source is truly non-rendered test/comment
+   text.
 4. **Explicit theme selection** — the opposite theme is selected through a
    theme prop, conditional class, variable, or multiline construction. Verify
-   both branches and record it as a triaged exception.
+   both branches. A real two-theme branch is compliant, not an exception.
 
 If the class is unclear, the finding is Tier R. Report it; do not mutate.
 
@@ -85,6 +89,44 @@ Before counting or fixing, review all candidates against:
 
 Record the reason for every excluded class in the patrol report. Never add a
 suppression or detector allowlist merely to make the output smaller.
+
+## Human-owned exception approval
+
+**Agents propose; Arman approves.** A plausible fixed palette is still an open
+finding until Arman explicitly approves that exact surface. No certifier,
+maintainer, prior styling, or “intentional” code comment substitutes for his
+decision.
+
+Every proposal must include:
+
+- exact file, line, raw token(s), and visual state;
+- a stable production URL plus precise click/state instructions;
+- what would change if semantic tokens replaced it;
+- an `Approve` or `Reject` decision request.
+
+If no stable URL or reproducible artifact exists, the item cannot be approved.
+Keep it open and create a Tier-C review-harness task. End any run containing
+proposals with this unmistakable envelope:
+
+```text
+EXCEPTION APPROVAL REQUIRED
+<complete numbered proposal list>
+ARMAN, WE NEED YOU: approve or reject every listed P4 exception.
+```
+
+Only after approval, add one entry to `exceptions.json` with `approvedBy` set
+to `Arman`, the approval date/reference, review URL, exact token list, file,
+line, and reason. Add a source comment within two lines of that exact line:
+
+```text
+patrol-exception:P4-EX-###
+```
+
+The detector validates ledger ↔ source agreement and exact line/token identity.
+It reports approved exceptions separately forever; it never silently removes
+them from totals. An unapproved comment, missing comment, moved token, stale
+pair, or one-to-many annotation is an invalid exception and a loud finding.
+Rejection means fix it; never record the rejection as an exemption.
 
 ## Tier-M batch and certification
 

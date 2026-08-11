@@ -1,0 +1,5 @@
+{
+  "__readme": "P4 exceptions require Arman's explicit approval. Required fields: id, file, line, tokens, reason, reviewUrl, approvedBy, approvedOn, approvalReference. Every approved entry must have exactly one matching patrol-exception:<id> source comment beside the exact line. The detector validates both sides and reports approved exceptions separately; it never silently hides them.",
+  "version": 1,
+  "approved": []
+}
