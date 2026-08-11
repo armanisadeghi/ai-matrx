@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useRef, useState, use } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
@@ -15,6 +15,7 @@ import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import {
   getDocument,
   renameDocument,
+  updateDocumentDescription,
 } from "@/features/data-tables/document-service";
 import {
   isServiceFailure,
@@ -63,6 +64,21 @@ export default function DocumentPage({
   // vanishes. Gate the mount on this flag so `editable` is stable from frame 1.
   const [permsResolved, setPermsResolved] = useState(false);
 
+  // The live document row, advanced SYNCHRONOUSLY as each write lands.
+  // `applySurfaceWrite` resolves a target's handler BEFORE it awaits that
+  // target's confirm dialog, so when an agent stages BOTH targets in one turn
+  // every closure is captured up front — a handler reading `doc` off its render
+  // closure would guard against a snapshot taken before the previous target
+  // applied, and would report the pre-write name back to the agent. Rendering
+  // still reads `doc`; only the write paths read this.
+  const docRef = useRef<DocumentRow | null>(null);
+
+  /** The ONE place that advances the row — keeps state and the ref in step. */
+  const commitDocument = (next: DocumentRow) => {
+    docRef.current = next;
+    setDoc(next);
+  };
+
   useEffect(() => {
     let active = true;
     (async () => {
@@ -72,7 +88,7 @@ export default function DocumentPage({
         setError(res.error);
         return;
       }
-      setDoc(res.data);
+      commitDocument(res.data);
       setRenameDraft(res.data.document_name);
 
       const { data: userData } = await supabase.auth.getUser();
@@ -101,17 +117,77 @@ export default function DocumentPage({
   const isOwner =
     doc !== null && currentUserId !== null && doc.user_id === currentUserId;
 
-  const commitRename = async () => {
-    if (!doc || renameDraft === doc.document_name) return;
+  const applyRename = async (name: string) => {
+    const current = docRef.current;
+    if (!current || name === current.document_name) return;
     setRenameSaving(true);
-    const res = await renameDocument(id, renameDraft);
+    const res = await renameDocument(id, name);
     setRenameSaving(false);
-    if (!isServiceFailure(res)) {
-      setDoc(res.data);
-    } else {
-      setRenameDraft(doc.document_name);
+    if (isServiceFailure(res)) {
+      setRenameDraft(current.document_name);
+      throw new Error(res.error);
     }
+    commitDocument(res.data);
+    setRenameDraft(res.data.document_name);
   };
+
+  const commitRename = () => {
+    // The field has already reverted to the persisted name on failure, and a
+    // blur is trivially retryable — swallow here so an unhandled rejection
+    // never escapes the event handler. Agent writes go through the handler
+    // below instead, where the throw becomes an error envelope the agent reads.
+    void applyRename(renameDraft).catch(() => {});
+  };
+
+  // Write half of `matrx-user/documents` for the DOCUMENT route. Both targets
+  // are the human-authored fields of the `udt_documents` row; the library route
+  // registers nothing at all, and the document BODY belongs to Univer and is
+  // not declared (see the manifest's `writeTargets` doc block for the per-mount
+  // and ruled-out rationale). Both persist immediately through
+  // `document-service` — never a direct table write — and both validate then
+  // THROW on a bad shape, which the writeback seam turns into an error envelope
+  // the agent reads. Fresh closures per call (getWriteHandlers contract), and
+  // every read of the row goes through `docRef` because the seam resolves these
+  // closures before the first confirm resolves.
+  const getSurfaceWriteHandlers = () => ({
+    document_name: async (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "document_name expects a plain text string, not JSON and not JSON-encoded — send the new title itself.",
+        );
+      const next = value.trim();
+      if (!next || next.length > 200)
+        throw new Error(
+          "document_name expects a non-empty string of at most 200 characters.",
+        );
+      if (!docRef.current)
+        throw new Error("The document has not finished loading yet.");
+      if (!canEdit)
+        throw new Error(
+          "This document is open in viewer-only mode — the user does not have edit permission, so it cannot be renamed.",
+        );
+      await applyRename(next);
+    },
+    document_description: async (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "document_description expects a plain text string, not JSON and not JSON-encoded — send the description prose itself.",
+        );
+      if (value.length > 2000)
+        throw new Error(
+          "document_description expects a string of at most 2000 characters.",
+        );
+      if (!docRef.current)
+        throw new Error("The document has not finished loading yet.");
+      if (!canEdit)
+        throw new Error(
+          "This document is open in viewer-only mode — the user does not have edit permission, so its description cannot be changed.",
+        );
+      const res = await updateDocumentDescription(id, value);
+      if (isServiceFailure(res)) throw new Error(res.error);
+      commitDocument(res.data);
+    },
+  });
 
   if (error) {
     return (
@@ -151,6 +227,7 @@ export default function DocumentPage({
     <SurfaceRuntimeProvider
       surfaceName={DOCUMENTS_SURFACE_NAME}
       getScope={getDocumentScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
       isEditable={canEdit}
     >
       <RouteHeader
