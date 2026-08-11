@@ -26,6 +26,7 @@ import {
     RefreshCw,
     Rocket,
     Sparkles,
+    Unlock,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,11 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 import { useNodeReality, writeStageLabel } from "../hooks/useNodeReality";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
-import { REALITY_BADGE, type RealityState } from "../lib/page-reality";
+import {
+    isWritePolicyBlocked,
+    REALITY_BADGE,
+    type RealityState,
+} from "../lib/page-reality";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import type { PlanNodeRow } from "../types";
 
@@ -142,6 +147,15 @@ export function NodeRealityCard({
     }
 
     const ActionIcon = verdict.action ? ACTION_ICON[verdict.action] : null;
+    // What to re-run once the website is unblocked — the very thing that failed.
+    const retryAction =
+        verdict.action === "create-page"
+            ? ("create" as const)
+            : verdict.action === "write-content" || verdict.action === "rewrite"
+              ? ("write" as const)
+              : verdict.action === "publish"
+                ? ("publish" as const)
+                : null;
 
     return (
         <div className="space-y-2 rounded-md border border-border bg-muted/20 p-2.5">
@@ -174,6 +188,32 @@ export function NodeRealityCard({
                 <p className="text-[11px] leading-snug text-destructive">
                     Could not read the live page: {reality.pageError.message}
                 </p>
+            ) : null}
+
+            {/* The server's refusal, in its own words, kept on screen. A toast
+              is gone in four seconds; the reason a page will not build is the
+              single most useful thing this card can say. */}
+            {reality.failure ? (
+                <div className="space-y-1.5">
+                    <p className="text-[11px] leading-snug text-destructive">
+                        {reality.failure}
+                    </p>
+                    {/* A problem we can detect ships with its one-click fix. */}
+                    {isWritePolicyBlocked(reality.failure) ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1 text-xs"
+                            disabled={busy !== null}
+                            onClick={() =>
+                                void reality.allowWrites(retryAction)
+                            }
+                        >
+                            <Unlock className="h-3 w-3" />
+                            Let the plan build this website
+                        </Button>
+                    ) : null}
+                </div>
             ) : null}
 
             {/* A run that takes minutes narrates its stages — never a bare

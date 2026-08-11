@@ -173,6 +173,27 @@ export function judgePageReality(input: RealityInput): RealityVerdict {
     };
 }
 
+/**
+ * Is this failure the CMS site's write policy refusing us?
+ *
+ * aidream answers `403 cms_write_policy_denied` with "Write blocked: site
+ * policy 'blocked' forbids 'update'." Sites created through Setup's rung 1 are
+ * seeded `agent_write_policy: "full"`, but every site linked BEFORE that seed
+ * existed still sits at the default `blocked` — so the whole build path is dead
+ * for them, with the reason buried in an HTTP response nobody sees.
+ *
+ * Matched on the message because the bridge narrows the server envelope to its
+ * text. This drives an OFFER (a button the user may press), never a silent
+ * decision, so a false positive costs nothing.
+ */
+export function isWritePolicyBlocked(message: string | null): boolean {
+    if (!message) return false;
+    return (
+        /cms_write_policy_denied/i.test(message) ||
+        (/site policy/i.test(message) && /forbid/i.test(message))
+    );
+}
+
 /** Compact badge text for tree/table rows — same verdict, four characters wide. */
 export const REALITY_BADGE: Record<RealityState, string> = {
     "no-cms-site": "No site",

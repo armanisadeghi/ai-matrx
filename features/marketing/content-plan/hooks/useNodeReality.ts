@@ -12,8 +12,9 @@
  *               only ever called it with "every ghost node on the site".
  *   - write   → `bridgeFillPreview`, which has ALWAYS taken a single `node_id`
  *               plus `write: true`; the UI only used it as a bulk-run preview.
- *   - publish → `CmsPageService.publishDraft`, the CMS editor's own publish
- *               path (the growth-loop map's human publish pipe).
+ *   - publish → `cms-publish`, which has ALWAYS taken `page_ids`. (Deliberately
+ *               NOT the CMS editor's `publishDraft`: only the bridge advances
+ *               the plan node to `published`.)
  * Nothing new was opened. The defect was a surface that ignored what it had.
  *
  * The page facts come from the FULL CMS row (`CmsPageService.getPage`), not the
@@ -22,9 +23,13 @@
  * no content at all. One page, fetched only while its panel is open.
  */
 import { useCallback, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { CmsPageService } from "@/features/cms/services/cmsService";
+import {
+    CmsPageService,
+    CmsSiteService,
+} from "@/features/cms/services/cmsService";
+import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
@@ -78,8 +83,12 @@ export interface UseNodeRealityArgs {
 export function useNodeReality(args: UseNodeRealityArgs) {
     const dispatch = useAppDispatch();
     const queryClient = useQueryClient();
-    const [busy, setBusy] = useState<null | "create" | "write" | "publish">(null);
+    const [busy, setBusy] = useState<
+        null | "create" | "write" | "publish" | "policy"
+    >(null);
     const [startedAt, setStartedAt] = useState<number | null>(null);
+    // A toast is a passing glance; the card keeps the reason on screen.
+    const [failure, setFailure] = useState<string | null>(null);
 
     const pageId = args.cmsPage?.pageId ?? null;
 
@@ -125,121 +134,134 @@ export function useNodeReality(args: UseNodeRealityArgs) {
         }
     }, [queryClient, args.siteId, pageId]);
 
-    /** Create the page shell on the website at the route the plan promised. */
-    const create = useMutation({
-        mutationFn: async () => {
-            if (!args.cmsSiteId) {
-                throw new Error("This plan has no website linked yet.");
-            }
-            return bridgeRealize(dispatch, args.siteId, [args.nodeId], {
-                dryRun: false,
-                cmsSite: args.cmsSiteId,
-            });
-        },
-        onMutate: () => setBusy("create"),
-        onSettled: () => setBusy(null),
-        onSuccess: async (result) => {
-            const item = result.items[0];
-            if (result.failed > 0 || (item && !item.ok)) {
-                // The server's own words — never a laundered summary.
-                toast.error(
-                    item?.error ||
-                        result.errors[0] ||
-                        "The website refused to create this page.",
-                );
-                return;
-            }
-            toast.success(item?.detail || "The page was created on the website.");
-            await invalidate();
-        },
-        onError: (error: Error) =>
-            toast.error(error.message || "Could not create this page."),
-    });
-
     /**
-     * Author this ONE page from its brief and save it as a draft. Minutes-long
-     * — the caller renders the stage line, never a bare spinner.
-     */
-    const write = useMutation({
-        mutationFn: async () => {
-            if (!args.cmsSiteId) {
-                throw new Error("This plan has no website linked yet.");
-            }
-            return bridgeFillPreview(dispatch, args.siteId, {
-                cmsSite: args.cmsSiteId,
-                nodeId: args.nodeId,
-                write: true,
-            });
-        },
-        onMutate: () => {
-            setBusy("write");
-            setStartedAt(Date.now());
-        },
-        onSettled: () => {
-            setBusy(null);
-            setStartedAt(null);
-        },
-        onSuccess: async (preview) => {
-            toast.success(
-                preview.wrote
-                    ? `"${preview.title}" was written into the website as a draft.`
-                    : `"${preview.title}" was written but not saved.`,
-            );
-            await invalidate();
-        },
-        onError: (error: Error) =>
-            toast.error(error.message || "Could not write this page."),
-    });
-
-    /**
-     * Publish this one page.
+     * The three actions, as ONE imperative runner.
      *
-     * Deliberately the BRIDGE path (`cms-publish` with `page_ids`), not the CMS
-     * editor's `publishDraft`: only the bridge advances the plan node's status
-     * to `published` (`sync_status`). Publishing through the CMS service alone
-     * would put the page live and leave the plan claiming it was never built.
+     * Deliberately NOT `useMutation`: the observer's `onError` / `onSettled`
+     * never fired here (measured — a 403 from the server left the button
+     * spinning forever with the failure invisible), and a one-shot imperative
+     * call has no need of mutation-cache semantics in the first place. A plain
+     * async function with try/catch/finally cannot lose an error.
      */
-    const publish = useMutation({
-        mutationFn: async () => {
-            if (!pageId) throw new Error("This page does not exist yet.");
+    const run = useCallback(
+        async (action: "create" | "write" | "publish") => {
             if (!args.cmsSiteId) {
-                throw new Error("This plan has no website linked yet.");
-            }
-            return bridgePublish(dispatch, args.siteId, {
-                dryRun: false,
-                cmsSite: args.cmsSiteId,
-                pageIds: [pageId],
-            });
-        },
-        onMutate: () => setBusy("publish"),
-        onSettled: () => setBusy(null),
-        onSuccess: async (result) => {
-            const item = result.items[0];
-            if (result.failed > 0 || item?.error) {
-                toast.error(item?.error || "The website refused to publish this page.");
+                toast.error("This plan has no website linked yet.");
                 return;
             }
-            if (result.published === 0 && result.skippedNoChanges > 0) {
-                toast.info("Nothing to publish — the live page already matches the draft.");
-            } else {
-                toast.success("The page is live.");
+            setBusy(action);
+            setFailure(null);
+            if (action === "write") setStartedAt(Date.now());
+            try {
+                if (action === "create") {
+                    const result = await bridgeRealize(
+                        dispatch,
+                        args.siteId,
+                        [args.nodeId],
+                        { dryRun: false, cmsSite: args.cmsSiteId },
+                    );
+                    const item = result.items[0];
+                    if (result.failed > 0 || (item && !item.ok)) {
+                        // The server's own words — never a laundered summary.
+                        throw new Error(
+                            item?.error ||
+                                result.errors[0] ||
+                                "The website refused to create this page.",
+                        );
+                    }
+                    toast.success(
+                        item?.detail || "The page was created on the website.",
+                    );
+                } else if (action === "write") {
+                    const preview = await bridgeFillPreview(dispatch, args.siteId, {
+                        cmsSite: args.cmsSiteId,
+                        nodeId: args.nodeId,
+                        write: true,
+                    });
+                    toast.success(
+                        preview.wrote
+                            ? `"${preview.title}" was written into the website as a draft.`
+                            : `"${preview.title}" was written but not saved.`,
+                    );
+                } else {
+                    if (!pageId) throw new Error("This page does not exist yet.");
+                    const result = await bridgePublish(dispatch, args.siteId, {
+                        dryRun: false,
+                        cmsSite: args.cmsSiteId,
+                        pageIds: [pageId],
+                    });
+                    const item = result.items[0];
+                    if (result.failed > 0 || item?.error) {
+                        throw new Error(
+                            item?.error || "The website refused to publish this page.",
+                        );
+                    }
+                    if (result.published === 0 && result.skippedNoChanges > 0) {
+                        toast.info(
+                            "Nothing to publish — the live page already matches the draft.",
+                        );
+                    } else {
+                        toast.success("The page is live.");
+                    }
+                }
+                await invalidate();
+            } catch (error) {
+                setFailure(extractErrorMessage(error));
+                toast.error(extractErrorMessage(error));
+            } finally {
+                setBusy(null);
+                setStartedAt(null);
             }
-            await invalidate();
         },
-        onError: (error: Error) =>
-            toast.error(error.message || "Could not publish this page."),
-    });
+        [dispatch, args.cmsSiteId, args.siteId, args.nodeId, pageId, invalidate],
+    );
+
+    /**
+     * Turn on writes for the linked website, then retry what just failed.
+     *
+     * `agent_write_policy` defaults to `blocked`, and only sites created
+     * through Setup's rung 1 are seeded `full` — so every site linked before
+     * that seed existed refuses every build action with a 403 the user could
+     * not see, let alone fix. Read-modify-write so no other setting is lost.
+     */
+    const allowWrites = useCallback(
+        async (retry: "create" | "write" | "publish" | null) => {
+            if (!args.cmsSiteId) return;
+            setBusy("policy");
+            setFailure(null);
+            try {
+                const site = await CmsSiteService.getSite(args.cmsSiteId);
+                const settings = {
+                    ...((site.settings ?? {}) as Record<string, unknown>),
+                    agent_write_policy: "full",
+                };
+                await CmsSiteService.updateSite(args.cmsSiteId, { settings });
+                toast.success("The website now accepts changes from the plan.");
+            } catch (error) {
+                setFailure(extractErrorMessage(error));
+                toast.error(extractErrorMessage(error));
+                setBusy(null);
+                return;
+            }
+            setBusy(null);
+            if (retry) await run(retry);
+        },
+        [args.cmsSiteId, run],
+    );
 
     return {
         verdict,
+        allowWrites,
         page: detail.data ?? null,
         isLoadingPage: detail.isLoading,
         pageError: detail.error as Error | null,
+        /** The last action failure, kept on screen until the next attempt. */
+        failure,
         busy,
         startedAt,
-        create: create.mutate,
-        write: write.mutate,
-        publish: publish.mutate,
+        create: () => void run("create"),
+        write: () => void run("write"),
+        publish: () => void run("publish"),
         refresh: invalidate,
     };
 }

@@ -1,4 +1,5 @@
 import {
+    isWritePolicyBlocked,
     judgePageReality,
     planChangedAfterPage,
     rollupReality,
@@ -107,6 +108,21 @@ describe("planChangedAfterPage", () => {
     it("is false when the page is newer or identical", () => {
         expect(planChangedAfterPage("2026-08-01T00:00:00Z", "2026-08-01T00:00:00Z")).toBe(false);
         expect(planChangedAfterPage("2026-08-01T00:00:00Z", "2026-08-02T00:00:00Z")).toBe(false);
+    });
+});
+
+describe("isWritePolicyBlocked", () => {
+    it("recognises the server's refusal", () => {
+        expect(
+            isWritePolicyBlocked("Write blocked: site policy 'blocked' forbids 'update'."),
+        ).toBe(true);
+        expect(isWritePolicyBlocked("cms_write_policy_denied")).toBe(true);
+    });
+
+    it("does not claim every failure is a policy problem", () => {
+        expect(isWritePolicyBlocked(null)).toBe(false);
+        expect(isWritePolicyBlocked("A page already serves /about.")).toBe(false);
+        expect(isWritePolicyBlocked("HTTP 500")).toBe(false);
     });
 });
 
