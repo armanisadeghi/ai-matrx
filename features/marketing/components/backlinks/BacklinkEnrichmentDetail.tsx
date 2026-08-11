@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -12,11 +12,13 @@ import {
   Save,
 } from "lucide-react";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
 import {
   backlinkAnalysisActionState,
+  backlinkCaptureForUi,
   hasBacklinkAssessment,
   humanizeAssessmentValue,
   jsonRecord,
@@ -26,6 +28,7 @@ import {
 import { parseObservationExtras } from "@/features/marketing/components/backlinks/lib/extras";
 import {
   formatDate,
+  SectionCard,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
@@ -34,6 +37,7 @@ import { useBacklinkRecord } from "@/features/marketing/data/backlinks-hooks";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { toast } from "@/lib/toast";
+import { webCopy } from "@/features/marketing/lib/copy-payloads";
 
 function fact(label: string, value: ReactNode) {
   return (
@@ -48,17 +52,23 @@ function fact(label: string, value: ReactNode) {
   );
 }
 
-function section(title: string, children: ReactNode, description?: string) {
+function section(
+  title: string,
+  children: ReactNode,
+  description?: string,
+  copy?: ComponentProps<typeof SectionCard>["copy"],
+) {
   return (
-    <section className="rounded-lg border border-border bg-card p-3">
-      <h2 className="text-xs font-semibold text-foreground">{title}</h2>
-      {description ? (
-        <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
-          {description}
-        </p>
-      ) : null}
-      <div className="mt-3">{children}</div>
-    </section>
+    <SectionCard title={title} copy={copy}>
+      <div className="p-3">
+        {description ? (
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+        <div className={description ? "mt-3" : undefined}>{children}</div>
+      </div>
+    </SectionCard>
   );
 }
 
@@ -123,7 +133,7 @@ export function BacklinkEnrichmentDetail({
   const row = backlink.data ?? initialRow;
   const assessment = parseBacklinkAssessment(row.resolved_assessment);
   const hasAssessment = hasBacklinkAssessment(row.resolved_assessment);
-  const capture = jsonRecord(row.source_capture);
+  const capture = backlinkCaptureForUi(row.source_capture);
   const hasCapture = Object.keys(capture).length > 0;
   const existingHuman = jsonRecord(row.human_ruling);
   const lastError = jsonRecord(row.last_error);
@@ -174,6 +184,231 @@ export function BacklinkEnrichmentDetail({
   const referringDomainHref = row.source_domain
     ? `${sitePath}/backlinks?tab=domains&search=${encodeURIComponent(row.source_domain)}`
     : null;
+  const recordSurface = `Backlink from ${row.source_domain ?? sourceOrigin(row.source_url)}`;
+  const displayRow: BacklinkObservationRow = {
+    ...row,
+    source_capture: capture,
+  };
+  const identityData = {
+    source_page: {
+      url: row.source_url,
+      title: extras.pageFromTitle,
+      surrounding_text: sourceContext,
+    },
+    referring_site: {
+      domain: row.source_domain,
+      origin: sourceOrigin(row.source_url),
+    },
+    target_page: { url: row.target_url, page_id: row.page_id },
+    link: {
+      anchor_text: row.anchor_text,
+      placement: extras.semanticLocation,
+      image_url: extras.imageUrl,
+      image_alt: extras.imageAlt,
+    },
+  };
+  const identityCopy = webCopy({
+    kind: "web-backlink-link-identity",
+    label: "Link identity",
+    description:
+      "The source page, referring site, target page, anchor, placement, and surrounding link context for one backlink.",
+    surface: recordSurface,
+    data: identityData,
+    lines: [
+      ["Source page", row.source_url],
+      ["Source title", extras.pageFromTitle],
+      ["Referring site", row.source_domain ?? sourceOrigin(row.source_url)],
+      ["Target page", row.target_url],
+      ["Anchor text", row.anchor_text ?? "No text anchor reported"],
+      ["Placement", humanizeAssessmentValue(extras.semanticLocation)],
+      ["Text around the link", sourceContext],
+      ["Linked image", extras.imageUrl],
+      ["Image alt text", extras.imageAlt],
+    ],
+    attributes: { backlink_id: row.id, site_id: row.site_id },
+  });
+  const providerCopy = webCopy({
+    kind: "web-backlink-provider-facts",
+    label: "Provider facts and link mechanics",
+    description:
+      "The raw provider evidence plus the stored authority, link-mechanics, and lifecycle observations for one backlink.",
+    surface: recordSurface,
+    data: {
+      state: row.state,
+      link_type: row.link_type,
+      is_dofollow: row.is_dofollow,
+      source_rank: row.source_rank,
+      domain_rank: row.domain_rank,
+      spam_score: row.spam_score,
+      first_seen_at: row.first_seen_at,
+      last_seen_at: row.last_seen_at,
+      lost_at: row.lost_at,
+      provider_evidence: row.provider_evidence,
+    },
+    lines: [
+      ["State", humanizeAssessmentValue(row.state)],
+      ["Link type", humanizeAssessmentValue(row.link_type)],
+      [
+        "Search-engine follow",
+        row.is_dofollow === null
+          ? "Unknown"
+          : row.is_dofollow
+            ? "Dofollow"
+            : "Nofollow",
+      ],
+      ["Source page rank", row.source_rank],
+      ["Referring domain rank", row.domain_rank],
+      ["Provider spam score", row.spam_score],
+      ["Placement", humanizeAssessmentValue(extras.semanticLocation)],
+      ["Broken link", yesNo(extras.isBroken)],
+      ["First seen", formatDate(row.first_seen_at)],
+      ["Last seen", formatDate(row.last_seen_at)],
+    ],
+    attributes: { backlink_id: row.id, site_id: row.site_id },
+  });
+  const redirectCopy = extras.urlToRedirectTarget
+    ? webCopy({
+        kind: "web-backlink-redirect-destination",
+        label: "Redirect destination",
+        description:
+          "The redirect destination reported for this backlink target.",
+        surface: recordSurface,
+        data: { redirect_destination: extras.urlToRedirectTarget },
+        lines: [["Redirect destination", extras.urlToRedirectTarget]],
+        attributes: { backlink_id: row.id, site_id: row.site_id },
+      })
+    : undefined;
+  const errorCopy = webCopy({
+    kind: "web-backlink-analysis-error",
+    label: "Last analysis error",
+    description:
+      "The latest stored source-page analysis error for one backlink.",
+    surface: recordSurface,
+    data: lastError,
+    lines: [
+      ["Message", lastErrorMessage],
+      ["Stage", jsonText(lastError.stage)],
+      ["HTTP status", jsonNumber(lastError.status_code)],
+      ["Retryable", yesNo(jsonBoolean(lastError.retryable))],
+    ],
+    attributes: { backlink_id: row.id, site_id: row.site_id },
+  });
+  const assessmentCopy = webCopy({
+    kind: "web-backlink-assessment",
+    label: "Our assessment",
+    description:
+      "The complete first-party assessment derived from provider and captured source-page evidence.",
+    surface: recordSurface,
+    data: row.resolved_assessment,
+    lines: [
+      ["Overall score", assessment.overallScore],
+      ["Source type", humanizeAssessmentValue(assessment.pageType)],
+      ["Relevance", humanizeAssessmentValue(assessment.relevanceVerdict)],
+      ["Context quality", humanizeAssessmentValue(assessment.contextVerdict)],
+      ["Anchor quality", humanizeAssessmentValue(assessment.anchorVerdict)],
+      ["Editorial nature", humanizeAssessmentValue(assessment.editorialKind)],
+      ["Can you change it?", humanizeAssessmentValue(assessment.controlLevel)],
+      ["Risk", humanizeAssessmentValue(assessment.riskVerdict)],
+      ["Confidence", assessment.confidence],
+      ["Source-page summary", assessment.pageSummary],
+    ],
+    attributes: { backlink_id: row.id, site_id: row.site_id },
+  });
+  const nextStepCopy = webCopy({
+    kind: "web-backlink-recommended-next-step",
+    label: "Recommended next step",
+    description:
+      "The recommended action, priority, and reasoning for one backlink.",
+    surface: recordSurface,
+    data: {
+      action: assessment.action,
+      priority: assessment.priority,
+      reason: assessment.actionReason,
+    },
+    lines: [
+      ["Action", humanizeAssessmentValue(assessment.action)],
+      ["Priority", humanizeAssessmentValue(assessment.priority)],
+      ["Reason", assessment.actionReason],
+    ],
+    attributes: { backlink_id: row.id, site_id: row.site_id },
+  });
+  const captureCopy = webCopy({
+    kind: "web-backlink-source-page-evidence",
+    label: "Captured source-page evidence",
+    description:
+      "The user-facing source-page evidence captured for this backlink; internal cache identifiers are excluded.",
+    surface: recordSurface,
+    data: capture,
+    lines: [
+      ["Capture succeeded", yesNo(jsonBoolean(capture.success))],
+      ["HTTP status", jsonNumber(capture.status_code)],
+      ["Content type", jsonText(capture.content_type)],
+      ["Characters captured", jsonNumber(capture.char_count)],
+      ["Found links to target", captureLinks],
+      ["Served from cache", yesNo(jsonBoolean(capture.from_cache))],
+      ["Captured title", jsonText(capture.title)],
+      ["Final captured URL", jsonText(capture.final_url)],
+      ["Scraped", formatDate(jsonText(capture.scraped_at))],
+    ],
+    attributes: { backlink_id: row.id, site_id: row.site_id },
+  });
+  const rulingCopy = webCopy({
+    kind: "web-backlink-human-ruling",
+    label: "Your ruling",
+    description: "The current human verdict and note for one backlink.",
+    surface: recordSurface,
+    data: { verdict, note: note.trim() },
+    lines: [
+      ["Verdict", humanizeAssessmentValue(verdict)],
+      ["Note", note.trim()],
+    ],
+    attributes: { backlink_id: row.id, site_id: row.site_id },
+  });
+  const lifecycleCopy = webCopy({
+    kind: "web-backlink-analysis-lifecycle",
+    label: "Analysis lifecycle",
+    description:
+      "The durable capture, analysis, review, and record timestamps for one backlink.",
+    surface: recordSurface,
+    data: {
+      enrichment_status: row.enrichment_status,
+      enrichment_attempt_count: row.enrichment_attempt_count,
+      next_enrichment_at: row.next_enrichment_at,
+      captured_at: row.captured_at,
+      analyzed_at: row.analyzed_at,
+      human_reviewed_at: row.human_reviewed_at,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    },
+    lines: [
+      ["Status", humanizeAssessmentValue(row.enrichment_status)],
+      ["Attempts", row.enrichment_attempt_count],
+      ["Next analysis", formatDate(row.next_enrichment_at)],
+      ["Captured", formatDate(row.captured_at)],
+      ["Analyzed", formatDate(row.analyzed_at)],
+      ["Human reviewed", formatDate(row.human_reviewed_at)],
+      ["Record created", formatDate(row.created_at)],
+      ["Record updated", formatDate(row.updated_at)],
+    ],
+    attributes: { backlink_id: row.id, site_id: row.site_id },
+  });
+  const storedDataCopy = webCopy({
+    kind: "web-backlink-stored-record",
+    label: "Stored backlink data",
+    description:
+      "The complete user-facing stored backlink record; internal cache identifiers are excluded.",
+    surface: recordSurface,
+    data: displayRow,
+    lines: [
+      ["Source page", row.source_url],
+      ["Target page", row.target_url],
+      ["State", humanizeAssessmentValue(row.state)],
+      ["Enrichment", humanizeAssessmentValue(row.enrichment_status)],
+      ["Last seen", formatDate(row.last_seen_at)],
+      ["Updated", formatDate(row.updated_at)],
+    ],
+    attributes: { backlink_id: row.id, site_id: row.site_id },
+  });
 
   return (
     <div className="h-full overflow-y-auto bg-background p-3 sm:p-4">
@@ -197,7 +432,11 @@ export function BacklinkEnrichmentDetail({
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
             <Button asChild type="button" size="sm" variant="outline">
-              <Link href={`${sitePath}/reputation`}>
+              <Link
+                href={`${sitePath}/reputation`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Newspaper className="h-3.5 w-3.5" />
                 Reputation
               </Link>
@@ -255,6 +494,8 @@ export function BacklinkEnrichmentDetail({
                 {referringDomainHref ? (
                   <Link
                     href={referringDomainHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-xs font-medium text-primary hover:underline"
                   >
                     View this site in Referring domains
@@ -269,12 +510,16 @@ export function BacklinkEnrichmentDetail({
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                 {externalUrl(row.target_url)}
                 {row.page_id ? (
-                  <Link
+                  <EntityRef
+                    token="web_page"
+                    id={row.page_id}
+                    name="View this page in AI Matrx"
                     href={`${sitePath}/pages/${row.page_id}`}
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
-                    View this page in AI Matrx
-                  </Link>
+                    showIcon={false}
+                    openInNewTab
+                    wrap
+                    labelClassName="text-xs font-medium text-primary"
+                  />
                 ) : null}
               </div>
             </div>
@@ -321,6 +566,7 @@ export function BacklinkEnrichmentDetail({
             ) : null}
           </div>,
           "The three identities in this relationship are shown separately and in full.",
+          identityCopy,
         )}
 
         {section(
@@ -363,6 +609,7 @@ export function BacklinkEnrichmentDetail({
             {fact("Provider previously saw it", formatDate(extras.prevSeen))}
           </div>,
           "These are the stored provider observations—not AI guesses.",
+          providerCopy,
         )}
 
         {extras.urlToRedirectTarget
@@ -370,17 +617,19 @@ export function BacklinkEnrichmentDetail({
               "Redirect destination",
               externalUrl(extras.urlToRedirectTarget),
               "The provider reports that the target redirects here.",
+              redirectCopy,
             )
           : null}
 
         {lastErrorMessage || Object.keys(lastError).length > 0 ? (
-          <section className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
-            <div className="flex items-start gap-2">
+          <SectionCard
+            title="Last analysis error"
+            copy={errorCopy}
+            className="border-destructive/40 bg-destructive/5"
+          >
+            <div className="flex items-start gap-2 p-3">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-              <div className="min-w-0">
-                <h2 className="text-xs font-semibold text-destructive">
-                  Last analysis error
-                </h2>
+              <div className="min-w-0 flex-1">
                 <p className="mt-1 break-words text-sm text-foreground">
                   {lastErrorMessage ?? "The stored error has no message field."}
                 </p>
@@ -397,9 +646,26 @@ export function BacklinkEnrichmentDetail({
                     </span>
                   ) : null}
                 </div>
+                {onAnalyze ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="mt-3"
+                    disabled={analysisAction.disabled}
+                    title={analysisAction.title}
+                    onClick={onAnalyze}
+                  >
+                    {running || analysisAction.inProgress ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <BrainCircuit className="h-3.5 w-3.5" />
+                    )}
+                    {analysisAction.label}
+                  </Button>
+                ) : null}
               </div>
             </div>
-          </section>
+          </SectionCard>
         ) : null}
 
         {hasAssessment ? (
@@ -479,6 +745,7 @@ export function BacklinkEnrichmentDetail({
                 ) : null}
               </>,
               "First-party interpretation of the provider evidence and captured source page.",
+              assessmentCopy,
             )}
 
             {section(
@@ -500,6 +767,7 @@ export function BacklinkEnrichmentDetail({
                 </p>
               </div>,
               "The practical decision—not just a score.",
+              nextStepCopy,
             )}
           </>
         ) : (
@@ -601,6 +869,7 @@ export function BacklinkEnrichmentDetail({
                 ) : null}
               </div>,
               "The exact cached page evidence used by the analysis. The entire stored excerpt is visible below.",
+              captureCopy,
             )
           : null}
 
@@ -644,6 +913,7 @@ export function BacklinkEnrichmentDetail({
                 </Button>
               </>,
               "Human judgment is offered only after an assessment exists.",
+              rulingCopy,
             )
           : null}
 
@@ -663,20 +933,26 @@ export function BacklinkEnrichmentDetail({
             {fact("Record updated", formatDate(row.updated_at))}
           </div>,
           "Durable state for this exact source-page → target-page relationship.",
+          lifecycleCopy,
         )}
 
-        {section(
-          "All stored data",
-          <div className="h-[min(52rem,70vh)] min-h-[28rem] overflow-hidden rounded-md border border-border/60">
-            <JsonInspector
-              data={row}
-              label="Exact backlink record"
-              defaultView="json"
-              className="h-full rounded-none"
-            />
-          </div>,
-          "Nothing is omitted: provider evidence, capture data, deterministic evidence, AI evidence, resolved assessment, human ruling, lifecycle fields, identifiers, and stored errors are all available here in their exact persisted form.",
-        )}
+        <SectionCard title="Technical details" collapsible defaultOpen={false}>
+          <div className="p-3">
+            <p className="mb-3 text-[11px] leading-4 text-muted-foreground">
+              Complete user-facing record data for troubleshooting and advanced
+              inspection. Internal cache identifiers are excluded.
+            </p>
+            <div className="h-[min(52rem,70vh)] min-h-[28rem] overflow-hidden rounded-md border border-border/60">
+              <JsonInspector
+                data={displayRow}
+                label="Exact backlink record"
+                defaultView="json"
+                agentCopy={storedDataCopy.agent}
+                className="h-full rounded-none"
+              />
+            </div>
+          </div>
+        </SectionCard>
       </div>
     </div>
   );

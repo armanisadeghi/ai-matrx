@@ -105,6 +105,7 @@ export const SOURCE_FEATURES = [
   "conversation_resume",
   "doc_verify",
   "fork_and_run",
+  "hindsight",
   "hindsight_replay",
   "kg_clustering_namer",
   "manual",

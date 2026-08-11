@@ -1,5 +1,6 @@
 import {
   backlinkAnalysisActionState,
+  backlinkCaptureForUi,
   hasBacklinkAssessment,
   parseBacklinkAssessment,
   providerExtras,
@@ -50,6 +51,17 @@ describe("backlink enrichment narrowers", () => {
     expect(hasBacklinkAssessment({})).toBe(false);
     expect(hasBacklinkAssessment(null)).toBe(false);
     expect(hasBacklinkAssessment({ overall_score: 72 })).toBe(true);
+  });
+
+  it("removes internal cache identifiers from user-facing capture evidence", () => {
+    expect(
+      backlinkCaptureForUi({
+        success: true,
+        cache_key: "source-page:internal-key",
+        cacheKey: "legacy-internal-key",
+        title: "Useful resource",
+      }),
+    ).toEqual({ success: true, title: "Useful resource" });
   });
 
   it("uses one controlled single-link action contract everywhere", () => {

@@ -10,6 +10,19 @@ export function jsonRecord(
     : {};
 }
 
+/**
+ * User-facing capture evidence. Internal cache identifiers are deliberately
+ * excluded: they are implementation details, not backlink evidence.
+ */
+export function backlinkCaptureForUi(
+  value: Json | null | undefined,
+): Record<string, Json> {
+  const capture = { ...jsonRecord(value) };
+  delete capture.cache_key;
+  delete capture.cacheKey;
+  return capture;
+}
+
 function text(value: Json | undefined): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
@@ -54,11 +67,12 @@ export function backlinkAnalysisActionState(
     inProgress,
     label:
       running || inProgress ? "Analyzing" : rerun ? "Re-analyze" : "Analyze",
-    title: running || inProgress
-      ? "This source page is already being analyzed"
-      : rerun
-        ? "Capture and analyze this source page again"
-        : "Capture and analyze this source page now",
+    title:
+      running || inProgress
+        ? "This source page is already being analyzed"
+        : rerun
+          ? "Capture and analyze this source page again"
+          : "Capture and analyze this source page now",
   };
 }
 
