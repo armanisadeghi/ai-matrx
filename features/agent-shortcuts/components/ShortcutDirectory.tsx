@@ -76,6 +76,23 @@ type SortField =
 
 type SortDirection = "asc" | "desc";
 
+const SortIcon = ({
+  field,
+  activeField,
+  direction,
+}: {
+  field: SortField;
+  activeField: SortField;
+  direction: SortDirection;
+}) => {
+  if (activeField !== field) return null;
+  return direction === "asc" ? (
+    <ChevronUp className="h-3 w-3 inline ml-1" />
+  ) : (
+    <ChevronDown className="h-3 w-3 inline ml-1" />
+  );
+};
+
 export interface ShortcutDirectoryProps {
   mode: ShortcutDirectoryMode;
   title?: string;
@@ -316,15 +333,6 @@ export function ShortcutDirectory({
         variant: "destructive",
       });
     }
-  };
-
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return null;
-    return sortDirection === "asc" ? (
-      <ChevronUp className="h-3 w-3 inline ml-1" />
-    ) : (
-      <ChevronDown className="h-3 w-3 inline ml-1" />
-    );
   };
 
   const renderRow = (row: ShortcutDirectoryRow) => (
@@ -742,7 +750,11 @@ export function ShortcutDirectory({
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
                       Label
                       <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="label" />
+                      <SortIcon
+                        field="label"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead
@@ -751,7 +763,11 @@ export function ShortcutDirectory({
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
                       Agent
-                      <SortIcon field="agent" />
+                      <SortIcon
+                        field="agent"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead
@@ -760,7 +776,11 @@ export function ShortcutDirectory({
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
                       Scope
-                      <SortIcon field="scope" />
+                      <SortIcon
+                        field="scope"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead
@@ -769,7 +789,11 @@ export function ShortcutDirectory({
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
                       Placement
-                      <SortIcon field="placement" />
+                      <SortIcon
+                        field="placement"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead
@@ -778,7 +802,11 @@ export function ShortcutDirectory({
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
                       Category
-                      <SortIcon field="category" />
+                      <SortIcon
+                        field="category"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead
@@ -787,7 +815,11 @@ export function ShortcutDirectory({
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
                       Surface
-                      <SortIcon field="surface" />
+                      <SortIcon
+                        field="surface"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead
@@ -796,7 +828,11 @@ export function ShortcutDirectory({
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary justify-center">
                       Status
-                      <SortIcon field="status" />
+                      <SortIcon
+                        field="status"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead className="w-[80px]">Open</TableHead>

@@ -301,6 +301,58 @@ function priorityLabel(priority: TaskWithProject["priority"]): string {
   return "—";
 }
 
+function ColumnHead({
+  k,
+  children,
+  className,
+  align = "left",
+  filter,
+  sortKey,
+  sortDir,
+  onSort,
+}: {
+  k: SortKey;
+  children: React.ReactNode;
+  className?: string;
+  align?: "left" | "right";
+  filter: React.ReactNode;
+  sortKey: SortKey;
+  sortDir: "asc" | "desc";
+  onSort: (key: SortKey) => void;
+}) {
+  return (
+    <TableHead className={className}>
+      <div
+        className={cn(
+          "inline-flex items-center gap-0.5",
+          align === "right" && "justify-end w-full",
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => onSort(k)}
+          className={cn(
+            "inline-flex items-center gap-1 hover:text-foreground transition-colors text-xs",
+            align === "right" && "justify-end",
+          )}
+        >
+          {children}
+          {sortKey === k ? (
+            sortDir === "asc" ? (
+              <ChevronUp className="h-3 w-3" />
+            ) : (
+              <ChevronDown className="h-3 w-3" />
+            )
+          ) : (
+            <ChevronsUpDown className="h-3 w-3 opacity-40" />
+          )}
+        </button>
+        {filter}
+      </div>
+    </TableHead>
+  );
+}
+
 export default function TasksTableView() {
   const dispatch = useAppDispatch();
   const tasks = useAppSelector(selectFilteredTasks);
@@ -417,50 +469,6 @@ export default function TasksTableView() {
 
   const filtersActive = hasActiveColumnFilters(columnFilters);
 
-  const ColumnHead = ({
-    k,
-    children,
-    className,
-    align = "left",
-    filter,
-  }: {
-    k: SortKey;
-    children: React.ReactNode;
-    className?: string;
-    align?: "left" | "right";
-    filter: React.ReactNode;
-  }) => (
-    <TableHead className={className}>
-      <div
-        className={cn(
-          "inline-flex items-center gap-0.5",
-          align === "right" && "justify-end w-full",
-        )}
-      >
-        <button
-          type="button"
-          onClick={() => toggleSort(k)}
-          className={cn(
-            "inline-flex items-center gap-1 hover:text-foreground transition-colors text-xs",
-            align === "right" && "justify-end",
-          )}
-        >
-          {children}
-          {sortKey === k ? (
-            sortDir === "asc" ? (
-              <ChevronUp className="h-3 w-3" />
-            ) : (
-              <ChevronDown className="h-3 w-3" />
-            )
-          ) : (
-            <ChevronsUpDown className="h-3 w-3 opacity-40" />
-          )}
-        </button>
-        {filter}
-      </div>
-    </TableHead>
-  );
-
   return (
     <div className="h-full min-h-0 flex flex-col">
       {filtersActive && (
@@ -483,6 +491,9 @@ export default function TasksTableView() {
           <TableHeader className="sticky top-0 z-10 bg-background">
             <TableRow className="hover:bg-transparent">
               <ColumnHead
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={toggleSort}
                 k="status"
                 className="w-10"
                 filter={
@@ -506,6 +517,9 @@ export default function TasksTableView() {
                 <span className="sr-only">Status</span>
               </ColumnHead>
               <ColumnHead
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={toggleSort}
                 k="title"
                 filter={
                   <ColumnFilterButton
@@ -524,6 +538,9 @@ export default function TasksTableView() {
                 Task
               </ColumnHead>
               <ColumnHead
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={toggleSort}
                 k="project"
                 className="min-w-[120px]"
                 filter={
@@ -573,6 +590,9 @@ export default function TasksTableView() {
                 Project
               </ColumnHead>
               <ColumnHead
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={toggleSort}
                 k="priority"
                 className="w-24"
                 filter={
@@ -598,6 +618,9 @@ export default function TasksTableView() {
                 Priority
               </ColumnHead>
               <ColumnHead
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={toggleSort}
                 k="dueDate"
                 className="w-28"
                 filter={
@@ -617,6 +640,9 @@ export default function TasksTableView() {
                 Due
               </ColumnHead>
               <ColumnHead
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={toggleSort}
                 k="updated"
                 className="w-32"
                 filter={

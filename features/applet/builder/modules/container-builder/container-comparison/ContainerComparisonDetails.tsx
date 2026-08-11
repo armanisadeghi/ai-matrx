@@ -23,6 +23,237 @@ interface ContainerComparisonModalProps {
   onDetach?: (event: React.MouseEvent) => void;
 }
 
+// Normalize string for display comparison
+const normalizeForDisplay = (value: any): string => {
+  if (value === null || value === undefined || value === "") {
+    return "(empty)";
+  }
+  return String(value).trim();
+};
+
+// Status Badge Component
+const StatusBadge = ({
+  status,
+  label,
+}: {
+  status: boolean;
+  label: string;
+}) => (
+  <Badge
+    variant={status ? "default" : "destructive"}
+    className="gap-1 text-xs"
+  >
+    {status ? (
+      <CheckCircle2 className="h-3 w-3" />
+    ) : (
+      <XCircle className="h-3 w-3" />
+    )}
+    {label}
+  </Badge>
+);
+
+// Property Row Component
+const PropertyRow = ({
+  label,
+  appletValue,
+  coreValue,
+  isMatch,
+}: {
+  label: string;
+  appletValue: any;
+  coreValue: any;
+  isMatch?: boolean;
+}) => {
+  // Normalize values for comparison if isMatch not explicitly provided
+  const normalizedAppletValue = normalizeForDisplay(appletValue);
+  const normalizedCoreValue = normalizeForDisplay(coreValue);
+  const actualMatch =
+    isMatch !== undefined
+      ? isMatch
+      : normalizedAppletValue === normalizedCoreValue ||
+        (normalizedAppletValue === "(empty)" &&
+          normalizedCoreValue === "(empty)");
+
+  return (
+    <div className="grid grid-cols-3 gap-4 py-2 border-b dark:border-zinc-700 text-sm">
+      <div>
+        <span className="font-medium text-muted-foreground">{label}:</span>
+        <div
+          className={cn(
+            "mt-1",
+            !actualMatch && "text-orange-600 dark:text-orange-400",
+          )}
+        >
+          {normalizedAppletValue}
+        </div>
+      </div>
+      <div>
+        <div
+          className={cn(
+            "mt-1",
+            !actualMatch && "text-blue-600 dark:text-blue-400",
+          )}
+        >
+          {normalizedCoreValue}
+        </div>
+      </div>
+      <div className="flex items-center">
+        {actualMatch ? (
+          <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+        ) : (
+          <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Field Difference Row Component
+const FieldDifferenceRow = ({
+  label,
+  coreValue,
+  appletValue,
+  match,
+  type = "string",
+}: {
+  label: string;
+  coreValue: any;
+  appletValue: any;
+  match: boolean;
+  type?: "string" | "number" | "component";
+}) => {
+  const displayValue = (value: any) => {
+    if (type === "string") {
+      return normalizeForDisplay(value);
+    }
+    if (type === "component") {
+      return value || "—";
+    }
+    return value?.toString() || "0";
+  };
+
+  return (
+    <div className="grid grid-cols-4 gap-2 py-1.5 text-sm border-b dark:border-zinc-700">
+      <div className="font-medium text-muted-foreground">{label}</div>
+      <div className={cn(!match && "text-orange-600 dark:text-orange-400")}>
+        {displayValue(appletValue)}
+      </div>
+      <div className={cn(!match && "text-blue-600 dark:text-blue-400")}>
+        {displayValue(coreValue)}
+      </div>
+      <div className="flex items-center justify-center">
+        {match ? (
+          <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+        ) : (
+          <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Field Details Component
+const FieldDetails = ({
+  field,
+  differences,
+}: {
+  field: any;
+  differences: any;
+}) => {
+  const dispatch = useAppDispatch();
+  const allFields = useSelector(selectAllFields);
+
+  // Check if the field is dirty
+  const fieldFromState = allFields.find((f) => f.id === field?.id);
+  const isFieldDirty = fieldFromState?.isDirty;
+
+  // Handle saving a dirty field
+  const handleSaveField = () => {
+    if (!field?.id) return;
+
+    dispatch(saveFieldThunk(field.id))
+      .unwrap()
+      .then(() => {
+        toast({
+          title: "Field Saved",
+          description: "Field has been saved successfully",
+        });
+      })
+      .catch((error) => {
+        toast({
+          title: "Save Failed",
+          description: error || "Failed to save field",
+          variant: "destructive",
+        });
+      });
+  };
+
+  return (
+    <div className="space-y-3">
+      {isFieldDirty && (
+        <div className="p-2 bg-amber-50 dark:bg-amber-950 dark:text-amber-100 rounded text-sm flex items-center justify-between">
+          <div>
+            <div className="font-medium">Unsaved Field Changes Detected</div>
+            <div className="text-xs mt-1">
+              This field has unsaved changes. Save the field to resolve
+              comparison differences.
+            </div>
+          </div>
+          <Button size="sm" className="gap-1" onClick={handleSaveField}>
+            <Save className="h-3.5 w-3.5" />
+            Save Field
+          </Button>
+        </div>
+      )}
+
+      <div className="space-y-1">
+        <FieldDifferenceRow
+          label="Component"
+          appletValue={differences.component.appletValue}
+          coreValue={differences.component.coreValue}
+          match={differences.component.match}
+          type="component"
+        />
+        <FieldDifferenceRow
+          label="Label"
+          appletValue={differences.label.appletValue}
+          coreValue={differences.label.coreValue}
+          match={differences.label.match}
+        />
+        <FieldDifferenceRow
+          label="Description"
+          appletValue={differences.description.appletValue}
+          coreValue={differences.description.coreValue}
+          match={differences.description.match}
+        />
+        <FieldDifferenceRow
+          label="Options Count"
+          appletValue={differences.optionCount.appletValue}
+          coreValue={differences.optionCount.coreValue}
+          match={differences.optionCount.match}
+          type="number"
+        />
+        <FieldDifferenceRow
+          label="Props Size"
+          appletValue={differences.propsSize.appletValue}
+          coreValue={differences.propsSize.coreValue}
+          match={differences.propsSize.match}
+          type="number"
+        />
+      </div>
+
+      {differences.hasOtherDifferences && (
+        <div className="p-2 bg-amber-50 dark:bg-amber-950 dark:text-amber-100 rounded text-sm">
+          <div className="font-medium">Other Differences Detected</div>
+          <div className="text-xs mt-1">
+            Additional property differences exist but are not shown in detail.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const ContainerComparisonDetails: React.FC<
   ContainerComparisonModalProps
 > = ({ appletId, containerId }) => {
@@ -39,237 +270,6 @@ export const ContainerComparisonDetails: React.FC<
   );
 
   const appletContainer = applet?.containers?.find((c) => c.id === containerId);
-
-  // Normalize string for display comparison
-  const normalizeForDisplay = (value: any): string => {
-    if (value === null || value === undefined || value === "") {
-      return "(empty)";
-    }
-    return String(value).trim();
-  };
-
-  // Status Badge Component
-  const StatusBadge = ({
-    status,
-    label,
-  }: {
-    status: boolean;
-    label: string;
-  }) => (
-    <Badge
-      variant={status ? "default" : "destructive"}
-      className="gap-1 text-xs"
-    >
-      {status ? (
-        <CheckCircle2 className="h-3 w-3" />
-      ) : (
-        <XCircle className="h-3 w-3" />
-      )}
-      {label}
-    </Badge>
-  );
-
-  // Property Row Component
-  const PropertyRow = ({
-    label,
-    appletValue,
-    coreValue,
-    isMatch,
-  }: {
-    label: string;
-    appletValue: any;
-    coreValue: any;
-    isMatch?: boolean;
-  }) => {
-    // Normalize values for comparison if isMatch not explicitly provided
-    const normalizedAppletValue = normalizeForDisplay(appletValue);
-    const normalizedCoreValue = normalizeForDisplay(coreValue);
-    const actualMatch =
-      isMatch !== undefined
-        ? isMatch
-        : normalizedAppletValue === normalizedCoreValue ||
-          (normalizedAppletValue === "(empty)" &&
-            normalizedCoreValue === "(empty)");
-
-    return (
-      <div className="grid grid-cols-3 gap-4 py-2 border-b dark:border-zinc-700 text-sm">
-        <div>
-          <span className="font-medium text-muted-foreground">{label}:</span>
-          <div
-            className={cn(
-              "mt-1",
-              !actualMatch && "text-orange-600 dark:text-orange-400",
-            )}
-          >
-            {normalizedAppletValue}
-          </div>
-        </div>
-        <div>
-          <div
-            className={cn(
-              "mt-1",
-              !actualMatch && "text-blue-600 dark:text-blue-400",
-            )}
-          >
-            {normalizedCoreValue}
-          </div>
-        </div>
-        <div className="flex items-center">
-          {actualMatch ? (
-            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-          ) : (
-            <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Field Difference Row Component
-  const FieldDifferenceRow = ({
-    label,
-    coreValue,
-    appletValue,
-    match,
-    type = "string",
-  }: {
-    label: string;
-    coreValue: any;
-    appletValue: any;
-    match: boolean;
-    type?: "string" | "number" | "component";
-  }) => {
-    const displayValue = (value: any) => {
-      if (type === "string") {
-        return normalizeForDisplay(value);
-      }
-      if (type === "component") {
-        return value || "—";
-      }
-      return value?.toString() || "0";
-    };
-
-    return (
-      <div className="grid grid-cols-4 gap-2 py-1.5 text-sm border-b dark:border-zinc-700">
-        <div className="font-medium text-muted-foreground">{label}</div>
-        <div className={cn(!match && "text-orange-600 dark:text-orange-400")}>
-          {displayValue(appletValue)}
-        </div>
-        <div className={cn(!match && "text-blue-600 dark:text-blue-400")}>
-          {displayValue(coreValue)}
-        </div>
-        <div className="flex items-center justify-center">
-          {match ? (
-            <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-          ) : (
-            <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Field Details Component
-  const FieldDetails = ({
-    field,
-    differences,
-  }: {
-    field: any;
-    differences: any;
-  }) => {
-    const dispatch = useAppDispatch();
-    const allFields = useSelector(selectAllFields);
-
-    // Check if the field is dirty
-    const fieldFromState = allFields.find((f) => f.id === field?.id);
-    const isFieldDirty = fieldFromState?.isDirty;
-
-    // Handle saving a dirty field
-    const handleSaveField = () => {
-      if (!field?.id) return;
-
-      dispatch(saveFieldThunk(field.id))
-        .unwrap()
-        .then(() => {
-          toast({
-            title: "Field Saved",
-            description: "Field has been saved successfully",
-          });
-        })
-        .catch((error) => {
-          toast({
-            title: "Save Failed",
-            description: error || "Failed to save field",
-            variant: "destructive",
-          });
-        });
-    };
-
-    return (
-      <div className="space-y-3">
-        {isFieldDirty && (
-          <div className="p-2 bg-amber-50 dark:bg-amber-950 dark:text-amber-100 rounded text-sm flex items-center justify-between">
-            <div>
-              <div className="font-medium">Unsaved Field Changes Detected</div>
-              <div className="text-xs mt-1">
-                This field has unsaved changes. Save the field to resolve
-                comparison differences.
-              </div>
-            </div>
-            <Button size="sm" className="gap-1" onClick={handleSaveField}>
-              <Save className="h-3.5 w-3.5" />
-              Save Field
-            </Button>
-          </div>
-        )}
-
-        <div className="space-y-1">
-          <FieldDifferenceRow
-            label="Component"
-            appletValue={differences.component.appletValue}
-            coreValue={differences.component.coreValue}
-            match={differences.component.match}
-            type="component"
-          />
-          <FieldDifferenceRow
-            label="Label"
-            appletValue={differences.label.appletValue}
-            coreValue={differences.label.coreValue}
-            match={differences.label.match}
-          />
-          <FieldDifferenceRow
-            label="Description"
-            appletValue={differences.description.appletValue}
-            coreValue={differences.description.coreValue}
-            match={differences.description.match}
-          />
-          <FieldDifferenceRow
-            label="Options Count"
-            appletValue={differences.optionCount.appletValue}
-            coreValue={differences.optionCount.coreValue}
-            match={differences.optionCount.match}
-            type="number"
-          />
-          <FieldDifferenceRow
-            label="Props Size"
-            appletValue={differences.propsSize.appletValue}
-            coreValue={differences.propsSize.coreValue}
-            match={differences.propsSize.match}
-            type="number"
-          />
-        </div>
-
-        {differences.hasOtherDifferences && (
-          <div className="p-2 bg-amber-50 dark:bg-amber-950 dark:text-amber-100 rounded text-sm">
-            <div className="font-medium">Other Differences Detected</div>
-            <div className="text-xs mt-1">
-              Additional property differences exist but are not shown in detail.
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-6">

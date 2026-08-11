@@ -78,6 +78,23 @@ type SortField =
   | "updated_at";
 type SortDirection = "asc" | "desc";
 
+const SortIcon = ({
+  field,
+  activeField,
+  direction,
+}: {
+  field: SortField;
+  activeField: SortField;
+  direction: SortDirection;
+}) => {
+  if (activeField !== field) return null;
+  return direction === "asc" ? (
+    <ArrowUpDown className="h-3 w-3 inline ml-1" />
+  ) : (
+    <ArrowUpDown className="h-3 w-3 inline ml-1 rotate-180" />
+  );
+};
+
 interface ColumnFilters {
   name: string;
   slug: string;
@@ -337,15 +354,6 @@ export default function AgentAppsAdminListPage() {
     });
   };
 
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return null;
-    return sortDirection === "asc" ? (
-      <ArrowUpDown className="h-3 w-3 inline ml-1" />
-    ) : (
-      <ArrowUpDown className="h-3 w-3 inline ml-1 rotate-180" />
-    );
-  };
-
   if (loading && apps.length === 0) {
     return (
       <div className="flex items-center justify-center h-full w-full">
@@ -562,7 +570,11 @@ export default function AgentAppsAdminListPage() {
                     >
                       <span className="font-semibold">Name</span>
                       <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="name" />
+                      <SortIcon
+                        field="name"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                     <Input
                       placeholder="Filter..."
@@ -597,7 +609,11 @@ export default function AgentAppsAdminListPage() {
                         className="h-3 w-3 cursor-pointer"
                         onClick={() => handleSort("status")}
                       />
-                      <SortIcon field="status" />
+                      <SortIcon
+                        field="status"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -638,7 +654,11 @@ export default function AgentAppsAdminListPage() {
                       onClick={() => handleSort("category")}
                     >
                       Category
-                      <SortIcon field="category" />
+                      <SortIcon
+                        field="category"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </span>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -793,7 +813,11 @@ export default function AgentAppsAdminListPage() {
                     onClick={() => handleSort("executions")}
                   >
                     Runs
-                    <SortIcon field="executions" />
+                    <SortIcon
+                      field="executions"
+                      activeField={sortField}
+                      direction={sortDirection}
+                    />
                   </span>
                 </TableHead>
                 <TableHead className="min-w-[80px] text-right">
@@ -802,7 +826,11 @@ export default function AgentAppsAdminListPage() {
                     onClick={() => handleSort("users")}
                   >
                     Users
-                    <SortIcon field="users" />
+                    <SortIcon
+                      field="users"
+                      activeField={sortField}
+                      direction={sortDirection}
+                    />
                   </span>
                 </TableHead>
                 <TableHead className="min-w-[100px] text-right">
@@ -811,7 +839,11 @@ export default function AgentAppsAdminListPage() {
                     onClick={() => handleSort("success_rate")}
                   >
                     Success
-                    <SortIcon field="success_rate" />
+                    <SortIcon
+                      field="success_rate"
+                      activeField={sortField}
+                      direction={sortDirection}
+                    />
                   </span>
                 </TableHead>
                 <TableHead className="min-w-[90px] text-right">
@@ -820,7 +852,11 @@ export default function AgentAppsAdminListPage() {
                     onClick={() => handleSort("cost")}
                   >
                     Cost
-                    <SortIcon field="cost" />
+                    <SortIcon
+                      field="cost"
+                      activeField={sortField}
+                      direction={sortDirection}
+                    />
                   </span>
                 </TableHead>
                 <TableHead className="text-right min-w-[120px] pr-4">

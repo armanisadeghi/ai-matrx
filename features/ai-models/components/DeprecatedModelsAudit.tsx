@@ -93,6 +93,35 @@ function SortIcon({
   );
 }
 
+// ── Column header helper ────────────────────────────────────────────────────
+function Th({
+  field,
+  label,
+  className = "",
+  sortBy,
+  sortDir,
+  onToggleSort,
+}: {
+  field: SortField;
+  label: string;
+  className?: string;
+  sortBy: SortField;
+  sortDir: SortDir;
+  onToggleSort: (field: SortField) => void;
+}) {
+  return (
+    <th
+      className={`px-3 py-2 text-left font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground whitespace-nowrap ${className}`}
+      onClick={() => onToggleSort(field)}
+    >
+      <span className="inline-flex items-center">
+        {label}
+        <SortIcon field={field} sortBy={sortBy} dir={sortDir} />
+      </span>
+    </th>
+  );
+}
+
 export default function DeprecatedModelsAudit({
   allModels,
   onClose,
@@ -384,27 +413,6 @@ export default function DeprecatedModelsAudit({
     }
   };
 
-  // ── Column header helper ──────────────────────────────────────────────────
-  const Th = ({
-    field,
-    label,
-    className = "",
-  }: {
-    field: SortField;
-    label: string;
-    className?: string;
-  }) => (
-    <th
-      className={`px-3 py-2 text-left font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground whitespace-nowrap ${className}`}
-      onClick={() => handleToggleSort(field)}
-    >
-      <span className="inline-flex items-center">
-        {label}
-        <SortIcon field={field} sortBy={sortBy} dir={sortDir} />
-      </span>
-    </th>
-  );
-
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -586,29 +594,61 @@ export default function DeprecatedModelsAudit({
           <table className={cn("text-xs border-collapse", MOBILE_TABLE_FROZEN)}>
             <thead className="sticky top-0 z-10 bg-card border-b">
               <tr className="h-8">
-                <Th field="model" label="Deprecated Model" />
-                <Th field="provider" label="Provider" className="w-28" />
+                <Th
+                  field="model"
+                  label="Deprecated Model"
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onToggleSort={handleToggleSort}
+                />
+                <Th
+                  field="provider"
+                  label="Provider"
+                  className="w-28"
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onToggleSort={handleToggleSort}
+                />
                 <Th
                   field="prompts"
                   label="Prompts"
                   className="w-20 text-center"
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onToggleSort={handleToggleSort}
                 />
                 <Th
                   field="builtins"
                   label="Builtins"
                   className="w-20 text-center"
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onToggleSort={handleToggleSort}
                 />
                 <Th
                   field="agents"
                   label="Agents"
                   className="w-20 text-center"
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onToggleSort={handleToggleSort}
                 />
                 <Th
                   field="templates"
                   label="Templates"
                   className="w-20 text-center"
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onToggleSort={handleToggleSort}
                 />
-                <Th field="total" label="Total" className="w-16 text-center" />
+                <Th
+                  field="total"
+                  label="Total"
+                  className="w-16 text-center"
+                  sortBy={sortBy}
+                  sortDir={sortDir}
+                  onToggleSort={handleToggleSort}
+                />
                 <th className="px-3 py-2 text-left font-semibold text-muted-foreground">
                   Replace With
                 </th>
@@ -909,7 +949,9 @@ export default function DeprecatedModelsAudit({
             const r = allModels.find(
               (m) => m.id === settingsTarget.entry.replacementId,
             );
-            return r?.common_name || r?.name || settingsTarget.entry.replacementId;
+            return (
+              r?.common_name || r?.name || settingsTarget.entry.replacementId
+            );
           })()}
           value={settingsTarget.settings}
           onChange={(next) =>

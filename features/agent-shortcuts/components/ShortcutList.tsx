@@ -72,6 +72,23 @@ type SortField =
 
 type SortDirection = "asc" | "desc";
 
+const SortIcon = ({
+  field,
+  activeField,
+  direction,
+}: {
+  field: SortField;
+  activeField: SortField;
+  direction: SortDirection;
+}) => {
+  if (activeField !== field) return null;
+  return direction === "asc" ? (
+    <ChevronUp className="h-3 w-3 inline ml-1" />
+  ) : (
+    <ChevronDown className="h-3 w-3 inline ml-1" />
+  );
+};
+
 export interface ShortcutListProps extends ScopeProps {
   onEdit?: (shortcut: AgentShortcutRecord) => void;
   onCreate?: () => void;
@@ -343,15 +360,6 @@ export function ShortcutList({
         variant: "destructive",
       });
     }
-  };
-
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return null;
-    return sortDirection === "asc" ? (
-      <ChevronUp className="h-3 w-3 inline ml-1" />
-    ) : (
-      <ChevronDown className="h-3 w-3 inline ml-1" />
-    );
   };
 
   if (isMobile) {
@@ -764,7 +772,11 @@ export function ShortcutList({
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
                       Label
                       <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="label" />
+                      <SortIcon
+                        field="label"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead
@@ -774,7 +786,11 @@ export function ShortcutList({
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
                       Placement
                       <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="placement" />
+                      <SortIcon
+                        field="placement"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead
@@ -784,7 +800,11 @@ export function ShortcutList({
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
                       Category
                       <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="category" />
+                      <SortIcon
+                        field="category"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead className="min-w-[140px] max-w-[220px]">
@@ -797,7 +817,11 @@ export function ShortcutList({
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
                       Display
                       <ArrowUpDown className="h-3 w-3" />
-                      <SortIcon field="display" />
+                      <SortIcon
+                        field="display"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead
@@ -806,7 +830,11 @@ export function ShortcutList({
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary justify-center">
                       Auto
-                      <SortIcon field="autoRun" />
+                      <SortIcon
+                        field="autoRun"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead
@@ -815,7 +843,11 @@ export function ShortcutList({
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary justify-center">
                       Chat
-                      <SortIcon field="allowChat" />
+                      <SortIcon
+                        field="allowChat"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead className="min-w-[120px]">Keyboard</TableHead>
@@ -825,7 +857,11 @@ export function ShortcutList({
                   >
                     <div className="flex items-center gap-1 cursor-pointer hover:text-primary justify-center">
                       Active
-                      <SortIcon field="status" />
+                      <SortIcon
+                        field="status"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
                     </div>
                   </TableHead>
                   <TableHead className="text-right w-[160px]">
