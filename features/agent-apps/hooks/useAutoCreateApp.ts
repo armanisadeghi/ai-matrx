@@ -6,6 +6,13 @@
  * with the data layer retargeted; the underlying generation step still uses
  * `executeBuiltinWith*Extraction` thunks (agent execution system under the hood).
  *
+ * 🚨 THE INVARIANT: a paid generation is persisted BEFORE any step that can
+ * fail. The metadata run lands in an `app.definition` draft row immediately;
+ * the generated TSX is written to that same row as the first statement after
+ * the code run resolves; only then does the attempt finalize. Slug throws, RLS
+ * rejections, network blips, and closed tabs can no longer destroy a run the
+ * user paid for. See `../services/auto-create-draft.ts`.
+ *
  * IMPORTANT: This hook includes protection against background tab failures.
  * Browser tabs that go to background can suspend network connections, causing
  * streaming to fail silently. This hook uses:
@@ -19,7 +26,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { supabase } from "@/utils/supabase/client";
 import {
   executeBuiltinWithCodeExtraction,
   executeBuiltinWithJsonExtraction,
@@ -28,6 +34,14 @@ import {
   validateSlugsInBatch,
   generateSlugCandidates,
 } from "../services/slug-service";
+import {
+  createGenerationDraft,
+  draftRecoveryHref,
+  finalizeDraft,
+  recordDraftFailure,
+  saveDraftCode,
+  type DraftHandle,
+} from "../services/auto-create-draft";
 import { getDefaultImportsForNewApps } from "../utils/allowed-imports";
 import type { AppMetadata } from "../types";
 
@@ -121,6 +135,8 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
   const [isCreating, setIsCreating] = useState(false);
   const [progress, setProgress] = useState<string>("");
   const [codeTaskId, setCodeTaskId] = useState<string | null>(null);
+  /** Draft row this attempt is writing to — the recovery door on any failure. */
+  const [draftAppId, setDraftAppId] = useState<string | null>(null);
   const [metadataTaskId, setMetadataTaskId] = useState<string | null>(null);
   const [wasBackgrounded, setWasBackgrounded] = useState(false);
   const [lastAttemptData, setLastAttemptData] =
@@ -186,8 +202,12 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
 
       // Track whether we're navigating away on success so we don't reset state prematurely
       let navigatingAway = false;
+      // The durable row every paid generation is written to. Non-null from the
+      // moment the metadata run is persisted.
+      let draft: DraftHandle | null = null;
 
       try {
+        setDraftAppId(null);
         setErrorFullResponse(null);
         errorFullResponseRef.current = null;
         setMetadataTaskId(null);
@@ -218,6 +238,76 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
         }
 
         const metadata = parseAppMetadata(metadataResult.data);
+
+        // Prepare variable schema. Agents store their input contract in
+        // `variable_definitions` (an array of {name, defaultValue, ...}); the
+        // legacy prompt-apps form fed off `prompt.variable_defaults` which had
+        // an identical shape. Try both names so callers can pass either.
+        let variableSchema: any[] = [];
+        const sourceDefs = Array.isArray(data.agent?.variable_definitions)
+          ? data.agent.variable_definitions
+          : Array.isArray(data.agent?.variable_defaults)
+            ? data.agent.variable_defaults
+            : null;
+        if (sourceDefs) {
+          variableSchema = sourceDefs.map((v: any) => ({
+            name: v.name,
+            type: "string",
+            label: v.name
+              .split("_")
+              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(" "),
+            default: v.defaultValue || "",
+            required: false,
+          }));
+        }
+
+        // Validate slugs BEFORE the expensive code run — the draft row needs a
+        // slug, and a slug throw must never be able to destroy a paid run.
+        setProgress("Validating slug availability...");
+
+        let selectedSlug: string;
+
+        // Get slug options from metadata, or generate fallbacks from prompt name
+        const slugOptions =
+          Array.isArray(metadata.slug_options) &&
+          metadata.slug_options.length > 0
+            ? metadata.slug_options
+            : generateSlugCandidates(data.agent?.name || metadata.name || "app");
+
+        try {
+          const slugValidation = await validateSlugsInBatch(
+            slugOptions.slice(0, 5),
+          );
+
+          if (slugValidation.available && slugValidation.available.length > 0) {
+            selectedSlug = slugValidation.available[0];
+          } else {
+            // All slugs taken, add random number to first option
+            selectedSlug = `${slugOptions[0]}-${Math.floor(Math.random() * 900) + 100}`;
+          }
+        } catch (slugError: any) {
+          // Fallback: use first slug option with random number
+          selectedSlug = `${slugOptions[0]}-${Math.floor(Math.random() * 900) + 100}`;
+        }
+
+        // Persist the paid metadata run NOW. Everything after this point
+        // updates this row, so nothing that fails later can destroy a
+        // generation the user paid for.
+        setProgress("Saving draft...");
+
+        const userId = requireUserId();
+
+        draft = await createGenerationDraft({
+          userId,
+          agentId: data.agent.id,
+          slug: selectedSlug,
+          metadata,
+          mode: data.mode ?? "standard",
+          variableSchema,
+          allowedImports: getDefaultImportsForNewApps(),
+        });
+        setDraftAppId(draft.appId);
 
         // Generate code second (slow - this is the most vulnerable to background tab issues)
         setActiveStage("code");
@@ -251,110 +341,22 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
           );
         }
 
-        // Prepare variable schema. Agents store their input contract in
-        // `variable_definitions` (an array of {name, defaultValue, ...}); the
-        // legacy prompt-apps form fed off `prompt.variable_defaults` which had
-        // an identical shape. Try both names so callers can pass either.
-        let variableSchema: any[] = [];
-        const sourceDefs = Array.isArray(data.agent?.variable_definitions)
-          ? data.agent.variable_definitions
-          : Array.isArray(data.agent?.variable_defaults)
-            ? data.agent.variable_defaults
-            : null;
-        if (sourceDefs) {
-          variableSchema = sourceDefs.map((v: any) => ({
-            name: v.name,
-            type: "string",
-            label: v.name
-              .split("_")
-              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-              .join(" "),
-            default: v.defaultValue || "",
-            required: false,
-          }));
-        }
+        // FIRST thing after the paid code run resolves — nothing may run
+        // between the generation and this write.
+        setProgress("Saving generated code...");
+        draft = await saveDraftCode(draft, codeResult.code!);
 
-        // Validate slugs
-        setProgress("Validating slug availability...");
-
-        let selectedSlug: string;
-
-        // Get slug options from metadata, or generate fallbacks from prompt name
-        const slugOptions =
-          Array.isArray(metadata.slug_options) &&
-          metadata.slug_options.length > 0
-            ? metadata.slug_options
-            : generateSlugCandidates(
-                data.agent?.name || metadata.name || "app",
-              );
-
-        try {
-          const slugValidation = await validateSlugsInBatch(
-            slugOptions.slice(0, 5),
-          );
-
-          if (slugValidation.available && slugValidation.available.length > 0) {
-            selectedSlug = slugValidation.available[0];
-          } else {
-            // All slugs taken, add random number to first option
-            selectedSlug = `${slugOptions[0]}-${Math.floor(Math.random() * 900) + 100}`;
-          }
-        } catch (slugError: any) {
-          // Fallback: use first slug option with random number
-          selectedSlug = `${slugOptions[0]}-${Math.floor(Math.random() * 900) + 100}`;
-        }
-
-        // Save to database
-        setProgress("Saving app to database...");
-
-        const userId = requireUserId();
-
-        const { data: appData, error: insertError } = await (
-          supabase as unknown as any
-        )
-          .schema("app")
-          .from("definition")
-          .insert({
-            user_id: userId,
-            // Canonical RLS std_insert on app.definition requires created_by = auth.uid().
-            created_by: userId,
-            agent_id: data.agent.id,
-            agent_version_id: null,
-            use_latest: true,
-            slug: selectedSlug,
-            name: metadata.name,
-            tagline: metadata.tagline,
-            description: metadata.description,
-            category: metadata.category,
-            tags: metadata.tags,
-            component_code: codeResult.code!,
-            component_language: "tsx",
-            variable_schema: variableSchema,
-            allowed_imports: getDefaultImportsForNewApps(),
-            // The AI generator produces a full custom UI; mark the row so the
-            // public renderer dispatches to AgentAppFullyCustomShell instead
-            // of a built-in shell (which would ignore the generated code).
-            shell_kind: "fully_custom",
-            rate_limit_per_ip: 10,
-            rate_limit_window_hours: 24,
-            status: "draft",
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          throw new Error(insertError.message || "Failed to save app");
-        }
-
-        if (!appData) {
-          throw new Error("No data returned from database");
-        }
+        // Everything that could still fail now runs against a row that already
+        // holds the full generated component.
+        setProgress("Finishing up...");
+        await finalizeDraft(draft);
 
         // No favicon step: the app badge is computed at render time as a data:
         // URI from the app name (features/agent-apps/utils/favicon-metadata).
         setProgress("App created successfully!");
 
-        onSuccessRef.current?.(appData.id);
+        const appId = draft.appId;
+        onSuccessRef.current?.(appId);
 
         // Mark that we're navigating — finally block will skip state reset so
         // the success UI stays visible during the brief redirect delay
@@ -364,10 +366,10 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
         // to see after creating the app. They can flip back to Overview /
         // Code / Settings from the sub-route header tabs.
         setTimeout(() => {
-          router.push(`/agent-apps/${appData.id}/run`);
+          router.push(`/agent-apps/${appId}/run`);
         }, 500);
 
-        return appData;
+        return appId;
       } catch (error: any) {
         const rawMessage = error.message || "An unexpected error occurred";
 
@@ -378,6 +380,20 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
           !rawMessage.includes("background")
         ) {
           errorMessage = `${rawMessage}. The browser tab was in the background during creation, which likely caused this failure. Please keep this tab active and try again.`;
+        }
+
+        // A draft exists once the metadata run was persisted. Preserve whatever
+        // was paid for on it and tell the user exactly where to find it —
+        // "failed" alone would imply the generations are gone.
+        if (draft) {
+          await recordDraftFailure(draft, {
+            error: rawMessage,
+            rawResponse: errorFullResponseRef.current,
+          });
+          const hasCode = draft.progress.stage === "code";
+          errorMessage =
+            `${errorMessage} Your ${hasCode ? "generated app was" : "app details were"} saved as a draft — ` +
+            `open it at ${draftRecoveryHref(draft.appId)} to recover it.`;
         }
 
         console.error("[AutoCreateApp] Creation failed:", errorMessage);
@@ -421,5 +437,7 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
     errorFullResponse,
     /** Which generation stage is currently active */
     activeStage,
+    /** Draft row holding this attempt's generations — set once metadata is persisted */
+    draftAppId,
   };
 }

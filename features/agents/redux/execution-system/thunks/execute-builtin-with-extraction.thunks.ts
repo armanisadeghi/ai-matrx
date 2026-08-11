@@ -97,7 +97,12 @@ async function runBuiltinAgent(
       agentId,
       surfaceKey: `programmatic-extraction:${payload.builtinKey}`,
       sourceFeature: "agent-app",
-      isEphemeral: true,
+      // NOT ephemeral: these runs are expensive (up to 5 minutes) and their
+      // output is the whole product of the flow. Server-side persistence is a
+      // second, independent recovery layer beside the draft row the caller
+      // writes — it costs nothing and it is the only copy that survives a
+      // closed tab mid-stream.
+      isEphemeral: false,
       autoClearConversation: true,
       config: {
         displayMode: "background",
@@ -209,7 +214,8 @@ export const executeBuiltinWithJsonExtraction = createAsyncThunk<
       surfaceKey: `programmatic-extraction:${payload.builtinKey}`,
       sourceFeature: "agent-app",
       variables: payload.variables,
-      isEphemeral: true,
+      // See runBuiltinAgent — persisted on purpose, as a recovery layer.
+      isEphemeral: false,
       autoClearConversation: true,
       timeoutMs: payload.timeoutMs ?? 120000,
       pollIntervalMs: payload.pollingIntervalMs ?? 100,

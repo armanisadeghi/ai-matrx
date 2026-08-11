@@ -8,6 +8,14 @@ export const COVERAGE_FILTER_COPY: Record<
   PageCoverageFilter,
   { label: string; description: string }
 > = {
+  all_known: {
+    label: "All known page URLs",
+    description: "Confirmed pages plus unconfirmed crawl candidates",
+  },
+  unconfirmed: {
+    label: "Unconfirmed candidates",
+    description: "Recorded by a crawl but never backed by page evidence",
+  },
   in_sitemap: {
     label: "In sitemaps",
     description: "Listed by at least one sitemap",

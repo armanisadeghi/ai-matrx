@@ -52012,10 +52012,12 @@ export type Database = {
           gsc_clicks_28d: number | null
           gsc_impressions_28d: number | null
           gsc_position_28d: number | null
+          has_page_evidence: boolean | null
           health_score: number | null
           http_status_last: number | null
           in_gsc: boolean | null
           indexability_verdict: string | null
+          is_canonical: boolean | null
           is_resource: boolean | null
           last_seen: string | null
           latest_snapshot_id: string | null
@@ -52280,6 +52282,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      is_machine_resource_url: { Args: { page_url: string }; Returns: boolean }
       move_site_brand: {
         Args: { p_brand_id: string; p_site_id: string }
         Returns: {

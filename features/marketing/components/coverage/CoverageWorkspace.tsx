@@ -40,6 +40,8 @@ const COVERAGE_TILE_FILTERS: ReadonlyArray<{
   filter: PageCoverageFilter;
   count: (matrix: SiteCoverageMatrix) => number;
 }> = [
+  { filter: "all_known", count: (m) => m.knownPageUrls },
+  { filter: "unconfirmed", count: (m) => m.unconfirmedCandidates },
   { filter: "in_sitemap", count: (m) => m.inSitemaps },
   { filter: "crawled", count: (m) => m.crawled },
   { filter: "never_crawled", count: (m) => m.neverCrawled },
@@ -149,9 +151,7 @@ export function CoverageWorkspace() {
   const data = matrix.data ?? null;
 
   const pagesHref = (coverage?: PageCoverageFilter) =>
-    coverage
-      ? `${sitePath}/pages?coverage=${coverage}`
-      : `${sitePath}/pages`;
+    coverage ? `${sitePath}/pages?coverage=${coverage}` : `${sitePath}/pages`;
 
   const matrixCopy = webCopy({
     kind: "web-coverage-matrix",
@@ -165,7 +165,10 @@ export function CoverageWorkspace() {
     },
     lines: [
       ["Site", site.root_url],
-      ["Canonical pages", data?.totalPages ?? null],
+      ["Confirmed pages", data?.totalPages ?? null],
+      ["All known page URLs", data?.knownPageUrls ?? null],
+      ["Unconfirmed candidates", data?.unconfirmedCandidates ?? null],
+      ["Non-HTML resources", data?.resourceUrls ?? null],
       [COVERAGE_FILTER_COPY.in_sitemap.label, data?.inSitemaps ?? null],
       [COVERAGE_FILTER_COPY.crawled.label, data?.crawled ?? null],
       [COVERAGE_FILTER_COPY.never_crawled.label, data?.neverCrawled ?? null],
@@ -177,17 +180,13 @@ export function CoverageWorkspace() {
         COVERAGE_FILTER_COPY.crawled_no_sitemap.label,
         data?.crawledNoSitemap ?? null,
       ],
-      ...PAGE_PROVENANCES.map(
-        (provenance): [string, number | null] => [
-          `First source: ${PROVENANCE_COPY[provenance].label}`,
-          data?.byProvenance[provenance] ?? null,
-        ],
-      ),
+      ...PAGE_PROVENANCES.map((provenance): [string, number | null] => [
+        `First source: ${PROVENANCE_COPY[provenance].label}`,
+        data?.byProvenance[provenance] ?? null,
+      ]),
       [
         "GSC last synced",
-        site.gsc_synced_at
-          ? formatCompactDate(site.gsc_synced_at)
-          : "never",
+        site.gsc_synced_at ? formatCompactDate(site.gsc_synced_at) : "never",
       ],
       [COVERAGE_FILTER_COPY.in_gsc.label, data?.inGsc ?? null],
       [COVERAGE_FILTER_COPY.gsc_no_sitemap.label, data?.gscNoSitemap ?? null],
@@ -202,8 +201,10 @@ export function CoverageWorkspace() {
     {
       id: "matrix",
       title: "Coverage matrix",
-      description: "Sitemap/crawl/GSC agreement counts for the canonical page registry.",
-      build: () => (data ? { ...data, gsc_synced_at: site.gsc_synced_at } : null),
+      description:
+        "Sitemap/crawl/GSC agreement counts for the canonical page registry.",
+      build: () =>
+        data ? { ...data, gsc_synced_at: site.gsc_synced_at } : null,
     },
   ];
 
@@ -225,6 +226,9 @@ export function CoverageWorkspace() {
           ...getBaseValues(),
           coverage_matrix: data ? { ...data } : undefined,
           total_pages: data?.totalPages,
+          known_page_urls: data?.knownPageUrls,
+          unconfirmed_candidates: data?.unconfirmedCandidates,
+          resource_urls: data?.resourceUrls,
           in_sitemaps: data?.inSitemaps,
           crawled: data?.crawled,
           never_crawled: data?.neverCrawled,
@@ -247,184 +251,236 @@ export function CoverageWorkspace() {
         })
       }
     >
-    <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
-      <div className="grid w-full gap-3">
-        <header className="flex items-start justify-between gap-2">
-          <div>
-            <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Grid3x3 className="h-4 w-4 text-muted-foreground" />
-              Coverage
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Where the evidence sources agree — and disagree — about the
-              canonical page registry. Every tile opens the filtered page list.
-            </p>
-          </div>
-          <div className="flex items-center gap-1">
-            <CopyButtons
-              size="icon"
-              label={matrixCopy.label}
-              human={matrixCopy.human}
-              json={() => data}
-              agent={matrixCopy.agent}
-            />
-            <ExportMenu
-              label={`coverage-matrix-${site.domain}`}
-              items={[jsonExportItem(() => data, "Matrix (.json)")]}
-            />
-            <AgentCopyGroomerLauncher config={groomerConfig} />
-          </div>
-        </header>
+      <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
+        <div className="grid w-full gap-3">
+          <header className="flex items-start justify-between gap-2">
+            <div>
+              <h1 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                <Grid3x3 className="h-4 w-4 text-muted-foreground" />
+                Coverage
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Where the evidence sources agree — and disagree — about the
+                canonical page registry. Every tile opens the filtered page
+                list.
+              </p>
+            </div>
+            <div className="flex items-center gap-1">
+              <CopyButtons
+                size="icon"
+                label={matrixCopy.label}
+                human={matrixCopy.human}
+                json={() => data}
+                agent={matrixCopy.agent}
+              />
+              <ExportMenu
+                label={`coverage-matrix-${site.domain}`}
+                items={[jsonExportItem(() => data, "Matrix (.json)")]}
+              />
+              <AgentCopyGroomerLauncher config={groomerConfig} />
+            </div>
+          </header>
 
-        <section
-          data-surface-value="coverage_filters"
-          className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6"
-        >
-          <CoverageTile
-            label="Canonical pages"
-            description="Every URL any source recorded"
-            value={data?.totalPages ?? null}
-            href={pagesHref()}
-            anchor="total_pages"
-            siteDomain={site.domain}
-            location={pageLocation}
-          />
-          <CoverageTile
-            label={COVERAGE_FILTER_COPY.in_sitemap.label}
-            description={COVERAGE_FILTER_COPY.in_sitemap.description}
-            value={data?.inSitemaps ?? null}
-            href={pagesHref("in_sitemap")}
-            anchor="in_sitemaps"
-            siteDomain={site.domain}
-            location={pageLocation}
-          />
-          <CoverageTile
-            label={COVERAGE_FILTER_COPY.crawled.label}
-            description={COVERAGE_FILTER_COPY.crawled.description}
-            value={data?.crawled ?? null}
-            href={pagesHref("crawled")}
-            anchor="crawled"
-            siteDomain={site.domain}
-            location={pageLocation}
-          />
-          <CoverageTile
-            label={COVERAGE_FILTER_COPY.never_crawled.label}
-            description={COVERAGE_FILTER_COPY.never_crawled.description}
-            value={data?.neverCrawled ?? null}
-            href={pagesHref("never_crawled")}
-            anchor="never_crawled"
-            siteDomain={site.domain}
-            location={pageLocation}
-          />
-          <CoverageTile
-            label={COVERAGE_FILTER_COPY.sitemap_not_crawled.label}
-            description={COVERAGE_FILTER_COPY.sitemap_not_crawled.description}
-            value={data?.sitemapNotCrawled ?? null}
-            href={pagesHref("sitemap_not_crawled")}
-            anchor="sitemap_not_crawled"
-            tone="attention"
-            siteDomain={site.domain}
-            location={pageLocation}
-          />
-          <CoverageTile
-            label={COVERAGE_FILTER_COPY.crawled_no_sitemap.label}
-            description={COVERAGE_FILTER_COPY.crawled_no_sitemap.description}
-            value={data?.crawledNoSitemap ?? null}
-            href={pagesHref("crawled_no_sitemap")}
-            anchor="crawled_no_sitemap"
-            tone="attention"
-            siteDomain={site.domain}
-            location={pageLocation}
-          />
-        </section>
-
-        <section data-surface-value="pages_by_provenance" className="grid gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Pages by first source
-          </h2>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            {PAGE_PROVENANCES.map((provenance) => (
+          <section className="grid gap-2">
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Registry accounting
+              </h2>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Confirmed pages drive product totals. Unconfirmed candidates and
+                non-HTML resources remain visible without inflating that number.
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               <CoverageTile
-                key={provenance}
-                label={PROVENANCE_COPY[provenance].label}
-                description={PROVENANCE_COPY[provenance].description}
-                value={data?.byProvenance[provenance] ?? null}
-                href={`${sitePath}/pages?f_provenance=select:${provenance}`}
+                label="Confirmed pages"
+                description="Canonical page URLs backed by retained evidence"
+                value={data?.totalPages ?? null}
+                href={pagesHref()}
+                anchor="total_pages"
                 siteDomain={site.domain}
                 location={pageLocation}
               />
-            ))}
-          </div>
-        </section>
+              <CoverageTile
+                label={COVERAGE_FILTER_COPY.all_known.label}
+                description={COVERAGE_FILTER_COPY.all_known.description}
+                value={data?.knownPageUrls ?? null}
+                href={pagesHref("all_known")}
+                anchor="known_page_urls"
+                siteDomain={site.domain}
+                location={pageLocation}
+              />
+              <CoverageTile
+                label={COVERAGE_FILTER_COPY.unconfirmed.label}
+                description={COVERAGE_FILTER_COPY.unconfirmed.description}
+                value={data?.unconfirmedCandidates ?? null}
+                href={pagesHref("unconfirmed")}
+                anchor="unconfirmed_candidates"
+                tone="attention"
+                siteDomain={site.domain}
+                location={pageLocation}
+              />
+              <CoverageTile
+                label="Non-HTML resources"
+                description="Observed JSON, XML, images, PDFs, and other assets"
+                value={data?.resourceUrls ?? null}
+                href={`${sitePath}/pages?scope=resources`}
+                anchor="resource_urls"
+                siteDomain={site.domain}
+                location={pageLocation}
+              />
+            </div>
+          </section>
 
-        <section data-surface-value="gsc_synced" className="grid gap-2">
-          <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            <SearchCheck className="h-3.5 w-3.5" />
-            Google Search coverage
+          <section
+            data-surface-value="coverage_filters"
+            className="grid gap-2 sm:grid-cols-3 xl:grid-cols-5"
+          >
+            <CoverageTile
+              label={COVERAGE_FILTER_COPY.in_sitemap.label}
+              description={COVERAGE_FILTER_COPY.in_sitemap.description}
+              value={data?.inSitemaps ?? null}
+              href={pagesHref("in_sitemap")}
+              anchor="in_sitemaps"
+              siteDomain={site.domain}
+              location={pageLocation}
+            />
+            <CoverageTile
+              label={COVERAGE_FILTER_COPY.crawled.label}
+              description={COVERAGE_FILTER_COPY.crawled.description}
+              value={data?.crawled ?? null}
+              href={pagesHref("crawled")}
+              anchor="crawled"
+              siteDomain={site.domain}
+              location={pageLocation}
+            />
+            <CoverageTile
+              label={COVERAGE_FILTER_COPY.never_crawled.label}
+              description={COVERAGE_FILTER_COPY.never_crawled.description}
+              value={data?.neverCrawled ?? null}
+              href={pagesHref("never_crawled")}
+              anchor="never_crawled"
+              siteDomain={site.domain}
+              location={pageLocation}
+            />
+            <CoverageTile
+              label={COVERAGE_FILTER_COPY.sitemap_not_crawled.label}
+              description={COVERAGE_FILTER_COPY.sitemap_not_crawled.description}
+              value={data?.sitemapNotCrawled ?? null}
+              href={pagesHref("sitemap_not_crawled")}
+              anchor="sitemap_not_crawled"
+              tone="attention"
+              siteDomain={site.domain}
+              location={pageLocation}
+            />
+            <CoverageTile
+              label={COVERAGE_FILTER_COPY.crawled_no_sitemap.label}
+              description={COVERAGE_FILTER_COPY.crawled_no_sitemap.description}
+              value={data?.crawledNoSitemap ?? null}
+              href={pagesHref("crawled_no_sitemap")}
+              anchor="crawled_no_sitemap"
+              tone="attention"
+              siteDomain={site.domain}
+              location={pageLocation}
+            />
+          </section>
+
+          <section
+            data-surface-value="pages_by_provenance"
+            className="grid gap-2"
+          >
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Pages by first source
+              </h2>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                These non-overlapping counts add up to Confirmed pages. The
+                sitemap, crawl, and Google evidence totals above overlap.
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {PAGE_PROVENANCES.map((provenance) => (
+                <CoverageTile
+                  key={provenance}
+                  label={PROVENANCE_COPY[provenance].label}
+                  description={PROVENANCE_COPY[provenance].description}
+                  value={data?.byProvenance[provenance] ?? null}
+                  href={`${sitePath}/pages?f_provenance=select:${provenance}`}
+                  siteDomain={site.domain}
+                  location={pageLocation}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section data-surface-value="gsc_synced" className="grid gap-2">
+            <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <SearchCheck className="h-3.5 w-3.5" />
+              Google Search coverage
+              {site.gsc_synced_at ? (
+                <span className="font-normal normal-case tracking-normal">
+                  · last synced {formatCompactDate(site.gsc_synced_at)}
+                </span>
+              ) : null}
+            </h2>
             {site.gsc_synced_at ? (
-              <span className="font-normal normal-case tracking-normal">
-                · last synced {formatCompactDate(site.gsc_synced_at)}
-              </span>
-            ) : null}
-          </h2>
-          {site.gsc_synced_at ? (
-            <div className="grid gap-2 sm:grid-cols-3">
-              <CoverageTile
-                label={COVERAGE_FILTER_COPY.in_gsc.label}
-                description={COVERAGE_FILTER_COPY.in_gsc.description}
-                value={data?.inGsc ?? null}
-                href={pagesHref("in_gsc")}
-                anchor="in_gsc"
-                siteDomain={site.domain}
-                location={pageLocation}
-              />
-              <CoverageTile
-                label={COVERAGE_FILTER_COPY.gsc_no_sitemap.label}
-                description={COVERAGE_FILTER_COPY.gsc_no_sitemap.description}
-                value={data?.gscNoSitemap ?? null}
-                href={pagesHref("gsc_no_sitemap")}
-                anchor="gsc_no_sitemap"
-                tone="attention"
-                siteDomain={site.domain}
-                location={pageLocation}
-              />
-              <CoverageTile
-                label={COVERAGE_FILTER_COPY.sitemap_no_gsc.label}
-                description={COVERAGE_FILTER_COPY.sitemap_no_gsc.description}
-                value={data?.sitemapNoGsc ?? null}
-                href={pagesHref("sitemap_no_gsc")}
-                anchor="sitemap_no_gsc"
-                tone="attention"
-                siteDomain={site.domain}
-                location={pageLocation}
-              />
-            </div>
-          ) : (
-            <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-card/50 p-4">
-              <SearchCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Search Console has never been synced for this site
-                </p>
-                <p className="mt-1 max-w-xl text-xs text-muted-foreground">
-                  Connect Search Console and run a sync from the Integrations
-                  workspace to add Google's evidence to this matrix: pages
-                  Google serves, traffic no sitemap advertises, and advertised
-                  pages Google never reports.
-                </p>
-                <Link
-                  href={`${sitePath}/integrations`}
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary"
-                >
-                  Open Integrations
-                  <ArrowUpRight className="h-3 w-3" />
-                </Link>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <CoverageTile
+                  label={COVERAGE_FILTER_COPY.in_gsc.label}
+                  description={COVERAGE_FILTER_COPY.in_gsc.description}
+                  value={data?.inGsc ?? null}
+                  href={pagesHref("in_gsc")}
+                  anchor="in_gsc"
+                  siteDomain={site.domain}
+                  location={pageLocation}
+                />
+                <CoverageTile
+                  label={COVERAGE_FILTER_COPY.gsc_no_sitemap.label}
+                  description={COVERAGE_FILTER_COPY.gsc_no_sitemap.description}
+                  value={data?.gscNoSitemap ?? null}
+                  href={pagesHref("gsc_no_sitemap")}
+                  anchor="gsc_no_sitemap"
+                  tone="attention"
+                  siteDomain={site.domain}
+                  location={pageLocation}
+                />
+                <CoverageTile
+                  label={COVERAGE_FILTER_COPY.sitemap_no_gsc.label}
+                  description={COVERAGE_FILTER_COPY.sitemap_no_gsc.description}
+                  value={data?.sitemapNoGsc ?? null}
+                  href={pagesHref("sitemap_no_gsc")}
+                  anchor="sitemap_no_gsc"
+                  tone="attention"
+                  siteDomain={site.domain}
+                  location={pageLocation}
+                />
               </div>
-            </div>
-          )}
-        </section>
-      </div>
-    </main>
+            ) : (
+              <div className="flex items-start gap-3 rounded-lg border border-dashed border-border bg-card/50 p-4">
+                <SearchCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Search Console has never been synced for this site
+                  </p>
+                  <p className="mt-1 max-w-xl text-xs text-muted-foreground">
+                    Connect Search Console and run a sync from the Integrations
+                    workspace to add Google's evidence to this matrix: pages
+                    Google serves, traffic no sitemap advertises, and advertised
+                    pages Google never reports.
+                  </p>
+                  <Link
+                    href={`${sitePath}/integrations`}
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary"
+                  >
+                    Open Integrations
+                    <ArrowUpRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
     </SurfaceRuntimeProvider>
   );
 }

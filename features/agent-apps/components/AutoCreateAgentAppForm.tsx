@@ -27,6 +27,7 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTitleCase } from "@/utils/text/text-case-converter";
@@ -36,7 +37,9 @@ import {
   DisplayMode,
   ResponseMode,
 } from "../config-instructions";
+import Link from "next/link";
 import { useAutoCreateApp } from "../hooks/useAutoCreateApp";
+import { draftRecoveryHref } from "../services/auto-create-draft";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import {
@@ -139,6 +142,7 @@ export function AutoCreateAgentAppForm({
     canRetry,
     errorFullResponse,
     activeStage,
+    draftAppId,
   } = useAutoCreateApp({
     onSuccess: (appId) => {
       console.log("[AutoCreateAgentAppForm] App created successfully:", appId);
@@ -563,6 +567,7 @@ export function AutoCreateAgentAppForm({
               onToggleFullResponse={() => setShowFullResponse((v) => !v)}
               canRetry={canRetry}
               onRetry={retry}
+              draftAppId={draftAppId}
             />
           )}
           <div className="text-center space-y-2">
@@ -664,6 +669,7 @@ export function AutoCreateAgentAppForm({
           onToggleFullResponse={() => setShowFullResponse((v) => !v)}
           canRetry={canRetry}
           onRetry={retry}
+          draftAppId={draftAppId}
         />
       )}
 
@@ -1475,6 +1481,8 @@ interface ErrorCardProps {
   onToggleFullResponse: () => void;
   canRetry: boolean;
   onRetry: () => void;
+  /** Draft row holding whatever generations were paid for before the failure. */
+  draftAppId: string | null;
 }
 
 function ErrorCard({
@@ -1484,6 +1492,7 @@ function ErrorCard({
   onToggleFullResponse,
   canRetry,
   onRetry,
+  draftAppId,
 }: ErrorCardProps) {
   const hasFullResponse = !!fullResponse;
 
@@ -1498,17 +1507,27 @@ function ErrorCard({
               {error}
             </p>
           </div>
-          {canRetry && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRetry}
-              className="gap-2 flex-shrink-0"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Try Again
-            </Button>
-          )}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {draftAppId && (
+              <Button variant="outline" size="sm" asChild className="gap-2">
+                <Link href={draftRecoveryHref(draftAppId)} target="_blank">
+                  <ExternalLink className="w-4 h-4" />
+                  Open draft
+                </Link>
+              </Button>
+            )}
+            {canRetry && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+                className="gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Try Again
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Full model response — shown when code extraction failed */}

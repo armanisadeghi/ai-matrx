@@ -251,7 +251,12 @@ export interface PageSitemapMembershipRow extends PageSitemapMembership {
 export interface SiteOverviewMetrics {
   siteScore: number | null;
   scoredPages: number;
+  /** Canonical non-resource URLs backed by retained page evidence. */
   canonicalPages: number;
+  /** Canonical non-resource URLs retained without current page evidence. */
+  unconfirmedCandidates: number;
+  /** Canonical non-HTML URLs retained as crawl/source evidence. */
+  resourceUrls: number;
   openFindings: number;
   snapshots: number;
   latestCrawl: CrawlSession | null;
@@ -432,12 +437,7 @@ export interface CreateBrandAssetInput {
    * "stock" = saved from a licensed-free stock provider (Unsplash).
    */
   source?:
-    | "discovered"
-    | "uploaded"
-    | "manual"
-    | "generated"
-    | "research"
-    | "stock";
+    "discovered" | "uploaded" | "manual" | "generated" | "research" | "stock";
 }
 
 export interface UpdateBrandAssetInput {
