@@ -55,6 +55,11 @@ import {
 import { fetchPodcastRunDetail } from "./runsRepository";
 import { deriveRecoveryState, type RecoveryState } from "./recovery";
 import { trueLiveness } from "./run-truth";
+import {
+  hasDeliverableEpisode,
+  reconcileRun,
+  type ReconcileResult,
+} from "./reconcile";
 import { formatText } from "@/utils/text/text-case-converter";
 import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
 import type {
@@ -397,6 +402,64 @@ export function useStudioRun(runId: string): UseStudioRun {
       }
     }
 
+    /**
+     * Fold a reconcile answer into the page.
+     *
+     * THE ESSENTIAL/ANCILLARY LAW, applied: if the episode is deliverable
+     * (audio exists), the user sees a finished, publishable episode — even when
+     * the outcome is still "running" because a promo-video compose is churning
+     * for another quarter of an hour. Ancillary work continues around the
+     * episode; it never stands in front of it, and it NEVER puts a Resume or
+     * Re-run button in front of a podcast that already exists.
+     */
+    function applyReconcile(rec: ReconcileResult): void {
+      const deliverable = hasDeliverableEpisode(rec);
+      setState((s) => ({
+        ...s,
+        status: deliverable
+          ? "done"
+          : rec.outcome === "failed"
+            ? "error"
+            : s.status,
+        progress: deliverable ? 100 : s.progress,
+        currentLabel: deliverable
+          ? "Episode ready"
+          : rec.outcome === "failed"
+            ? "Finished with errors"
+            : s.currentLabel,
+        audioUrl: rec.audio_url ?? s.audioUrl,
+        script: rec.script ?? s.script,
+        episodeId: rec.episode_id ?? s.episodeId,
+        episodeSlug: rec.episode_slug ?? s.episodeSlug,
+        // Only a run with NOTHING to show reports an error. A delivered episode
+        // with a failed cover is not an error state — the failed asset renders
+        // as its own retryable card.
+        error: deliverable
+          ? null
+          : rec.outcome === "failed"
+            ? rec.reason
+            : s.error,
+      }));
+      if (deliverable) {
+        setCanReconnect(false);
+        setStalled(false);
+        setOrphaned(false);
+      }
+      // Persist what the server just told us so a reload doesn't have to ask
+      // again — the durable record is the truth, and this keeps our own row
+      // from being the thing that lies next time.
+      if (rec.outcome === "completed" || deliverable) {
+        persist({
+          status: rec.outcome === "failed" ? "failed" : "completed",
+          script: rec.script ?? null,
+          audio_url: rec.audio_url ?? null,
+          episode_id: rec.episode_id,
+          episode_slug: rec.episode_slug,
+          error: null,
+        });
+      }
+    }
+
     // The backend keeps generating after a client disconnect
     // (detach_on_disconnect on /generate AND /resume). So when our stream drops
     // we OBSERVE the durable record via Supabase polls instead of re-firing the
@@ -474,9 +537,32 @@ export function useStudioRun(runId: string): UseStudioRun {
             return; // terminal — stop polling
           }
           if (live === "stalled") {
-            // No server-side heartbeat for minutes (the pipeline bumps it
-            // every ~30s even mid-video) AND nothing was delivered — genuinely
-            // stuck; offer Resume.
+            // The record says stuck. DON'T take that at face value and dump the
+            // user on a Resume button — ASK the server what is actually going
+            // on (runs/reconcile.ts). It inspects the run and either reports it
+            // genuinely alive, stamps a completion nobody wrote, restarts the
+            // pending essential work from its checkpoint, or tells us plainly
+            // that it is dead. A passive re-read of the same stale row can do
+            // none of those.
+            const rec = await reconcileRun(backendRunIdRef.current ?? runId);
+            if (cancelled) return;
+            if (rec) {
+              applyReconcile(rec);
+              if (rec.outcome === "completed" || rec.outcome === "failed") {
+                completedRef.current = true;
+                setBackgroundWorking(false);
+                return;
+              }
+              // running | resumed — the server is working; keep observing at
+              // ITS cadence, not a number we invented.
+              bgPollTimer = setTimeout(
+                poll,
+                Math.max(rec.poll_after_seconds ?? 15, 5) * 1000,
+              );
+              return;
+            }
+            // Reconcile unavailable (not deployed yet, or unreachable) — fall
+            // back to the previous behaviour rather than hiding the run.
             setBackgroundWorking(false);
             setCanReconnect(d.recovery.resumable);
             return;
@@ -898,8 +984,22 @@ export function useStudioRun(runId: string): UseStudioRun {
           row?.status === "failed") &&
         backendRunIdRef.current
       ) {
-        // Interrupted with a checkpoint — offer manual Resume (don't auto-burn).
-        setCanReconnect(true);
+        // The record says this run didn't finish. Before showing the user a
+        // recovery dead end, ASK THE SERVER (runs/reconcile.ts) — it inspects
+        // the run and either reports it alive, stamps a completion nobody
+        // wrote, restarts the pending essential work from its checkpoint, or
+        // says plainly that it is dead. Only if it can't answer do we fall back
+        // to offering manual Resume.
+        const rec = await reconcileRun(backendRunIdRef.current);
+        if (cancelled) return;
+        if (rec) {
+          applyReconcile(rec);
+          if (rec.outcome === "running" || rec.outcome === "resumed") {
+            void watchInBackground();
+          }
+        } else {
+          setCanReconnect(true);
+        }
       } else if (
         !delivered &&
         runDetail?.recovery.resumable &&
