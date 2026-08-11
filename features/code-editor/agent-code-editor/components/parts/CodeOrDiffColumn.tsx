@@ -45,6 +45,10 @@ import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
 // (front door), so a plain static import IS the split. A second dynamic()
 // here would stack boundaries (code-splitting skill, rule 2).
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
+import type { editor as MonacoEditorNs } from "monaco-editor";
+
+/** The live Monaco instance, as handed back by `SmallCodeEditor`'s mount hook. */
+type MonacoEditorInstance = MonacoEditorNs.IStandaloneCodeEditor;
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -59,6 +63,8 @@ interface CodeOrDiffColumnProps {
 
   // Editor content
   onContentChange: (value: string | undefined) => void;
+  /** Receives the live Monaco instance on mount (and `null` on unmount). */
+  onEditorMount?: (editor: MonacoEditorInstance | null) => void;
   editorWrapperRef: React.Ref<HTMLDivElement>;
   editorHeight: string | undefined;
   editorPath: string | undefined;
@@ -100,6 +106,7 @@ export function CodeOrDiffColumn({
   onTabClick,
   onTabClose,
   onContentChange,
+  onEditorMount,
   editorWrapperRef,
   editorHeight,
   editorPath,
@@ -225,6 +232,7 @@ export function CodeOrDiffColumn({
               language={monacoLanguage}
               initialCode={currentFile.content}
               onChange={onContentChange}
+              onEditorMount={onEditorMount}
               mode={mode}
               height={editorHeight}
               readOnly={
