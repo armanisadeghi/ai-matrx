@@ -440,6 +440,31 @@ end-to-end runtime needs NER to produce live rows in both ledgers.
 
 ## Change log
 
+- `2026-08-10` — **The queue is agent-FILTERABLE, and deliberately not
+  agent-DECIDABLE.** `SuggestionsManager` now passes `getWriteHandlers` to its
+  `SurfaceRuntimeProvider`, registering exactly one of
+  `matrx-user/knowledge`'s write targets: `suggestions_filter`
+  (`mode: "ui"`, `applyPolicy: "ask"`), a partial patch over `search`,
+  `statuses`, `stage`, `minConfidence`, `starredOnly` and `unseenOnly` that
+  goes through the same `patchQuery` the filter bar's own controls call. It
+  asks rather than applying silently because it re-queries the server and
+  resets paging to page 0, which throws away where the user was in a triage
+  pass. **Accept / reject / defer / star get NO write target, in single or
+  bulk form, and neither does the row selection that arms the bulk bar.** That
+  is the point of this feature: accepting tags a source to a scope, creates a
+  scope, or writes a value through `set_context_value` — it turns a machine's
+  proposal into confirmed knowledge on a human's behalf, and an agent that
+  could accept its own pipeline's output would close that loop on itself.
+  A `focused_suggestion_id` target (expand one row via `setExpandedId`) was
+  built and then REMOVED: its only legal inputs are ids inside
+  `suggestions_rows`, which the manifest declares `autoContext: false`, so an
+  agent in an ordinary turn never sees one and every call ends in a refusal.
+  Supporting change: the status and stage vocabularies moved out of
+  `SuggestionsFilterBar` into `constants.ts` as `KG_SUGGESTION_STATUSES` /
+  `KG_SUGGESTION_STAGE_FILTERS` — the filter chips render from them and the
+  write handler validates against them, so the two cannot drift. Live-verified
+  with a real agent run; see the `features/surfaces` FEATURE.md Change Log
+  entry of the same date.
 - `2026-06-18` — **Association-link decision card surfaces the source inline.**
   `KgSuggestionRowItem` (association-link branch) now leads its source section
   with an explicit "Source — where this suggestion came from" label, keeps the

@@ -163,6 +163,28 @@ NER entities once backfill runs).
 
 ## Change log
 
+- 2026-08-10 — Claude: **the canvas is agent-writable.** `KgGraphCanvas` now
+  passes `getWriteHandlers` to its `SurfaceRuntimeProvider`, registering four of
+  `matrx-user/knowledge`'s write targets: `graph_search`, `graph_kind_filter`
+  and `graph_layout` (`applyPolicy: "auto"`) plus `graph_detail_level`
+  (`"ask"` — it re-REQUESTS the graph from the service at up to a 1000-node
+  budget, which is real backend work the user should get to decline). Every
+  handler calls the SAME setter the toolbar control's own `onChange` calls, so
+  an agent write and a user click are indistinguishable, and each validates
+  against the vocabulary the UI itself renders from — `KG_DETAIL_LEVELS`,
+  `KG_LAYOUTS`, and the live payload's own `kinds` array — never a re-typed
+  literal. The three whose controls are `disabled={!showGraph}` throw rather
+  than write while the canvas is loading, errored, or fully filtered out;
+  `graph_detail_level` deliberately does not, because its Select stays enabled
+  during a load and the fetch effect's `AbortController` already handles a
+  change mid-flight. NOT writable: the org / scope / scope-type selectors (they
+  choose whose knowledge is drawn — scoping identity, not authoring), and the
+  colour-by / size-by / hide-noise encodings (mechanical toggles, and
+  `KgColorBy` / `KgSizeBy` are types with no runtime constant to validate
+  against — if you ever want them as targets, promote a canonical
+  `KG_COLOR_BY_OPTIONS` the toolbar renders from first). Live-verified with a
+  real agent run; full reasoning in the `features/surfaces` FEATURE.md Change
+  Log entry of the same date.
 - 2026-07-20 — Claude: the cytoscape engine is now REUSED outside this feature — `features/marketing/components/inspection/link-graph/` consumes `useKgCytoscape`, `ops`, `layouts`, `style`/`KG_CLASS`, and the chrome/tier constants for the marketing site link graph; keep their signatures stable. Robustness fixes from that integration: camera ops (`fitAll`/`fitTo`/`zoomByFactor`) now `cy.stop(true)` first so a stalled/queued core animation can't make the buttons appear dead; `KgGraphCytoscape`'s StrictMode mount-guard refs (`firstData`/`layoutMounted`) reset on unmount — they previously survived the remount and made the second pass run a redundant animated layout against the fresh instance.
 - 2026-06-04 — Org picker + bigger card + org-page card. Toolbar now has an
   always-visible **organization picker** (`KgOrgFilter`) beside the scope picker,
