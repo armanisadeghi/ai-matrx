@@ -33,7 +33,17 @@ const USER_TERMINAL = new Set<RunLiveness>(["cancelled", "draft"]);
 export function hasDeliverable(
   detail: Pick<RunDetail, "audio_url" | "episode_id">,
 ): boolean {
-  return Boolean(detail.audio_url) || Boolean(detail.episode_id);
+  // Trim before judging. These columns are not reliably NULL when empty — a
+  // real failed run (studio run e824214f, killed by the content gate before it
+  // ever wrote a script) carries audio_url = "" rather than null. An empty
+  // string is falsy in JS so it happened to be handled, but a stray space is
+  // not, and the failure direction here is the bad one: a junk value would
+  // declare a dead run "completed" and HIDE it from recovery.
+  return nonEmpty(detail.audio_url) || nonEmpty(detail.episode_id);
+}
+
+function nonEmpty(value: string | null | undefined): boolean {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 /**

@@ -84,6 +84,17 @@ describe("trueLiveness", () => {
     expect(trueLiveness(detail({}))).toBe("stalled");
   });
 
+  // Real shape from studio run e824214f (killed by the content gate before it
+  // wrote a script): audio_url is "" rather than null. Declaring that run
+  // "completed" would hide a genuinely dead run from recovery.
+  it("does not treat an empty or blank audio_url as a deliverable", () => {
+    expect(trueLiveness(detail({ liveness: "failed", audio_url: "" }))).toBe(
+      "failed",
+    );
+    expect(trueLiveness(detail({ audio_url: "   " }))).toBe("stalled");
+    expect(trueLiveness(detail({ episode_id: "" }))).toBe("stalled");
+  });
+
   it("never overrides what the user did", () => {
     expect(
       trueLiveness(detail({ liveness: "cancelled", audio_url: "https://c/a" })),
