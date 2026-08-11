@@ -74,6 +74,9 @@ export default function QuickTasksWindow({
     const selected = selectedTaskId
       ? (visible.find((t) => t.id === selectedTaskId) ?? null)
       : null;
+    const selectedLabels = Array.isArray(selected?.settings?.labels)
+      ? (selected.settings.labels as string[])
+      : [];
 
     return createQuickTasksScope({
       show_all_projects: selectShowAllProjects(s),
@@ -95,10 +98,20 @@ export default function QuickTasksWindow({
             description: selected.description,
             priority: selected.priority ?? null,
             due_date: selected.dueDate,
+            labels: selectedLabels,
             project_id: selected.projectId,
             project_name: selected.projectName,
           }
         : undefined,
+      // Flat read twins for the panel_* write targets (the evidence loop).
+      // These report the task as SAVED — TaskDetailsPanel holds its unsaved
+      // field edits in local React state, which the store cannot see, so a
+      // staged value does NOT echo back here. The manifest says so.
+      selected_task_title: selected ? selected.title : undefined,
+      selected_task_description: selected ? selected.description : undefined,
+      selected_task_priority: selected ? (selected.priority ?? "") : undefined,
+      selected_task_due_date: selected ? selected.dueDate : undefined,
+      selected_task_labels: selected ? selectedLabels : undefined,
     });
   }, [store]);
 

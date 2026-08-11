@@ -7,7 +7,10 @@ import {
   useNavTree,
 } from "@/features/agent-context/hooks/useNavTree";
 import { selectAllTasks } from "@/features/agent-context/redux/tasksSlice";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { QUICK_TASKS_SURFACE_NAME } from "@/features/surfaces/manifests/quick-tasks.manifest";
+import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
 import { Input } from "@/components/ui/input";
 import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
@@ -245,6 +248,7 @@ export function QuickTasksSidebar() {
 
 export function QuickTasksMain() {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const selectedTaskId = useAppSelector(selectQuickTasksSelectedTaskId);
   const selectedProjectId = useAppSelector(selectActiveProject);
   const quickTasksOrgId = useAppSelector(selectQuickTasksSelectedOrgId);
@@ -283,6 +287,85 @@ export function QuickTasksMain() {
       scheduleQuickAddRefocus();
     }
   };
+
+  // Write half of the quick-add pane (surface `matrx-user/quick-tasks`). Both
+  // handlers validate and THROW on a bad shape — the writeback seam turns a
+  // throw into the loud envelope the agent reads. The details panel registers
+  // the `panel_*` targets itself; see the manifest's writeTargets doc block.
+  //
+  // Context (org / project / scopes) is read from the STORE AT CALL TIME, not
+  // from this render's props: when an agent stages several targets in one turn
+  // the seam can resolve every handler before the user confirms the first
+  // dialog, and a captured snapshot would be stale by the time it is used.
+  useSurfaceWriteHandlers(QUICK_TASKS_SURFACE_NAME, {
+    quick_add_title: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("quick_add_title expects a non-empty string.");
+      // Close the details panel first — the quick-add input only renders in
+      // the empty state, and staging into a box the user cannot see is worse
+      // than not staging at all. Same action the Close Details button fires.
+      dispatch(setQuickTasksSelectedTaskId(null));
+      dispatch(setNewTaskTitle(value.trim()));
+    },
+    quick_create_task: async (value: unknown) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          'quick_create_task expects an object like { "title": "…" } — not a string or an array.',
+        );
+      const input = value as Record<string, unknown>;
+      const title = typeof input.title === "string" ? input.title.trim() : "";
+      if (!title)
+        throw new Error(
+          "quick_create_task requires a non-empty `title` string.",
+        );
+      if (
+        input.description !== undefined &&
+        typeof input.description !== "string"
+      )
+        throw new Error("quick_create_task `description` must be a string.");
+      if (
+        input.priority !== undefined &&
+        input.priority !== null &&
+        !(TASK_PRIORITIES as readonly unknown[]).includes(input.priority)
+      )
+        throw new Error(
+          `quick_create_task \`priority\` expects one of: ${TASK_PRIORITIES.join(" | ")}.`,
+        );
+      if (
+        input.due_date !== undefined &&
+        input.due_date !== null &&
+        (typeof input.due_date !== "string" ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(input.due_date))
+      )
+        throw new Error(
+          'quick_create_task `due_date` expects a "YYYY-MM-DD" string, or null.',
+        );
+
+      const s = store.getState();
+      const liveScopeIds = Object.values(
+        selectScopeSelectionsContext(s),
+      ).filter((v): v is string => typeof v === "string" && v.length > 0);
+      const newId = await dispatch(
+        createTaskThunk({
+          title,
+          description: (input.description as string | undefined) ?? null,
+          priority:
+            (input.priority as "low" | "medium" | "high" | undefined) ?? null,
+          dueDate: (input.due_date as string | undefined) ?? null,
+          projectId: normalizeProjectIdForCreate(selectActiveProject(s)),
+          organizationId:
+            selectQuickTasksSelectedOrgId(s) ?? selectOrganizationId(s),
+          scopeIds: liveScopeIds,
+        }),
+      ).unwrap();
+      if (!newId)
+        throw new Error(
+          "The task could not be created — the create service returned no id.",
+        );
+      // Open what was just made so the user can read, edit or delete it.
+      dispatch(setQuickTasksSelectedTaskId(newId));
+    },
+  });
 
   if (!selectedTask) {
     return (
@@ -327,6 +410,7 @@ export function QuickTasksMain() {
       <TaskDetailsPanel
         task={selectedTask}
         titleLayout="stacked"
+        writeSurfaceName={QUICK_TASKS_SURFACE_NAME}
         onClose={() => dispatch(setQuickTasksSelectedTaskId(null))}
       />
     </div>

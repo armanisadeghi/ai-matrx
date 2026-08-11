@@ -58,6 +58,8 @@ import type { TaskLabel } from "@/features/tasks/services/taskService";
 import type { Comment } from "@/features/comments/types";
 import { TaskContextPicker } from "./TaskContextSection";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
 import type { TaskWithProject } from "@/features/tasks/types";
 import { buildTaskTitleLabel } from "@/features/tasks/utils/taskTitleLabel";
 import { cn } from "@/lib/utils";
@@ -72,12 +74,23 @@ interface TaskDetailsPanelProps {
    * full title on its own row below. For narrow Quick Tasks panes.
    */
   titleLayout?: TaskDetailsTitleLayout;
+  /**
+   * Surface (`ui_surface.name`) whose `panel_*` write targets this panel should
+   * service, or omitted for none. This panel is rendered by three different
+   * mounts and its field drafts are LOCAL state, so it cannot assume which
+   * surface it is inside — the mount that declares the targets is the one that
+   * names itself here. Only the Quick Tasks window
+   * (`matrx-user/quick-tasks`) does today; `/tasks` stages through
+   * `TaskEditorBody`'s own Redux-backed targets instead.
+   */
+  writeSurfaceName?: string;
 }
 
 export default function TaskDetailsPanel({
   task,
   onClose,
   titleLayout = "default",
+  writeSurfaceName,
 }: TaskDetailsPanelProps) {
   const dispatch = useAppDispatch();
   const refresh = () => dispatch(invalidateAndRefetchFullContext());
@@ -294,6 +307,94 @@ export default function TaskDetailsPanel({
       setIsAddingComment(false);
     }
   };
+
+  // Write half of the Quick Tasks details panel (`panel_*` targets on
+  // `matrx-user/quick-tasks`). Registered by NAME rather than through a
+  // provider because this panel is a deep child of the window that owns the
+  // surface — and only when a mount hands us `writeSurfaceName`, so the same
+  // component rendered under /tasks or the Quick Tasks sheet registers
+  // nothing.
+  //
+  // Every handler validates and THROWS on a bad shape; the writeback seam
+  // converts a throw into the error envelope the agent reads. The field
+  // handlers set the SAME local draft + dirty flag the user's own typing sets,
+  // so a staged value shows up in the field and the panel's Save button
+  // appears — the user still saves. Saving is deliberately NOT a target: this
+  // panel's draft is local React state, so a save handler would run against
+  // whatever the closure captured, which can pre-date a stage applied earlier
+  // in the same agent turn.
+  useSurfaceWriteHandlers(writeSurfaceName ?? null, {
+    panel_task_title: (value: unknown) => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error("panel_task_title expects a non-empty string.");
+      handleTitleChange(value.trim());
+    },
+    panel_task_description: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error("panel_task_description expects a string.");
+      handleDescriptionChange(value);
+    },
+    panel_task_priority: (value: unknown) => {
+      if (value === null) {
+        setPriority(null);
+        setIsDirty(true);
+        return;
+      }
+      if (!(TASK_PRIORITIES as readonly unknown[]).includes(value))
+        throw new Error(
+          `panel_task_priority expects one of: ${TASK_PRIORITIES.join(" | ")}, or null to clear.`,
+        );
+      handlePriorityChange(value as (typeof TASK_PRIORITIES)[number]);
+    },
+    panel_task_due_date: (value: unknown) => {
+      if (value === null || value === "") {
+        handleDueDateChange("");
+        return;
+      }
+      if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+        throw new Error(
+          'panel_task_due_date expects a "YYYY-MM-DD" string, or null to clear.',
+        );
+      handleDueDateChange(value);
+    },
+    panel_task_labels: (value: unknown) => {
+      const allowed = taskService.TASK_LABEL_OPTIONS.map(
+        (o) => o.value as string,
+      );
+      if (
+        !Array.isArray(value) ||
+        !value.every((v) => typeof v === "string" && allowed.includes(v))
+      )
+        throw new Error(
+          `panel_task_labels expects an array drawn from: ${allowed.join(" | ")}.`,
+        );
+      setLabels(value as TaskLabel[]);
+      setIsDirty(true);
+    },
+    panel_add_subtasks: async (value: unknown) => {
+      if (
+        !Array.isArray(value) ||
+        value.length === 0 ||
+        !value.every((v) => typeof v === "string" && v.trim())
+      )
+        throw new Error(
+          "panel_add_subtasks expects a non-empty array of subtask title strings.",
+        );
+      // The panel's own canonical create path — one refresh at the end
+      // instead of one per subtask.
+      for (const subtaskTitle of value as string[]) {
+        const created = await taskService.createSubtask(
+          task.id,
+          subtaskTitle.trim(),
+        );
+        if (!created)
+          throw new Error(
+            `Creating subtask "${subtaskTitle.trim()}" failed — the service returned nothing.`,
+          );
+      }
+      await refresh();
+    },
+  });
 
   const getPriorityColor = (p: string | null) => {
     switch (p) {
