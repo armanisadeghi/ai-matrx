@@ -3,15 +3,18 @@
 /**
  * The no-site landing — every site the caller administers as a KPI card
  * (28-day clicks/impressions/position from `web.v_site_kpis`, GSC binding
- * state, data freshness). Click a card → that site's deep dashboard.
+ * state, data freshness). Metrics open the deep dashboard; any reported
+ * problem carries its own Sync or Connect action.
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, Plug, SearchCheck } from "lucide-react";
+import { Loader2, Plug, RefreshCw, SearchCheck } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { listSites } from "@/features/marketing/data/service";
 import {
   LoadingSurface,
@@ -24,6 +27,7 @@ import {
 } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { SiteListRow } from "@/features/marketing/types";
+import { siteHasGscBinding } from "@/features/marketing/search-console/components/SiteSwitcher";
 import {
   formatCount,
   formatPosition,
@@ -53,9 +57,11 @@ function daysBehind(latest: string | null | undefined): number | null {
 }
 
 export function SearchConsolePortfolio({
-  onSelectSite,
+  onSyncSite,
+  syncingSiteId,
 }: {
-  onSelectSite: (siteId: string) => void;
+  onSyncSite: (siteId: string, organizationId: string | null) => void;
+  syncingSiteId: string | null;
 }) {
   const router = useRouter();
   const [, startNavigation] = useTransition();
@@ -83,8 +89,10 @@ export function SearchConsolePortfolio({
     );
   }
   const rows = sites.data?.rows ?? [];
-  const withData = rows.filter((r) => (r.gsc_clicks_28d ?? null) !== null);
-  const withoutData = rows.filter((r) => (r.gsc_clicks_28d ?? null) === null);
+  // A zero-click property still has real Search Console data. Freshness, not
+  // clicks, decides which section owns the card.
+  const withData = rows.filter((r) => r.gsc_latest_date !== null);
+  const withoutData = rows.filter((r) => r.gsc_latest_date === null);
 
   const card = (site: SiteListRow) => {
     const clicksTrend =
@@ -92,36 +100,35 @@ export function SearchConsolePortfolio({
         ? trendPercent(site.gsc_clicks_28d, site.gsc_clicks_prev_28d)
         : null;
     const behind = daysBehind(site.gsc_latest_date);
+    const stale = behind !== null && behind >= GSC_STALE_AFTER_DAYS;
+    const hasBinding = siteHasGscBinding(site);
+    const needsAction = stale || site.gsc_latest_date === null;
+    const dashboardHref = marketingRoutes.searchConsole(site.id);
+    const integrationsHref = `${marketingRoutes.site(site.brand_id, site.id)}/integrations`;
+    const siteLabel = site.name ?? site.domain ?? site.id;
     return (
       <div
         key={site.id}
-        role="button"
-        tabIndex={0}
-        onClick={() => onSelectSite(site.id)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onSelectSite(site.id);
-          }
-        }}
-        className="group flex cursor-pointer flex-col gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-accent"
+        className="group flex flex-col gap-2 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40"
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-foreground">
-              {site.name ?? site.domain ?? site.id}
-            </p>
+            <EntityRef
+              token="web_site"
+              id={site.id}
+              name={siteLabel}
+              href={dashboardHref}
+              showIcon={false}
+              labelClassName="text-sm font-medium text-foreground"
+            />
             <p className="truncate text-xs text-muted-foreground">
               {site.domain ?? "—"}
             </p>
           </div>
-          <span
-            onClick={(e) => e.stopPropagation()}
-            className="opacity-0 transition-opacity group-hover:opacity-100"
-          >
+          <span className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
             <CopyButtons
               size="xs"
-              label={`Site search KPIs — ${site.name ?? site.domain ?? site.id}`}
+              label={`Site search KPIs — ${siteLabel}`}
               human={() =>
                 humanLines([
                   ["Site", site.name ?? site.domain],
@@ -149,56 +156,89 @@ export function SearchConsolePortfolio({
             />
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <p className="text-[11px] text-muted-foreground">Clicks 28d</p>
-            <p className="text-base font-semibold tabular-nums text-foreground">
-              {formatCount(site.gsc_clicks_28d)}
-            </p>
-            {clicksTrend !== null ? (
-              <p
-                className={
-                  clicksTrend >= 0
-                    ? "text-[11px] tabular-nums text-success"
-                    : "text-[11px] tabular-nums text-destructive"
-                }
-              >
-                {clicksTrend >= 0 ? "+" : ""}
-                {clicksTrend.toFixed(0)}%
-              </p>
-            ) : null}
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground">Impressions</p>
-            <p className="text-base font-semibold tabular-nums text-foreground">
-              {formatCount(site.gsc_impressions_28d)}
-            </p>
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground">Position</p>
-            <p className="text-base font-semibold tabular-nums text-foreground">
-              {formatPosition(site.gsc_position_28d)}
-            </p>
-          </div>
-        </div>
-        {/* This is the FIRST screen of the feature, and until now it
-            presented a 15-day-stale 28-day KPI as current with no hint. A
-            staleness marker has to live wherever a number is shown, not only
-            on the deep dashboard. */}
-        <p
-          className={
-            behind !== null && behind >= GSC_STALE_AFTER_DAYS
-              ? "text-[11px] font-medium text-destructive"
-              : "text-[11px] text-muted-foreground"
-          }
+        <Link
+          href={dashboardHref}
+          aria-label={`Open Search Console dashboard for ${siteLabel}`}
+          className="rounded-sm outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {site.gsc_latest_date
-            ? behind !== null && behind >= GSC_STALE_AFTER_DAYS
-              ? `Stale — data only through ${formatGscDate(site.gsc_latest_date)} (${behind} days behind)`
-              : `Data through ${formatGscDate(site.gsc_latest_date)}`
-            : "No Search Console data yet"}
-          <ArrowUpRight className="ml-1 inline h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
-        </p>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <p className="text-[11px] text-muted-foreground">Clicks 28d</p>
+              <p className="text-base font-semibold tabular-nums text-foreground">
+                {formatCount(site.gsc_clicks_28d)}
+              </p>
+              {clicksTrend !== null ? (
+                <p
+                  className={
+                    clicksTrend >= 0
+                      ? "text-[11px] tabular-nums text-success"
+                      : "text-[11px] tabular-nums text-destructive"
+                  }
+                >
+                  {clicksTrend >= 0 ? "+" : ""}
+                  {clicksTrend.toFixed(0)}%
+                </p>
+              ) : null}
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">Impressions</p>
+              <p className="text-base font-semibold tabular-nums text-foreground">
+                {formatCount(site.gsc_impressions_28d)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">Position</p>
+              <p className="text-base font-semibold tabular-nums text-foreground">
+                {formatPosition(site.gsc_position_28d)}
+              </p>
+            </div>
+          </div>
+        </Link>
+        <div className="flex min-h-6 items-center justify-between gap-2">
+          <p
+            className={
+              stale
+                ? "text-[11px] font-medium text-destructive"
+                : "text-[11px] text-muted-foreground"
+            }
+          >
+            {site.gsc_latest_date
+              ? stale
+                ? `Stale — data only through ${formatGscDate(site.gsc_latest_date)} (${behind} days behind)`
+                : `Up to date — data through ${formatGscDate(site.gsc_latest_date)}`
+              : "No Search Console data yet"}
+          </p>
+          {needsAction ? (
+            hasBinding ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 shrink-0 gap-1 px-2 text-[11px]"
+                disabled={syncingSiteId !== null}
+                onClick={() => onSyncSite(site.id, site.organization_id)}
+              >
+                {syncingSiteId === site.id ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3 w-3" />
+                )}
+                Sync now
+              </Button>
+            ) : (
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="h-6 shrink-0 gap-1 px-2 text-[11px]"
+              >
+                <Link href={integrationsHref}>
+                  <Plug className="h-3 w-3" />
+                  Connect
+                </Link>
+              </Button>
+            )
+          ) : null}
+        </div>
       </div>
     );
   };

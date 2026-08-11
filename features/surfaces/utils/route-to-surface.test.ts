@@ -33,7 +33,7 @@ describe("surfaceFromPathname — marketing tree", () => {
 
   it("resolves the site root and folded verticals to marketing-site", () => {
     expect(surfaceFromPathname(SITE)).toBe("matrx-user/marketing-site");
-    for (const folded of ["access", "settings", "cost"]) {
+    for (const folded of ["access", "cost"]) {
       expect(surfaceFromPathname(`${SITE}/${folded}`)).toBe(
         "matrx-user/marketing-site",
       );
@@ -56,6 +56,7 @@ describe("surfaceFromPathname — marketing tree", () => {
       [`sitemaps/${P}`, "matrx-user/marketing-sitemaps"],
       ["discovery", "matrx-user/marketing-discovery"],
       ["integrations", "matrx-user/marketing-integrations"],
+      ["settings", "matrx-user/marketing-site-settings"],
       ["keywords", "matrx-user/marketing-site-keywords"],
       ["media", "matrx-user/marketing-site-media"],
     ];

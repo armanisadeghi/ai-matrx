@@ -250,11 +250,13 @@ const MARKETING_SITE_VERTICAL_SURFACES: Readonly<Record<string, string>> = {
   sitemaps: "matrx-user/marketing-sitemaps",
   discovery: "matrx-user/marketing-discovery",
   integrations: "matrx-user/marketing-integrations",
+  settings: "matrx-user/marketing-site-settings",
   keywords: "matrx-user/marketing-site-keywords",
   media: "matrx-user/marketing-site-media",
-  // access / settings / cost / structure stay on the site surface — they
-  // configure or re-project the same entity and don't warrant their own
-  // agent bindings.
+  // access / cost / structure stay on the site surface — they re-project the
+  // same entity and don't warrant their own agent bindings. Settings left that
+  // list on 2026-08-11: it is agent-WRITABLE (crawl policy), which is a
+  // capability the parent surface cannot carry.
 };
 
 function resolveMarketingSurface(stripped: string): string | null {

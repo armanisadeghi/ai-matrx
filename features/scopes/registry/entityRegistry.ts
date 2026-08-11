@@ -395,6 +395,13 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
 
   // ─── Web (canonical pages — the marketing page workspace anchors here) ────
+  web_site: {
+    Icon: Globe,
+    labelPlural: "Sites",
+    // The flat route is the canonical resolver when a caller only has the
+    // site id; its server redirect restores the brand-first hierarchy.
+    hrefFor: (id) => `/marketing/sites/${id}`,
+  },
   web_page: {
     Icon: Globe,
     labelPlural: "Canonical Pages",

@@ -115,7 +115,8 @@ export function SearchConsoleWorkspace() {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const [isNavigating, startNavigation] = useTransition();
-  const [syncing, setSyncing] = useState(false);
+  const [syncingSiteId, setSyncingSiteId] = useState<string | null>(null);
+  const syncing = syncingSiteId !== null;
   // History walk state is SEPARATE from syncing — one shared flag put a
   // spinner on three buttons at once, which reads as broken. The live note
   // narrates progress; the banner is where it renders.
@@ -217,14 +218,18 @@ export function SearchConsoleWorkspace() {
     });
   };
 
-  const runSync = async (mode: "incremental" | "backfill" = "incremental") => {
-    if (!state.siteId || syncing) return;
-    setSyncing(true);
+  const runSync = async (
+    mode: "incremental" | "backfill" = "incremental",
+    target?: { siteId: string; organizationId: string | null },
+  ) => {
+    const syncSiteId = target?.siteId ?? state.siteId;
+    if (!syncSiteId || syncing) return;
+    setSyncingSiteId(syncSiteId);
     try {
       const result = await syncGscSearchPerformance(
         dispatch,
-        state.siteId,
-        site?.organization_id ?? null,
+        syncSiteId,
+        target?.organizationId ?? site?.organization_id ?? null,
         { mode },
       );
       if (result.mode === "backfill") {
@@ -309,7 +314,7 @@ export function SearchConsoleWorkspace() {
       await queryClient.invalidateQueries({
         queryKey: ["marketing", "gsc"],
       });
-      setSyncing(false);
+      setSyncingSiteId(null);
     }
   };
 
@@ -512,8 +517,9 @@ export function SearchConsoleWorkspace() {
       <main className="h-full overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
         {!state.siteId ? (
           <SearchConsolePortfolio
-            onSelectSite={(siteId) =>
-              applyState({ ...state, siteId, filters: {} })
+            syncingSiteId={syncingSiteId}
+            onSyncSite={(siteId, organizationId) =>
+              void runSync("incremental", { siteId, organizationId })
             }
           />
         ) : (

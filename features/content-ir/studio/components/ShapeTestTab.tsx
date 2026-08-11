@@ -18,8 +18,8 @@ import {
   Copy,
   Eye,
   Loader2,
+  PencilRuler,
   Save,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -269,7 +269,30 @@ export default function ShapeTestTab({
             <span className="text-sm font-semibold text-foreground">
               Fill in your {label}
             </span>
+            <button
+              type="button"
+              onClick={() => void fillWithAi()}
+              disabled={aiFill.isRunning}
+              className="ml-auto flex h-7 items-center gap-1.5 rounded-md border border-border px-2 text-xs text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {aiFill.isRunning ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <PencilRuler className="h-3.5 w-3.5 text-primary" />
+              )}
+              Fill with AI
+            </button>
           </div>
+          {/* Renders nothing when there is no run — safe to mount always. The
+              agent's own tokens stream here through the canonical pipeline
+              while it drafts; the result still lands in the form below. */}
+          <LiveRunDisplay
+            conversationId={aiFill.hasLiveRun ? aiFill.conversationId : null}
+            pending={aiFill.hasLiveRun && !aiFill.conversationId}
+            label={`Drafting a sample ${label}`}
+            onDismiss={aiFill.dismiss}
+            className="mb-2"
+          />
           <KindInputForm
             key={formSeedKey}
             kind={kind}

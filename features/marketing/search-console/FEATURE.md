@@ -33,9 +33,12 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   run's rows aggregate, chosen before user filters apply).
 - Reads go browser → Supabase directly (`data.ts`); the ONE compute call is
   the sync trigger (`sync.ts` → aidream, streamed, health-gated by the
-  site's GSC binding). The legacy `web.gsc_page_stat` pipeline is untouched
-  and still feeds the sites portfolio / page cards (retirement handoff:
-  `docs/handoffs/gsc-page-stat-retirement.md`).
+  site's GSC binding). The portfolio's existing `web.v_site_kpis` contract now
+  delegates every GSC field to `seo.gsc_perf_site_portfolio`, which uses this
+  same canonical fact table and `gsc_perf_summary` accuracy path
+  ([`migrations/seo_gsc_site_portfolio_canonical_source.sql`](../../../migrations/seo_gsc_site_portfolio_canonical_source.sql)).
+  The remaining legacy `web.gsc_page_stat` page-level readers are tracked in
+  `docs/handoffs/gsc-page-stat-retirement.md`.
 
 ## Surface map
 
@@ -43,7 +46,9 @@ UI deliberately beyond it. Status: **live core** (2026-07-30).
   (the route's ONE `next/dynamic({ssr:false})` edge; recharts and all
   sub-components import statically inside — Fragmentation Law).
 - `components/SearchConsoleWorkspace.tsx` — composition root. No `?site` →
-  `SearchConsolePortfolio` (cross-site KPI cards over `listSites`);
+  `SearchConsolePortfolio` (cross-site KPI cards over `listSites`; freshness,
+  not click count, determines whether data exists; every stale/no-data card
+  offers the correct one-click `Sync now` or `Connect` action);
   `?site=` → per-site dashboard. **ALL view state is URL state**
   (`lib/url-state.ts`): `?site&tab&range&compare&q&qc&qn&pg&pgc&country&device&appearance`
   (+ `from`/`to` for custom ranges) — every drill-down is a shareable link.
@@ -510,6 +515,12 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-11 — Portfolio truth + actions: `web.v_site_kpis` now reads the
+  canonical `seo.search_performance_daily` spine through
+  `seo.gsc_perf_site_portfolio`, eliminating the false stale July 26 cards
+  while per-site dashboards were current through August 9. Zero-click sites
+  are no longer misclassified as empty; stale/empty cards now offer targeted
+  Sync or Connect actions, and site names use the canonical entity door.
 - 2026-08-09 — Brand + Rules panels de-modalized: both workspace side
   sheets moved off the blocking `Sheet` onto the canonical
   `SidePanelSurface` (non-blocking, drag-resizable, table stays live;

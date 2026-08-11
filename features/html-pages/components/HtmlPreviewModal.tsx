@@ -95,7 +95,7 @@ function HtmlPreviewModalBody({
   user,
   hasReduxProvider,
 }: HtmlPreviewModalProps & {
-  user: { id?: string } | null;
+  user: { id?: string | null; email?: string | null } | null;
   hasReduxProvider: boolean;
 }) {
   const [copied, setCopied] = useState(false);

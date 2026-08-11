@@ -103,7 +103,9 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
     runnable: false,
     fix: () => ({
       label: "Connect Bing",
-      href: marketingRoutes.connectionsBing(),
+      // The site binding lives in that page's "Bind a verified Bing property
+      // to a site" section — land on it, not at the top of the page.
+      href: `${marketingRoutes.connectionsBing()}#site-bindings`,
     }),
     data: ({ siteId }) => ({
       label: "Open search data",
