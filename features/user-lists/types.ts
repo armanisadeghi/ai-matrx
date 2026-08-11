@@ -137,7 +137,23 @@ export type UserListBookmark =
 
 // ─── Visibility ───────────────────────────────────────────────────────────────
 
-export type ListVisibility = "public" | "authenticated" | "private";
+/**
+ * The REAL visibility vocabulary, as a runtime constant.
+ *
+ * `getListVisibility` below is the only producer of these strings, so this
+ * array is the single source of truth for "what can `list_visibility` ever
+ * be". The lists surface manifest interpolates it (via
+ * `LIST_VISIBILITY_ENUM_TEXT` in `features/user-lists/surface-write.ts`)
+ * instead of re-typing the literals, so the vocabulary an agent reads cannot
+ * drift from the vocabulary the page emits.
+ */
+export const LIST_VISIBILITY_VALUES = [
+  "public",
+  "authenticated",
+  "private",
+] as const;
+
+export type ListVisibility = (typeof LIST_VISIBILITY_VALUES)[number];
 
 export function getListVisibility(
   list: Pick<UserList, "is_public" | "public_read">,

@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Share2, Trash2 } from "lucide-react";
 import type { UserListWithItems, GroupedItem } from "../types";
+import { getListVisibility } from "../types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createListsScope,
+  type ListsItemEntry,
+} from "@/features/surfaces/manifests/lists.manifest";
+import { buildListSurfaceWriteHandlers } from "../surface-write-handlers";
 import { ListDetail } from "./ListDetail";
 import { EditListDialog } from "./EditListDialog";
 import { AddItemDialog } from "./AddItemDialog";
@@ -84,6 +91,74 @@ export function ListDetailClient({
     }
   };
 
+  // ── Surface runtime (`matrx-user/lists`) ────────────────────────────────
+  //
+  // ONLY the `/lists/[id]` route registers. The List Manager window renders
+  // this same component WITHOUT `asRoute` and publishes its own
+  // `matrx-user/list-manager` surface around it — and the surface registry
+  // resolves DEEPEST-first, so registering here unconditionally would shadow
+  // that shipped window surface from inside its own detail pane.
+  //
+  // The write handlers are the SHARED ones (`buildListSurfaceWriteHandlers`),
+  // the same implementation and the same canonical server actions the List
+  // Manager mount uses, so the two mounts of this state cannot drift.
+  const surfaceGuardRef = useRef({ listId: list.list_id, isOwner });
+  useEffect(() => {
+    // `applySurfaceWrite` resolves handler closures BEFORE the confirm dialog
+    // is answered, so these guards are read through a ref rather than off the
+    // render closure they would otherwise capture.
+    surfaceGuardRef.current = { listId: list.list_id, isOwner };
+  }, [list.list_id, isOwner]);
+
+  const getSurfaceScope = () => {
+    const grouped = list.items_grouped ?? {};
+    const allItems: ListsItemEntry[] = Object.entries(grouped).flatMap(
+      ([group, items]) =>
+        items.map((item) => ({
+          id: item.id,
+          label: item.label,
+          description: item.description,
+          help_text: item.help_text,
+          group,
+        })),
+    );
+    const focused = editItemOpen ? editItem : null;
+    return createListsScope({
+      active_list_id: list.list_id,
+      active_list_name: list.list_name,
+      active_list_description: list.description ?? undefined,
+      active_list_item_count: allItems.length,
+      list_visibility: getListVisibility(list),
+      list_is_owner: isOwner,
+      all_items: allItems,
+      items_grouped: grouped,
+      selected_item_id: focused?.id,
+      selected_item_label: focused?.label,
+      selected_item_description: focused?.description ?? undefined,
+    });
+  };
+
+  const listWriteHandlers = useMemo(
+    () =>
+      buildListSurfaceWriteHandlers({
+        resolveListId: (target) => {
+          const { listId, isOwner: viewerOwnsList } = surfaceGuardRef.current;
+          if (!viewerOwnsList)
+            throw new Error(
+              `${target} cannot be applied: the signed-in user does not own this list — they are viewing it through a shared link and the page is read-only. Read list_is_owner before proposing an edit.`,
+            );
+          return listId;
+        },
+        // The route's list is a server-component prop, so a refresh is what
+        // re-reads it — the same path a human's dialog save takes after its
+        // server action revalidates.
+        afterWrite: () => {
+          router.refresh();
+        },
+      }),
+    [router],
+  );
+
   const handleCopyLink = () => {
     const shareUrl =
       typeof window !== "undefined"
@@ -93,7 +168,7 @@ export function ListDetailClient({
     toast.success("Link copied");
   };
 
-  return (
+  const body = (
     <>
       {asRoute && (
         <EntityModeHeader
@@ -170,5 +245,20 @@ export function ListDetailClient({
         onConfirm={handleDeleteItem}
       />
     </>
+  );
+
+  // Embedded renders (List Manager window, overlays, dev demos) register
+  // nothing — see the surface-runtime note above.
+  if (!asRoute) return body;
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/lists"
+      getScope={getSurfaceScope}
+      isEditable={isOwner}
+      getWriteHandlers={() => listWriteHandlers}
+    >
+      {body}
+    </SurfaceRuntimeProvider>
   );
 }
