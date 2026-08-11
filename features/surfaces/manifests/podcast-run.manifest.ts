@@ -79,6 +79,20 @@
  * `entity` rather than the preferred `draft` because this page has no editor
  * state and no Save bar to stage into — the `mermaid-editor` reasoning that
  * `draft`'s "nothing is saved until you save" would simply be a lie here.
+ *
+ * READ TRUTH FOR THE EVIDENCE LOOP. This page rebuilds its state from the RUN
+ * record — `detailToRunState` / `rowToRunState` in `studio/runs/mapping.ts`
+ * read `detail.title` / `row.title`, which is the metadata the PIPELINE
+ * generated. Every title/description edit, human or agent, lands on
+ * `pc_episodes` instead (`podcastService.updateEpisode`), so the two diverge
+ * the moment anyone edits and a reload showed a title the episode no longer
+ * had. That was already true for the Title options panel's "Use" and for
+ * admin episode-form edits; the write half is what made it intolerable,
+ * because `episode_title` / `episode_description` are the READ TWINS an agent
+ * checks its own work against — after a confirmed write, asked to change the
+ * title again, it quoted the STALE title back. `useStudioRun` now overlays
+ * the persisted `pc_episodes` row over the run-derived title and description
+ * once the episode is known and the stream is done writing it.
  */
 
 import type {
