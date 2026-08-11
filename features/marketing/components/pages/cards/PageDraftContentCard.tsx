@@ -21,7 +21,10 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
-import { usePageContent, useSavePageContent } from "@/features/marketing/data/hooks";
+import {
+  usePageContent,
+  useSavePageContent,
+} from "@/features/marketing/data/hooks";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MARKETING_PAGE_SURFACE_NAME } from "@/features/marketing/lib/marketing-page-scope";
 import type { MarketingPage } from "@/features/marketing/types";
@@ -160,16 +163,17 @@ export function PageDraftContentCard({ page }: { page: MarketingPage }) {
         ) : null
       }
     >
-      <div className="grid gap-2 p-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
         {contentQuery.isLoading ? (
           <div className="h-48 animate-pulse rounded-lg border border-border bg-muted/40" />
         ) : (
-          <div className="min-h-[20rem]">
+          <div className="min-h-[20rem] flex-1">
             <BasicContentEditorLazy
               content={value}
               onChange={setDraft}
               placeholder="Write the content this page SHOULD have — markdown, saved on demand."
               resetKey={`${page.id}:${row?.version ?? 0}:${stagedNonce}`}
+              className="h-full"
             />
           </div>
         )}

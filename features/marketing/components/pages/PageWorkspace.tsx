@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   AppWindow,
   ArrowRight,
+  ChevronDown,
   Eye,
   FileQuestion,
   History,
@@ -20,6 +21,11 @@ import { FetchPageButton } from "@/features/marketing/components/pages/FetchPage
 import { PageTaskButton } from "@/features/marketing/components/pages/PageTaskButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
   usePageContent,
@@ -140,6 +146,10 @@ import { PagePlanNoteCard } from "@/features/marketing/components/pages/cards/Pa
 // section titles and field labels below render these byte-identically.
 const L = surfaceValueLabels(marketingPageManifest);
 
+/** Studio lane rules: one outer disclosure owns nested card visibility/height. */
+const STUDIO_LANE_CARD_CLASSES =
+  "h-full content-stretch [&_[data-section-card-shell]]:h-full [&_[data-section-card-shell]]:self-stretch [&_[data-section-card]]:flex [&_[data-section-card]]:h-full [&_[data-section-card]]:min-h-0 [&_[data-section-card]]:flex-col [&_[data-section-card]]:self-stretch [&_[data-section-card-content]]:flex [&_[data-section-card-content]]:min-h-0 [&_[data-section-card-content]]:flex-1 [&_[data-section-card-content]]:flex-col [&_[data-section-card-content][data-state=closed]]:flex [&_[data-section-card-content]>*]:min-h-0 [&_[data-section-card-content]>*]:flex-1 [&_[data-section-card-toggle]]:hidden";
+
 /** Column header shown only in Studio (split) view to orient the two lanes. */
 function LaneLabel({
   icon: Icon,
@@ -200,46 +210,85 @@ function PairStub({
  */
 function Pair({
   mode,
+  title,
   current,
   plan,
 }: {
   mode: WorkspaceViewMode;
+  title: string;
   current: ReactNode;
   plan: ReactNode;
 }) {
+  const [open, setOpen] = useState(true);
+  const studio = mode === "studio";
+
   return (
-    <>
-      <div
+    <Collapsible
+      open={!studio || open}
+      onOpenChange={studio ? setOpen : undefined}
+      className="min-w-0"
+    >
+      {studio ? (
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Toggle ${title} comparison`}
+            className="group relative flex h-7 w-full items-center gap-2 overflow-hidden rounded-md border border-border bg-card px-2.5 text-left transition-colors hover:bg-muted/40"
+          >
+            <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-primary/25" />
+            <span className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-foreground">
+              {title}
+            </span>
+            <span className="relative z-10 hidden items-center gap-1 rounded-full border border-primary/30 bg-background px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground sm:flex">
+              Current
+              <ArrowRight className="h-2.5 w-2.5 text-primary" />
+              Plan
+            </span>
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
+          </button>
+        </CollapsibleTrigger>
+      ) : null}
+      <CollapsibleContent
+        forceMount
         className={cn(
-          "@container grid min-w-0 gap-3",
-          mode === "plan" && "hidden",
+          "grid min-w-0 gap-3 data-[state=closed]:hidden",
+          studio && "mt-1.5 xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
         )}
       >
-        {current}
-      </div>
-      {/* The connector: a vertical gradient thread with a current→plan node.
-          Rendered only in the Studio split at xl+ (below xl the pair stacks). */}
-      <div
-        aria-hidden="true"
-        className={cn(
-          "relative hidden w-6",
-          mode === "studio" && "xl:flex xl:items-center xl:justify-center",
-        )}
-      >
-        <div className="absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 rounded-full bg-gradient-to-b from-primary/10 via-primary/45 to-primary/10" />
-        <div className="relative z-10 flex h-5 w-5 items-center justify-center rounded-full border border-primary/40 bg-background shadow-sm">
-          <ArrowRight className="h-3 w-3 text-primary" />
+        <div
+          className={cn(
+            "@container grid min-w-0 content-start gap-3",
+            studio && STUDIO_LANE_CARD_CLASSES,
+            mode === "plan" && "hidden",
+          )}
+        >
+          {current}
         </div>
-      </div>
-      <div
-        className={cn(
-          "@container grid min-w-0 gap-3",
-          mode === "current" && "hidden",
-        )}
-      >
-        {plan}
-      </div>
-    </>
+        {/* The connector: a vertical gradient thread with a current→plan node.
+            Rendered only in the Studio split at xl+ (below xl the pair stacks). */}
+        <div
+          aria-hidden="true"
+          className={cn(
+            "relative hidden w-6",
+            studio && "xl:flex xl:items-center xl:justify-center",
+          )}
+        >
+          <div className="absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 rounded-full bg-gradient-to-b from-primary/10 via-primary/45 to-primary/10" />
+          <div className="relative z-10 flex h-5 w-5 items-center justify-center rounded-full border border-primary/40 bg-background shadow-sm">
+            <ArrowRight className="h-3 w-3 text-primary" />
+          </div>
+        </div>
+        <div
+          className={cn(
+            "@container grid min-w-0 content-start gap-3",
+            studio && STUDIO_LANE_CARD_CLASSES,
+            mode === "current" && "hidden",
+          )}
+        >
+          {plan}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -480,9 +529,15 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   // full width at the bottom.
   // ————————————————————————————————————————————————————————————————————————
 
-  const rows: Array<{ key: string; current: ReactNode; plan: ReactNode }> = [
+  const rows: Array<{
+    key: string;
+    title: string;
+    current: ReactNode;
+    plan: ReactNode;
+  }> = [
     {
       key: "serp",
+      title: "Search appearance",
       current: (
         <SectionCard
           title="Search result preview"
@@ -594,6 +649,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "keywords",
+      title: "Keyword opportunity",
       current: (
         <div className="grid gap-3 @5xl:grid-cols-2">
           <PageTargetPerformanceCard page={page} />
@@ -610,6 +666,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "identity",
+      title: "Page identity",
       current: snapshot ? (
         <PageIdentityCard page={page} snapshot={snapshot} />
       ) : (
@@ -630,6 +687,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "structured-data",
+      title: "Structured data & resources",
       current: snapshot ? (
         <div className="grid gap-3 @3xl:grid-cols-2">
           <StructuredDataCard page={page} snapshot={snapshot} />
@@ -653,6 +711,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "social-card",
+      title: "Social card",
       current: snapshot ? (
         <SectionCard
           title={L.social_card}
@@ -756,6 +815,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "indexability",
+      title: "Indexability",
       current: snapshot ? (
         <SectionCard
           title={L.indexability}
@@ -818,6 +878,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "media",
+      title: "Media",
       current: snapshot ? (
         <PageMediaCard
           page={page}
@@ -836,6 +897,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "analyzer",
+      title: "Page strategy",
       current: snapshot ? (
         <PageAnalyzerCard
           page={page}
@@ -860,6 +922,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "performance",
+      title: "Performance",
       current: (
         <div className="grid gap-3">
           <PagePerformanceCard page={page} />
@@ -881,6 +944,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "headings",
+      title: "Heading structure",
       current: snapshot ? (
         <SectionCard
           title={L.headings_outline}
@@ -931,6 +995,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "content-stats",
+      title: "Content targets",
       current: snapshot ? (
         <SectionCard
           title={L.content_stats}
@@ -980,6 +1045,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "content",
+      title: "Page content",
       current: snapshot?.markdown_file_id ? (
         <PageContentCard
           page={page}
@@ -996,6 +1062,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "work",
+      title: "Findings & tasks",
       current: (
         <>
           <PageFindingsCard page={page} />
@@ -1006,11 +1073,13 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "links",
+      title: "Links",
       current: <PageLinksCard page={page} />,
       plan: <LinksPlan page={page} />,
     },
     {
       key: "backlinks",
+      title: "Backlinks",
       current: <PageBacklinksCard page={page} />,
       plan: (
         <PagePlanNoteCard
@@ -1024,6 +1093,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     },
     {
       key: "publication",
+      title: "Publication",
       current: (
         <div className="grid gap-3 @3xl:grid-cols-2">
           <SitemapMembershipsCard page={page} />
@@ -1166,29 +1236,24 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             />
           </section>
 
-          {/* The paired split: 3 columns in Studio at xl+ (current | connector
-              | plan). Each Pair contributes one grid row, so the two sides of
-              every "thing" share a row and stretch to the same height. In
-              Current/Plan modes (and Studio below xl) the grid is one column
-              and hidden cells collapse — nothing unmounts on mode switch. */}
-          <div
-            className={cn(
-              "grid gap-3",
-              viewMode === "studio" &&
-                "xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
-            )}
-          >
-            <div className={cn("hidden", viewMode === "studio" && "xl:block")}>
+          {/* Every paired row owns one compact disclosure in Studio. Nested
+              card disclosures stay open there, so the two lanes can never be
+              folded independently; Current and Plan retain their card-level
+              controls. Pair contents remain mounted through view switches. */}
+          <div className="grid gap-3">
+            <div
+              className={cn(
+                "hidden min-w-0 gap-3",
+                viewMode === "studio" &&
+                  "xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
+              )}
+            >
               <LaneLabel
                 icon={Eye}
                 label="Current"
                 detail="what the page is today"
               />
-            </div>
-            <div
-              className={cn("hidden", viewMode === "studio" && "xl:block")}
-            />
-            <div className={cn("hidden", viewMode === "studio" && "xl:block")}>
+              <div className="w-6" />
               <LaneLabel
                 icon={PenLine}
                 label="Plan"
@@ -1219,6 +1284,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               <Pair
                 key={row.key}
                 mode={viewMode}
+                title={row.title}
                 current={row.current}
                 plan={row.plan}
               />

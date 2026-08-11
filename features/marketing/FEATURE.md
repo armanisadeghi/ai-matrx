@@ -494,3 +494,9 @@ as keyof paths` cast pending the OpenAPI type sync).
   dead `batch_item` branch while preserving every live site/page/session/item
   integrity check; a rollback-only clone insert verified the trigger on the
   live database.
+- 2026-08-10 — Codex: **Page Studio comparison rows now fold and align as one.**
+  Each Current/Plan pair has one compact Studio disclosure, nested card toggles
+  are suppressed only in Studio, and paired cards stretch to the taller lane.
+  Draft content expands with observed page content instead of leaving a short
+  editor beside a long document. The remaining current-vs-plan data gaps are
+  tracked in `docs/handoffs/marketing-page-studio-alignment.md`.

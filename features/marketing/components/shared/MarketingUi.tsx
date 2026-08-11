@@ -382,13 +382,20 @@ export function SectionCard({
   anchor?: string;
 }) {
   const content = collapsible ? (
-    <CollapsibleContent>{children}</CollapsibleContent>
+    <CollapsibleContent
+      forceMount
+      data-section-card-content
+      className="data-[state=closed]:hidden"
+    >
+      {children}
+    </CollapsibleContent>
   ) : (
     children
   );
   const card = (
     <section
       data-surface-value={anchor}
+      data-section-card
       className={cn(
         "min-w-0 rounded-lg border border-border bg-card",
         collapsible && "self-start",
@@ -424,6 +431,7 @@ export function SectionCard({
             <CollapsibleTrigger asChild>
               <button
                 type="button"
+                data-section-card-toggle
                 aria-label={`Toggle ${title}`}
                 title={`Toggle ${title}`}
                 className="group flex h-6 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground"
@@ -440,7 +448,11 @@ export function SectionCard({
 
   if (collapsible) {
     return (
-      <Collapsible defaultOpen={defaultOpen} className="min-w-0 self-start">
+      <Collapsible
+        defaultOpen={defaultOpen}
+        data-section-card-shell
+        className="min-w-0 self-start"
+      >
         {card}
       </Collapsible>
     );
