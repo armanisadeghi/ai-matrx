@@ -32,7 +32,7 @@ defect as a spinner**.
 | **B** | Spinner-only, no stream handle yet — needs `adoptForeignStream` or a `useRunAgent`→`useLiveAgentRun` migration first | **5** |
 | **C** | Page-shifting live-run block (live output above the page's own content) | **3** |
 | **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **12** (11 overlap A) |
-| **E** | Needs a content-IR kind before it can stream well — 4 confirmed (2 of the original 6 resolved as text/headless, see below) | **4** |
+| **E** | Needs a content-IR kind before it can stream well — 4 confirmed (2 of the original 6 resolved as text/headless, see below); **title options shipped 2026-08-11** | **3** |
 
 Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L** ≈ a day+.
 
@@ -40,6 +40,11 @@ Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L*
 
 - Primitives: `useLiveAgentRun`, `<LiveRunDisplay>`, `adoptForeignStream`,
   `useOpenLiveRunWindow()`. Recipe + traps: `live-stream-everywhere.md`.
+- Reference for a class-B/E migration done whole:
+  `features/podcasts/generator/useEpisodeTitleOptions.ts` (2026-08-11) — open
+  the window BEFORE the launch, run the slot through `useLiveAgentRun`, and
+  let the kind component carry the action so the window is the primary
+  surface rather than a preview of one.
 - Reference implementation for class D done right:
   `features/marketing/data/useSiteCrawlActivity.ts` +
   `features/marketing/components/crawls/LiveCrawlFeed.tsx` (durable server rows
@@ -158,22 +163,27 @@ characters — unfix it while here.
 
 ### 6. Podcasts — three generators, silent by design — B (+E for two), S–M each
 
-`useEpisodeArticles.ts:67`, `useEpisodeTitleOptions.ts:70`,
-`useEpisodeChapters.ts:49` all use `useRunAgent`, which **produces no
-`requestId` at all** — live rendering is structurally impossible from it, so
-this is class B: migrate to `useLiveAgentRun` first.
-Hosts: `features/podcasts/studio/components/{EpisodeContentStudio,EpisodeTitlePanel,EpisodeChaptersPanel}.tsx`.
+`useEpisodeArticles.ts:67` and `useEpisodeChapters.ts:49` still use
+`useRunAgent`, which **produces no `requestId` at all** — live rendering is
+structurally impossible from it, so this is class B: migrate to
+`useLiveAgentRun` first.
+Hosts: `features/podcasts/studio/components/{EpisodeContentStudio,EpisodeChaptersPanel}.tsx`.
 
 They split three ways once the payloads were actually read:
 
 - **Articles (blog / show notes) — plain markdown.** No kind, no schema. The
   hook already holds the assembled markdown in `drafts`; migrating to
   `useLiveAgentRun` and streaming it is the WHOLE fix. **S.**
-- **Title options** — pick-one-and-apply, persisted to `pc_episodes.title`. Kind
-  required. **Chipped.**
+- ~~**Title options**~~ — **DONE 2026-08-11.** `episode_title_options` kind
+  authored + activated, the agent (`podcast.title_optimizer` v4) emits the
+  envelope, `useEpisodeTitleOptions` runs through `useLiveAgentRun` into the
+  floating `LiveRunWindow`, and each streamed card applies itself through the
+  `episode_title` surface write target. Live-verified: `pc_episodes.title`
+  changed on a real run. See `features/podcasts/FEATURE.md`.
 - **Chapters** — timestamped segments persisted to `pc_episodes.chapters`,
   used to seek the player. Kind required (check `timeline.ts` for reuse).
-  **Chipped.**
+  **Chipped.** (A `media_chapters` kind has since appeared in
+  `system-kinds.ts` — check whether that chip already landed before starting.)
 
 ### 7. Page-shifting live blocks — C, S each
 
@@ -261,10 +271,10 @@ Each of the six was read in code. Verdicts:
 | Research slide deck — `OutputsStudio.tsx:1069` | **Kind already exists.** The agent returns `{ title, slides[] }` — exactly `presentation_deck` (`features/content-ir/kinds/presentation-deck.ts` → Slideshow). No new kind; bind it. → chip |
 | Research SEO package — `OutputsStudio.tsx:1215` | **New kind.** `{ title, meta_description, slug, primary_keyword, keywords[], schema_org, open_graph, faq[] }` with character-limit validation UI (`SeoView:1391`). `page_brief` does not fit (content-plan specific). → chip |
 | Podcast chapters — `useEpisodeChapters.ts:49` | **Kind.** Timestamped segments persisted to `pc_episodes.chapters`, used to seek the player. Check `timeline.ts` for reuse first. → chip |
-| Podcast title options — `useEpisodeTitleOptions.ts:70` | **Kind.** Pick-one-and-apply; `video_prompt_options` is the action-carrying precedent to model on. → chip |
+| Podcast title options — `useEpisodeTitleOptions.ts:70` | **DONE 2026-08-11.** Kind `episode_title_options` shipped end to end (schema + component + dual gate, agent v4, live posture, real-run verification). It went further than the precedent: the apply is a surface WRITE, not an agent launch, and the target is a component constant rather than payload data — see `features/content-ir/FEATURE.md`. |
 
-Four focused sessions are queued as chips (slide deck, SEO package, chapters,
-title options). Each carries the full end-to-end contract: schema, agent
+Three focused sessions remain as chips (slide deck, SEO package, chapters);
+**title options shipped 2026-08-11**. Each carries the full end-to-end contract: schema, agent
 instruction rewrite via `agent_author`, every usage repinned, kind + component +
 dual-gate example, live posture, real end-to-end test. **Do not start one of
 these inline in a sweep session** — that is how a half-authored kind ships.

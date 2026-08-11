@@ -110,3 +110,9 @@ One item that sweep does not own, because it is server-side:
   run or they accumulate for the tab's life.
 - Terminal `setRun({status:"done"})`-style writes must preserve `requestId`
   or the display dies at the exact moment the content completes.
+- Open the window BEFORE the launch, not in `onConversationCreated` — the
+  window is what the user watches while the stream connects, and opening it
+  after is a spinner by another name (`useEpisodeTitleOptions`, 2026-08-11).
+- `LiveRunDisplay` must receive `conversationId` for `hideReasoning` /
+  `hideToolResults` to work at all — those flags are conversation-keyed in
+  `BlockRenderer`. Fixed platform-wide 2026-08-11; do not drop the prop.

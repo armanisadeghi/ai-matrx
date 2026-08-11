@@ -206,6 +206,14 @@ export function LiveRunDisplay({
           >
             <MarkdownStream
               requestId={requestId}
+              // Load-bearing, not decoration: BlockRenderer keys the
+              // `hideReasoning` / `hideToolResults` display flags off the
+              // CONVERSATION. Without it every live-run window rendered the
+              // model's private chain-of-thought even though the headless
+              // runner explicitly sets `hideReasoning` (run-headless-agent-json
+              // `showReasoning !== true`). Threaded only — it never switches
+              // the renderer's mode (that needs turnId/messageId).
+              conversationId={conversationId ?? undefined}
               isStreamActive={isActive}
               hideCopyButton
             />
@@ -263,6 +271,9 @@ export function LiveRunDisplay({
         >
           <MarkdownStream
             requestId={requestId}
+            // Same reason as the bare variant above: the display flags are
+            // conversation-keyed.
+            conversationId={conversationId ?? undefined}
             isStreamActive={isActive}
             hideCopyButton
           />

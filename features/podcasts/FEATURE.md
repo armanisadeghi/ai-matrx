@@ -104,6 +104,41 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-11 — **Title options stream, and each option applies itself — the
+  `episode_title_options` kind end to end.** `useEpisodeTitleOptions` ran
+  through `useRunAgent`, which produces **no requestId at all**, so live
+  rendering was structurally impossible and the user watched a spinner while
+  the model wrote (class B in `docs/handoffs/live-run-streaming-sweep.md` §6,
+  THE FLOATING LAW's exact violation). Three changes, one flow. (1) The
+  `podcast.title_optimizer` agent (master `077108a1…`, now **v4**, re-authored
+  via `agent_author`) emits the canonical `episode_title_options` envelope
+  instead of a bare `{options:[…]}`; `slug` was dropped, because no consumer
+  ever read it and a title edit deliberately never touches the episode slug or
+  public URL. The slot is FLOATING (`use_latest`, no version pin) and the FE
+  resolves the MASTER agent id, so its one consumer picked v4 up with no
+  repin — there is no second usage anywhere in either repo. (2) The hook runs
+  through `useLiveAgentRun` on the slot (`slotKey`, so `config_overrides`
+  survive inside the canonical launcher) and opens the floating
+  `LiveRunWindow` **before** the launch, so the window is what the user
+  watches while the stream connects rather than something that appears after
+  it. Floating rather than inline is forced: the panel sits mid-page, so an
+  inline live block would shove the episode's own content down the instant a
+  run starts. (3) Applying moved onto the streamed cards. Each card's "Use
+  this title" fires `apply_surface_write` → the `episode_title` target →
+  `podcastService.updateEpisode` — the ONE canonical path the panel's own
+  "Use" button already used, so there is still no second way to set a title.
+  `PodcastRunWriteTargets` now publishes the read half
+  (`episode_title_selection`) that makes those cards interactive, and
+  publishes it ONLY while the write would actually be accepted (episode saved,
+  run no longer producing) — the handlers refuse otherwise, and a button that
+  is always refused is worse than no button. Rendered anywhere else (chat, a
+  share page) the same cards degrade to read-only with Copy. **Live-verified
+  end to end** on run `64fa5cdb…` / episode `5a9634ae…`: window opened
+  pending → four cards streamed in with rationales → "Use this title" →
+  `pc_episodes.title` changed in the DB, `slug` untouched, the hero and the
+  card's "Current" badge both reflected it. The kind, its component, and the
+  dual-gate rows live in `features/content-ir/` — see that FEATURE.md.
+
 - 2026-08-11 — **The two red errors on run `68605dd6` were TRUE, and one
   dropped socket now produces ONE of them.** Investigated whether the server
   holds `/podcast/generate` open past its terminal event (the D130
