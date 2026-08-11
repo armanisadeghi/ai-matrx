@@ -1,11 +1,8 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { callApi } from "@/lib/api/call-api";
-import {
-  parsePersistedBackendError,
-  parseStreamError,
-  type BackendApiError,
-} from "@/lib/api/errors";
+import { parseStreamError, type BackendApiError } from "@/lib/api/errors";
+import { getLatestCollectionFailure } from "@/features/marketing/data/collection-runs";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import type { AppDispatch } from "@/lib/redux/store";
 
@@ -81,20 +78,7 @@ export async function getLatestAnalyticsFailure(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<BackendApiError | null> {
-  await requireAuthenticatedSupabaseSession(supabase);
-  const response = await supabase
-    .schema("seo")
-    .from("collection_run")
-    .select("status, error, request_id")
-    .eq("site_id", siteId)
-    .eq("provider", "ga4")
-    .order("requested_at", { ascending: false })
-    .limit(1)
-    .abortSignal(signal ?? new AbortController().signal);
-  if (response.error) throw response.error;
-  const latest = response.data[0];
-  if (!latest || latest.status !== "failed") return null;
-  return parsePersistedBackendError(latest.error, latest.request_id ?? "");
+  return getLatestCollectionFailure({ siteId }, "ga4", signal);
 }
 
 export interface AnalyticsSyncCallbacks {

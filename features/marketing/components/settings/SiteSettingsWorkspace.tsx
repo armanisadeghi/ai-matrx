@@ -38,14 +38,14 @@ import {
 } from "@/features/marketing/crawler/crawl-defaults";
 import { extractErrorMessage } from "@/utils/errors";
 import { SiteStrategyCard } from "@/features/marketing/components/settings/SiteStrategyCard";
-import { ScheduleStatusPanel } from "@/features/marketing/components/settings/ScheduleStatusPanel";
+import { CollectionStatusPanel } from "@/features/marketing/components/settings/CollectionStatusPanel";
 import { SiteAnalyticsCard } from "@/features/marketing/components/settings/SiteAnalyticsCard";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 
 // crawl_defaults round-trips ONLY through features/marketing/crawler/crawl-defaults.ts.
 
 export function SiteSettingsWorkspace() {
-  const { site, crawlActivity } = useMarketingSite();
+  const { site, sitePath, crawlActivity } = useMarketingSite();
   const router = useRouter();
   const deleteMutation = useDeleteSite();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -349,7 +349,12 @@ export function SiteSettingsWorkspace() {
           </div>
         </section>
 
-        <ScheduleStatusPanel siteId={site.id} />
+        {/* A seven-column status table needs the full width — squeezing it
+            into one half-column is what pushed the old panel into stacking
+            badges and sentences on top of each other. */}
+        <div className="xl:col-span-2">
+          <CollectionStatusPanel site={site} sitePath={sitePath} />
+        </div>
 
         <SiteAnalyticsCard
           siteId={site.id}

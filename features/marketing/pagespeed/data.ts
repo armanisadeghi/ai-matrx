@@ -1,12 +1,7 @@
-import { supabase } from "@/utils/supabase/client";
-import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { callApi, type ApiCallError } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
-import {
-  parsePersistedBackendError,
-  parseStreamError,
-  BackendApiError,
-} from "@/lib/api/errors";
+import { parseStreamError, BackendApiError } from "@/lib/api/errors";
+import { getLatestCollectionFailure } from "@/features/marketing/data/collection-runs";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import type { components } from "@/types/python-generated/api-types";
 
@@ -61,20 +56,7 @@ export async function getLatestPagespeedFailure(
   pageId: string,
   signal?: AbortSignal,
 ): Promise<BackendApiError | null> {
-  await requireAuthenticatedSupabaseSession(supabase);
-  const response = await supabase
-    .schema("seo")
-    .from("collection_run")
-    .select("status, error, request_id")
-    .eq("page_id", pageId)
-    .eq("provider", "pagespeed_insights")
-    .order("requested_at", { ascending: false })
-    .limit(1)
-    .abortSignal(signal ?? new AbortController().signal);
-  if (response.error) throw response.error;
-  const latest = response.data[0];
-  if (!latest || latest.status !== "failed") return null;
-  return parsePersistedBackendError(latest.error, latest.request_id ?? "");
+  return getLatestCollectionFailure({ pageId }, "pagespeed_insights", signal);
 }
 
 export type PagespeedStrategy = "mobile" | "desktop" | "both";
