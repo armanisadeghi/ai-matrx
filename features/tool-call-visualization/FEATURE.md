@@ -148,6 +148,42 @@ interface ToolRendererProps {
 
 ---
 
+## 🚨 A tool result NEVER shows the user where we store bytes
+
+**A URL pointing at one of OUR files is not a hyperlink — it is the file.** `detectResultShape`
+(`result-fields/shape.ts`) is the one truth-teller every tool result renders through, so the rule
+lives there and every tool gets it for free:
+
+- Any string (or url-ish object key) that `recognizeOurFileUrl` (`@/lib/media/our-file-sources`)
+  matches resolves to its durable `file_id` and becomes `{kind:"media"}` → `<InlineMediaRef>`, or
+  `{kind:"file"}` → the download card. Both re-mint forever; the expiring URL is never carried.
+- The canonical server envelope `{ kind:"image_ref", media_ref:{ file_id } }` (aidream
+  `matrx_ai/tools/image_outputs.py`) is unwrapped by `coerceMediaRef`.
+- **Third-party URLs keep their `UrlChip`** — that IS the useful rendering for those. So does a
+  bare `/share/<token>` carrying neither an identity nor a type: it is as likely a shared
+  conversation as a file, and guessing wrong is worse than a link.
+
+**Why this is load-bearing.** An image-generation `agent_call` shipped as a four-row key/value grid
+whose "Result" cell was a chip reading `matrx-user-files.s3.amazonaws.com` — our storage provider
+printed in place of the picture the user asked for, on a URL that dies when its signature expires.
+Never write a second URL heuristic; extend `recognizeOurFileUrl` or `shape.ts` instead.
+
+**Guard:** `result-fields/__tests__/shape-our-files.test.ts`. **Demo:** `/demos/tool-viz/result-fields`
+§ "Our own files never render as a link" carries the exact live payload from the incident.
+
+### Image-generation `agent_call` — the picture IS the result
+
+`isImageGenerationAgentCall` (declared `variables.image_description`, never an agent UUID) routes
+`AgentCallInline` to `ImageGenerationLoading` while running and `ImageGenerationResult` once
+completed. The completed card renders **only** the canonical media component: the agent name, agent
+id, and model id are plumbing, not the answer. HIDE NOTHING is kept — every field stays one click
+away in "View complete result". `findResultMedia` (pure, `renderers/agent-call/findResultMedia.ts`)
+locates the image via `detectResultShape` only, so anything the classifier learns it understands
+too; when there is no image it returns null and the honest `GenericRenderer` takes over rather than
+faking one.
+
+---
+
 ## Collaboration `agent_call` — the ONE renderer that owns stream content
 
 `agent_call` with `history_mode: "snapshot" | "fork"` (aidream's conversation-aware collaboration; contract in that tool's module docstring) is the single case where a renderer displays **stream text**, not just tool args/output. Read this before touching `renderers/agent-call/` or `sub_agent` handling.
@@ -226,6 +262,7 @@ Historical planning and analysis docs from the pre-consolidation era have been a
 
 ## Change log
 
+- `2026-08-11` — claude: **A generated image renders as the image, never as our S3 host (new § "A tool result NEVER shows the user where we store bytes").** An image-generation `agent_call` shipped as a four-row key/value grid whose "Result" cell was a `UrlChip` reading `matrx-user-files.s3.amazonaws.com` — our storage provider printed in place of the picture, on a URL that expires. Fixed at two altitudes: (1) **platform** — `detectResultShape` now resolves any of OUR file URLs (via the canonical `recognizeOurFileUrl`) to its durable `file_id` and returns `media`/`file` instead of `url`, and `coerceMediaRef` unwraps the canonical server `{ media_ref: { file_id } }` envelope, so **every** tool result stops leaking storage hosts and stops rendering links that die; third-party URLs and identity-less `/share/<token>` links deliberately keep their chip. (2) **the card** — a completed image `agent_call` routes to the new `ImageGenerationResult`, which renders only the canonical media component (ids stay reachable in "View complete result"), with the pure `findResultMedia` locating the picture through the shape classifier alone. Guards: `result-fields/__tests__/shape-our-files.test.ts` + `renderers/agent-call/__tests__/image-result.test.ts` (14 tests); the incident payload is a permanent fixture on `/demos/tool-viz/result-fields`. Live-verified against a real `agent_call` run in `/chat`, both while streaming and after a refresh from the database.
 - `2026-08-11` — claude: **Collaboration `agent_call` renders as its own card (new § above).** `history_mode` "snapshot"/"fork" calls now get `CollabCallCard` instead of the generic args/result dump: header naming the specialist and the conversation it reviewed, mode chip, `messages_included`, the live child token stream inside the card, collapsed answer summary once complete, Door Law links to the source + child conversations, and the `remember` write-back state (queued → which conversation will see it; failed → a loud inline error). The load-bearing half is the child-stream attribution: `sub_agent` INIT/COMPLETION now stamp a `blockAnchor`/`blockEnd`/`toolCallId` range on the operation entry, `selectUnifiedSlots` hides that range from the transcript (the child's tokens never persist to the parent conversation, so showing them live made the transcript change on reload), and the new `selectAgentCallChildStream` hands the same text to the owning card. The registry entry gained collaboration phase labels + a `getHeaderSubtitle` so the FOLDED line still says who answered and what they said. Guarded by 15 tests; the hide behavior was confirmed to fail without the fix.
 - `2026-08-10` — claude: **Tool detail page is now agent-WRITABLE for authored metadata (`matrx-admin/tool-registry` write targets).** `ToolViewPage` registers `getWriteHandlers` for the manifest's three new `entity`/`ask` targets — `tool_description`, `tool_category`, `tool_tags` — validating against the new `admin/mcp-tools/tool-metadata.ts` (bounds + throwing validators, the SAME constants the manifest interpolates into the prose an agent reads) and writing through the new `admin/mcp-tools/tool-definition.service.ts`, a typed wrapper over the `requireAdmin()`-gated `PUT /api/admin/tools/[id]`. That route is the only write path: `tool.definition` is SELECT-only under RLS. The page's Active switch was refactored onto the same wrapper, so its inline `fetch` is gone and there is one door. `McpToolsManager` (the catalogue mount of the same surface) deliberately registers NO handlers — browse state only. Everything capability-shaped (`is_active`, `admin_only`, gating, exemptions, visibility, tier), the tool's name, its parameter/output schemas, its annotations, its version fields, and MCP provenance stay human-only; see the `writeTargets` block in `features/surfaces/manifests/admin-tool-registry.manifest.ts` for the full reasoning. Live-verified with a real agent run on `describe_demo` (test values restored afterwards).
 - `2026-08-09` — claude: **D115 fixed — in-session repaint of DB tool renderers + kind components, via the invalidation-registry INVERSION (no import edge).** The reverted v0.4.198/199 repaint is reimplemented per the ruled pattern: `toolStateEffects` gains two effects that fire NAMES through the tiny zero-import `lib/invalidation/invalidation-registry.ts` — `toolcomp_*` writes → `tool-viz:db-renderers` (targeted by `tool_name` when the call/result names it, invalidate-all when only a `component_id` comes back), `kindcomp_*` writes → `content-ir:kind-components`. `toolRendererCache.ts` registers its callback at chunk init (drops positive/negative/meta/in-flight + bumps a monotonic per-tool version); new `useToolRendererVersion` re-resolves mounted `DbToolRendererImpl` (old compile keeps rendering until the fresh one lands — no blank flash) and `useDbToolMeta` (collapsed label). content-ir's `component-registry.ts` registers `refreshKindComponents(0)`; its existing per-kind repaint + `updated_at`-keyed compile cache do the rest. **NEVER add an import — static or `await import()` — from `toolStateEffects` into content-ir or `db-renderer`**: that exact edge cost +14GB build RSS and 12 OOM'd builds (D115); `__tests__/tool-viz-repaint-invalidation.test.ts` has a source-guard test that goes red on any such edge. Known sibling gap: `features/workflow-emit/emitRendererCache.ts` has no invalidation consumer.
