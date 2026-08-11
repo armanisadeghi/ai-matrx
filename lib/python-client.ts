@@ -24,7 +24,11 @@
  * collapse this back into it.
  */
 
-import { parseHttpError, BackendApiError } from "@/lib/api/errors";
+import {
+  parseHttpError,
+  parseHttpErrorBody,
+  BackendApiError,
+} from "@/lib/api/errors";
 import { BACKEND_URLS } from "@/lib/api/endpoints";
 import { supabase } from "@/utils/supabase/client";
 import { getStore } from "@/lib/redux/store-singleton";
@@ -735,6 +739,47 @@ export async function postMultipart<T>(
 }
 
 /**
+ * Turn a non-2xx XHR into a BackendApiError using the SAME parser `fetch`
+ * callers use (`parseHttpErrorBody`), so an XHR transport never surfaces a
+ * thinner error than a fetch would for the identical response body.
+ *
+ * Only safe for XHRs left at the default `responseType` — a `blob` response
+ * throws on `responseText`.
+ */
+function parseXhrError(
+  xhr: XMLHttpRequest,
+  requestId: string,
+  fallbackUserMessage: string,
+): BackendApiError {
+  const text = (xhr.responseText ?? "").trim();
+  let body: Record<string, unknown> | null = null;
+  try {
+    body = JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    body = null;
+  }
+  if (body) {
+    const parsed = parseHttpErrorBody(body, xhr.status);
+    return new BackendApiError({
+      code: parsed.code,
+      detail: parsed.detail,
+      userMessage: parsed.userMessage,
+      details: parsed.details,
+      requestId: parsed.requestId || requestId,
+      status: xhr.status,
+    });
+  }
+  // Non-JSON body: keep the server's own text — it beats "HTTP 500".
+  return new BackendApiError({
+    code: statusToCloudFilesCode(xhr.status) as BackendApiError["code"],
+    detail: text || `HTTP ${xhr.status}`,
+    userMessage: text || fallbackUserMessage,
+    requestId,
+    status: xhr.status,
+  });
+}
+
+/**
  * Multipart upload WITH progress via XMLHttpRequest.
  * `fetch` doesn't expose upload progress — XHR is still the only path.
  */
@@ -816,25 +861,15 @@ export async function uploadWithProgress<T>(
         return;
       }
 
-      // Error path — try to parse structured error
-      let body: Record<string, unknown> | null = null;
-      try {
-        body = JSON.parse(xhr.responseText) as Record<string, unknown>;
-      } catch {
-        body = null;
-      }
+      // Error path — parse through the ONE canonical body parser. Reading
+      // only top-level `error`/`message` here (as this used to) throws away
+      // FastAPI's `{"detail": {...}}` envelope, which is the shape EVERY
+      // matrx-files error uses: a 500 whose body said
+      // `{"detail":{"error":"internal","message":"File operation failed"}}`
+      // reached the user as a bare `Upload failed (500)` with details:null,
+      // and cost a full debugging session to attribute.
       rejectCaptured(
-        new BackendApiError({
-          code: (body?.error as string) ?? statusToCloudFilesCode(xhr.status),
-          detail: (body?.message as string) ?? `HTTP ${xhr.status}`,
-          userMessage:
-            (body?.user_message as string) ??
-            (body?.message as string) ??
-            `Upload failed (${xhr.status})`,
-          details: body?.details ?? null,
-          requestId: (body?.request_id as string) ?? requestId,
-          status: xhr.status,
-        }),
+        parseXhrError(xhr, requestId, `Upload failed (${xhr.status})`),
       );
     });
 

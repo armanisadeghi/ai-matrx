@@ -113,7 +113,18 @@ export async function parseHttpError(
   return parseHttpErrorBody(body, status);
 }
 
-function parseHttpErrorBody(
+/**
+ * Parse an already-decoded JSON error body into a BackendApiError.
+ *
+ * Exported because XHR callers (upload/download progress paths) have the
+ * parsed body in hand and MUST NOT hand-roll a shallower read: a private
+ * copy in `python-client.ts` looked only at top-level `error`/`message`, so
+ * FastAPI's `{"detail": {...}}` envelope — what every matrx-files 500 uses —
+ * degraded to the useless `code: "internal", detail: "HTTP 500"`. That is
+ * exactly how an upload failure with a real server-side cause reached the
+ * user as `Upload failed (500)` and nothing else. One parser, every transport.
+ */
+export function parseHttpErrorBody(
   body: Record<string, unknown> | null,
   status: number,
 ): BackendApiError {
