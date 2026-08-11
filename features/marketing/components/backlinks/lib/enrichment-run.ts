@@ -6,8 +6,18 @@ import type {
 export type BacklinkEnrichmentRunStatus =
   "running" | "completed" | "partial" | "failed";
 
+/**
+ * A run over ONE backlink vs a batch over many. This decides which events may
+ * end the run: `seo.backlink_enriched` / `_enrichment_failed` are PER ITEM, so
+ * for a batch the first settled item must not finish the whole run — only the
+ * run-level completion may. (Reusing the single-record reducer for the
+ * workspace batch is exactly how the panel once read 100% after link one.)
+ */
+export type BacklinkEnrichmentRunScope = "single" | "batch";
+
 export interface BacklinkEnrichmentRunState {
   status: BacklinkEnrichmentRunStatus;
+  scope: BacklinkEnrichmentRunScope;
   label: string;
   runId: string | null;
   candidateCount: number;
@@ -24,9 +34,11 @@ export interface BacklinkEnrichmentRunState {
 
 export function startBacklinkEnrichmentRun(
   label: string,
+  scope: BacklinkEnrichmentRunScope = "single",
 ): BacklinkEnrichmentRunState {
   return {
     status: "running",
+    scope,
     label,
     runId: null,
     candidateCount: 0,
@@ -89,16 +101,30 @@ export function applyBacklinkEnrichmentEvent(
     event.kind === "seo.backlink_enrichment_completed" && event.result
       ? event.result
       : current.result;
+  // The run ends on its OWN completion event; per-item events end it only for
+  // a single-record run, where the one item IS the run. A batch without a
+  // result payload still settles on the run-level event rather than hanging.
+  const runLevelFinish =
+    event.kind === "seo.backlink_enrichment_completed" ||
+    event.kind === "seo.backlink_enrichment_finished";
   const terminalStatus: BacklinkEnrichmentRunStatus = result
     ? result.failed > 0
       ? result.completed > 0
         ? "partial"
         : "failed"
       : "completed"
-    : event.kind === "seo.backlink_enriched"
-      ? "completed"
-      : event.kind === "seo.backlink_enrichment_failed"
-        ? "failed"
+    : runLevelFinish
+      ? current.failed > 0
+        ? current.completed > 0
+          ? "partial"
+          : "failed"
+        : "completed"
+      : current.scope === "single"
+        ? event.kind === "seo.backlink_enriched"
+          ? "completed"
+          : event.kind === "seo.backlink_enrichment_failed"
+            ? "failed"
+            : current.status
         : current.status;
 
   return {

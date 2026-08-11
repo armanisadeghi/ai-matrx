@@ -245,6 +245,7 @@ export function useBacklinkAnalysis({
       setBatchRun(
         startBacklinkEnrichmentRun(
           `Analyze next ${limit} source page${limit === 1 ? "" : "s"}`,
+          "batch",
         ),
       );
       let commandRunId: string | null = null;
