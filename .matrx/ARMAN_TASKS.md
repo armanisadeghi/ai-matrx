@@ -30,10 +30,23 @@ work, and none of them can tell whose work they're touching. "Commit immediately
 and is what we now do, but it cannot cover the seconds between writing a file and
 committing it — which is exactly where all six losses happened.
 
-**The fix that worked** (adopted by both sessions, unprompted): do the work in a throwaway
-`git worktree` at `origin/main`, commit and push from there, then remove it. The shared
-working tree is never touched, and another agent's in-flight merge can't block your push.
-It costs one command and it made the problem go away completely.
+**A THIRD face, and worktrees do NOT fix this one: nobody can ship.** `release.sh` (both
+repos) requires a fully clean tracked tree. With several agents in one checkout, the tree
+is essentially never clean, so *at most one* agent can release at a time — and only during
+a window another agent isn't editing. Observed the same afternoon: three sessions had
+finished, pushed work sitting on `origin/main` and none could cut a release, with two of
+them running polling loops waiting for the tree to go quiet. No work was destroyed; it
+simply could not reach production. (Mitigation that worked: since any session's release
+deploys whatever is on `origin/main`, later sessions deliberately did not add more polling
+loops — the first release to land ships everyone's commits.)
+
+**The fix that worked for faces 1 and 2** (adopted by both sessions, unprompted): do the
+work in a throwaway `git worktree` at `origin/main`, commit and push from there, then
+remove it. The shared working tree is never touched, and another agent's in-flight merge
+can't block your push. It costs one command and it made lost work stop happening. It does
+nothing for the release-contention face, which needs a different answer — a release path
+that doesn't require the shared tree to be clean (e.g. releasing from a clean worktree at
+`origin/main` too), or accepting that one agent ships for everyone.
 
 **The decision for you:** should this be the standing rule for agents in these repos —
 i.e. worth writing into the root `CLAUDE.md` (and/or enforced by a hook the way the
