@@ -5,7 +5,9 @@
 // VISION §11 "Proactive suggestions" — the opt-in, per-card memory-aid
 // affordance surfaced inside the flashcards StudyDeck. Tap it and it fetches a
 // single glanceable mnemonic/analogy/association for the current card (the
-// memory_hint lane). Deliberately opt-in and non-disruptive: nothing fires until
+// memory_hint lane), STREAMED into the floating LiveRunWindow while it is
+// written (THE FLOATING LAW — never a spinner while AI works; the card the
+// learner is studying never moves). Deliberately opt-in and non-disruptive: nothing fires until
 // tapped, it never blocks grading, and it resets when the card changes.
 //
 // Mirrors the deck's existing AskAiPanel affordance. React Compiler is on.
@@ -14,6 +16,7 @@ import { useEffect, useState } from "react";
 import { Brain, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
 import { memoryHint } from "../lanes/memoryHint";
 import type { HintTechnique, MemoryHintPayload } from "../types";
 
@@ -41,6 +44,10 @@ export function MemoryAidButton({
   className?: string;
 }) {
   const dispatch = useAppDispatch();
+  // One window for this card slot, reused by every "another memory aid" tap.
+  const liveWindow = useFloatingRunWindow({
+    instanceId: "flashcards-memory-hint",
+  });
   const [loading, setLoading] = useState(false);
   const [asked, setAsked] = useState(false);
   const [hint, setHint] = useState<MemoryHintPayload | null>(null);
@@ -56,7 +63,12 @@ export function MemoryAidButton({
     setLoading(true);
     setAsked(true);
     setHint(null);
-    const result = await dispatch(memoryHint({ front, back, topic }));
+    // Float FIRST, before the launch — the aid is written in front of the
+    // learner instead of behind a spinner.
+    const live = liveWindow.start("Finding you a memory aid");
+    const result = await dispatch(
+      memoryHint({ front, back, topic, onConversationCreated: live.bind }),
+    );
     setHint(result);
     setLoading(false);
   }

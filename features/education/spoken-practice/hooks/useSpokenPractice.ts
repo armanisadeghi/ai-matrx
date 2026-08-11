@@ -19,10 +19,20 @@
 // This hook only adds the prompt-sequencing state machine + long-form answering
 // (press "Done" — no short FastFire timer), same local-state discipline as
 // AudioReviewSession / SingleCardVoiceTest. React Compiler is on: no manual memo.
+//
+// THE FLOATING LAW, inline variant: every one of the three agent runs (design
+// the session, grade an answer, review the session) exposes its live
+// conversation as `liveConversationId`, and PracticeRunner renders it with
+// `<LiveRunDisplay>` exactly where the spinner used to be. This surface earns
+// the inline exception because at those moments the wait IS the entire screen —
+// there is nothing to shift, and a floating window over an empty page would be
+// worse. `useLiveRunHandle` owns the kept-alive instance (released on the next
+// run and on unmount).
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useLiveRunHandle } from "@/features/agents/hooks/useLiveRunHandle";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import {
   startContinuousCapture,
@@ -57,6 +67,8 @@ import type { SpokenGrade } from "@/features/flashcards/fast-fire/agents/grading
 
 export interface UseSpokenPractice {
   phase: RunnerPhase;
+  /** The current run's live conversation — render it, never a spinner. */
+  liveConversationId: string | null;
   plan: PracticePlan | null;
   index: number;
   sessionId: string | null;
@@ -84,6 +96,7 @@ export interface UseSpokenPractice {
 
 export function useSpokenPractice(): UseSpokenPractice {
   const dispatch = useAppDispatch();
+  const liveRun = useLiveRunHandle();
   const { speak, stop: speakStop } = useCartesiaSpeaker({
     processMarkdown: false,
     purpose: "assistant",
@@ -149,6 +162,7 @@ export function useSpokenPractice(): UseSpokenPractice {
           count: config.count,
           studyMaterial: config.source?.material ?? "",
           source: config.source,
+          onConversationCreated: liveRun.claim,
         }),
       );
       if (!designed) {
@@ -266,6 +280,7 @@ export function useSpokenPractice(): UseSpokenPractice {
           clip,
           itemId: current.id,
           sessionId,
+          onConversationCreated: liveRun.claim,
         }),
       );
       if (res.status === "graded" && res.grade) {
@@ -386,6 +401,7 @@ export function useSpokenPractice(): UseSpokenPractice {
         mode: config.mode,
         attempts,
         aggregate,
+        onConversationCreated: liveRun.claim,
       }),
     );
     if (!summary) {
@@ -447,6 +463,7 @@ export function useSpokenPractice(): UseSpokenPractice {
 
   return {
     phase,
+    liveConversationId: liveRun.conversationId,
     plan,
     index,
     sessionId,

@@ -8,11 +8,13 @@
 // source edit or a manual card change. Drives the `verifyAgainstSource` agent
 // and returns a typed VerifyResult.
 //
-// Runs through the canonical headless primitive (`useHeadlessAgentJson`,
-// D126). React Compiler is on — no manual memo.
+// Runs through the canonical `useFloatingAgentRun` primitive: the check
+// STREAMS into the floating LiveRunWindow while the model re-reads the cited
+// passage (THE FLOATING LAW — never a spinner while AI works). React Compiler
+// is on — no manual memo.
 
 import { useState } from "react";
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
 import { FC_AGENTS } from "@/features/flashcards/data/agents";
 import { coerceVerifyResult, type SourceCitation, type VerifyResult } from "./types";
 
@@ -43,15 +45,16 @@ export function excerptFromCitations(citations: SourceCitation[]): string {
 }
 
 export function useVerifyAgainstSource(): UseVerifyAgainstSource {
-  const { run, isRunning, error, reset: resetRun } = useHeadlessAgentJson();
+  const { run, isRunning, error, reset: resetRun } = useFloatingAgentRun();
   const [result, setResult] = useState<VerifyResult | null>(null);
 
   async function verify(
     args: VerifyAgainstSourceArgs,
   ): Promise<VerifyResult | null> {
     setResult(null);
-    // Clear any prior run's error too — the early "unverifiable" return below
-    // never enters run(), which is where the hook clears its own error state.
+    // Clear any prior run's error + window too — the early "unverifiable"
+    // return below never enters run(), which is where the hook clears its own
+    // error state.
     resetRun();
     if (!args.sourceExcerpt.trim()) {
       // No cited passage to check against — an honest "can't verify", not an error.
@@ -66,6 +69,7 @@ export function useVerifyAgainstSource(): UseVerifyAgainstSource {
     try {
       const verdict = await run<VerifyResult | null>({
         agentId: FC_AGENTS.verifyAgainstSource,
+        label: "Verifying against the source",
         surfaceKey: "education-trust-verify",
         sourceFeature: "education-flashcards",
         variables: {

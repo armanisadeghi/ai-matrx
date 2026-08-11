@@ -5,7 +5,10 @@
 // The owner/editor surface (gated by P7 useAccess — non-editors are bounced to
 // the read-only detail). Edit the title/description, edit each question inline,
 // delete a question, and — depth-on-demand — "Make this deeper" to append an
-// exam/clinical-grade version of any question (the deepenItem agent).
+// exam/clinical-grade version of any question (the deepenItem agent). The
+// deepen run STREAMS into the floating LiveRunWindow (THE FLOATING LAW) — the
+// user watches the harder question being written instead of a toast spinner,
+// and the questions they are editing never move.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
@@ -28,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
 import { useAccess } from "@/utils/permissions/access";
 import { assessmentService } from "../../data/assessmentService";
 import { deepenItem, deeperThan } from "../../data/deepenItem";
@@ -51,6 +55,10 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const access = useAccess("assessment", assessmentId);
+  // One window for this editor, reused by every "Make this deeper" run.
+  const deepenWindow = useFloatingRunWindow({
+    instanceId: `assessment-deepen:${assessmentId}`,
+  });
   const [assessment, setAssessment] = useState<AssessmentRow | null>(null);
   const [items, setItems] = useState<AssessmentItemRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -202,14 +210,18 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
               onDelete={() => void removeItem(item.id)}
               onDeepen={async () => {
                 const target = deeperThan(asDepth(item.depth));
-                const t = toast.loading(`Deepening to ${target} level…`);
+                // Float FIRST, before the launch — the window is what the user
+                // watches while the run connects.
+                const live = deepenWindow.start(
+                  `Writing a ${target}-depth version of Q${i + 1}`,
+                );
                 const deeper = await dispatch(
                   deepenItem({
                     item,
                     examType: assessment.exam_type,
+                    onConversationCreated: live.bind,
                   }),
                 );
-                toast.dismiss(t);
                 if (!deeper) {
                   toast.error("Couldn't deepen this question");
                   return;

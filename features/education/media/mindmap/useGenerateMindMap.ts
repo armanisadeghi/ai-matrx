@@ -3,13 +3,16 @@
 // features/education/media/mindmap/useGenerateMindMap.ts
 //
 // Run the Study Mind Map Generator agent → get a `diagram_spec` envelope back,
-// via the canonical `useHeadlessAgentJson` primitive (D126). The structured
-// payload is a diagram_spec (nodes + edges) instead of a card set. The caller persists the result to study_media
-// and renders it via the content-IR diagram renderer.
+// via the canonical `useFloatingAgentRun` primitive: the run STREAMS into the
+// floating LiveRunWindow, where `diagram_spec` renders as its registered kind
+// component while it is written (THE FLOATING LAW — never a spinner while AI
+// works). The structured payload is a diagram_spec (nodes + edges) instead of a
+// card set. The caller persists the result to study_media and renders it via
+// the content-IR diagram renderer.
 //
 // React Compiler is on: no manual memo.
 
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
 import { EDU_MEDIA_AGENTS } from "./agents";
 
 const EXTRACTION_TIMEOUT_MS = 90_000;
@@ -47,14 +50,14 @@ function isDiagramSpec(v: unknown): v is DiagramSpecEnvelope {
 }
 
 export function useGenerateMindMap(): GenerateMindMapResult {
-  const { run, isRunning, error } = useHeadlessAgentJson();
+  const { run, isRunning, error } = useFloatingAgentRun();
 
   async function generate(vars: MindMapVariables): Promise<DiagramSpecEnvelope> {
     return run<DiagramSpecEnvelope>({
       agentId: EDU_MEDIA_AGENTS.mindMap,
+      label: "Mapping your material",
       surfaceKey: "education-mindmap-create",
       sourceFeature: "education-mindmap",
-      displayMode: "direct",
       variables: {
         source_content: vars.source_content,
         title: vars.title,

@@ -11,6 +11,11 @@
 // mic across the whole session — the Cartesia read-aloud speaker, and the spine.
 // React Compiler is on: no manual memo.
 //
+// THE FLOATING LAW, inline exception (features/window-panels/FEATURE.md): while
+// an answer is being graded the wait IS the whole screen, so the grader streams
+// right there under the status line instead of behind a spinner. A floating
+// window over an otherwise-empty voice screen would be worse.
+//
 // Cross-surface orphan-on-interrupt fix (same pattern as
 // useSpokenPractice.endSession, education/spoken-practice): endSession marks
 // the study_session terminal (completed) as its first move, and quit() now
@@ -35,6 +40,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useLiveRunHandle } from "@/features/agents/hooks/useLiveRunHandle";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import {
   startContinuousCapture,
@@ -98,6 +105,7 @@ export function AudioReviewSession({
 }) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const liveRun = useLiveRunHandle();
   const { speak, stop: speakStop } = useCartesiaSpeaker({
     processMarkdown: true,
     purpose: "assistant",
@@ -255,6 +263,7 @@ export function AudioReviewSession({
           method: AUDIO_REVIEW_METHOD,
           sessionId,
           surface: "audio-review",
+          onConversationCreated: liveRun.claim,
         }),
       );
       if (res.status === "graded" && res.grade) {
@@ -484,6 +493,13 @@ export function AudioReviewSession({
             <p className="text-sm text-muted-foreground">
               Grading your answer…
             </p>
+            <LiveRunDisplay
+              conversationId={liveRun.conversationId}
+              label="Grading your answer"
+              pending
+              className="w-full text-left"
+              bodyClassName="max-h-56 overflow-y-auto px-2.5 py-2 text-sm"
+            />
           </>
         )}
 

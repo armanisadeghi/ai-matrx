@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
 import { useContentConverter } from "./useContentConverter";
 import { isTargetAvailable } from "./registry";
 import type { ConvertResult, ConvertSource, SourceRef, TargetKind } from "./types";
@@ -165,6 +166,10 @@ export function ConvertContentDialog({
 }: ConvertContentDialogProps) {
   const router = useRouter();
   const { convert } = useContentConverter();
+  // THE FLOATING LAW: each conversion streams in the floating LiveRunWindow —
+  // the generator's output is written in front of the user instead of behind
+  // the row's "Working" spinner. One window, reused per target.
+  const liveWindow = useFloatingRunWindow({ instanceId: "education-convert" });
   // School-safe COPPA gate: an under-13 account with no active guardian link is
   // blocked from AI generation until a parent approves (never a silent failure).
   const coppa = useAiComplianceGate();
@@ -200,8 +205,11 @@ export function ConvertContentDialog({
         entityId: origin.entityId,
       },
     };
+    const live = liveWindow.start(`Creating your ${kind.replace(/_/g, " ")}`);
     try {
-      const result = await convert({ source, targetKind: kind });
+      const result = await convert({ source, targetKind: kind }, (requestId) =>
+        live.bindRequest(requestId),
+      );
       setRows((r) => ({ ...r, [kind]: { status: "done", result } }));
       onConverted?.();
       toast.success(`Created "${result.title}"`, {

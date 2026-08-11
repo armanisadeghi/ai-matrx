@@ -10,7 +10,10 @@
 // card — this thunk is only dispatched from that tap, never automatically.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  livePosture,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { EDU_MEMORY_AGENTS } from "../agents";
 import { coerceMemoryHint, type MemoryHintPayload } from "../types";
 
@@ -18,6 +21,8 @@ export interface MemoryHintContext {
   front: string;
   back: string;
   topic?: string | null;
+  /** Live handle — the aid streams where the caller mounts it (never a spinner). */
+  onConversationCreated?: (conversationId: string) => void;
 }
 
 /** One memory aid for the current card, or null on failure / no signal. */
@@ -34,6 +39,7 @@ export function memoryHint(ctx: MemoryHintContext) {
         // meaning of the existing "coach" lane tag.
         sourceFeature: "education-flashcards",
         surfaceName: "matrx-user/education-flashcards",
+        ...livePosture(ctx.onConversationCreated),
         variables: {
           front: ctx.front,
           back: ctx.back,

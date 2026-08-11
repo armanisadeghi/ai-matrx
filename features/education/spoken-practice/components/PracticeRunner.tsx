@@ -6,6 +6,13 @@
 // Presentational only — all state + side effects live in useSpokenPractice.
 // Trust is rendered with the shared P0 primitives (ConfidenceBadge +
 // SourceCitations); grading feedback is the verdict explanation (grade-on-meaning).
+//
+// THE FLOATING LAW, inline exception (features/window-panels/FEATURE.md): the
+// three wait states below (designing the session, grading an answer, reviewing
+// the session) are the ENTIRE screen at that moment — nothing to shift, and a
+// floating window over an empty page would be worse — so the run streams here,
+// under the persona line, in a bounded scroll area. `LiveRunDisplay` renders
+// nothing until the stream connects, so it is safe to mount unconditionally.
 
 import {
   AlertCircle,
@@ -19,6 +26,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { verdictResult, type GradeResult } from "@/features/education/trust/types";
@@ -68,7 +76,8 @@ export function PracticeRunner({
   practice: UseSpokenPractice;
 }) {
   const cfg = MODE_CONFIG[mode];
-  const { phase, plan, index, grade, error, micLevel } = practice;
+  const { phase, plan, index, grade, error, micLevel, liveConversationId } =
+    practice;
   const current = plan?.prompts[index] ?? null;
   const total = plan?.prompts.length ?? 0;
   const style = grade ? RESULT_STYLE[verdictResult(grade.verdict)] : null;
@@ -80,6 +89,10 @@ export function PracticeRunner({
         <p className="text-sm text-muted-foreground">
           {cfg.persona} is preparing your session…
         </p>
+        <LiveRun
+          conversationId={liveConversationId}
+          label={`${cfg.persona} is preparing your session`}
+        />
       </Centered>
     );
   }
@@ -91,6 +104,10 @@ export function PracticeRunner({
         <p className="text-sm text-muted-foreground">
           {cfg.persona} is reviewing your whole session…
         </p>
+        <LiveRun
+          conversationId={liveConversationId}
+          label={`${cfg.persona} is reviewing your session`}
+        />
       </Centered>
     );
   }
@@ -161,6 +178,10 @@ export function PracticeRunner({
             <p className="text-sm text-muted-foreground">
               Grading your answer…
             </p>
+            <LiveRun
+              conversationId={liveConversationId}
+              label="Grading your answer"
+            />
           </>
         )}
 
@@ -225,6 +246,28 @@ export function PracticeRunner({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The run, streaming where the wait is. Full width of the wait column, bounded
+ * so a long stream scrolls itself instead of pushing the page around.
+ */
+function LiveRun({
+  conversationId,
+  label,
+}: {
+  conversationId: string | null;
+  label: string;
+}) {
+  return (
+    <LiveRunDisplay
+      conversationId={conversationId}
+      label={label}
+      pending
+      className="w-full text-left"
+      bodyClassName="max-h-64 overflow-y-auto px-2.5 py-2 text-sm"
+    />
   );
 }
 

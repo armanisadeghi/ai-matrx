@@ -13,7 +13,10 @@
 // result coercion. Nothing is persisted; the answer surfaces transiently.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  livePosture,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { getFcTutorAgentConfig } from "./config";
 import {
   coerceTrustEnvelope,
@@ -41,6 +44,8 @@ export interface HelpLiveContext {
   cardHistory?: unknown[];
   /** Override the configured `fc_help_live` agent id (rare — testing only). */
   agentId?: string | null;
+  /** Live handle — the tutor's answer streams where the caller mounts it. */
+  onConversationCreated?: (conversationId: string) => void;
 }
 
 export interface HelpLiveResult {
@@ -68,6 +73,7 @@ export function helpLive(ctx: HelpLiveContext) {
         // NOT ephemeral (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md); kept out of
         // normal chats via a distinct system source_feature (source-registry.ts).
         sourceFeature: "education-flashcards",
+        ...livePosture(ctx.onConversationCreated),
         userInput:
           ctx.question?.trim() || "I'm confused — help me with this card.",
         variables: {

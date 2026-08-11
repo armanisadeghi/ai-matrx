@@ -19,7 +19,10 @@
 // primitive (`runHeadlessAgentJson`, D126). Never throws.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  livePosture,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
 import type {
   ReviewAggregate,
@@ -34,6 +37,8 @@ export interface ReviewPracticeSessionArgs {
   mode: SpokenPracticeMode;
   attempts: ReviewAttempt[];
   aggregate: ReviewAggregate;
+  /** Live handle — the examiner's review streams onto the waiting screen. */
+  onConversationCreated?: (conversationId: string) => void;
 }
 
 /**
@@ -69,6 +74,7 @@ export function reviewPracticeSession(args: ReviewPracticeSessionArgs) {
         agentId: SPOKEN_PRACTICE_AGENTS.reviewSession,
         surfaceKey: "education-spoken-practice-review",
         sourceFeature: "education-tutor",
+        ...livePosture(args.onConversationCreated),
         variables: {
           mode: args.mode,
           transcript: buildTranscript(args.attempts),

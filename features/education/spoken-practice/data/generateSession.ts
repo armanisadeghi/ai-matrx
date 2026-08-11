@@ -5,7 +5,10 @@
 // headless primitive (`runHeadlessAgentJson`, D126). Never throws.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  livePosture,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { TrustConfidence } from "@/features/education/trust/types";
 import { SPOKEN_PRACTICE_AGENTS } from "../agents";
 import type {
@@ -24,6 +27,8 @@ export interface GenerateSessionArgs {
   studyMaterial: string;
   /** The source, for attaching trust citations to each prompt. */
   source: PracticeSource | null;
+  /** Live handle — the session designer streams onto the waiting screen. */
+  onConversationCreated?: (conversationId: string) => void;
 }
 
 function asString(v: unknown): string {
@@ -97,6 +102,7 @@ export function generateSession(args: GenerateSessionArgs) {
         // agents module); reuse the closest sibling — generating graded
         // questions — which is exactly what this does.
         sourceFeature: "education-assessment",
+        ...livePosture(args.onConversationCreated),
         variables: {
           mode: args.mode,
           focus: args.focus,

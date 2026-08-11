@@ -3,8 +3,10 @@
 // features/education/study/planner/usePlannerAgent.ts
 //
 // The "run the Study Planner agent → get a PlanDraft back" hook, built on the
-// canonical `useHeadlessAgentJson` primitive (D126) — this hook only owns the
-// planner variables and the `PlanDraft` coercion.
+// canonical `useFloatingAgentRun` primitive — the plan STREAMS into the
+// floating LiveRunWindow while it is written (THE FLOATING LAW: never a
+// spinner while AI works). This hook only owns the planner variables and the
+// `PlanDraft` coercion.
 //
 // Persisting the draft (planService.savePlan / regeneratePlan) is the caller's
 // job — this hook only owns the agent round-trip, so the same primitive serves
@@ -12,7 +14,7 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
 import { STUDY_AGENTS, restDaysToNames } from "./agents";
 import { buildStudySnapshot, coercePlanDraft } from "./coercePlan";
 import type { PlanDraft, PlanInput } from "./types";
@@ -28,7 +30,7 @@ export interface PlannerAgentResult {
 }
 
 export function usePlannerAgent(): PlannerAgentResult {
-  const { run, isRunning, error } = useHeadlessAgentJson();
+  const { run, isRunning, error } = useFloatingAgentRun();
 
   async function generate(
     input: PlanInput,
@@ -37,9 +39,9 @@ export function usePlannerAgent(): PlannerAgentResult {
     const itemType = input.itemType ?? "fc_card";
     return run<PlanDraft>({
       agentId: STUDY_AGENTS.planner,
+      label: "Building your study plan",
       surfaceKey: "education-planner-generate",
       sourceFeature: "education-planner",
-      displayMode: "direct",
       variables: {
         goal_title: input.title,
         start_date: input.startDate,

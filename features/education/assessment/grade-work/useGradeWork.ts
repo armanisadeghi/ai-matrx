@@ -10,10 +10,15 @@
 // response_kind 'handwritten' — so standalone grades feed FSRS mastery + streak
 // exactly like every other study action. No new grader, no new spine.
 //
+// THE FLOATING LAW: the vision grader STREAMS into the floating LiveRunWindow
+// while it reads the photo step by step — the learner watches the grade being
+// worked out instead of a spinning button, and the composer never moves.
+//
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
 import { studyService } from "@/features/education/study/service/studyService";
 import { buildGradeScore } from "@/features/education/study/utils/gradeScore";
 import { gradeAnswerImage, type GradedAnswer } from "../data/grading";
@@ -34,6 +39,7 @@ const NO_MODEL_ANSWER =
 
 export function useGradeWork() {
   const dispatch = useAppDispatch();
+  const liveWindow = useFloatingRunWindow({ instanceId: "education-grade-work" });
   const [status, setStatus] = useState<GradeWorkStatus>("idle");
   const [result, setResult] = useState<GradedAnswer | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +57,11 @@ export function useGradeWork() {
       });
       const sessionId = session.data?.id ?? null;
 
+      // Float FIRST, before the launch — the read-and-grade is the whole wait.
+      const live = liveWindow.start("Reading your work");
       const graded = await dispatch(
         gradeAnswerImage({
+          onConversationCreated: live.bind,
           question: input.problem,
           expected: input.expected.trim() || NO_MODEL_ANSWER,
           photo: input.photo,
@@ -116,6 +125,7 @@ export function useGradeWork() {
   }
 
   function reset(): void {
+    liveWindow.close();
     setStatus("idle");
     setResult(null);
     setError(null);

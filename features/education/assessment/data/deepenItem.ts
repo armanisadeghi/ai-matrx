@@ -7,7 +7,10 @@
 // agent round-trip runs through the canonical `runHeadlessAgentJson` (D126).
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  livePosture,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { ASSESSMENT_AGENTS } from "./agents";
 import { asDepth, isDepth } from "./types";
@@ -91,6 +94,8 @@ export function deepenItem(args: {
   >;
   examType?: string | null;
   sourceContent?: string | null;
+  /** Live handle — the deeper question streams where the caller mounts it. */
+  onConversationCreated?: (conversationId: string) => void;
 }) {
   return async (
     dispatch: AppDispatch,
@@ -104,6 +109,7 @@ export function deepenItem(args: {
         surfaceKey: "assessment-deepen-item",
         sourceFeature: "education-assessment",
         surfaceName: "matrx-user/education-assessment",
+        ...livePosture(args.onConversationCreated),
         variables: {
           prompt: args.item.prompt,
           correct_answer: args.item.correct_answer ?? "",

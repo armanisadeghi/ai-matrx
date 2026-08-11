@@ -231,6 +231,8 @@ export function gradeAnswerImage(args: {
   agentId?: string;
   surfaceKey?: string;
   surfaceName?: string;
+  /** Live handle — the vision grade streams where the caller mounts it. */
+  onConversationCreated?: (conversationId: string) => void;
 }) {
   return async (dispatch: AppDispatch): Promise<GradedAnswer> => {
     const agentId = args.agentId ?? ASSESSMENT_AGENTS.gradeHandwritten;
@@ -263,6 +265,9 @@ export function gradeAnswerImage(args: {
         surfaceKey: args.surfaceKey ?? "assessment-grade-image",
         sourceFeature: "education-assessment",
         ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
+        ...(args.onConversationCreated
+          ? { onConversationCreated: args.onConversationCreated }
+          : {}),
       }),
     );
     if (!verdict) return { ...fallback, responseImageFileId: fileId };

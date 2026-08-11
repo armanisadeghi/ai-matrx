@@ -17,7 +17,10 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fileHandler } from "@/features/files/handler/handler";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  livePosture,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import {
   coerceStepGradeVerdict,
@@ -73,6 +76,8 @@ export interface RunVisionGraderArgs {
   surfaceKey: string;
   sourceFeature: SourceFeature;
   surfaceName?: string;
+  /** Live handle — the step-by-step read streams where the caller mounts it. */
+  onConversationCreated?: (conversationId: string) => void;
 }
 
 /**
@@ -98,6 +103,7 @@ export function runVisionGrader(args: RunVisionGraderArgs) {
         // of the user's normal chats via the system-marked source_feature.
         sourceFeature: args.sourceFeature,
         ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
+        ...livePosture(args.onConversationCreated),
         variables: {
           question: args.question,
           expected_answer: args.expected,

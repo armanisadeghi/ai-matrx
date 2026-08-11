@@ -3,13 +3,15 @@
 // features/education/study/analytics/useAnalyticsNarrative.ts
 //
 // Runs the Study Analytics Narrator agent over computed analytics and returns a
-// coerced `NarrativeReport`, via the canonical `useHeadlessAgentJson`
-// primitive (D126). Optional layer — the dashboard renders the raw numbers with
-// or without it, so a slow/failed narration never blocks the data.
+// coerced `NarrativeReport`, via the canonical `useFloatingAgentRun` primitive:
+// the reading STREAMS into the floating LiveRunWindow instead of leaving the
+// card on "Reading your progress…" (THE FLOATING LAW). Optional layer — the
+// dashboard renders the raw numbers with or without it, so a slow/failed
+// narration never blocks the data.
 //
 // React Compiler is on: no manual memo.
 
-import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
+import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
 import { STUDY_AGENTS } from "../planner/agents";
 import type { StudyAnalytics } from "./computeAnalytics";
 import {
@@ -31,7 +33,7 @@ export interface AnalyticsNarrativeResult {
 }
 
 export function useAnalyticsNarrative(): AnalyticsNarrativeResult {
-  const { run, isRunning, error } = useHeadlessAgentJson();
+  const { run, isRunning, error } = useFloatingAgentRun();
 
   async function narrate(
     analytics: StudyAnalytics,
@@ -39,9 +41,9 @@ export function useAnalyticsNarrative(): AnalyticsNarrativeResult {
   ): Promise<NarrativeReport> {
     return run<NarrativeReport>({
       agentId: STUDY_AGENTS.narrator,
+      label: "Reading your progress",
       surfaceKey: "education-analytics-narrate",
       sourceFeature: "education-analytics",
-      displayMode: "direct",
       variables: narrativeVariables(analytics, itemLabel),
       timeoutMs: EXTRACTION_TIMEOUT_MS,
       pollIntervalMs: POLL_INTERVAL_MS,

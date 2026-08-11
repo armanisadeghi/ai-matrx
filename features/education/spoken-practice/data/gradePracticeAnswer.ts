@@ -40,6 +40,8 @@ export interface GradePracticeAnswerArgs {
   /** study-spine item id (the client-minted prompt id) — records the attempt. */
   itemId: string;
   sessionId: string | null;
+  /** Live handle — the grade streams onto the waiting screen (never a spinner). */
+  onConversationCreated?: (conversationId: string) => void;
 }
 
 export interface GradePracticeAnswerResult {
@@ -114,6 +116,9 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
           rubric: modeRubric(args.mode, args.rubric),
           surfaceKey: "spoken-practice-grade",
           sourceFeature: "education-assessment",
+          ...(args.onConversationCreated
+            ? { onConversationCreated: args.onConversationCreated }
+            : {}),
         }),
       );
 

@@ -14,7 +14,10 @@
 // and the session_review persist.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import {
+  livePosture,
+  runHeadlessAgentJson,
+} from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
 import { getFcTutorAgentConfig } from "./config";
 import type { ReviewAggregate, ReviewAttempt } from "./learnerContext";
@@ -25,6 +28,8 @@ export interface ReviewSessionArgs {
   aggregate: ReviewAggregate;
   /** Override the configured `fc_review_batch` agent id (rare — testing only). */
   agentId?: string | null;
+  /** Live handle — the review streams where the caller mounts it. */
+  onConversationCreated?: (conversationId: string) => void;
 }
 
 export interface ReviewSessionResult {
@@ -53,6 +58,7 @@ export function reviewSession(args: ReviewSessionArgs) {
         agentId,
         surfaceKey: "flashcards-review-session",
         sourceFeature: "education-flashcards",
+        ...livePosture(args.onConversationCreated),
         variables: {
           transcript: args.attempts
             .map((a) => a.transcript)

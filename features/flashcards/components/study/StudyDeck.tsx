@@ -73,6 +73,7 @@ import {
   type ReviewSessionResult,
 } from "@/features/education/tutor/lanes/reviewSession";
 import { microCoach } from "@/features/education/tutor/lanes/microCoach";
+import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
 import {
   buildRecentSessionContext,
   buildReviewAggregate,
@@ -248,6 +249,13 @@ export function StudyDeck(props: StudyDeckProps) {
   const currentKind = asCardKind(current?.card_kind);
   const [askOpen, setAskOpen] = useState(false);
   const [question, setQuestion] = useState("");
+  // THE FLOATING LAW: the tutor's answer and the end-of-session review both
+  // STREAM in the floating LiveRunWindow — the card the learner is studying
+  // never moves, and neither run is ever a bare spinner. (microCoach stays
+  // headless on purpose: nothing waits on it, it has no loading state, and its
+  // one-line tip arrives as a toast.)
+  const helpWindow = useFloatingRunWindow({ instanceId: "fc-help-live" });
+  const reviewWindow = useFloatingRunWindow({ instanceId: "fc-session-review" });
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
   const [helpAsked, setHelpAsked] = useState(false);
@@ -275,8 +283,12 @@ export function StudyDeck(props: StudyDeckProps) {
         studyService.listDue(FC_CARD_ITEM_TYPE, 200),
         studyService.listAttemptsForItem(FC_CARD_ITEM_TYPE, current.id, 5),
       ]);
+      // Float FIRST, before the launch — the answer is written in front of the
+      // learner, not behind a spinner on the Ask button.
+      const live = helpWindow.start("Your tutor is answering");
       const result = await dispatch(
         helpLive({
+          onConversationCreated: live.bind,
           front: current.front,
           back: current.back,
           question: question.trim() || undefined,
@@ -313,7 +325,15 @@ export function StudyDeck(props: StudyDeckProps) {
     setReviewLoading(true);
     const attempts = buildReviewAttempts(cards, resultsByCard, masteryByCard);
     const aggregate = buildReviewAggregate(attempts, progress.total);
-    void dispatch(reviewSession({ sessionId, attempts, aggregate }))
+    const live = reviewWindow.start("Reviewing your session");
+    void dispatch(
+      reviewSession({
+        sessionId,
+        attempts,
+        aggregate,
+        onConversationCreated: live.bind,
+      }),
+    )
       .then((result) => setReview(result))
       .finally(() => setReviewLoading(false));
   }, [completed, sessionId]);

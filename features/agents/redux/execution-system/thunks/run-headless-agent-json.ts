@@ -135,6 +135,32 @@ export interface HeadlessAgentJsonOptions {
   };
 }
 
+/**
+ * THE FLOATING LAW, thunk side. Spread into `runHeadlessAgentJson` options to
+ * make a THUNK-launched run watchable by the component that triggered it:
+ * `direct` so the stream is rendered rather than drained, `keepInstance` so the
+ * display does not go blank at the exact moment the content completes, and the
+ * conversation handed back the instant it exists.
+ *
+ * Pass the component's `useLiveRunHandle().claim` (or a
+ * `useFloatingRunWindow().start(...).bind`) — those own the kept-alive
+ * instance and destroy it on the next run and on unmount. With no callback this
+ * spreads NOTHING, so a genuinely headless lane keeps its background posture
+ * and its automatic teardown.
+ */
+export function livePosture(
+  onConversationCreated?: (conversationId: string) => void,
+):
+  | Record<string, never>
+  | Pick<
+      HeadlessAgentJsonOptions,
+      "displayMode" | "keepInstance" | "onConversationCreated"
+    > {
+  return onConversationCreated
+    ? { displayMode: "direct", keepInstance: true, onConversationCreated }
+    : {};
+}
+
 export interface HeadlessAgentJsonResult {
   success: boolean;
   /**
