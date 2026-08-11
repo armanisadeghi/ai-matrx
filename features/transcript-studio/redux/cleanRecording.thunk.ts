@@ -45,6 +45,7 @@ import type {
   TriggerCause,
 } from "../types";
 import { cleanedSegmentApplied, runUpserted } from "./slice";
+import { watchLiveRun } from "./liveRunWatch";
 
 interface CleanRecordingArgs {
   sessionId: string;
@@ -52,6 +53,11 @@ interface CleanRecordingArgs {
   triggerCause: TriggerCause;
   /** Override the studio default. Falls back to DEFAULT_CLEANING_SHORTCUT_ID. */
   shortcutId?: string;
+  /**
+   * What the floating live-run window calls this pass, e.g.
+   * "Cleaning recording 2 of 7" — how a batch re-clean narrates its own steps.
+   */
+  watchLabel?: string;
 }
 
 export type CleanRecordingResult =
@@ -64,7 +70,7 @@ export const cleanRecordingThunk = createAsyncThunk<
   CleanRecordingArgs,
   { state: RootState; dispatch: AppDispatch }
 >("transcriptStudio/cleanRecording", async (args, { dispatch, getState }) => {
-  const { sessionId, recordingSegmentId, triggerCause } = args;
+  const { sessionId, recordingSegmentId, triggerCause, watchLabel } = args;
   const shortcutId = args.shortcutId ?? DEFAULT_CLEANING_SHORTCUT_ID;
 
   const state = getState();
@@ -146,9 +152,21 @@ export const cleanRecordingThunk = createAsyncThunk<
         sourceFeature: "transcription",
         runtime: { applicationScope: window.scope },
         config: { displayMode: "background", autoRun: true },
+        // THE FLOATING LAW — see `liveRunWatch.ts`.
+        onConversationCreated: (cid) => {
+          conversationId = cid;
+          watchLiveRun({
+            dispatch,
+            sessionId,
+            runId: run.id,
+            columnIdx: 2,
+            triggerCause,
+            label: watchLabel ?? "Cleaning recording",
+          })(cid);
+        },
       }),
     ).unwrap()) as { conversationId: string; responseText?: string };
-    conversationId = result.conversationId ?? null;
+    conversationId = result.conversationId ?? conversationId;
     responseText = result.responseText;
   } catch (err) {
     const message =

@@ -400,9 +400,37 @@ const slice = createSlice({
       const sid = run.sessionId;
       if (!state.runsById[sid]) state.runsById[sid] = {};
       if (!state.runIdsBySession[sid]) state.runIdsBySession[sid] = [];
-      const isNew = !state.runsById[sid]![run.id];
-      state.runsById[sid]![run.id] = run;
+      const prior = state.runsById[sid]![run.id];
+      const isNew = !prior;
+      // THE FLOATING LAW: the live-run window binds to this row's
+      // `conversationId`. A terminal write that carried no conversation id
+      // (the agent threw before its instance existed, or an older row round-
+      // tripped) must NOT erase the binding made at launch — the display would
+      // die at the exact moment the content finished arriving. Only the stream
+      // handle survives a terminal overwrite; never widen this to other fields.
+      state.runsById[sid]![run.id] = {
+        ...run,
+        conversationId: run.conversationId ?? prior?.conversationId ?? null,
+      };
       if (isNew) state.runIdsBySession[sid]!.push(run.id);
+    },
+    /**
+     * Bind a run row to its agent conversation the moment the instance exists —
+     * long BEFORE the pass finishes. This is what lets a column float a live
+     * window over a run instead of spinning until the last token lands.
+     * Local-only; `finalizeAgentRun` persists the same id onto the DB row.
+     */
+    runConversationBound(
+      state,
+      action: PayloadAction<{
+        sessionId: string;
+        runId: string;
+        conversationId: string;
+      }>,
+    ) {
+      const { sessionId, runId, conversationId } = action.payload;
+      const run = state.runsById[sessionId]?.[runId];
+      if (run) run.conversationId = conversationId;
     },
     runsLoaded(
       state,
@@ -702,6 +730,7 @@ export const {
   cleanedSegmentUpdated,
   cleanedSegmentRemoved,
   runUpserted,
+  runConversationBound,
   runsLoaded,
   conceptsLoaded,
   conceptsAppended,

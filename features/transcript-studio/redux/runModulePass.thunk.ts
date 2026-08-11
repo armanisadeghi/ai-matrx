@@ -31,6 +31,7 @@ import {
   moduleSegmentsAppended,
   runUpserted,
 } from "./slice";
+import { watchLiveRun } from "./liveRunWatch";
 
 interface RunModulePassArgs {
   sessionId: string;
@@ -159,12 +160,24 @@ export const runModulePassThunk = createAsyncThunk<
         sourceFeature: "transcription",
         runtime: { applicationScope: scopeResult.scope },
         config: { displayMode: "background", autoRun: true },
+        // THE FLOATING LAW — see `liveRunWatch.ts`.
+        onConversationCreated: (cid) => {
+          conversationId = cid;
+          watchLiveRun({
+            dispatch,
+            sessionId,
+            runId: run.id,
+            columnIdx: 4,
+            triggerCause,
+            label: `Building ${moduleDef.label.toLowerCase()}`,
+          })(cid);
+        },
       }),
     ).unwrap()) as {
       conversationId: string;
       responseText?: string;
     };
-    conversationId = result.conversationId ?? null;
+    conversationId = result.conversationId ?? conversationId;
     responseText = result.responseText;
   } catch (err) {
     const message =

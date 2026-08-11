@@ -37,6 +37,7 @@ import {
 import { DEFAULT_CONCEPT_SHORTCUT_ID } from "../constants";
 import type { TriggerCause } from "../types";
 import { conceptsAppended, runUpserted } from "./slice";
+import { watchLiveRun } from "./liveRunWatch";
 
 interface RunConceptPassArgs {
   sessionId: string;
@@ -148,12 +149,24 @@ export const runConceptPassThunk = createAsyncThunk<
         sourceFeature: "transcription",
         runtime: { applicationScope: window.scope },
         config: { displayMode: "background", autoRun: true },
+        // THE FLOATING LAW — see `liveRunWatch.ts`.
+        onConversationCreated: (cid) => {
+          conversationId = cid;
+          watchLiveRun({
+            dispatch,
+            sessionId,
+            runId: run.id,
+            columnIdx: 3,
+            triggerCause,
+            label: "Pulling out concepts",
+          })(cid);
+        },
       }),
     ).unwrap()) as {
       conversationId: string;
       responseText?: string;
     };
-    conversationId = result.conversationId ?? null;
+    conversationId = result.conversationId ?? conversationId;
     responseText = result.responseText;
   } catch (err) {
     const message =
