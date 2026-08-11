@@ -112,14 +112,30 @@ export function statusBadgeVariant(
   return status ? "secondary" : "outline";
 }
 
-export function StatusBadge({ value }: { value: string | null }) {
-  const label = value || "unknown";
+/**
+ * `value` is always the machine status — it decides the tone, so tones can
+ * never drift when wording changes. Pass `label` when the raw status is not
+ * language a human should read (`dead_letter`, `capturing`): the badge then
+ * renders your words verbatim, un-title-cased.
+ */
+export function StatusBadge({
+  value,
+  label,
+}: {
+  value: string | null;
+  label?: string;
+}) {
+  const status = value || "unknown";
   return (
     <Badge
-      variant={statusBadgeVariant(label)}
-      className="whitespace-nowrap capitalize"
+      variant={statusBadgeVariant(status)}
+      className={
+        label
+          ? "whitespace-nowrap"
+          : "whitespace-nowrap capitalize"
+      }
     >
-      {label.replaceAll("_", " ")}
+      {label ?? status.replaceAll("_", " ")}
     </Badge>
   );
 }

@@ -34,7 +34,6 @@ import {
 import { parseObservationExtras } from "@/features/marketing/components/backlinks/lib/extras";
 import {
   backlinkAnalysisActionState,
-  humanizeAssessmentValue,
   parseBacklinkAssessment,
   providerExtras,
 } from "@/features/marketing/components/backlinks/lib/enrichment";
@@ -47,10 +46,21 @@ import {
   BACKLINK_RECOMMENDED_ACTIONS,
   BACKLINK_RELEVANCE_VERDICTS,
   BACKLINK_STATES,
+  backlinkActionLabel,
+  backlinkControlLabel,
+  backlinkEmptyHint,
+  backlinkPageTypeLabel,
+  backlinkRelevanceLabel,
+  backlinkReviewStatusLabel,
   DOMAIN_RANK_EXPLAINER,
+  LINK_CREDIT_EXPLAINER,
+  linkAttributeLabel,
   LINK_PLACEMENTS,
+  linkPlacementLabel,
   LINK_TYPES,
+  linkTypeLabel,
   PAGE_RANK_EXPLAINER,
+  SPAM_SCORE_EXPLAINER,
   type BacklinkLensKey,
 } from "@/features/marketing/components/backlinks/lib/vocab";
 import {
@@ -75,14 +85,14 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
  * news, and must never read like missing data.
  */
 const LENS_EMPTY_LINE: Record<BacklinkLensKey, string> = {
-  best: "No strong links found — no active dofollow links are stored in the latest snapshot.",
-  new: "No new links found — nothing gained since the previous snapshot.",
-  lost: "No lost links found — nothing to reclaim right now.",
-  broken: "No broken links found — nothing to fix or 301 right now.",
-  toxic: "No captured links currently require a risk review.",
-  actionable: "No captured links have a high-priority action right now.",
-  relevant: "No captured source pages have been rated strongly relevant yet.",
-  controllable: "No captured links have a direct or likely edit path yet.",
+  best: "None of your live links currently pass credit, so there is nothing to rank here yet.",
+  new: "You have not picked up any new links since our last check.",
+  lost: "Nothing has disappeared — there is no link to go and ask for.",
+  broken: "Every link points at a page of yours that works. Nothing to fix.",
+  toxic: "Nothing we have read gave us pause. Nothing here needs a second look.",
+  actionable: "Nothing needs doing right now.",
+  relevant: "None of the pages we have read so far are a close topic match.",
+  controllable: "We have not found a link you can edit yourself yet.",
 };
 
 export function BacklinkObservationTable({
@@ -270,10 +280,7 @@ export function BacklinkObservationTable({
         const placement = parseObservationExtras(
           providerExtras(row.provider_evidence),
         ).semanticLocation;
-        const label = placement
-          ? (LINK_PLACEMENTS.find((entry) => entry.key === placement)?.label ??
-            placement)
-          : null;
+        const label = placement ? linkPlacementLabel(placement) : null;
         return label ? (
           <span className="text-xs text-foreground">{label}</span>
         ) : (
@@ -291,10 +298,7 @@ export function BacklinkObservationTable({
         label: type.label,
       })),
       cell: (row) => {
-        const label = row.link_type
-          ? (LINK_TYPES.find((entry) => entry.key === row.link_type)?.label ??
-            row.link_type)
-          : null;
+        const label = row.link_type ? linkTypeLabel(row.link_type) : null;
         return label ? (
           <span className="text-xs text-foreground">{label}</span>
         ) : (
@@ -305,7 +309,7 @@ export function BacklinkObservationTable({
     {
       id: "is_dofollow",
       accessorKey: "is_dofollow",
-      header: "Rel",
+      header: headerWithTooltip("Counts for SEO?", LINK_CREDIT_EXPLAINER),
       filter: "boolean",
       cell: (row) => {
         const extras = parseObservationExtras(
@@ -317,14 +321,23 @@ export function BacklinkObservationTable({
         return (
           <span className="flex flex-wrap items-center gap-1">
             {row.is_dofollow ? (
-              <span className="inline-flex items-center rounded border border-success/30 bg-success/10 px-1 py-px text-[10px] font-medium leading-4 text-success">
-                Dofollow
+              <span
+                className="inline-flex items-center rounded border border-success/30 bg-success/10 px-1 py-px text-[10px] font-medium leading-4 text-success"
+                title="Search engines let this link help your rankings (dofollow)."
+              >
+                Passes credit
               </span>
             ) : (
-              <MutedChip>Nofollow</MutedChip>
+              <MutedChip>
+                <span title="This link is marked so search engines ignore it (nofollow).">
+                  No credit
+                </span>
+              </MutedChip>
             )}
             {special.map((attribute) => (
-              <MutedChip key={attribute}>{attribute}</MutedChip>
+              <MutedChip key={attribute}>
+                {linkAttributeLabel(attribute)}
+              </MutedChip>
             ))}
           </span>
         );
@@ -333,7 +346,7 @@ export function BacklinkObservationTable({
     {
       id: "enrichment_status",
       accessorKey: "enrichment_status",
-      header: "Analysis",
+      header: "Review",
       filter: "select",
       filterOptions: BACKLINK_ENRICHMENT_STATUSES.map((status) => ({
         value: status.key,
@@ -348,15 +361,14 @@ export function BacklinkObservationTable({
           typeof row.last_error.message === "string"
             ? row.last_error.message
             : undefined;
+        // The attempt counter is a pipeline number, not news for the user —
+        // it stays inside the record, never on a row badge.
         return (
           <span title={error} className="whitespace-nowrap">
-            <StatusBadge value={row.enrichment_status} />
-            {row.enrichment_attempt_count > 0 ? (
-              <span className="ml-1 text-[10px] text-muted-foreground">
-                {row.enrichment_attempt_count} try
-                {row.enrichment_attempt_count === 1 ? "" : "s"}
-              </span>
-            ) : null}
+            <StatusBadge
+              value={row.enrichment_status}
+              label={backlinkReviewStatusLabel(row.enrichment_status)}
+            />
           </span>
         );
       },
@@ -373,7 +385,7 @@ export function BacklinkObservationTable({
           row.resolved_assessment,
         ).overallScore;
         return value === null ? (
-          <span className="text-xs text-muted-foreground">Awaiting</span>
+          <span className="text-xs text-muted-foreground">Not reviewed</span>
         ) : (
           <span className="font-medium tabular-nums text-foreground">
             {value}
@@ -383,7 +395,10 @@ export function BacklinkObservationTable({
     },
     {
       id: "relevance",
-      header: "Relevance",
+      header: headerWithTooltip(
+        "Topic match",
+        "How closely the subject of the linking page matches the page of yours it points to.",
+      ),
       filter: "select",
       filterOptions: BACKLINK_RELEVANCE_VERDICTS.map((verdict) => ({
         value: verdict.key,
@@ -395,7 +410,7 @@ export function BacklinkObservationTable({
         const value = parseBacklinkAssessment(row.resolved_assessment);
         return (
           <span className="whitespace-nowrap text-xs text-foreground">
-            {humanizeAssessmentValue(value.relevanceVerdict)}
+            {backlinkRelevanceLabel(value.relevanceVerdict)}
             {value.relevanceScore !== null ? ` · ${value.relevanceScore}` : ""}
           </span>
         );
@@ -403,7 +418,7 @@ export function BacklinkObservationTable({
     },
     {
       id: "page_type",
-      header: "Source type",
+      header: "Kind of page",
       filter: "select",
       filterOptions: BACKLINK_PAGE_TYPES.map((pageType) => ({
         value: pageType.key,
@@ -413,7 +428,7 @@ export function BacklinkObservationTable({
         parseBacklinkAssessment(row.resolved_assessment).pageType ?? "",
       cell: (row) => (
         <span className="text-xs text-foreground">
-          {humanizeAssessmentValue(
+          {backlinkPageTypeLabel(
             parseBacklinkAssessment(row.resolved_assessment).pageType,
           )}
         </span>
@@ -421,7 +436,10 @@ export function BacklinkObservationTable({
     },
     {
       id: "control",
-      header: "Can change?",
+      header: headerWithTooltip(
+        "Can you change it?",
+        "Whether this is a page you could edit yourself, or ask someone to edit.",
+      ),
       filter: "select",
       filterOptions: BACKLINK_CONTROL_LEVELS.map((level) => ({
         value: level.key,
@@ -431,7 +449,7 @@ export function BacklinkObservationTable({
         parseBacklinkAssessment(row.resolved_assessment).controlLevel ?? "",
       cell: (row) => (
         <span className="text-xs text-foreground">
-          {humanizeAssessmentValue(
+          {backlinkControlLabel(
             parseBacklinkAssessment(row.resolved_assessment).controlLevel,
           )}
         </span>
@@ -439,7 +457,7 @@ export function BacklinkObservationTable({
     },
     {
       id: "action",
-      header: "Recommended action",
+      header: "What to do",
       filter: "select",
       filterOptions: BACKLINK_RECOMMENDED_ACTIONS.map((action) => ({
         value: action.key,
@@ -454,7 +472,7 @@ export function BacklinkObservationTable({
             className="block max-w-52 text-xs text-foreground"
             title={value.actionReason ?? undefined}
           >
-            {humanizeAssessmentValue(value.action)}
+            {backlinkActionLabel(value.action)}
             {value.priority ? (
               <span className="ml-1 text-[10px] uppercase text-muted-foreground">
                 {value.priority}
@@ -467,7 +485,7 @@ export function BacklinkObservationTable({
     {
       id: "source_rank",
       accessorKey: "source_rank",
-      header: headerWithTooltip("PR", PAGE_RANK_EXPLAINER),
+      header: headerWithTooltip("Page authority", PAGE_RANK_EXPLAINER),
       filter: false,
       align: "right",
       cell: (row) => <RankCell value={row.source_rank} />,
@@ -475,7 +493,7 @@ export function BacklinkObservationTable({
     {
       id: "domain_rank",
       accessorKey: "domain_rank",
-      header: headerWithTooltip("DR", DOMAIN_RANK_EXPLAINER),
+      header: headerWithTooltip("Site authority", DOMAIN_RANK_EXPLAINER),
       filter: false,
       align: "right",
       cell: (row) => <RankCell value={row.domain_rank} />,
@@ -483,7 +501,7 @@ export function BacklinkObservationTable({
     {
       id: "spam_score",
       accessorKey: "spam_score",
-      header: "Spam",
+      header: headerWithTooltip("Spam signals", SPAM_SCORE_EXPLAINER),
       filter: false,
       align: "right",
       cell: (row) => <SpamCell score={row.spam_score} />,
@@ -516,13 +534,13 @@ export function BacklinkObservationTable({
               <span
                 title={
                   extras.urlToStatusCode
-                    ? `Broken target — HTTP ${extras.urlToStatusCode}`
-                    : "Broken target"
+                    ? `This link points at a page of yours that does not work (error ${extras.urlToStatusCode}).`
+                    : "This link points at a page of yours that does not work."
                 }
               >
                 <Unlink
                   className="h-3.5 w-3.5 shrink-0 text-destructive"
-                  aria-label="Broken target"
+                  aria-label="Points at a page that does not work"
                 />
               </span>
             ) : null}
@@ -568,7 +586,7 @@ export function BacklinkObservationTable({
             onStateChange: table.onStateChange,
           }}
           toolbar={{
-            searchPlaceholder: "Search source, target, or anchor…",
+            searchPlaceholder: "Search by linking site, your page, or link text…",
           }}
           copy={{
             label: "Backlink",
@@ -581,9 +599,9 @@ export function BacklinkObservationTable({
             rowKind: "web-backlink",
             listKind: "web-backlink-table",
             rowDescription:
-              "One stored backlink observation with authority, placement, rel attributes, spam score, and lifecycle dates.",
+              "One link to this site: where it comes from, where it points, how much authority it carries, whether it passes credit, and when we first and last saw it.",
             listDescription:
-              "The currently visible backlink rows (respecting search, sort, filters, lens, and pagination).",
+              "The links currently on screen (respecting the search, sort, filters, view, and page you are on).",
             humanRow: humanBacklinkRow,
             agentRow: projectBacklinkRow,
             rowAttributes: (row) => ({
@@ -606,8 +624,8 @@ export function BacklinkObservationTable({
           }}
           detail={{
             title: (row) =>
-              `Backlink from ${row.source_domain ?? "an external page"}`,
-            description: () => "Complete source-page to target-page record",
+              `Link from ${row.source_domain ?? "another website"}`,
+            description: () => "Everything we know about this link",
             render: renderBacklinkDrawer,
           }}
           rowActions={
@@ -645,7 +663,7 @@ export function BacklinkObservationTable({
           }
           window={{
             title: (row) =>
-              `Backlink from ${row.source_domain ?? "an external page"}`,
+              `Link from ${row.source_domain ?? "another website"}`,
             renderView: renderBacklinkWindow,
             renderEdit: false,
             defaultTab: "view",
@@ -656,13 +674,13 @@ export function BacklinkObservationTable({
             icon: <Link2 className="h-8 w-8 text-muted-foreground" />,
             title: lensLabel
               ? `${lensLabel}: nothing found`
-              : "No detailed backlinks stored",
+              : "No links stored yet",
             description:
               backlinks.isSuccess && (lens || table.queryState.search)
                 ? lens
                   ? LENS_EMPTY_LINE[lens]
-                  : "No stored backlinks match this search and filter set."
-                : "No detailed backlinks stored — run a Monthly detail or Full bootstrap refresh.",
+                  : "No links match what you searched and filtered for."
+                : backlinkEmptyHint("the individual links to this site"),
           }}
           className="min-h-0 flex-1"
         />
