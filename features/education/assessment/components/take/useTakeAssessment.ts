@@ -16,6 +16,7 @@
 import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { studyService } from "@/features/education/study/service/studyService";
+import { buildGradeScore } from "@/features/education/study/utils/gradeScore";
 import { assessmentService } from "../../data/assessmentService";
 import { ASSESSMENT_ITEM_TYPE } from "../../data/agents";
 import {
@@ -165,6 +166,11 @@ export function useTakeAssessment(
       }
 
       const gradedByImage = graded.responseImageFileId != null;
+      const gradeScore = buildGradeScore({
+        explanation: graded.explanation,
+        misconception: graded.misconception,
+        steps: graded.steps,
+      });
       // Record to the shared study spine (feeds FSRS mastery + weak-area review).
       // A photographed answer records as 'handwritten' with the durable photo
       // file_id + the grader's transcription + the per-step breakdown.
@@ -182,9 +188,12 @@ export function useTakeAssessment(
         ...(gradedByImage
           ? { responseImageFileId: graded.responseImageFileId }
           : {}),
-        ...(graded.steps && graded.steps.length > 0
-          ? { score: { steps: graded.steps } }
-          : {}),
+        // A paid grade persists its REASONING, not just its score: the
+        // explanation + named misconception ride in the attempt's score jsonb
+        // (the canonical home — see study/utils/gradeScore.ts) so review, the
+        // study plan, and weak-area drilling can read them back without
+        // re-grading. Losing them was a real defect.
+        ...(gradeScore ? { score: gradeScore } : {}),
         ...(sessionId ? { sessionId } : {}),
       });
 

@@ -104,6 +104,15 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 - **TrustEnvelope passthrough.** Agents emit `trust` per item; consumers `coerceTrustEnvelope` + render
   `<SourceCitations>`/`<ConfidenceBadge>` — never re-derive. Topic gen = `inferred`, no citations;
   deck/document gen = `grounded` with real `sourceId`/`excerpt`.
+- **A PAID GRADE PERSISTS ITS REASONING, NOT JUST ITS SCORE.** Every write of a graded attempt carries
+  the grader's `explanation` and `misconception` — the pedagogically valuable half (WHY the learner was
+  wrong, WHICH wrong belief they hold), and the half you cannot recover without paying for the grade
+  again. `study_attempt` has no explanation column: the reasoning rides in the row's `score` jsonb under
+  the canonical keys built by `features/education/study/utils/gradeScore.ts#buildGradeScore`
+  (`feedback` / `misconception` / `missing` / `rubric` / `steps`) and read back by `readGradeScore`.
+  NEVER hand-write those keys and never leave a grade's reasoning in component state — it dies on
+  unmount (the defect this rule replaced: the take flow and Grade Work both threw it away).
+  Read surfaces: `AssessmentResults` (per-item review) and the mode-agnostic `SessionDetailView`.
 - **Spine RPC needs FSRS state.** `studyService.recordAttempt` computes it in `lib/srs/fsrs.ts` before
   the RPC; a raw RPC call with a graded result errors by design. Always go through the service.
 - **`education.quiz_sessions` is NOT ours** (canvas artifact store). This engine is independent.
@@ -140,6 +149,17 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
   search/pagination for the list at scale.
 
 ## Change log
+
+- **2026-08-11** — **Graded attempts now persist the grader's reasoning.** `useTakeAssessment.submit`
+  and `useGradeWork.grade` were writing `result` / `scoreValue` / transcript / steps to the spine and
+  dropping `explanation` + `misconception` in `useState` — the paid half of every AI grade died on
+  unmount. Both now build the attempt's `score` jsonb through the new shared
+  `features/education/study/utils/gradeScore.ts` (`buildGradeScore` / `readGradeScore`), the ONE place
+  the key names live; `SessionDetailView` reads through it (replacing its private `readScoreExtras`)
+  and renders the misconception, `AssessmentResults` now renders the grader's per-answer "Why"
+  (already persisted in `result.detail`, previously never shown), and spoken practice — same class,
+  same loss — carries its misconception through too. No DB change: `score` is the existing
+  grade-detail jsonb `study_record_attempt` already accepts.
 
 - **2026-08-10** — **The Grade Work composer is agent-writable — inputs only.**
   `features/surfaces/manifests/education-grade-work.manifest.ts` declares 2

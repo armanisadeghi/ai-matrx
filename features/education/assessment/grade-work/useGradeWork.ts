@@ -15,6 +15,7 @@
 import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { studyService } from "@/features/education/study/service/studyService";
+import { buildGradeScore } from "@/features/education/study/utils/gradeScore";
 import { gradeAnswerImage, type GradedAnswer } from "../data/grading";
 import { HANDWRITTEN_WORK_ITEM_TYPE } from "../data/agents";
 
@@ -66,6 +67,11 @@ export function useGradeWork() {
         typeof crypto !== "undefined" && "randomUUID" in crypto
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const gradeScore = buildGradeScore({
+        explanation: graded.explanation,
+        misconception: graded.misconception,
+        steps: graded.steps,
+      });
       const rec = await studyService.recordAttempt({
         itemType: HANDWRITTEN_WORK_ITEM_TYPE,
         itemId,
@@ -78,9 +84,10 @@ export function useGradeWork() {
         ...(graded.responseImageFileId
           ? { responseImageFileId: graded.responseImageFileId }
           : {}),
-        ...(graded.steps && graded.steps.length > 0
-          ? { score: { steps: graded.steps } }
-          : {}),
+        // Same rule as the take flow: the vision grade's REASONING (why, and
+        // the named misconception) is the half worth keeping — persist it on
+        // the attempt row, never leave it in component state.
+        ...(gradeScore ? { score: gradeScore } : {}),
         ...(sessionId ? { sessionId } : {}),
       });
       if (rec.error) {

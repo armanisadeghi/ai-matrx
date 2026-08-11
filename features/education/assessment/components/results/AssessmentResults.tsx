@@ -282,6 +282,18 @@ export function AssessmentResults({
                         {item.explanation}
                       </p>
                     )}
+                    {/* The grader's reasoning about THIS answer — the paid,
+                        pedagogically valuable half of the grade. Shown only
+                        when it says something the item's own explanation
+                        doesn't (objective items grade locally and reuse it). */}
+                    {d?.explanation &&
+                      d.explanation.trim() !== "" &&
+                      d.explanation.trim() !== (item.explanation ?? "").trim() && (
+                        <p className="mt-1 text-xs text-foreground">
+                          <span className="font-medium">Why: </span>
+                          {d.explanation}
+                        </p>
+                      )}
                     {d?.misconception && (
                       <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
                         Watch out: {d.misconception}

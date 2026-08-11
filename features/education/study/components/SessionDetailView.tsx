@@ -37,6 +37,7 @@ import {
   isAwaitingCoachReview,
   parseSessionReview,
 } from "../utils/parseSessionReview";
+import { readGradeScore } from "../utils/gradeScore";
 
 const MODE_LABEL: Record<string, string> = {
   fast_fire: "Fast Fire",
@@ -67,21 +68,6 @@ const RESULT_META: Record<
     classes: "text-red-600 dark:text-red-400",
   },
 };
-
-/** Pull the optional feedback / missing[] the grader stashed in the score jsonb. */
-function readScoreExtras(score: unknown): {
-  feedback?: string;
-  missing?: string[];
-} {
-  if (!score || typeof score !== "object") return {};
-  const s = score as Record<string, unknown>;
-  return {
-    feedback: typeof s.feedback === "string" ? s.feedback : undefined,
-    missing: Array.isArray(s.missing)
-      ? s.missing.filter((m): m is string => typeof m === "string")
-      : undefined,
-  };
-}
 
 /** Bold, color-coded badge classes for the score pill — score is the headline metric. */
 function scoreBadgeClasses(pct: number): string {
@@ -368,7 +354,7 @@ function AttemptRow({
   onOverridden: (updated: StudyAttemptRow) => void;
 }) {
   const meta = attempt.result ? RESULT_META[attempt.result] : null;
-  const extras = readScoreExtras(attempt.score);
+  const extras = readGradeScore(attempt.score);
   const scorePct =
     attempt.score_value != null
       ? Math.round(Number(attempt.score_value) * 100)
@@ -502,6 +488,17 @@ function AttemptRow({
                 {explanationExpanded ? "Show less" : "Read more"}
               </button>
             )}
+          </div>
+        )}
+
+        {extras.misconception && (
+          <div className="px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Watch out for
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-amber-600 dark:text-amber-400">
+              {extras.misconception}
+            </p>
           </div>
         )}
 

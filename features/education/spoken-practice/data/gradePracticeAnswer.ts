@@ -17,6 +17,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { verdictResult } from "@/features/education/trust/types";
 import { studyService } from "@/features/education/study/service/studyService";
+import { buildGradeScore } from "@/features/education/study/utils/gradeScore";
 import {
   runSpokenGrader,
   uploadResponseClip,
@@ -158,17 +159,19 @@ async function recordAttempt(
     ...(grade ? { scoreValue: grade.score } : {}),
     ...(grade
       ? {
-          score: {
-            rubric: grade.rubric,
-            missing: grade.missing,
-            feedback: grade.verdict.explanation,
-            // Pronunciation dims ride in the attempt's score jsonb (present only
-            // for the pronunciation mode) so the spine row carries the delivery
-            // assessment alongside the content grade.
-            ...(grade.pronunciation
-              ? { pronunciation: grade.pronunciation }
-              : {}),
-          },
+          score:
+            buildGradeScore({
+              rubric: grade.rubric,
+              missing: grade.missing,
+              explanation: grade.verdict.explanation,
+              misconception: grade.verdict.misconception,
+              // Pronunciation dims ride in the attempt's score jsonb (present
+              // only for the pronunciation mode) so the spine row carries the
+              // delivery assessment alongside the content grade.
+              ...(grade.pronunciation
+                ? { extra: { pronunciation: grade.pronunciation } }
+                : {}),
+            }) ?? {},
         }
       : {}),
     ...(responseAudioFileId ? { responseAudioFileId } : {}),
