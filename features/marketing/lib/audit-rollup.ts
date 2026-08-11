@@ -112,7 +112,7 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
   };
 
   for (const row of rows) {
-    if (isResourceContentType(row.contentTypeLast)) {
+    if (isResourceContentType(row.contentTypeLast, row.url)) {
       nonHtmlResources += 1;
       continue;
     }

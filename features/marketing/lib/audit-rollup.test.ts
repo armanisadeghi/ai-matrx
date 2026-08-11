@@ -175,4 +175,72 @@ describe("buildSiteAuditRollup", () => {
       false,
     );
   });
+
+  it("excludes machine endpoints the crawler never stamped a content type on", () => {
+    // The real datadestruction.com shape: the pre-2026-07-27 crawler followed
+    // WordPress' json+oembed <head> link, fetched the JSON, never recorded
+    // content_type_last, and scored the response with the HTML audit. 717 such
+    // rows became the site's "pages needing attention" list, each faulted for
+    // missing og:title and <h1>. content_type_last is NULL, so URL shape is the
+    // only signal that can catch them.
+    const OEMBED =
+      "https://datadestruction.com/wp-json/oembed/1.0/embed" +
+      "?url=https%3A%2F%2Fdatadestruction.com%2Fhard-drive-shredding%2F";
+
+    const rollup = buildSiteAuditRollup([
+      {
+        id: "oembed",
+        url: OEMBED,
+        path: "/wp-json/oembed/1.0/embed",
+        contentTypeLast: null,
+        seo_metrics: buildStoredSeoMetrics("", "", "client"),
+        audit_metrics: auditFor(OEMBED, { title: null }),
+      },
+      {
+        id: "rest",
+        url: "https://datadestruction.com/wp-json/wp/v2/compliance/21086",
+        path: "/wp-json/wp/v2/compliance/21086",
+        contentTypeLast: null,
+        seo_metrics: buildStoredSeoMetrics("", "", "client"),
+        audit_metrics: auditFor(
+          "https://datadestruction.com/wp-json/wp/v2/compliance/21086",
+          { title: null },
+        ),
+      },
+      {
+        // A never-fetched, page-shaped URL still counts as a page.
+        id: "uncrawled",
+        url: "https://datadestruction.com/compliance/state-laws/arizona",
+        path: "/compliance/state-laws/arizona",
+        contentTypeLast: null,
+        seo_metrics: null,
+        audit_metrics: null,
+      },
+      {
+        id: "html",
+        url: GOOD_URL,
+        path: "/blog/clean-post",
+        contentTypeLast: "html",
+        seo_metrics: buildStoredSeoMetrics(
+          "A perfectly sized meta title for this page",
+          "Learn how the platform works, what it costs, and how teams use it to ship real work every single day.",
+          "client",
+        ),
+        audit_metrics: auditFor(GOOD_URL),
+      },
+    ]);
+
+    expect(rollup.nonHtmlResources).toBe(2);
+    expect(rollup.totalPages).toBe(2);
+    expect(rollup.uncomputedPages).toBe(1);
+    expect(
+      rollup.worstPages.filter((page) => page.url.includes("/wp-json")),
+    ).toEqual([]);
+    // And their invented findings never reach the site-wide issue list.
+    expect(
+      rollup.topIssues.some((issue) =>
+        issue.samples.some((sample) => sample.path.startsWith("/wp-json")),
+      ),
+    ).toBe(false);
+  });
 });

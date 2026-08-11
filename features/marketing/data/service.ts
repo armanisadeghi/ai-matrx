@@ -61,7 +61,7 @@ import { isJsonRecord, isPropertyKind } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
-import { PAGE_CONTENT_TYPE_OR_FILTER } from "@/features/marketing/lib/page-content-class";
+import { applyPageOnlyFilters } from "@/features/marketing/lib/page-content-class";
 import {
   parseSnapshotImages,
   parseSnapshotResources,
@@ -514,6 +514,8 @@ export async function getSiteOverview(
   const [
     score,
     pages,
+    unconfirmedCandidates,
+    resourceUrls,
     findings,
     snapshots,
     latestCrawl,
@@ -530,15 +532,31 @@ export async function getSiteOverview(
       .eq("site_id", siteId)
       .abortSignal(abortSignal)
       .maybeSingle(),
-    // The headline page count. Reads the projection, not `web.page`: crawls
-    // record every fetched URL in the registry, so the raw table also holds
-    // images/json/xml/pdf. `is_resource` is the server's classification of
-    // that (NULL content type = not yet fetched, still a page).
+    // The headline is evidence-backed. The durable registry also retains
+    // aliases, resources, and never-confirmed crawl candidates; those remain
+    // inspectable without being presented as pages.
     db
       .from("v_page_list")
       .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
+      .eq("is_canonical", true)
       .eq("is_resource", false)
+      .eq("has_page_evidence", true)
+      .abortSignal(abortSignal),
+    db
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
+      .eq("has_page_evidence", false)
+      .abortSignal(abortSignal),
+    db
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("is_canonical", true)
+      .eq("is_resource", true)
       .abortSignal(abortSignal),
     db
       .from("finding")
@@ -566,28 +584,36 @@ export async function getSiteOverview(
       .abortSignal(abortSignal)
       .maybeSingle(),
     db
-      .from("page")
-      .select("id", { count: "exact", head: true })
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
+      .eq("has_page_evidence", true)
       .not("target_keyword", "is", null)
-      .is("deleted_at", null)
       .abortSignal(abortSignal),
     db
       .from("v_page_list")
       .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
       .eq("in_gsc", true)
       .abortSignal(abortSignal),
     db
       .from("v_page_list")
       .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
       .eq("indexability_verdict", "blocked")
       .abortSignal(abortSignal),
     db
       .from("v_page_list")
       .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
       .eq("serp_ok", false)
       .abortSignal(abortSignal),
     db
@@ -606,6 +632,8 @@ export async function getSiteOverview(
 
   if (score.error) throw score.error;
   if (pages.error) throw pages.error;
+  if (unconfirmedCandidates.error) throw unconfirmedCandidates.error;
+  if (resourceUrls.error) throw resourceUrls.error;
   if (findings.error) throw findings.error;
   if (snapshots.error) throw snapshots.error;
   if (latestCrawl.error) throw latestCrawl.error;
@@ -620,6 +648,8 @@ export async function getSiteOverview(
     siteScore: score.data?.site_score ?? null,
     scoredPages: Number(score.data?.scored_pages ?? 0),
     canonicalPages: pages.count ?? 0,
+    unconfirmedCandidates: unconfirmedCandidates.count ?? 0,
+    resourceUrls: resourceUrls.count ?? 0,
     openFindings: findings.count ?? 0,
     snapshots: snapshots.count ?? 0,
     latestCrawl: latestCrawl.data,
@@ -739,6 +769,8 @@ export const SNAPSHOT_COLUMNS =
  * Membership = a live `web.page_sitemap` row; crawled = `latest_snapshot_id`.
  */
 export type PageCoverageFilter =
+  | "all_known"
+  | "unconfirmed"
   | "in_sitemap"
   | "crawled"
   | "never_crawled"
@@ -749,6 +781,8 @@ export type PageCoverageFilter =
   | "sitemap_no_gsc";
 
 export const PAGE_COVERAGE_FILTERS: readonly PageCoverageFilter[] = [
+  "all_known",
+  "unconfirmed",
   "in_sitemap",
   "crawled",
   "never_crawled",
@@ -831,12 +865,17 @@ export async function listPages(
     .eq("site_id", siteId);
 
   if (resourceScope === "pages") {
-    query = query.eq("is_resource", false);
+    query = query.eq("is_canonical", true).eq("is_resource", false);
+    if (coverage !== "all_known" && coverage !== "unconfirmed") {
+      query = query.eq("has_page_evidence", true);
+    }
   } else if (resourceScope === "resources") {
-    query = query.eq("is_resource", true);
+    query = query.eq("is_canonical", true).eq("is_resource", true);
   }
 
-  if (coverage === "in_sitemap") {
+  if (coverage === "unconfirmed") {
+    query = query.eq("has_page_evidence", false);
+  } else if (coverage === "in_sitemap") {
     query = query.gt("sitemap_count", 0);
   } else if (coverage === "crawled") {
     query = query.not("latest_snapshot_id", "is", null);
@@ -1029,7 +1068,14 @@ export const PAGE_PROVENANCES: readonly PageProvenance[] = [
 ];
 
 export interface SiteCoverageMatrix {
+  /** Canonical non-resource URLs with retained crawl/source/manual evidence. */
   totalPages: number;
+  /** Confirmed + unconfirmed canonical non-resource registry URLs. */
+  knownPageUrls: number;
+  /** Crawl candidates with no retained page evidence yet. */
+  unconfirmedCandidates: number;
+  /** Canonical URLs positively classified as non-HTML resources. */
+  resourceUrls: number;
   inSitemaps: number;
   crawled: number;
   neverCrawled: number;
@@ -1056,38 +1102,48 @@ export async function getCoverageMatrix(
   const db = await authenticatedWebDb(supabase);
   const abortSignal = signal ?? new AbortController().signal;
 
-  const basePages = () =>
+  const confirmedPages = () =>
     db
-      .from("page")
-      .select("id", { count: "exact", head: true })
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
-      .is("deleted_at", null);
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
+      .eq("has_page_evidence", true);
   const membershipPages = () =>
     db
-      .from("page")
-      .select("id, page_sitemap!inner(id)", { count: "exact", head: true })
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
-      .is("deleted_at", null)
-      .is("page_sitemap.deleted_at", null);
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
+      .eq("has_page_evidence", true)
+      .gt("sitemap_count", 0);
   const antiMembershipPages = () =>
     db
-      .from("page")
-      .select("id, page_sitemap!left(id)", { count: "exact", head: true })
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
-      .is("deleted_at", null)
-      .is("page_sitemap.deleted_at", null)
-      .is("page_sitemap", null);
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
+      .eq("has_page_evidence", true)
+      .eq("sitemap_count", 0);
 
   const gscPages = () =>
     db
-      .from("page")
-      .select("id, gsc_page_stat!inner(id)", { count: "exact", head: true })
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
       .eq("site_id", siteId)
-      .is("deleted_at", null)
-      .is("gsc_page_stat.deleted_at", null);
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
+      .eq("has_page_evidence", true)
+      .eq("in_gsc", true);
 
   const [
     total,
+    knownPageUrls,
+    unconfirmedCandidates,
+    resourceUrls,
     inSitemaps,
     crawled,
     neverCrawled,
@@ -1098,46 +1154,53 @@ export async function getCoverageMatrix(
     sitemapNoGsc,
     ...provenanceCounts
   ] = await Promise.all([
-    basePages().abortSignal(abortSignal),
+    confirmedPages().abortSignal(abortSignal),
+    db
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
+      .abortSignal(abortSignal),
+    db
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("is_canonical", true)
+      .eq("is_resource", false)
+      .eq("has_page_evidence", false)
+      .abortSignal(abortSignal),
+    db
+      .from("v_page_list")
+      .select("page_id", { count: "exact", head: true })
+      .eq("site_id", siteId)
+      .eq("is_canonical", true)
+      .eq("is_resource", true)
+      .abortSignal(abortSignal),
     membershipPages().abortSignal(abortSignal),
-    basePages().not("latest_snapshot_id", "is", null).abortSignal(abortSignal),
-    basePages().is("latest_snapshot_id", null).abortSignal(abortSignal),
+    confirmedPages().not("latest_snapshot_id", "is", null).abortSignal(abortSignal),
+    confirmedPages().is("latest_snapshot_id", null).abortSignal(abortSignal),
     membershipPages().is("latest_snapshot_id", null).abortSignal(abortSignal),
     antiMembershipPages()
       .not("latest_snapshot_id", "is", null)
       .abortSignal(abortSignal),
     gscPages().abortSignal(abortSignal),
-    db
-      .from("page")
-      .select("id, gsc_page_stat!inner(id), page_sitemap!left(id)", {
-        count: "exact",
-        head: true,
-      })
-      .eq("site_id", siteId)
-      .is("deleted_at", null)
-      .is("gsc_page_stat.deleted_at", null)
-      .is("page_sitemap.deleted_at", null)
-      .is("page_sitemap", null)
+    gscPages()
+      .eq("sitemap_count", 0)
       .abortSignal(abortSignal),
-    db
-      .from("page")
-      .select("id, page_sitemap!inner(id), gsc_page_stat!left(id)", {
-        count: "exact",
-        head: true,
-      })
-      .eq("site_id", siteId)
-      .is("deleted_at", null)
-      .is("page_sitemap.deleted_at", null)
-      .is("gsc_page_stat.deleted_at", null)
-      .is("gsc_page_stat", null)
+    membershipPages()
+      .eq("in_gsc", false)
       .abortSignal(abortSignal),
     ...PAGE_PROVENANCES.map((provenance) =>
-      basePages().eq("provenance", provenance).abortSignal(abortSignal),
+      confirmedPages().eq("provenance", provenance).abortSignal(abortSignal),
     ),
   ]);
 
   for (const response of [
     total,
+    knownPageUrls,
+    unconfirmedCandidates,
+    resourceUrls,
     inSitemaps,
     crawled,
     neverCrawled,
@@ -1158,6 +1221,9 @@ export async function getCoverageMatrix(
 
   return {
     totalPages: total.count ?? 0,
+    knownPageUrls: knownPageUrls.count ?? 0,
+    unconfirmedCandidates: unconfirmedCandidates.count ?? 0,
+    resourceUrls: resourceUrls.count ?? 0,
     inSitemaps: inSitemaps.count ?? 0,
     crawled: crawled.count ?? 0,
     neverCrawled: neverCrawled.count ?? 0,
@@ -1276,12 +1342,13 @@ export async function searchPagesForMetaApply(
     // cause of the "same URL appears twice" report — there are zero same-site
     // duplicates, `page_site_id_url_hash_key` has always guaranteed that.
     .is("site.deleted_at", null)
-    // Crawls record assets as page rows too — offering someone a .png or a
-    // wp-json endpoint to "apply a meta title to" is noise. `content_type_last`
-    // is the crawler's own verdict, so filter on it rather than guessing from
-    // the URL. NULL stays in: it means not-yet-crawled, not not-a-page.
-    .or(PAGE_CONTENT_TYPE_OR_FILTER)
     .eq("status", "active");
+  // Crawls record assets and machine endpoints as page rows too — offering
+  // someone a .png or a /wp-json/ endpoint to "apply a meta title to" is noise.
+  // Both halves of the one rule: the crawler's content_type verdict, plus URL
+  // shape for the rows it has never fetched (content_type_last is NULL for most
+  // of the registry, so the verdict alone lets every oEmbed URL through).
+  query = applyPageOnlyFilters(query);
 
   const trimmed = term.trim();
   if (trimmed) {
