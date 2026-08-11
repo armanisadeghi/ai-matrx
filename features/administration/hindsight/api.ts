@@ -13,6 +13,7 @@ import { apiDelete, apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed
 import { postJson } from "@/lib/python-client";
 
 import type {
+  DiscussResult,
   DrainResult,
   Enrollment,
   EnrollmentDetail,
@@ -24,6 +25,7 @@ import type {
   ReplayRunResult,
   ReviewDetail,
   ReviewRunResult,
+  ReviewThread,
   ToolSubject,
 } from "./types";
 
@@ -80,6 +82,47 @@ export async function triggerReview(id: string): Promise<ReviewRunResult> {
 export async function getReview(id: string): Promise<ReviewDetail> {
   const { data } = await apiGet(
     buildPath("/hindsight/reviews/{review_id}", { review_id: id }),
+  );
+  return data;
+}
+
+/**
+ * The reviewer's own conversation. `available: false` is a NORMAL outcome —
+ * reviews from before threaded reviews shipped persisted only a cost spine —
+ * and `reason` carries the sentence to show instead of an empty void.
+ */
+export async function getReviewThread(reviewId: string): Promise<ReviewThread> {
+  const { data } = await apiGet(
+    buildPath("/hindsight/reviews/{review_id}/thread", { review_id: reviewId }),
+  );
+  return data;
+}
+
+/**
+ * Send human guidance into the reviewer's thread. Takes roughly a minute (a
+ * frontier model call) and commonly produces BRAND-NEW findings rather than
+ * editing the one the human was looking at — callers must refetch the review.
+ * `status: "failed"` with a `reason` is a normal outcome to render.
+ */
+export async function discussReview(
+  reviewId: string,
+  message: string,
+): Promise<DiscussResult> {
+  const { data } = await apiPost(
+    buildPath("/hindsight/reviews/{review_id}/discuss", { review_id: reviewId }),
+    { message },
+  );
+  return data;
+}
+
+/** Same thread, scoped to one finding. */
+export async function discussFinding(
+  findingId: string,
+  message: string,
+): Promise<DiscussResult> {
+  const { data } = await apiPost(
+    buildPath("/hindsight/findings/{finding_id}/discuss", { finding_id: findingId }),
+    { message },
   );
   return data;
 }

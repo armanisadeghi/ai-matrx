@@ -16,11 +16,19 @@ import { cn } from "@/lib/utils";
 import { getReview } from "../api";
 import { conversationHref, exampleDoor } from "../subject-doors";
 import type { Review } from "../types";
+import { DiscussPanel } from "./DiscussPanel";
 import { DoorLink } from "./DoorLink";
 import { ReplaysTable } from "./ReplaysTable";
 import { fmtCost, fmtDate } from "./tokens";
 
-export function ReviewRow({ review }: { review: Review }) {
+export function ReviewRow({
+  review,
+  onChanged,
+}: {
+  review: Review;
+  /** Guidance sent from the thread changes the FINDINGS — refetch on resolve. */
+  onChanged: () => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const detail = useQuery({
     queryKey: ["hindsight", "review", review.id],
@@ -137,6 +145,8 @@ export function ReviewRow({ review }: { review: Review }) {
               </pre>
             </div>
           )}
+
+          <DiscussPanel reviewId={review.id} onResolved={onChanged} />
 
           {detail.isLoading && <Skeleton className="h-16" />}
           {detail.data && (detail.data.replays ?? []).length > 0 && (

@@ -357,7 +357,7 @@ export function EnrollmentDetailPanel({
         ) : (
           <div className="space-y-2">
             {(data.reviews ?? []).map((r) => (
-              <ReviewRow key={r.id} review={r} />
+              <ReviewRow key={r.id} review={r} onChanged={invalidate} />
             ))}
           </div>
         )}

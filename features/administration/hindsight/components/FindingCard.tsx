@@ -8,7 +8,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
-import { Check, ChevronDown, ChevronRight, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, MessageSquare, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { applyFinding, rejectFinding } from "../api";
 import { conversationHref } from "../subject-doors";
 import { splitEvidenceIds, type Finding } from "../types";
+import { DiscussPanel } from "./DiscussPanel";
 import { LEVER_COLOR, LEVER_LABEL, VERDICT_COLOR } from "./tokens";
 
 const DECIDED = new Set(["applied", "rejected", "superseded", "approved"]);
@@ -42,6 +43,7 @@ export function FindingCard({
   onChanged: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [discussing, setDiscussing] = useState(false);
 
   const apply = useMutation({
     mutationFn: () => applyFinding(finding.id),
@@ -120,8 +122,22 @@ export function FindingCard({
             <div className="mt-1 text-sm font-medium">{finding.title}</div>
           </div>
         </button>
-        {!decided && (
-          <div className="flex shrink-0 gap-1.5">
+        <div className="flex shrink-0 items-start gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            title="Tell the reviewer what it missed"
+            onClick={() => {
+              setDiscussing((v) => !v);
+              setExpanded(true);
+            }}
+            data-testid="hindsight-guide"
+          >
+            <MessageSquare className="mr-1 h-3.5 w-3.5" />
+            Guide
+          </Button>
+          {!decided && (
+          <>
             <Button
               size="sm"
               disabled={busy}
@@ -145,8 +161,9 @@ export function FindingCard({
             >
               <X className="h-3.5 w-3.5" />
             </Button>
-          </div>
-        )}
+          </>
+          )}
+        </div>
       </div>
 
       {expanded && (
@@ -198,8 +215,17 @@ export function FindingCard({
             <p className="text-xs text-muted-foreground">
               {LEVER_LABEL[finding.lever]} findings are reports for a human —
               “Accept” records the decision, it does not change anything by
-              itself.
+              itself. If the recommendation is close but not the real point,
+              use <strong>Guide</strong> and tell the reviewer.
             </p>
+          )}
+          {discussing && (
+            <DiscussPanel
+              reviewId={finding.review_id}
+              findingId={finding.id}
+              findingTitle={finding.title}
+              onResolved={onChanged}
+            />
           )}
         </div>
       )}

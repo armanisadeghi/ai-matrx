@@ -24,6 +24,9 @@ export type EnrollmentUpdateRequest =
 export type ReviewRunResult = components["schemas"]["ReviewRunResult"];
 export type ReplayRunResult = components["schemas"]["ReplayRunResult"];
 export type DrainResult = components["schemas"]["DrainResult"];
+export type ReviewThread = components["schemas"]["ReviewThreadOut"];
+export type ThreadMessage = components["schemas"]["ThreadMessageOut"];
+export type DiscussResult = components["schemas"]["DiscussOut"];
 
 export type SubjectKind = Enrollment["subject_kind"];
 export type Lever = Finding["lever"];

@@ -24,7 +24,8 @@ platform admin, not in a backend-repo dashboard. Do not re-create a second copy.
 | Page | `components/HindsightPage.tsx` — list + platform spend + detail pane |
 | Detail | `components/EnrollmentDetailPanel.tsx` — subject, spend, cadence, findings, reviews |
 | Enroll | `components/EnrollDialog.tsx` — all four kinds, real pickers |
-| Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, Apply / Reject |
+| Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, Apply / Reject / **Guide** |
+| Discuss | `components/DiscussPanel.tsx` — the reviewer's thread + the reply box |
 | Review | `components/ReviewRow.tsx` → `components/ReplaysTable.tsx` |
 | Doors | `subject-doors.ts` |
 | Types | `types.ts` — DERIVED from the OpenAPI contract |
@@ -53,6 +54,37 @@ Wire shapes: `aidream/aidream/api/schemas/hindsight.py`. Work order:
   `environment` subjects are deliberately doorless: an environment is a
   conversation SELECTOR, not a row, so its selector renders as chips and its
   transcripts are reached through the reviewed-runs list.
+
+## Guide — the third path, and why it exists
+
+Apply / Reject is not enough. Arman's case: the reviewer caught small problems on
+the AI Model Config Sync agent and **missed the biggest point** — that we need
+scrapable model-list URLs per provider, verified with our scraper, built into the
+system prompt — and there was no way to tell it so.
+
+`DiscussPanel` is that path. It renders the reviewer's own conversation and lets
+the human reply with guidance; the reviewer answers and usually proposes NEW
+findings. Two rules the UI must keep:
+
+- **A reply CREATES findings, it does not edit the one in front of you.** Never
+  frame it as editing. On resolve, refetch the whole enrollment — proven live:
+  one reply took a review from 2 findings to 6 and deprioritized the original.
+- **It takes about a minute** and `status: "failed"` is a normal outcome to
+  render, not an exception. The typed message stays in the box on failure — a
+  carefully written paragraph must never be lost to a transient error.
+
+`available: false` from `/thread` is also normal (reviews from before threaded
+reviews persisted only a cost spine); render the backend's `reason` sentence and
+disable Send, never an empty void.
+
+Message bodies render through the canonical markdown pipeline (`MarkdownStream`
+in persisted mode — no `requestId`, not a stream). Never hand-render one.
+
+**Known rough edge:** `discuss` returns the reviewer's STRUCTURED output in
+`reply`, so it is usually a raw JSON object rather than prose. The findings are
+the human-facing result, so the panel headlines those and collapses a
+JSON-shaped reply behind a toggle. The clean fix is backend-side: return the
+reviewer's sentence separately from its structured payload.
 
 ## The three things that are easy to get wrong
 
@@ -92,4 +124,8 @@ All four kinds enrolled through this dialog against production; Apply took the
 AI Model Config Sync agent to **v20**; Reject recorded a decision; a review run
 from this page read 3 real Chrome-extension transcripts, cost $0.146, and
 produced 2 findings; replay table renders the did-not-run case correctly; dark
-mode checked.
+mode checked. Guide proven end-to-end on the Chrome-extension environment
+review: real guidance ("you missed that browser-tool failures are
+indistinguishable") returned 4 new findings for $0.085 in ~2 minutes, the
+findings list refreshed itself, and the original finding was deprioritized to
+40% confidence.
