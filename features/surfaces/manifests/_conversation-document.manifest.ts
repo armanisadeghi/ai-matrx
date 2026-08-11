@@ -26,6 +26,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 
 /**
@@ -319,6 +320,120 @@ export const CONVERSATION_DOCUMENT_VALUES: SurfaceValue[] = [
     typicalCharCount: 360,
     sortOrder: 380,
     group: "conversation_link",
+  },
+];
+
+/**
+ * Shared `SurfaceWriteTarget[]` for BOTH conversation-document surfaces — the
+ * write half of the set above. ONE editor (`WorkingDocumentEditor`) renders both
+ * surfaces and ONE handler block services them, so the targets live here for the
+ * same reason the values do: two copies would drift, and a target that drifted
+ * from its handler is a loud runtime defect by design.
+ *
+ * WHY THE SAME FOUR TARGETS ARE RIGHT ON BOTH SURFACES:
+ * The read/write asymmetry between these two surfaces is about the CLOUD agent
+ * in the chat outside — it reads the scratchpad and writes the working document.
+ * That asymmetry is enforced where it lives: in the context values the chat
+ * publishes (`user_scratchpad` is a read-only context entry) and in the agent's
+ * `ctx_patch` path. It says nothing about an agent the user RUNS FROM INSIDE the
+ * document, which is the only agent these targets are offered to. Inside either
+ * document, acting on the user's own explicit request and behind a per-target
+ * confirm, it is just text — so the writable parts are identical, and so are the
+ * safety rules below.
+ *
+ * MODE IS A TRUTH CLAIM, NOT A PREFERENCE — all four are `"entity"`:
+ * There is no Save button on this editor. `useWorkingDocument.onChange` (the
+ * SAME function every keystroke goes through) writes the canonical slice at once
+ * and its 700ms debounce commits to the durable row; the panel chrome literally
+ * reads "Auto-saved". So `mode: "draft"` would put "staged — review and save" in
+ * a dialog where the user has nothing to save and no way to decline afterwards —
+ * a lie, exactly as the `mermaid-editor` adopter found on its own autosaving
+ * workbench. `"entity"` says the true thing ("done"), and the descriptions carry
+ * the mitigation instead: the commit is optimistic-concurrency checked and every
+ * commit is captured in `history.row_versions`, so the previous text is
+ * recoverable from the document's version history.
+ *
+ * Deliberately NOT claimed anywhere below: ⌘Z. This editor mounts no undo stack
+ * (unlike `code-editor`'s Monaco or the mermaid workbench's reducer), and a
+ * programmatic React value change does not enter the textarea's native undo
+ * history. Version history is the real recovery path, so it is the one named.
+ *
+ * SAFETY RULE EVERY HANDLER ENFORCES — `has_conflict`:
+ * True means a save was already refused because a concurrent edit advanced the
+ * row, and `useWorkingDocument`'s commit deliberately returns early while it is
+ * unresolved. Staging over that is worse than useless: the text would land in
+ * the editor, never persist, and enlarge the very merge the user is about to
+ * reconcile. Handlers refuse loudly with that reason instead.
+ *
+ * Deliberately NOT targets:
+ * - `document_version` — the optimistic-concurrency token. It is a fact about
+ *   which row version the buffer is based on, not a value anyone authors;
+ *   writing it would forge the concurrency check the safety story rests on.
+ * - `conversation_id` / `conversation_context` / `active_scope_ids` — the
+ *   conversation is a REFERENCE, not this surface's content (see the header).
+ * - `document_id` / `binding_kind` / `binding_id` / `binding_label` — identity
+ *   and where the document persists. Re-pointing a document at a different
+ *   durable row is a human gesture with its own picker and merge dialog.
+ * - `is_dirty` / `is_saving` / `is_materialized` / `word_count` / `char_count` /
+ *   `active_scope_kind` / `current_heading` / `current_section_text` — all
+ *   DERIVED from the body. An agent moves them by writing the text; that IS the
+ *   evidence loop.
+ * - `document_title` — the document auto-names itself from its own content
+ *   (`useAutoLabel`) while unnamed, and a non-empty title means the user named
+ *   it by hand. A title target would either duplicate the auto-namer or
+ *   overwrite a deliberate human choice.
+ * - `editor_mode` / `cursor_offset` — which pane a human is looking at, and
+ *   where their caret is, are theirs. `cursor_offset` is READ (it aims
+ *   `insert_at_cursor`), never written.
+ */
+export const CONVERSATION_DOCUMENT_WRITE_TARGETS: SurfaceWriteTarget[] = [
+  {
+    name: "document_content",
+    label: "Document content",
+    description:
+      "REPLACES the ENTIRE document body with the plain text you pass. This is a full replacement, not a merge: read `content` first and include every line that should survive, or use `append_document_content` / `replace_selection` when you only mean to change part of it. Pass the markdown itself — no ``` code fence and no commentary. Must be non-empty; clearing the document is a human gesture, so an empty string is refused. It lands exactly as if the user had typed it — on screen at once, then autosaved to the document about a second later. There is no Save step. Refused while an unresolved edit conflict is pending.",
+    valueType: "string",
+    updatesValue: "content",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "active_scope",
+    sortOrder: 100,
+  },
+  {
+    name: "append_document_content",
+    label: "Added content",
+    description:
+      "APPENDS the plain text you pass to the END of the document, separated by a blank line. Nothing already in the document is touched or re-sent — pass ONLY the new text, never the whole body. Use this to add a section, an example, or a closing paragraph; use `document_content` when the whole document is being rewritten. No ``` code fence, no commentary. Must be non-empty. It lands exactly as if the user had typed it — on screen at once, then autosaved about a second later, with no Save step. Refused while an unresolved edit conflict is pending.",
+    valueType: "string",
+    updatesValue: "content",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "active_scope",
+    sortOrder: 110,
+  },
+  {
+    name: "replace_selection",
+    label: "Selected text",
+    description:
+      "REPLACES exactly the user's highlighted range with the plain text you pass — nothing outside the selection is touched. This is the precise target: prefer it whenever `active_scope_kind` is \"selection\", so a rewrite of one paragraph does not resend the whole document. Pass the replacement text only, with no ``` code fence and no commentary. REFUSED when nothing is selected — a select-aware request needs a real selection, and guessing a range would silently overwrite the wrong text; ask the user to highlight the passage instead. Autosaved about a second after it lands; no Save step. Refused while an unresolved edit conflict is pending.",
+    valueType: "string",
+    updatesValue: "selection",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "active_scope",
+    sortOrder: 120,
+  },
+  {
+    name: "insert_at_cursor",
+    label: "Inserted text",
+    description:
+      "INSERTS the plain text you pass at the user's caret (`cursor_offset`), or immediately AFTER the highlighted range when there is a selection — nothing existing is removed or re-sent. Use this to add a paragraph, a list, or a table at the point the user is working, rather than rewriting what is already there. A blank line is placed around the insertion, so pass the text alone without leading or trailing newlines. No ``` code fence, no commentary. Must be non-empty. Autosaved about a second after it lands; no Save step. Refused while an unresolved edit conflict is pending.",
+    valueType: "string",
+    updatesValue: "content",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "active_scope",
+    sortOrder: 130,
   },
 ];
 
