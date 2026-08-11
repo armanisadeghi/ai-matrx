@@ -15,6 +15,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { FsrsState } from "@/lib/srs/fsrs";
 import {
   mapResultToRating,
@@ -447,7 +448,17 @@ export const studyService = {
         .is("deleted_at", null)
         .maybeSingle();
       if (targetErr) return fail("overrideAttempt", targetErr);
-      if (!targetRow) return fail("overrideAttempt", "Attempt not found");
+      // Zero rows is deleted / denied / stale id — never assert one.
+      if (!targetRow)
+        return fail(
+          "overrideAttempt",
+          recordUnavailable({
+            entity: "attempt",
+            recordId: input.attemptId,
+            reason: "unknown",
+            relation: "education.study_attempt",
+          }).message,
+        );
 
       const historyRes = await this.attemptsForItem({
         itemType: targetRow.item_type,

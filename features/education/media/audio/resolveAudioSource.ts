@@ -8,6 +8,7 @@
 
 "use client";
 
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { TrustEnvelope } from "@/features/education/trust/types";
@@ -51,7 +52,18 @@ export async function resolveDeckAudioSource(
 ): Promise<ResolveResult> {
   const res = await fcService.getSetWithCards(setId);
   if (res.error || !res.data) {
-    return { data: null, error: res.error ?? "Deck not found" };
+    // Zero rows is deleted / denied / stale id — never assert one.
+    return {
+      data: null,
+      error:
+        res.error ??
+        recordUnavailable({
+          entity: "deck",
+          recordId: setId,
+          reason: "unknown",
+          relation: "education.fc_set",
+        }).message,
+    };
   }
   const { set, cards } = res.data;
   if (cards.length === 0) {

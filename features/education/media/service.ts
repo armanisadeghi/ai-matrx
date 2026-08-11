@@ -10,6 +10,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   MediaResult,
   StudyMediaRow,
@@ -117,7 +118,18 @@ export const studyMediaService = {
         .is("deleted_at", null)
         .maybeSingle();
       if (error) return fail("getById", error);
-      if (!data) return { data: null, error: "Not found" };
+      // Zero rows is deleted / denied / stale id — never assert one. The
+      // canonical honest sentence, and a scream into the Error Inspector.
+      if (!data)
+        return {
+          data: null,
+          error: recordUnavailable({
+            entity: "study item",
+            recordId: id,
+            reason: "unknown",
+            relation: "education.study_media",
+          }).message,
+        };
       return { data: data as StudyMediaRow, error: null };
     } catch (e) {
       return fail("getById", e);

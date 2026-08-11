@@ -64,6 +64,30 @@ export function isAssessmentKind(value: string): value is AssessmentKind {
 }
 
 /**
+ * The door back to the list of whichever kind the user is currently inside,
+ * derived from the URL rather than the row — the detail/edit/results surfaces
+ * need that door precisely when the row DIDN'T load, so `assessment_kind` is
+ * unavailable. `/education/quizzes/<id>/results` → `/education/quizzes`.
+ */
+export function assessmentListDoor(pathname: string): {
+  href: string;
+  label: string;
+  /** Singular noun for this kind ("quiz" / "practice test"). */
+  noun: string;
+} {
+  const segments = pathname.split("/").slice(0, 3);
+  const base = segments[2] ?? "";
+  const config = Object.values(KIND_CONFIG).find((c) => c.base === base);
+  if (!config)
+    return { href: "/education", label: "Education", noun: "assessment" };
+  return {
+    href: segments.join("/"),
+    label: `All ${config.pluralLabel}`,
+    noun: config.noun,
+  };
+}
+
+/**
  * Narrow a DB `assessment_kind` string (CHECK-constrained to the
  * `AssessmentKind` union) to its config. Throws loudly on an unknown kind —
  * that means the DB CHECK and this union drifted, never a recoverable state.

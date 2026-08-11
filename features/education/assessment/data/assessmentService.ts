@@ -13,6 +13,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   AsResult,
   AssessmentRow,
@@ -309,8 +310,18 @@ export const assessmentService = {
   async duplicate(id: string): Promise<AsResult<AssessmentRow>> {
     try {
       const src = await this.getAssessmentWithItems(id);
+      // Zero rows is deleted / denied / stale id — never assert one.
       if (src.error || !src.data)
-        return fail("duplicate", src.error ?? "source not found");
+        return fail(
+          "duplicate",
+          src.error ??
+            recordUnavailable({
+              entity: "assessment",
+              recordId: id,
+              reason: "unknown",
+              relation: "education.assessment",
+            }).message,
+        );
       const { assessment: a, items } = src.data;
       const created = await this.createAssessment({
         assessmentKind: a.assessment_kind as NewAssessmentInput["assessmentKind"],

@@ -10,7 +10,7 @@
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   CheckCircle2,
   XCircle,
@@ -20,7 +20,6 @@ import {
   TrendingUp,
   TrendingDown,
   ArrowRight,
-  AlertCircle,
   Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,9 +28,10 @@ import { cn } from "@/lib/utils";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { assessmentService } from "../../data/assessmentService";
 import { pairLearningGain } from "../../data/learningGain";
-import { kindConfigFor } from "../kindConfig";
+import { assessmentListDoor, kindConfigFor } from "../kindConfig";
 import type {
   AssessmentItemRow,
   AssessmentResultRow,
@@ -58,12 +58,18 @@ export function AssessmentResults({
   resultId: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [assessment, setAssessment] = useState<AssessmentRow | null>(null);
   const [items, setItems] = useState<AssessmentItemRow[]>([]);
   const [result, setResult] = useState<AssessmentResultRow | null>(null);
   const [gainDelta, setGainDelta] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Which read failed decides which record the gate resolves — the assessment
+  // and its scored result are two different rows with two different owners of
+  // the answer "why can't I see this?".
+  const [assessmentError, setAssessmentError] = useState<unknown>(null);
+  const [resultError, setResultError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -75,10 +81,14 @@ export function AssessmentResults({
         assessmentService.getResult(resultId),
       ]);
       if (cancelled) return;
+      setAssessmentError(null);
+      setResultError(null);
       if (aw.error || !aw.data) {
-        setError(aw.error ?? "Assessment not found");
+        setAssessment(null);
+        setAssessmentError(aw.error ?? null);
       } else if (r.error || !r.data) {
-        setError(r.error ?? "Result not found");
+        setResult(null);
+        setResultError(r.error ?? null);
       } else {
         setAssessment(aw.data.assessment);
         setItems(aw.data.items);
@@ -99,7 +109,7 @@ export function AssessmentResults({
     return () => {
       cancelled = true;
     };
-  }, [assessmentId, resultId]);
+  }, [assessmentId, resultId, reloadKey]);
 
   if (loading) {
     return (
@@ -111,17 +121,24 @@ export function AssessmentResults({
       </div>
     );
   }
-  if (error || !assessment || !result) {
+  if (!assessment || !result) {
+    // Whichever row didn't arrive is the one the gate must explain; the door
+    // out of a missing RESULT is the assessment itself, which they may well
+    // still be able to open.
+    const door = assessmentListDoor(pathname);
+    const onAssessment = !assessment;
     return (
       <div className="min-h-full w-full bg-textured">
-        <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-4 py-20 text-center">
-          <AlertCircle className="h-7 w-7 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">{error ?? "Not found"}</p>
-          <Button variant="outline" onClick={() => router.back()}>
-            <ArrowLeft className="mr-1.5 h-4 w-4" />
-            Back
-          </Button>
-        </div>
+        <AccessGate
+          token={onAssessment ? "assessment" : "assessment_result"}
+          id={onAssessment ? assessmentId : resultId}
+          error={onAssessment ? assessmentError : resultError}
+          onRetry={() => setReloadKey((k) => k + 1)}
+          fallbackHref={onAssessment ? door.href : `${door.href}/${assessmentId}`}
+          fallbackLabel={
+            onAssessment ? door.label : `Back to this ${door.noun}`
+          }
+        />
       </div>
     );
   }

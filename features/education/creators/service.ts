@@ -9,7 +9,26 @@
 "use client";
 
 import { createClient } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import type { CreatorProfileMine, FeaturedItem, CreatorLink } from "./types";
+
+/**
+ * The handle RPCs are the ONE place a DB message is written FOR the user:
+ * `creator_normalize_handle` / `creator_claim_handle` raise authored sentences
+ * ("That handle is reserved", "That handle is already taken", the format rule)
+ * under errcodes this contract owns. Passing those through is not leaking
+ * PostgREST prose — losing them would be, because nothing else can tell the
+ * user WHICH rule they broke. Every other failure is machine noise and gets the
+ * plain sentence.
+ */
+const HANDLE_RULE_CODES = new Set(["22023", "23505"]);
+
+function handleRuleError(error: { code?: string; message?: string }): Error {
+  if (error.code && HANDLE_RULE_CODES.has(error.code) && error.message) {
+    return new Error(error.message, { cause: error });
+  }
+  return operationFailed("check that handle", error);
+}
 
 function coerceMine(data: unknown): CreatorProfileMine | null {
   if (!data || typeof data !== "object") return null;
@@ -33,7 +52,7 @@ function coerceMine(data: unknown): CreatorProfileMine | null {
 export async function getMyCreatorProfile(): Promise<CreatorProfileMine | null> {
   const sb = createClient();
   const { data, error } = await sb.rpc("creator_get_mine");
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load your creator profile", error);
   return coerceMine(data);
 }
 
@@ -41,7 +60,7 @@ export async function getMyCreatorProfile(): Promise<CreatorProfileMine | null> 
 export async function isHandleAvailable(handle: string): Promise<boolean> {
   const sb = createClient();
   const { data, error } = await sb.rpc("creator_handle_available", { p_handle: handle });
-  if (error) throw new Error(error.message);
+  if (error) throw handleRuleError(error);
   return data === true;
 }
 
@@ -55,7 +74,7 @@ export async function claimHandle(
     p_handle: handle,
     p_display_name: displayName ?? undefined,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw handleRuleError(error);
   return coerceMine(data);
 }
 
@@ -81,7 +100,7 @@ export async function updateCreatorProfile(
     p_links: patch.links ?? undefined,
     p_featured: patch.featured ?? undefined,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("save your creator profile", error);
   return coerceMine(data);
 }
 
@@ -89,7 +108,7 @@ export async function updateCreatorProfile(
 export async function setCreatorPublic(isPublic: boolean): Promise<CreatorProfileMine | null> {
   const sb = createClient();
   const { data, error } = await sb.rpc("creator_set_public", { p_public: isPublic });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed(isPublic ? "publish your creator page" : "unpublish your creator page", error);
   return coerceMine(data);
 }
 

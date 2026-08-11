@@ -16,7 +16,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  AlertCircle,
   CheckCircle2,
   AlertTriangle,
   XCircle,
@@ -26,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { studyService } from "../service/studyService";
 import type { SessionWithAttempts, StudyAttemptRow } from "../types";
 import { SessionAudio } from "./SessionAudio";
@@ -103,7 +103,9 @@ export function SessionDetailView({
   const [data, setData] = useState<SessionWithAttempts | null>(null);
   const [labels, setLabels] = useState<Record<string, ItemLabel>>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // The raw failure, never a sentence — the gate decides what it means.
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,13 +114,13 @@ export function SessionDetailView({
       const res = await studyService.getSession(sessionId);
       if (cancelled) return;
       if (res.error || !res.data) {
-        setError(res.error ?? "Session not found");
+        setLoadError(res.error ?? null);
         setData(null);
         setLoading(false);
         return;
       }
       setData(res.data);
-      setError(null);
+      setLoadError(null);
       setLoading(false);
       if (labelResolver) {
         try {
@@ -132,7 +134,7 @@ export function SessionDetailView({
     return () => {
       cancelled = true;
     };
-  }, [sessionId, labelResolver]);
+  }, [sessionId, labelResolver, reloadKey]);
 
   // FastFire's holistic review is fire-and-forget after complete — if the learner
   // opens this page before the agent finishes, poll until session_review lands.
@@ -225,16 +227,17 @@ export function SessionDetailView({
               ))}
             </div>
           </>
-        ) : error || !session ? (
-          <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
-            <AlertCircle className="h-6 w-6 text-muted-foreground" />
-            <p className="text-sm text-foreground">
-              Couldn&apos;t load this session
-            </p>
-            <p className="max-w-md text-xs text-muted-foreground">
-              {error ?? "It may have been deleted."}
-            </p>
-          </div>
+        ) : !session ? (
+          // "It may have been deleted" was a guess. Zero rows is equally a
+          // denial, a stale link, or an expired session — the gate asks.
+          <AccessGate
+            token="study_session"
+            id={sessionId}
+            error={loadError}
+            onRetry={() => setReloadKey((k) => k + 1)}
+            fallbackHref={backHref ?? "/education"}
+            fallbackLabel={backHref ? "Back to sessions" : "Education"}
+          />
         ) : session.status === "abandoned" ? (
           <>
             <div className="mb-4">

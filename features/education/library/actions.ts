@@ -9,6 +9,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
+import { operationFailed } from "@/utils/errors";
 import type { DeckSuggestionRow } from "./types";
 
 // ─── Certified tier (super-admin) ─────────────────────────────────────────────
@@ -23,7 +24,7 @@ export async function certifyDeckAction(
     p_resource_id: resourceId,
     p_note: note ?? undefined,
   });
-  if (error) throw new Error(`Certify failed: ${error.message}`);
+  if (error) throw operationFailed("certify this deck", error);
 }
 
 export async function uncertifyDeckAction(resourceId: string): Promise<void> {
@@ -33,7 +34,7 @@ export async function uncertifyDeckAction(resourceId: string): Promise<void> {
     p_resource_type: "fc_set",
     p_resource_id: resourceId,
   });
-  if (error) throw new Error(`Uncertify failed: ${error.message}`);
+  if (error) throw operationFailed("remove this deck's certification", error);
 }
 
 // ─── Suggest-edit flywheel (any authenticated user → the deck owner) ──────────
@@ -47,7 +48,7 @@ export async function suggestEditAction(
     p_body: body,
     p_resource_type: "fc_set",
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("send your suggestion", error);
 }
 
 /** Suggestions on the caller's own decks (the owner inbox). */
@@ -63,7 +64,7 @@ export async function listOwnerSuggestionsAction(): Promise<DeckSuggestionRow[]>
     .select("*")
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load suggestions on your decks", error);
   return (data ?? []) as DeckSuggestionRow[];
 }
 
@@ -76,5 +77,5 @@ export async function resolveSuggestionAction(
     p_id: id,
     p_status: status,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("update this suggestion", error);
 }

@@ -21,6 +21,7 @@ import { ConfidenceBadge } from "@/features/education/trust/components/Confidenc
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { downloadTextFile } from "../export/download";
@@ -35,22 +36,30 @@ interface SummaryEnvelope {
 export function SummaryDetail({ id }: { id: string }) {
   const router = useRouter();
   const [row, setRow] = useState<StudyMediaRow | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // The raw failure, never a sentence — the gate decides what it means.
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     (async () => {
+      setLoading(true);
       const res = await studyMediaService.getById(id);
       if (!alive) return;
-      if (res.error || !res.data) setError(res.error ?? "Summary not found");
-      else setRow(res.data);
+      if (res.error || !res.data) {
+        setLoadError(res.error ?? null);
+        setRow(null);
+      } else {
+        setLoadError(null);
+        setRow(res.data);
+      }
       setLoading(false);
     })();
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [id, reloadKey]);
 
   if (loading) {
     return (
@@ -59,11 +68,17 @@ export function SummaryDetail({ id }: { id: string }) {
       </div>
     );
   }
-  if (error || !row) {
+  if (!row) {
+    // Denied / deleted / never existed / signed-out all read as zero rows here.
     return (
-      <div className="mx-auto max-w-2xl p-6 text-center text-sm text-muted-foreground">
-        {error ?? "Summary not found"}
-      </div>
+      <AccessGate
+        token="study_media"
+        id={id}
+        error={loadError}
+        onRetry={() => setReloadKey((k) => k + 1)}
+        fallbackHref="/education/summaries"
+        fallbackLabel="All summaries"
+      />
     );
   }
 

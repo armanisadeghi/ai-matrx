@@ -11,7 +11,7 @@
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
@@ -21,7 +21,6 @@ import {
   Clock,
   TrendingUp,
   Copy,
-  AlertCircle,
   ArrowLeft,
   History,
   Boxes,
@@ -30,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAccess } from "@/utils/permissions/access";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { cn } from "@/lib/utils";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
@@ -39,7 +39,7 @@ import { createEducationAssessmentScope } from "@/features/surfaces/manifests/ed
 import { assessmentService } from "../data/assessmentService";
 import { serializeAssessment } from "../data/serializeAssessment";
 import { newGainGroupId } from "../data/learningGain";
-import { kindConfigFor } from "./kindConfig";
+import { assessmentListDoor, kindConfigFor } from "./kindConfig";
 import { AssessmentTaker } from "./take/AssessmentTaker";
 import type {
   AssessmentItemRow,
@@ -60,11 +60,15 @@ export function AssessmentDetail({
   gainGroupId?: string | null;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [assessment, setAssessment] = useState<AssessmentRow | null>(null);
   const [items, setItems] = useState<AssessmentItemRow[]>([]);
   const [results, setResults] = useState<AssessmentResultRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // The raw failure, never a sentence: a zero-row read is four different
+  // stories and only the platform can tell them apart (see AccessGate below).
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
@@ -78,11 +82,11 @@ export function AssessmentDetail({
       setLoading(true);
       const res = await assessmentService.getAssessmentWithItems(assessmentId);
       if (cancelled) return;
-      if (res.error) {
-        setError(res.error);
-      } else if (!res.data) {
-        setError("This assessment could not be found or you don't have access.");
+      if (res.error || !res.data) {
+        setLoadError(res.error ?? null);
+        setAssessment(null);
       } else {
+        setLoadError(null);
         setAssessment(res.data.assessment);
         setItems(res.data.items);
         const r = await assessmentService.listResults(assessmentId);
@@ -93,7 +97,7 @@ export function AssessmentDetail({
     return () => {
       cancelled = true;
     };
-  }, [assessmentId]);
+  }, [assessmentId, reloadKey]);
 
   if (loading) {
     return (
@@ -106,19 +110,21 @@ export function AssessmentDetail({
     );
   }
 
-  if (error || !assessment) {
+  if (!assessment) {
+    // Zero rows means denied / deleted / never existed / signed-out, and this
+    // surface cannot tell them apart. The gate asks the platform, says the true
+    // one, and offers the way forward (including asking the owner for access).
+    const door = assessmentListDoor(pathname);
     return (
       <div className="min-h-full w-full bg-textured">
-        <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-4 py-20 text-center">
-          <AlertCircle className="h-7 w-7 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">
-            {error ?? "Not found"}
-          </p>
-          <Button variant="outline" onClick={() => router.back()}>
-            <ArrowLeft className="mr-1.5 h-4 w-4" />
-            Back
-          </Button>
-        </div>
+        <AccessGate
+          token="assessment"
+          id={assessmentId}
+          error={loadError}
+          onRetry={() => setReloadKey((k) => k + 1)}
+          fallbackHref={door.href}
+          fallbackLabel={door.label}
+        />
       </div>
     );
   }

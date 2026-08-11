@@ -13,7 +13,7 @@
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {
   ArrowLeft,
@@ -21,8 +21,8 @@ import {
   Save,
   Sparkles,
   Loader2,
-  AlertCircle,
   Lock,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,9 +33,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
 import { useAccess } from "@/utils/permissions/access";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { assessmentService } from "../../data/assessmentService";
 import { deepenItem, deeperThan } from "../../data/deepenItem";
-import { kindConfigFor } from "../kindConfig";
+import { assessmentListDoor, kindConfigFor } from "../kindConfig";
 import { asDepth } from "../../data/types";
 import type {
   AssessmentItemRow,
@@ -53,6 +54,7 @@ const TYPE_LABEL: Record<QuestionType, string> = {
 
 export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useAppDispatch();
   const access = useAccess("assessment", assessmentId);
   // One window for this editor, reused by every "Make this deeper" run.
@@ -62,7 +64,9 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
   const [assessment, setAssessment] = useState<AssessmentRow | null>(null);
   const [items, setItems] = useState<AssessmentItemRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // The raw failure, never a sentence — the gate decides what it means.
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [title, setTitle] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -73,8 +77,10 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
       const res = await assessmentService.getAssessmentWithItems(assessmentId);
       if (cancelled) return;
       if (res.error || !res.data) {
-        setError(res.error ?? "Not found");
+        setLoadError(res.error ?? null);
+        setAssessment(null);
       } else {
+        setLoadError(null);
         setAssessment(res.data.assessment);
         setItems(res.data.items);
         setTitle(res.data.assessment.title);
@@ -84,7 +90,7 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [assessmentId]);
+  }, [assessmentId, reloadKey]);
 
   if (loading || access.loading) {
     return (
@@ -100,13 +106,21 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
   const canEdit =
     access.level === "edit" || access.level === "admin" || access.isOwner;
 
-  if (error || !assessment) {
+  if (!assessment) {
+    // Denied / deleted / never existed / signed-out are indistinguishable from
+    // here — the gate asks the platform and offers the real next step.
+    const door = assessmentListDoor(pathname);
     return (
-      <CenteredNotice
-        icon={AlertCircle}
-        text={error ?? "Not found"}
-        onBack={() => router.back()}
-      />
+      <div className="min-h-full w-full bg-textured">
+        <AccessGate
+          token="assessment"
+          id={assessmentId}
+          error={loadError}
+          onRetry={() => setReloadKey((k) => k + 1)}
+          fallbackHref={door.href}
+          fallbackLabel={door.label}
+        />
+      </div>
     );
   }
   if (!canEdit) {
@@ -370,7 +384,7 @@ function CenteredNotice({
   text,
   onBack,
 }: {
-  icon: typeof AlertCircle;
+  icon: LucideIcon;
   text: string;
   onBack: () => void;
 }) {

@@ -33,6 +33,7 @@
 "use client";
 
 import { createClient } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { parseClassSettings, parseAccessMode } from "./settings";
 import type {
   AccessMode,
@@ -199,7 +200,7 @@ export async function getClassState(classId: string): Promise<ClassAccessState> 
   const { data, error } = await createClient().rpc("edu_class_state", {
     p_class: classId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load this class", error);
   return coerceState(data);
 }
 
@@ -209,13 +210,13 @@ export async function getClassRoster(
   const { data, error } = await createClient().rpc("edu_class_roster", {
     p_class: classId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load this class's roster", error);
   return coerceRoster(data);
 }
 
 export async function getMyClasses(): Promise<MyClass[]> {
   const { data, error } = await createClient().rpc("edu_my_classes");
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load your classes", error);
   return coerceMyClasses(data);
 }
 
@@ -225,7 +226,7 @@ export async function joinClass(classId: string): Promise<ClassJoinResult> {
   const { data, error } = await createClient().rpc("edu_class_join", {
     p_class: classId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("join this class", error);
   return coerceJoin(data);
 }
 
@@ -233,7 +234,7 @@ export async function requestClass(classId: string): Promise<ClassJoinResult> {
   const { data, error } = await createClient().rpc("edu_class_request", {
     p_class: classId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("request to join this class", error);
   return coerceJoin(data);
 }
 
@@ -241,7 +242,7 @@ export async function leaveClass(classId: string): Promise<ClassJoinResult> {
   const { data, error } = await createClient().rpc("edu_class_leave", {
     p_class: classId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("leave this class", error);
   return coerceJoin(data);
 }
 
@@ -255,7 +256,7 @@ export async function approveMember(
     p_class: classId,
     p_user: userId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("approve this member", error);
   return coerceJoin(data);
 }
 
@@ -267,7 +268,7 @@ export async function removeMember(
     p_class: classId,
     p_user: userId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("remove this member", error);
   return coerceJoin(data);
 }
 
@@ -280,7 +281,7 @@ export async function grantAccess(
     p_class: classId,
     p_user: userId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("give this person access", error);
   return coerceJoin(data);
 }
 
@@ -293,7 +294,7 @@ export async function setAccessMode(
     p_class: classId,
     p_access_mode: mode,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("change who can join this class", error);
 }
 
 // ─── Assignments + class analytics (teacher tools) ──────────────────────────────
@@ -311,7 +312,7 @@ export async function getClassAssignments(
   const { data, error } = await createClient().rpc("edu_class_assignments", {
     p_class: classId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load this class's assignments", error);
   return coerceAssignments(data);
 }
 
@@ -328,7 +329,7 @@ export async function assignResource(
     p_resource: resourceId,
     ...(dueDate ? { p_due: dueDate } : {}),
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("assign this to the class", error);
 }
 
 /** Owner: remove an assignment. */
@@ -342,7 +343,7 @@ export async function unassignResource(
     p_token: token,
     p_resource: resourceId,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("remove this assignment", error);
 }
 
 /**
@@ -357,7 +358,7 @@ export async function getClassStudentProgress(
     "edu_class_student_progress",
     { p_class: classId, p_user: userId },
   );
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load this student's progress", error);
   return coerceProgress(data);
 }
 
@@ -369,7 +370,7 @@ export async function getClassProgressOverview(
     "edu_class_progress_overview",
     { p_class: classId },
   );
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load this class's progress", error);
   return coerceOverview(data);
 }
 

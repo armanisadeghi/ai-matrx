@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useGamePlay } from "../../data/useGamePlay";
 import { useGameChannel } from "../../realtime/useGameChannel";
 import { gameService, type JoinableRoom, type RoomPlayerResult } from "../../data/gameService";
@@ -52,7 +53,9 @@ export function MultiplayerGameImpl({
   const { userId, displayName } = useCurrentPlayer();
   const [room, setRoom] = useState<JoinableRoom | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // The raw failure, never a sentence — the gate decides what it means.
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [finalOutcome, setFinalOutcome] = useState<GameOutcome | null>(null);
   const [newBadges, setNewBadges] = useState<BadgeKey[]>([]);
@@ -69,17 +72,19 @@ export function MultiplayerGameImpl({
       const res = await gameService.findRoomByCode(code);
       if (!active) return;
       if (res.error || !res.data) {
-        setLoadError(res.error ?? "Room not found or already ended.");
+        setLoadError(res.error ?? null);
+        setRoom(null);
         setLoading(false);
         return;
       }
+      setLoadError(null);
       setRoom(res.data);
       setLoading(false);
     })();
     return () => {
       active = false;
     };
-  }, [code]);
+  }, [code, reloadKey]);
 
   const isHost = Boolean(userId && room && room.host_user_id === userId);
   const config = room?.config ?? DEFAULT_ROOM_CONFIG;
@@ -183,16 +188,19 @@ export function MultiplayerGameImpl({
       </Centered>
     );
   }
-  if (loadError || !room) {
+  if (!room) {
+    // "Room not found or already ended" was two guesses at once. The room may
+    // equally be live and closed to this player, or the session may have
+    // expired — the gate asks the platform which it is.
     return (
-      <Centered>
-        <p className="max-w-sm text-center text-sm text-muted-foreground">
-          {loadError ?? "Room unavailable."}
-        </p>
-        <Button variant="outline" onClick={exit}>
-          <ArrowLeft className="mr-1 h-4 w-4" /> Back
-        </Button>
-      </Centered>
+      <AccessGate
+        token="game_room"
+        id={roomId}
+        error={loadError}
+        onRetry={() => setReloadKey((k) => k + 1)}
+        fallbackHref="/education/game"
+        fallbackLabel="Back to games"
+      />
     );
   }
 
