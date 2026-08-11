@@ -40,6 +40,8 @@ const COVERAGE_TILE_FILTERS: ReadonlyArray<{
   filter: PageCoverageFilter;
   count: (matrix: SiteCoverageMatrix) => number;
 }> = [
+  { filter: "all_known", count: (m) => m.knownPageUrls },
+  { filter: "unconfirmed", count: (m) => m.unconfirmedCandidates },
   { filter: "in_sitemap", count: (m) => m.inSitemaps },
   { filter: "crawled", count: (m) => m.crawled },
   { filter: "never_crawled", count: (m) => m.neverCrawled },
@@ -165,7 +167,10 @@ export function CoverageWorkspace() {
     },
     lines: [
       ["Site", site.root_url],
-      ["Canonical pages", data?.totalPages ?? null],
+      ["Confirmed pages", data?.totalPages ?? null],
+      ["All known page URLs", data?.knownPageUrls ?? null],
+      ["Unconfirmed candidates", data?.unconfirmedCandidates ?? null],
+      ["Non-HTML resources", data?.resourceUrls ?? null],
       [COVERAGE_FILTER_COPY.in_sitemap.label, data?.inSitemaps ?? null],
       [COVERAGE_FILTER_COPY.crawled.label, data?.crawled ?? null],
       [COVERAGE_FILTER_COPY.never_crawled.label, data?.neverCrawled ?? null],
@@ -225,6 +230,9 @@ export function CoverageWorkspace() {
           ...getBaseValues(),
           coverage_matrix: data ? { ...data } : undefined,
           total_pages: data?.totalPages,
+          known_page_urls: data?.knownPageUrls,
+          unconfirmed_candidates: data?.unconfirmedCandidates,
+          resource_urls: data?.resourceUrls,
           in_sitemaps: data?.inSitemaps,
           crawled: data?.crawled,
           never_crawled: data?.neverCrawled,
@@ -276,19 +284,61 @@ export function CoverageWorkspace() {
           </div>
         </header>
 
+        <section className="grid gap-2">
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Registry accounting
+            </h2>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Confirmed pages drive product totals. Unconfirmed candidates and
+              non-HTML resources remain visible without inflating that number.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <CoverageTile
+              label="Confirmed pages"
+              description="Canonical page URLs backed by retained evidence"
+              value={data?.totalPages ?? null}
+              href={pagesHref()}
+              anchor="total_pages"
+              siteDomain={site.domain}
+              location={pageLocation}
+            />
+            <CoverageTile
+              label={COVERAGE_FILTER_COPY.all_known.label}
+              description={COVERAGE_FILTER_COPY.all_known.description}
+              value={data?.knownPageUrls ?? null}
+              href={pagesHref("all_known")}
+              anchor="known_page_urls"
+              siteDomain={site.domain}
+              location={pageLocation}
+            />
+            <CoverageTile
+              label={COVERAGE_FILTER_COPY.unconfirmed.label}
+              description={COVERAGE_FILTER_COPY.unconfirmed.description}
+              value={data?.unconfirmedCandidates ?? null}
+              href={pagesHref("unconfirmed")}
+              anchor="unconfirmed_candidates"
+              tone="attention"
+              siteDomain={site.domain}
+              location={pageLocation}
+            />
+            <CoverageTile
+              label="Non-HTML resources"
+              description="Observed JSON, XML, images, PDFs, and other assets"
+              value={data?.resourceUrls ?? null}
+              href={`${sitePath}/pages?scope=resources`}
+              anchor="resource_urls"
+              siteDomain={site.domain}
+              location={pageLocation}
+            />
+          </div>
+        </section>
+
         <section
           data-surface-value="coverage_filters"
-          className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6"
+          className="grid gap-2 sm:grid-cols-3 xl:grid-cols-5"
         >
-          <CoverageTile
-            label="Canonical pages"
-            description="Every URL any source recorded"
-            value={data?.totalPages ?? null}
-            href={pagesHref()}
-            anchor="total_pages"
-            siteDomain={site.domain}
-            location={pageLocation}
-          />
           <CoverageTile
             label={COVERAGE_FILTER_COPY.in_sitemap.label}
             description={COVERAGE_FILTER_COPY.in_sitemap.description}
@@ -339,9 +389,15 @@ export function CoverageWorkspace() {
         </section>
 
         <section data-surface-value="pages_by_provenance" className="grid gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Pages by first source
-          </h2>
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Pages by first source
+            </h2>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              These non-overlapping counts add up to Confirmed pages. The
+              sitemap, crawl, and Google evidence totals above overlap.
+            </p>
+          </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             {PAGE_PROVENANCES.map((provenance) => (
               <CoverageTile

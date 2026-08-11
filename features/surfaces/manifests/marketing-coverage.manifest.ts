@@ -77,13 +77,46 @@ const surfaceSpecific: SurfaceValue[] = [
   {
     group: "registry_totals",
     name: "total_pages",
-    label: "Canonical pages",
+    label: "Confirmed pages",
     description:
-      "Count of every canonical URL any source has recorded for this site — the denominator for every other cell. Zero when no source has ever run; empty during initial load.",
+      "Count of canonical non-resource URLs backed by a retained crawl snapshot, sitemap membership, Search Console row, or manual assertion. This is the user-facing page total; empty during initial load.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 6,
     sortOrder: 410,
+  },
+  {
+    group: "registry_totals",
+    name: "known_page_urls",
+    label: "All known page URLs",
+    description:
+      "Confirmed pages plus canonical non-resource crawl candidates that have not yet earned retained page evidence.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 412,
+  },
+  {
+    group: "registry_totals",
+    name: "unconfirmed_candidates",
+    label: "Unconfirmed candidates",
+    description:
+      "Canonical non-resource registry URLs with no retained crawl, sitemap, Search Console, or manual page evidence. They remain auditable but are excluded from the page total.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 414,
+  },
+  {
+    group: "registry_totals",
+    name: "resource_urls",
+    label: "Non-HTML resources",
+    description:
+      "Canonical URLs positively classified from a response as JSON, XML, PDF, image, or another non-HTML resource. They have their own page-list destination and never inflate page totals.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 416,
   },
   {
     group: "registry_totals",
@@ -268,6 +301,9 @@ export function createMarketingCoverageScope(values: {
   // surface-specific optionals
   coverage_matrix?: Record<string, unknown>;
   total_pages?: number;
+  known_page_urls?: number;
+  unconfirmed_candidates?: number;
+  resource_urls?: number;
   in_sitemaps?: number;
   crawled?: number;
   never_crawled?: number;

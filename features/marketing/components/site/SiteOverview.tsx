@@ -829,8 +829,12 @@ function KpiGrid({
         icon={<FileText className="h-4 w-4" />}
         label="Pages"
         value={metrics.canonicalPages.toLocaleString()}
-        detail={`${metrics.snapshots.toLocaleString()} saved captures`}
-        href={`${sitePath}/pages`}
+        detail={
+          metrics.unconfirmedCandidates > 0
+            ? `${metrics.unconfirmedCandidates.toLocaleString()} unconfirmed excluded`
+            : `${metrics.snapshots.toLocaleString()} saved captures`
+        }
+        href={`${sitePath}/coverage`}
       />
       <MetricCell
         variant="card"
