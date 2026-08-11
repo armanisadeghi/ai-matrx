@@ -3436,6 +3436,12 @@ export async function fetchSiteAuditTrend(
 
 const MEDIA_PAGE_CAP = 5000;
 const MEDIA_PAGE_SIZE = 1000;
+/**
+ * Supabase/PostgREST serializes `.in()` filters into the GET URL. Keep UUID
+ * batches comfortably below the edge request-line ceiling; this is a request
+ * size bound, deliberately separate from the 1,000-row response page size.
+ */
+const MEDIA_SNAPSHOT_ID_BATCH_SIZE = 150;
 
 export async function fetchSiteMediaRows(
   siteId: string,
@@ -3475,8 +3481,15 @@ export async function fetchSiteMediaRows(
     string,
     { images: Json; head_tags: Json; captured_at: string }
   >();
-  for (let start = 0; start < snapshotIds.length; start += MEDIA_PAGE_SIZE) {
-    const chunk = snapshotIds.slice(start, start + MEDIA_PAGE_SIZE);
+  for (
+    let start = 0;
+    start < snapshotIds.length;
+    start += MEDIA_SNAPSHOT_ID_BATCH_SIZE
+  ) {
+    const chunk = snapshotIds.slice(
+      start,
+      start + MEDIA_SNAPSHOT_ID_BATCH_SIZE,
+    );
     const response = await db
       .from("snapshot")
       .select("id, images, head_tags, captured_at")
@@ -3563,8 +3576,15 @@ export async function fetchSiteVideoResourceRows(
     string,
     { resources: Json; captured_at: string }
   >();
-  for (let start = 0; start < snapshotIds.length; start += MEDIA_PAGE_SIZE) {
-    const chunk = snapshotIds.slice(start, start + MEDIA_PAGE_SIZE);
+  for (
+    let start = 0;
+    start < snapshotIds.length;
+    start += MEDIA_SNAPSHOT_ID_BATCH_SIZE
+  ) {
+    const chunk = snapshotIds.slice(
+      start,
+      start + MEDIA_SNAPSHOT_ID_BATCH_SIZE,
+    );
     const response = await db
       .from("snapshot")
       .select(VIDEO_RESOURCES_SELECT)
