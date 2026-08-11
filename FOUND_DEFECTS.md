@@ -13,6 +13,70 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D160 — An agent definition edited in the DB is served STALE for ~10 min, so "bound and verified" can be a lie (2026-08-11)
+
+Agent execution loads the definition through the Matrx ORM's **per-process**
+record cache: `matrx_ai/db/_agx_manager_impl.py` `to_config()` → `load_by_id(id)`,
+whose `use_cache` defaults to `True` (`matrx-orm/core/base.py:1199`). The policy is
+`CachePolicy.SHORT_TERM` — **10 minutes** (`matrx-orm/state.py:230`), with no
+override on the `Definition` model. aidream runs multiple workers, each holding its
+own copy, so expiry is staggered and results **flap** between old and new.
+
+Why it matters: every agent edit applied by MIGRATION (the sanctioned path for
+`output_schema` bindings — `migrations/agent_bind_*.sql`) bypasses the ORM write
+that would refresh the cache. Measured 2026-08-11 binding `seo.keyword_researcher`:
+the DB row was correct immediately, yet three consecutive live runs over 7 minutes
+returned the OLD prompt verbatim (identical 570–571 input_tokens, and a `__kind` the
+new schema forbids). An agent that writes a migration, runs the agent once, sees
+plausible output and reports "verified live" **will be wrong** — this is the exact
+shape of a false completion claim.
+
+- **Working rule today:** after a migration-applied agent edit, wait out the full
+  10 min AND re-run until the output changes; treat an unchanged `input_tokens`
+  count as proof you are still reading cache, not as proof of no-op.
+- **Fix:** the execution load is an authoritative read — the row decides what the
+  model is contractually required to emit. `load_by_id`'s own docstring reserves
+  `use_cache=False` for exactly that ("whenever the row decides identity,
+  ownership, or whether the request may run at all"). Pass it in
+  `AgxDefinitionManager.to_config` / `AgxDefinitionVersionManager.to_config`
+  (aidream `packages/matrx-ai/matrx_ai/db/_agx_manager_impl.py:52,71`). Cost is one
+  PK read per agent run — negligible beside the LLM call it precedes. **Decision:
+  Arman** — it is a cross-repo hot-path change in matrx-ai.
+- Applies retroactively to `migrations/agent_bind_topic_idea_generator_output_kind.sql`
+  (the precedent): its live verification ran inside the same stale window.
+
+### D161 — The portable-schema gate SILENTLY EMPTIES map-typed fields, so `research.suggest_setup` cannot be bound (2026-08-11)
+
+`matrx_ai.schema.lint._make_portable` → `enforce_additional_properties_false` sets
+`additionalProperties: false` on **every** object node unconditionally. For a
+`dict[str, str]` field that rewrites `{"type":"object","additionalProperties":{"type":"string"}}`
+into `{"type":"object","additionalProperties":false}` — an object that can legally
+hold **nothing**. The schema still lints "portable" and still binds; the field just
+becomes permanently unfillable. Silent, not loud.
+
+Hit while binding the four `output_kind`-declaring slots. `research.suggest_setup`
+(agent `4f802fd1-…`, Claude Opus 4.8) is **left unbound** because of it:
+
+- `research.agents.SuggestSetupOutput.keyword_goals` is `dict[str, str] | None` — the
+  per-keyword lens, live in `research/service.py:895,976`. Binding today would
+  foreclose it forever.
+- The kind's `emitted_json_schema` is also **stale**: it predates `keyword_goals`,
+  `intent_key`, and `intent_reasoning` (added 2026-08-08) and still validates as
+  `SuggestSetupOutput`. Regenerating it from the pydantic model is the trivial half.
+- The blocking half is that portable strict makes **every** property required, so a
+  bound agent must emit `intent_key` — and this agent's prompt never teaches the 17
+  seeded `research.research_intent` keys. `research/intents.py:78` screams on an
+  unknown key, so binding would install a permanent loud error on every run. The
+  model's own docstring already flags this: "the agent's prompt must be versioned to
+  actually emit these".
+- **Fix, in order:** (1) make the gate REFUSE a map-typed object loudly instead of
+  emptying it — same posture as `response_format_for_kind` declining an unportable
+  kind; (2) change `keyword_goals` to a closed `list[{keyword, goal}]` (aidream —
+  `analysis.py:717` folds it back to a dict, so the HTTP response shape is
+  unchanged); (3) version the prompt to teach `intent_key`/`intent_reasoning`;
+  (4) regenerate the kind from the model, then bind. Steps 2–3 are product
+  authoring — **decision: Arman**.
+
 ### D158 — The public-media-URL guard was SCHEMA-BLIND and silently protected nothing on 3 anon-facing columns (2026-08-11) — FIXED
 
 `mtx_public_url_guard_trigger()` matched its registry on `TG_TABLE_NAME` alone. Two
@@ -138,6 +202,15 @@ is never missing — only the client-side field declaration is.
 `topic_ideas` was fixed as the worked instance
 (`migrations/content_ir_declare_topic_ideas_fields.sql`) via the sanctioned TS
 emitter `planKindMigration` (`scripts/shape/plan-topic-ideas.ts`).
+
+**Count unchanged at 140 as of 2026-08-11 after the slot-binding pass** — binding
+an agent's `output_schema` is a DIFFERENT axis and does not touch `data`.
+`research_tag_suggestions`, `keyword_relationship_research` and
+`research_setup_suggestion` were all confirmed `data IS NULL`, which is precisely
+why their bindings had to be written as migrations
+(`migrations/agent_bind_*.sql`): `isKindBindable` still refuses them in the FE
+picker, so an owner opening those agents in the builder cannot see or re-make the
+binding. That gap is this defect, not the bindings.
 
 **Measured 2026-08-11 — a backfill is NOT the fix.** Running the existing
 sanctioned converter (`fields_from_json_schema`) over all 140: **7 are
