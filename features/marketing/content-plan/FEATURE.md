@@ -344,8 +344,46 @@ plan CRUD through it.
 
 ## Change log
 
-- 2026-08-10 — Claude: **The Entities view is agent-writable — the last member
-  of the content-plan family to get write targets.**
+- 2026-08-10 — Claude: **Reconciled the Entities write-half docs with what
+  actually shipped, and removed the merge debris left behind.** Two agents
+  built this surface in parallel and BOTH merged; main resolved to the
+  "lifted draft" implementation, but the documentation below and one source
+  file survived from the OTHER, superseded design — so the repo described
+  targets that do not exist. Corrected here. **What is actually live** is 3
+  targets, all `applyPolicy: "ask"`, all registered by `EntityManager.tsx`
+  via `useSurfaceWriteHandlers` against a parent-owned `draftRef`:
+  `entity_draft` (`draft` — stages `{label?, entity_type?}` into the OPEN
+  editor dialog and THROWS when none is open; source type is deliberately not
+  settable), `save_entity_draft` (`entity` — commits that staged draft
+  through the dialog's own create/update path), and `add_entities` (`entity`
+  — appends new roster rows through `createPlanEntity`, with duplicate-label
+  refusal and a post-write label check). The one read twin is
+  `entity_editor_draft`. **Removed:** `lib/entity-write-targets.ts` and its
+  test, which validated the superseded `open_entity_editor` / `create_entity`
+  targets and an `entity_draft` that accepted `source_type_id` — nothing
+  imported them but their own test, and their contract contradicted the
+  shipped one, so they were a trap for the next reader. `source_type_options`
+  was never added as a read value; the claim below that it was is what the
+  stale entry got wrong. Deleting an entity, attaching entities to nodes, and
+  editing an existing row's `attributes` remain human by doctrine.
+  **Independently re-verified live** (real Badass Agent run, prpinjectionmd
+  roster): `add_entities` asked with its manifest description verbatim,
+  applied, and persisted; a same-message delete request and a node-attachment
+  request were both refused with the agent naming the targets it actually
+  has; `entity_draft` with no editor open returned its own throw to the agent
+  verbatim. **Open usability finding, NOT fixed here** (it is the subject of a
+  pending review-queue question): `entity_draft` requires the editor dialog to
+  already be open, but that dialog is MODAL — with it open, a `fixed inset-0
+  z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
+  button and the chat composer, so `elementFromPoint` returns the overlay and
+  a real click times out (measured; the same click succeeds once the dialog is
+  closed). The target is therefore only reachable by starting the turn with
+  the editor closed and opening it while the agent is still thinking. Letting
+  the handler OPEN the editor on a named row would remove the race; that is
+  the decision the review row asks for.
+- 2026-08-10 — Claude: ~~**The Entities view is agent-writable — the last
+  member of the content-plan family to get write targets.**~~ *(Superseded —
+  this entry describes the design that did NOT ship; see the entry above.)*
   `matrx-user/content-plan-entities` declares 3: `create_entity`
   (`entity`/ask) through the canonical `useCreatePlanEntity` →
   `createPlanEntity` (the same service "Suggest from research" already
