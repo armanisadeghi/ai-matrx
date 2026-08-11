@@ -20,13 +20,58 @@ import {
   AlertTriangle,
   CheckCircle2,
   ChevronDown,
+  CircleDot,
   Globe,
   Loader2,
   Search,
 } from "lucide-react";
 import type { ResearchActivityEntry } from "@/features/podcasts/studio/runs/useStudioRun";
 
-function iconFor(entry: ResearchActivityEntry) {
+type ActivityVisualState = "active" | "complete" | "error" | "history";
+
+/**
+ * Resolve visual lifecycle from the canonical call_id, not from one event in
+ * isolation. A tool's old progress messages become history as soon as a later
+ * tool_completed/tool_error arrives, so they can never keep spinning forever.
+ */
+export function activityVisualStates(
+  entries: ResearchActivityEntry[],
+  streaming: boolean,
+): Map<string, ActivityVisualState> {
+  const terminalByCall = new Map<string, "complete" | "error">();
+  const latestNonTerminalByCall = new Map<string, string>();
+
+  for (const entry of entries) {
+    if (entry.event === "tool_completed") {
+      terminalByCall.set(entry.callId, "complete");
+    } else if (entry.event === "tool_error") {
+      terminalByCall.set(entry.callId, "error");
+    } else {
+      latestNonTerminalByCall.set(entry.callId, entry.id);
+    }
+  }
+
+  const states = new Map<string, ActivityVisualState>();
+  for (const entry of entries) {
+    const terminal = terminalByCall.get(entry.callId);
+    if (entry.event === "tool_error") states.set(entry.id, "error");
+    else if (entry.event === "tool_completed") states.set(entry.id, "complete");
+    else if (terminal === "complete") states.set(entry.id, "complete");
+    else if (terminal === "error") states.set(entry.id, "history");
+    else if (
+      streaming &&
+      latestNonTerminalByCall.get(entry.callId) === entry.id
+    )
+      states.set(entry.id, "active");
+    else states.set(entry.id, "history");
+  }
+  return states;
+}
+
+function iconFor(
+  entry: ResearchActivityEntry,
+  visualState: ActivityVisualState,
+) {
   if (entry.event === "tool_error") {
     return <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" />;
   }
@@ -39,7 +84,20 @@ function iconFor(entry: ResearchActivityEntry) {
   if (entry.message.startsWith("Searched:")) {
     return <Search className="h-3.5 w-3.5 shrink-0 text-primary" />;
   }
-  return <Loader2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />;
+  if (visualState === "active") {
+    return (
+      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+    );
+  }
+  if (visualState === "error") {
+    return <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-destructive" />;
+  }
+  if (visualState === "complete") {
+    return <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />;
+  }
+  return (
+    <CircleDot className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+  );
 }
 
 export function ResearchActivityFeed({
@@ -52,6 +110,7 @@ export function ResearchActivityFeed({
   const [open, setOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const count = entries.length;
+  const visualStates = activityVisualStates(entries, streaming);
 
   // Keep the newest line in view while the run is live. Only auto-scroll when
   // the user is already near the bottom, so scrolling back to read something
@@ -59,8 +118,7 @@ export function ResearchActivityFeed({
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || !open) return;
-    const nearBottom =
-      el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
     if (nearBottom) el.scrollTop = el.scrollHeight;
   }, [count, open]);
 
@@ -104,7 +162,9 @@ export function ResearchActivityFeed({
               key={entry.id}
               className="flex items-start gap-2 text-xs text-muted-foreground"
             >
-              <span className="mt-0.5">{iconFor(entry)}</span>
+              <span className="mt-0.5">
+                {iconFor(entry, visualStates.get(entry.id) ?? "history")}
+              </span>
               <span className="min-w-0 break-words">{entry.message}</span>
             </div>
           ))}

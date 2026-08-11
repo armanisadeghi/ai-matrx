@@ -6,8 +6,8 @@
 // reveals the title + description the instant they parse (well before audio
 // finishes). RTL for Persian.
 
-import { AudioLines } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PodcastCompositionPlaceholder } from "./PodcastCompositionPlaceholder";
 import type { PodcastRunState } from "../types";
 
 interface MetadataHeroProps {
@@ -19,19 +19,7 @@ export function MetadataHero({ state }: MetadataHeroProps) {
   const rtl = state.podcastType === "persian";
 
   if (!hasMeta) {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <AudioLines className="h-3.5 w-3.5 animate-pulse text-primary" />
-          Composing the episode…
-        </div>
-        <div className="h-9 w-3/4 animate-pulse rounded-lg bg-muted" />
-        <div className="space-y-2">
-          <div className="h-4 w-full animate-pulse rounded bg-muted" />
-          <div className="h-4 w-5/6 animate-pulse rounded bg-muted" />
-        </div>
-      </div>
-    );
+    return <PodcastCompositionPlaceholder />;
   }
 
   return (

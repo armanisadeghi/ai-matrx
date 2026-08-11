@@ -17,6 +17,7 @@ import {
   Clapperboard,
   AlertTriangle,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
@@ -113,15 +114,20 @@ export function StudioRunView({ runId }: { runId: string }) {
       const resume = livePlayer.isPlaying();
       const timeSec = livePlayer.getPositionMs() / 1000;
       livePlayer.pause();
-      if (timeSec > 0) setHandoff({ timeSec, resume });
+      if (timeSec <= 0) return undefined;
+      const handoffTimer = setTimeout(() => setHandoff({ timeSec, resume }), 0);
+      return () => clearTimeout(handoffTimer);
     }
+    return undefined;
   }, [state.audioUrl, livePlayer]);
 
   if (loading) {
     return (
       <>
         <PageHeader>
-          <span className="ml-2 text-sm font-medium text-foreground truncate">Studio run</span>
+          <span className="ml-2 text-sm font-medium text-foreground truncate">
+            Studio run
+          </span>
         </PageHeader>
         <div className="mx-auto max-w-5xl px-4 py-10">
           <Skeleton className="mb-4 h-8 w-64" />
@@ -140,12 +146,17 @@ export function StudioRunView({ runId }: { runId: string }) {
   if (notFound) {
     return (
       <>
-        <EntityModeHeader backHref="/podcast/studio" entityLabel="Run not found" />
+        <EntityModeHeader
+          backHref="/podcast/studio"
+          entityLabel="Run not found"
+        />
         <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
             <Podcast className="h-7 w-7" />
           </span>
-          <h1 className="text-xl font-semibold text-foreground">Run not found</h1>
+          <h1 className="text-xl font-semibold text-foreground">
+            Run not found
+          </h1>
           <p className="text-sm text-muted-foreground">
             This studio run doesn&apos;t exist or isn&apos;t yours.
           </p>
@@ -169,6 +180,7 @@ export function StudioRunView({ runId }: { runId: string }) {
   const effectiveCover = selectedCoverUrl ?? firstDoneImage;
   const hasVideo = state.videos.some((s) => s.status === "done" && s.url);
   const hasStages = state.stages.length > 0;
+  const hasMetadata = state.title.trim().length > 0;
   const publicLink = episodeHref(state.episodeSlug, state.episodeId);
 
   // The merged "official" video — every clip + still stitched into one
@@ -294,156 +306,183 @@ export function StudioRunView({ runId }: { runId: string }) {
         entityLabel={isRunning && !streaming ? "Studio run" : "Episode"}
         actions={[
           { label: "Refresh", icon: RefreshCw, onPress: refresh },
-          { label: "New episode", icon: Plus, href: "/podcast/studio/create", primary: true },
+          {
+            label: "New episode",
+            icon: Plus,
+            href: "/podcast/studio/create",
+            primary: true,
+          },
         ]}
       />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        {/* LEFT — the episode: title, description, audio, then the visual options. */}
-        <div className="order-1 min-w-0 space-y-6">
-          <MetadataHero state={state} />
+        <div
+          className={cn(
+            "grid gap-6 lg:grid-cols-[1fr_360px]",
+            // Before metadata lands, reserve at least one complete viewport for
+            // the episode canvas. The advanced inspector can never rise into the
+            // initial composition while the right rail grows event by event.
+            !hasMetadata && "min-h-dvh",
+          )}
+        >
+          {/* LEFT — the episode: title, description, audio, then the visual options. */}
+          <div className="order-1 min-w-0 space-y-6">
+            <MetadataHero state={state} />
 
-          {/* The merged episode video — the primary, share-ready video stitched
+            {/* The merged episode video — the primary, share-ready video stitched
               from every clip + still. Shown first so it reads as the hero/default
               cover. */}
-          {mergedVideoBlock && (
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-              <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <Clapperboard className="h-4 w-4 text-primary" />
-                  Episode video
-                </h3>
-                <span className="hidden text-xs text-muted-foreground sm:inline">
-                  Default cover — stitched from every image &amp; clip
-                </span>
-              </div>
-              <div className="relative aspect-video w-full bg-black">
-                <div className="absolute inset-0 [&_.group]:m-0 [&_.group]:h-full [&_.group]:w-full [&_.group>video]:h-full [&_.group>video]:max-h-none [&_.group>video]:w-full [&_.group>video]:min-h-0 [&_.group>video]:min-w-0 [&_.group>video]:rounded-none [&_.group>video]:object-contain">
-                  <UnifiedVideoBlockRenderer block={mergedVideoBlock} />
+            {mergedVideoBlock && (
+              <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Clapperboard className="h-4 w-4 text-primary" />
+                    Episode video
+                  </h3>
+                  <span className="hidden text-xs text-muted-foreground sm:inline">
+                    Default cover — stitched from every image &amp; clip
+                  </span>
+                </div>
+                <div className="relative aspect-video w-full bg-black">
+                  <div className="absolute inset-0 [&_.group]:m-0 [&_.group]:h-full [&_.group]:w-full [&_.group>video]:h-full [&_.group>video]:max-h-none [&_.group>video]:w-full [&_.group>video]:min-h-0 [&_.group>video]:min-w-0 [&_.group>video]:rounded-none [&_.group>video]:object-contain">
+                    <UnifiedVideoBlockRenderer block={mergedVideoBlock} />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {mergedVideoMissing && (
-            <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-              <span>
-                The combined episode video couldn&apos;t be assembled from this
-                run&apos;s media. Your individual clips and images are still
-                available below; you can pick any image as the cover.
-              </span>
-            </div>
-          )}
+            {mergedVideoMissing && (
+              <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                <span>
+                  The combined episode video couldn&apos;t be assembled from
+                  this run&apos;s media. Your individual clips and images are
+                  still available below; you can pick any image as the cover.
+                </span>
+              </div>
+            )}
 
-          {/* Audio: the finished player; the live (streaming) player while the
+            {/* Audio: the finished player; the live (streaming) player while the
               TTS is still rendering; or the teaser before any audio exists. */}
-          {state.audioUrl ? (
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <PodcastAudioPlayer
+            {state.audioUrl ? (
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                <PodcastAudioPlayer
+                  audioUrl={state.audioUrl}
+                  title={state.title}
+                  coverImageUrl={effectiveCover ?? undefined}
+                  initialTime={handoff?.timeSec}
+                  autoPlay={handoff?.resume ?? false}
+                />
+              </div>
+            ) : livePlayer ? (
+              <LiveAudioPlayer player={livePlayer} title={state.title} />
+            ) : streaming && state.title ? (
+              <ProductionTeaser state={state} startedAt={startedAt} />
+            ) : null}
+
+            {isDone && state.episodeId && (
+              <ResultActions
+                episodeId={state.episodeId}
+                episodeSlug={state.episodeSlug}
                 audioUrl={state.audioUrl}
                 title={state.title}
-                coverImageUrl={effectiveCover ?? undefined}
-                initialTime={handoff?.timeSec}
-                autoPlay={handoff?.resume ?? false}
+                hasVideo={hasVideo}
               />
-            </div>
-          ) : livePlayer ? (
-            <LiveAudioPlayer player={livePlayer} title={state.title} />
-          ) : streaming && state.title ? (
-            <ProductionTeaser state={state} startedAt={startedAt} />
-          ) : null}
+            )}
 
-          {isDone && state.episodeId && (
-            <ResultActions
-              episodeId={state.episodeId}
-              episodeSlug={state.episodeSlug}
-              audioUrl={state.audioUrl}
-              title={state.title}
-              hasVideo={hasVideo}
+            {isDone && state.episodeId && (
+              <EpisodeContentStudio episodeId={state.episodeId} />
+            )}
+
+            <MediaOptionsGrid
+              state={state}
+              interactive={isDone && !!state.episodeId}
+              selectedCoverUrl={effectiveCover}
+              onSelectCover={selectCover}
+              onRegenerate={!streaming ? regenerateAsset : undefined}
+              onAddAsset={!streaming ? addAsset : undefined}
+              assetBusy={assetBusy}
+              modelCounts={detail?.model_counts}
             />
-          )}
 
-          {isDone && state.episodeId && (
-            <EpisodeContentStudio episodeId={state.episodeId} />
-          )}
+            {isDone && state.episodeId && (
+              <EpisodeTitlePanel
+                episodeId={state.episodeId}
+                onTitleApplied={(title) => reflectEpisodeMetadata({ title })}
+              />
+            )}
 
-          <MediaOptionsGrid
-            state={state}
-            interactive={isDone && !!state.episodeId}
-            selectedCoverUrl={effectiveCover}
-            onSelectCover={selectCover}
-            onRegenerate={!streaming ? regenerateAsset : undefined}
-            onAddAsset={!streaming ? addAsset : undefined}
-            assetBusy={assetBusy}
-            modelCounts={detail?.model_counts}
-          />
+            {isDone && state.episodeId && (
+              <EpisodeChaptersPanel
+                episodeId={state.episodeId}
+                onChaptersChange={setEpisodeChapters}
+              />
+            )}
+          </div>
 
-          {isDone && state.episodeId && (
-            <EpisodeTitlePanel
-              episodeId={state.episodeId}
-              onTitleApplied={(title) => reflectEpisodeMetadata({ title })}
-            />
-          )}
+          {/* RIGHT — status & steps on top, then the script, source, and resources. */}
+          <div className="order-2 space-y-4">
+            {hasStages && (
+              <LiveProgressRail state={state} startedAt={startedAt} />
+            )}
 
-          {isDone && state.episodeId && (
-            <EpisodeChaptersPanel
-              episodeId={state.episodeId}
-              onChaptersChange={setEpisodeChapters}
-            />
-          )}
-        </div>
-
-        {/* RIGHT — status & steps on top, then the script, source, and resources. */}
-        <div className="order-2 space-y-4">
-          {hasStages && <LiveProgressRail state={state} startedAt={startedAt} />}
-
-          {/* Real backend tool activity, layered on top of the rail's synthetic
+            {/* Real backend tool activity, layered on top of the rail's synthetic
               steps — self-hides when the stream sends none. */}
-          <ResearchActivityFeed entries={researchActivity} streaming={streaming} />
+            <ResearchActivityFeed
+              entries={researchActivity}
+              streaming={streaming}
+            />
 
-          <RunRecoveryBannerFor run={run} />
+            <RunRecoveryBannerFor run={run} />
 
-          {state.script && <TranscriptPanel script={state.script} rtl={rtl} />}
+            {state.script && (
+              <TranscriptPanel script={state.script} rtl={rtl} />
+            )}
 
-          {detail && <SourceSummaryPanel detail={detail} />}
+            {detail && <SourceSummaryPanel detail={detail} />}
 
-          {isDone && (state.episodeId || publicLink) && (
-            <details className="group rounded-2xl border border-border bg-card/40 p-4 text-xs text-muted-foreground">
-              <summary className="cursor-pointer list-none font-medium text-foreground/70">
-                Episode details
-              </summary>
-              <div className="mt-2 space-y-1.5">
-                {state.episodeId && (
-                  <p className="break-all">
-                    <span className="font-medium text-foreground/70">Episode ID:</span>{" "}
-                    {state.episodeId}
-                  </p>
-                )}
-                {publicLink && (
-                  <p>
-                    <span className="font-medium text-foreground/70">Public link:</span>{" "}
-                    <Link href={publicLink} className="text-primary hover:underline">
-                      {publicLink}
-                    </Link>
-                  </p>
-                )}
-              </div>
-            </details>
-          )}
+            {isDone && (state.episodeId || publicLink) && (
+              <details className="group rounded-2xl border border-border bg-card/40 p-4 text-xs text-muted-foreground">
+                <summary className="cursor-pointer list-none font-medium text-foreground/70">
+                  Episode details
+                </summary>
+                <div className="mt-2 space-y-1.5">
+                  {state.episodeId && (
+                    <p className="break-all">
+                      <span className="font-medium text-foreground/70">
+                        Episode ID:
+                      </span>{" "}
+                      {state.episodeId}
+                    </p>
+                  )}
+                  {publicLink && (
+                    <p>
+                      <span className="font-medium text-foreground/70">
+                        Public link:
+                      </span>{" "}
+                      <Link
+                        href={publicLink}
+                        className="text-primary hover:underline"
+                      >
+                        {publicLink}
+                      </Link>
+                    </p>
+                  )}
+                </div>
+              </details>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Full run truth — advanced inspector over the durable record (request,
+        {/* Full run truth — advanced inspector over the durable record (request,
           every agent stage's output/error/cost, the studio + episode rows).
           Always available so nothing about a run is ever hidden. */}
-      <div className="mt-6">
-        <RunTruthInspector
-          agentRunId={detail?.run_id ?? null}
-          studioRunId={runId}
-          episodeId={state.episodeId}
-        />
-      </div>
+        <div className="mt-6">
+          <RunTruthInspector
+            agentRunId={detail?.run_id ?? null}
+            studioRunId={runId}
+            episodeId={state.episodeId}
+          />
+        </div>
       </div>
     </SurfaceRuntimeProvider>
   );

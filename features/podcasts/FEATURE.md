@@ -104,6 +104,15 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-11 — **Early runs keep a stable composition canvas and activity
+  reflects real tool lifecycle.** `PodcastCompositionPlaceholder` mirrors the
+  finished identity, production card, cover, and video regions before metadata
+  arrives; `StudioRunView` reserves one viewport in that state, so the advanced
+  Run details inspector cannot rise into the initial screen as the right rail
+  grows. `ResearchActivityFeed` resolves history by canonical `call_id`: only
+  the newest unresolved row spins (with a real `animate-spin`), and
+  `tool_completed` / `tool_error` settles the call even when its optional
+  message is absent. Focused tests pin started → progress → completed behavior.
 - 2026-08-11 — **The Run page is agent-writable, and its reads now tell the
   truth.** `matrx-user/podcast-run` declares three ask-policy `entity` write
   targets, all on the FINISHED episode: `episode_title` and

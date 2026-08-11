@@ -54,8 +54,12 @@ import {
 } from "./runsApi";
 import { fetchPodcastRunDetail } from "./runsRepository";
 import { deriveRecoveryState, type RecoveryState } from "./recovery";
+import { formatText } from "@/utils/text/text-case-converter";
 import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import type {
+  ToolEventPayload,
+  TypedStreamEvent,
+} from "@/types/python-generated/stream-events";
 
 // No live event (podcast_tick fires ~every 3s) for this long ⇒ the stream is
 // silently dead. Mark stalled + settle "queued" assets. 5+ missed ticks.
@@ -67,8 +71,12 @@ const STALL_MS = 20_000;
  *  and is simply empty when the backend sends nothing. */
 export interface ResearchActivityEntry {
   id: string;
+  /** Canonical lifecycle identity. Every event for one tool execution shares
+   *  this value, so the UI can settle its earlier progress rows when the
+   *  terminal event arrives. */
+  callId: string;
   toolName: string;
-  event: string;
+  event: ToolEventPayload["event"];
   message: string;
   at: number;
 }
@@ -572,19 +580,36 @@ export function useStudioRun(runId: string): UseStudioRun {
             lastHeartbeatRef.current = Date.now();
             setStalled(false);
             const t = event.data;
-            if (t.message) {
+            const activityMessage =
+              t.message?.trim() ||
+              (t.event === "tool_completed"
+                ? `${formatText(t.tool_name)} finished`
+                : t.event === "tool_error"
+                  ? `${formatText(t.tool_name)} failed`
+                  : "");
+            // Terminal events must be retained even when the backend omits
+            // their optional message; call_id is how earlier rows stop looking
+            // active. The fallback is honest lifecycle copy, not fake output.
+            if (activityMessage) {
               setResearchActivity((prev) => {
                 // Collapse consecutive duplicates (retries re-emit the same
                 // line); cap the tail so a long run can't grow state unbounded.
                 const last = prev[prev.length - 1];
-                if (last && last.message === t.message) return prev;
+                if (
+                  last &&
+                  last.callId === t.call_id &&
+                  last.event === t.event &&
+                  last.message === activityMessage
+                )
+                  return prev;
                 const next = [
                   ...prev,
                   {
                     id: `${t.call_id}:${prev.length}`,
+                    callId: t.call_id,
                     toolName: t.tool_name,
                     event: t.event,
-                    message: t.message as string,
+                    message: activityMessage,
                     at: Date.now(),
                   },
                 ];
