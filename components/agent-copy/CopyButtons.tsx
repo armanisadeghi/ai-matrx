@@ -82,6 +82,19 @@ export interface CopyButtonsProps {
    */
   aiVariants?: AiVariant[];
   /**
+   * Labels and positions the faithful `agent` payload inside an upgraded AI
+   * menu. Defaults to the final "Everything" item. Use this when the payload
+   * has a more precise name (for example "Errors") or should precede derived
+   * variants. The payload itself still comes from `agent`, so there is only
+   * one never-lossy builder.
+   */
+  agentVariant?: {
+    id?: string;
+    label?: string;
+    hint?: string;
+    position?: "first" | "last";
+  };
+  /**
    * Custom-preview source (options + live size counts dialog). Implies the
    * dropdown upgrade. Reserve for data with real shortening knobs.
    */
@@ -99,6 +112,7 @@ export function CopyButtons({
   className,
   aiVariants,
   aiCustom,
+  agentVariant,
 }: CopyButtonsProps) {
   const [copied, setCopied] = React.useState<"human" | "agent" | "json" | null>(
     null,
@@ -139,6 +153,17 @@ export function CopyButtons({
         : "min-h-11 lg:min-h-8";
   const iconCls =
     size === "xs" ? "h-3 w-3" : size === "icon" ? "h-3.5 w-3.5" : "h-4 w-4";
+
+  const faithfulAgentVariant: AiVariant = {
+    id: agentVariant?.id ?? "everything",
+    label: agentVariant?.label ?? "Everything",
+    hint: agentVariant?.hint ?? "Full faithful payload — never lossy",
+    build: () => resolve(agent),
+  };
+  const menuVariants =
+    agentVariant?.position === "first"
+      ? [faithfulAgentVariant, ...(aiVariants ?? [])]
+      : [...(aiVariants ?? []), faithfulAgentVariant];
 
   return (
     <div
@@ -191,15 +216,7 @@ export function CopyButtons({
           label={label}
           disabled={disabled}
           stopPropagation={false}
-          variants={[
-            ...(aiVariants ?? []),
-            {
-              id: "everything",
-              label: "Everything",
-              hint: "Full faithful payload — never lossy",
-              build: () => resolve(agent),
-            },
-          ]}
+          variants={menuVariants}
           custom={aiCustom}
         />
       ) : (

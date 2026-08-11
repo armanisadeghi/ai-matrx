@@ -13,7 +13,10 @@
  * `errorTierRules.ts` → the error goes quiet.
  */
 
-import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import {
+  buildAgentPayload,
+  type AgentPayloadInput,
+} from "@/components/agent-copy/buildAgentPayload";
 import type {
   CapturedError,
   CapturedErrorSource,
@@ -30,6 +33,30 @@ import {
 } from "@/lib/diagnostics/sanitizeErrorContextForAi";
 
 const LOCATION = "AI Matrx — Error Inspector";
+
+const ERROR_INVESTIGATION_PROMPT = `The following error evidence was captured from the running AI Matrx application. Use it as the starting point for a complete, evidence-based root cause analysis and, only when warranted, a durable fix.
+
+Follow every applicable repository instruction. Do not assume the inspector's surface message is the root cause, especially when it says "unknown error." Trace the actual execution path in the code, logs, persisted records, request or conversation identifiers, configuration, and service boundaries that are available to you.
+
+Your investigation must:
+1. Reconstruct what happened, in order, from the initiating action through the final captured error, including retries, rollback, cancellation, cleanup, and user-facing handling.
+2. Identify the direct technical root cause and explain why it happened.
+3. Identify every system, boundary, and process involved, and distinguish the original failure from secondary or duplicate symptoms.
+4. Determine which safeguards should have prevented, detected, classified, preserved, explained, recovered from, or contained the failure, and why each relevant safeguard did not.
+5. Assess the entire class of similar failures, not only this occurrence. Prefer the simplest shared correction at the real choke point over a route-specific or message-specific patch.
+
+Before making any change, decide whether the captured condition is truly a defect. If it is expected and correct behavior—for example, an intentional guard, a valid user mistake, a normal cancellation, or a transient condition already handled as designed—make no code changes. Report the evidence for that conclusion and explain why the current behavior is correct.
+
+If it is a real defect, implement the complete, durable correction at every layer the evidence shows is warranted. Do not merely silence or downgrade the error, swallow an exception, add a blind retry, change wording, or special-case this one payload. Preserve useful structured diagnostics and make unknown failures more specific at their source. Add or update focused regression coverage and the feature documentation required by the repository, then verify both the original scenario and the broader failure class.
+
+Conclude with: the root cause; the failure sequence; the systems and failed safeguards involved; the changes made at each justified layer; and the verification evidence.`;
+
+const MULTI_LAYER_REMINDER = `Important: by the time an error or warning reaches this inspector, the incident is rarely only one failure. The originating operation may have failed, and one or more validation, classification, retry, recovery, rollback, observability, or presentation layers may also have failed to prevent it or make it actionable. Inspect all of them and repair every layer supported by evidence—but do not invent failures, broaden scope without evidence, or change code when the reported behavior is actually correct.`;
+
+/** Wraps a faithful Error Inspector payload in an implementation-ready brief. */
+function buildErrorInvestigationPrompt(payload: AgentPayloadInput): string {
+  return `${ERROR_INVESTIGATION_PROMPT}\n\n<captured-error-evidence>\n${buildAgentPayload(payload)}\n</captured-error-evidence>\n\n${MULTI_LAYER_REMINDER}`;
+}
 
 const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "supabase-postgrest": "Supabase error",
@@ -48,7 +75,8 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "agent-stream-data-error": "Server data error",
   "agent-stream-transport": "Stream transport error",
   "agent-stream-client-error": "Stream connection failure",
-  "agent-stream-terminal-guard": "Stream held open after terminal (closed locally)",
+  "agent-stream-terminal-guard":
+    "Stream held open after terminal (closed locally)",
   "media-durability": "Media durability violation",
   "reasoning-leak": "Reasoning leaked into answer text",
   "data-shape": "Data-shape contract violation",
@@ -218,6 +246,11 @@ export function capturedErrorToAgentInput(e: CapturedError): AgentPayloadInput {
   };
 }
 
+/** Ready-to-paste investigation prompt for one captured error. */
+export function capturedErrorToInvestigationPrompt(e: CapturedError): string {
+  return buildErrorInvestigationPrompt(capturedErrorToAgentInput(e));
+}
+
 /** Agent (Copy for AI) payload for the entire captured-error set. */
 export function capturedErrorsToAgentInput(
   list: CapturedError[],
@@ -263,6 +296,13 @@ export function capturedErrorsToAgentInput(
       raw: sanitizeRawForAi(e.raw),
     })),
   };
+}
+
+/** Ready-to-paste investigation prompt for the complete captured error set. */
+export function capturedErrorsToInvestigationPrompt(
+  list: CapturedError[],
+): string {
+  return buildErrorInvestigationPrompt(capturedErrorsToAgentInput(list));
 }
 
 /** Human-readable block for the entire captured-error set. */

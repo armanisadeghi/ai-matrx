@@ -121,6 +121,10 @@ must scale to its data. There is no one-size-fits-all; for every surface ask
   AI button becomes the menu, with the existing `agent` payload auto-appended
   as the never-lossy **Everything** escape hatch. Never render a second AI
   icon beside the pair.
+- A surface may give that faithful payload a precise name and position with
+  `agentVariant` (`label`, `hint`, `position`) while continuing to source its
+  data from the one canonical `agent` builder. The Error Inspector uses this
+  for **Error(s)** followed by the derived **Error(s) with prompt** variant.
 - **`MatrxDataTable`**: `copy.aiVariants` / `copy.aiCustom` (receive
   `(visible, all)` rows) do the same for the toolbar view copy.
 - **Derive variants from existing section lists** — the Backlinks header builds

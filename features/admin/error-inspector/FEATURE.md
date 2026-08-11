@@ -182,6 +182,19 @@ minified `/_next/static/chunks/*.js` frames via
 (`Lazy`, `Suspense`, boundaries) are kept. The plain **Copy** button and the
 in-window detail panel still show the full unsanitized stacks.
 
+The AI action is a two-choice menu at both inspector levels:
+
+- **Error / Errors** — the existing faithful structured payload, unchanged.
+- **Error with prompt / Errors with prompt** — the same payload wrapped in an
+  implementation-ready investigation brief. It requires the receiving agent to
+  reconstruct the failure path, find the direct root cause, inspect every
+  involved boundary and failed safeguard, correct the whole evidence-supported
+  failure class, and verify the fix. It explicitly forbids code changes when
+  the captured condition is expected/correct behavior and forbids mistaking a
+  downgrade, swallowed exception, blind retry, or one-payload special case for
+  a fix. The prompt is built centrally in `buildCapturedErrorPayload.ts`, so
+  single-error and whole-session exports cannot drift.
+
 ## Entry points
 
 - **Sidebar Administration section** (every route, any admin) —
@@ -232,6 +245,10 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-08-11 — **Error exports gained an implementation-ready prompt variant.**
+  Both the selected-error and all-errors actions now offer the faithful error
+  object alone or the same evidence wrapped in the shared root-cause,
+  multi-layer repair, expected-behavior, and verification instructions.
 - 2026-08-09 — **New source `layout-scroll-chain`.** A broken bounded-height chain
   (one non-flex wrapper between a table and the page) left the backlinks
   Insights table at height:auto: it grew past the viewport, an

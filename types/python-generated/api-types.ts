@@ -36141,6 +36141,14 @@ export interface components {
             next_due_at?: string | null;
             /** Next Due Reason */
             next_due_reason?: string | null;
+            /** Disabled Reason */
+            disabled_reason?: string | null;
+            /** Last Run Id */
+            last_run_id?: string | null;
+            /** Last Run Error */
+            last_run_error?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** ProviderSpendRow */
         ProviderSpendRow: {

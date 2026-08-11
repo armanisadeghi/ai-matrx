@@ -44,8 +44,10 @@ import {
   capturedErrorLabel,
   capturedErrorToAgentInput,
   capturedErrorToHuman,
+  capturedErrorToInvestigationPrompt,
   capturedErrorsToAgentInput,
   capturedErrorsToHuman,
+  capturedErrorsToInvestigationPrompt,
   sourceLabel,
 } from "@/lib/diagnostics/buildCapturedErrorPayload";
 
@@ -301,13 +303,27 @@ export default function ErrorInspectorWindow({
             label="All captured errors"
             human={() => capturedErrorsToHuman(errors)}
             agent={() => capturedErrorsToAgentInput(errors)}
+            agentVariant={{
+              id: "errors",
+              label: "Errors",
+              hint: "Captured error objects with full diagnostic context",
+              position: "first",
+            }}
+            aiVariants={[
+              {
+                id: "errors-with-prompt",
+                label: "Errors with prompt",
+                hint: "Add a root-cause investigation and durable-fix brief",
+                build: () => capturedErrorsToInvestigationPrompt(errors),
+              },
+            ]}
           />
         ) : undefined
       }
       footerLeft={
         <span className="text-xs text-muted-foreground">
-          {errors.length} distinct ·{" "}
-          {errors.reduce((s, e) => s + e.count, 0)} total occurrences
+          {errors.length} distinct · {errors.reduce((s, e) => s + e.count, 0)}{" "}
+          total occurrences
         </span>
       }
       footerRight={
@@ -368,6 +384,21 @@ export default function ErrorInspectorWindow({
                       label={`Error: ${capturedErrorLabel(selected)}`}
                       human={() => capturedErrorToHuman(selected)}
                       agent={() => capturedErrorToAgentInput(selected)}
+                      agentVariant={{
+                        id: "error",
+                        label: "Error",
+                        hint: "Captured error object with full diagnostic context",
+                        position: "first",
+                      }}
+                      aiVariants={[
+                        {
+                          id: "error-with-prompt",
+                          label: "Error with prompt",
+                          hint: "Add a root-cause investigation and durable-fix brief",
+                          build: () =>
+                            capturedErrorToInvestigationPrompt(selected),
+                        },
+                      ]}
                     />
                   </div>
                 </div>
@@ -491,8 +522,8 @@ export default function ErrorInspectorWindow({
           <p className="text-xs mt-1 max-w-xs">
             Every runtime error in this session — Supabase, uncaught exceptions,
             rejected promises, console.error, backend HTTP failures, and React
-            render errors — appears here automatically, with full detail and Copy
-            for AI.
+            render errors — appears here automatically, with full detail and
+            Copy for AI.
           </p>
         </div>
       )}
