@@ -14,9 +14,22 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export type PlanView = "tree" | "table" | "map" | "entities" | "setup";
+export type PlanView =
+  | "tree"
+  | "table"
+  | "map"
+  | "entities"
+  | "setup"
+  | "ai-runs";
 
-const VIEWS: readonly PlanView[] = ["tree", "table", "map", "entities", "setup"];
+const VIEWS: readonly PlanView[] = [
+  "tree",
+  "table",
+  "map",
+  "entities",
+  "setup",
+  "ai-runs",
+];
 
 export function usePlanWorkspaceParams() {
   const router = useRouter();

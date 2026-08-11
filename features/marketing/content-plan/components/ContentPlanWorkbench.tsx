@@ -60,6 +60,7 @@ import { useContentPlanSites } from "./ContentPlanHeader";
 import { EntityManager } from "./EntityManager";
 import { NewNodeDialog } from "./NewNodeDialog";
 import { NodePanel } from "./NodePanel";
+import { PlanAiRunsView } from "./PlanAiRunsView";
 import { PlanNodesTable } from "./PlanNodesTable";
 import { PlanTree } from "./PlanTree";
 import { SetupView } from "../setup/components/SetupView";
@@ -433,6 +434,16 @@ export function ContentPlanWorkbench({
             <EntityManager
               siteId={siteId}
               organizationId={site.organization_id}
+            />
+          ) : view === "ai-runs" ? (
+            // Every recorded AI run for this site. A per-page run opens the
+            // page it ran for, right here — never a dead end.
+            <PlanAiRunsView
+              siteId={siteId}
+              onOpenNode={(nodeId) => {
+                setSelectedNodeId(nodeId);
+                setView("tree");
+              }}
             />
           ) : view === "table" ? (
             <PlanNodesTable

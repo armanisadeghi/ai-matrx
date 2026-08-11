@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft,
+  History,
   LayoutTemplate,
   ListTree,
   Loader2,
@@ -56,6 +57,12 @@ const VIEW_ITEMS: { view: PlanView; label: string; icon: React.ReactNode }[] = [
     view: "entities",
     label: "Entities",
     icon: <Users className="h-3.5 w-3.5" />,
+  },
+  // Every paid AI run this site has ever had, openable in full.
+  {
+    view: "ai-runs",
+    label: "AI runs",
+    icon: <History className="h-3.5 w-3.5" />,
   },
 ];
 

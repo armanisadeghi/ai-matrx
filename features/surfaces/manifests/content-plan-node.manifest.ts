@@ -583,7 +583,7 @@ Hard rules: node_route, node_depth, node_pillar_label, and node_cluster_label ar
  */
 export function createContentPlanNodeScope(values: {
   // Inherited guarantee (parent's alwaysAvailable) → required
-  view: "tree" | "table" | "map" | "entities" | "setup";
+  view: "tree" | "table" | "map" | "entities" | "setup" | "ai-runs";
   // Own alwaysAvailable: true → required
   node_id: string;
   node_label: string;
