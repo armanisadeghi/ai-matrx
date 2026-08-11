@@ -56,7 +56,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
   if (query.isError) {
     return (
       <InlineQueryError
-        what="the anchor snapshot"
+        what="the wording of your links"
         error={query.error}
         onRetry={() => void query.refetch()}
       />
