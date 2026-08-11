@@ -75,8 +75,8 @@ import {
   updateBrand,
   updateBrandAsset,
   updateBusinessFact,
-  fetchSiteAuditRows,
-  fetchSiteAuditTrendRows,
+  fetchSiteAuditRollup,
+  fetchSiteAuditTrend,
   fetchSiteMediaRows,
   fetchSiteStructureRows,
   fetchSiteVideoResourceRows,
@@ -102,11 +102,7 @@ import {
   getLatestAnalyticsFailure,
   listWebAnalyticsDailyForPage,
 } from "@/features/marketing/analytics/data";
-import {
-  buildSiteAuditRollup,
-  buildSiteAuditTrend,
-  type SiteAuditRollup,
-} from "@/features/marketing/lib/audit-rollup";
+import type { SiteAuditRollup } from "@/features/marketing/lib/audit-rollup";
 import {
   buildSiteRouteTree,
   type SiteRouteTree,
@@ -1030,28 +1026,26 @@ export function useDeleteBusinessFact() {
 }
 
 /**
- * Site-wide audit rollup over stored deterministic metrics. Fetch is bounded
- * and paged (service); aggregation is pure (lib/audit-rollup.ts).
+ * Site-wide audit rollup over stored deterministic metrics. Aggregated in
+ * Postgres (`web.site_audit_rollup`) — no row cap, and the rollup reports its
+ * own coverage. See lib/audit-rollup.ts for the counting semantics it mirrors.
  */
 export function useSiteAuditRollup(siteId: string) {
   return useQuery<SiteAuditRollup>({
     queryKey: marketingKeys.auditRollup(siteId),
-    queryFn: async ({ signal }) =>
-      buildSiteAuditRollup(await fetchSiteAuditRows(siteId, signal)),
+    queryFn: ({ signal }) => fetchSiteAuditRollup(siteId, signal),
     staleTime: 60_000,
   });
 }
 
 /**
- * Site audit score trend (M-55) over stored deterministic metrics across
- * EVERY historical snapshot (not just the latest per page). Aggregation is
- * pure (lib/audit-rollup.ts::buildSiteAuditTrend).
+ * Site audit score trend (M-55) across EVERY historical snapshot, not just the
+ * latest per page. Aggregated in Postgres (`web.site_audit_trend`).
  */
 export function useSiteAuditTrend(siteId: string) {
   return useQuery({
     queryKey: marketingKeys.auditTrend(siteId),
-    queryFn: async ({ signal }) =>
-      buildSiteAuditTrend(await fetchSiteAuditTrendRows(siteId, signal)),
+    queryFn: ({ signal }) => fetchSiteAuditTrend(siteId, signal),
     staleTime: 60_000,
   });
 }

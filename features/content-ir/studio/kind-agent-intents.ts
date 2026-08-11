@@ -64,6 +64,34 @@ export function composeKindAgentIntent(input: KindAgentIntentInput): string {
   return `${base}${schemaBlock(input.emittedJsonSchema)}${note}`;
 }
 
+export interface KindSampleFillIntentInput {
+  kind: string;
+  label: string;
+  emittedJsonSchema?: Json | null;
+  /** Free-form direction from the user ("make it about pediatrics"). */
+  note?: string;
+}
+
+/**
+ * Seed text for the Test tab's "Fill with AI" run: the agent produces ONE
+ * realistic sample instance of the kind as a bare JSON object, which the tab
+ * stages into the canonical `KindInputForm`. Deliberately read-only work — the
+ * creator agent must not touch the kind itself here, and the user still presses
+ * Render (the real ajv gate) and Save.
+ */
+export function composeKindSampleFillIntent(
+  input: KindSampleFillIntentInput,
+): string {
+  const note = input.note?.trim() ? `\n\n${input.note.trim()}` : "";
+  return (
+    `Write ONE realistic sample instance of the existing Shape (kind) \`${input.kind}\` — "${input.label}".\n\n` +
+    `Do NOT create, edit, activate or otherwise modify this Shape or any of its assets — this is a read-only drafting task. ` +
+    `Respond with a single JSON object containing ONLY this Shape's own fields: no \`__kind\` key, no wrapper object, no commentary around it. ` +
+    `Fill every required field with plausible, specific content (never "string", "example" or lorem ipsum), and include optional fields when they make the sample more convincing.` +
+    `${schemaBlock(input.emittedJsonSchema)}${note}`
+  );
+}
+
 /** Cap for inlined live-instance JSON — enough context, never a mega-prompt. */
 const FIX_INSTANCE_CONTENT_MAX = 6_000;
 

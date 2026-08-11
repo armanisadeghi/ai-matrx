@@ -4,6 +4,25 @@
  * `audit_metrics`, stamped per capture) plus the live URL-quality
  * evaluation (needs no crawl data). No I/O; unit-tested in
  * `audit-rollup.test.ts`.
+ *
+ * 🚨 THIS FILE IS THE SPECIFICATION, NOT THE PRODUCTION PATH.
+ *
+ * The app aggregates in POSTGRES — `web.site_audit_rollup(uuid)` and
+ * `web.site_audit_trend(uuid)` (migration
+ * `migrations/web_site_audit_rollup_server_side.sql`), consumed by
+ * `fetchSiteAuditRollup` / `fetchSiteAuditTrend`. Aggregating in the browser
+ * meant shipping every page row plus every latest snapshot's full metrics
+ * jsonb over the wire (6.9 MB for allgreenrecycling.com's 4,531 pages) behind
+ * a 5,000-row cap that THREW instead of truncating.
+ *
+ * `buildSiteAuditRollup` / `buildSiteAuditTrend` stay as the executable,
+ * jest-tested definition of the counting semantics the SQL must reproduce:
+ * URL-quality issues counted for every page, SERP title/description issues
+ * always warnings, social/headings/indexability issues by their own severity,
+ * machine resources excluded by the shared classification rule.
+ * CHANGE ONE, CHANGE BOTH — and re-prove parity against real sites before
+ * shipping (the check that gated the cutover diffed both implementations over
+ * 5 live sites and all 10,437 distinct registry URLs).
  */
 
 import {
@@ -78,6 +97,117 @@ export interface SiteAuditRollup {
 }
 
 const SAMPLE_LIMIT = 3;
+
+// ---------------------------------------------------------------------------
+// Narrowing for the server-side aggregates. The RPCs return `jsonb`, which the
+// generated Supabase types surface as `Json` — these turn that into the typed
+// shapes above, and THROW LOUDLY on anything else rather than handing a
+// half-shaped object to the workspace.
+// ---------------------------------------------------------------------------
+
+const AUDIT_SECTIONS: readonly AuditSection[] = [
+  "serp",
+  "social",
+  "headings",
+  "indexability",
+  "url",
+];
+const VERDICTS = ["indexable", "check", "blocked"] as const;
+
+function bad(what: string): never {
+  throw new Error(
+    `Site audit aggregate returned an unexpected shape (${what}). ` +
+      "Check web.site_audit_rollup / web.site_audit_trend against " +
+      "features/marketing/lib/audit-rollup.ts.",
+  );
+}
+
+function record(value: unknown, what: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) bad(what);
+  return value as Record<string, unknown>;
+}
+
+function int(value: unknown, what: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) bad(what);
+  return value;
+}
+
+function str(value: unknown, what: string): string {
+  if (typeof value !== "string") bad(what);
+  return value;
+}
+
+function list(value: unknown, what: string): unknown[] {
+  if (!Array.isArray(value)) bad(what);
+  return value;
+}
+
+export function parseSiteAuditRollup(value: unknown): SiteAuditRollup {
+  const root = record(value, "rollup");
+  const verdicts = record(root.verdicts, "rollup.verdicts");
+  const passes = record(root.passes, "rollup.passes");
+  return {
+    totalPages: int(root.totalPages, "rollup.totalPages"),
+    nonHtmlResources: int(root.nonHtmlResources, "rollup.nonHtmlResources"),
+    auditedPages: int(root.auditedPages, "rollup.auditedPages"),
+    uncomputedPages: int(root.uncomputedPages, "rollup.uncomputedPages"),
+    verdicts: {
+      indexable: int(verdicts.indexable, "rollup.verdicts.indexable"),
+      check: int(verdicts.check, "rollup.verdicts.check"),
+      blocked: int(verdicts.blocked, "rollup.verdicts.blocked"),
+    },
+    passes: {
+      serp: int(passes.serp, "rollup.passes.serp"),
+      social: int(passes.social, "rollup.passes.social"),
+      headings: int(passes.headings, "rollup.passes.headings"),
+      url: int(passes.url, "rollup.passes.url"),
+    },
+    topIssues: list(root.topIssues, "rollup.topIssues").map((entry) => {
+      const issue = record(entry, "rollup.topIssues[]");
+      const section = str(issue.section, "rollup.topIssues[].section");
+      if (!AUDIT_SECTIONS.includes(section as AuditSection))
+        bad(`rollup.topIssues[].section=${section}`);
+      const severity = str(issue.severity, "rollup.topIssues[].severity");
+      if (severity !== "error" && severity !== "warning")
+        bad(`rollup.topIssues[].severity=${severity}`);
+      return {
+        section: section as AuditSection,
+        severity,
+        message: str(issue.message, "rollup.topIssues[].message"),
+        count: int(issue.count, "rollup.topIssues[].count"),
+        samples: list(issue.samples, "rollup.topIssues[].samples").map(
+          (raw) => {
+            const sample = record(raw, "rollup.topIssues[].samples[]");
+            return {
+              pageId: str(sample.pageId, "rollup.topIssues[].samples[].pageId"),
+              path: str(sample.path, "rollup.topIssues[].samples[].path"),
+            };
+          },
+        ),
+      };
+    }),
+    worstPages: list(root.worstPages, "rollup.worstPages").map((entry) => {
+      const page = record(entry, "rollup.worstPages[]");
+      const verdict = page.indexabilityVerdict;
+      if (
+        verdict !== null &&
+        !VERDICTS.includes(verdict as (typeof VERDICTS)[number])
+      )
+        bad(`rollup.worstPages[].indexabilityVerdict=${String(verdict)}`);
+      return {
+        pageId: str(page.pageId, "rollup.worstPages[].pageId"),
+        path: str(page.path, "rollup.worstPages[].path"),
+        url: str(page.url, "rollup.worstPages[].url"),
+        errorCount: int(page.errorCount, "rollup.worstPages[].errorCount"),
+        warningCount: int(
+          page.warningCount,
+          "rollup.worstPages[].warningCount",
+        ),
+        indexabilityVerdict: verdict as AuditPageRollup["indexabilityVerdict"],
+      };
+    }),
+  };
+}
 
 export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
   const issueMap = new Map<string, AuditIssueRollup>();
@@ -253,4 +383,19 @@ export function buildSiteAuditTrend(
     });
   }
   return points.sort((a, b) => a.day.localeCompare(b.day));
+}
+
+/** Narrow the `web.site_audit_trend` jsonb payload. Throws on any other shape. */
+export function parseSiteAuditTrend(value: unknown): AuditTrendPoint[] {
+  return list(value, "trend").map((entry) => {
+    const point = record(entry, "trend[]");
+    const score = point.overallScore;
+    if (score !== null && typeof score !== "number") bad("trend[].overallScore");
+    return {
+      day: str(point.day, "trend[].day"),
+      overallScore: score,
+      totalPages: int(point.totalPages, "trend[].totalPages"),
+      auditedPages: int(point.auditedPages, "trend[].auditedPages"),
+    };
+  });
 }

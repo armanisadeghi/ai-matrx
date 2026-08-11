@@ -3,8 +3,8 @@
  *
  * Drives `/marketing/brands/[brandId]/sites/[siteId]/audit` — the
  * deterministic site-wide audit dashboard (`features/marketing`,
- * `AuditWorkspace`). It renders the pure rollup from `lib/audit-rollup.ts`
- * (`buildSiteAuditRollup`) over every canonical page's STORED metrics
+ * `AuditWorkspace`). It renders the rollup aggregated in Postgres by
+ * `web.site_audit_rollup` over every canonical page's STORED metrics
  * (`web.snapshot.seo_metrics` + `audit_metrics`, stamped per capture; URL
  * quality computed by the shared evaluator): indexability verdict counts,
  * per-section pass rates (SERP / social / headings / indexability / URL),
@@ -65,6 +65,17 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: true,
     typicalCharCount: 2500,
     sortOrder: 300,
+    group: "audit_coverage",
+  },
+  {
+    name: "audit_coverage_statement",
+    label: "Coverage statement",
+    description:
+      "One sentence stating exactly what this audit covered: total pages, how many carry stored metrics, how many await a first crawl, and how many machine resources were excluded. The rollup is aggregated server-side over every page the caller can see — there is no row cap and no sampling, and this sentence says so.",
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 200,
+    sortOrder: 305,
     group: "audit_coverage",
   },
   {
@@ -187,6 +198,7 @@ Every metric here is DETERMINISTIC and STORED: the scraper (and its byte-identic
 The user comes here to decide what to fix first across the whole site. Your job is prioritization and remediation planning from the evidence — turning top issues and worst pages into an ordered work plan — not re-auditing.
 Uncomputed pages are pages with no stored metrics yet (never crawled or pre-stamping); treat them as unknown, never as passing or failing.
 Known non-HTML resources are retained as crawl evidence and reported in non_html_resources, but are not pages eligible for HTML-only findings. An unusual URL that returned HTML remains a normal audited page.
+The coverage statement (audit_coverage_statement) is the honest scope of this rollup — it is aggregated server-side over every page, uncapped and unsampled. Quote it when you summarize; never imply the audit saw more or less than it did.
 Read the individual values (pages_total / pages_audited / pages_uncomputed / non_html_resources, indexability_verdicts, section_passes, top_issues, worst_pages, audit_score_trend) rather than re-deriving them from audit_rollup — the composite exists only for callers that want the whole bag at once.
 </surface_intro>`,
   groups,
@@ -236,6 +248,7 @@ export function createMarketingAuditScope(values: {
   // alwaysAvailable: true (surface-specific) → required. The workspace mounts
   // this provider only after the rollup query has resolved.
   audit_rollup: Record<string, unknown>;
+  audit_coverage_statement: string;
   pages_total: number;
   pages_audited: number;
   pages_uncomputed: number;

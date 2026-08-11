@@ -43,6 +43,7 @@ import {
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { webCopy, webLocation } from "@/features/marketing/lib/copy-payloads";
 import {
+  auditCoverageStatement,
   humanAuditSnapshot,
   humanIssueRow,
   humanWorstPageRow,
@@ -588,6 +589,17 @@ function AuditBody({
           />
         </section>
 
+        {/* THE COVERAGE STATEMENT — the rollup is aggregated in Postgres over
+            every page the caller can see, so it can always say exactly what it
+            looked at. Never let this surface show numbers without saying what
+            they cover. */}
+        <p
+          data-surface-value="audit_coverage_statement"
+          className="text-xs text-muted-foreground"
+        >
+          {auditCoverageStatement(rollup)}
+        </p>
+
         <CatalogueAnalysisPanel />
 
         <SectionCard anchor="section_passes" title="Pass rates" copy={copy}>
@@ -780,6 +792,7 @@ export function AuditWorkspace() {
         createMarketingAuditScope({
           ...getBaseValues(),
           audit_rollup: { ...data },
+          audit_coverage_statement: auditCoverageStatement(data),
           pages_total: data.totalPages,
           pages_audited: data.auditedPages,
           pages_uncomputed: data.uncomputedPages,

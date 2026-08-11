@@ -23,7 +23,7 @@ import {
   Target,
   X,
 } from "lucide-react";
-import MarkdownStream from "@/components/MarkdownStream";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
@@ -524,22 +524,12 @@ export function ReputationWorkspace() {
                 {analysis.run.error}
               </div>
             ) : null}
-            {analysis.run.requestId && analysis.run.hasStreamedContent ? (
-              <SectionCard title="Live evidence review" anchor="live-analysis">
-                <div className="p-3">
-                  <MarkdownStream
-                    requestId={analysis.run.requestId}
-                    isStreamActive={running}
-                    hideCopyButton
-                  />
-                </div>
-              </SectionCard>
-            ) : running ? (
-              <div className="flex items-center gap-2 rounded-lg border bg-card p-3 text-xs text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                {analysis.run.stage || "Building the evidence bundle…"}
-              </div>
-            ) : null}
+            <LiveRunDisplay
+              requestId={analysis.run.requestId}
+              pending={running}
+              label={analysis.run.stage || "Building the evidence bundle"}
+              bodyClassName="max-h-[32rem]"
+            />
 
             <KpiBand data={data} />
 

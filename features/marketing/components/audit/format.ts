@@ -41,6 +41,33 @@ export function humanWorstPageRow(page: AuditPageRollup): string {
 }
 
 /**
+ * THE COVERAGE STATEMENT — what this audit actually looked at.
+ *
+ * A site audit that silently sampled, capped, or dropped rows is worse than no
+ * audit: the user reads a clean number and believes it covers their site. The
+ * rollup is aggregated in Postgres over every page the caller can see, so the
+ * honest answer is always sayable — say it, on screen, in every copy/export.
+ */
+export function auditCoverageStatement(rollup: SiteAuditRollup): string {
+  const n = (value: number) => value.toLocaleString();
+  const parts = [
+    `Audited all ${n(rollup.totalPages)} page${rollup.totalPages === 1 ? "" : "s"} on this site`,
+    `${n(rollup.auditedPages)} with stored metrics from their latest capture`,
+  ];
+  if (rollup.uncomputedPages > 0) {
+    parts.push(
+      `${n(rollup.uncomputedPages)} awaiting a first crawl (URL quality still evaluated)`,
+    );
+  }
+  if (rollup.nonHtmlResources > 0) {
+    parts.push(
+      `${n(rollup.nonHtmlResources)} machine resource${rollup.nonHtmlResources === 1 ? "" : "s"} excluded from HTML-only findings`,
+    );
+  }
+  return `${parts.join(" — ")}. Nothing is capped or sampled.`;
+}
+
+/**
  * The snapshot stays a readable summary: it enumerates the top slice of the
  * (now complete, uncapped) issue list and states how many more exist. The
  * full list is always reachable via the JSON/agent copies and exports.
@@ -51,6 +78,7 @@ export function humanAuditSnapshot(rollup: SiteAuditRollup): string {
   const hiddenIssues = rollup.topIssues.length - SNAPSHOT_ISSUE_LIMIT;
   return [
     `Site audit rollup:`,
+    `- Coverage: ${auditCoverageStatement(rollup)}`,
     `- Pages: ${rollup.totalPages} (${rollup.auditedPages} audited, ${rollup.uncomputedPages} not yet audited)`,
     `- Non-HTML resources excluded from page findings: ${rollup.nonHtmlResources}`,
     `- Indexable: ${rollup.verdicts.indexable} · Needs review: ${rollup.verdicts.check} · Blocked: ${rollup.verdicts.blocked}`,

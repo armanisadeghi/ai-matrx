@@ -12,11 +12,25 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { Check, CircleAlert, Copy, Eye, Loader2, Save } from "lucide-react";
+import {
+  Check,
+  CircleAlert,
+  Copy,
+  Eye,
+  Loader2,
+  Save,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import type { Json } from "@/types/database.types";
+import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import { KIND_CREATOR_SLOT_KEY } from "@/features/content-ir/studio/constants";
+import { composeKindSampleFillIntent } from "@/features/content-ir/studio/kind-agent-intents";
 import KindInputForm from "@/features/content-ir/input/KindInputForm";
 import KindInstanceRender, {
   isRecordValue,
@@ -38,6 +52,27 @@ interface ShapeTestTabProps {
   kindVersion: number;
   /** `metadata.title_key` — the per-kind instance-title override (or null). */
   titleKey: string | null;
+  /** The kind's emitted JSON Schema — inlined into the AI fill brief. */
+  emittedJsonSchema?: Json | null;
+}
+
+/** Generous ceiling — a large Shape's sample is a real drafting task. */
+const AI_FILL_TIMEOUT_MS = 180_000;
+
+/**
+ * Narrow whatever the agent emitted to a form seed: a bare object of THIS
+ * Shape's fields. `__kind` is the carried discriminator, never a form field —
+ * it is dropped rather than fed to the input resolver as an unknown property.
+ */
+function coerceSeedValue(value: unknown): Record<string, unknown> {
+  if (!isRecordValue(value))
+    throw new Error(
+      "The agent returned something other than a JSON object of this Shape's fields.",
+    );
+  const { [KIND_KEY]: _discriminator, ...fields } = value;
+  if (Object.keys(fields).length === 0)
+    throw new Error("The agent returned an empty object.");
+  return fields;
 }
 
 type SaveState =
@@ -58,6 +93,7 @@ export default function ShapeTestTab({
   kindDefinitionId,
   kindVersion,
   titleKey,
+  emittedJsonSchema,
 }: ShapeTestTabProps) {
   const [instance, setInstance] = useState<unknown>(null);
   const [renderKey, setRenderKey] = useState(0);
@@ -68,6 +104,58 @@ export default function ShapeTestTab({
   // arrive with a new `key` to remount the form — hence the counter.
   const [formSeed, setFormSeed] = useState<Record<string, unknown> | null>(null);
   const [formSeedKey, setFormSeedKey] = useState(0);
+  // Live-by-default (no spinner while AI works): the fill run keeps its
+  // instance alive so `<LiveRunDisplay>` renders the model's own tokens
+  // through the canonical pipeline while it drafts.
+  const aiFill = useLiveAgentRun();
+
+  // THE ONE seeding path — the surface write target (`test_draft_instance`)
+  // and the "Fill with AI" button stage the form identically. Neither sets the
+  // rendered instance: the user presses Render (the real ajv gate) and Save
+  // exactly as if they had typed every field themselves.
+  function seedForm(value: Record<string, unknown>): void {
+    setFormSeed(value);
+    setFormSeedKey((k) => k + 1);
+    // The staged payload is not the rendered one until the user presses
+    // Render, so clear any stale render/save state rather than implying the
+    // preview below reflects what just landed in the form.
+    setInstance(null);
+    setSaveState({ status: "idle" });
+  }
+
+  async function fillWithAi(): Promise<void> {
+    try {
+      const seed = await aiFill.run<Record<string, unknown>>({
+        slotKey: KIND_CREATOR_SLOT_KEY,
+        surfaceKey: `shapes-test-fill:${kind}`,
+        sourceFeature: "ai-results",
+        surfaceName: "matrx-user/shapes",
+        userInput: composeKindSampleFillIntent({
+          kind,
+          label,
+          emittedJsonSchema,
+        }),
+        autoClearConversation: true,
+        timeoutMs: AI_FILL_TIMEOUT_MS,
+        failureMessages: {
+          streamError: "The agent failed before drafting a sample.",
+          noJson: "The agent finished without producing a JSON object.",
+          timeout: "Timed out waiting for the agent to draft a sample.",
+        },
+        coerce: coerceSeedValue,
+      });
+      seedForm(seed);
+      toast.success(`Draft ${label} staged in the form`, {
+        description: "Review it, then press Render.",
+      });
+    } catch (error) {
+      // `useLiveAgentRun` surfaces the message; the display keeps the partial
+      // stream on screen so the user can see how far the agent got.
+      toast.error("The AI could not draft a sample", {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
 
   async function saveInstance(): Promise<void> {
     if (!isRecordValue(instance)) {
@@ -163,13 +251,7 @@ export default function ShapeTestTab({
         );
       if (Object.keys(value).length === 0)
         throw new Error("test_draft_instance expects at least one field.");
-      setFormSeed(value);
-      setFormSeedKey((k) => k + 1);
-      // The staged payload is not the rendered one until the user presses
-      // Render, so clear any stale render/save state rather than implying the
-      // preview below reflects what just landed in the form.
-      setInstance(null);
-      setSaveState({ status: "idle" });
+      seedForm(value);
     },
   });
 

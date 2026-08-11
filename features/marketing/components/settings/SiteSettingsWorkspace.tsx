@@ -41,6 +41,15 @@ import { SiteStrategyCard } from "@/features/marketing/components/settings/SiteS
 import { CollectionStatusPanel } from "@/features/marketing/components/settings/CollectionStatusPanel";
 import { SiteAnalyticsCard } from "@/features/marketing/components/settings/SiteAnalyticsCard";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingSiteSettingsScope } from "@/features/surfaces/manifests/marketing-site-settings.manifest";
+import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
+import {
+  collectionStatusForSurface,
+  useCollectionStatus,
+} from "@/features/marketing/data/collection-status";
+import { buildCrawlPolicyWriteHandlers } from "@/features/marketing/components/settings/crawl-policy-writes";
 
 // crawl_defaults round-trips ONLY through features/marketing/crawler/crawl-defaults.ts.
 
@@ -67,6 +76,17 @@ export function SiteSettingsWorkspace() {
     include_patterns: parsePatternLines(includeText),
     exclude_patterns: parsePatternLines(excludeText),
   };
+  const { getBaseValues } = useMarketingSiteSurfaceBase();
+  // Same React Query entry the panel below renders — the surface exposes the
+  // rows to agents without a second request.
+  const collectionStatus = useCollectionStatus(site, sitePath);
+  // Agents edit this page through the SAME setters the user's typing uses.
+  const writeHandlers = buildCrawlPolicyWriteHandlers({
+    setCrawl,
+    setIncludeText,
+    setExcludeText,
+    setStatus,
+  });
   const patternProblems = invalidCrawlPatterns(pendingOptions);
   const update = useMutation({
     mutationFn: updateSiteSettings,
@@ -135,7 +155,42 @@ export function SiteSettingsWorkspace() {
     attributes: { site_id: site.id },
   });
 
+  const dirty =
+    name !== site.name ||
+    status !== site.status ||
+    visibility !== site.visibility ||
+    JSON.stringify(pendingOptions) !==
+      JSON.stringify(crawlOptionsFromSettings(site.settings));
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName="matrx-user/marketing-site-settings"
+      isEditable
+      getScope={() =>
+        createMarketingSiteSettingsScope({
+          ...getBaseValues(),
+          site_status: status,
+          site_visibility: visibility,
+          crawl_policy: { ...pendingOptions },
+          crawl_policy_issues: patternProblems.map((problem) => ({
+            field: problem.field,
+            pattern: problem.pattern,
+            error: problem.error,
+          })),
+          unsaved_changes: dirty,
+          ...(collectionStatus.data
+            ? {
+                data_sources: collectionStatusForSurface(collectionStatus.data),
+                data_sources_needing_attention: collectionStatus.data.filter(
+                  (row) =>
+                    row.health === "failing" || row.health === "not_connected",
+                ).length,
+              }
+            : {}),
+        })
+      }
+      getWriteHandlers={() => writeHandlers}
+    >
     <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
       <div className="grid gap-3 xl:grid-cols-2">
         <section className="rounded-lg border border-border bg-card">
@@ -441,6 +496,7 @@ export function SiteSettingsWorkspace() {
         </Button>
       </div>
     </main>
+    </SurfaceRuntimeProvider>
   );
 }
 

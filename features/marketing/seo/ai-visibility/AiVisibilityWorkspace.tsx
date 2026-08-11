@@ -15,7 +15,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
-import MarkdownStream from "@/components/MarkdownStream";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -595,14 +595,13 @@ export function AiVisibilityWorkspace({
               </span>
             ) : null}
           </div>
-          {run.requestId && run.hasStreamedContent ? (
-            <div className="max-h-80 overflow-y-auto rounded-lg border border-border bg-muted/20 px-3 py-2">
-              <MarkdownStream
-                requestId={run.requestId}
-                isStreamActive={running}
-                hideCopyButton
-              />
-            </div>
+          {run.requestId ? (
+            <LiveRunDisplay
+              requestId={run.requestId}
+              pending={running}
+              label={run.stage ?? "AI visibility analysis"}
+              bodyClassName="max-h-80"
+            />
           ) : (
             <p className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
               Evidence cards will appear here as each provider answer, source

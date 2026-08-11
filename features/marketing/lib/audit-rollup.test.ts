@@ -133,6 +133,55 @@ describe("buildSiteAuditRollup", () => {
     expect([...counts].sort((a, b) => b - a)).toEqual(counts);
   });
 
+  it("aggregates a site far past the retired 5,000-page fetch cap", () => {
+    // The client-side fetch used to page `web.page` behind a hard 5,000-row
+    // ceiling and THROW when a site crossed it — allgreenrecycling.com sat 469
+    // crawled rows away from a blank audit page. Aggregation now happens in
+    // Postgres (web.site_audit_rollup) with no cap, and this reference
+    // implementation must have none either: every page counted, every finding
+    // kept, nothing sampled.
+    const PAGES = 6200;
+    const rollup = buildSiteAuditRollup(
+      Array.from({ length: PAGES }, (_, i) => {
+        // Every 10th page is a WordPress REST endpoint the crawler never
+        // stamped — excluded by URL shape alone, exactly as at real scale.
+        const isMachine = i % 10 === 0;
+        const url = isMachine
+          ? `https://example.com/wp-json/wp/v2/posts/${i}`
+          : `https://example.com/page-${i}`;
+        return {
+          id: `p${i}`,
+          url,
+          path: isMachine ? `/wp-json/wp/v2/posts/${i}` : `/page-${i}`,
+          contentTypeLast: null,
+          seo_metrics: buildStoredSeoMetrics(
+            "t".repeat(80),
+            "Learn how the platform works, what it costs, and how teams use it to ship real work every single day.",
+            "client",
+          ),
+          audit_metrics: auditFor(url, { title: null }),
+        };
+      }),
+    );
+
+    const machinePages = PAGES / 10;
+    expect(rollup.nonHtmlResources).toBe(machinePages);
+    expect(rollup.totalPages).toBe(PAGES - machinePages);
+    expect(rollup.auditedPages).toBe(PAGES - machinePages);
+    // Every HTML page carries findings, and every one of them is reported.
+    expect(rollup.worstPages).toHaveLength(PAGES - machinePages);
+    // The shared over-long-title issue is counted on all of them, not capped.
+    const titleIssue = rollup.topIssues.find((issue) =>
+      issue.message.includes("Title is too long"),
+    );
+    expect(titleIssue?.count).toBe(PAGES - machinePages);
+    expect(titleIssue?.samples).toHaveLength(3);
+    // And no /wp-json endpoint leaked into the findings at this scale.
+    expect(
+      rollup.worstPages.some((page) => page.url.includes("/wp-json")),
+    ).toBe(false);
+  });
+
   it("handles an empty site", () => {
     const rollup = buildSiteAuditRollup([]);
     expect(rollup.totalPages).toBe(0);
