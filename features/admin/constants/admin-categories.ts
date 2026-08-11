@@ -1148,6 +1148,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/reporting/dead-ends",
         isNew: true,
       },
+      {
+        title: "ESLint debt",
+        description:
+          "Every error-severity ESLint finding in the repo, classified bug / correctness / doctrine / style so the backlog can be worked worst-first. Ranked by feature and file, each row with a one-click repair brief.",
+        iconName: "ShieldCheck",
+        link: "/administration/reporting/lint-debt",
+        isNew: true,
+      },
     ],
   },
   {

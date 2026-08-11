@@ -51,13 +51,8 @@ import {
   type DeadEndRuleId,
   type DeadEndSeverity,
 } from "@/scripts/dead-ends/types";
-import { fixPromptForBucket, fixPromptForFinding } from "./fix-prompt";
-import {
-  ENTITY_REGISTRY_PATH,
-  commitHref,
-  pathHref,
-  sourceHref,
-} from "./source-links";
+import { ENTITY_REGISTRY_PATH, fixPromptForBucket, fixPromptForFinding } from "./fix-prompt";
+import { commitHref, pathHref, sourceHref } from "@/features/admin/reporting/source-links";
 
 const DOCTRINE_HREF =
   "https://github.com/armanisadeghi/ai-matrx/blob/main/.claude/skills/no-dead-ends/SKILL.md";

@@ -10,6 +10,7 @@ type-errors/
 
 # Claude ephemeral agent worktrees (nested repos / copied trees — never commit)
 .claude/worktrees/
+.worktrees/
 
 # dependencies
 node_modules/

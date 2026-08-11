@@ -10,7 +10,10 @@
 
 import { describeFinding, isRegistryToken } from "@/scripts/dead-ends/describe";
 import type { DeadEndFinding } from "@/scripts/dead-ends/types";
-import { ENTITY_REGISTRY_PATH } from "./source-links";
+/** The registry a missing `hrefFor` gets added to — the one-click fix pointer.
+ *  Dead-ends-specific, so it stays here rather than in the shared reporting
+ *  source-link module the lint-debt scoreboard also consumes. */
+export const ENTITY_REGISTRY_PATH = "features/scopes/registry/entityRegistry.ts";
 
 const DOCTRINE = "common-docs/policies/no-dead-ends.md";
 

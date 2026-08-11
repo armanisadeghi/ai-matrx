@@ -127,6 +127,9 @@ export const RULE_CLASS: Record<string, LintDebtClass> = {
   "react-hooks/immutability": "correctness",
   // Side effects during render.
   "react-hooks/purity": "correctness",
+  // Reading or writing module/global state during render — the same tearing
+  // class as `purity`, surfaced separately by the compiler lint.
+  "react-hooks/globals": "correctness",
   // A component defined inside another component is a NEW type every render:
   // the whole subtree unmounts and remounts, losing state and focus.
   "react-hooks/static-components": "correctness",

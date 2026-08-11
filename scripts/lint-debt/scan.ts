@@ -48,6 +48,10 @@ export async function scanRepo(root: string, targets: string[] = ["."]): Promise
       // and silently bucketing it as `(none)` would hide a genuinely broken
       // checkout inside a style backlog.
       const rule = message.ruleId ?? "(parse error)";
+      // The compiler lints are multi-paragraph. Collapsed to one line so a
+      // finding stays one row in the terminal AND one cell on the scoreboard;
+      // the full text is always one `npx eslint <file>` away.
+      const flat = message.message.replace(/\s+/g, " ").trim();
       findings.push({
         file,
         line: message.line ?? 0,
@@ -55,10 +59,7 @@ export async function scanRepo(root: string, targets: string[] = ["."]): Promise
         rule,
         feature: featureOf(file),
         route: routeOf(file),
-        message:
-          message.message.length > MESSAGE_MAX
-            ? `${message.message.slice(0, MESSAGE_MAX - 1)}…`
-            : message.message,
+        message: flat.length > MESSAGE_MAX ? `${flat.slice(0, MESSAGE_MAX - 1)}…` : flat,
       });
     }
   }

@@ -289,7 +289,7 @@ function print(report: LintDebtReport, args: Args, unclassified: string[]): void
   for (const bucket of report.byRule) {
     const color = bucket.klass === "bug" ? RED : bucket.klass === "correctness" ? YELLOW : DIM;
     console.log(
-      `  ${String(bucket.count).padStart(5)}  ${color}${bucket.klass.padEnd(11)}${NC}${bucket.rule}`,
+      `  ${String(bucket.count).padStart(5)}  ${color}${bucket.klass.padEnd(12)}${NC}${bucket.rule}`,
     );
   }
 
