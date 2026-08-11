@@ -13,6 +13,26 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D150 — Marketing item surfaces hide stored identities, evidence, and doors (2026-08-11)
+
+A No-Dead-Ends audit after the backlink-record rebuild found these verified gaps; fix each by extending/reusing the canonical item detail rather than adding another partial drawer:
+
+- P0: `components/analysis/FindingDetail.tsx` replaces the full inspector with a partial view that omits identity, subject, status, score/severity/confidence, lifecycle, and timestamps.
+- P0: `components/pages/SnapshotDetail.tsx` describes itself as the full immutable record but shows selected fragments and an inert eight-character crawl id; add full data plus crawl/page doors.
+- P0: `components/operations/BatchDetailWorkspace.tsx` item detail shows only label/subject/metadata; site subjects and result ids remain inert. Build one canonical `BatchItemDetail`.
+- P0: `components/media/SiteVideosView.tsx` persists expensive AI title/description/keywords/schema/generation metadata but item UI exposes only title and a meta badge; build a complete video/brand-asset detail.
+- P1: `components/backlinks/ReferringDomainIntelligenceTable.tsx` hides most profile, provider, quality, AI, opinion, and lifecycle fields and disables professional sort/filter on most columns.
+- P1: GSC query rows in `search-console/components/{GscDimensionTable,dig/DigResultsTable,watch/WatchlistTab,classification/KeywordClassificationWorkspace}.tsx` do not use the existing Keyword Intelligence window.
+- P1: `components/ranks/RanksWorkspace.tsx` leaves matched/competitive result URLs inert and forks a weaker SERP renderer instead of canonical `SerpResult`.
+- P1: `content-plan/components/NodeAssociations.tsx` renders topic/keyword/person/source relationships as truncated removable labels without entity doors.
+- P1: provider inventories/counts are inert in `components/integrations/MarketingConnectionsWorkspace.tsx` and Bing accounts are shortened UUIDs in `bing/BingConnectionsWorkspace.tsx`; build a complete shared connection panel.
+- P1: `components/access/SiteAccessWorkspace.tsx` displays grantee UUIDs despite already loading user names/emails; reuse `UserIdentity` and the user door.
+- P1: relationship doors/full inventories are missing in `components/{structure/StructureWorkspace,pages/cards/PageLinksCard,inspection/LinksInspectionTable,pages/PagePickerDialog,pages/DismissedPagesTable,sitemaps/SitemapsWorkspace}.tsx`.
+- P1: individual data remains hidden or inert in `components/{discovery/DiscoveryInbox,sites/SitePeekWindow,brands/BrandWorkspace,media/SiteVideosView}.tsx`.
+- P2: silent slices remain in `discovery/youtube/YouTubeVideoPreview.tsx`, `components/analysis/CatalogueAnalysisPanel.tsx`, `components/inspection/link-plan/SiteLinkComplianceView.tsx`, and `components/inspection/link-graph/ExternalLinksView.tsx`; expose the remainder through a real door/list.
+
+The audit found Coverage, crawl session/URL/log tables and reports, active Pages, page captures/findings/tasks/media, finding remedies, link-graph selected-node panels, URL-set sitemap detail, Site Keyword Performance/Keyword Intelligence, Content Plan node detail, and Search Console New Pages already following the complete-record/door contract.
+
 ### D149 — Marketing batch/cost routes still query the retired `web.batch_*` spine (2026-08-11)
 
 The live DB dropped `web.batch_job`, `web.batch_item`, and `web.v_cost_by_*`, but
