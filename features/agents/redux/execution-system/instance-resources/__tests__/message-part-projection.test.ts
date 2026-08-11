@@ -3,6 +3,7 @@ import type {
   MessagePart,
   PreFetchedUrl,
 } from "@/types/python-generated/stream-events";
+import { isMessagePart } from "@/types/python-generated/stream-events";
 import {
   messagePartToUserInputPart,
   selectResourcePayloads,
@@ -84,6 +85,26 @@ describe("request/message attachment projection", () => {
       url: "data:image/png;base64,YWJj",
     });
   });
+
+  it("projects persisted media through a complete discriminated request member", () => {
+    expect(
+      messagePartToUserInputPart({
+        type: "media",
+        kind: "image",
+        url: "https://cdn.example.com/image.png",
+        mime_type: "image/png",
+      }),
+    ).toEqual({
+      type: "media",
+      kind: "image",
+      url: "https://cdn.example.com/image.png",
+      mime_type: "image/png",
+    });
+  });
+
+  it("rejects persisted media without a locator at the generated boundary", () => {
+    expect(isMessagePart({ type: "media", kind: "image" })).toBe(false);
+  });
 });
 
 describe("outbound attachment validation", () => {
@@ -98,10 +119,64 @@ describe("outbound attachment validation", () => {
   });
 
   it.each([
-    ["webpage missing its snapshot text", readyResource("input_webpage", { url: snapshot.url })],
-    ["document missing a file id, URL, or bytes", readyResource("document", { filename: "ghost.pdf" })],
-    ["entity reference missing its id", readyResource("input_agent", { name: "No id" })],
-    ["table reference with a guessed shape", readyResource("input_table", { table_id: "table-1" })],
+    [
+      "webpage missing its snapshot text",
+      readyResource("input_webpage", { url: snapshot.url }),
+    ],
+    [
+      "document missing a file id, URL, or bytes",
+      readyResource("document", { filename: "ghost.pdf" }),
+    ],
+    [
+      "entity reference missing its id",
+      readyResource("input_agent", { name: "No id" }),
+    ],
+    [
+      "table reference with a guessed shape",
+      readyResource("input_table", { table_id: "table-1" }),
+    ],
+    [
+      "table cell with an empty row identity",
+      readyResource("input_table", {
+        type: "table_cell",
+        table_id: "table-1",
+        row_id: "",
+        column_name: "status",
+      }),
+    ],
+    [
+      "list item with an empty item identity",
+      readyResource("input_list", {
+        type: "list_item",
+        list_id: "list-1",
+        item_id: "",
+      }),
+    ],
+    [
+      "data reference to a non-allowlisted table",
+      readyResource("input_data", {
+        ref_type: "db_record",
+        table: "contacts",
+        id: "contact-1",
+      }),
+    ],
+    [
+      "data query with an out-of-range limit",
+      readyResource("input_data", {
+        ref_type: "db_query",
+        table: "notes",
+        limit: 1001,
+      }),
+    ],
+    [
+      "data field reference with an empty field name",
+      readyResource("input_data", {
+        ref_type: "db_field",
+        table: "notes",
+        id: "note-1",
+        field_name: "",
+      }),
+    ],
   ])("rejects a malformed %s instead of guessing", (_label, resource) => {
     expect(() =>
       payloadSelector.resultFunc({ [resource.resourceId]: resource }),
@@ -120,9 +195,36 @@ describe("outbound attachment validation", () => {
       transcript: "Legacy Voice Pad words",
     });
 
-    expect(payloadSelector.resultFunc({ [resource.resourceId]: resource })).toEqual([
-      { type: "text", text: "Legacy Voice Pad words" },
-    ]);
+    expect(
+      payloadSelector.resultFunc({ [resource.resourceId]: resource }),
+    ).toEqual([{ type: "text", text: "Legacy Voice Pad words" }]);
     expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])(
+    "preserves an explicit editable=%s decision for a writable reference",
+    (editable) => {
+      const note = readyResource("input_notes", { id: "note-1" });
+      note.options.editable = editable;
+
+      expect(payloadSelector.resultFunc({ [note.resourceId]: note })).toEqual([
+        expect.objectContaining({
+          type: "input_notes",
+          note_ids: ["note-1"],
+          editable,
+        }),
+      ]);
+    },
+  );
+
+  it("omits editable for a data reference with no write capability", () => {
+    const data = readyResource("input_data", {
+      refs: [{ ref_type: "db_record", table: "notes", id: "note-1" }],
+    });
+    data.options.editable = true;
+
+    expect(payloadSelector.resultFunc({ [data.resourceId]: data })).toEqual([
+      expect.not.objectContaining({ editable: expect.anything() }),
+    ]);
   });
 });

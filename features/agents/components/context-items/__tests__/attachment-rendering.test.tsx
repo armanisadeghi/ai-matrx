@@ -157,6 +157,16 @@ describe("submitted webpage rendering", () => {
     expect(container.querySelector("[contenteditable='true']")).toBeNull();
   });
 
+  it("labels an attached draft without pretending it was already sent", () => {
+    act(() => {
+      root.render(<WebpageBody item={webpageItem("resource")} />);
+    });
+
+    expect(container.textContent).toContain("Snapshot attached to this draft");
+    expect(container.textContent).not.toContain("Snapshot sent with this message");
+    expect(container.textContent).toContain(snapshot.textContent);
+  });
+
   it("renders a legacy string URL without fetching or embedding the live page", () => {
     const item = webpageItem("block");
     item.refs.webpages = ["https://legacy.example.com/article"];

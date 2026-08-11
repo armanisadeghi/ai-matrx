@@ -6,8 +6,9 @@
  * is permitted to modify the underlying record (note body, task fields, etc.).
  * Files, media, raw text, and editor XML pills are never editable.
  *
- * The wire contract (see `selectResourcePayloads`): read-only omits the
- * `editable` key entirely (backend default); editable sends `editable: true`.
+ * The wire contract (see `selectResourcePayloads`) is explicit for capable
+ * resources: read-only sends `editable: false`; editable sends `editable: true`.
+ * Omission means "unspecified" on the backend and must never represent a lock.
  */
 
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
@@ -17,14 +18,12 @@ const EDITABLE_CAPABLE_BLOCK_TYPES: ReadonlySet<ResourceBlockType> = new Set([
   "input_task",
   "input_table",
   "input_list",
-  "input_data",
   // Webpage text may be edited in the picker BEFORE send, but it has no
   // writable backing record. That is snapshot preparation, not agent access.
   // Matrx entities whose underlying record the agent can write back to.
   // Pure references (input_agent, input_agent_app) are intentionally NOT here.
   "input_project",
   "input_transcript",
-  "input_transcript_session",
   "input_workbook",
   "input_document",
 ]);

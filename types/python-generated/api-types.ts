@@ -17435,7 +17435,7 @@ export interface components {
              */
             type: "input_agent_app";
             /** Agent App Ids */
-            agent_app_ids?: string[];
+            agent_app_ids: string[];
         };
         /**
          * AgentAssignmentRunRequest
@@ -17724,7 +17724,7 @@ export interface components {
              */
             type: "input_agent";
             /** Agent Ids */
-            agent_ids?: string[];
+            agent_ids: string[];
         };
         /** AgentListItem */
         AgentListItem: {
@@ -23092,6 +23092,11 @@ export interface components {
              * @default false
              */
             overwrite?: boolean;
+            /**
+             * Include Published
+             * @default false
+             */
+            include_published?: boolean;
             /** Node Ids */
             node_ids?: string[] | null;
         };
@@ -25445,9 +25450,7 @@ export interface components {
              */
             type: "input_data";
             /** Refs */
-            refs?: {
-                [key: string]: unknown;
-            }[];
+            refs: (components["schemas"]["DbRecordRef"] | components["schemas"]["DbQueryRef"] | components["schemas"]["DbFieldRef"])[];
             /**
              * Convert To Text
              * @default true
@@ -25465,6 +25468,17 @@ export interface components {
             keep_fresh?: boolean;
             /** Editable */
             editable?: boolean | null;
+        };
+        /** DataRefSort */
+        DataRefSort: {
+            /** Field */
+            field: string;
+            /**
+             * Direction
+             * @default asc
+             * @enum {string}
+             */
+            direction?: "asc" | "desc";
         };
         /** DataStoreAdminRow */
         DataStoreAdminRow: {
@@ -25722,6 +25736,104 @@ export interface components {
             updated_at?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * DbFieldRef
+         * @description Fetch a single field value from one row of a system table.
+         */
+        DbFieldRef: {
+            /**
+             * Table
+             * @enum {string}
+             */
+            table: "notes" | "tasks" | "projects" | "organizations";
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            ref_type: "db_field";
+            /** Id */
+            id: string;
+            /** Field Name */
+            field_name: string;
+        };
+        /**
+         * DbQueryRef
+         * @description Fetch multiple rows from a system table with optional filters.
+         */
+        DbQueryRef: {
+            /**
+             * Table
+             * @enum {string}
+             */
+            table: "notes" | "tasks" | "projects" | "organizations";
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            ref_type: "db_query";
+            /** Filter */
+            filter?: {
+                [key: string]: unknown;
+            };
+            /** Fields */
+            fields?: string[] | null;
+            sort?: components["schemas"]["DataRefSort"] | null;
+            /**
+             * Limit
+             * @default 50
+             */
+            limit?: number;
+        };
+        /**
+         * DbRecordRef
+         * @description Fetch one full row from a system table by primary key.
+         */
+        DbRecordRef: {
+            /**
+             * Table
+             * @enum {string}
+             */
+            table: "notes" | "tasks" | "projects" | "organizations";
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            ref_type: "db_record";
+            /** Id */
+            id: string;
+            /** Fields */
+            fields?: string[] | null;
         };
         /** DedupResponse */
         DedupResponse: {
@@ -26786,7 +26898,7 @@ export interface components {
              */
             type: "input_document";
             /** Document Ids */
-            document_ids?: (string | components["schemas"]["ResourceRefInput"])[];
+            document_ids: (string | components["schemas"]["LiveResourceRefInput"])[];
         };
         /**
          * DocumentLineage
@@ -26951,6 +27063,10 @@ export interface components {
             note?: string | null;
             /** Rewrote Column */
             rewrote_column?: boolean | null;
+            /** Schema */
+            schema?: string | null;
+            /** Schema Source */
+            schema_source?: string | null;
         };
         /** DryRunEdgeReport */
         DryRunEdgeReport: {
@@ -32474,7 +32590,7 @@ export interface components {
              */
             type: "input_list";
             /** Bookmarks */
-            bookmarks?: (components["schemas"]["FullListBookmark"] | components["schemas"]["ListGroupBookmark"] | components["schemas"]["ListItemBookmark"])[];
+            bookmarks: (components["schemas"]["FullListBookmark"] | components["schemas"]["ListGroupBookmark"] | components["schemas"]["ListItemBookmark"])[];
             /**
              * Convert To Text
              * @default true
@@ -32567,6 +32683,22 @@ export interface components {
             tools: components["schemas"]["ToolRecord"][];
             /** Count */
             count: number;
+        };
+        /**
+         * LiveResourceRefInput
+         * @description A live id-backed reference; snapshots are not meaningful for opaque resources.
+         */
+        LiveResourceRefInput: {
+            /** Id */
+            id: string;
+            /**
+             * Mode
+             * @default reference
+             * @constant
+             */
+            mode?: "reference";
+        } & {
+            [key: string]: unknown;
         };
         /** LogFileListResponse */
         LogFileListResponse: {
@@ -33966,7 +34098,7 @@ export interface components {
              */
             type: "input_notes";
             /** Note Ids */
-            note_ids?: (string | components["schemas"]["ResourceRefInput"])[];
+            note_ids: (string | components["schemas"]["ResourceRefInput"])[];
             /**
              * Template
              * @default full
@@ -36777,7 +36909,7 @@ export interface components {
              */
             type: "input_project";
             /** Project Ids */
-            project_ids?: string[];
+            project_ids: string[];
         };
         /**
          * ProjectionResponse
@@ -38856,33 +38988,7 @@ export interface components {
              */
             max_chars?: number;
         };
-        /**
-         * ResourceRefInput
-         * @description A single attached-resource reference inside an id list (note_ids, task_ids).
-         *
-         *     Two attach contracts share this shape:
-         *       - reference (default): the server fetches the live record by ``id`` every
-         *         turn. Clients may send a bare id string OR this object with an ``id``.
-         *       - snapshot: the server renders the supplied content verbatim and never
-         *         touches the DB. Set ``mode="snapshot"`` and include the inline fields
-         *         (``content``/``label``/``title``/…). Extra fields are preserved.
-         *
-         *     ``extra="allow"`` so a client can ship the whole resource object (label,
-         *     content, tags, …) without a validation failure — the server reduces it to a
-         *     canonical reference at resolve time (see config/resource_ref.py).
-         */
-        ResourceRefInput: {
-            /** Id */
-            id?: string | null;
-            /**
-             * Mode
-             * @default reference
-             * @enum {string}
-             */
-            mode?: "reference" | "snapshot";
-        } & {
-            [key: string]: unknown;
-        };
+        ResourceRefInput: components["schemas"]["LiveResourceRefInput"] | components["schemas"]["SnapshotContentResourceRefInput"] | components["schemas"]["SnapshotTextResourceRefInput"] | components["schemas"]["SnapshotBodyResourceRefInput"] | components["schemas"]["SnapshotDescriptionResourceRefInput"] | components["schemas"]["SnapshotValueResourceRefInput"];
         /** ResponseFormatJsonObject */
         ResponseFormatJsonObject: {
             /**
@@ -41907,6 +42013,66 @@ export interface components {
             original_bbox: components["schemas"]["BboxInput"];
             snapped_bbox: components["schemas"]["BboxInput"];
         };
+        /** SnapshotBodyResourceRefInput */
+        SnapshotBodyResourceRefInput: {
+            /**
+             * Mode
+             * @constant
+             */
+            mode: "snapshot";
+            /** Body */
+            body: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** SnapshotContentResourceRefInput */
+        SnapshotContentResourceRefInput: {
+            /**
+             * Mode
+             * @constant
+             */
+            mode: "snapshot";
+            /** Content */
+            content: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** SnapshotDescriptionResourceRefInput */
+        SnapshotDescriptionResourceRefInput: {
+            /**
+             * Mode
+             * @constant
+             */
+            mode: "snapshot";
+            /** Description */
+            description: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** SnapshotTextResourceRefInput */
+        SnapshotTextResourceRefInput: {
+            /**
+             * Mode
+             * @constant
+             */
+            mode: "snapshot";
+            /** Text */
+            text: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** SnapshotValueResourceRefInput */
+        SnapshotValueResourceRefInput: {
+            /**
+             * Mode
+             * @constant
+             */
+            mode: "snapshot";
+            /** Value */
+            value: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** SourceBulkAction */
         SourceBulkAction: {
             /** Source Ids */
@@ -43169,7 +43335,7 @@ export interface components {
              */
             type: "input_table";
             /** Bookmarks */
-            bookmarks?: (components["schemas"]["FullTableBookmark"] | components["schemas"]["TableColumnBookmark"] | components["schemas"]["TableRowBookmark"] | components["schemas"]["TableCellBookmark"] | components["schemas"]["TableSchemaBookmark"])[];
+            bookmarks: (components["schemas"]["FullTableBookmark"] | components["schemas"]["TableColumnBookmark"] | components["schemas"]["TableRowBookmark"] | components["schemas"]["TableCellBookmark"] | components["schemas"]["TableSchemaBookmark"])[];
             /**
              * Convert To Text
              * @default true
@@ -43324,7 +43490,7 @@ export interface components {
              */
             type: "input_task";
             /** Task Ids */
-            task_ids?: (string | components["schemas"]["ResourceRefInput"])[];
+            task_ids: (string | components["schemas"]["ResourceRefInput"])[];
             /**
              * Template
              * @default full
@@ -44496,7 +44662,7 @@ export interface components {
              */
             type: "input_transcript";
             /** Transcript Ids */
-            transcript_ids?: string[];
+            transcript_ids: string[];
         };
         /** TranscriptSessionInputPart */
         TranscriptSessionInputPart: {
@@ -44530,7 +44696,7 @@ export interface components {
              */
             type: "input_transcript_session";
             /** Transcript Session Ids */
-            transcript_session_ids?: string[];
+            transcript_session_ids: string[];
         };
         /** TranscriptionFileRequest */
         TranscriptionFileRequest: {
@@ -45176,15 +45342,28 @@ export interface components {
              */
             type: "media";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Kind
+             * @default audio
+             * @constant
              */
             kind: "audio";
             /** Duration Ms */
             duration_ms?: number | null;
             /** Transcription Result */
             transcription_result?: string | null;
-        };
+        } & (({
+            url: string;
+        } | {
+            file_id: string;
+        } | {
+            base64_data: string;
+        }) & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "audio";
+        });
         /** UserDataStoreCreate */
         UserDataStoreCreate: {
             /** Name */
@@ -45349,8 +45528,9 @@ export interface components {
              */
             type: "media";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Kind
+             * @default document
+             * @constant
              */
             kind: "document";
             /** Width */
@@ -45359,7 +45539,19 @@ export interface components {
             height?: number | null;
             /** Page Count */
             page_count?: number | null;
-        };
+        } & (({
+            url: string;
+        } | {
+            file_id: string;
+        } | {
+            base64_data: string;
+        }) & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "document";
+        });
         /** UserImageMediaPart */
         UserImageMediaPart: {
             /** Metadata */
@@ -45385,15 +45577,28 @@ export interface components {
              */
             type: "media";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Kind
+             * @default image
+             * @constant
              */
             kind: "image";
             /** Width */
             width?: number | null;
             /** Height */
             height?: number | null;
-        };
+        } & (({
+            url: string;
+        } | {
+            file_id: string;
+        } | {
+            base64_data: string;
+        }) & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "image";
+        });
         /**
          * UserOverrides
          * @description Per-request user-level inclusion / exclusion overrides.
@@ -45584,8 +45789,9 @@ export interface components {
              */
             type: "media";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * Kind
+             * @default video
+             * @constant
              */
             kind: "video";
             /** Width */
@@ -45594,7 +45800,19 @@ export interface components {
             height?: number | null;
             /** Duration Ms */
             duration_ms?: number | null;
-        };
+        } & (({
+            url: string;
+        } | {
+            file_id: string;
+        } | {
+            base64_data: string;
+        }) & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "video";
+        });
         /** UserYouTubeMediaPart */
         UserYouTubeMediaPart: {
             /** Metadata */
@@ -47203,7 +47421,7 @@ export interface components {
              */
             type: "input_webpage";
             /** Urls */
-            urls?: (string | components["schemas"]["PreFetchedUrl"])[];
+            urls: (string | components["schemas"]["PreFetchedUrl"])[];
             /**
              * Convert To Text
              * @default true
@@ -47265,7 +47483,7 @@ export interface components {
              */
             type: "input_workbook";
             /** Workbook Ids */
-            workbook_ids?: (string | components["schemas"]["ResourceRefInput"])[];
+            workbook_ids: (string | components["schemas"]["LiveResourceRefInput"])[];
         };
         /** WorkerHealthResponse */
         WorkerHealthResponse: {

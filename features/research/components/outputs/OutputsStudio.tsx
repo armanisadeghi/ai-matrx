@@ -14,9 +14,6 @@ import {
   CheckCircle2,
   X,
   Headphones,
-  Link2,
-  Tag,
-  HelpCircle,
   ImageIcon,
   Clapperboard,
   Film,
@@ -61,11 +58,6 @@ import {
 } from "./outputDefinitions";
 import { getBundleBySlug, getResourceManifest } from "../../service/resources";
 import { resolveBundle } from "../../resources/resolve";
-import {
-  countSeoCharacters,
-  DESCRIPTION_LIMITS,
-  TITLE_LIMITS,
-} from "@/features/marketing/seo/serp/metrics";
 
 /** Research content-engine generators run through AGENT SLOTS — the slot is the
  *  identity, never a hardcoded agent id. The system default is managed in the
@@ -115,17 +107,6 @@ interface PresentationDeck {
   title?: string;
   theme?: Record<string, unknown>;
   slides?: Array<Record<string, unknown>>;
-}
-
-interface SeoPackage {
-  title?: string;
-  meta_description?: string;
-  slug?: string;
-  primary_keyword?: string;
-  keywords?: string[];
-  schema_org?: Record<string, unknown>;
-  open_graph?: Record<string, unknown>;
-  faq?: Array<{ question?: string; answer?: string }>;
 }
 
 const HOST_COUNTS = [1, 2, 3, 4] as const;
@@ -314,11 +295,9 @@ export default function OutputsStudio() {
 
         <SeoOutputCard
           topicId={topicId}
-          organizationId={topic?.organization_id ?? undefined}
           reportMarkdown={reportMarkdown}
           hasReport={hasReport}
           toneProfile={topic?.tone_profile ?? ""}
-          defaultTitle={topic?.name ?? "Research"}
           existing={assetsFor(outputs, "seo")}
           onPersisted={(asset) => persistOutput("seo", asset)}
         />
@@ -1271,69 +1250,87 @@ function SlidesOutputCard({
   );
 }
 
-// ── SEO output (live: runs research_to_seo → renders the package) ────────────
+// ── SEO output ───────────────────────────────────────────────────────────────
+//
+// The package IS the `seo_package` content-IR kind: the slot's agent emits a
+// canonical `{__kind:"seo_package", faq:[{__kind:"faq_item"}]}` envelope, so the
+// run streams into the FLOATING LiveRunWindow and the pipeline routes it to the
+// real SeoPackageBlock token by token — the title lands with its 60-character
+// budget already measured while the FAQ is still being written. No spinner, no
+// page shift, and no second renderer for a shape that already has one (the
+// bespoke `SeoView` card this replaced was deleted 2026-08-11). The persisted
+// asset replays through the SAME path (`KindInstanceRender`), so a reload shows
+// the identical component the live run did.
+//
+// KNOWN GAP (FOUND_DEFECTS D165): the execution system carries no
+// `context_anchor`, so the research-topic anchor the old one-shot `useSlotRunner`
+// call passed is not sent on this path. The report itself still travels in
+// `userInput`, so the agent sees the same material.
 
 function SeoOutputCard({
   topicId,
-  organizationId,
   reportMarkdown,
   hasReport,
   toneProfile,
-  defaultTitle,
   existing,
   onPersisted,
 }: {
   topicId: string;
-  organizationId?: string;
   reportMarkdown: string;
   hasReport: boolean;
   toneProfile: string;
-  defaultTitle: string;
   existing: OutputAsset[];
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
-  const { runSlot, running, unavailable, slotError } = useSlotRunner(SEO_SLOT);
+  // Resolution is read here only to DISABLE the affordance and say why; the
+  // run itself resolves the slot inside the canonical launcher.
+  const { error: slotError } = useAgentSlot(SEO_SLOT);
+  const seoRun = useLiveAgentRun();
   const [viewing, setViewing] = useState<OutputAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
-    if (!hasReport || running) return;
+    if (!hasReport || seoRun.isRunning) return;
     setViewing(null);
     setError(null);
     try {
-      const raw = await runSlot({
-        userInput: buildGeneratorInput(reportMarkdown, toneProfile),
-        organizationId,
-        contextAnchor: {
-          resource_type: "research_topic",
-          resource_id: topicId,
-        },
-        sourceApp: "matrx-frontend",
+      const seo = await seoRun.run<Record<string, unknown>>({
+        slotKey: SEO_SLOT,
+        surfaceKey: "research-outputs-seo",
         sourceFeature: "research",
+        userInput: buildGeneratorInput(reportMarkdown, toneProfile),
+        coerce: (value) => {
+          if (
+            typeof value !== "object" ||
+            value === null ||
+            typeof (value as { title?: unknown }).title !== "string"
+          ) {
+            throw new Error(
+              "The SEO generator didn't return a valid package. Try again.",
+            );
+          }
+          return value as Record<string, unknown>;
+        },
       });
-      const seo = parseJsonLoose<SeoPackage>(raw);
-      if (!seo || !seo.title) {
-        setError("The SEO generator didn't return a valid package. Try again.");
-        return;
-      }
       const asset: OutputAsset = {
         id: crypto.randomUUID(),
         kind: "seo",
-        title: seo.title,
+        title: String(seo.title),
         status: "ready",
         created_at: new Date().toISOString(),
-        slug: seo.slug,
+        slug: typeof seo.slug === "string" ? seo.slug : undefined,
         meta: { seo },
       };
       await onPersisted(asset);
       setViewing(asset);
+      seoRun.dismiss();
       toast.success("SEO package saved to outputs");
     } catch (e) {
       setError(e instanceof Error ? e.message : "unknown error");
     }
   };
 
-  const seo = (viewing?.meta?.seo as SeoPackage | undefined) ?? null;
+  const seo = (viewing?.meta?.seo as Record<string, unknown> | undefined) ?? null;
 
   return (
     <OutputCardShell
@@ -1344,12 +1341,12 @@ function SeoOutputCard({
       slotKey={SEO_SLOT}
     >
       {slotError && <SlotUnavailableNote message={slotError} />}
-      {!running && !viewing && (
+      {!seoRun.isRunning && !viewing && (
         <Button
           size="sm"
           className="gap-1.5 h-8"
           onClick={handleGenerate}
-          disabled={!hasReport || unavailable}
+          disabled={!hasReport || slotError !== null}
         >
           <SearchIcon className="h-3.5 w-3.5" />
           Generate SEO package
@@ -1361,13 +1358,32 @@ function SeoOutputCard({
           {error}
         </span>
       )}
-      {running && <GeneratingNote label="Optimizing for search…" />}
 
-      {!running && viewing && seo && (
-        <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
-            <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
-            <span className="text-xs font-medium flex-1 truncate">
+      {/* The RUN itself is the display — it floats, so this page never shifts
+          and the user can keep working underneath. This strip only says where
+          to look; it is never the only thing on screen while the AI works. */}
+      {seoRun.hasLiveRun && (
+        <>
+          <LiveRunWindowController
+            instanceId={`seo:${topicId}`}
+            conversationId={seoRun.conversationId}
+            pending={seoRun.conversationId === null}
+            label="Optimizing for search"
+          />
+          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-2.5">
+            <SearchIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <span className="text-xs font-medium text-primary">
+              Writing the package — it is streaming in the run window.
+            </span>
+          </div>
+        </>
+      )}
+
+      {!seoRun.hasLiveRun && viewing && seo && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
+            <span className="flex-1 truncate text-xs font-medium">
               {viewing.title}
             </span>
             <button
@@ -1377,9 +1393,12 @@ function SeoOutputCard({
               Close
             </button>
           </div>
-          <div className="p-3">
-            <SeoView seo={seo} />
-          </div>
+          {/* ONE component for the shape — the same one the live run rendered. */}
+          <KindInstanceRender
+            kind="seo_package"
+            value={seo}
+            showRoutingNote={false}
+          />
         </div>
       )}
 
@@ -1396,13 +1415,13 @@ function SeoOutputCard({
                   setViewing(a);
                   setError(null);
                 }}
-                className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left hover:bg-accent/40 transition-colors"
+                className="flex w-full items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left transition-colors hover:bg-accent/40"
               >
-                <SearchIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <span className="text-[11px] font-medium truncate flex-1">
+                <SearchIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="flex-1 truncate text-[11px] font-medium">
                   {a.title}
                 </span>
-                <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
                   {new Date(a.created_at).toLocaleDateString()}
                 </span>
               </button>
@@ -1411,144 +1430,5 @@ function SeoOutputCard({
         </div>
       )}
     </OutputCardShell>
-  );
-}
-
-function SeoField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-0.5">
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
-      <div className="text-xs text-foreground/90">{children}</div>
-    </div>
-  );
-}
-
-function SlugCopyButton({
-  slug,
-  onCopy,
-}: {
-  slug: string;
-  onCopy: (text: string, what: string) => void;
-}) {
-  return (
-    <button
-      onClick={() => onCopy(slug, "Slug")}
-      className="inline-flex items-center gap-1 font-mono text-[11px] rounded bg-muted/60 px-1.5 py-0.5 hover:bg-muted"
-    >
-      <Link2 className="h-3 w-3" />
-      {slug}
-    </button>
-  );
-}
-
-function SeoView({ seo }: { seo: SeoPackage }) {
-  const [showRaw, setShowRaw] = useState(false);
-  const jsonLd = JSON.stringify(
-    { schema_org: seo.schema_org ?? {}, open_graph: seo.open_graph ?? {} },
-    null,
-    2,
-  );
-  const copy = async (text: string, what: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${what} copied`);
-    } catch {
-      toast.error("Couldn't copy");
-    }
-  };
-  return (
-    <div className="space-y-3">
-      <SeoField label="Title">
-        <span className="font-medium">{seo.title}</span>
-        {typeof seo.title === "string" && (
-          <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">
-            {countSeoCharacters(seo.title)}/{TITLE_LIMITS.maxChars}
-          </span>
-        )}
-      </SeoField>
-      {seo.meta_description && (
-        <SeoField label="Meta description">
-          {seo.meta_description}
-          <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">
-            {countSeoCharacters(seo.meta_description)}/
-            {DESCRIPTION_LIMITS.maxChars}
-          </span>
-        </SeoField>
-      )}
-      {seo.slug && (
-        <SeoField label="Slug">
-          <SlugCopyButton slug={seo.slug} onCopy={copy} />
-        </SeoField>
-      )}
-      {Array.isArray(seo.keywords) && seo.keywords.length > 0 && (
-        <SeoField label="Keywords">
-          <div className="flex flex-wrap gap-1 mt-0.5">
-            {seo.keywords.map((k, i) => (
-              <span
-                key={i}
-                className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]",
-                  k === seo.primary_keyword
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "bg-muted/60 text-muted-foreground",
-                )}
-              >
-                <Tag className="h-2.5 w-2.5" />
-                {k}
-              </span>
-            ))}
-          </div>
-        </SeoField>
-      )}
-      {Array.isArray(seo.faq) && seo.faq.length > 0 && (
-        <SeoField label="FAQ">
-          <div className="space-y-1.5 mt-0.5">
-            {seo.faq.map((f, i) => (
-              <div
-                key={i}
-                className="rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5"
-              >
-                <div className="flex items-start gap-1.5">
-                  <HelpCircle className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
-                  <span className="text-[11px] font-medium">{f.question}</span>
-                </div>
-                {f.answer && (
-                  <p className="text-[11px] text-muted-foreground mt-0.5 pl-4.5">
-                    {f.answer}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </SeoField>
-      )}
-      <div className="flex items-center gap-2 pt-1">
-        <button
-          onClick={() => setShowRaw((v) => !v)}
-          className="text-[11px] text-muted-foreground hover:text-foreground"
-        >
-          {showRaw ? "Hide" : "Show"} schema.org + OpenGraph
-        </button>
-        <button
-          onClick={() => copy(jsonLd, "JSON-LD")}
-          className="text-[11px] text-primary hover:underline"
-        >
-          Copy JSON-LD
-        </button>
-      </div>
-      {showRaw && (
-        <pre className="text-[10px] bg-muted/50 rounded-lg p-2.5 overflow-x-auto max-h-60 overflow-y-auto leading-relaxed">
-          {jsonLd}
-        </pre>
-      )}
-    </div>
   );
 }

@@ -12,9 +12,10 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { ManagedResource } from "@/features/agents/types/instance.types";
-import type {
-  MessagePart,
-  PreFetchedUrl,
+import {
+  isMessagePart,
+  type MessagePart,
+  type PreFetchedUrl,
 } from "@/types/python-generated/stream-events";
 import type { UserInputPart } from "@/features/agents/types/request.types";
 import { isPreFetchedUrl } from "@/features/resource-manager/webpage/webpage-snapshot";
@@ -22,23 +23,14 @@ import {
   isEditorXmlResource,
   serializeEditorResourcesAsXml,
 } from "@/features/agents/utils/editor-resource-xml";
+import { isEditableCapableBlockType } from "./editable-resource-types";
 
 const EMPTY_RESOURCES: ManagedResource[] = [];
 const EMPTY_EDITOR_RESOURCES: ManagedResource[] = [];
 const EMPTY_PAYLOADS: UserInputPart[] = [];
 
-type TableBookmark = NonNullable<
-  Extract<UserInputPart, { type: "input_table" }>["bookmarks"]
->[number];
-type ListBookmark = NonNullable<
-  Extract<UserInputPart, { type: "input_list" }>["bookmarks"]
->[number];
-type RequestWebpage = Exclude<
-  NonNullable<
-    Extract<UserInputPart, { type: "input_webpage" }>["urls"]
-  >[number],
-  string
->;
+type RequestMediaPart = Extract<UserInputPart, { type: "media" }>;
+type PersistedMediaPart = Extract<MessagePart, { type: "media" }>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -88,7 +80,9 @@ function resourceMetadata(
 function inputControls(resource: ManagedResource) {
   return {
     ...(resource.options.keepFresh ? { keep_fresh: true } : {}),
-    ...(resource.options.editable ? { editable: true } : {}),
+    ...(isEditableCapableBlockType(resource.blockType)
+      ? { editable: resource.options.editable }
+      : {}),
     ...(!resource.options.convertToText ? { convert_to_text: false } : {}),
     ...(resource.options.optionalContext ? { optional_context: true } : {}),
     ...(resource.options.template
@@ -136,126 +130,82 @@ function toResourceIdList(content: unknown): string[] {
  * `extra="allow"` display hints per docs/protocol/MATRX_REFERENCES.md), so we
  * only array-wrap and drop empties; we never strip hint fields.
  */
-function isTableBookmark(value: unknown): value is TableBookmark {
-  if (!isRecord(value) || typeof value.type !== "string") return false;
-  if (typeof value.table_id !== "string" || !value.table_id) return false;
-  switch (value.type) {
-    case "full_table":
-    case "table_schema":
-      return true;
-    case "table_column":
-      return typeof value.column_name === "string";
-    case "table_row":
-      return typeof value.row_id === "string";
-    case "table_cell":
-      return (
-        typeof value.row_id === "string" &&
-        typeof value.column_name === "string"
-      );
-    default:
-      return false;
-  }
+function structuredEntries(content: unknown, key: "bookmarks" | "refs") {
+  const source =
+    isRecord(content) && Array.isArray(content[key]) ? content[key] : content;
+  return Array.isArray(source) ? source : [source];
 }
 
-function isListBookmark(value: unknown): value is ListBookmark {
-  if (!isRecord(value) || typeof value.type !== "string") return false;
-  if (typeof value.list_id !== "string" || !value.list_id) return false;
-  switch (value.type) {
-    case "full_list":
-      return true;
-    case "list_group":
-      return typeof value.group_name === "string";
-    case "list_item":
-      return typeof value.item_id === "string";
-    default:
-      return false;
-  }
+/** Validate shared request/persistence shapes with the generated schema. */
+function toTableBookmarks(content: unknown) {
+  const candidate: unknown = {
+    type: "input_table",
+    bookmarks: structuredEntries(content, "bookmarks"),
+  };
+  if (!isMessagePart(candidate) || candidate.type !== "input_table") return [];
+  return candidate.bookmarks ?? [];
 }
 
-function toTableBookmarks(content: unknown): TableBookmark[] {
-  const entries = Array.isArray(content) ? content : [content];
-  return entries.filter(isTableBookmark);
+function toListBookmarks(content: unknown) {
+  const candidate: unknown = {
+    type: "input_list",
+    bookmarks: structuredEntries(content, "bookmarks"),
+  };
+  if (!isMessagePart(candidate) || candidate.type !== "input_list") return [];
+  return candidate.bookmarks ?? [];
 }
 
-function toListBookmarks(content: unknown): ListBookmark[] {
-  const entries = Array.isArray(content) ? content : [content];
-  return entries.filter(isListBookmark);
-}
-
-function toRecordList(content: unknown): Record<string, unknown>[] {
-  const entries = Array.isArray(content) ? content : [content];
-  return entries.filter(isRecord);
+function toDataRefs(content: unknown) {
+  const candidate: unknown = {
+    type: "input_data",
+    refs: structuredEntries(content, "refs"),
+  };
+  if (!isMessagePart(candidate) || candidate.type !== "input_data") return [];
+  return candidate.refs ?? [];
 }
 
 function mediaDataUrl(base64Data: string, mimeType?: string): string {
   return `data:${mimeType ?? "application/octet-stream"};base64,${base64Data}`;
 }
 
-function toRequestWebpage(value: PreFetchedUrl): RequestWebpage {
-  return {
-    ...(isRecord(value) ? value : {}),
-    url: value.url,
-    textContent: value.textContent,
-    title: value.title,
-    scrapedAt: value.scrapedAt,
-    charCount: value.charCount,
-  };
+function requestMediaLocator(
+  url: string | null | undefined,
+  fileId: string | null | undefined,
+  base64Data: string | null | undefined,
+) {
+  if (url) return { url };
+  if (fileId) return { file_id: fileId };
+  if (base64Data) return { base64_data: base64Data };
+  throw new TypeError(
+    "Cannot send media attachment without a URL, file id, or inline bytes",
+  );
 }
 
-function toRequestResourceRef(
-  value: string | { id?: string | null; mode?: "reference" | "snapshot" },
-) {
-  if (typeof value === "string") return value;
-  return {
-    ...(isRecord(value) ? value : {}),
-    id: value.id,
-    mode: value.mode,
+function messageMediaPartToUserInputPart(
+  part: PersistedMediaPart,
+): RequestMediaPart {
+  if (part.kind === "youtube") return part;
+  const locator = requestMediaLocator(part.url, part.file_id, undefined);
+  const common = {
+    ...part,
+    ...locator,
+    type: "media" as const,
   };
+  switch (part.kind) {
+    case "image":
+      return { ...common, kind: "image" };
+    case "audio":
+      return { ...common, kind: "audio" };
+    case "video":
+      return { ...common, kind: "video" };
+    case "document":
+      return { ...common, kind: "document" };
+  }
 }
 
 /** Convert an already-persisted part back to the generated request contract. */
 export function messagePartToUserInputPart(part: MessagePart): UserInputPart {
-  switch (part.type) {
-    case "input_webpage":
-      return {
-        ...part,
-        urls: part.urls?.map((value) =>
-          typeof value === "string" ? value : toRequestWebpage(value),
-        ),
-      };
-    case "input_notes":
-      return {
-        ...part,
-        note_ids: part.note_ids?.map(toRequestResourceRef),
-      };
-    case "input_task":
-      return {
-        ...part,
-        task_ids: part.task_ids?.map(toRequestResourceRef),
-      };
-    case "input_workbook":
-      return {
-        ...part,
-        workbook_ids: part.workbook_ids?.map(toRequestResourceRef),
-      };
-    case "input_document":
-      return {
-        ...part,
-        document_ids: part.document_ids?.map(toRequestResourceRef),
-      };
-    case "input_table":
-      return {
-        ...part,
-        bookmarks: part.bookmarks?.map((bookmark) => ({ ...bookmark })),
-      };
-    case "input_list":
-      return {
-        ...part,
-        bookmarks: part.bookmarks?.map((bookmark) => ({ ...bookmark })),
-      };
-    default:
-      return part;
-  }
+  return part.type === "media" ? messageMediaPartToUserInputPart(part) : part;
 }
 
 /**
@@ -276,16 +226,19 @@ export function userInputPartToMessagePart(part: UserInputPart): MessagePart {
       mime_type: part.mime_type,
     };
   }
-  const url =
-    part.url ??
-    ("base64_data" in part && part.base64_data
-      ? mediaDataUrl(part.base64_data, part.mime_type ?? undefined)
-      : undefined);
+  const locator = part.url
+    ? { url: part.url }
+    : part.file_id
+      ? { file_id: part.file_id }
+      : "base64_data" in part && part.base64_data
+        ? { url: mediaDataUrl(part.base64_data, part.mime_type ?? undefined) }
+        : null;
+  if (!locator)
+    throw new TypeError("Cannot persist optimistic media without a locator");
   const common = {
     metadata: part.metadata,
     origin: part.origin,
-    file_id: part.file_id,
-    url,
+    ...locator,
     mime_type: part.mime_type,
     size_bytes: part.size_bytes,
   };
@@ -381,12 +334,11 @@ function buildResourcePayload(resource: ManagedResource): UserInputPart | null {
           "media requires a URL, file id, or inline bytes",
         );
       }
+      const locator = requestMediaLocator(url, fileId, base64Data);
       const common = {
         type: "media" as const,
         metadata,
-        url,
-        file_id: fileId,
-        base64_data: base64Data,
+        ...locator,
         mime_type: mimeType,
       };
       switch (resource.blockType) {
@@ -428,10 +380,12 @@ function buildResourcePayload(resource: ManagedResource): UserInputPart | null {
           "webpage entries must be URLs or saved snapshots",
         );
       }
-      const urls = validEntries.map((entry) =>
-        typeof entry === "string" ? entry : toRequestWebpage(entry),
-      );
-      return { type: "input_webpage", urls, metadata, ...controls };
+      return {
+        type: "input_webpage",
+        urls: validEntries,
+        metadata,
+        ...controls,
+      };
     }
     case "input_notes": {
       const noteIds = toResourceIdList(content);
@@ -456,7 +410,7 @@ function buildResourcePayload(resource: ManagedResource): UserInputPart | null {
       return { type: "input_list", bookmarks, metadata, ...controls };
     }
     case "input_data": {
-      const refs = toRecordList(content);
+      const refs = toDataRefs(content);
       if (refs.length === 0)
         invalidResource(resource, "data reference is malformed");
       return { type: "input_data", refs, metadata, ...controls };

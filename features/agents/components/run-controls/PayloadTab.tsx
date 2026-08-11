@@ -30,7 +30,7 @@ import type {
   ContextSlot,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { UserInputPart } from "@/features/agents/types/request.types";
 import { makeSelectAssembledRequest } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectAgentContextSlots } from "@/features/agents/redux/agent-definition/selectors";
 import { EmptyStats, StatRow, StatSection } from "./panels/shared";
@@ -154,7 +154,7 @@ function ContextEntryRow({
   );
 }
 
-function MessagePartsView({ parts }: { parts: MessagePart[] }) {
+function MessagePartsView({ parts }: { parts: UserInputPart[] }) {
   if (parts.length === 0) {
     return (
       <span className="text-[11px] text-muted-foreground/60 italic">
@@ -165,8 +165,8 @@ function MessagePartsView({ parts }: { parts: MessagePart[] }) {
   return (
     <div className="space-y-1">
       {parts.map((part, idx) => {
-        const partType = (part as { type?: string }).type ?? "unknown";
-        const text = (part as { text?: string }).text;
+        const partType = part.type;
+        const text = part.type === "text" ? part.text : undefined;
         return (
           <div
             key={idx}

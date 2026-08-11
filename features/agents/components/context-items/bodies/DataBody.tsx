@@ -27,7 +27,7 @@ export function DataBody({ item, setTitle }: ContextItemBodyProps) {
 
   return (
     <div className="p-4">
-      <DataRefPreviewContent ref={ref} />
+      <DataRefPreviewContent dataRef={ref} />
     </div>
   );
 }

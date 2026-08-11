@@ -10,6 +10,8 @@
 import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
 import type { Note } from "@/features/notes/types";
 import type { DatabaseTask, ProjectWithTasks } from "@/features/tasks/types";
+import type { ComponentType } from "react";
+import type { TableBookmark } from "@/features/agents/types/message-types";
 
 // ===========================
 // Base Resource Interfaces
@@ -20,7 +22,7 @@ import type { DatabaseTask, ProjectWithTasks } from "@/features/tasks/types";
  */
 export interface BaseResourceData {
   id: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -41,35 +43,27 @@ export type ProjectResourceData = ProjectWithTasks;
 /**
  * Table resource data structure
  */
-export interface TableResourceData {
-  // Reference information
-  type: "full_table" | "table_row" | "table_column" | "table_cell";
-  table_id: string;
+export type TableResourceData = TableBookmark & {
   table_name: string;
   description?: string;
-
-  // Additional data based on type
-  row_id?: string;
-  column_name?: string;
   column_display_name?: string;
-
-  // Full table data (populated when fetched)
   fields?: TableField[];
   rows?: TableRow[];
   row_count?: number;
-}
+  cell_value?: unknown;
+};
 
 export interface TableField {
   field_name: string;
   display_name: string;
   field_type: string;
   is_required?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface TableRow {
   id: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -93,7 +87,7 @@ export interface FileResourceData {
   // Display info (for icons, etc.)
   details?: {
     filename: string;
-    icon?: any;
+    icon?: ComponentType<{ className?: string }>;
     color?: string;
     extension?: string;
   };
@@ -272,7 +266,7 @@ export type Resource =
 /**
  * Configuration for how to format each resource type
  */
-export interface ResourceFormatConfig {
+export interface ResourceFormatConfig<TData> {
   /**
    * Instructions to include for the AI about this resource type
    */
@@ -287,18 +281,24 @@ export interface ResourceFormatConfig {
   /**
    * Function to extract metadata for XML tags
    */
-  extractMetadata: (data: any) => Record<string, string>;
+  extractMetadata: (data: TData) => Record<string, string>;
 
   /**
    * Function to extract content for XML
    */
-  extractContent: (data: any) => string;
+  extractContent: (data: TData) => string;
 
   /**
    * Whether this resource requires data fetching before formatting
    */
   requiresDataFetch?: boolean;
 }
+
+export type ResourceFormatConfigMap = Partial<{
+  [TType in Resource["type"]]: ResourceFormatConfig<
+    Extract<Resource, { type: TType }>["data"]
+  >;
+}>;
 
 // ===========================
 // Message Metadata (inlined from features/prompts/types/core.ts)
@@ -318,7 +318,7 @@ export interface MessageFileReference {
 export interface MessageResourceReference {
   type: string;
   id?: string;
-  data?: any; // Full object for tables
+  data?: unknown;
 }
 
 /**

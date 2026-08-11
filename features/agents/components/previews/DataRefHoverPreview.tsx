@@ -18,9 +18,11 @@ import { Check, Copy, Database, Filter, Hash, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 import type { DataRef } from "@/features/agents/types/message-types";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { tryGetEntityInfoByUniqueTableName } from "@/features/scopes/registry/entityRegistry";
 
-function describeRefType(ref: DataRef): string {
-  switch (ref.ref_type) {
+function describeRefType(dataRef: DataRef): string {
+  switch (dataRef.ref_type) {
     case "db_record":
       return "Single record";
     case "db_query":
@@ -60,15 +62,18 @@ function MetaRow({
 }
 
 interface DataRefPreviewContentProps {
-  ref: DataRef;
+  dataRef: DataRef;
 }
 
-export function DataRefPreviewContent({ ref }: DataRefPreviewContentProps) {
+export function DataRefPreviewContent({ dataRef }: DataRefPreviewContentProps) {
   const [copied, setCopied] = useState(false);
+  const entityInfo = tryGetEntityInfoByUniqueTableName(dataRef.table);
+  const recordId = "id" in dataRef ? dataRef.id : null;
+  const recordName = dataRef.label?.trim() || dataRef.table;
 
   const handleCopyJson = async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(ref, null, 2));
+      await navigator.clipboard.writeText(JSON.stringify(dataRef, null, 2));
       setCopied(true);
       toast.success("Reference copied as JSON");
       setTimeout(() => setCopied(false), 1500);
@@ -82,66 +87,82 @@ export function DataRefPreviewContent({ ref }: DataRefPreviewContentProps) {
       <div className="flex items-start gap-2">
         <Database className="w-3.5 h-3.5 text-gray-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-foreground">
-            {ref.label?.trim() || ref.table}
-          </div>
+          {entityInfo && recordId ? (
+            <EntityRef
+              token={entityInfo.token}
+              id={recordId}
+              name={recordName}
+              openInNewTab
+              alwaysShowActions
+              fill
+              className="w-full text-sm font-semibold text-foreground"
+            />
+          ) : (
+            <div className="text-sm font-semibold text-foreground">
+              {recordName}
+            </div>
+          )}
           <div className="text-[11px] text-muted-foreground">
-            {describeRefType(ref)} · {ref.table}
+            {describeRefType(dataRef)} · {dataRef.table}
           </div>
         </div>
       </div>
 
       <div className="rounded-md bg-muted/40 p-2">
-        {ref.ref_type === "db_record" && (
+        {dataRef.ref_type === "db_record" && (
           <>
-            <MetaRow Icon={Hash} label="ID" value={ref.id} mono />
-            {ref.fields && ref.fields.length > 0 && (
+            <MetaRow Icon={Hash} label="ID" value={dataRef.id} mono />
+            {dataRef.fields && dataRef.fields.length > 0 && (
               <MetaRow
                 Icon={Tag}
                 label="Fields"
-                value={ref.fields.join(", ")}
+                value={dataRef.fields.join(", ")}
                 mono
               />
             )}
           </>
         )}
-        {ref.ref_type === "db_field" && (
+        {dataRef.ref_type === "db_field" && (
           <>
-            <MetaRow Icon={Hash} label="ID" value={ref.id} mono />
-            <MetaRow Icon={Tag} label="Field" value={ref.field_name} mono />
+            <MetaRow Icon={Hash} label="ID" value={dataRef.id} mono />
+            <MetaRow Icon={Tag} label="Field" value={dataRef.field_name} mono />
           </>
         )}
-        {ref.ref_type === "db_query" && (
+        {dataRef.ref_type === "db_query" && (
           <>
-            {ref.filter && Object.keys(ref.filter).length > 0 ? (
+            {dataRef.filter && Object.keys(dataRef.filter).length > 0 ? (
               <MetaRow
                 Icon={Filter}
                 label="Filter"
                 value={
                   <pre className="font-mono text-[10px] whitespace-pre-wrap break-all">
-                    {JSON.stringify(ref.filter, null, 2)}
+                    {JSON.stringify(dataRef.filter, null, 2)}
                   </pre>
                 }
               />
             ) : (
               <MetaRow Icon={Filter} label="Filter" value="—" />
             )}
-            {ref.fields && ref.fields.length > 0 && (
+            {dataRef.fields && dataRef.fields.length > 0 && (
               <MetaRow
                 Icon={Tag}
                 label="Fields"
-                value={ref.fields.join(", ")}
+                value={dataRef.fields.join(", ")}
                 mono
               />
             )}
-            {"limit" in ref && typeof ref.limit === "number" && (
-              <MetaRow Icon={Hash} label="Limit" value={String(ref.limit)} />
+            {typeof dataRef.limit === "number" && (
+              <MetaRow
+                Icon={Hash}
+                label="Limit"
+                value={String(dataRef.limit)}
+              />
             )}
           </>
         )}
       </div>
 
-      {ref.optional_context && (
+      {dataRef.optional_context && (
         <div className="text-[10px] text-muted-foreground italic">
           Optional context — fetch failures are dropped silently
         </div>
@@ -194,7 +215,7 @@ export function DataRefHoverPreview({
           className,
         )}
       >
-        <DataRefPreviewContent ref={dataRef} />
+        <DataRefPreviewContent dataRef={dataRef} />
       </HoverCardContent>
     </HoverCard>
   );

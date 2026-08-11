@@ -36,6 +36,12 @@ export interface ContextInputSnapshot {
   data: Record<string, unknown>;
 }
 
+export interface ContextResourceSnapshot {
+  title: string;
+  text: string | null;
+  data: Record<string, unknown>;
+}
+
 /** Where a normalized item came from in the message lifecycle. */
 export type ContextItemOrigin = "resource" | "block";
 
@@ -43,6 +49,8 @@ export type ContextItemOrigin = "resource" | "block";
 export interface ContextItemRefs {
   noteIds?: string[];
   taskIds?: string[];
+  /** Attach-by-value note/task content with no live record identity. */
+  resourceSnapshot?: ContextResourceSnapshot;
   /** Exact persisted webpage values; never narrow PreFetchedUrl to a string. */
   webpages?: (string | PreFetchedUrl)[];
   dataRefs?: DataRef[];

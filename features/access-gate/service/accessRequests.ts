@@ -69,11 +69,18 @@ function parseRecipients(raw: unknown): AccessRequestRecipient[] {
  */
 function rpcError(error: { message?: string } | null): Error {
   const message = error?.message?.trim();
-  return new Error(
-    message && message.length > 0 && !message.startsWith("{")
-      ? message
-      : "We could not complete that just now.",
-  );
+  const isOurs =
+    !!message &&
+    message.length > 0 &&
+    !message.startsWith("{") &&
+    // Postgres's own prose leaks constraint names, relations and SQLSTATEs.
+    // Our sentences never contain any of these. (Adversarial pass, 2026-08-11:
+    // a concurrent second ask toasted `duplicate key value violates unique
+    // constraint "access_requests_one_pending"` verbatim.)
+    !/violates|constraint|relation |column |permission denied for|syntax error|null value in|PGRST|SQLSTATE|_pkey|_fkey/i.test(
+      message,
+    );
+  return new Error(isOurs ? message : "We could not complete that just now.");
 }
 
 /**
@@ -114,14 +121,17 @@ export async function createAccessRequest(args: {
   };
 
   if (!created.already && args.currentUserId) {
-    await notifyRecipients(created, args);
+    created.delivered = await notifyRecipients(created, args);
   }
   return created;
 }
 
 /**
- * Deliver the ask as an actionable DM. Failures are swallowed on purpose — see
- * the file header. One recipient failing must not stop the others.
+ * Deliver the ask as an actionable DM. Failures never fail the request — the
+ * row is the durable fact — but the COUNT is returned, because telling the user
+ * "they've been messaged" when nothing was delivered is its own small lie, and
+ * this feature exists to stop the app claiming things it didn't verify.
+ * One recipient failing must not stop the others.
  */
 async function notifyRecipients(
   created: AccessRequestCreated,
@@ -132,7 +142,7 @@ async function notifyRecipients(
     message?: string;
     href?: string | null;
   },
-): Promise<void> {
+): Promise<number> {
   const what = created.entityTitle
     ? `${created.entityLabel ?? "item"} "${created.entityTitle}"`
     : (created.entityLabel ?? "item").toLowerCase();
@@ -140,7 +150,7 @@ async function notifyRecipients(
     ? `Access requested for your ${what}: "${args.message.trim()}"`
     : `Access requested for your ${what}.`;
 
-  await Promise.allSettled(
+  const results = await Promise.allSettled(
     created.recipients.map((recipient) =>
       sendDirectActionMessage({
         currentUserId: args.currentUserId as string,
@@ -163,6 +173,7 @@ async function notifyRecipients(
       }),
     ),
   );
+  return results.filter((r) => r.status === "fulfilled").length;
 }
 
 /** Grant or decline. Only someone who administers the target may call this. */

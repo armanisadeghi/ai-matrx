@@ -5,7 +5,8 @@
  * real SmartAgentResourceChips, so the read-only ↔ editable toggle can be
  * confirmed alongside the chips that don't have the feature.
  *
- * Editable-capable types (notes, task, table, list, data, webpage) render a
+ * Editable-capable types (notes, task, table, list, data, and writable Matrx
+ * records) render a
  * Lock/Pencil toggle in the right control column; everything else just shows
  * the remove control. On touch devices, long-press any chip for a full-size
  * action menu. Dev-only.
@@ -74,9 +75,9 @@ export function ResourceEditableToggleSamples() {
           control column; files, media, YouTube, and text show the remove
           control only. Click a lock/pencil to toggle, ✕ to remove, hover a chip
           for its preview. On a touch device, long-press any chip for a
-          full-size menu. Read-only is the default (no{" "}
-          <code className="text-[10px]">editable</code> on the wire); editable
-          sends <code className="text-[10px]">editable: true</code>.
+          full-size menu. Writable references send the visible decision exactly:
+          <code className="text-[10px]"> editable: false</code> when locked and
+          <code className="text-[10px]"> editable: true</code> when unlocked.
         </p>
       </div>
 

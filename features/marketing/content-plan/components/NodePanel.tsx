@@ -67,6 +67,7 @@ const EMPTY_CMS_PAGES: ReadonlyMap<string, CmsPageMapEntry> = new Map();
 import { NodeAssociations } from "./NodeAssociations";
 import { AttributesEditor } from "./AttributesEditor";
 import { BriefEditor } from "./BriefEditor";
+import { hasKeywordAssignment } from "../plan-assists-producer";
 
 export function NodePanel({
   node,
@@ -143,6 +144,23 @@ export function NodePanel({
   );
 
   const dirty = Object.keys(draft).length > 0;
+
+  /**
+   * Does this page still lack a target keyword?
+   *
+   * Read off the SAVED row, not the staged draft — that is exactly what the
+   * server's `assert_brief_preconditions` reads, so the button's state and the
+   * server's answer can never disagree. Enabling Draft brief on an unsaved pick
+   * would send the user into a guaranteed 409.
+   *
+   * `keywordStaged` is the in-between: they've chosen one and haven't saved. The
+   * fix then isn't "pick a keyword", it's "press Save" — so say that instead.
+   */
+  const keywordGap = !hasKeywordAssignment(node);
+  const keywordStaged =
+    keywordGap &&
+    Boolean(draft.primary_keyword_id) &&
+    draft.primary_keyword_id !== node.primary_keyword_id;
 
   const save = () => {
     update.mutate(
@@ -370,11 +388,13 @@ export function NodePanel({
           variant="outline"
           size="sm"
           className="h-7 gap-1.5 px-2 text-xs"
-          disabled={briefWriter.busy || deepening}
+          disabled={briefWriter.busy || deepening || keywordGap}
           title={
-            briefWriter.busy
-              ? "Drafting…"
-              : "AI: draft this page's brief against its SIBLINGS — saved to this page for you to review, then applied when you accept it"
+            keywordGap
+              ? "This page needs a target search term first — pick one under Targeting, or use Deepen to research the page and choose its term together"
+              : briefWriter.busy
+                ? "Drafting…"
+                : "AI: draft this page's brief against its SIBLINGS — saved to this page for you to review, then applied when you accept it"
           }
           onClick={() => void briefWriter.start()}
         >
@@ -621,6 +641,28 @@ export function NodePanel({
                 setDraft((d) => ({ ...d, primary_keyword_id: keywordId }))
               }
             />
+            {/* THE GAP, WHERE THE FIX IS. A page with no target term cannot be
+                briefed or written, and every downstream agent used to discover
+                that only after a paid run. The picker above is the fix, so the
+                notice sits on it — never in a summary count somewhere else. */}
+            {keywordGap ? (
+              <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-500">
+                {keywordStaged ? (
+                  <>
+                    Press <span className="font-medium">Save</span> to apply
+                    this keyword — then this page can be briefed and written.
+                  </>
+                ) : (
+                  <>
+                    This page has no target search term yet, so nothing tells it
+                    apart from its sibling pages — and briefs and drafts
+                    can&apos;t be written without one. Pick one above, or use{" "}
+                    <span className="font-medium">Deepen</span> to research this
+                    page and choose its term together.
+                  </>
+                )}
+              </p>
+            ) : null}
           </div>
         </PanelSection>
 

@@ -129,6 +129,12 @@ export interface AccessRequestCreated {
   entityLabel: string | null;
   entityTitle: string | null;
   recipients: AccessRequestRecipient[];
+  /**
+   * How many recipients we actually reached. `undefined` when no delivery was
+   * attempted (a duplicate ask). ZERO means the row exists but nobody was told —
+   * the UI must not then claim "they've been messaged".
+   */
+  delivered?: number;
 }
 
 /** A row in either direction of `/settings/access-requests`. */

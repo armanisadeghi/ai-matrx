@@ -26,9 +26,14 @@
  * and datadestruction.com's "pages needing attention" list became 717 JSON
  * endpoints faulted for missing `og:title` and `<h1>`.
  *
- * Mirrored server-side by `web.is_machine_resource_url` + `web.v_page_list.is_resource`
- * (migration `web_page_list_url_shape_resource_class.sql`) and by matrx-scraper's
- * `web_crawl/page_class.py`. Change one, change all three.
+ * 3. A LEARNED per-site rule — {@link matchesEndpointRule}. Signal 2 only knows
+ *    the families we already thought of; the endpoint-family sweep discovers new
+ *    ones on real data and proposes each as a one-click assist. See that
+ *    function's doc and aidream `services/endpoint_family_sweep/FEATURE.md`.
+ *
+ * Mirrored server-side by `web.is_machine_resource_url` +
+ * `web.matches_endpoint_rule` + `web.v_page_list.is_resource` (migrations
+ * 0334/0335) and by `matrx_utils.web_page_class`. Change one, change all three.
  */
 
 /** The single content type that counts as an HTML page. */
@@ -61,7 +66,7 @@ const RESOURCE_EXTENSIONS = new Set([
   "m4a", "flac", "aac",
   // documents / data
   "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "csv", "tsv", "rtf",
-  "json", "xml", "rss", "atom", "txt", "yaml", "yml", "sql",
+  "json", "xml", "rss", "atom", "txt", "md", "yaml", "yml", "sql",
   // archives
   "zip", "gz", "tgz", "bz2", "7z", "rar", "tar", "dmg", "exe", "apk",
   // code / fonts served as assets
@@ -83,6 +88,47 @@ const RESOURCE_PATH_PATTERNS: RegExp[] = [
 
 /** WordPress' extensionless REST form. */
 const RESOURCE_QUERY_PATTERNS: RegExp[] = [/(^|&)rest_route=/];
+
+/**
+ * True when `url` belongs to a LEARNED per-site machine-endpoint family — a
+ * `web.site_endpoint_rule` row.
+ *
+ * Signal 2 above only knows the endpoint families we already thought of.
+ * Shopify (`/cart/<id>:1?com_cvv=…`), Next.js (`/_next/data/…`), Drupal
+ * (`/jsonapi/…`), Ghost (`/ghost/api/…`), Remix (`?_data=…`) and every custom
+ * API reproduce the same bug on a future customer site. The endpoint-family
+ * sweep (aidream `services/endpoint_family_sweep/`) detects new families on
+ * real registry data, has an agent judge each one in plain language, and
+ * proposes it as a one-click assist; accepting it writes a rule row.
+ *
+ * This is the SAME rule shape as signal 2 — a path prefix, optionally narrowed
+ * to URLs carrying a given query parameter — scoped to one site rather than
+ * hardcoded. Mirrors `web.matches_endpoint_rule` (migration 0334) and
+ * `matrx_utils.web_page_class.matches_endpoint_rule`, including the two
+ * behaviours that are easy to get wrong: a prefix ending in `/` also matches
+ * the bare directory (`/cart/` covers `/cart`), and prefix matching is a
+ * literal compare so metacharacters in a stored prefix cannot widen the rule.
+ */
+export function matchesEndpointRule(
+  url: string | null | undefined,
+  pathPrefix: string | null | undefined,
+  queryParam?: string | null,
+): boolean {
+  if (!url || !pathPrefix) return false;
+  const withoutScheme = url.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^/]*/, "");
+  const [beforeHash] = withoutScheme.split("#");
+  const [rawPath, ...queryParts] = beforeHash.split("?");
+  const path = (rawPath || "/").toLowerCase();
+  const prefix = pathPrefix.toLowerCase();
+
+  if (!path.startsWith(prefix) && path !== prefix.replace(/\/+$/, "")) {
+    return false;
+  }
+  if (queryParam === null || queryParam === undefined) return true;
+  const query = queryParts.join("?").toLowerCase();
+  const escaped = queryParam.toLowerCase().replace(/[.*+?^${}()|[\]\\-]/g, "\\$&");
+  return new RegExp(`(^|&)${escaped}=`).test(query);
+}
 
 /**
  * True when the URL's SHAPE alone proves it is not a page a human visits.

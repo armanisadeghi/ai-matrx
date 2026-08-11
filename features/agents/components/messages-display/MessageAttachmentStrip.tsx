@@ -24,14 +24,7 @@ function AttachmentItem({
   onOpen: () => void;
 }) {
   const tile = item.refs.fileId ? (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={`Open ${item.title}`}
-      className="inline-flex"
-    >
-      <FileResourceChip fileId={item.refs.fileId} size="xs" />
-    </button>
+    <FileResourceChip fileId={item.refs.fileId} size="xs" onOpen={onOpen} />
   ) : (
     <ResourceAttachmentTile
       typeLabel={item.typeLabel}

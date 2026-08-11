@@ -7,7 +7,7 @@
 Every attachment a user sends with a turn renders as a chip in one of two places:
 
 - **Pre-submit** — `inputs/resources/SmartAgentResourceChips.tsx` (resources still editable before send; `ManagedResource`).
-- **Post-submit** — `messages-display/user/AgentUserMessage.tsx` (already sent; `RenderBlockPayload`).
+- **Post-submit** — `messages-display/MessageAttachmentStrip.tsx` (already sent; generated `MessagePart`; shared by user and assistant turns).
 
 Both now route every chip click through **one shared drawer** (`ContextItemDrawer`, built on `MatrxDynamicPanelHost`, right-positioned/resizable — same primitive as `ContextSlotDetailSheet`). This replaced the old per-message placeholder modal that just dumped `JSON.stringify(block.raw)` for every non-image type.
 
@@ -22,17 +22,21 @@ Both now route every chip click through **one shared drawer** (`ContextItemDrawe
 | `NoteBody` | `input_notes` | yes (native `NoteContentEditor`) |
 | `TaskBody` | `input_task` | yes (native `TaskEditor`) |
 | `WorkingDocumentBody` | `working_document` | yes (full `NoteEditorCore` modes + version history + agent diff) |
-| `WebpageBody` | `input_webpage` | preview + live iframe |
+| `WebpageBody` | `input_webpage` | stored text snapshot + source link (read-only after send) |
 | `DataBody` | `input_data` | preview |
 | `MediaBody` | image/audio/video/document/youtube | view (via `InlineMediaRef`) |
 | `BookmarkReferenceBody` | `input_table` / `input_list` | live reference chips (resolve from Supabase + open the entity), via `bookmarkToReference` |
 | `ProcessedDocumentBody` | `processed_document` | RAG doc canvas — composes `LibraryPreviewPage` (pages / cleaned / raw / chunks + search), keyed by `refs.processedDocumentId`; `LibraryPreviewPage` is `next/dynamic({ ssr:false })` |
-| `GenericBody` | project/agent/app/transcript/workbook/document/text/editor_* + fallback | no (yet — extension targets) |
+| `EntityReferenceBody` | project/agent/app/transcript/session/workbook/document | canonical linked entity reference |
+| `ContextInputBody` | `input_context` | read-only submitted context snapshot |
+| `GenericBody` | text/editor_* + fallback | no (extension target) |
 
 ## Key flows
 
 - **Attached documents** — `inputs/resources/AttachedDocumentChips.tsx` renders the DURABLE `processed_document → conversation` / `file → conversation` edges (from `platform.associations`, not `instanceResources`). Each chip now opens the shared drawer: it builds `ContextDrawerItem`s directly (`processedDocDrawerItem` → `processed_document`/`ProcessedDocumentBody`; `fileDrawerItem` → `document`/`MediaBody`) and hosts its own `useContextItemDrawer` + `ContextItemDrawer`. This is a third chip-host alongside the pre/post-submit ones — it doesn't go through `normalize.ts` because these edges aren't `ManagedResource`/`RenderBlockPayload`.
-- **Normalization** (`normalize.ts`) — `ManagedResource` and `RenderBlockPayload` both flatten to `ContextDrawerItem[]`, **one item per underlying record**. So a "3 Notes" chip becomes 3 drawer items; prev/next + the bottom thumbnail rail page through each individually. A chip opens the drawer at its first item.
+- **Normalization** (`normalize.ts`) — `ManagedResource` and generated `MessagePart` values both flatten to `ContextDrawerItem[]`, **one item per underlying record**. So a "3 Notes" chip becomes 3 drawer items; prev/next page through each individually. A chip opens the drawer at its first item. Runtime guards preserve exact union members; they never narrow an unknown array with a cast.
+- **Webpages** — the generated `(string | PreFetchedUrl)[]` contract survives picker → request → persistence → renderer intact. A `PreFetchedUrl` shows the exact stored `textContent`, title, character count, scrape time, and source URL. Legacy string-only URLs remain supported. Submitted snapshots are immutable and never iframe the live page.
+- **Entity references** — all seven generated id-backed parts render through the same registry and use the canonical entity door. The server resolves the ids into Matrx reference envelopes before provider dispatch.
 - **Editing** — note/task/working-document mount their canonical native editors, which self-persist to their own slices/DB.
 - **Re-context** (`recontext.ts`) — an attachment is sent to the model only once. If the user edits an already-sent (`origin: "block"`) editable record, the drawer footer offers **"Send updated version"** → dispatches `addResource` so the edit reaches the agent on the next turn. The live **working document** needs no re-attach (it's a context entry re-sent every turn) — open it from the context-slot chip or (when registered in the drawer list) via `WorkingDocumentBody`.
 
@@ -42,6 +46,7 @@ Both now route every chip click through **one shared drawer** (`ContextItemDrawe
 - `input_document` (a reference to a specific rich doc) ≠ `working_document` (the live collaborative doc). Don't merge them.
 - Each chip-host owns ONE local drawer controller (`useContextItemDrawer`); no global state/Redux added.
 - **Attachments ≠ context (load-bearing UI rule).** User-attached resources (`input_notes`, files, tasks, …) render ONLY as attachment chips from `content[]`. Ambient / slot context (`model_context.items`, working document, org, declared slots) renders ONLY in `ContextSlotChipStrip`. Never merge `model_context.input_items` into the context strip — that field mirrors attachments for the server/audit trail; duplicating it in the UI showed notes twice and made attachments look like defer-fetch context.
+- **Generated unions are the boundary.** Outbound resource projection returns the generated request union, persistence projection returns the generated message union, and DB content is runtime-validated by the generated parser. Never rebuild a payload as `Record<string, unknown>` and assert it into a message type.
 
 ## Layout contract (non-negotiable)
 
@@ -64,6 +69,8 @@ Shown as **context pills** (working doc + scratchpad in `ConversationContextRail
 Only the Body mounts `useWorkingDocument`; title actions + history read the shared per-conversation view store (`workingDocumentViewStore.ts`).
 
 ## Change log
+
+- `2026-08-11` — codex: **typed attachments now round-trip and render end to end.** Replaced the force-cast outbound payload builder with exact request/persisted projections; generated parsing now validates at runtime. Added one shared user/assistant `MessageAttachmentStrip`; exact text-first webpage snapshots; linked renderers for all seven Matrx entity references; submitted `input_context`; document/YouTube preservation; Voice Pad transcript projection; immutable submitted note/task/webpage views; and exhaustive attachment-matrix regression coverage.
 
 - `2026-07-16` — claude: **PDF identity pill in the drawer title bar.** New registry `Title` slot (full title-bar replacement; `resolveContextItemTitle`) + `ProcessedDocumentTitle` — the canonical `PdfNamedSurfaceSwitcher` glass pill (PDF icon = sibling-document switcher when several PDFs are attached via `onSelectItem`; click-to-rename via the real `renameFile` thunk; PDF-everywhere links; full /files `···`/right-click menus incl. Knowledge assets / Knowledge search; macOS-style find-in-document). Header search submissions flow drawer → Body via `searchSubmission` → `LibraryPreviewPage externalSearch` (its internal `DocumentSearchBar` is dropped with `hideSearchBar` — summary + ranked results still render in-body).
 - `2026-07-14` — claude: **attached-document chips now open the real document canvas (Smart Canvas Controller).** Registered `processed_document` in the registry with `ProcessedDocumentBody` — composes the canonical `LibraryPreviewPage` (pages / cleaned / raw / chunks + in-document search), keyed by the `processed_document_id`, lazy-loaded via `next/dynamic({ ssr:false })`. `AttachedDocumentChips` previously rendered chips with NO click handler (dead click) — it now hosts its own `useContextItemDrawer` + `ContextItemDrawer`, builds `ContextDrawerItem`s inline (`processedDocDrawerItem` / `fileDrawerItem`; file chips → `MediaBody`), and wires each chip's `onClick`. Added `refs.processedDocumentId` to `ContextItemRefs` + a `processed_document → document` theme alias.

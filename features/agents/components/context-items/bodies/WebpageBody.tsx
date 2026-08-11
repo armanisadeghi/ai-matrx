@@ -49,7 +49,12 @@ export function WebpageBody({ item, setTitle }: ContextItemBodyProps) {
     );
   }
 
-  return <WebpageSnapshotView snapshot={webpage} />;
+  return (
+    <WebpageSnapshotView
+      snapshot={webpage}
+      variant={item.origin === "block" ? "submitted" : "draft"}
+    />
+  );
 }
 
 export function WebpageFooter({ item }: ContextItemBodyProps) {

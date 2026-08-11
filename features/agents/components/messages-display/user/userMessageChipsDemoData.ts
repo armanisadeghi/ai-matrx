@@ -3,6 +3,139 @@ import type {
   ContextSlot,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
+
+export const DEMO_WEBPAGE_TEXT = `# TikTok Algorithm in 2026: The 7 Signals That Decide If You Go Viral
+Completion rate under 70% is why your TikTok views cratered in 2026. Here are the 7 signals TikTok checks first, and the exact fix to try this week.
+
+## TikTok Algorithm 2026: What Actually Works Now
+Updated July 6, 2026. The follower first distribution model described below is still how TikTok ranks videos as of this month, and completion rate plus rewatch rate remain the two heaviest signals.
+The TikTok algorithm changed again in late 2025. What worked last year won't work this year.
+If your views dropped in January 2026, you're not alone.
+Here's exactly what changed and how to adapt your strategy.
+### The Big Algorithm Update (January 2026)
+TikTok updated its algorithm with major changes to how content gets distributed.
+The biggest shift? [Follower engagement is now central to distribution](https://www.agorapulse.com/blog/tiktok/tiktok-algorithm/) .
+Your video shows to a small test audience of your followers first. If it performs well with them, it goes wider.
+If your followers don't engage, your video dies.
+### 7 Key Changes in the 2026 TikTok Algorithm
+#### 1. 70% Completion Rate Required (Up from 50%)
+You need [70%+ completion rate to go viral](https://buffer.com/resources/tiktok-algorithm/) in 2026.
+That's up from 50% in 2024.
+Translation: Your hooks need to be stronger. Your pacing needs to be faster. Every second counts.
+#### 2. Rewatch Rate Multiplies Reach
+Videos that people immediately replay get massive algorithmic boosts.
+[A rewatch rate over 15-20% is considered a strong signal](https://www.socialpilot.co/blog/tiktok-algorithm) .
+One viewer watching your video 3 times beats three viewers watching once.
+#### 3. Longer Videos Are Winning
+60-180 second videos are outperforming 15-second clips now.
+Why? [TikTok wants to compete with YouTube](https://www.mickyweis.com/en/tiktok-algorithm-2026/) . Longer videos mean more ad inventory.
+Don't make videos short just to be short. Make them as long as they need to be engaging.
+#### 4. Original Audio Gets Priority
+TikTok rebalanced to [reward original audio more heavily](https://medium.com/@daniel.belhart/what-the-tiktok-algorithm-in-2026-actually-prioritizes-and-why-its-different-from-instagram-05b6a74a773d) .
+Trending sounds still work, but original audio gets a boost.
+Create your own audio or use sounds within the first 24 hours of them trending.
+#### 5. TikTok Is Now a Search Engine
+[64% of Gen Z users search on TikTok like they search on Google](https://www.wordstream.com/blog/tiktok-algorithm) .
+This means:
+- SEO matters on TikTok now
+- Captions need keywords
+- On-screen text needs to be searchable
+- Your hook should answer a question people search for
+#### 6. Engagement Velocity Matters
+How quickly your followers respond determines distribution.
+Fast engagement in the first hour = wider reach.
+This is why [posting when your audience is most active](https://www.socialync.io/best-time-to-post-on-tiktok) matters more than ever. We published a full day by day breakdown of the best posting windows.
+Pro tip: Use [Socialync](https://www.socialync.io) to schedule posts for optimal times across all platforms, so you never miss your best engagement windows.
+#### 7. Watch Time Over Everything
+The algorithm heavily favors videos watched in full or rewatched.
+A 15-second video watched fully beats a 60-second video watched halfway.
+Focus on retention over length.
+Post to all your platforms in one click
+Socialync lets you cross-post to TikTok, Instagram, YouTube, X, Facebook, LinkedIn, Threads, and Bluesky — with AI-powered captions for each platform. Free to start.
+### How to Adapt Your Strategy for 2026
+#### Nail Your First 3 Seconds
+You have 3 seconds to hook viewers.
+Use:
+- A bold statement
+- A question
+- A visual pattern interrupt
+- Text on screen that creates curiosity
+Bad hook: "Hey guys, today I want to talk about..."
+Good hook: "This TikTok mistake is killing your views."
+#### Optimize for Rewatches
+Make videos that people want to watch again:
+- Pack value into every second
+- Use fast cuts that require rewatching to catch everything
+- End with a twist that makes people replay
+- Add Easter eggs or hidden details
+#### Test Longer Formats
+Try 60-90 second videos this month.
+Story-based content performs exceptionally well in longer formats.
+You don't need to pad content - just don't artificially cut good content short.
+#### Use Original Audio
+Record your own voiceovers.
+Create unique sounds.
+Even if you use trending audio, add your own twist to it.
+#### Write Searchable Captions
+Your caption should include:
+- The main keyword people would search for
+- A clear description of what the video is about
+- A call to action
+Example: "How to go viral on TikTok in 2026 - I tested the new algorithm for 30 days and here's what actually works. Save this for later."
+#### Post Consistently
+The algorithm rewards consistency more than ever.
+Posting 3-5 times per week maintains algorithm favor better than sporadic viral hits.
+Use [Socialync](https://www.socialync.io) to schedule TikToks in advance so you maintain consistency without burning out.
+### What No Longer Works in 2026
+These tactics are dead:
+- Posting 15-second videos just to hit a "sweet spot"
+- Using trending sounds without adding value
+- Clickbait hooks that don't deliver
+- Posting at random times
+- Inconsistent posting schedules
+- Copy-pasting the same content from Instagram
+The algorithm is smarter. It detects low-effort content and buries it.
+### The Bottom Line
+The 2026 TikTok algorithm rewards:
+- High completion rates (70%+)
+- Rewatchability
+- Original audio
+- Searchable content
+- Consistent posting
+- Engaged followers
+It punishes:
+- Low retention
+- Inconsistent posting
+- Generic content
+- Poor hooks
+Want to stay consistent without spending hours scheduling? [Socialync](https://www.socialync.io) lets you schedule TikToks (and all other platforms) in one place. Upload once, post everywhere.
+Stop fighting the algorithm. Start working with it.
+### TikTok Algorithm FAQ
+#### How does the TikTok algorithm work in 2026?
+Every new video is shown first to a small test pool made up largely of your existing followers. If that pool watches to the end and engages quickly, TikTok pushes the video to a wider audience. Completion rate, rewatch rate, and early engagement velocity are the strongest ranking signals.
+#### Why did my TikTok views drop in 2026?
+The most common cause is a completion rate below the roughly 70% bar the 2026 algorithm expects, followed by weak engagement from your own followers during the first hour test window. Posting when your audience is asleep makes both problems worse.
+#### What is the latest TikTok algorithm update?
+As of July 2026 the follower first distribution model is still in place: your followers act as the test audience that decides whether a video goes wide. Watch time, rewatch rate, original audio, and search relevance continue to carry the most weight.
+#### How do you fix low views on TikTok?
+Tighten your first 3 seconds, cut anything that does not hold attention, use original audio, write searchable captions, and post consistently at the hours your followers are online. Our guide to the [best time to post on TikTok](https://www.socialync.io/best-time-to-post-on-tiktok) lists the exact windows by day.
+Sources:
+- [TikTok Algorithm Guide 2026 - Buffer](https://buffer.com/resources/tiktok-algorithm/)
+- [What You Need to Know About the TikTok Algorithm - Agorapulse](https://www.agorapulse.com/blog/tiktok/tiktok-algorithm/)
+- [TikTok Algorithm 2026 - Micky Weis](https://www.mickyweis.com/en/tiktok-algorithm-2026/)
+- [How the TikTok Algorithm Works in 2026 - WordStream](https://www.wordstream.com/blog/tiktok-algorithm)
+- [TikTok Algorithm Priorities 2026 - Medium](https://medium.com/@daniel.belhart/what-the-tiktok-algorithm-in-2026-actually-prioritizes-and-why-its-different-from-instagram-05b6a74a773d)
+`;
+
+export const DEMO_WEBPAGE_SNAPSHOT = {
+  url: "https://www.socialync.io/blog/tiktok-algorithm-2026-what-works-now",
+  title:
+    "TikTok Algorithm in 2026: The 7 Signals That Decide If You Go Viral",
+  charCount: DEMO_WEBPAGE_TEXT.length,
+  scrapedAt: "2026-08-11T20:57:26.175473+00:00",
+  textContent: DEMO_WEBPAGE_TEXT,
+} satisfies PreFetchedUrl;
 
 export const DEMO_CONV_SINGLE = "demo-user-msg-ctx-single";
 export const DEMO_CONV_MULTI = "demo-user-msg-ctx-multi";
@@ -289,8 +422,8 @@ export const DEMO_INPUT_CHIP_RESOURCES: {
   {
     resourceId: "demo-res-webpage",
     blockType: "input_webpage",
-    preview: "aimatrx.com/docs",
-    source: { url: "https://aimatrx.com/docs" },
+    preview: DEMO_WEBPAGE_SNAPSHOT.title,
+    source: DEMO_WEBPAGE_SNAPSHOT,
   },
   {
     resourceId: "demo-res-image",
@@ -359,8 +492,8 @@ export const DEMO_ALL_RESOURCES: {
   {
     resourceId: "demo-all-webpage",
     blockType: "input_webpage",
-    preview: "aimatrx.com/docs",
-    source: { urls: ["https://aimatrx.com/docs"] },
+    preview: DEMO_WEBPAGE_SNAPSHOT.title,
+    source: DEMO_WEBPAGE_SNAPSHOT,
   },
   {
     resourceId: "demo-all-image",

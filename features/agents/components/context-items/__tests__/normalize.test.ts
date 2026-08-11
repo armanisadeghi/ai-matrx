@@ -4,6 +4,8 @@ import type {
   PreFetchedUrl,
 } from "@/types/python-generated/stream-events";
 import type { ContextDrawerItem } from "../types";
+import { readWebpageInputs } from "@/features/resource-manager/webpage/webpage-snapshot";
+import { DEMO_WEBPAGE_SNAPSHOT } from "../../messages-display/user/userMessageChipsDemoData";
 
 jest.mock("../registry", () => ({
   resolveContextItemDef: (blockType: string) => ({
@@ -55,6 +57,13 @@ function resource(
 }
 
 describe("canonical attachment projection", () => {
+  it("keeps the exact long webpage demo fixture internally consistent", () => {
+    expect(DEMO_WEBPAGE_SNAPSHOT.textContent).toHaveLength(7941);
+    expect(DEMO_WEBPAGE_SNAPSHOT.charCount).toBe(
+      DEMO_WEBPAGE_SNAPSHOT.textContent.length,
+    );
+  });
+
   it("preserves the exact pre-submit webpage snapshot object", () => {
     const [item] = normalizeResource(
       resource("input_webpage", webpageSnapshot),
@@ -90,6 +99,32 @@ describe("canonical attachment projection", () => {
     expect(item.refs.webpages).toEqual([webpageSnapshot]);
   });
 
+  it("rejects webpage snapshots whose optional fields violate the generated contract", () => {
+    expect(
+      readWebpageInputs({
+        url: "https://example.com/article",
+        textContent: "Saved text",
+        title: 42,
+      }),
+    ).toEqual([]);
+
+    expect(
+      readWebpageInputs({
+        url: "https://example.com/article",
+        textContent: "Saved text",
+        charCount: 1.2,
+      }),
+    ).toEqual([]);
+
+    expect(
+      readWebpageInputs({
+        url: "https://example.com/article",
+        textContent: "Saved text",
+        charCount: -1,
+      }),
+    ).toEqual([]);
+  });
+
   it("supports legacy string-only webpage attachments", () => {
     const url = "https://legacy.example.com/post";
     const [item] = normalizeMessagePart(
@@ -101,6 +136,52 @@ describe("canonical attachment projection", () => {
     expect(item.title).toBe("legacy.example.com");
     expect(item.refs.webpages).toEqual([url]);
   });
+
+  it.each([
+    [
+      {
+        type: "input_notes",
+        note_ids: [
+          {
+            mode: "snapshot",
+            title: "Saved note",
+            content: "Note snapshot body",
+          },
+        ],
+      },
+      "Saved note",
+      "Note snapshot body",
+    ],
+    [
+      {
+        type: "input_task",
+        task_ids: [
+          {
+            mode: "snapshot",
+            title: "Saved task",
+            value: "Task snapshot body",
+          },
+        ],
+      },
+      "Saved task",
+      "Task snapshot body",
+    ],
+  ] satisfies [MessagePart, string, string][])(
+    "keeps an attach-by-value $type snapshot visible without inventing a live id",
+    (part, title, content) => {
+      const [item] = normalizeMessagePart(part, 2, CONVERSATION_ID);
+
+      expect(item).toMatchObject({
+        title,
+        editable: false,
+        refs: {
+          resourceSnapshot: { title, text: content },
+        },
+      });
+      expect(item.refs.noteIds).toBeUndefined();
+      expect(item.refs.taskIds).toBeUndefined();
+    },
+  );
 
   it.each([
     [
@@ -137,17 +218,36 @@ describe("canonical attachment projection", () => {
 
   it.each([
     [{ type: "input_agent", agent_ids: ["agent-1"] }, "agent", "agent-1"],
-    [{ type: "input_project", project_ids: ["project-1"] }, "project", "project-1"],
-    [{ type: "input_agent_app", agent_app_ids: ["app-1"] }, "app", "app-1"],
-    [{ type: "input_transcript", transcript_ids: ["transcript-1"] }, "transcript", "transcript-1"],
     [
-      { type: "input_transcript_session", transcript_session_ids: ["session-1"] },
+      { type: "input_project", project_ids: ["project-1"] },
+      "project",
+      "project-1",
+    ],
+    [{ type: "input_agent_app", agent_app_ids: ["app-1"] }, "app", "app-1"],
+    [
+      { type: "input_transcript", transcript_ids: ["transcript-1"] },
+      "transcript",
+      "transcript-1",
+    ],
+    [
+      {
+        type: "input_transcript_session",
+        transcript_session_ids: ["session-1"],
+      },
       "studio_session",
       "session-1",
     ],
-    [{ type: "input_workbook", workbook_ids: ["workbook-1"] }, "workbook", "workbook-1"],
-    [{ type: "input_document", document_ids: ["document-1"] }, "udt_document", "document-1"],
-  ] satisfies Array<[MessagePart, string, string]>) (
+    [
+      { type: "input_workbook", workbook_ids: ["workbook-1"] },
+      "workbook",
+      "workbook-1",
+    ],
+    [
+      { type: "input_document", document_ids: ["document-1"] },
+      "udt_document",
+      "document-1",
+    ],
+  ] satisfies Array<[MessagePart, string, string]>)(
     "projects %o into the canonical %s entity door",
     (part, token, id) => {
       const items = normalizeMessagePart(part, 0, CONVERSATION_ID);
@@ -224,12 +324,31 @@ describe("canonical attachment projection", () => {
     ]);
   });
 
-  it("keeps valid data references and drops malformed guesses", () => {
+  it("rejects malformed draft bookmarks at the generated boundary", () => {
+    expect(
+      normalizeResource(
+        resource("input_table", {
+          type: "table_cell",
+          table_id: "table-1",
+          row_id: "",
+          column_name: "status",
+        }),
+        CONVERSATION_ID,
+      ),
+    ).toEqual([]);
+  });
+
+  it("renders every valid generated data-reference variant", () => {
     const items = normalizeMessagePart(
       {
         type: "input_data",
         refs: [
-          { ref_type: "db_record", table: "notes", id: "note-1", label: "Note row" },
+          {
+            ref_type: "db_record",
+            table: "notes",
+            id: "note-1",
+            label: "Note row",
+          },
           { ref_type: "db_query", table: "tasks", filter: { status: "open" } },
           {
             ref_type: "db_field",
@@ -237,8 +356,6 @@ describe("canonical attachment projection", () => {
             id: "project-1",
             field_name: "name",
           },
-          { ref_type: "db_record", table: "notes" },
-          { ref_type: "made_up", table: "tasks", id: "task-1" },
         ],
       },
       0,
@@ -253,13 +370,57 @@ describe("canonical attachment projection", () => {
     ]);
   });
 
+  it("rejects a malformed draft data reference instead of inventing a drawer item", () => {
+    expect(
+      normalizeResource(
+        resource("input_data", {
+          refs: [{ ref_type: "db_record", table: "contacts", id: "contact-1" }],
+        }),
+        CONVERSATION_ID,
+      ),
+    ).toEqual([]);
+  });
+
   it.each([
-    [{ type: "media", kind: "image", file_id: "image-1" }, "image", "image-1", null],
-    [{ type: "media", kind: "audio", url: "https://cdn.example.com/audio.mp3" }, "audio", null, "https://cdn.example.com/audio.mp3"],
-    [{ type: "media", kind: "video", file_id: "video-1" }, "video", "video-1", null],
-    [{ type: "media", kind: "document", url: "https://cdn.example.com/file.pdf" }, "document", null, "https://cdn.example.com/file.pdf"],
-    [{ type: "media", kind: "youtube", url: "https://youtu.be/dQw4w9WgXcQ" }, "youtube_video", null, "https://youtu.be/dQw4w9WgXcQ"],
-  ] satisfies Array<[MessagePart, string, string | null, string | null]>) (
+    [
+      { type: "media", kind: "image", file_id: "image-1" },
+      "image",
+      "image-1",
+      null,
+    ],
+    [
+      {
+        type: "media",
+        kind: "audio",
+        url: "https://cdn.example.com/audio.mp3",
+      },
+      "audio",
+      null,
+      "https://cdn.example.com/audio.mp3",
+    ],
+    [
+      { type: "media", kind: "video", file_id: "video-1" },
+      "video",
+      "video-1",
+      null,
+    ],
+    [
+      {
+        type: "media",
+        kind: "document",
+        url: "https://cdn.example.com/file.pdf",
+      },
+      "document",
+      null,
+      "https://cdn.example.com/file.pdf",
+    ],
+    [
+      { type: "media", kind: "youtube", url: "https://youtu.be/dQw4w9WgXcQ" },
+      "youtube_video",
+      null,
+      "https://youtu.be/dQw4w9WgXcQ",
+    ],
+  ] satisfies Array<[MessagePart, string, string | null, string | null]>)(
     "projects %o into a visible %s attachment",
     (part, blockType, fileId, fileUrl) => {
       const items = normalizeMessagePart(part, 0, CONVERSATION_ID);
@@ -312,7 +473,9 @@ describe("canonical attachment projection", () => {
 
     for (const [index, part] of parts.entries()) {
       expect(isAttachmentMessagePart(part)).toBe(true);
-      expect(normalizeMessagePart(part, index, CONVERSATION_ID).length).toBeGreaterThan(0);
+      expect(
+        normalizeMessagePart(part, index, CONVERSATION_ID).length,
+      ).toBeGreaterThan(0);
     }
   });
 
@@ -327,6 +490,8 @@ describe("canonical attachment projection", () => {
       { type: "web_search", id: "search-1" },
     ] satisfies MessagePart[];
 
-    expect(nonAttachments.every((part) => !isAttachmentMessagePart(part))).toBe(true);
+    expect(nonAttachments.every((part) => !isAttachmentMessagePart(part))).toBe(
+      true,
+    );
   });
 });

@@ -292,4 +292,37 @@ describe("buildSiteAuditRollup", () => {
       ),
     ).toBe(false);
   });
+
+  it("counts an alias URL once, not twice", () => {
+    // An alias is the SAME document under a second URL — the live cases are
+    // http:// twins of https:// pages. 47 exist today, 32 on one site. Counting
+    // both inflates the page count and doubles every finding on that document.
+    const rollup = buildSiteAuditRollup([
+      {
+        id: "canonical",
+        url: GOOD_URL,
+        path: "/blog/clean-post",
+        contentTypeLast: "html",
+        canonicalPageId: "canonical",
+        seo_metrics: null,
+        audit_metrics: auditFor(GOOD_URL, { title: null }),
+      },
+      {
+        id: "alias",
+        url: "http://example.com/blog/clean-post",
+        path: "/blog/clean-post",
+        contentTypeLast: "html",
+        canonicalPageId: "canonical",
+        seo_metrics: null,
+        audit_metrics: auditFor(GOOD_URL, { title: null }),
+      },
+    ]);
+
+    expect(rollup.totalPages).toBe(1);
+    expect(rollup.worstPages).toHaveLength(1);
+    expect(rollup.worstPages[0].pageId).toBe("canonical");
+    // And the finding is reported once, on one page — not twice.
+    const social = rollup.topIssues.find((i) => i.section === "social");
+    expect(social?.count).toBe(1);
+  });
 });

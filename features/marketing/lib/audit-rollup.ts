@@ -45,6 +45,14 @@ export interface AuditSourceRow {
   path: string | null;
   /** Latest detected response kind. Null means not fetched or historical unknown. */
   contentTypeLast: string | null;
+  /**
+   * The canonical page this URL resolves to. When it points at a DIFFERENT row,
+   * this URL is an alias — the same document reached a second way (the live
+   * cases are `http://` twins of `https://` pages) — and counting it would
+   * double every finding on that document. Same rule as `v_page_list.is_canonical`
+   * and matrx-scraper `analysis.py` (`pages_skipped_alias`).
+   */
+  canonicalPageId?: string | null;
   seo_metrics: unknown;
   audit_metrics: unknown;
 }
@@ -214,6 +222,7 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
   const pages: AuditPageRollup[] = [];
   let auditedPages = 0;
   let nonHtmlResources = 0;
+  let aliasRows = 0;
   const verdicts = { indexable: 0, check: 0, blocked: 0 };
   const passes = { serp: 0, social: 0, headings: 0, url: 0 };
 
@@ -242,6 +251,10 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
   };
 
   for (const row of rows) {
+    if (row.canonicalPageId && row.canonicalPageId !== row.id) {
+      aliasRows += 1;
+      continue;
+    }
     if (isResourceContentType(row.contentTypeLast, row.url)) {
       nonHtmlResources += 1;
       continue;
@@ -321,10 +334,10 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
     });
 
   return {
-    totalPages: rows.length - nonHtmlResources,
+    totalPages: rows.length - nonHtmlResources - aliasRows,
     nonHtmlResources,
     auditedPages,
-    uncomputedPages: rows.length - nonHtmlResources - auditedPages,
+    uncomputedPages: rows.length - nonHtmlResources - aliasRows - auditedPages,
     verdicts,
     passes,
     topIssues,

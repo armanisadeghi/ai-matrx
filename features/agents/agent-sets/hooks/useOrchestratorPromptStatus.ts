@@ -16,7 +16,8 @@ import {
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { AVAILABLE_AGENTS_RE } from "../orchestrator/constants";
 
-const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+const UUID_RE =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const SECTION_RE = /<available_agents>([\s\S]*?)<\/available_agents>/i;
 
 export interface OrchestratorPromptStatus {
@@ -32,8 +33,12 @@ export function useOrchestratorPromptStatus(
   memberIds: string[],
 ): OrchestratorPromptStatus {
   const dispatch = useAppDispatch();
-  const ready = useAppSelector((s) => selectAgentReadyForBuilder(s, orchestratorId));
-  const sysMsg = useAppSelector((s) => selectAgentSystemMessage(s, orchestratorId));
+  const ready = useAppSelector((s) =>
+    selectAgentReadyForBuilder(s, orchestratorId),
+  );
+  const sysMsg = useAppSelector((s) =>
+    selectAgentSystemMessage(s, orchestratorId),
+  );
 
   // Load the full definition once (guarded on readiness) — the list row has no messages.
   useEffect(() => {
@@ -42,12 +47,14 @@ export function useOrchestratorPromptStatus(
 
   return useMemo(() => {
     const block = sysMsg?.content?.find((b) => b.type === "text");
-    const sysText = block?.type === "text" ? block.text : "";
+    const sysText = block?.type === "text" ? (block.text ?? "") : "";
     const isTemplate = AVAILABLE_AGENTS_RE.test(sysText);
     if (!isTemplate) return { ready, isTemplate: false, outOfSync: false };
 
     const section = sysText.match(SECTION_RE)?.[1] ?? "";
-    const promptIds = new Set((section.match(UUID_RE) ?? []).map((s) => s.toLowerCase()));
+    const promptIds = new Set(
+      (section.match(UUID_RE) ?? []).map((s) => s.toLowerCase()),
+    );
     const memberSet = new Set(memberIds.map((s) => s.toLowerCase()));
     let outOfSync = promptIds.size !== memberSet.size;
     if (!outOfSync) {

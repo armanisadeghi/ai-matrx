@@ -96,8 +96,7 @@ export function TasksResourcePicker({
 
   // Get priority badge color
   const getPriorityColor = (priority?: "low" | "medium" | "high" | null) => {
-    if (!priority)
-      return "bg-muted text-muted-foreground";
+    if (!priority) return "bg-muted text-muted-foreground";
     switch (priority) {
       case "high":
         return "bg-destructive/15 text-destructive";
@@ -107,16 +106,6 @@ export function TasksResourcePicker({
         return "bg-blue-500/15 text-blue-600 dark:text-blue-400";
     }
   };
-
-  // Reset expanded task when project or search changes
-  React.useEffect(() => {
-    setExpandedTaskId(null);
-  }, [selectedProject, searchQuery, showCompleted]);
-
-  // Reset selections when changing projects
-  React.useEffect(() => {
-    setSelectedTaskIds(new Set());
-  }, [selectedProject]);
 
   // Toggle task selection
   const toggleTaskSelection = (taskId: string) => {
@@ -156,16 +145,25 @@ export function TasksResourcePicker({
       {/* Header */}
       <ResourcePickerSubViewHeader
         title={selectedProject ? selectedProject.name : "Tasks"}
-        onBack={selectedProject ? () => setSelectedProject(null) : onBack}
+        onBack={
+          selectedProject
+            ? () => {
+                setSelectedProject(null);
+                setExpandedTaskId(null);
+                setSelectedTaskIds(new Set());
+              }
+            : onBack
+        }
         actions={
           selectedProject ? (
             <>
               <label className="flex shrink-0 items-center gap-1 cursor-pointer">
                 <Checkbox
                   checked={showCompleted}
-                  onCheckedChange={(checked) =>
-                    setShowCompleted(checked === true)
-                  }
+                  onCheckedChange={(checked) => {
+                    setShowCompleted(checked === true);
+                    setExpandedTaskId(null);
+                  }}
                   className="h-3 w-3"
                 />
                 <span className="text-[10px] text-muted-foreground">
@@ -227,7 +225,10 @@ export function TasksResourcePicker({
             type="text"
             placeholder="Search..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setExpandedTaskId(null);
+            }}
             className="h-7 text-xs pl-7 pr-2 bg-background border-border"
           />
         </div>
@@ -408,7 +409,11 @@ export function TasksResourcePicker({
                   return (
                     <button
                       key={project.id}
-                      onClick={() => setSelectedProject(project)}
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setExpandedTaskId(null);
+                        setSelectedTaskIds(new Set());
+                      }}
                       className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/60 transition-colors group"
                     >
                       <FolderKanban className="w-4 h-4 flex-shrink-0 text-blue-600 dark:text-blue-500" />

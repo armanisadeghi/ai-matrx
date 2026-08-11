@@ -28,6 +28,8 @@ import { ContextSlotChipStrip } from "@/features/agents/components/context-slots
 import { ContextSlotChip } from "@/features/agents/components/context-slots-display/ContextSlotChip";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
+import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
+import type { MessagePart } from "@/types/python-generated/stream-events";
 import {
   DEMO_CONV_MULTI,
   DEMO_CONV_SINGLE,
@@ -38,6 +40,7 @@ import {
   DEMO_MULTI_ENTRIES,
   DEMO_SINGLE_ENTRY,
   DEMO_TYPE_ENTRIES,
+  DEMO_WEBPAGE_SNAPSHOT,
   type DemoAttachmentSpec,
 } from "./userMessageChipsDemoData";
 import { UserMessageAttachmentStyleComparison } from "./UserMessageAttachmentStyleComparison";
@@ -65,6 +68,24 @@ const ATTACHMENT_ICONS: Record<
   "audio-legacy": Music,
   "doc-legacy": FileText,
 };
+
+const SUBMITTED_ATTACHMENT_PARTS: MessagePart[] = [
+  {
+    type: "input_webpage",
+    urls: [DEMO_WEBPAGE_SNAPSHOT],
+  },
+  {
+    type: "media",
+    kind: "youtube",
+    url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    origin: "external",
+    metadata: { title: "Creator strategy walkthrough" },
+  },
+  {
+    type: "input_agent",
+    agent_ids: ["demo-agent-id"],
+  },
+];
 
 function seedInputResources(
   dispatch: ReturnType<typeof useAppDispatch>,
@@ -193,6 +214,20 @@ export function UserMessageChipsDemo() {
         </header>
 
         <ResourceEditableToggleSamples />
+
+        <DemoBubble
+          title="Submitted typed attachments"
+          description="The production submitted-message renderer with the exact prefetched webpage payload shape. The drawer is read-only and preserves the sent snapshot."
+          className="max-w-lg"
+        >
+          <MessageAttachmentStrip
+            conversationId="demo-submitted-typed-attachments"
+            parts={SUBMITTED_ATTACHMENT_PARTS}
+          />
+          <p className="text-xs text-foreground whitespace-pre-wrap">
+            Please turn the attached research into an infographic prompt.
+          </p>
+        </DemoBubble>
 
         <UserMessageAttachmentStyleComparison
           specs={DEMO_COMPARISON_ATTACHMENTS}

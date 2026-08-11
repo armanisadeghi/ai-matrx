@@ -571,6 +571,15 @@ const TABLE_TO_TOKEN: Record<string, EntityTypeToken> = (() => {
   return m;
 })();
 
+const UNIQUE_TABLE_NAME_TO_TOKEN: Record<string, EntityTypeToken | null> = (() => {
+  const index: Record<string, EntityTypeToken | null> = {};
+  for (const token of Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]) {
+    const table = ENTITY_TYPE_METADATA[token].table;
+    index[table] = table in index ? null : token;
+  }
+  return index;
+})();
+
 /**
  * Resolve an entity descriptor from a live `(schema, table)` pair, or null when
  * that table backs no registered entity. Use this for surfaces keyed by raw
@@ -581,6 +590,14 @@ export function tryGetEntityInfoByTable(
   table: string,
 ): EntityInfo | null {
   const token = TABLE_TO_TOKEN[`${schema}.${table}`];
+  return token ? getEntityInfo(token) : null;
+}
+
+/** Resolve a raw table name only when it maps to exactly one registered entity. */
+export function tryGetEntityInfoByUniqueTableName(
+  table: string,
+): EntityInfo | null {
+  const token = UNIQUE_TABLE_NAME_TO_TOKEN[table];
   return token ? getEntityInfo(token) : null;
 }
 

@@ -8,8 +8,9 @@
 
 import type { ManagedResource } from "@/features/agents/types/instance.types";
 import type { DataRef } from "@/features/agents/types/message-types";
-import type {
-  MessagePart,
+import {
+  isMessagePart,
+  type MessagePart,
 } from "@/types/python-generated/stream-events";
 import {
   isPreFetchedUrl,
@@ -23,6 +24,7 @@ import type {
   ContextDrawerItem,
   ContextEntityRef,
   ContextItemRefs,
+  ContextResourceSnapshot,
 } from "./types";
 
 type Data = Record<string, unknown> | null | undefined;
@@ -46,11 +48,47 @@ function asResourceIdList(value: unknown): string[] | undefined {
   for (const entry of entries) {
     if (typeof entry === "string" && entry) {
       ids.push(entry);
-    } else if (isRecord(entry) && typeof entry.id === "string" && entry.id) {
+    } else if (
+      isRecord(entry) &&
+      entry.mode !== "snapshot" &&
+      typeof entry.id === "string" &&
+      entry.id
+    ) {
       ids.push(entry.id);
     }
   }
   return ids.length > 0 ? ids : undefined;
+}
+
+function readResourceSnapshots(
+  value: unknown,
+  fallbackTitle: string,
+): ContextResourceSnapshot[] {
+  const entries = Array.isArray(value) ? value : value == null ? [] : [value];
+  return entries.flatMap((entry) => {
+    if (!isRecord(entry) || entry.mode !== "snapshot") return [];
+    const title =
+      [entry.title, entry.label, entry.name]
+        .find((candidate) => typeof candidate === "string" && candidate.trim())
+        ?.toString()
+        .trim() || fallbackTitle;
+    const textCandidate = [
+      entry.content,
+      entry.text,
+      entry.body,
+      entry.description,
+      entry.value,
+      // Legacy picker drafts used `notes`; keep it after every canonical key.
+      entry.notes,
+    ].find((candidate) => typeof candidate === "string" && candidate.trim());
+    return [
+      {
+        title,
+        text: typeof textCandidate === "string" ? textCandidate : null,
+        data: entry,
+      },
+    ];
+  });
 }
 
 function basename(path: string): string {
@@ -119,37 +157,35 @@ function displayTitle(data: Data, fallback: string): string {
   return candidate?.slice(0, 100) || fallback;
 }
 
-function isDataRef(value: unknown): value is DataRef {
-  if (!isRecord(value) || typeof value.table !== "string") return false;
-  if (value.ref_type === "db_query") return true;
-  if (value.ref_type === "db_record") return typeof value.id === "string";
-  return (
-    value.ref_type === "db_field" &&
-    typeof value.id === "string" &&
-    typeof value.field_name === "string"
-  );
-}
-
 function readDataRefs(value: unknown): DataRef[] {
-  return Array.isArray(value) ? value.filter(isDataRef) : [];
+  const candidate: unknown = {
+    type: "input_data",
+    refs: Array.isArray(value) ? value : [],
+  };
+  if (!isMessagePart(candidate) || candidate.type !== "input_data") return [];
+  return candidate.refs;
 }
 
-function isBookmark(value: unknown): value is ContextBookmark {
-  if (!isRecord(value) || typeof value.type !== "string") return false;
-  if (value.type.startsWith("table_")) return typeof value.table_id === "string";
-  if (value.type === "full_table") return typeof value.table_id === "string";
-  if (value.type.startsWith("list_")) return typeof value.list_id === "string";
-  return value.type === "full_list" && typeof value.list_id === "string";
-}
-
-function readBookmarks(value: unknown): ContextBookmark[] {
+function readBookmarks(
+  value: unknown,
+  blockType: "input_table" | "input_list",
+): ContextBookmark[] {
   const entries = Array.isArray(value) ? value : value == null ? [] : [value];
-  return entries.filter(isBookmark);
+  const candidate: unknown = { type: blockType, bookmarks: entries };
+  if (!isMessagePart(candidate)) return [];
+  if (candidate.type === "input_table" || candidate.type === "input_list")
+    return candidate.bookmarks;
+  return [];
 }
 
 function bookmarkTitle(bookmark: ContextBookmark): string {
-  if ("table_id" in bookmark) return bookmark.table_name?.trim() || "Table";
-  return bookmark.list_name?.trim() || "List";
+  if ("table_id" in bookmark)
+    return typeof bookmark.table_name === "string" && bookmark.table_name.trim()
+      ? bookmark.table_name.trim()
+      : "Table";
+  return typeof bookmark.list_name === "string" && bookmark.list_name.trim()
+    ? bookmark.list_name.trim()
+    : "List";
 }
 
 type ItemBase = Omit<ContextDrawerItem, "id" | "title" | "refs"> & {
@@ -197,18 +233,42 @@ function expand(
   };
 
   if (blockType === "input_notes") {
-    const ids = asResourceIdList(d.note_ids ?? d);
-    return (ids ?? []).map((id) => make(id, displayTitle(d, "Note"), { noteIds: [id] }));
+    const source = d.note_ids ?? d;
+    const ids = asResourceIdList(source) ?? [];
+    const snapshots = readResourceSnapshots(source, "Note snapshot");
+    return [
+      ...ids.map((id) => make(id, displayTitle(d, "Note"), { noteIds: [id] })),
+      ...snapshots.map((snapshot, index) =>
+        make(
+          `snapshot-${index}`,
+          snapshot.title,
+          { resourceSnapshot: snapshot },
+          snapshot.data,
+        ),
+      ),
+    ];
   }
 
   if (blockType === "input_task") {
-    const ids = asResourceIdList(d.task_ids ?? d);
-    return (ids ?? []).map((id) => make(id, displayTitle(d, "Task"), { taskIds: [id] }));
+    const source = d.task_ids ?? d;
+    const ids = asResourceIdList(source) ?? [];
+    const snapshots = readResourceSnapshots(source, "Task snapshot");
+    return [
+      ...ids.map((id) => make(id, displayTitle(d, "Task"), { taskIds: [id] })),
+      ...snapshots.map((snapshot, index) =>
+        make(
+          `snapshot-${index}`,
+          snapshot.title,
+          { resourceSnapshot: snapshot },
+          snapshot.data,
+        ),
+      ),
+    ];
   }
 
   if (blockType === "input_webpage") {
     const webpages = readWebpageInputs(
-      isPreFetchedUrl(d) ? d : d.urls ?? d.url ?? d,
+      isPreFetchedUrl(d) ? d : (d.urls ?? d.url ?? d),
     );
     return webpages.map((webpage, index) =>
       make(
@@ -223,7 +283,12 @@ function expand(
   if (blockType === "input_data") {
     const refs = readDataRefs(d.refs);
     return refs.map((ref, index) =>
-      make(String(index), ref.label?.trim() || ref.table, { dataRefs: [ref] }, ref),
+      make(
+        String(index),
+        ref.label?.trim() || ref.table,
+        { dataRefs: [ref] },
+        ref,
+      ),
     );
   }
 
@@ -243,9 +308,14 @@ function expand(
   }
 
   if (blockType === "input_table" || blockType === "input_list") {
-    const bookmarks = readBookmarks(d.bookmarks ?? d);
+    const bookmarks = readBookmarks(d.bookmarks ?? d, blockType);
     return bookmarks.map((bookmark, index) =>
-      make(String(index), bookmarkTitle(bookmark), { bookmarks: [bookmark] }, bookmark),
+      make(
+        String(index),
+        bookmarkTitle(bookmark),
+        { bookmarks: [bookmark] },
+        bookmark,
+      ),
     );
   }
 
@@ -259,13 +329,17 @@ function expand(
         id,
         name: label === base.typeLabel ? null : label,
       };
-      return make(id, entityRef.name ?? base.typeLabel, { entityRefs: [entityRef] });
+      return make(id, entityRef.name ?? base.typeLabel, {
+        entityRefs: [entityRef],
+      });
     });
   }
 
   const { fileId, fileUrl } = extractMediaRefs(d, base.raw);
   if (fileId || fileUrl) {
-    return [make("media", displayTitle(d, base.typeLabel), { fileId, fileUrl })];
+    return [
+      make("media", displayTitle(d, base.typeLabel), { fileId, fileUrl }),
+    ];
   }
 
   const text = readNonEmptyString(d.text) ?? readNonEmptyString(d.content);
@@ -331,7 +405,7 @@ export function normalizeMessagePart(
     partType === "media"
       ? part.kind === "youtube"
         ? "youtube_video"
-        : part.kind ?? "media"
+        : (part.kind ?? "media")
       : partType;
   const def = resolveContextItemDef(blockType);
   return expand(blockType, isRecord(part) ? part : null, {

@@ -1,8 +1,9 @@
 # Resource attachment wire spec (frontend → backend)
 
-How the frontend includes attached resources (notes, tasks, files, and the new
-Matrx-entity references) in a user message. **For backend confirmation** — the
-"Pending" types below are emitted by the FE but need backend handlers.
+How the frontend includes attached resources (notes, tasks, files, and Matrx
+entity references) in a user message. The frontend request union, persisted
+message union, OpenAPI schema, and backend Pydantic union are generated from one
+contract and validated at their boundaries.
 
 Frontend reference:
 - `instance-resources.selectors.ts` → `selectResourcePayloads` (builds the blocks)
@@ -29,8 +30,9 @@ id/value field:
 }
 ```
 
-Option flags are **omitted unless set** (lean wire). Specifically:
-- `editable` — emitted **only** when `true` (see below).
+Option flags are **omitted unless set** (lean wire), except editability where an
+explicit lock is security-significant. Specifically:
+- `editable` — emitted as `true` or `false` for editable-capable types (see below), omitted for types with no write capability.
 - `keep_fresh` — emitted only when `true`.
 - `convert_to_text` — emitted only when **`false`** (default is true).
 - `optional_context` — emitted only when `true`.
@@ -47,22 +49,20 @@ flattens `string`, `{ id }`, and `{ mode, content }` shapes down to ids.
 
 ## Editability (IMPORTANT — default flipped)
 
-- The **server defaults a resource to LOCKED** (read-only).
-- The **FE now defaults editable-capable resources to EDITABLE** on attach, and
-  emits `editable: true` explicitly. The user opts out by clicking the lock,
-  which removes the key (→ server treats as locked).
-- Therefore: **absence of `editable` = locked/read-only**; **`editable: true` =
-  the agent may modify the underlying record.** The FE never sends
-  `editable: false`.
+- The **FE defaults editable-capable resources to EDITABLE** on attach and sends
+  `editable: true`. Clicking the lock sends `editable: false` explicitly.
+- **Absence/null means unspecified**: the server leaves the agent's existing
+  tools alone. It is not a lock. Types without write capability omit the field.
 
 Editable-capable types (toggle shown, default editable):
-`input_notes`, `input_task`, `input_table`, `input_list`, `input_data`,
-`input_webpage`, `input_project`, `input_transcript`,
-`input_transcript_session`, `input_workbook`, `input_document`.
+`input_notes`, `input_task`, `input_table`, `input_list`,
+`input_project`, `input_transcript`, `input_workbook`, `input_document`.
 
 Never editable (no toggle): files/media (`image`, `audio`, `video`,
-`document`), `youtube_video`, `text`, `input_agent`, `input_agent_app`, and the
-editor pills.
+`document`), `youtube_video`, `text`, `input_webpage`, `input_agent`,
+`input_agent_app`, `input_transcript_session`, and the editor pills. A webpage's
+text can be prepared in the picker before send; that is not permission for the
+agent to mutate a backing record.
 
 ---
 
@@ -75,7 +75,7 @@ editor pills.
 | `text` | `text: string` | inline text |
 | `image` / `audio` / `video` / `document` | `file_id` \| `url` \| `base64_data` (+ `mime_type`, `metadata`) | MediaRef contract — `file_uri` (native storage URI) was eradicated from the client 2026-07-06; identify by `file_id` first, then `url` (see `features/files/FEATURE.md`) |
 | `youtube_video` | `url: string` | |
-| `input_webpage` | `urls: string[]` | |
+| `input_webpage` | `urls: (string \| PreFetchedUrl)[]` | `PreFetchedUrl` preserves the exact submitted `url`, `title`, `textContent`, `charCount`, and `scrapedAt`; string URLs are legacy-compatible |
 | `input_notes` | `note_ids: string[]` | |
 | `input_task` | `task_ids: string[]` | |
 | `input_table` | `bookmarks` | table bookmark objects — **a bookmark IS a reference item** (FLAT identity ids + display hints); types `full_table`/`table_column`/`table_row`/`table_cell` map to the `table*` reference taxonomy via `features/matrx-envelope/bookmarkToReference.ts` |
@@ -140,7 +140,7 @@ request emits `variable_resource_context[name] = { promote, exclude }`. The
 variable itself remains the canonical `file_id`, so provider media substitution
 and agent-to-agent callers keep one stable identity shape.
 
-### Pending backend support (FE emits these now)
+### Matrx entity references (backend supported)
 
 | `type` | Payload field | Entity |
 |---|---|---|
@@ -155,10 +155,9 @@ and agent-to-agent callers keep one stable identity shape.
 `input_transcript` vs `input_transcript_session` are **two separate types** by
 design — a whole transcript vs. a single recording session inside it.
 
-### Open questions for backend
-
-1. Confirm the `*_ids` field names above (or tell us your preferred names).
-2. Confirm which Pending types are writable (honor `editable: true`) vs.
-   reference-only. FE currently marks project/transcript/session/workbook/
-   document as editable-capable; agent/agent_app as reference-only.
-3. Confirm `template` support for any of the new types (FE can send it).
+The server runtime reconstructs every variant, resolves its RLS-scoped canonical
+entity, emits a `matrx` reference envelope, stages the reference, and replaces
+it in the provider-bound clone. Agent, agent-app, and transcript-session are
+reference-only because those domains do not expose a canonical write tool.
+Project and transcript use their existing data payloads; workbook and document
+retain their dedicated tools.

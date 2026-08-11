@@ -49,26 +49,14 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
   // switch below dumps them to `unknown_data_event` ("This data type is not yet
   // registered" — the every-reload bug). Recognize + reconstruct them first.
   // MATRX-EXCEPTION: `raw` is a concrete MessagePart union member (no index
-  // signature), but these two helpers need to probe for keys that aren't on
-  // any MessagePart variant (`_matrxBlockType`, or the alternate wire shape
-  // for images) — a defensive shape-sniff on data whose real runtime shape
-  // isn't fully described by the generated union.
+  // signature), but this legacy helper needs to probe for keys that aren't on
+  // any MessagePart variant (`_matrxBlockType`) — a defensive shape-sniff on
+  // data whose real runtime shape isn't fully described by the generated union.
   const persisted = reconstructPersistedBlock(
     raw as unknown as Record<string, unknown>,
     index,
   );
   if (persisted) return persisted;
-
-  // Optimistic user bubbles (and the API wire spec) store attachments as
-  // `{ type: "image", file_id, url, … }`. cx_message uses `{ type: "media",
-  // kind: "image", … }`. Coerce before the typed switch so sent images render
-  // as attachment chips instead of vanishing into `unknown_data_event`.
-  const wireMedia = coerceWireMediaPart(
-    raw as unknown as Record<string, unknown>,
-  );
-  if (wireMedia) {
-    return normalizeMedia(wireMedia, index);
-  }
 
   switch (raw.type) {
     case "text":
@@ -395,32 +383,6 @@ type AnyMediaPart =
   | VideoMediaPart
   | DocumentMediaPart
   | YouTubeMediaPart;
-
-const WIRE_MEDIA_KINDS = new Set(["image", "audio", "video", "document"]);
-
-/** Lift API wire-format media blocks into the cx_message `media` part shape. */
-function coerceWireMediaPart(
-  raw: Record<string, unknown>,
-): AnyMediaPart | null {
-  const wireType = raw.type;
-  if (typeof wireType !== "string" || !WIRE_MEDIA_KINDS.has(wireType)) {
-    return null;
-  }
-
-  return {
-    type: "media",
-    kind: wireType as NonNullable<ImageMediaPart["kind"]>,
-    file_id: typeof raw.file_id === "string" ? raw.file_id : null,
-    url: typeof raw.url === "string" ? raw.url : null,
-    mime_type: typeof raw.mime_type === "string" ? raw.mime_type : null,
-    metadata:
-      raw.metadata &&
-      typeof raw.metadata === "object" &&
-      !Array.isArray(raw.metadata)
-        ? (raw.metadata as Record<string, unknown>)
-        : undefined,
-  };
-}
 
 function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
   switch (raw.kind) {

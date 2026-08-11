@@ -116,6 +116,11 @@ function deriveStatus(
   payload: Record<string, unknown>,
   disclosure: AccessDisclosure,
 ): AccessGateStatus {
+  // An unregistered token is a bug in the CALLING surface, not evidence about
+  // the user's record. Reporting it as "missing" would tell someone their data
+  // is gone because WE misconfigured a registry — the exact lie this feature
+  // exists to kill. (Caught by the adversarial pass, 2026-08-11.)
+  if (payload.unresolvable === true) return "error";
   if (disclosure === "anonymous") return "anonymous";
   if (parseLevel(payload.level) !== "none") return "ok";
   if (payload.exists === false) return "missing";

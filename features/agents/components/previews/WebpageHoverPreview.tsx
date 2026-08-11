@@ -91,17 +91,12 @@ export function WebpagePreviewContent({
           {copied ? <Check className="text-success" /> : <Copy />}
           {copied ? "Copied" : "Copy URL"}
         </Button>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-auto"
-        >
-          <Button size="sm" className="h-7 px-2.5 text-xs gap-1">
+        <Button asChild size="sm" className="ml-auto h-7 px-2.5 text-xs gap-1">
+          <a href={url} target="_blank" rel="noopener noreferrer">
             <ExternalLink />
             Open
-          </Button>
-        </a>
+          </a>
+        </Button>
       </div>
     </div>
   );

@@ -13,6 +13,45 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D166 — `scripts/shape/activate-kinds.ts --apply` can no longer activate anything (2026-08-11)
+
+The activation gate trigger added by `migrations/content_ir_kind_activation_rpc.sql`
+rejects every direct write to `content_ir.kind_definition.is_active`
+(`is_active is gated — write it through content_ir.set_kind_activation`), but
+the script still does `.update({ is_active: true })` (`activate-kinds.ts:295`).
+Measured live 2026-08-11 activating `seo_package`: both dual-gate legs passed,
+the flip failed. The dry-run report is still correct and useful — only `--apply`
+is dead.
+
+The RPC is the right target, but it raises `no authenticated user` under the
+service key the script uses (`auth.uid()` is null), so the fix is not a
+one-liner swap: either give the script a user JWT, or add a service-role branch
+to `content_ir.set_kind_activation` that still runs the gate. Until then the
+only working activation path is the UI (`/shapes/[kind]` owner control, or the
+`kind_activate` agent tool).
+
+### D165 — the Redux execution system cannot carry a `context_anchor` (2026-08-11)
+
+`useRunAgent` (the one-shot `callApi` path) accepts `contextAnchor` +
+`organizationId` and puts them on the wire (`useRunAgent.ts:59`, `:103`); the
+Redux execution system does not — `ManagedAgentOptions.runtime`
+(`agent-execution-config.types.ts:153`) has no field for either, and
+`assembleRequest` (`execute-instance.thunk.ts:300-312`) derives org only from
+the instance / ambient active org. `AgentStartRequest.context_anchor` is
+type-legal and never populated from this path.
+
+Consequence: every surface migrated from the one-shot runner to the live posture
+(`useLiveAgentRun`, required for streaming — it is the only path that yields a
+`requestId`/`conversationId`) silently LOSES its durable-entity anchor. Hit
+while migrating the Research Outputs Studio SEO card, which passed
+`{resource_type:"research_topic", resource_id: topicId}`. The report still
+travels in `userInput`, so nothing broke visibly — but the server can no longer
+reload the topic's saved scope, and the same loss lands on every remaining
+class-A migration in `docs/handoffs/live-run-streaming-sweep.md`.
+
+Fix: thread `contextAnchor` through `AgentExecutionRuntime` → instance state →
+`assembleRequest`, the same way `surfaceName` already travels.
+
 ### D164 — `keyword_set` and `keyword_variant_set` are byte-identical kinds (2026-08-11)
 
 Surfaced by the D156 fix: with fieldless kinds in the binder's fingerprint

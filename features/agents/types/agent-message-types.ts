@@ -44,6 +44,7 @@ export type {
   DataInputBlock,
   TableBookmark,
   FullTableBookmark,
+  TableSchemaBookmark,
   TableColumnBookmark,
   TableRowBookmark,
   TableCellBookmark,
@@ -76,6 +77,7 @@ import type {
   ContentBlock,
 } from "./message-types";
 import type { Enums } from "@/types/database.types";
+import type { MessagePart } from "@/types/python-generated/stream-events";
 
 // The canonical role union, sourced from the generated DB enum so it can never
 // drift from `public.cx_message.role`. Aliased here so `MessageRole` below
@@ -308,28 +310,7 @@ export interface WebSearchCallBlock {
  *                 WebSearchCallBlock
  *   "tool"      → ToolResultBlock (one block per tool call result)
  */
-export type ConversationBlock =
-  // ── User-sendable blocks (ContentBlock) ──
-  | TextBlock
-  | ImageBlock
-  | AudioBlock
-  | VideoBlock
-  | YouTubeVideoBlock
-  | DocumentBlock
-  | WebpageInputBlock
-  | NotesInputBlock
-  | TaskInputBlock
-  | TableInputBlock
-  | ListInputBlock
-  | DataInputBlock
-  // ── Assistant-only blocks ──
-  | ThinkingBlock
-  | ToolCallBlock
-  | CodeExecutionBlock
-  | CodeExecutionResultBlock
-  | WebSearchCallBlock
-  // ── Tool-role blocks ──
-  | ToolResultBlock;
+export type ConversationBlock = MessagePart;
 
 // =============================================================================
 // SECTION 4 — ConversationMessage: a full message with role + content
@@ -366,29 +347,35 @@ export interface ConversationMessage {
 
 // Narrowed per-role message types for exhaustive type narrowing
 
-/** A user turn. Content is any ContentBlock. */
+/** A persisted user turn. Request-only inline media is normalized first. */
 export interface UserMessage extends ConversationMessage {
   role: "user";
-  content: ContentBlock[];
+  content: MessagePart[];
 }
 
 /** An assistant turn. Content is text, thinking, tool calls, or code execution. */
 export interface AssistantMessage extends ConversationMessage {
   role: "assistant";
   content: Array<
-    | TextBlock
-    | ThinkingBlock
-    | ToolCallBlock
-    | CodeExecutionBlock
-    | CodeExecutionResultBlock
-    | WebSearchCallBlock
+    Extract<
+      MessagePart,
+      {
+        type:
+          | "text"
+          | "thinking"
+          | "tool_call"
+          | "code_exec"
+          | "code_result"
+          | "web_search";
+      }
+    >
   >;
 }
 
 /** A tool-results turn. Content is one ToolResultBlock per executed call. */
 export interface ToolMessage extends ConversationMessage {
   role: "tool";
-  content: ToolResultBlock[];
+  content: Array<Extract<MessagePart, { type: "tool_result" }>>;
 }
 
 /** Discriminated union — narrow on .role for exhaustive handling. */

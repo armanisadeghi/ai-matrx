@@ -32,6 +32,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { ContextItemBodyProps } from "../types";
+import { ResourceSnapshotView } from "./ResourceSnapshotView";
 
 function notesDrawerInstanceId(noteId: string): string {
   return `ctx-drawer:${noteId}`;
@@ -63,6 +64,7 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
   const noteId = item.refs.noteIds?.[0] ?? null;
   const instanceId = noteId ? notesDrawerInstanceId(noteId) : "";
   useNotesDrawerInstance(noteId);
+  const snapshot = item.refs.resourceSnapshot;
   const note = useAppSelector((s) =>
     noteId ? selectNoteById(noteId)(s) : undefined,
   );
@@ -78,6 +80,10 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
   useEffect(() => {
     if (note?.label?.trim()) setTitle?.(note.label.trim());
   }, [note?.label, setTitle]);
+
+  if (snapshot) {
+    return <ResourceSnapshotView snapshot={snapshot} />;
+  }
 
   if (!noteId) {
     return (

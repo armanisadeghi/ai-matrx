@@ -15,9 +15,11 @@ import {
 } from "@/features/agent-context/redux/tasksSlice";
 import type { ContextItemBodyProps } from "../types";
 import { TaskPreviewContent } from "@/features/agents/components/previews/TaskHoverPreview";
+import { ResourceSnapshotView } from "./ResourceSnapshotView";
 
 export function TaskBody({ item, setTitle }: ContextItemBodyProps) {
   const taskId = item.refs.taskIds?.[0] ?? null;
+  const snapshot = item.refs.resourceSnapshot;
   const task = useAppSelector((s) =>
     taskId
       ? (selectTaskById(s as Parameters<typeof selectTaskById>[0], taskId) as
@@ -29,6 +31,10 @@ export function TaskBody({ item, setTitle }: ContextItemBodyProps) {
   useEffect(() => {
     if (task?.title?.trim()) setTitle?.(task.title.trim());
   }, [task?.title, setTitle]);
+
+  if (snapshot) {
+    return <ResourceSnapshotView snapshot={snapshot} />;
+  }
 
   if (!taskId) {
     return (

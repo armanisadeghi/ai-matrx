@@ -22,44 +22,39 @@ import UserTableViewer from "@/components/user-generated-table-data/UserTableVie
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import type { TableBookmark } from "@/features/agents/types/message-types";
+import {
+  isPaginatedDataRow,
+  isUserTableFieldRow,
+  isUserTableListRow,
+  unwrapGetUserTableComplete,
+  unwrapGetUserTableDataPaginatedRows,
+  unwrapGetUserTables,
+  type UserTableFieldRow,
+  type UserTableListRow,
+} from "@/utils/user-tables-rpc";
 
 // Types
-interface UserTable {
-  id: string;
-  table_name: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-  is_public: boolean;
-}
-
-interface TableField {
-  id: string;
-  field_name: string;
-  display_name: string;
-  data_type: string;
-  field_order: number;
-  is_required: boolean;
-}
+type UserTable = UserTableListRow;
+type TableField = UserTableFieldRow;
 
 interface TableRow {
   id: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 type SelectionType = "table" | "row" | "column" | "cell";
 type ViewMode =
   "tables" | "table-options" | "rows" | "columns" | "cell-row" | "cell-column";
 
-interface TableReference {
-  type: "full_table" | "table_row" | "table_column" | "table_cell";
-  table_id: string;
+export type TableReference = Exclude<
+  TableBookmark,
+  { type: "table_schema" }
+> & {
   table_name: string;
-  row_id?: string;
-  column_name?: string;
   column_display_name?: string;
   description: string;
-}
+};
 
 interface TablesResourcePickerProps {
   onBack: () => void;
@@ -94,32 +89,24 @@ export function TablesResourcePicker({
 
   // Load user tables
   useEffect(() => {
-    fetchTables();
-  }, []);
+    async function loadTables() {
+      try {
+        setLoading(true);
+        setError(null);
+        const { data, error } = await supabase.rpc("get_user_tables");
 
-  const fetchTables = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await supabase.rpc("get_user_tables");
-
-      if (error) throw error;
-      const tablesPayload = data as unknown as {
-        success: boolean;
-        error?: string;
-        tables?: UserTable[];
-      };
-      if (!tablesPayload.success)
-        throw new Error(tablesPayload.error || "Failed to load tables");
-
-      setTables(tablesPayload.tables || []);
-    } catch (err) {
-      console.error("Error fetching tables:", err);
-      setError("Failed to load your tables");
-    } finally {
-      setLoading(false);
+        if (error) throw error;
+        setTables(unwrapGetUserTables(data).filter(isUserTableListRow));
+      } catch (err) {
+        console.error("Error fetching tables:", err);
+        setError("Failed to load your tables");
+      } finally {
+        setLoading(false);
+      }
     }
-  };
+
+    void loadTables();
+  }, []);
 
   // Load table details (fields and rows)
   const loadTableDetails = async (table: UserTable) => {
@@ -133,15 +120,8 @@ export function TablesResourcePicker({
       );
 
       if (tableError) throw tableError;
-      const tableData = tableDataRaw as unknown as {
-        success: boolean;
-        error?: string;
-        fields?: TableField[];
-      };
-      if (!tableData.success)
-        throw new Error(tableData.error || "Failed to load table");
-
-      setFields(tableData.fields || []);
+      const tableData = unwrapGetUserTableComplete(tableDataRaw);
+      setFields(tableData.fields.filter(isUserTableFieldRow));
 
       // Get rows (first 100)
       const { data: rowsDataRaw, error: rowsError } = await supabase.rpc(
@@ -157,15 +137,11 @@ export function TablesResourcePicker({
       );
 
       if (rowsError) throw rowsError;
-      const rowsData = rowsDataRaw as unknown as {
-        success: boolean;
-        error?: string;
-        data?: TableRow[];
-      };
-      if (!rowsData.success)
-        throw new Error(rowsData.error || "Failed to load rows");
-
-      setRows(rowsData.data || []);
+      setRows(
+        unwrapGetUserTableDataPaginatedRows(rowsDataRaw).filter(
+          isPaginatedDataRow,
+        ),
+      );
     } catch (err) {
       console.error("Error loading table details:", err);
       setError("Failed to load table details");
@@ -282,13 +258,14 @@ export function TablesResourcePicker({
 
   // Handle row selection
   const handleRowSelect = (row: TableRow) => {
+    if (!selectedTable) return;
     if (selectionType === "row") {
       onSelect({
         type: "table_row",
-        table_id: selectedTable!.id,
-        table_name: selectedTable!.table_name,
+        table_id: selectedTable.id,
+        table_name: selectedTable.table_name,
         row_id: row.id,
-        description: `Reference to row ${row.id} in table "${selectedTable!.table_name}"`,
+        description: `Reference to row ${row.id} in table "${selectedTable.table_name}"`,
       });
     } else if (selectionType === "cell") {
       setSelectedRow(row);
@@ -299,24 +276,25 @@ export function TablesResourcePicker({
 
   // Handle column selection
   const handleColumnSelect = (column: TableField) => {
+    if (!selectedTable) return;
     if (selectionType === "column") {
       onSelect({
         type: "table_column",
-        table_id: selectedTable!.id,
-        table_name: selectedTable!.table_name,
+        table_id: selectedTable.id,
+        table_name: selectedTable.table_name,
         column_name: column.field_name,
         column_display_name: column.display_name,
-        description: `Reference to column "${column.display_name}" in table "${selectedTable!.table_name}"`,
+        description: `Reference to column "${column.display_name}" in table "${selectedTable.table_name}"`,
       });
     } else if (selectionType === "cell" && selectedRow) {
       onSelect({
         type: "table_cell",
-        table_id: selectedTable!.id,
-        table_name: selectedTable!.table_name,
+        table_id: selectedTable.id,
+        table_name: selectedTable.table_name,
         row_id: selectedRow.id,
         column_name: column.field_name,
         column_display_name: column.display_name,
-        description: `Reference to cell "${column.display_name}" in row ${selectedRow.id} of table "${selectedTable!.table_name}"`,
+        description: `Reference to cell "${column.display_name}" in row ${selectedRow.id} of table "${selectedTable.table_name}"`,
       });
     }
   };
@@ -598,9 +576,7 @@ export function TablesResourcePicker({
           <div className="flex-1 overflow-auto min-h-0">
             {previewTableId && (
               <div className="h-full px-6 py-4">
-                <UserTableViewer
-                  tableId={previewTableId}
-                />
+                <UserTableViewer tableId={previewTableId} />
               </div>
             )}
           </div>

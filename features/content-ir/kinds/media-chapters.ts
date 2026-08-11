@@ -79,7 +79,11 @@ export const mediaChaptersKindSchema: KindSchema = {
       description:
         "The chapters, in playback order — contiguous, gapless, strictly increasing.",
     },
-    additionalDetails: { type: "inline_object", open: true, fields: {} },
+    // NO `additionalDetails`. Under a bound output schema every declared
+    // property becomes REQUIRED (OpenAI strict / Anthropic both enforce it),
+    // so declaring the residue channel would force the model to emit an empty
+    // object on every run for nothing. Unknown keys still survive — they ride
+    // the parser's residue channel and `collectExtras` renders them.
   },
 };
 

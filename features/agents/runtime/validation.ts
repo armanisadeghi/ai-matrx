@@ -14,10 +14,12 @@ import type {
   ContentType,
   ModelCapabilities,
 } from "@/features/ai-models/capabilities/types";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { UserInputPart } from "@/features/agents/types/request.types";
 
-/** Project a single MessagePart onto the canonical input ContentType. Null if not an input modality (e.g. tool calls, thinking). */
-function messagePartToInputContentType(part: MessagePart): ContentType | null {
+/** Project a single outbound part onto the canonical input ContentType. */
+function messagePartToInputContentType(
+  part: UserInputPart,
+): ContentType | null {
   if (part.type === "text") return "text";
   if (part.type !== "media") return null;
   if (part.kind === "image") return "image";
@@ -29,19 +31,18 @@ function messagePartToInputContentType(part: MessagePart): ContentType | null {
 }
 
 export type ValidationResult =
-  | { ok: true }
-  | { ok: false; rejected: ContentType[]; message: string };
+  { ok: true } | { ok: false; rejected: ContentType[]; message: string };
 
 /**
  * Validates every outbound block against the model's input capabilities.
- * `parts` is the assembled MessagePart[] (or a single text string, which
+ * `parts` is the assembled request union (or a single text string, which
  * is always accepted).
  *
  * Note: `text` is always accepted (every model takes text input). We
  * only reject when a non-text input modality isn't in `caps.input`.
  */
 export function validateMessageBlocks(
-  parts: ReadonlyArray<MessagePart> | string | undefined,
+  parts: ReadonlyArray<UserInputPart> | string | undefined,
   caps: ModelCapabilities,
 ): ValidationResult {
   if (typeof parts === "string" || parts === undefined) return { ok: true };
@@ -54,9 +55,10 @@ export function validateMessageBlocks(
   if (rejected.size === 0) return { ok: true };
   const list: ContentType[] = [];
   rejected.forEach((v) => list.push(v));
-  const human = list.length === 1
-    ? `${list[0]}s`
-    : `${list.slice(0, -1).join("s, ")}s or ${list[list.length - 1]}s`;
+  const human =
+    list.length === 1
+      ? `${list[0]}s`
+      : `${list.slice(0, -1).join("s, ")}s or ${list[list.length - 1]}s`;
   return {
     ok: false,
     rejected: list,

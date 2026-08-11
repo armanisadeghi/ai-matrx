@@ -14,12 +14,21 @@
  * `EpisodeChaptersPanel`, which owns the loaded episode row, the chapter list,
  * and the canonical `saveEpisodeChapters` call that target writes through.
  *
+ * It also publishes the READ half the streamed `episode_title_options` cards
+ * consume (`episode_title_selection`), so the option cards rendered in the
+ * floating live-run window know the episode's current title and whether this
+ * page is currently accepting the write.
+ *
  * Renders nothing. Mount once inside the run page's `SurfaceRuntimeProvider`.
  * Handlers throw on a bad shape or a mid-run attempt — the writeback runtime
  * turns that into the loud toast + captured error.
  */
 
+import { useEffect } from "react";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { publishSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+import { EPISODE_TITLE_UI_STATE_KEY } from "@/features/content-ir/kinds/episode-title-options";
+import type { EpisodeTitleUiState } from "@/components/mardown-display/blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import type { UseStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 
 export const PODCAST_RUN_SURFACE_NAME = "matrx-user/podcast-run";
@@ -94,6 +103,43 @@ export function assertRunWritable(
 }
 
 export function PodcastRunWriteTargets({ run }: { run: UseStudioRun }) {
+  // ── The read half the streamed `episode_title_options` cards consume ─────
+  // Publishing this key is what makes those cards interactive: the block
+  // renders "Use this title" only where a surface offers the target, and
+  // marks the matching card "Current" instead of a no-op apply. We publish
+  // ONLY while the write would actually be accepted (episode saved, run no
+  // longer producing) — the handlers below refuse otherwise, and a button
+  // that is always refused is worse than no button. `run.state.title` is the
+  // authoritative title: both the panel's Apply and this surface's write land
+  // through `applyEpisodeMetadata`, which reflects into it.
+  const writable =
+    !run.streaming &&
+    !run.backgroundWorking &&
+    run.state.status !== "running" &&
+    Boolean(run.state.episodeId);
+  const publishedTitle = writable ? (run.state.title ?? "") : undefined;
+  useEffect(() => {
+    publishSurfaceUiState(
+      PODCAST_RUN_SURFACE_NAME,
+      EPISODE_TITLE_UI_STATE_KEY,
+      publishedTitle === undefined
+        ? undefined
+        : ({ current: publishedTitle } satisfies EpisodeTitleUiState),
+    );
+  }, [publishedTitle]);
+
+  // Unpublish on unmount so a closed run page never leaves stale state behind
+  // for the next surface that mounts.
+  useEffect(
+    () => () =>
+      publishSurfaceUiState(
+        PODCAST_RUN_SURFACE_NAME,
+        EPISODE_TITLE_UI_STATE_KEY,
+        undefined,
+      ),
+    [],
+  );
+
   useSurfaceWriteHandlers(PODCAST_RUN_SURFACE_NAME, {
     episode_title: async (value: unknown) => {
       const obj = asRecord(value, "episode_title");

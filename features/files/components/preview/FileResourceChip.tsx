@@ -51,6 +51,8 @@ export interface FileResourceChipProps {
   fileId: string;
   /** When set, renders a small ✕ remove button. Omit to make the chip read-only. */
   onRemove?: () => void;
+  /** Override the primary click (for example, open the shared attachment drawer). */
+  onOpen?: () => void;
   /** Compact size — default is medium. Use `"xs"` for sent-message chips. */
   size?: "xs" | "sm";
   /** Override the displayed name (rare — mostly for sub-references). */
@@ -68,6 +70,7 @@ export interface FileResourceChipProps {
 export function FileResourceChip({
   fileId,
   onRemove,
+  onOpen,
   size = "sm",
   nameOverride,
   className,
@@ -82,26 +85,12 @@ export function FileResourceChip({
   const mimeType = file?.mimeType ?? null;
   const details = getFileTypeDetails(fileName);
 
-  const handleOpen = () => openFilePreview(fileId);
+  const handleOpen = onOpen ?? (() => openFilePreview(fileId));
 
   const thumbSizePx = size === "xs" ? 14 : 18;
 
-  // The chip itself — a small pill with thumbnail + truncated filename
-  // (+ optional ✕). Wrapped in a HoverCard for the desktop peek.
-  const chip = (
-    <button
-      type="button"
-      onClick={handleOpen}
-      title={fileName}
-      className={cn(
-        "group inline-flex items-center gap-1.5 rounded-md border border-border bg-card text-foreground",
-        "transition-colors hover:bg-accent hover:border-accent-foreground/20",
-        size === "xs"
-          ? "h-6 pl-1 pr-1.5 text-[11px] leading-none"
-          : "h-7 pl-1 pr-2 text-xs",
-        className,
-      )}
-    >
+  const chipContent = (
+    <>
       {/* Thumb: real image for image/video, category icon otherwise.
           Container forces a square so MediaThumbnail's aspect math is happy. */}
       {file ? (
@@ -126,36 +115,48 @@ export function FileResourceChip({
       >
         {fileName}
       </span>
+    </>
+  );
 
-      {onRemove ? (
-        <span
-          // Use a span+role=button instead of a nested <button>; nested
-          // buttons aren't valid HTML. stopPropagation prevents the chip's
-          // open-preview click from firing on remove.
-          role="button"
-          tabIndex={0}
-          aria-label={`Remove ${fileName}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              e.stopPropagation();
-              onRemove();
-            }
-          }}
-          className={cn(
-            "ml-0.5 inline-flex shrink-0 items-center justify-center rounded-full",
-            "p-0.5 text-muted-foreground/70 hover:bg-black/10 hover:text-foreground",
-            "dark:hover:bg-white/10 transition-colors",
-          )}
-        >
-          <X className={size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3"} />
-        </span>
-      ) : null}
+  const openButton = (
+    <button
+      type="button"
+      onClick={handleOpen}
+      title={fileName}
+      className={cn(
+        "group inline-flex items-center gap-1.5 border border-border bg-card text-foreground",
+        "transition-colors hover:bg-accent hover:border-accent-foreground/20",
+        onRemove ? "rounded-l-md" : "rounded-md",
+        size === "xs"
+          ? "h-6 pl-1 pr-1.5 text-[11px] leading-none"
+          : "h-7 pl-1 pr-2 text-xs",
+        className,
+      )}
+    >
+      {chipContent}
     </button>
+  );
+
+  // Open and remove are sibling buttons. Interactive descendants inside a
+  // button are invalid HTML and make one keyboard action trigger both paths.
+  const chip = onRemove ? (
+    <span className="inline-flex items-stretch">
+      {openButton}
+      <button
+        type="button"
+        aria-label={`Remove ${fileName}`}
+        onClick={onRemove}
+        className={cn(
+          "inline-flex shrink-0 items-center justify-center rounded-r-md border border-l-0 border-border bg-card",
+          "text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground",
+          size === "xs" ? "h-6 w-5" : "h-7 w-6",
+        )}
+      >
+        <X className={size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3"} />
+      </button>
+    </span>
+  ) : (
+    openButton
   );
 
   return (

@@ -76,34 +76,47 @@ export async function toTarget<T extends FileTarget>(
 function toMediaBlock(file: NormalizedFile): MediaBlock {
   if (file.youtubeUrl) {
     const block: YouTubeVideoBlock = {
-      type: "youtube_video",
+      type: "media",
+      kind: "youtube",
       url: file.youtubeUrl,
     };
     return block;
   }
 
-  const locator = preferIdentityLocator(file);
+  const locator = requiredRequestLocator(file);
   const mime = file.meta.mime;
   const category = file.meta.category;
 
   if (category === "IMAGE") {
-    const block: ImageBlock = { type: "image", ...locator };
+    const block: ImageBlock = { type: "media", kind: "image", ...locator };
     if (mime) block.mime_type = mime;
     return block;
   }
   if (category === "AUDIO") {
-    const block: AudioBlock = { type: "audio", ...locator };
+    const block: AudioBlock = { type: "media", kind: "audio", ...locator };
     if (mime) block.mime_type = mime;
     return block;
   }
   if (category === "VIDEO") {
-    const block: VideoBlock = { type: "video", ...locator };
+    const block: VideoBlock = { type: "media", kind: "video", ...locator };
     if (mime) block.mime_type = mime;
     return block;
   }
-  const block: DocumentBlock = { type: "document", ...locator };
+  const block: DocumentBlock = {
+    type: "media",
+    kind: "document",
+    ...locator,
+  };
   if (mime) block.mime_type = mime;
   return block;
+}
+
+function requiredRequestLocator(file: NormalizedFile) {
+  const locator = preferIdentityLocator(file);
+  if (locator.file_id) return { file_id: locator.file_id };
+  if (locator.url) return { url: locator.url };
+  if (locator.base64_data) return { base64_data: locator.base64_data };
+  throw new Error("file-handler: media block has no locator");
 }
 
 /**
@@ -208,7 +221,7 @@ function toJsonbContentPart(file: NormalizedFile): MessagePart {
     return part;
   }
 
-  const locator = preferIdentityLocator(file);
+  const locator = requiredPersistedLocator(file);
   const base = {
     type: "media" as const,
     // file_id is the PREFERRED locator (preferIdentityLocator returns ONLY
@@ -217,8 +230,7 @@ function toJsonbContentPart(file: NormalizedFile): MessagePart {
     // private FastFire audio clip) shipped {url:null} — the model received an
     // empty media block and hallucinated from context. Carry it, like
     // toMediaBlock/toMediaRef do, and per media-durability doctrine.
-    file_id: locator.file_id ?? null,
-    url: locator.url ?? null,
+    ...locator,
     mime_type: file.meta.mime ?? null,
   };
   switch (file.meta.category) {
@@ -239,6 +251,17 @@ function toJsonbContentPart(file: NormalizedFile): MessagePart {
       return part;
     }
   }
+}
+
+function requiredPersistedLocator(file: NormalizedFile) {
+  if (file.fileId) return { file_id: file.fileId };
+  if (file.url) return { url: file.url };
+  if (file.base64) {
+    return {
+      url: `data:${file.meta.mime ?? "application/octet-stream"};base64,${file.base64}`,
+    };
+  }
+  throw new Error("file-handler: persisted media has no locator");
 }
 
 // ---------------------------------------------------------------------------

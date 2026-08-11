@@ -37,7 +37,7 @@ function PreviewBody({ item }: { item: ContextDrawerItem }) {
   }
 
   const dataRef = item.refs.dataRefs?.[0];
-  if (dataRef) return <DataRefPreviewContent ref={dataRef} />;
+  if (dataRef) return <DataRefPreviewContent dataRef={dataRef} />;
 
   return null;
 }
@@ -79,7 +79,10 @@ export function BlockHoverPreview({
         side={side}
         align={align}
         sideOffset={8}
-        className={cn("w-80 border border-border bg-card p-3 shadow-lg", className)}
+        className={cn(
+          "w-80 border border-border bg-card p-3 shadow-lg",
+          className,
+        )}
       >
         <PreviewBody item={item} />
       </HoverCardContent>

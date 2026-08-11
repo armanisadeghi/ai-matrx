@@ -47862,15 +47862,18 @@
           },
           "agent_app_ids": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
             "type": "array",
+            "minItems": 1,
             "title": "Agent App Ids"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "agent_app_ids",
           "type"
         ],
         "title": "AgentAppInputPart"
@@ -48583,15 +48586,18 @@
           },
           "agent_ids": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
             "type": "array",
+            "minItems": 1,
             "title": "Agent Ids"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "agent_ids",
           "type"
         ],
         "title": "AgentInputPart"
@@ -62657,6 +62663,11 @@
             "title": "Overwrite",
             "default": false
           },
+          "include_published": {
+            "type": "boolean",
+            "title": "Include Published",
+            "default": false
+          },
           "node_ids": {
             "anyOf": [
               {
@@ -68786,10 +68797,28 @@
           },
           "refs": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/DbRecordRef"
+                },
+                {
+                  "$ref": "#/components/schemas/DbQueryRef"
+                },
+                {
+                  "$ref": "#/components/schemas/DbFieldRef"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "ref_type",
+                "mapping": {
+                  "db_field": "#/components/schemas/DbFieldRef",
+                  "db_query": "#/components/schemas/DbQueryRef",
+                  "db_record": "#/components/schemas/DbRecordRef"
+                }
+              }
             },
             "type": "array",
+            "minItems": 1,
             "title": "Refs"
           },
           "convert_to_text": {
@@ -68822,9 +68851,34 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "refs",
           "type"
         ],
         "title": "DataInputPart"
+      },
+      "DataRefSort": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Field"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "title": "Direction",
+            "default": "asc"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field"
+        ],
+        "title": "DataRefSort"
       },
       "DataStoreAdminRow": {
         "properties": {
@@ -69641,6 +69695,185 @@
         ],
         "title": "DatasetSummary",
         "description": "The metadata-only projection of a dataset row.\n\nExtra keys are tolerated because the user_data SQL projections can add\ncolumns (counts, flags) without bumping this wire shape."
+      },
+      "DbFieldRef": {
+        "properties": {
+          "table": {
+            "type": "string",
+            "enum": [
+              "notes",
+              "tasks",
+              "projects",
+              "organizations"
+            ],
+            "title": "Table"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
+          },
+          "optional_context": {
+            "type": "boolean",
+            "title": "Optional Context",
+            "default": false
+          },
+          "ref_type": {
+            "type": "string",
+            "const": "db_field",
+            "title": "Ref Type"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "field_name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Field Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "table",
+          "ref_type",
+          "id",
+          "field_name"
+        ],
+        "title": "DbFieldRef",
+        "description": "Fetch a single field value from one row of a system table."
+      },
+      "DbQueryRef": {
+        "properties": {
+          "table": {
+            "type": "string",
+            "enum": [
+              "notes",
+              "tasks",
+              "projects",
+              "organizations"
+            ],
+            "title": "Table"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
+          },
+          "optional_context": {
+            "type": "boolean",
+            "title": "Optional Context",
+            "default": false
+          },
+          "ref_type": {
+            "type": "string",
+            "const": "db_query",
+            "title": "Ref Type"
+          },
+          "filter": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Filter"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fields"
+          },
+          "sort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataRefSort"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 50
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "table",
+          "ref_type"
+        ],
+        "title": "DbQueryRef",
+        "description": "Fetch multiple rows from a system table with optional filters."
+      },
+      "DbRecordRef": {
+        "properties": {
+          "table": {
+            "type": "string",
+            "enum": [
+              "notes",
+              "tasks",
+              "projects",
+              "organizations"
+            ],
+            "title": "Table"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
+          },
+          "optional_context": {
+            "type": "boolean",
+            "title": "Optional Context",
+            "default": false
+          },
+          "ref_type": {
+            "type": "string",
+            "const": "db_record",
+            "title": "Ref Type"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fields"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "table",
+          "ref_type",
+          "id"
+        ],
+        "title": "DbRecordRef",
+        "description": "Fetch one full row from a system table by primary key."
       },
       "DedupResponse": {
         "properties": {
@@ -72382,20 +72615,23 @@
             "items": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1
                 },
                 {
-                  "$ref": "#/components/schemas/ResourceRefInput"
+                  "$ref": "#/components/schemas/LiveResourceRefInput"
                 }
               ]
             },
             "type": "array",
+            "minItems": 1,
             "title": "Document Ids"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "document_ids",
           "type"
         ],
         "title": "DocumentInputPart"
@@ -72820,6 +73056,28 @@
               }
             ],
             "title": "Rewrote Column"
+          },
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema"
+          },
+          "schema_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Source"
           }
         },
         "type": "object",
@@ -79904,6 +80162,7 @@
           },
           "list_id": {
             "type": "string",
+            "minLength": 1,
             "title": "List Id"
           },
           "list_name": {
@@ -79935,6 +80194,7 @@
           },
           "table_id": {
             "type": "string",
+            "minLength": 1,
             "title": "Table Id"
           },
           "table_name": {
@@ -87574,10 +87834,12 @@
           },
           "list_id": {
             "type": "string",
+            "minLength": 1,
             "title": "List Id"
           },
           "group_name": {
             "type": "string",
+            "minLength": 1,
             "title": "Group Name"
           },
           "list_name": {
@@ -87660,6 +87922,7 @@
               }
             },
             "type": "array",
+            "minItems": 1,
             "title": "Bookmarks"
           },
           "convert_to_text": {
@@ -87692,6 +87955,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "bookmarks",
           "type"
         ],
         "title": "ListInputPart"
@@ -87706,10 +87970,12 @@
           },
           "list_id": {
             "type": "string",
+            "minLength": 1,
             "title": "List Id"
           },
           "item_id": {
             "type": "string",
+            "minLength": 1,
             "title": "Item Id"
           },
           "list_name": {
@@ -87903,6 +88169,28 @@
           "count"
         ],
         "title": "ListToolsResponse"
+      },
+      "LiveResourceRefInput": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "mode": {
+            "type": "string",
+            "const": "reference",
+            "title": "Mode",
+            "default": "reference"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "LiveResourceRefInput",
+        "description": "A live id-backed reference; snapshots are not meaningful for opaque resources."
       },
       "LogFileListResponse": {
         "properties": {
@@ -91104,7 +91392,8 @@
             "items": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1
                 },
                 {
                   "$ref": "#/components/schemas/ResourceRefInput"
@@ -91112,6 +91401,7 @@
               ]
             },
             "type": "array",
+            "minItems": 1,
             "title": "Note Ids"
           },
           "template": {
@@ -91149,6 +91439,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "note_ids",
           "type"
         ],
         "title": "NotesInputPart"
@@ -97245,6 +97536,7 @@
         "properties": {
           "url": {
             "type": "string",
+            "minLength": 1,
             "title": "Url"
           },
           "textContent": {
@@ -97276,7 +97568,8 @@
           "charCount": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -98027,15 +98320,18 @@
           },
           "project_ids": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
             "type": "array",
+            "minItems": 1,
             "title": "Project Ids"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "project_ids",
           "type"
         ],
         "title": "ProjectInputPart"
@@ -103722,32 +104018,26 @@
         "title": "ResourcePromotion"
       },
       "ResourceRefInput": {
-        "properties": {
-          "id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/LiveResourceRefInput"
           },
-          "mode": {
-            "type": "string",
-            "enum": [
-              "reference",
-              "snapshot"
-            ],
-            "title": "Mode",
-            "default": "reference"
+          {
+            "$ref": "#/components/schemas/SnapshotContentResourceRefInput"
+          },
+          {
+            "$ref": "#/components/schemas/SnapshotTextResourceRefInput"
+          },
+          {
+            "$ref": "#/components/schemas/SnapshotBodyResourceRefInput"
+          },
+          {
+            "$ref": "#/components/schemas/SnapshotDescriptionResourceRefInput"
+          },
+          {
+            "$ref": "#/components/schemas/SnapshotValueResourceRefInput"
           }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "title": "ResourceRefInput",
-        "description": "A single attached-resource reference inside an id list (note_ids, task_ids).\n\nTwo attach contracts share this shape:\n  - reference (default): the server fetches the live record by ``id`` every\n    turn. Clients may send a bare id string OR this object with an ``id``.\n  - snapshot: the server renders the supplied content verbatim and never\n    touches the DB. Set ``mode=\"snapshot\"`` and include the inline fields\n    (``content``/``label``/``title``/…). Extra fields are preserved.\n\n``extra=\"allow\"`` so a client can ship the whole resource object (label,\ncontent, tags, …) without a validation failure — the server reduces it to a\ncanonical reference at resolve time (see config/resource_ref.py)."
+        ]
       },
       "ResponseFormatJsonObject": {
         "properties": {
@@ -111413,6 +111703,111 @@
         ],
         "title": "SnapBboxResponse"
       },
+      "SnapshotBodyResourceRefInput": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "snapshot",
+            "title": "Mode"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Body"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "mode",
+          "body"
+        ],
+        "title": "SnapshotBodyResourceRefInput"
+      },
+      "SnapshotContentResourceRefInput": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "snapshot",
+            "title": "Mode"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "mode",
+          "content"
+        ],
+        "title": "SnapshotContentResourceRefInput"
+      },
+      "SnapshotDescriptionResourceRefInput": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "snapshot",
+            "title": "Mode"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Description"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "mode",
+          "description"
+        ],
+        "title": "SnapshotDescriptionResourceRefInput"
+      },
+      "SnapshotTextResourceRefInput": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "snapshot",
+            "title": "Mode"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "mode",
+          "text"
+        ],
+        "title": "SnapshotTextResourceRefInput"
+      },
+      "SnapshotValueResourceRefInput": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "snapshot",
+            "title": "Mode"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Value"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "mode",
+          "value"
+        ],
+        "title": "SnapshotValueResourceRefInput"
+      },
       "SourceBulkAction": {
         "properties": {
           "source_ids": {
@@ -114595,14 +114990,17 @@
           },
           "table_id": {
             "type": "string",
+            "minLength": 1,
             "title": "Table Id"
           },
           "row_id": {
             "type": "string",
+            "minLength": 1,
             "title": "Row Id"
           },
           "column_name": {
             "type": "string",
+            "minLength": 1,
             "title": "Column Name"
           },
           "table_name": {
@@ -114636,10 +115034,12 @@
           },
           "table_id": {
             "type": "string",
+            "minLength": 1,
             "title": "Table Id"
           },
           "column_name": {
             "type": "string",
+            "minLength": 1,
             "title": "Column Name"
           },
           "table_name": {
@@ -114706,6 +115106,7 @@
               }
             },
             "type": "array",
+            "minItems": 1,
             "title": "Bookmarks"
           },
           "convert_to_text": {
@@ -114738,6 +115139,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "bookmarks",
           "type"
         ],
         "title": "TableInputPart"
@@ -114752,10 +115154,12 @@
           },
           "table_id": {
             "type": "string",
+            "minLength": 1,
             "title": "Table Id"
           },
           "row_id": {
             "type": "string",
+            "minLength": 1,
             "title": "Row Id"
           },
           "table_name": {
@@ -114788,6 +115192,7 @@
           },
           "table_id": {
             "type": "string",
+            "minLength": 1,
             "title": "Table Id"
           },
           "table_name": {
@@ -115076,7 +115481,8 @@
             "items": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1
                 },
                 {
                   "$ref": "#/components/schemas/ResourceRefInput"
@@ -115084,6 +115490,7 @@
               ]
             },
             "type": "array",
+            "minItems": 1,
             "title": "Task Ids"
           },
           "template": {
@@ -115121,6 +115528,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "task_ids",
           "type"
         ],
         "title": "TaskInputPart"
@@ -118053,15 +118461,18 @@
           },
           "transcript_ids": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
             "type": "array",
+            "minItems": 1,
             "title": "Transcript Ids"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "transcript_ids",
           "type"
         ],
         "title": "TranscriptInputPart"
@@ -118123,15 +118534,18 @@
           },
           "transcript_session_ids": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "minLength": 1
             },
             "type": "array",
+            "minItems": 1,
             "title": "Transcript Session Ids"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "transcript_session_ids",
           "type"
         ],
         "title": "TranscriptSessionInputPart"
@@ -119911,6 +120325,45 @@
         "description": "Round-tripped user preferences row.\n\nThe detector / pattern / override sub-fields are user-defined\nJSONB payloads that the detector pipeline interprets, so they ride\nthrough as ``JsonValue`` rather than typed Pydantic models."
       },
       "UserAudioMediaPart": {
+        "allOf": [
+          {
+            "anyOf": [
+              {
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              },
+              {
+                "properties": {
+                  "file_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "file_id"
+                ]
+              },
+              {
+                "properties": {
+                  "base64_data": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "base64_data"
+                ]
+              }
+            ]
+          }
+        ],
         "properties": {
           "metadata": {
             "additionalProperties": true,
@@ -120444,6 +120897,45 @@
         "title": "UserDataStorePatch"
       },
       "UserDocumentMediaPart": {
+        "allOf": [
+          {
+            "anyOf": [
+              {
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              },
+              {
+                "properties": {
+                  "file_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "file_id"
+                ]
+              },
+              {
+                "properties": {
+                  "base64_data": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "base64_data"
+                ]
+              }
+            ]
+          }
+        ],
         "properties": {
           "metadata": {
             "additionalProperties": true,
@@ -120575,6 +121067,45 @@
         "title": "UserDocumentMediaPart"
       },
       "UserImageMediaPart": {
+        "allOf": [
+          {
+            "anyOf": [
+              {
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              },
+              {
+                "properties": {
+                  "file_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "file_id"
+                ]
+              },
+              {
+                "properties": {
+                  "base64_data": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "base64_data"
+                ]
+              }
+            ]
+          }
+        ],
         "properties": {
           "metadata": {
             "additionalProperties": true,
@@ -121152,6 +121683,45 @@
         "title": "UserSecretUpdateRequest"
       },
       "UserVideoMediaPart": {
+        "allOf": [
+          {
+            "anyOf": [
+              {
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              },
+              {
+                "properties": {
+                  "file_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "file_id"
+                ]
+              },
+              {
+                "properties": {
+                  "base64_data": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "base64_data"
+                ]
+              }
+            ]
+          }
+        ],
         "properties": {
           "metadata": {
             "additionalProperties": true,
@@ -121303,6 +121873,7 @@
           },
           "url": {
             "type": "string",
+            "minLength": 1,
             "title": "Url"
           },
           "external_url": {
@@ -125423,7 +125994,8 @@
             "items": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1
                 },
                 {
                   "$ref": "#/components/schemas/PreFetchedUrl"
@@ -125431,6 +126003,7 @@
               ]
             },
             "type": "array",
+            "minItems": 1,
             "title": "Urls"
           },
           "convert_to_text": {
@@ -125463,6 +126036,7 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "urls",
           "type"
         ],
         "title": "WebpageInputPart"
@@ -125568,20 +126142,23 @@
             "items": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "minLength": 1
                 },
                 {
-                  "$ref": "#/components/schemas/ResourceRefInput"
+                  "$ref": "#/components/schemas/LiveResourceRefInput"
                 }
               ]
             },
             "type": "array",
+            "minItems": 1,
             "title": "Workbook Ids"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "workbook_ids",
           "type"
         ],
         "title": "WorkbookInputPart"

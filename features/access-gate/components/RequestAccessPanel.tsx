@@ -55,6 +55,10 @@ export function RequestAccessPanel({
   const [level, setLevel] = useState<RequestedLevel>("viewer");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  /** Null until we've sent one; 0 means the row saved but nobody was reached. */
+  const [delivered, setDelivered] = useState<number | null>(null);
+  /** The user chose to ask again after a decline. */
+  const [reasking, setReasking] = useState(false);
 
   const request = context.request;
   const kind = context.entity.label.toLowerCase();
@@ -70,13 +74,23 @@ export function RequestAccessPanel({
         currentUserId,
         href,
       });
-      toast.success(
-        result.already
-          ? "You've already asked — they haven't answered yet."
-          : `Request sent to ${
-              result.recipients[0]?.displayName ?? ownerName(context)
-            }.`,
-      );
+      if (result.already) {
+        toast.success("You've already asked — they haven't answered yet.");
+      } else if (result.delivered === 0) {
+        // The request row landed, but nobody was actually reached. Saying
+        // "sent" here would be the same unverified claim this whole feature
+        // exists to stop.
+        toast.warning(
+          "Your request is saved, but we couldn't message them just now.",
+        );
+      } else {
+        toast.success(
+          `Request sent to ${
+            result.recipients[0]?.displayName ?? ownerName(context)
+          }.`,
+        );
+      }
+      setDelivered(result.already ? null : (result.delivered ?? null));
       onChanged();
     } catch (error) {
       toast.error(
@@ -111,8 +125,9 @@ export function RequestAccessPanel({
           Waiting on {ownerName(context)}.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          They&rsquo;ve been messaged. You&rsquo;ll get a message back the moment
-          they answer, and this page will open.
+          {delivered === 0
+            ? "We couldn't reach them with a message, but your request is saved and they'll see it."
+            : "They’ve been messaged. You’ll get a message back the moment they answer, and this page will open."}
         </p>
         <Button
           className="mt-3 h-8"
@@ -132,17 +147,30 @@ export function RequestAccessPanel({
     );
   }
 
-  if (request?.status === "declined") {
+  // A declined ask used to end in "reach out to them directly" with no way to
+  // do it — a dead end inside the No Dead Ends primitive. The database happily
+  // accepts a fresh request (declined is neither pending nor reported), so the
+  // door is real; it just wasn't rendered.
+  if (request?.status === "declined" && !reasking) {
     return (
       <div className="rounded-lg border border-border bg-muted/40 p-4">
         <p className="text-sm text-foreground">
           {ownerName(context)} declined this request.
         </p>
-        {request.createdAt ? (
+        {request.decisionNote ? (
           <p className="mt-1 text-xs text-muted-foreground">
-            If something has changed, reach out to them directly.
+            &ldquo;{request.decisionNote}&rdquo;
           </p>
         ) : null}
+        <Button
+          className="mt-3 h-8"
+          size="sm"
+          variant="outline"
+          onClick={() => setReasking(true)}
+        >
+          <Send className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+          Ask again
+        </Button>
       </div>
     );
   }

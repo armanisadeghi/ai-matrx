@@ -84,6 +84,12 @@ function explanation(context: AccessDeniedContext): string {
   const kind = context.entity.label.toLowerCase();
   switch (context.status) {
     case "denied":
+      // Only promise the panel when it will actually render. `canRequest` is
+      // false for rows with neither an owner nor an org (platform catalogs),
+      // where "ask below" pointed at nothing. (Adversarial pass, 2026-08-11.)
+      if (!context.canRequest && context.request?.status !== "pending") {
+        return `It belongs to someone else, and there's no one for us to pass a request to.`;
+      }
       return context.owner?.displayName
         ? `It belongs to someone else. You can ask them for access below.`
         : `It belongs to someone else. You can ask for access below.`;

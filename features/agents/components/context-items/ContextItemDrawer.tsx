@@ -16,7 +16,7 @@
  * registry `Footer`.
  */
 
-import { useEffect, useState } from "react";
+import { createElement, useState } from "react";
 import { ChevronLeft, ChevronRight, Send } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -47,17 +47,27 @@ export function ContextItemDrawer({ controller }: ContextItemDrawerProps) {
 
   // Body-reported title override + header-driven search submission — both
   // reset whenever the active item changes.
-  const [bodyTitle, setBodyTitle] = useState<string | null>(null);
-  const [searchSubmission, setSearchSubmission] = useState<{
+  const [bodyTitleState, setBodyTitleState] = useState<{
+    itemId: string;
+    title: string | null;
+  } | null>(null);
+  const [searchSubmissionState, setSearchSubmissionState] = useState<{
+    itemId: string;
     query: string;
     nonce: number;
   } | null>(null);
-  useEffect(() => {
-    setBodyTitle(null);
-    setSearchSubmission(null);
-  }, [activeItem?.id]);
 
   if (!activeItem) return null;
+
+  const bodyTitle =
+    bodyTitleState?.itemId === activeItem.id ? bodyTitleState.title : null;
+  const searchSubmission =
+    searchSubmissionState?.itemId === activeItem.id
+      ? {
+          query: searchSubmissionState.query,
+          nonce: searchSubmissionState.nonce,
+        }
+      : null;
 
   const Body = resolveContextItemBody(activeItem.blockType);
   const Footer = resolveContextItemFooter(activeItem.blockType);
@@ -73,7 +83,14 @@ export function ContextItemDrawer({ controller }: ContextItemDrawerProps) {
     if (i >= 0) goTo(i);
   };
   const handleSearchSubmit = (query: string) => {
-    setSearchSubmission((s) => ({ query, nonce: (s?.nonce ?? 0) + 1 }));
+    setSearchSubmissionState((current) => ({
+      itemId: activeItem.id,
+      query,
+      nonce: current?.itemId === activeItem.id ? current.nonce + 1 : 1,
+    }));
+  };
+  const handleBodyTitle = (nextTitle: string | null) => {
+    setBodyTitleState({ itemId: activeItem.id, title: nextTitle });
   };
 
   const handleReattach = () => {
@@ -103,20 +120,22 @@ export function ContextItemDrawer({ controller }: ContextItemDrawerProps) {
       title={
         Title ? (
           <span className="inline-flex min-w-0 items-center gap-1">
-            <Title
-              item={activeItem}
-              title={title}
-              items={items}
-              onSelectItem={handleSelectItem}
-              onSearchSubmit={handleSearchSubmit}
-            />
-            {TitleActions && <TitleActions item={activeItem} />}
+            {createElement(Title, {
+              item: activeItem,
+              title,
+              items,
+              onSelectItem: handleSelectItem,
+              onSearchSubmit: handleSearchSubmit,
+            })}
+            {TitleActions && createElement(TitleActions, { item: activeItem })}
           </span>
         ) : (
           <span className="inline-flex min-w-0 items-center gap-2">
-            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+            {createElement(Icon, {
+              className: "h-4 w-4 shrink-0 text-muted-foreground",
+            })}
             <span className="min-w-0 truncate">{title}</span>
-            {TitleActions && <TitleActions item={activeItem} />}
+            {TitleActions && createElement(TitleActions, { item: activeItem })}
           </span>
         )
       }
@@ -158,17 +177,17 @@ export function ContextItemDrawer({ controller }: ContextItemDrawerProps) {
       contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
     >
       <div className="min-h-0 flex-1 overflow-hidden">
-        <Body
-          key={activeItem.id}
-          item={activeItem}
-          setTitle={setBodyTitle}
-          searchSubmission={searchSubmission}
-        />
+        {createElement(Body, {
+          key: activeItem.id,
+          item: activeItem,
+          setTitle: handleBodyTitle,
+          searchSubmission,
+        })}
       </div>
 
       {hasFooter && (
         <div className="flex h-9 shrink-0 items-center gap-2 border-t border-border bg-card px-3">
-          {Footer && <Footer item={activeItem} />}
+          {Footer && createElement(Footer, { item: activeItem })}
           {showReattach && (
             <Tooltip>
               <TooltipTrigger asChild>

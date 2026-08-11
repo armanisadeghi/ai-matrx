@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   ChevronLeft,
   Globe,
@@ -150,22 +150,6 @@ export function WebpageResourcePickerCore({
     inputRef.current?.focus({ preventScroll: true });
   }, []);
 
-  // Auto-scrape if initialUrl is provided
-  useEffect(() => {
-    if (initialUrl && initialUrl.trim()) {
-      handleScrape(initialUrl);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialUrl]);
-
-  // Set edited content and reset char limit when data is loaded
-  useEffect(() => {
-    if (data?.textContent) {
-      setEditedContent(data.textContent);
-      setCharLimit(0);
-    }
-  }, [data]);
-
   const handleScrape = async (rawUrl?: string) => {
     const target = rawUrl ?? url;
     if (!target.trim()) return;
@@ -191,13 +175,27 @@ export function WebpageResourcePickerCore({
     setSuggestedType(null);
 
     try {
-      await scrapeUrl(normalized);
+      const result = await scrapeUrl(normalized);
+      if (!result) return;
+      setEditedContent(result.textContent);
+      setCharLimit(0);
       setPreviewTab("pretty");
       setShowPreview(true);
     } catch {
       // Error is already captured in hook state (hasError / error)
     }
   };
+
+  const scrapeInitialUrl = useEffectEvent((value: string) => {
+    void handleScrape(value);
+  });
+
+  // Auto-scrape when a host opens this picker with a URL already supplied.
+  useEffect(() => {
+    if (!initialUrl?.trim()) return;
+    const timer = window.setTimeout(() => scrapeInitialUrl(initialUrl), 0);
+    return () => window.clearTimeout(timer);
+  }, [initialUrl]);
 
   const handleConfirm = () => {
     if (!data) return;
