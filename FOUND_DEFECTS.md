@@ -142,6 +142,57 @@ becomes public until the user chooses to share); or publish those specific asset
 token-scoped minting to the share lane (most correct, most work). Detection is live and
 repeatable: `pnpm check:media-durability` (`scripts/media-durability/FEATURE.md`).
 
+### D159 — A live agent edit does NOT reach the running server: the execution path reads the agent through a process-global cache (2026-08-11)
+
+**Found the hard way.** Grounding was turned OFF in the database for 11 agents
+(`agent_disable_grounding_on_structured_gemini_agents.sql`, applied and verified
+on both `agent.definition` AND `agent.definition_version`), and **production
+kept grounding anyway** — two runs of the Topic Idea Generator at 22:34 and
+22:37, both after the 22:33:41 write, came back with grounding citation markers
+(`[1.2.6]`), 11-12 thinking blocks carrying 54-96 KB of grounding thought
+signatures, and the D155 corruption. A clean ungrounded run in the same window
+had 0 thinking blocks and 3.3 KB.
+
+The path:
+
+```
+execution_definition.py  -> definition_manager.load_definition_by_id(id)
+db/managers/agent/definition.py:152  -> return await self.load_by_id(id)
+matrx_orm/core/base.py:1199  async def load_by_id(cls, item_id, use_cache: bool = True)
+```
+
+`use_cache` defaults to **True**, so the executor serves whatever copy the
+process loaded first. No TTL was found — it is a process-global identity map
+that lives until the process restarts.
+
+matrx_orm's own docstring states the rule this violates: *"`use_cache=False` is
+the AUTHORITATIVE read: pass it whenever the row decides identity, ownership, or
+whether the request may run at all."* The agent definition decides exactly that
+— `execution_definition.py` checks `is_public` / `user_id` / `is_active` /
+`is_archived` on this very row to decide whether the run is allowed — and it is
+read from cache. `aidream/services/agent_data/writes.py:168` and
+`services/references/resources.py:395` already call the same cache
+"process-global" and mark `use_cache=False` MANDATORY for authoritative reads.
+
+**Why this is bigger than grounding.** Every agent edit — the admin UI, the
+agent builder, a slot repin, a prompt fix, a model swap, a settings change —
+lands in the DB and may not change what production runs until the next deploy
+restarts the process. Nothing tells you; the write succeeds and the UI shows
+the new value. Any past "I changed the agent and it didn't take effect" belongs
+here.
+
+**NOT FIXED — needs Arman's decision.** The obvious change (pass
+`use_cache=False` on the execution read) puts one extra DB round trip on every
+agent run, and the cache is presumably there on purpose. Alternatives: an
+invalidation hook on agent write, a short TTL for this model only, or a
+version/revision check. This is an execution-hot-path change and must not be
+made unilaterally.
+
+**Blocks verification of D155's fix.** The grounding removal is applied and
+correct in the database but is NOT yet in effect on the deployed server, so it
+cannot be confirmed live until the server restarts or the cache question is
+resolved.
+
 ### D155 — Google's grounded stream DROPS a span of the answer (confirmed by Google's own forum) (2026-08-11)
 
 **Not ours, not our schema, and independently reported.** Google's AI Developers
@@ -203,7 +254,7 @@ Also worth testing: the forum reports 2.5-flash unaffected (0/5).
 reasoning and no result. Incident: `chat.request
 c665e986-a1ca-4796-a61e-89204caad0b7`, message `21c2d9cc-…`.
 
-### D156 — Python-owned kinds are FIELDLESS to the frontend (140 active rows) (2026-08-11)
+### D156 — Python-owned kinds are FIELDLESS to the frontend (140 active rows) (2026-08-11) — FIXED
 
 The FE Shape registry reads **only** `content_ir.kind_definition.data` +
 `kind_edge` (`schema-source-kind-tables.ts` `DEF_COLUMNS`) — it never reads
@@ -255,6 +306,72 @@ entry type, `isKindBindable`, `buildKindOutputSchema`, the fingerprint index and
 `matchKindForSchema`, plus their tests. The `/shapes` Test per-field form is a
 SEPARATE concern — it genuinely needs `fields`, and the JSON textarea remains
 the correct fallback there.
+
+**FIXED 2026-08-11 — `emitted_json_schema` now rides on the catalog entry.**
+`DEF_COLUMNS` reads it, `BlockSchemaEntry.emittedJsonSchema` /
+`KindCatalogEntry.emittedJsonSchema` carry it VERBATIM, `isKindBindable`
+passes on "has fields OR has a stored schema", and `buildKindOutputSchema`
+(now entry-keyed, not slug-keyed) returns the stored schema untouched for
+fieldless rows — the same thing `topic_ideas` was hand-bound to. No
+schema→fields→schema round trip anywhere, so the nesting the 133 kinds are
+made of survives. The fingerprint index and `matchKindForSchema` follow for
+free because they build on `buildKindOutputSchema`.
+
+**One thing the original write-up did not anticipate:** reading
+`emitted_json_schema` also makes the 665 machine-minted
+`is_contract_artifact` rows buildable, and 68 active
+`agent_io_<uuid>_output` snapshots would have flooded the picker. They had
+been excluded only as a SIDE EFFECT of the old fields check, so the exclusion
+is now stated (`entry.isContractArtifact`) rather than inherited.
+
+Verified live: bindable kinds 32 → **146**, of which **114 are newly
+reachable** and all 114 build; 113 of 114 round-trip through
+`matchKindForSchema` (the one miss is D164, a duplicate-schema data defect).
+Browser-confirmed end to end in the agent builder's Output Schema tab: the
+picker reads "146 bindable kinds", a previously-invisible python-owned kind
+(`web_meta_description_duplication_v1`) selects, and the written envelope
+keeps `$schema` / `title` / the nested `properties` intact.
+
+### D164 — `keyword_set` and `keyword_variant_set` are byte-identical kinds (2026-08-11)
+
+Surfaced by the D156 fix: with fieldless kinds in the binder's fingerprint
+index, these two slugs canonicalize to the SAME fingerprint
+(`9q-183lvc51ku2s37`) because their `emitted_json_schema` values are byte-for-
+byte identical — `{primary_keyword, alternate_keywords[{keyword, rationale}]}`,
+same required list, same `additionalProperties:false`.
+
+Two kinds for one shape is the duplication the platform forbids, and the
+consequence is visible: `matchKindForSchema` is first-writer-wins, so an agent
+bound to `keyword_variant_set` displays as `keyword_set`. Not a code bug — the
+collision handling is deliberate and documented — but the DATA needs a ruling:
+merge the two (repoint consumers to the survivor, graveyard the other) or give
+them genuinely different schemas. **Arman's call, since it is a product-
+semantics question about what the two names mean.**
+
+### D163 — 12 stored `emitted_block_schema` rows are stale against the live emitter (2026-08-11)
+
+Found by `pnpm shape:reemit-discriminator`
+(`scripts/shape/regenerate-kind-block-schemas.ts`), whose self-verifying gate
+refuses any row that differs from a fresh emission by more than the `__kind`
+discriminator form. Three classes:
+
+- **10 rows** — `additionalDetails.additionalProperties` stored `false`, emitter
+  now produces `true` (`presentation_deck`, `diagram_spec`, `schema_proposal`,
+  `cooking_recipe`, `research_report`, `transcript`, `comparison_set`,
+  `decision_tree`, `item_presentation`, `math_problem`). One emitter change to
+  open-object handling that was never carried into the stored rows.
+- **`study_pack_set`** — its stored `$defs` still carries the dangling
+  `flashcard_set_beta` stub (a pre-existing known ref, see the 2026-07-05
+  migration note).
+- **`video_transcript_research`** — the client cannot reconstruct its
+  python-owned `claim_evidence` child at all (D156's other half), so its whole
+  `$defs` entry would be blanked by a naive re-emit. Correctly refused.
+
+`emitted_block_schema` has NO runtime reader today, so none of this is a live
+correctness problem — it is a code↔DB drift guard that is currently blind
+because nothing routinely re-emits. Fixing the 10 needs a decision on whether
+the emitter's `additionalProperties:true` for open objects is the intended
+behavior; the other two need their upstream data fixed first.
 
 **Not urgent, and specifically NOT a live breakage.** Checked 2026-08-11: 102
 agents carry an `output_schema`; only 4 bind a `__kind`-injected block export,
