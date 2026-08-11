@@ -14,6 +14,7 @@ import { AgentConversationDisplay } from "../messages-display/AgentConversationD
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
+import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -477,6 +478,9 @@ export function AgentConversationColumn({
               the SmartAgentInput, so every surface gets them — not just this
               column. The chat input itself stays fully interactive: answering
               cards and typing into the input are independent actions. */}
+          {/* Server-truth reconnect indicator: a non-terminal /runtime
+              operation exists for this conversation (survives refresh). */}
+          <ServerOperationBanner conversationId={displayId} />
           <PendingAsksZone conversationId={displayId} />
           <ProposedDirectivesZone conversationId={displayId} />
 

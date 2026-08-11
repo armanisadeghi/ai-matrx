@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D148 — `pnpm type-check` is red on main: 11 errors in `features/brokers/` (2026-08-10)
+
+On a clean `main` checkout (v0.4.380), `pnpm type-check` fails with 11 errors confined to `features/brokers/services/core-broker-crud.ts` (7), `features/brokers/types.ts` (3), and `features/brokers/services/resolution-service.ts` (1) — the code calls RPCs (`upsert_broker_value`, …) that no longer exist in the generated `types/database.types.ts` RPC union, i.e. the brokers feature drifted from a DB-types regeneration. Since the build ignores type errors (`ignoreBuildErrors: true`), this ships silently AND masks the gate for every other task (a red gate can't prove a change clean; per-file filtering is the only workaround). Fix: reconcile the brokers service with the live RPC surface (restore/rename the RPCs in the DB, or update the code to the current ones), then confirm `pnpm type-check` is green repo-wide.
+
 ### D147 — the documented full-repo lint gate is baseline-red with 2,475 errors (2026-08-09)
 
 `pnpm lint` on canonical `main` reports 5,286 findings: 2,475 errors and 2,811

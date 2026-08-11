@@ -12,6 +12,7 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
 import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
+import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
@@ -287,6 +288,18 @@ export function ChatRoomClient({
         // (Only the genuinely-cold branch reaches here; the in-memory-live
         // branch above returns early, where prompts arrive over the stream.)
         void dispatch(surfaceColdPendingCalls(conversationIdProp));
+        // Cold-reconnect: if the hydrated rows say the latest turn never
+        // reached a terminal status, the server may still be working on it
+        // (streams run detach_on_disconnect — a refresh never stops them).
+        // Ask the canonical /runtime surface, show the server-truth "still
+        // working" banner, follow its event stream to terminal, and refetch
+        // the finished message automatically. Self-gating + fire-and-forget.
+        void dispatch(
+          reconnectServerOperation({
+            conversationId: conversationIdProp,
+            source: "cold-load",
+          }),
+        );
       } catch (err) {
         if (!ctrl.signal.aborted) setIsColdLoadingConversation(false);
         if (loadedKeyRef.current === conversationIdProp) {

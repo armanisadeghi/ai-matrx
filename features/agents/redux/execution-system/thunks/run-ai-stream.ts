@@ -597,16 +597,25 @@ export async function runAiStream(
     dispatch(setInstanceStatus({ conversationId, status: "error" }));
 
     // Self-heal: the server runs detached and persists the turn even though
-    // our connection died. Poll for the terminal status and rehydrate from
-    // the DB — for the common case (server finished fine) the user gets the
-    // full response without touching anything. Fire-and-forget; the thunk
-    // stands down by itself if the user retries or sends a new message.
+    // our connection died. Ask the canonical /runtime reconnect surface for
+    // the operation's server-truth status and follow its SSE event stream to
+    // terminal, then rehydrate from the DB — for the common case (server
+    // finished fine) the user gets the full response without touching
+    // anything. Falls back internally to the legacy recoverDroppedStream poll
+    // when the spine has no operation. Fire-and-forget; the follower stands
+    // down by itself if the user retries or sends a new message.
     if (isHeartbeat) {
-      void import("./recover-dropped-stream.thunk").then(
-        ({ recoverDroppedStream }) => {
-          dispatch(recoverDroppedStream({ conversationId, requestId }));
-        },
-      );
+      void import(
+        "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk"
+      ).then(({ reconnectServerOperation }) => {
+        dispatch(
+          reconnectServerOperation({
+            conversationId,
+            requestId,
+            source: "stream-loss",
+          }),
+        );
+      });
     }
     // Force-terminal any tool that the stream left mid-flight. Without this,
     // LiveToolCallCard keeps shimmering "Using tool …" forever because the

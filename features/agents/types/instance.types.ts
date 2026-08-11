@@ -17,6 +17,7 @@ import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
 import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
+import type { ServerOperationState } from "@/features/agents/runtime-reconnect/types";
 
 import {
   SOURCE_APPS,
@@ -269,6 +270,14 @@ export interface ExecutionInstance {
 
   // ── Free-form metadata bag (ConversationInvocation.metadata) ────────────
   metadata?: Record<string, unknown>;
+
+  /**
+   * A known non-terminal server-side operation for this conversation, stamped
+   * from aidream's `/runtime` reconnect surface (SERVER truth — survives page
+   * refresh). Drives the "still working on the server" banner; `null`/absent
+   * means no such operation. Written only by `reconnectServerOperation`.
+   */
+  serverOperation?: ServerOperationState | null;
 
   /**
    * THE sandbox this conversation is bound to — the single source of truth,
