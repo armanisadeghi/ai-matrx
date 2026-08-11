@@ -42,3 +42,15 @@ site, loaded competitors and opportunities, latest persisted artifact, and activ
   has never had, and the persisted row wrote `discovery_source='dataforseo'` against a check
   constraint that admits only `provider|declared|manual|backlink|serp`. Both fixed in aidream
   (`services/seo/competitor_autopsy.py`).
+- 2026-08-11 — Claude: **the strategist agent could never finish, and the cap was the reason.** With the
+  route finally reachable, the first complete runs failed at the last stage with "output missing
+  required keys". The agent's schema was correct; its budget was not. `agent.definition_version.settings`
+  carried `max_output_tokens: 16000` with `reasoning_effort: "high"` — the execution row shows
+  `output_tokens: 16000` exactly, i.e. reasoning consumed the entire budget and the JSON was truncated
+  before it closed, after spending $0.41. Raising the cap to 64000 traded one failure for another: the
+  run was killed at exactly its 30-minute execution lease. Settled at `max_output_tokens: 32000` +
+  `reasoning_effort: "medium"` (agent version 4; the `seo.competitor_opportunity_autopsy` slot is
+  pinned with `use_latest: false`, so the slot's `default_agent_version_id` was repointed in the same
+  change — bumping the agent alone would have changed nothing). **Both bounds are real:** too small
+  truncates the artifact, too large exceeds the lease. A verified run on datadestruction.com now
+  produces 3 competitors, 5 prioritized opportunities, and a 35% already-covered verdict.
