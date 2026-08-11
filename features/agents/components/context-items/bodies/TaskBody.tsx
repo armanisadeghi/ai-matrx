@@ -14,6 +14,7 @@ import {
   type TaskRecord,
 } from "@/features/agent-context/redux/tasksSlice";
 import type { ContextItemBodyProps } from "../types";
+import { TaskPreviewContent } from "@/features/agents/components/previews/TaskHoverPreview";
 
 export function TaskBody({ item, setTitle }: ContextItemBodyProps) {
   const taskId = item.refs.taskIds?.[0] ?? null;
@@ -34,6 +35,14 @@ export function TaskBody({ item, setTitle }: ContextItemBodyProps) {
       <p className="p-4 text-xs text-muted-foreground italic">
         No task reference on this item.
       </p>
+    );
+  }
+
+  if (!item.editable) {
+    return (
+      <div className="h-full min-h-0 overflow-y-auto p-4">
+        <TaskPreviewContent taskId={taskId} />
+      </div>
     );
   }
 

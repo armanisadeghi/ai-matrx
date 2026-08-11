@@ -22,22 +22,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrapedContentPretty } from "@/features/scraper/parts/ScrapedContentPretty";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
-
-interface WebpageContent {
-  url: string;
-  title: string;
-  textContent: string;
-  charCount: number;
-  scrapedAt: string;
-}
+import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
+import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
 
 interface WebpageResourcePickerProps {
   onBack: () => void;
-  onSelect: (content: WebpageContent) => void;
+  onSelect: (content: PreFetchedUrl) => void;
   onSwitchTo?: (
     type: "youtube" | "image_url" | "file_url",
     url: string,
@@ -46,7 +39,7 @@ interface WebpageResourcePickerProps {
 }
 
 interface WebpageResourcePickerCoreProps {
-  onSelect: (content: WebpageContent) => void;
+  onSelect: (content: PreFetchedUrl) => void;
   onSwitchTo?: (
     type: "youtube" | "image_url" | "file_url",
     url: string,
@@ -446,9 +439,16 @@ export function WebpageResourcePickerCore({
                     value="pretty"
                     className="flex-1 overflow-auto mt-0 px-0 pb-0 min-h-0 data-[state=inactive]:hidden"
                   >
-                    <div className="h-full overflow-auto rounded-none bg-background border-none">
-                      <ScrapedContentPretty markdown={prettyMarkdown} />
-                    </div>
+                    <WebpageSnapshotView
+                      variant="content"
+                      snapshot={{
+                        url,
+                        title: pageTitle || url,
+                        textContent: prettyMarkdown,
+                        charCount: effectiveContent.length,
+                        scrapedAt: data.scrapedAt,
+                      }}
+                    />
                   </TabsContent>
                   <TabsContent
                     value="edit"

@@ -53,6 +53,7 @@ function useNotesDrawerInstance(noteId: string | null) {
 export function NoteTitleActions({ item }: ContextItemBodyProps) {
   const noteId = item.refs.noteIds?.[0] ?? null;
   useNotesDrawerInstance(noteId);
+  if (!item.editable) return null;
   if (!noteId) return null;
   return <NoteViewControls instanceId={notesDrawerInstanceId(noteId)} />;
 }
@@ -83,6 +84,22 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
       <p className="p-4 text-xs text-muted-foreground italic">
         No note reference on this item.
       </p>
+    );
+  }
+
+  if (!item.editable) {
+    return (
+      <div className="h-full min-h-0 overflow-y-auto p-4">
+        {note?.content?.trim() ? (
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+            {note.content}
+          </p>
+        ) : (
+          <p className="text-xs italic text-muted-foreground">
+            {note ? "This note is empty." : "Loading note…"}
+          </p>
+        )}
+      </div>
     );
   }
 
@@ -121,7 +138,7 @@ export function NoteFooter({ item }: ContextItemBodyProps) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Link
-            href={`/notes/${noteId}`}
+            href={`/notes?active=${encodeURIComponent(noteId)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"

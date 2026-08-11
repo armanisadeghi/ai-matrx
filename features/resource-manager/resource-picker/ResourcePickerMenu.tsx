@@ -33,10 +33,11 @@ import {
   type ResourcePickerViewId,
 } from "./resource-picker-menu-items";
 import { useRunControlCounts } from "./useRunControlCounts";
+import type { Resource } from "@/features/agents/resources/types";
 
 interface ResourcePickerMenuProps {
   onResourceSelected(
-    resource: unknown,
+    resource: Resource,
   ): boolean | void | Promise<boolean | void>;
   onClose: () => void;
   /** Required for Tools / Skills / Settings in-place pickers. */
@@ -82,7 +83,7 @@ export function ResourcePickerMenu({
     attachmentCapabilities,
     { conversationId, allowedViewIds },
   );
-  const selectOne = async (resource: unknown) => {
+  const selectOne = async (resource: Resource) => {
     const selected = await onResourceSelected(resource);
     if (selected !== false) onClose();
     return selected;

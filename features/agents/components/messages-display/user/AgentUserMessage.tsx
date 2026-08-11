@@ -15,18 +15,7 @@ import { useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
-  Image as ImageIcon,
-  Music,
-  Video,
-  FileText,
-  Globe,
-  StickyNote,
-  CheckSquare,
-  Table2,
-  List,
-  Database,
 } from "lucide-react";
-import { Youtube } from "@/components/icons/brand-icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -39,17 +28,12 @@ import {
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { UserActionBar } from "./UserActionBar";
 import { FirstTurnVariables } from "./FirstTurnVariables";
-import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
-import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ContextSlotChipStrip } from "@/features/agents/components/context-slots-display/ContextSlotChipStrip";
-import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
 import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
-import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
-import { normalizeBlock } from "@/features/agents/components/context-items/normalize";
-import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
-import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
+import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
+import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
+import MarkdownStream from "@/components/MarkdownStream";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { RootState } from "@/lib/redux/store";
 
@@ -90,10 +74,6 @@ function isAmbientContextEntry(entry: InstanceContextEntry): boolean {
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
-
-type ContentBlock = RenderBlockPayload;
-
 interface AgentUserMessageProps {
   conversationId: string;
   /** Server-assigned `cx_message.id` or client temp id for an optimistic user message. */
@@ -104,293 +84,6 @@ interface AgentUserMessageProps {
    */
   surfaceKey?: string;
   compact?: boolean;
-}
-
-interface NormalisedBlock {
-  key: string;
-  blockType: string;
-  icon: React.ComponentType<{ className?: string }>;
-  iconColor: string;
-  chipBg: string;
-  chipBorder: string;
-  label: string;
-  title: string;
-  raw: ContentBlock;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Normalisation
-// ─────────────────────────────────────────────────────────────────────────────
-
-function normaliseBlock(
-  block: ContentBlock,
-  idx: number,
-): NormalisedBlock | null {
-  if (block.type === "text") return null;
-
-  const key = block.blockId ?? `block-${idx}`;
-
-  // Normalized output types (from streaming or DB normalization)
-  switch (block.type) {
-    case "image":
-    case "image_output":
-      return mediaChip(key, "image", block);
-    case "audio":
-    case "audio_output":
-      return mediaChip(key, "audio", block);
-    case "video":
-    case "video_output":
-      return mediaChip(key, "video", block);
-    case "document":
-    case "file_output":
-      return mediaChip(key, "document", block);
-    case "youtube_video":
-      return mediaChip(key, "youtube", block);
-
-    case "input_webpage":
-      return chip(
-        key,
-        "input_webpage",
-        Globe,
-        "text-teal-600 dark:text-teal-400",
-        "bg-teal-50 dark:bg-teal-950/30",
-        "border-teal-300 dark:border-teal-700",
-        "Webpage",
-        block,
-      );
-    case "input_notes":
-      return chip(
-        key,
-        "input_notes",
-        StickyNote,
-        "text-orange-600 dark:text-orange-400",
-        "bg-orange-50 dark:bg-orange-950/30",
-        "border-orange-300 dark:border-orange-700",
-        "Note",
-        block,
-      );
-    case "input_task":
-      return chip(
-        key,
-        "input_task",
-        CheckSquare,
-        "text-blue-600 dark:text-blue-400",
-        "bg-blue-50 dark:bg-blue-950/30",
-        "border-blue-300 dark:border-blue-700",
-        "Task",
-        block,
-      );
-    case "input_table":
-      return chip(
-        key,
-        "input_table",
-        Table2,
-        "text-green-600 dark:text-green-400",
-        "bg-green-50 dark:bg-green-950/30",
-        "border-green-300 dark:border-green-700",
-        "Table",
-        block,
-      );
-    case "input_list":
-      return chip(
-        key,
-        "input_list",
-        List,
-        "text-purple-600 dark:text-purple-400",
-        "bg-purple-50 dark:bg-purple-950/30",
-        "border-purple-300 dark:border-purple-700",
-        "List",
-        block,
-      );
-    case "input_data":
-      return chip(
-        key,
-        "input_data",
-        Database,
-        "text-gray-600 dark:text-gray-400",
-        "bg-gray-50 dark:bg-gray-950/30",
-        "border-gray-300 dark:border-gray-700",
-        "Data",
-        block,
-      );
-
-    default:
-      return null;
-  }
-}
-
-function mediaChip(
-  key: string,
-  kind: string,
-  raw: ContentBlock,
-): NormalisedBlock {
-  const map: Record<
-    string,
-    [
-      React.ComponentType<{ className?: string }>,
-      string,
-      string,
-      string,
-      string,
-    ]
-  > = {
-    image: [
-      ImageIcon,
-      "text-blue-600 dark:text-blue-400",
-      "bg-blue-50 dark:bg-blue-950/30",
-      "border-blue-300 dark:border-blue-700",
-      "Image",
-    ],
-    audio: [
-      Music,
-      "text-pink-600 dark:text-pink-400",
-      "bg-pink-50 dark:bg-pink-950/30",
-      "border-pink-300 dark:border-pink-700",
-      "Audio",
-    ],
-    video: [
-      Video,
-      "text-indigo-600 dark:text-indigo-400",
-      "bg-indigo-50 dark:bg-indigo-950/30",
-      "border-indigo-300 dark:border-indigo-700",
-      "Video",
-    ],
-    document: [
-      FileText,
-      "text-gray-600 dark:text-gray-400",
-      "bg-gray-50 dark:bg-gray-950/30",
-      "border-gray-300 dark:border-gray-700",
-      "Doc",
-    ],
-    youtube: [
-      Youtube,
-      "text-red-600 dark:text-red-400",
-      "bg-red-50 dark:bg-red-950/30",
-      "border-red-300 dark:border-red-700",
-      "YouTube",
-    ],
-  };
-  const [icon, iconColor, chipBg, chipBorder, defaultLabel] =
-    map[kind] ?? map.document;
-
-  const d = raw.data as Record<string, unknown> | null | undefined;
-  const title =
-    (d?.["filename"] as string) ??
-    (d?.["title"] as string) ??
-    (d?.["url"] as string)?.split("/").pop() ??
-    defaultLabel;
-  return {
-    key,
-    blockType: raw.type,
-    icon,
-    iconColor,
-    chipBg,
-    chipBorder,
-    label: defaultLabel,
-    title,
-    raw,
-  };
-}
-
-function chip(
-  key: string,
-  blockType: string,
-  icon: React.ComponentType<{ className?: string }>,
-  iconColor: string,
-  chipBg: string,
-  chipBorder: string,
-  label: string,
-  raw: ContentBlock,
-): NormalisedBlock {
-  const d = raw.data as Record<string, unknown> | null | undefined;
-  const title =
-    (d?.["title"] as string) ??
-    (d?.["label"] as string) ??
-    (d?.["name"] as string) ??
-    label;
-  return {
-    key,
-    blockType,
-    icon,
-    iconColor,
-    chipBg,
-    chipBorder,
-    label,
-    title,
-    raw,
-  };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Chip — tiny pill reference inside the bubble
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Pull the cld_files UUID off a content block when present. Media blocks
- * (image / audio / video / document) carry it as `file_id` per the
- * MediaRef contract. Non-media blocks return null and fall through to
- * the legacy per-type chip + modal path.
- */
-function extractBlockFileId(raw: ContentBlock): string | null {
-  if (!raw || typeof raw !== "object") return null;
-  const { type } = raw as { type?: string };
-  if (
-    type !== "image" &&
-    type !== "image_output" &&
-    type !== "audio" &&
-    type !== "audio_output" &&
-    type !== "video" &&
-    type !== "video_output" &&
-    type !== "document" &&
-    type !== "file_output"
-  ) {
-    return null;
-  }
-  const r = raw as {
-    file_id?: unknown;
-    data?: Record<string, unknown> | null;
-  };
-  if (typeof r.file_id === "string") return r.file_id;
-  const data = r.data;
-  if (data && typeof data.fileId === "string") return data.fileId;
-  if (data && typeof data.file_id === "string") return data.file_id;
-  return null;
-}
-
-function AttachmentChip({
-  block,
-  onOpen,
-}: {
-  block: NormalisedBlock;
-  onOpen: (blockKey: string) => void;
-}) {
-  const fileId = extractBlockFileId(block.raw);
-
-  // file_id media keeps its rich FileResourceChip, but clicking still opens the
-  // shared drawer (the chip itself only renders a thumbnail/label).
-  const tile = fileId ? (
-    <button
-      type="button"
-      onClick={() => onOpen(block.key)}
-      className="inline-flex"
-    >
-      <FileResourceChip fileId={fileId} size="xs" />
-    </button>
-  ) : (
-    <ResourceAttachmentTile
-      typeLabel={block.label}
-      title={block.title}
-      icon={block.icon}
-      themeKey={block.blockType}
-      onClick={() => onOpen(block.key)}
-    />
-  );
-
-  return (
-    <BlockHoverPreview block={block.raw} side="top" align="start">
-      {tile}
-    </BlockHoverPreview>
-  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -424,42 +117,14 @@ export function AgentUserMessage({
   const [isHovered, setIsHovered] = useState(false);
 
   const content = extractFlatText(record);
-  // Non-text content blocks (images, audio, tables, etc.) render as chips.
-  // Filter out plain text blocks since those are already rendered as the
-  // main content line.
-  //
-  // `extractContentBlocks` returns the persisted `MessagePart[]` shape
-  // (`note_ids` on the part root). The drawer + hover previews expect the
-  // canonical `RenderBlockPayload` shape (`note_ids` under `data`) — same
-  // normalization `AgentAssistantMessage` already applies. Without this,
-  // clicking a sent note chip opens an empty drawer because the id was never
-  // lifted into `refs.noteIds`.
-  //
-  // useMemo is intentional: normalizeContentBlocks mints blockIds.
-  const renderBlocks = useMemo(() => {
-    const parts = extractContentBlocks(record).filter((b) => b.type !== "text");
-    if (parts.length === 0) return [] as ContentBlock[];
-    return normalizeContentBlocks(parts) as ContentBlock[];
-  }, [record]);
-
-  const normalisedBlocks: NormalisedBlock[] = renderBlocks
-    .map((b, i) => normaliseBlock(b, i))
-    .filter((b): b is NormalisedBlock => b !== null);
-
-  // Flattened drawer items across every attachment on this message — prev/next
-  // walks each individual record. Each chip opens the drawer at its first item.
-  const drawer = useContextItemDrawer();
-  const drawerItems: ContextDrawerItem[] = renderBlocks.flatMap((b, i) =>
-    normalizeBlock(b, i, conversationId),
+  // Persisted generated parts stay typed all the way into the one shared
+  // attachment strip. No RenderBlockPayload/open-data conversion is involved.
+  const attachmentParts = extractContentBlocks(record).filter(
+    isAttachmentMessagePart,
   );
 
-  const openDrawerForBlock = (blockKey: string) => {
-    const idx = drawerItems.findIndex((it) => it.id.startsWith(`${blockKey}:`));
-    drawer.openAt(drawerItems, idx < 0 ? 0 : idx);
-  };
-
   const trimmedText = content.trim();
-  const hasContent = trimmedText || normalisedBlocks.length > 0;
+  const hasContent = trimmedText || attachmentParts.length > 0;
   const metadata =
     record?.metadata && typeof record.metadata === "object"
       ? (record.metadata as Record<string, unknown>)
@@ -531,13 +196,15 @@ export function AgentUserMessage({
     const contextSig = (contextSnapshot ?? [])
       .map((e) => `${e.key}:${e.label}`)
       .join("|");
-    const attachmentSig = normalisedBlocks.map((b) => b.key).join("|");
+    const attachmentSig = attachmentParts
+      .map((part, index) => `${part.type}:${index}`)
+      .join("|");
     return `${variableSig}\u0000${contextSig}\u0000${attachmentSig}\u0000${trimmedText}`;
   }, [
     isFirstTurnMessage,
     userVariableValues,
     contextSnapshot,
-    normalisedBlocks,
+    attachmentParts,
     trimmedText,
   ]);
 
@@ -621,23 +288,19 @@ export function AgentUserMessage({
             )}
 
             {/* Attachment chips */}
-            {normalisedBlocks.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {normalisedBlocks.map((block) => (
-                  <AttachmentChip
-                    key={block.key}
-                    block={block}
-                    onOpen={openDrawerForBlock}
-                  />
-                ))}
-              </div>
-            )}
+            <MessageAttachmentStrip
+              conversationId={conversationId}
+              parts={attachmentParts}
+            />
 
             {/* Text content */}
             {trimmedText && (
-              <div className="text-xs text-foreground whitespace-pre-wrap break-words">
-                {trimmedText}
-              </div>
+              <MarkdownStream
+                content={trimmedText}
+                className="text-xs text-foreground"
+                hideCopyButton
+                allowFullScreenEditor={false}
+              />
             )}
           </div>
 
@@ -682,8 +345,6 @@ export function AgentUserMessage({
           surfaceKey={surfaceKey}
         />
       </div>
-
-      <ContextItemDrawer controller={drawer} />
     </div>
   );
 }

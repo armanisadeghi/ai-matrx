@@ -18,7 +18,8 @@ const EDITABLE_CAPABLE_BLOCK_TYPES: ReadonlySet<ResourceBlockType> = new Set([
   "input_table",
   "input_list",
   "input_data",
-  "input_webpage",
+  // Webpage text may be edited in the picker BEFORE send, but it has no
+  // writable backing record. That is snapshot preparation, not agent access.
   // Matrx entities whose underlying record the agent can write back to.
   // Pure references (input_agent, input_agent_app) are intentionally NOT here.
   "input_project",

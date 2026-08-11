@@ -36,7 +36,10 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import {
+  parseMessageContent,
+  type MessagePart,
+} from "@/types/python-generated/stream-events";
 import { removeMessage } from "../messages/messages.slice";
 import {
   setUserInputText,
@@ -71,10 +74,14 @@ function splitUserContent(content: unknown): {
   text: string;
   parts: MessagePart[];
 } {
-  const rawBlocks = Array.isArray(content) ? (content as MessagePart[]) : [];
+  const rawBlocks = Array.isArray(content) ? parseMessageContent(content) : [];
   let text = "";
   const parts: MessagePart[] = [];
-  const ASSISTANT_ONLY_TYPES = new Set(["tool_call", "tool_result", "thinking"]);
+  const ASSISTANT_ONLY_TYPES = new Set([
+    "tool_call",
+    "tool_result",
+    "thinking",
+  ]);
   for (const block of rawBlocks) {
     const type = block.type ?? "";
     if (ASSISTANT_ONLY_TYPES.has(type)) continue;

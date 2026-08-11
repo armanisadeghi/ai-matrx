@@ -4979,11 +4979,10 @@ export interface paths {
         };
         /**
          * Site Schedule Status
-         * @description M-78 / WS-12: per-provider freshness for one site — last successful
-         *     run, last attempt, and persisted row count, read straight off the
-         *     canonical ``seo.collection_run`` ledger (WS-2 site attribution) plus
-         *     each provider's fact table. Read-only, ordinary JSON (sub-second) per
-         *     the handoff ruling — this is a status panel, not a streamed command.
+         * @description M-78 / WS-12: per-provider freshness for one site. Read-only, ordinary
+         *     JSON (sub-second) per the handoff ruling — this is a status panel, not a
+         *     streamed command. The pipeline lives in
+         *     ``aidream/services/seo/schedule_status.py``; the router only authorizes.
          */
         get: operations["site_schedule_status_seo_sites__site_id__schedule_status_get"];
         put?: never;
@@ -6846,6 +6845,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11131,6 +11154,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/{definition_id}/nodes/{node_id}/agent-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Node Agent Context
+         * @description The Node Agent launcher — assemble the node's context bundle and
+         *     resolve which agent (slot) answers for this node type. The studio then
+         *     starts an ordinary agent conversation with the returned variables; every
+         *     workflow/agent WRITE goes through the workflow_node tool's gate stack.
+         */
+        get: operations["get_node_agent_context_workflows__definition_id__nodes__node_id__agent_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflows/{definition_id}/nodes/{node_id}/input-status": {
         parameters: {
             query?: never;
@@ -14802,6 +14848,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/podcast/runs/{run_id}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reconcile Podcast Run
+         * @description Ask the server what is ACTUALLY going on with a run, and have it act.
+         *
+         *     The client calls this whenever it finds a run that isn't terminal — on mount,
+         *     or when a stream drops. The server inspects the run's real evidence (its stage
+         *     checkpoints, not its status column) and lands it in exactly one of four
+         *     outcomes, every one actionable:
+         *
+         *       running   — genuinely alive; keep observing (`poll_after_seconds`).
+         *       completed — the essential work was done and has now been stamped: status,
+         *                   result, episode, cost, and the studio row all corrected.
+         *       resumed   — essential work was genuinely pending, so it was restarted from
+         *                   the existing checkpoint. Completed stages replay free; paid TTS
+         *                   and paid renders are never re-bought.
+         *       failed    — terminal and unrecoverable, with the reason.
+         *
+         *     Ancillary assets (covers, clips, the composed promo video) NEVER hold a run
+         *     out of `completed`; they come back in `ancillary_pending`, each addressable
+         *     via `/runs/{run_id}/assets/regenerate`.
+         *
+         *     Idempotent and safe to call repeatedly and concurrently.
+         */
+        post: operations["reconcile_podcast_run_podcast_runs__run_id__reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tests/examples": {
         parameters: {
             query?: never;
@@ -17318,6 +17403,40 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** AgentAppInputPart */
+        AgentAppInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+            /** Template */
+            template?: ("full" | "compact" | "minimal") | null;
+            /**
+             * Type
+             * @default input_agent_app
+             * @constant
+             */
+            type: "input_agent_app";
+            /** Agent App Ids */
+            agent_app_ids?: string[];
+        };
         /**
          * AgentAssignmentRunRequest
          * @description HTTP form of the workflow batch input with client-injected scope support.
@@ -17428,9 +17547,7 @@ export interface components {
             /** Is New */
             is_new: boolean;
             /** User Input */
-            user_input?: string | {
-                [key: string]: unknown;
-            }[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"])[] | null;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -17575,6 +17692,40 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             };
         };
+        /** AgentInputPart */
+        AgentInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+            /** Template */
+            template?: ("full" | "compact" | "minimal") | null;
+            /**
+             * Type
+             * @default input_agent
+             * @constant
+             */
+            type: "input_agent";
+            /** Agent Ids */
+            agent_ids?: string[];
+        };
         /** AgentListItem */
         AgentListItem: {
             /** Id */
@@ -17659,9 +17810,7 @@ export interface components {
             /** Is New */
             is_new: boolean;
             /** User Input */
-            user_input?: string | {
-                [key: string]: unknown;
-            }[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"])[] | null;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -18809,6 +18958,46 @@ export interface components {
              * @default false
              */
             use_user_agent_overrides?: boolean;
+        };
+        /**
+         * AncillaryItem
+         * @description One decorative asset that needs attention — and how to fix it.
+         *
+         *     Never a reason to hold a run out of completion. This is the "your episode is
+         *     ready, this one cover needs a redo" channel.
+         */
+        AncillaryItem: {
+            /**
+             * Stage Key
+             * @description The pipeline stage this asset came from, e.g. image_3.
+             */
+            stage_key: string;
+            /**
+             * Kind
+             * @description Asset family: image, video, or composition.
+             */
+            kind: string;
+            /**
+             * Slot
+             * @description Slot index for a numbered image/video; null otherwise.
+             */
+            slot?: number | null;
+            /**
+             * Status
+             * @description Where this one asset stands.
+             * @enum {string}
+             */
+            status: "completed" | "pending" | "failed";
+            /**
+             * Action
+             * @description What the client can do about it: regenerate, or none when unaddressable.
+             */
+            action: string;
+            /**
+             * Error
+             * @description Plain-language reason it needs attention.
+             */
+            error?: string | null;
         };
         /** AnnotationCreateBody */
         AnnotationCreateBody: {
@@ -23359,6 +23548,52 @@ export interface components {
             /** @default {} */
             parameters?: components["schemas"]["JsonValue"];
         };
+        /** CodeExecPart */
+        CodeExecPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default code_exec
+             * @constant
+             */
+            type: "code_exec";
+            /**
+             * Language
+             * @default python
+             */
+            language?: string;
+            /**
+             * Code
+             * @default
+             */
+            code?: string;
+        };
+        /** CodeResultPart */
+        CodeResultPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default code_result
+             * @constant
+             */
+            type: "code_result";
+            /**
+             * Output
+             * @default
+             */
+            output?: string;
+            /**
+             * Outcome
+             * @default success
+             */
+            outcome?: string;
+        };
         /** CodingSessionBridgeRestRequest */
         CodingSessionBridgeRestRequest: {
             /**
@@ -24053,6 +24288,50 @@ export interface components {
              */
             resource_id: string;
         };
+        /** ContextInputPart */
+        ContextInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default input_context
+             * @constant
+             */
+            type: "input_context";
+            /**
+             * Context Id
+             * @default
+             */
+            context_id?: string;
+            /**
+             * Context Name
+             * @default
+             */
+            context_name?: string;
+            /** Context Data */
+            context_data?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+        };
         /**
          * ContextItemBinding
          * @description Binds a variable to a scope context item; it inherits that item's component.
@@ -24364,9 +24643,7 @@ export interface components {
              */
             target_instance_id?: string | null;
             /** User Input */
-            user_input?: string | {
-                [key: string]: unknown;
-            }[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"])[] | null;
             /**
              * Retry
              * @default false
@@ -25155,6 +25432,40 @@ export interface components {
             /** Operations */
             operations: components["schemas"]["DataForSeoOperationOut"][];
         };
+        /** DataInputPart */
+        DataInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default input_data
+             * @constant
+             */
+            type: "input_data";
+            /** Refs */
+            refs?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+        };
         /** DataStoreAdminRow */
         DataStoreAdminRow: {
             /** Id */
@@ -25827,6 +26138,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -26415,6 +26753,40 @@ export interface components {
              */
             pages?: components["schemas"]["PageSummary"][];
             lineage?: components["schemas"]["DocumentLineage"] | null;
+        };
+        /** DocumentInputPart */
+        DocumentInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+            /** Template */
+            template?: ("full" | "compact" | "minimal") | null;
+            /**
+             * Type
+             * @default input_document
+             * @constant
+             */
+            type: "input_document";
+            /** Document Ids */
+            document_ids?: (string | components["schemas"]["ResourceRefInput"])[];
         };
         /**
          * DocumentLineage
@@ -27146,6 +27518,30 @@ export interface components {
             public_key_spki_b64: string;
             /** Key Spec */
             key_spec: string;
+        };
+        /**
+         * EssentialState
+         * @description The three parts that ARE the podcast.
+         */
+        EssentialState: {
+            /**
+             * Script
+             * @description Whether the episode script has been written.
+             * @enum {string}
+             */
+            script: "completed" | "pending" | "failed";
+            /**
+             * Audio
+             * @description Whether the episode audio has been produced.
+             * @enum {string}
+             */
+            audio: "completed" | "pending" | "failed";
+            /**
+             * Episode
+             * @description Whether the publishable episode row exists.
+             * @enum {string}
+             */
+            episode: "completed" | "pending" | "failed";
         };
         /** EvidenceReference */
         EvidenceReference: {
@@ -29039,9 +29435,7 @@ export interface components {
              */
             target_instance_id?: string | null;
             /** User Input */
-            user_input?: string | {
-                [key: string]: unknown;
-            }[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"])[] | null;
             /**
              * Retry
              * @default false
@@ -29184,6 +29578,34 @@ export interface components {
              * @default 1
              */
             attempt?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /** FullListBookmark */
+        FullListBookmark: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "full_list";
+            /** List Id */
+            list_id: string;
+            /** List Name */
+            list_name?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** FullTableBookmark */
+        FullTableBookmark: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "full_table";
+            /** Table Id */
+            table_id: string;
+            /** Table Name */
+            table_name?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -32014,6 +32436,22 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** ListGroupBookmark */
+        ListGroupBookmark: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "list_group";
+            /** List Id */
+            list_id: string;
+            /** Group Name */
+            group_name: string;
+            /** List Name */
+            list_name?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** ListGroupedItemsResponse */
         ListGroupedItemsResponse: {
             /** Grouped Items */
@@ -32022,6 +32460,54 @@ export interface components {
             }[];
             /** Count */
             count: number;
+        };
+        /** ListInputPart */
+        ListInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default input_list
+             * @constant
+             */
+            type: "input_list";
+            /** Bookmarks */
+            bookmarks?: (components["schemas"]["FullListBookmark"] | components["schemas"]["ListGroupBookmark"] | components["schemas"]["ListItemBookmark"])[];
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+        };
+        /** ListItemBookmark */
+        ListItemBookmark: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "list_item";
+            /** List Id */
+            list_id: string;
+            /** Item Id */
+            item_id: string;
+            /** List Name */
+            list_name?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** ListItemsResponse */
         ListItemsResponse: {
@@ -33027,6 +33513,44 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * NodeAgentChatContext
+         * @description Everything the studio needs to open a Node Agent chat for one node:
+         *     the resolved slot agent + the variables to pass on POST /agents/{id}.
+         */
+        NodeAgentChatContext: {
+            /** Slot Key */
+            slot_key: string;
+            /** Agent Id */
+            agent_id: string;
+            /** Is Version */
+            is_version: boolean;
+            /**
+             * Provenance
+             * @default system
+             */
+            provenance?: string;
+            /**
+             * Can Edit
+             * @default true
+             */
+            can_edit?: boolean;
+            /** Node Id */
+            node_id: string;
+            /** Node Label */
+            node_label: string;
+            /** Spec Type */
+            spec_type: string;
+            /** Backing Agent Id */
+            backing_agent_id?: string | null;
+            /**
+             * Variables
+             * @description Pass verbatim as the agent-start `variables`: node_context (the XML bundle), workflow_id, node_id, node_label, spec_type.
+             */
+            variables?: {
+                [key: string]: string;
+            };
+        };
         /** NodeContractReport */
         NodeContractReport: {
             /** Node Type */
@@ -33376,6 +33900,95 @@ export interface components {
             replacement?: string | null;
             /** Label */
             label?: string | null;
+        };
+        /**
+         * NormalizedCitation
+         * @description The canonical cross-provider citation shape — the FE contract.
+         *
+         *     Offsets come in two flavours and are never conflated:
+         *       - ``source_start`` / ``source_end``: char/block offsets INTO THE SOURCE
+         *         document (Anthropic char/content_block locations).
+         *       - ``answer_start`` / ``answer_end``: char offsets INTO THE ANSWER TEXT
+         *         (OpenAI url_citation annotations, Gemini grounding segment offsets).
+         *     ``page`` / ``end_page`` are 1-based (Anthropic page_location).
+         */
+        NormalizedCitation: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "document_char" | "document_page" | "document_block" | "search_result" | "web" | "grounding";
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "anthropic" | "openai" | "google" | "xai";
+            /** Cited Text */
+            cited_text?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Url */
+            url?: string | null;
+            /**
+             * Source Index
+             * @default 0
+             */
+            source_index?: number;
+            /** File Id */
+            file_id?: string | null;
+            /** Page */
+            page?: number | null;
+            /** End Page */
+            end_page?: number | null;
+            /** Source Start */
+            source_start?: number | null;
+            /** Source End */
+            source_end?: number | null;
+            /** Answer Start */
+            answer_start?: number | null;
+            /** Answer End */
+            answer_end?: number | null;
+            /** Raw */
+            raw?: {
+                [key: string]: unknown;
+            };
+        };
+        /** NotesInputPart */
+        NotesInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default input_notes
+             * @constant
+             */
+            type: "input_notes";
+            /** Note Ids */
+            note_ids?: (string | components["schemas"]["ResourceRefInput"])[];
+            /**
+             * Template
+             * @default full
+             */
+            template?: string;
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
         };
         /**
          * NounActions
@@ -35643,6 +36256,132 @@ export interface components {
             asset?: components["schemas"]["Asset"] | null;
         };
         /**
+         * PodcastReconcileRequest
+         * @description No fields. Inherits ScopedRequest so the frontend's injected
+         *     organization/project/task scope is ACCEPTED rather than 422'd — every
+         *     mutating call from `callApi` carries it.
+         */
+        PodcastReconcileRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Scope Ids
+             * @description Active context-scope ids selected by the caller and membership-validated server-side.
+             */
+            scope_ids?: string[] | null;
+            /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
+            context_anchor?: components["schemas"]["ContextAnchor"] | null;
+            /**
+             * Source App
+             * @description Stable application slug that initiated the request.
+             */
+            source_app?: string | null;
+            /**
+             * Source Feature
+             * @description Stable feature slug within the source application.
+             */
+            source_feature?: string | null;
+            /**
+             * Store
+             * @description Persist request outputs when true; run ephemerally when false.
+             * @default true
+             */
+            store?: boolean;
+            /**
+             * Target Instance Id
+             * @description Specific connected desktop instance allowed to claim delegated local tools.
+             */
+            target_instance_id?: string | null;
+        };
+        /**
+         * PodcastReconcileResponse
+         * @description What the server figured out, and what the client should do about it.
+         *
+         *     Four outcomes, every one of them actionable — never a shrug that leaves the
+         *     client re-reading the same stale row it already had.
+         */
+        PodcastReconcileResponse: {
+            /**
+             * Run Id
+             * @description The run that was inspected.
+             */
+            run_id: string;
+            /**
+             * Outcome
+             * @description running = genuinely alive, keep observing. completed = essential work was done and has now been stamped. resumed = essential work was pending and the server restarted it from its checkpoint. failed = terminal and unrecoverable.
+             * @enum {string}
+             */
+            outcome: "running" | "completed" | "resumed" | "failed";
+            /**
+             * Status
+             * @description The run's status in the database after this call.
+             */
+            status: string;
+            /**
+             * Reason
+             * @description One plain sentence, safe to show a non-technical user.
+             */
+            reason: string;
+            /** @description State of script, audio and episode. */
+            essential: components["schemas"]["EssentialState"];
+            /**
+             * Audio Url
+             * @description Durable URL of the episode audio.
+             */
+            audio_url?: string | null;
+            /**
+             * Script
+             * @description The episode script.
+             */
+            script?: string | null;
+            /**
+             * Episode Id
+             * @description Published episode row id.
+             */
+            episode_id?: string | null;
+            /**
+             * Episode Slug
+             * @description Published episode slug.
+             */
+            episode_slug?: string | null;
+            /**
+             * Total Cost Usd
+             * @description What this run has cost in total.
+             * @default 0
+             */
+            total_cost_usd?: number;
+            /** @description Stage counts for a progress indicator. */
+            progress: components["schemas"]["RunProgress"];
+            /**
+             * Stages
+             * @description Per-stage detail.
+             */
+            stages?: components["schemas"]["StageView"][];
+            /**
+             * Ancillary Pending
+             * @description Decorative assets needing attention. NEVER a reason to withhold completion — a run can be completed and still list items here.
+             */
+            ancillary_pending?: components["schemas"]["AncillaryItem"][];
+            /**
+             * Poll After Seconds
+             * @description Seconds to wait before calling again; null when the run is terminal.
+             */
+            poll_after_seconds?: number | null;
+        };
+        /**
          * PodcastType
          * @enum {string}
          */
@@ -35659,6 +36398,28 @@ export interface components {
          * @enum {string}
          */
         PostPrepOption: "none" | "translation" | "summarization" | "expansion" | "fact_checking";
+        /**
+         * PreFetchedUrl
+         * @description A webpage entry that has already been scraped by the client.
+         *
+         *     When the frontend has already fetched a page (e.g. via /scraper/quick-scrape)
+         *     it can embed the content here instead of a plain URL string. The server will
+         *     use this content directly and skip re-scraping.
+         */
+        PreFetchedUrl: {
+            /** Url */
+            url: string;
+            /** Textcontent */
+            textContent: string;
+            /** Title */
+            title?: string | null;
+            /** Scrapedat */
+            scrapedAt?: string | null;
+            /** Charcount */
+            charCount?: number | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** PreferencesWriteResponse */
         PreferencesWriteResponse: {
             /** Status */
@@ -35984,6 +36745,40 @@ export interface components {
             /** Missing */
             missing?: string[];
         };
+        /** ProjectInputPart */
+        ProjectInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+            /** Template */
+            template?: ("full" | "compact" | "minimal") | null;
+            /**
+             * Type
+             * @default input_project
+             * @constant
+             */
+            type: "input_project";
+            /** Project Ids */
+            project_ids?: string[];
+        };
         /**
          * ProjectionResponse
          * @description Projection result — each row is a free-form subset of the requested fields.
@@ -36054,9 +36849,7 @@ export interface components {
             /** Is New */
             is_new: boolean;
             /** User Input */
-            user_input?: string | {
-                [key: string]: unknown;
-            }[] | null;
+            user_input?: string | (components["schemas"]["TextPart"] | components["schemas"]["ThinkingPart"] | components["schemas"]["ToolCallPart"] | components["schemas"]["ToolResultPart"] | (components["schemas"]["UserImageMediaPart"] | components["schemas"]["UserAudioMediaPart"] | components["schemas"]["UserVideoMediaPart"] | components["schemas"]["UserDocumentMediaPart"] | components["schemas"]["UserYouTubeMediaPart"]) | components["schemas"]["CodeExecPart"] | components["schemas"]["CodeResultPart"] | components["schemas"]["WebSearchPart"] | components["schemas"]["WebpageInputPart"] | components["schemas"]["NotesInputPart"] | components["schemas"]["TaskInputPart"] | components["schemas"]["AgentInputPart"] | components["schemas"]["ProjectInputPart"] | components["schemas"]["AgentAppInputPart"] | components["schemas"]["TranscriptInputPart"] | components["schemas"]["TranscriptSessionInputPart"] | components["schemas"]["WorkbookInputPart"] | components["schemas"]["DocumentInputPart"] | components["schemas"]["TableInputPart"] | components["schemas"]["ListInputPart"] | components["schemas"]["DataInputPart"] | components["schemas"]["ContextInputPart"])[] | null;
             /** Variables */
             variables?: {
                 [key: string]: unknown;
@@ -38063,6 +38856,33 @@ export interface components {
              */
             max_chars?: number;
         };
+        /**
+         * ResourceRefInput
+         * @description A single attached-resource reference inside an id list (note_ids, task_ids).
+         *
+         *     Two attach contracts share this shape:
+         *       - reference (default): the server fetches the live record by ``id`` every
+         *         turn. Clients may send a bare id string OR this object with an ``id``.
+         *       - snapshot: the server renders the supplied content verbatim and never
+         *         touches the DB. Set ``mode="snapshot"`` and include the inline fields
+         *         (``content``/``label``/``title``/…). Extra fields are preserved.
+         *
+         *     ``extra="allow"`` so a client can ship the whole resource object (label,
+         *     content, tags, …) without a validation failure — the server reduces it to a
+         *     canonical reference at resolve time (see config/resource_ref.py).
+         */
+        ResourceRefInput: {
+            /** Id */
+            id?: string | null;
+            /**
+             * Mode
+             * @default reference
+             * @enum {string}
+             */
+            mode?: "reference" | "snapshot";
+        } & {
+            [key: string]: unknown;
+        };
         /** ResponseFormatJsonObject */
         ResponseFormatJsonObject: {
             /**
@@ -38864,6 +39684,24 @@ export interface components {
              * @default false
              */
             use_user_agent_overrides?: boolean;
+        };
+        /** RunProgress */
+        RunProgress: {
+            /**
+             * Done
+             * @description Stages that produced their output.
+             */
+            done: number;
+            /**
+             * Failed
+             * @description Stages that did not.
+             */
+            failed: number;
+            /**
+             * Total
+             * @description Stages recorded so far.
+             */
+            total: number;
         };
         /**
          * RunRecord
@@ -41289,6 +42127,32 @@ export interface components {
             /** Detail */
             detail?: string | null;
         };
+        /**
+         * StageView
+         * @description One stage as the client sees it.
+         */
+        StageView: {
+            /**
+             * Stage Key
+             * @description Pipeline stage identifier.
+             */
+            stage_key: string;
+            /**
+             * Status
+             * @description completed, failed, or processing.
+             */
+            status: string;
+            /**
+             * Essential
+             * @description True when this stage gates the run's completion.
+             */
+            essential: boolean;
+            /**
+             * Cost Usd
+             * @description What this stage cost, when it tracked usage.
+             */
+            cost_usd?: number | null;
+        };
         /** StagesStatusResponse */
         StagesStatusResponse: {
             /** Processed Document Id */
@@ -42258,6 +43122,102 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** TableCellBookmark */
+        TableCellBookmark: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "table_cell";
+            /** Table Id */
+            table_id: string;
+            /** Row Id */
+            row_id: string;
+            /** Column Name */
+            column_name: string;
+            /** Table Name */
+            table_name?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** TableColumnBookmark */
+        TableColumnBookmark: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "table_column";
+            /** Table Id */
+            table_id: string;
+            /** Column Name */
+            column_name: string;
+            /** Table Name */
+            table_name?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** TableInputPart */
+        TableInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default input_table
+             * @constant
+             */
+            type: "input_table";
+            /** Bookmarks */
+            bookmarks?: (components["schemas"]["FullTableBookmark"] | components["schemas"]["TableColumnBookmark"] | components["schemas"]["TableRowBookmark"] | components["schemas"]["TableCellBookmark"] | components["schemas"]["TableSchemaBookmark"])[];
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+        };
+        /** TableRowBookmark */
+        TableRowBookmark: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "table_row";
+            /** Table Id */
+            table_id: string;
+            /** Row Id */
+            row_id: string;
+            /** Table Name */
+            table_name?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** TableSchemaBookmark */
+        TableSchemaBookmark: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "table_schema";
+            /** Table Id */
+            table_id: string;
+            /** Table Name */
+            table_name?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** TagCreate */
         TagCreate: {
             /** Name */
@@ -42350,6 +43310,43 @@ export interface components {
             triggers?: components["schemas"]["TriggerResponse"][];
             /** Recent Runs */
             recent_runs?: components["schemas"]["RunResponse"][];
+        };
+        /** TaskInputPart */
+        TaskInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default input_task
+             * @constant
+             */
+            type: "input_task";
+            /** Task Ids */
+            task_ids?: (string | components["schemas"]["ResourceRefInput"])[];
+            /**
+             * Template
+             * @default full
+             */
+            template?: string;
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
         };
         /** TaskListResponse */
         TaskListResponse: {
@@ -42494,6 +43491,62 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** TextPart */
+        TextPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default text
+             * @constant
+             */
+            type: "text";
+            /**
+             * Text
+             * @default
+             */
+            text?: string;
+            /**
+             * Id
+             * @default
+             */
+            id?: string;
+            /** Citations */
+            citations?: components["schemas"]["NormalizedCitation"][];
+        };
+        /** ThinkingPart */
+        ThinkingPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default thinking
+             * @constant
+             */
+            type: "thinking";
+            /**
+             * Text
+             * @default
+             */
+            text?: string;
+            /**
+             * Id
+             * @default
+             */
+            id?: string;
+            /** Provider */
+            provider?: ("openai" | "anthropic" | "google" | "cerebras" | "moonshot" | "together" | "groq" | "xai" | "generic_openai") | null;
+            /** Signature */
+            signature?: string | null;
+            /** Signature Encoding */
+            signature_encoding?: "base64" | null;
+            /** Summary */
+            summary?: unknown[];
+        };
         /**
          * ThreadMessageOut
          * @description One message in the reviewer's own conversation, rendered for display.
@@ -42512,6 +43565,33 @@ export interface components {
              * @default
              */
             text?: string;
+        };
+        /** ToolCallPart */
+        ToolCallPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default tool_call
+             * @constant
+             */
+            type: "tool_call";
+            /**
+             * Call Id
+             * @default
+             */
+            call_id?: string;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
+            /** Arguments */
+            arguments?: {
+                [key: string]: unknown;
+            };
         };
         /** ToolDetail */
         ToolDetail: {
@@ -42717,6 +43797,48 @@ export interface components {
             managed_by_server_id?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /** ToolResultPart */
+        ToolResultPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default tool_result
+             * @constant
+             */
+            type: "tool_result";
+            /**
+             * Call Id
+             * @default
+             */
+            call_id?: string;
+            /**
+             * Tool Use Id
+             * @default
+             */
+            tool_use_id?: string;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
+            /**
+             * Is Error
+             * @default false
+             */
+            is_error?: boolean;
+            /**
+             * Output Chars
+             * @default 0
+             */
+            output_chars?: number;
+            /** Output Preview */
+            output_preview?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** ToolResultsRequest */
         ToolResultsRequest: {
@@ -43342,6 +44464,74 @@ export interface components {
             /** Is Header Only */
             is_header_only: boolean;
         };
+        /** TranscriptInputPart */
+        TranscriptInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+            /** Template */
+            template?: ("full" | "compact" | "minimal") | null;
+            /**
+             * Type
+             * @default input_transcript
+             * @constant
+             */
+            type: "input_transcript";
+            /** Transcript Ids */
+            transcript_ids?: string[];
+        };
+        /** TranscriptSessionInputPart */
+        TranscriptSessionInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+            /** Template */
+            template?: ("full" | "compact" | "minimal") | null;
+            /**
+             * Type
+             * @default input_transcript_session
+             * @constant
+             */
+            type: "input_transcript_session";
+            /** Transcript Session Ids */
+            transcript_session_ids?: string[];
+        };
         /** TranscriptionFileRequest */
         TranscriptionFileRequest: {
             /**
@@ -43961,6 +45151,40 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** UserAudioMediaPart */
+        UserAudioMediaPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Origin */
+            origin?: ("matrx" | "external") | null;
+            /** File Id */
+            file_id?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Base64 Data */
+            base64_data?: string | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /**
+             * Type
+             * @default media
+             * @constant
+             */
+            type: "media";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "audio";
+            /** Duration Ms */
+            duration_ms?: number | null;
+            /** Transcription Result */
+            transcription_result?: string | null;
+        };
         /** UserDataStoreCreate */
         UserDataStoreCreate: {
             /** Name */
@@ -44099,6 +45323,76 @@ export interface components {
             short_code?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /** UserDocumentMediaPart */
+        UserDocumentMediaPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Origin */
+            origin?: ("matrx" | "external") | null;
+            /** File Id */
+            file_id?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Base64 Data */
+            base64_data?: string | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /**
+             * Type
+             * @default media
+             * @constant
+             */
+            type: "media";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "document";
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Page Count */
+            page_count?: number | null;
+        };
+        /** UserImageMediaPart */
+        UserImageMediaPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Origin */
+            origin?: ("matrx" | "external") | null;
+            /** File Id */
+            file_id?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Base64 Data */
+            base64_data?: string | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /**
+             * Type
+             * @default media
+             * @constant
+             */
+            type: "media";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "image";
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
         };
         /**
          * UserOverrides
@@ -44264,6 +45558,72 @@ export interface components {
             is_active?: boolean | null;
             /** Inject Into Sandbox */
             inject_into_sandbox?: boolean | null;
+        };
+        /** UserVideoMediaPart */
+        UserVideoMediaPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Origin */
+            origin?: ("matrx" | "external") | null;
+            /** File Id */
+            file_id?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Base64 Data */
+            base64_data?: string | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /**
+             * Type
+             * @default media
+             * @constant
+             */
+            type: "media";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "video";
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
+        };
+        /** UserYouTubeMediaPart */
+        UserYouTubeMediaPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default media
+             * @constant
+             */
+            type: "media";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "youtube";
+            /** Url */
+            url: string;
+            /** External Url */
+            external_url?: string | null;
+            /**
+             * Origin
+             * @default external
+             * @constant
+             */
+            origin?: "external";
+            /** Mime Type */
+            mime_type?: string | null;
         };
         /** ValidateCronRequest */
         ValidateCronRequest: {
@@ -45807,6 +47167,61 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** WebSearchPart */
+        WebSearchPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default web_search
+             * @constant
+             */
+            type: "web_search";
+            /**
+             * Id
+             * @default
+             */
+            id?: string;
+            /**
+             * Status
+             * @default
+             */
+            status?: string;
+        };
+        /** WebpageInputPart */
+        WebpageInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Type
+             * @default input_webpage
+             * @constant
+             */
+            type: "input_webpage";
+            /** Urls */
+            urls?: (string | components["schemas"]["PreFetchedUrl"])[];
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+        };
         /** WhoamiResponse */
         WhoamiResponse: {
             /** Authenticated */
@@ -45817,6 +47232,40 @@ export interface components {
             is_admin: boolean;
             /** Email */
             email: string | null;
+        };
+        /** WorkbookInputPart */
+        WorkbookInputPart: {
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Convert To Text
+             * @default true
+             */
+            convert_to_text?: boolean;
+            /**
+             * Optional Context
+             * @default false
+             */
+            optional_context?: boolean;
+            /**
+             * Keep Fresh
+             * @default false
+             */
+            keep_fresh?: boolean;
+            /** Editable */
+            editable?: boolean | null;
+            /** Template */
+            template?: ("full" | "compact" | "minimal") | null;
+            /**
+             * Type
+             * @default input_workbook
+             * @constant
+             */
+            type: "input_workbook";
+            /** Workbook Ids */
+            workbook_ids?: (string | components["schemas"]["ResourceRefInput"])[];
         };
         /** WorkerHealthResponse */
         WorkerHealthResponse: {
@@ -58763,6 +60212,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -66800,6 +68284,38 @@ export interface operations {
             };
         };
     };
+    get_node_agent_context_workflows__definition_id__nodes__node_id__agent_context_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeAgentChatContext"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_definition_node_input_status_workflows__definition_id__nodes__node_id__input_status_get: {
         parameters: {
             query?: never;
@@ -73118,6 +74634,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_podcast_run_podcast_runs__run_id__reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PodcastReconcileRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PodcastReconcileResponse"];
                 };
             };
             /** @description Validation Error */

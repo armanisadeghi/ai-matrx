@@ -1,72 +1,81 @@
 /**
- * Normalization — turn the two attachment representations (pre-submit
- * `ManagedResource` and post-submit `RenderBlockPayload`) into a flat list of
- * `ContextDrawerItem`s, ONE per underlying record. Flattening here means the
- * drawer's prev/next walks every individual note / task / url / ref, not just
- * every chip.
+ * Canonical attachment projection.
+ *
+ * Pre-submit resources and persisted MessagePart values both become the same
+ * ContextDrawerItem model. Every boundary is narrowed at runtime; this module
+ * never recovers a guessed shape with `as string[]` or `as MessagePart`.
  */
 
 import type { ManagedResource } from "@/features/agents/types/instance.types";
-import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import type { DataRef } from "@/features/agents/types/message-types";
+import type {
+  MessagePart,
+} from "@/types/python-generated/stream-events";
+import {
+  isPreFetchedUrl,
+  readWebpageInputs,
+  webpageTitle,
+  webpageUrl,
+} from "@/features/resource-manager/webpage/webpage-snapshot";
 import { resolveContextItemDef } from "./registry";
-import type { ContextDrawerItem, ContextItemRefs } from "./types";
+import type {
+  ContextBookmark,
+  ContextDrawerItem,
+  ContextEntityRef,
+  ContextItemRefs,
+} from "./types";
 
 type Data = Record<string, unknown> | null | undefined;
 
-function asStringArray(v: unknown): string[] | undefined {
-  if (!Array.isArray(v)) return undefined;
-  const out = v.filter((x): x is string => typeof x === "string");
-  return out.length ? out : undefined;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-/** Accept plain id strings or `{ id }` ResourceRefInput objects from the wire. */
-function asResourceIdList(v: unknown): string[] | undefined {
-  if (!Array.isArray(v)) return undefined;
+function asStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const strings = value.filter(
+    (entry): entry is string => typeof entry === "string" && entry.length > 0,
+  );
+  return strings.length > 0 ? strings : undefined;
+}
+
+/** Accept plain ids, `{id}` references, or one raw picker record. */
+function asResourceIdList(value: unknown): string[] | undefined {
+  const entries = Array.isArray(value) ? value : value == null ? [] : [value];
   const ids: string[] = [];
-  for (const entry of v) {
+  for (const entry of entries) {
     if (typeof entry === "string" && entry) {
       ids.push(entry);
-    } else if (entry && typeof entry === "object") {
-      const id = (entry as Record<string, unknown>).id;
-      if (typeof id === "string" && id) ids.push(id);
+    } else if (isRecord(entry) && typeof entry.id === "string" && entry.id) {
+      ids.push(entry.id);
     }
   }
-  return ids.length ? ids : undefined;
+  return ids.length > 0 ? ids : undefined;
 }
 
 function basename(path: string): string {
-  const i = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
-  return i === -1 ? path : path.slice(i + 1);
+  const index = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  return index === -1 ? path : path.slice(index + 1);
 }
 
-function readNonEmptyString(v: unknown): string | null {
-  return typeof v === "string" && v.length > 0 ? v : null;
+function readNonEmptyString(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null;
 }
 
 function readNestedRecord(
-  obj: unknown,
+  value: unknown,
   key: string,
 ): Record<string, unknown> | null {
-  if (!obj || typeof obj !== "object") return null;
-  const nested = (obj as Record<string, unknown>)[key];
-  return nested && typeof nested === "object" && !Array.isArray(nested)
-    ? (nested as Record<string, unknown>)
-    : null;
+  if (!isRecord(value)) return null;
+  return isRecord(value[key]) ? value[key] : null;
 }
 
-/**
- * Lift `fileId` + a renderable URL off every media shape we store:
- * pre-submit MediaRef (`file_id` / `url`), wire blocks, and post-submit
- * `image_output.data` (UnifiedImageBlock camelCase).
- */
 function extractMediaRefs(
   data: Data,
   raw: unknown,
 ): { fileId: string | null; fileUrl: string | null } {
   const d = data ?? {};
-  const rawRecord =
-    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+  const rawRecord = isRecord(raw) ? raw : null;
   const nestedData = readNestedRecord(raw, "data");
 
   const fileId =
@@ -74,8 +83,7 @@ function extractMediaRefs(
     readNonEmptyString(d.file_id) ??
     (rawRecord ? readNonEmptyString(rawRecord.file_id) : null) ??
     (nestedData ? readNonEmptyString(nestedData.fileId) : null) ??
-    (nestedData ? readNonEmptyString(nestedData.file_id) : null) ??
-    null;
+    (nestedData ? readNonEmptyString(nestedData.file_id) : null);
 
   const fileUrl =
     readNonEmptyString(d.cdnUrl) ??
@@ -91,35 +99,86 @@ function extractMediaRefs(
     (nestedData ? readNonEmptyString(nestedData.cdnUrl) : null) ??
     (nestedData ? readNonEmptyString(nestedData.signedUrl) : null) ??
     (nestedData ? readNonEmptyString(nestedData.externalUrl) : null) ??
-    (nestedData ? readNonEmptyString(nestedData.url) : null) ??
-    null;
+    (nestedData ? readNonEmptyString(nestedData.url) : null);
 
   return { fileId, fileUrl };
 }
 
-function bestTitle(data: Data, fallback: string): string {
+function displayTitle(data: Data, fallback: string): string {
   const d = data ?? {};
+  const metadata = isRecord(d.metadata) ? d.metadata : null;
   const candidate =
-    (d.fileName as string) ??
-    (d.file_name as string) ??
-    (d.title as string) ??
-    (d.label as string) ??
-    (d.name as string) ??
-    (d.filename as string) ??
-    (typeof d.url === "string" ? basename(d.url as string) : undefined);
-  return candidate?.toString().slice(0, 80) || fallback;
+    readNonEmptyString(metadata?.display_title) ??
+    readNonEmptyString(d.fileName) ??
+    readNonEmptyString(d.file_name) ??
+    readNonEmptyString(d.title) ??
+    readNonEmptyString(d.label) ??
+    readNonEmptyString(d.name) ??
+    readNonEmptyString(d.filename) ??
+    (typeof d.url === "string" ? basename(d.url) : null);
+  return candidate?.slice(0, 100) || fallback;
 }
 
-/**
- * Build the per-record items for a single attachment given its block type, the
- * data bag (block.data or resource.source), and shared meta. Splits multi-id
- * bags into one item each.
- */
-/** The shared, per-attachment fields (everything but the per-record id/title/refs). */
+function isDataRef(value: unknown): value is DataRef {
+  if (!isRecord(value) || typeof value.table !== "string") return false;
+  if (value.ref_type === "db_query") return true;
+  if (value.ref_type === "db_record") return typeof value.id === "string";
+  return (
+    value.ref_type === "db_field" &&
+    typeof value.id === "string" &&
+    typeof value.field_name === "string"
+  );
+}
+
+function readDataRefs(value: unknown): DataRef[] {
+  return Array.isArray(value) ? value.filter(isDataRef) : [];
+}
+
+function isBookmark(value: unknown): value is ContextBookmark {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  if (value.type.startsWith("table_")) return typeof value.table_id === "string";
+  if (value.type === "full_table") return typeof value.table_id === "string";
+  if (value.type.startsWith("list_")) return typeof value.list_id === "string";
+  return value.type === "full_list" && typeof value.list_id === "string";
+}
+
+function readBookmarks(value: unknown): ContextBookmark[] {
+  const entries = Array.isArray(value) ? value : value == null ? [] : [value];
+  return entries.filter(isBookmark);
+}
+
+function bookmarkTitle(bookmark: ContextBookmark): string {
+  if ("table_id" in bookmark) return bookmark.table_name?.trim() || "Table";
+  return bookmark.list_name?.trim() || "List";
+}
+
 type ItemBase = Omit<ContextDrawerItem, "id" | "title" | "refs"> & {
-  /** The attachment-level base id; per-record ids are derived from it. */
   baseId: string;
 };
+
+function entityFieldFor(blockType: string): {
+  field: string;
+  token: string;
+} | null {
+  switch (blockType) {
+    case "input_agent":
+      return { field: "agent_ids", token: "agent" };
+    case "input_project":
+      return { field: "project_ids", token: "project" };
+    case "input_agent_app":
+      return { field: "agent_app_ids", token: "app" };
+    case "input_transcript":
+      return { field: "transcript_ids", token: "transcript" };
+    case "input_transcript_session":
+      return { field: "transcript_session_ids", token: "studio_session" };
+    case "input_workbook":
+      return { field: "workbook_ids", token: "workbook" };
+    case "input_document":
+      return { field: "document_ids", token: "udt_document" };
+    default:
+      return null;
+  }
+}
 
 function expand(
   blockType: string,
@@ -127,75 +186,110 @@ function expand(
   base: ItemBase,
 ): ContextDrawerItem[] {
   const d = data ?? {};
-
   const make = (
     idSuffix: string,
     title: string,
     refs: ContextItemRefs,
+    raw: unknown = base.raw,
   ): ContextDrawerItem => {
     const { baseId, ...rest } = base;
-    return {
-      ...rest,
-      id: `${baseId}:${idSuffix}`,
-      title,
-      refs,
-    };
+    return { ...rest, id: `${baseId}:${idSuffix}`, title, refs, raw };
   };
 
-  // Notes
-  const noteIds = asResourceIdList(d.note_ids);
-  if (noteIds) return noteIds.map((id) => make(id, "Note", { noteIds: [id] }));
+  if (blockType === "input_notes") {
+    const ids = asResourceIdList(d.note_ids ?? d);
+    return (ids ?? []).map((id) => make(id, displayTitle(d, "Note"), { noteIds: [id] }));
+  }
 
-  // Tasks
-  const taskIds = asResourceIdList(d.task_ids);
-  if (taskIds) return taskIds.map((id) => make(id, "Task", { taskIds: [id] }));
+  if (blockType === "input_task") {
+    const ids = asResourceIdList(d.task_ids ?? d);
+    return (ids ?? []).map((id) => make(id, displayTitle(d, "Task"), { taskIds: [id] }));
+  }
 
-  // Webpages
-  const urls =
-    asStringArray(d.urls) ??
-    (typeof d.url === "string" ? [d.url as string] : undefined);
-  if (urls) return urls.map((u) => make(u, u, { urls: [u] }));
-
-  // Data refs
-  const refs = Array.isArray(d.refs) ? (d.refs as DataRef[]) : undefined;
-  if (refs && refs.length) {
-    return refs.map((r, i) =>
-      make(String(i), r.label?.trim() || r.table, { dataRefs: [r] }),
+  if (blockType === "input_webpage") {
+    const webpages = readWebpageInputs(
+      isPreFetchedUrl(d) ? d : d.urls ?? d.url ?? d,
+    );
+    return webpages.map((webpage, index) =>
+      make(
+        `${index}-${webpageUrl(webpage)}`,
+        webpageTitle(webpage),
+        { webpages: [webpage] },
+        webpage,
+      ),
     );
   }
 
-  // Media — file_id / url (UnifiedImageBlock, MediaRef, wire blocks)
-  const { fileId, fileUrl } = extractMediaRefs(d, base.raw);
-  if (fileId || fileUrl) {
-    return [make("media", bestTitle(d, base.typeLabel), { fileId, fileUrl })];
+  if (blockType === "input_data") {
+    const refs = readDataRefs(d.refs);
+    return refs.map((ref, index) =>
+      make(String(index), ref.label?.trim() || ref.table, { dataRefs: [ref] }, ref),
+    );
   }
 
-  // Entity id lists → GenericBody
-  const entityRefs: ContextItemRefs = {
-    projectIds: asStringArray(d.project_ids),
-    agentIds: asStringArray(d.agent_ids),
-    transcriptIds:
-      asStringArray(d.transcript_ids) ?? asStringArray(d.session_ids),
-    workbookIds: asStringArray(d.workbook_ids),
-    documentIds: asStringArray(d.document_ids),
-    text:
-      typeof d.text === "string"
-        ? (d.text as string)
-        : typeof d.content === "string"
-          ? (d.content as string)
-          : null,
-  };
+  if (blockType === "input_context") {
+    const contextData = isRecord(d.context_data) ? d.context_data : {};
+    const contextId = readNonEmptyString(d.context_id);
+    const contextName = readNonEmptyString(d.context_name);
+    return [
+      make(contextId ?? "context", contextName ?? "Context", {
+        contextInput: {
+          id: contextId,
+          name: contextName,
+          data: contextData,
+        },
+      }),
+    ];
+  }
 
-  return [make("0", bestTitle(d, base.typeLabel), entityRefs)];
+  if (blockType === "input_table" || blockType === "input_list") {
+    const bookmarks = readBookmarks(d.bookmarks ?? d);
+    return bookmarks.map((bookmark, index) =>
+      make(String(index), bookmarkTitle(bookmark), { bookmarks: [bookmark] }, bookmark),
+    );
+  }
+
+  const entityField = entityFieldFor(blockType);
+  if (entityField) {
+    const ids = asResourceIdList(d[entityField.field] ?? d);
+    const label = displayTitle(d, base.typeLabel);
+    return (ids ?? []).map((id) => {
+      const entityRef: ContextEntityRef = {
+        token: entityField.token,
+        id,
+        name: label === base.typeLabel ? null : label,
+      };
+      return make(id, entityRef.name ?? base.typeLabel, { entityRefs: [entityRef] });
+    });
+  }
+
+  const { fileId, fileUrl } = extractMediaRefs(d, base.raw);
+  if (fileId || fileUrl) {
+    return [make("media", displayTitle(d, base.typeLabel), { fileId, fileUrl })];
+  }
+
+  const text = readNonEmptyString(d.text) ?? readNonEmptyString(d.content);
+  return [make("0", displayTitle(d, base.typeLabel), { text })];
 }
 
-/** Normalize a pre-submit ManagedResource into drawer items. */
+/** Normalize a pre-submit ManagedResource. It remains editable only before send. */
 export function normalizeResource(
   resource: ManagedResource,
   conversationId: string,
 ): ContextDrawerItem[] {
   const def = resolveContextItemDef(resource.blockType);
-  return expand(resource.blockType, resource.source as Data, {
+  const source = isRecord(resource.source)
+    ? resource.source
+    : typeof resource.source === "string" &&
+        (resource.blockType === "input_webpage" ||
+          resource.blockType === "image" ||
+          resource.blockType === "audio" ||
+          resource.blockType === "video" ||
+          resource.blockType === "document" ||
+          resource.blockType === "youtube_video")
+      ? { url: resource.source }
+      : { text: resource.source };
+  return expand(resource.blockType, source, {
     baseId: resource.resourceId,
     blockType: resource.blockType,
     typeLabel: def.typeLabel,
@@ -209,24 +303,46 @@ export function normalizeResource(
   });
 }
 
-/** Normalize a post-submit RenderBlockPayload into drawer items. */
-export function normalizeBlock(
-  block: RenderBlockPayload,
-  idx: number,
+const NON_ATTACHMENT_PART_TYPES = new Set([
+  "text",
+  "thinking",
+  "tool_call",
+  "tool_result",
+  "code_exec",
+  "code_result",
+  "web_search",
+]);
+
+export function isAttachmentMessagePart(part: MessagePart): boolean {
+  return !!part.type && !NON_ATTACHMENT_PART_TYPES.has(part.type);
+}
+
+/** Normalize one persisted part without erasing its generated field types. */
+export function normalizeMessagePart(
+  part: MessagePart,
+  index: number,
   conversationId: string,
 ): ContextDrawerItem[] {
-  if (block.type === "text") return [];
-  const def = resolveContextItemDef(block.type);
-  const baseId = block.blockId ?? `block-${idx}`;
-  return expand(block.type, block.data as Data, {
-    baseId,
-    blockType: block.type,
+  if (!isAttachmentMessagePart(part)) return [];
+  const partType = part.type;
+  if (!partType) return [];
+
+  const blockType =
+    partType === "media"
+      ? part.kind === "youtube"
+        ? "youtube_video"
+        : part.kind ?? "media"
+      : partType;
+  const def = resolveContextItemDef(blockType);
+  return expand(blockType, isRecord(part) ? part : null, {
+    baseId: `part-${index}`,
+    blockType,
     typeLabel: def.typeLabel,
     icon: def.icon,
     themeKey: def.themeKey,
     origin: "block",
     conversationId,
-    editable: def.editable,
-    raw: block,
+    editable: false,
+    raw: part,
   });
 }

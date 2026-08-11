@@ -1012,7 +1012,7 @@ export function KeywordClassificationWorkspace({
         </div>
         {review.isError ? (
           <InlineQueryError
-            title="Keyword review could not load"
+            what="keyword review"
             error={review.error}
             onRetry={() => void review.refetch()}
           />

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { ResourcePickerMenu } from "./ResourcePickerMenu";
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
+import type { Resource } from "@/features/agents/resources/types";
 
 // Lazy-loaded: the window component (with its WindowPanel chrome + every
 // resource-picker tab) is its own chunk, only fetched when `useWindowMode`
@@ -29,7 +30,7 @@ const ResourcePickerWindow = dynamic(
 );
 
 interface ResourcePickerButtonProps {
-  onResourceSelected?: (resource: any) => void;
+  onResourceSelected?: (resource: Resource) => void;
   attachmentCapabilities?: {
     supportsImageUrls?: boolean;
     supportsFileUrls?: boolean;

@@ -288,6 +288,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   studio_session: {
     Icon: Mic,
     labelPlural: "Audio Sessions",
+    hrefFor: (id) => `/transcripts/studio?session=${encodeURIComponent(id)}`,
   },
   // ─── Code (canonical `code.*` entities — attachable to orgs, war rooms, etc.) ─
   code_file: {

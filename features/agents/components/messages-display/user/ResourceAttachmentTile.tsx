@@ -161,6 +161,7 @@ export function ResourceAttachmentTile({
                   aria-label={`${typeLabel}: ${title}`}
                   className={cn(
                     "inline-flex h-6 min-w-0 items-center gap-1 rounded-full border border-border px-2",
+                    showToggle && "pr-6",
                     "text-[11px] font-medium transition-colors",
                     "bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     error && "ring-1 ring-destructive/50",
@@ -178,31 +179,6 @@ export function ResourceAttachmentTile({
                     })
                   )}
                   <span className="max-w-[4.5rem] truncate">{word}</span>
-                  {showToggle && (
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={editable}
-                      aria-label={editableTooltip}
-                      onClick={(e) => {
-                        stop(e);
-                        toggleEditable();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          stop(e);
-                          toggleEditable();
-                        }
-                      }}
-                      className="inline-flex shrink-0 items-center justify-center text-foreground/70 hover:text-foreground"
-                    >
-                      {editable ? (
-                        <Pencil className="h-2.5 w-2.5" />
-                      ) : (
-                        <Lock className="h-2.5 w-2.5" />
-                      )}
-                    </span>
-                  )}
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[16rem]">
@@ -219,6 +195,24 @@ export function ResourceAttachmentTile({
                 )}
               </TooltipContent>
             </Tooltip>
+            {showToggle && (
+              <button
+                type="button"
+                aria-pressed={editable}
+                aria-label={editableTooltip}
+                onClick={(e) => {
+                  stop(e);
+                  toggleEditable();
+                }}
+                className="absolute right-1 top-1/2 z-10 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-foreground/70 hover:bg-accent hover:text-foreground"
+              >
+                {editable ? (
+                  <Pencil className="h-2.5 w-2.5" />
+                ) : (
+                  <Lock className="h-2.5 w-2.5" />
+                )}
+              </button>
+            )}
             {onRemove && (
               <button
                 type="button"

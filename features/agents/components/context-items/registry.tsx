@@ -56,6 +56,8 @@ import { ProcessedDocumentBody } from "./bodies/ProcessedDocumentBody";
 import { ProcessedDocumentTitle } from "./bodies/ProcessedDocumentTitle";
 import { GenericBody, GenericFooter } from "./bodies/GenericBody";
 import { BookmarkReferenceBody } from "./bodies/BookmarkReferenceBody";
+import { EntityReferenceBody } from "./bodies/EntityReferenceBody";
+import { ContextInputBody } from "./bodies/ContextInputBody";
 import {
   OrgLayerBody,
   ProjectLayerBody,
@@ -73,6 +75,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "image",
     editable: false,
     Body: MediaBody,
+    Footer: MediaFooter,
   },
   {
     blockTypes: ["audio", "audio_output"],
@@ -81,6 +84,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "audio",
     editable: false,
     Body: MediaBody,
+    Footer: MediaFooter,
   },
   {
     blockTypes: ["video", "video_output"],
@@ -89,6 +93,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "video",
     editable: false,
     Body: MediaBody,
+    Footer: MediaFooter,
   },
   {
     blockTypes: ["document", "file_output"],
@@ -106,6 +111,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     themeKey: "youtube_video",
     editable: false,
     Body: MediaBody,
+    Footer: MediaFooter,
   },
 
   // Editable knowledge records.
@@ -142,13 +148,13 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
   },
   {
     // A reference to a specific rich document by id — distinct from the live
-    // working document. GenericBody until a dedicated viewer is wired.
+    // working document.
     blockTypes: ["input_document"],
     typeLabel: "Document",
     icon: FileText,
     themeKey: "input_document",
     editable: false,
-    Body: GenericBody,
+    Body: EntityReferenceBody,
   },
   {
     // A RAG processed document (rag.processed_documents), attached to a
@@ -242,14 +248,14 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     Body: BookmarkReferenceBody,
   },
 
-  // ── Not-yet-custom types — GenericBody for now (extension targets) ──────────
+  // Matrx entity references — every identity is a canonical navigable door.
   {
     blockTypes: ["input_project"],
     typeLabel: "Project",
     icon: Folder,
     themeKey: "input_project",
     editable: false,
-    Body: GenericBody,
+    Body: EntityReferenceBody,
   },
   {
     blockTypes: ["input_agent"],
@@ -257,7 +263,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     icon: Webhook,
     themeKey: "input_agent",
     editable: false,
-    Body: GenericBody,
+    Body: EntityReferenceBody,
   },
   {
     blockTypes: ["input_agent_app"],
@@ -265,7 +271,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     icon: LayoutGrid,
     themeKey: "input_agent_app",
     editable: false,
-    Body: GenericBody,
+    Body: EntityReferenceBody,
   },
   {
     blockTypes: ["input_transcript"],
@@ -273,7 +279,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     icon: Captions,
     themeKey: "input_transcript",
     editable: false,
-    Body: GenericBody,
+    Body: EntityReferenceBody,
   },
   {
     blockTypes: ["input_transcript_session"],
@@ -281,7 +287,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     icon: AudioLines,
     themeKey: "input_transcript_session",
     editable: false,
-    Body: GenericBody,
+    Body: EntityReferenceBody,
   },
   {
     blockTypes: ["input_workbook"],
@@ -289,7 +295,15 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     icon: Notebook,
     themeKey: "input_workbook",
     editable: false,
-    Body: GenericBody,
+    Body: EntityReferenceBody,
+  },
+  {
+    blockTypes: ["input_context"],
+    typeLabel: "Context",
+    icon: Layers,
+    themeKey: "input_data",
+    editable: false,
+    Body: ContextInputBody,
   },
   {
     blockTypes: ["text"],

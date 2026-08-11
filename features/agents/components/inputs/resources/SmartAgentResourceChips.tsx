@@ -9,32 +9,15 @@
  * Reads from instanceResources, dispatches removeResource directly.
  */
 
-import { useCallback, type ComponentType } from "react";
+import { useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  StickyNote,
-  CheckSquare,
-  Table2,
-  Globe,
-  File,
-  FileText,
   Image as ImageIcon,
-  Mic,
-  Video,
-  FolderKanban,
   AlertCircle,
-  Code2,
-  Webhook,
-  Folder,
-  LayoutGrid,
-  Captions,
-  AudioLines,
-  Notebook,
   Layers,
   Loader2,
   X,
 } from "lucide-react";
-import { Youtube } from "@/components/icons/brand-icons";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -46,121 +29,23 @@ import { isEditableCapableBlockType } from "@/features/agents/redux/execution-sy
 import { selectShowAttachments } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import type {
   ManagedResource,
-  ResourceBlockType,
 } from "@/features/agents/types/instance.types";
 import type { ResourceEditableState } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
-import { NoteHoverPreview } from "@/features/agents/components/previews/NoteHoverPreview";
-import { TaskHoverPreview } from "@/features/agents/components/previews/TaskHoverPreview";
-import { WebpageHoverPreview } from "@/features/agents/components/previews/WebpageHoverPreview";
-import { DataRefHoverPreview } from "@/features/agents/components/previews/DataRefHoverPreview";
+import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
 import { ContextItemDrawer } from "@/features/agents/components/context-items/ContextItemDrawer";
 import { useContextItemDrawer } from "@/features/agents/components/context-items/useContextItemDrawer";
 import { normalizeResource } from "@/features/agents/components/context-items/normalize";
 import type { ContextDrawerItem } from "@/features/agents/components/context-items/types";
-import type { DataRef } from "@/features/agents/types/message-types";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { parseReferenceFence } from "@/features/matrx-envelope/referenceFence";
 import { revokeTrackedObjectUrl } from "@/lib/media/object-url-registry";
 
-function getBlockTypeDisplay(blockType: ResourceBlockType) {
-  const map: Record<
-    ResourceBlockType,
-    {
-      icon: ComponentType<{ className?: string }>;
-      label: string;
-    }
-  > = {
-    text: {
-      icon: FileText,
-      label: "Text",
-    },
-    image: {
-      icon: ImageIcon,
-      label: "Image",
-    },
-    audio: {
-      icon: Mic,
-      label: "Audio",
-    },
-    video: {
-      icon: Video,
-      label: "Video",
-    },
-    youtube_video: {
-      icon: Youtube,
-      label: "YouTube",
-    },
-    document: {
-      icon: File,
-      label: "File",
-    },
-    input_webpage: {
-      icon: Globe,
-      label: "Webpage",
-    },
-    input_notes: {
-      icon: StickyNote,
-      label: "Note",
-    },
-    input_task: {
-      icon: CheckSquare,
-      label: "Task",
-    },
-    input_table: {
-      icon: Table2,
-      label: "Table",
-    },
-    input_list: {
-      icon: FolderKanban,
-      label: "List",
-    },
-    input_data: {
-      icon: FileText,
-      label: "Data",
-    },
-    input_agent: {
-      icon: Webhook,
-      label: "Agent",
-    },
-    input_project: {
-      icon: Folder,
-      label: "Project",
-    },
-    input_agent_app: {
-      icon: LayoutGrid,
-      label: "App",
-    },
-    input_transcript: {
-      icon: Captions,
-      label: "Transcript",
-    },
-    input_transcript_session: {
-      icon: AudioLines,
-      label: "Session",
-    },
-    input_workbook: {
-      icon: Notebook,
-      label: "Workbook",
-    },
-    input_document: {
-      icon: FileText,
-      label: "Document",
-    },
-    processed_document: {
-      icon: FileText,
-      label: "Document",
-    },
-    editor_error: {
-      icon: AlertCircle,
-      label: "Error",
-    },
-    editor_code_snippet: {
-      icon: Code2,
-      label: "Code",
-    },
-  };
-  return map[blockType] ?? map.text;
+import { resolveContextItemDef } from "@/features/agents/components/context-items/registry";
+
+function getBlockTypeDisplay(blockType: ManagedResource["blockType"]) {
+  const def = resolveContextItemDef(blockType);
+  return { icon: def.icon, label: def.typeLabel };
 }
 
 function isContextValueResource(resource: ManagedResource): boolean {
@@ -177,6 +62,10 @@ function basename(path: string): string {
   return i === -1 ? path : path.slice(i + 1);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
 function getResourceLabel(resource: ManagedResource): string {
   // preview is set by SmartAgentResourcePickerButton as the display label string
   if (typeof resource.preview === "string" && resource.preview) {
@@ -185,29 +74,28 @@ function getResourceLabel(resource: ManagedResource): string {
   // Editor pills carry a structured `source` we can format directly —
   // keeps the chip identifiable even though `preview` is never set on add.
   if (resource.blockType === "editor_error") {
-    const src = resource.source as { file?: string; line?: number } | null;
-    if (src?.file) {
-      return `${basename(src.file)}${src.line ? `:${src.line}` : ""}`;
+    const src = isRecord(resource.source) ? resource.source : null;
+    if (typeof src?.file === "string") {
+      const line = typeof src.line === "number" ? src.line : null;
+      return `${basename(src.file)}${line ? `:${line}` : ""}`;
     }
   }
   if (resource.blockType === "editor_code_snippet") {
-    const src = resource.source as {
-      file?: string;
-      startLine?: number;
-      endLine?: number;
-    } | null;
-    if (src?.file) {
+    const src = isRecord(resource.source) ? resource.source : null;
+    if (typeof src?.file === "string") {
+      const startLine = typeof src.startLine === "number" ? src.startLine : null;
+      const endLine = typeof src.endLine === "number" ? src.endLine : null;
       const range =
-        src.startLine !== undefined && src.endLine !== undefined
-          ? src.startLine === src.endLine
-            ? `:${src.startLine}`
-            : `:${src.startLine}-${src.endLine}`
+        startLine !== null && endLine !== null
+          ? startLine === endLine
+            ? `:${startLine}`
+            : `:${startLine}-${endLine}`
           : "";
       return `${basename(src.file)}${range}`;
     }
   }
   // Fallback: derive from source
-  const src = resource.source as Record<string, unknown> | null;
+  const src = isRecord(resource.source) ? resource.source : null;
   if (src) {
     const candidate =
       (src.label as string) ??
@@ -410,67 +298,13 @@ function wrapWithPreview(
   resource: ManagedResource,
   chip: React.ReactNode,
 ): React.ReactNode {
-  const src = resource.source as Record<string, unknown> | null;
-
-  switch (resource.blockType) {
-    case "input_notes": {
-      const ids = src?.note_ids;
-      const id =
-        Array.isArray(ids) && typeof ids[0] === "string" ? ids[0] : null;
-      if (!id) return chip;
-      return (
-        <NoteHoverPreview noteId={id} side="top" align="start">
-          {chip}
-        </NoteHoverPreview>
-      );
-    }
-    case "input_task": {
-      const ids = src?.task_ids;
-      const id =
-        Array.isArray(ids) && typeof ids[0] === "string" ? ids[0] : null;
-      if (!id) return chip;
-      return (
-        <TaskHoverPreview taskId={id} side="top" align="start">
-          {chip}
-        </TaskHoverPreview>
-      );
-    }
-    case "input_webpage": {
-      const urls = src?.urls;
-      const url =
-        Array.isArray(urls) && typeof urls[0] === "string"
-          ? urls[0]
-          : typeof src?.url === "string"
-            ? (src.url as string)
-            : null;
-      if (!url) return chip;
-      const preview =
-        typeof resource.preview === "string" ? resource.preview : null;
-      return (
-        <WebpageHoverPreview
-          url={url}
-          snippet={preview}
-          side="top"
-          align="start"
-        >
-          {chip}
-        </WebpageHoverPreview>
-      );
-    }
-    case "input_data": {
-      const refs = src?.refs;
-      const ref =
-        Array.isArray(refs) && refs.length > 0 ? (refs[0] as DataRef) : null;
-      if (!ref) return chip;
-      return (
-        <DataRefHoverPreview dataRef={ref} side="top" align="start">
-          {chip}
-        </DataRefHoverPreview>
-      );
-    }
-    default:
-      return chip;
-  }
+  const item = normalizeResource(resource, "composer-preview")[0];
+  if (!item) return chip;
+  return (
+    <BlockHoverPreview item={item} side="top" align="start">
+      {chip}
+    </BlockHoverPreview>
+  );
 }
 
 interface SmartAgentResourceChipsProps {

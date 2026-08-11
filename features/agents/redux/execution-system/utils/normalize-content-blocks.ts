@@ -63,7 +63,9 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
   // `{ type: "image", file_id, url, … }`. cx_message uses `{ type: "media",
   // kind: "image", … }`. Coerce before the typed switch so sent images render
   // as attachment chips instead of vanishing into `unknown_data_event`.
-  const wireMedia = coerceWireMediaPart(raw as unknown as Record<string, unknown>);
+  const wireMedia = coerceWireMediaPart(
+    raw as unknown as Record<string, unknown>,
+  );
   if (wireMedia) {
     return normalizeMedia(wireMedia, index);
   }
@@ -226,6 +228,69 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
         metadata: raw.metadata,
       };
 
+    case "input_agent":
+      return normalizeEntityInput(
+        "input_agent",
+        "agent_ids",
+        raw.agent_ids,
+        raw.metadata,
+        index,
+      );
+
+    case "input_project":
+      return normalizeEntityInput(
+        "input_project",
+        "project_ids",
+        raw.project_ids,
+        raw.metadata,
+        index,
+      );
+
+    case "input_agent_app":
+      return normalizeEntityInput(
+        "input_agent_app",
+        "agent_app_ids",
+        raw.agent_app_ids,
+        raw.metadata,
+        index,
+      );
+
+    case "input_transcript":
+      return normalizeEntityInput(
+        "input_transcript",
+        "transcript_ids",
+        raw.transcript_ids,
+        raw.metadata,
+        index,
+      );
+
+    case "input_transcript_session":
+      return normalizeEntityInput(
+        "input_transcript_session",
+        "transcript_session_ids",
+        raw.transcript_session_ids,
+        raw.metadata,
+        index,
+      );
+
+    case "input_workbook":
+      return normalizeEntityInput(
+        "input_workbook",
+        "workbook_ids",
+        raw.workbook_ids,
+        raw.metadata,
+        index,
+      );
+
+    case "input_document":
+      return normalizeEntityInput(
+        "input_document",
+        "document_ids",
+        raw.document_ids,
+        raw.metadata,
+        index,
+      );
+
     case "input_table":
       return {
         blockId: newId("input_table"),
@@ -296,12 +361,6 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
         metadata: raw.metadata,
       };
 
-    case undefined:
-      // Pydantic emits parts without a `type` field when a union default
-      // collapses; shouldn't normally happen but is shape-legal in
-      // MessagePart. Preserve everything for inspection.
-      return makeUnknown(raw, index, "missing_type");
-
     default: {
       // Compile-time exhaustiveness — any new MessagePart variant in Python
       // surfaces here as a TS error until a case is added above.
@@ -310,6 +369,24 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
       return makeUnknown(raw as MessagePart, index, "unhandled_type");
     }
   }
+}
+
+function normalizeEntityInput(
+  type: string,
+  idField: string,
+  ids: unknown[] | undefined,
+  metadata: Record<string, unknown> | undefined,
+  index: number,
+): RenderBlockPayload {
+  return {
+    blockId: newId(type),
+    blockIndex: index,
+    type,
+    status: "complete",
+    content: null,
+    data: { [idField]: ids ?? null },
+    metadata,
+  };
 }
 
 type AnyMediaPart =
@@ -337,7 +414,9 @@ function coerceWireMediaPart(
     url: typeof raw.url === "string" ? raw.url : null,
     mime_type: typeof raw.mime_type === "string" ? raw.mime_type : null,
     metadata:
-      raw.metadata && typeof raw.metadata === "object" && !Array.isArray(raw.metadata)
+      raw.metadata &&
+      typeof raw.metadata === "object" &&
+      !Array.isArray(raw.metadata)
         ? (raw.metadata as Record<string, unknown>)
         : undefined,
   };
@@ -403,17 +482,34 @@ function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
       };
 
     case "document":
-      // No canonical "*_output" type for documents — fall back to the
-      // documented `unknown_data_event` shape rather than inventing one.
-      return makeUnknown(raw, index, "media_document");
+      return {
+        blockId: newId("db_document"),
+        blockIndex: index,
+        type: "document",
+        status: "complete",
+        content: null,
+        data: {
+          file_id: raw.file_id ?? null,
+          url: raw.url ?? null,
+          mime_type: raw.mime_type ?? null,
+          page_count: raw.page_count ?? null,
+        },
+        metadata: raw.metadata,
+      };
 
     case "youtube":
-      // Same reasoning as `document`: no canonical render type for YouTube
-      // embeds in the python-generated set today.
-      return makeUnknown(raw, index, "media_youtube");
-
-    case undefined:
-      return makeUnknown(raw, index, "media_missing_kind");
+      return {
+        blockId: newId("db_youtube"),
+        blockIndex: index,
+        type: "youtube_video",
+        status: "complete",
+        content: null,
+        data: {
+          url: raw.url,
+          external_url: raw.external_url ?? null,
+        },
+        metadata: raw.metadata,
+      };
 
     default: {
       const _exhaustive: never = raw;
@@ -442,8 +538,9 @@ function reconstructPersistedBlock(
   // carry _matrxState so the user's progress restores.
   let data: Record<string, unknown> = rb;
   if (blockType === "quiz") {
-    const qs = (rb._matrxState as { quizState?: Record<string, unknown> } | undefined)
-      ?.quizState;
+    const qs = (
+      rb._matrxState as { quizState?: Record<string, unknown> } | undefined
+    )?.quizState;
     const questions = (qs?.originalQuestions as unknown[]) ?? [];
     data = {
       quiz_title: (qs?.title as string) ?? "Quiz",
@@ -454,7 +551,9 @@ function reconstructPersistedBlock(
 
   return {
     blockId:
-      typeof rb._matrxBlockId === "string" ? rb._matrxBlockId : newId("db_persisted"),
+      typeof rb._matrxBlockId === "string"
+        ? rb._matrxBlockId
+        : newId("db_persisted"),
     blockIndex: index,
     type: blockType,
     status: "complete",
@@ -476,11 +575,8 @@ function makeUnknown(
     status: "complete",
     content: null,
     data: {
-      ...(raw as Record<string, unknown>),
-      _dataType:
-        typeof (raw as { type?: unknown }).type === "string"
-          ? (raw as { type: string }).type
-          : reason,
+      ...raw,
+      _dataType: raw.type || reason,
     },
     metadata: raw.metadata,
   };

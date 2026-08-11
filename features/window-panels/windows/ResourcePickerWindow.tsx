@@ -4,18 +4,13 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 
 import type { WindowPosition } from "@/features/window-panels/hooks/useWindowPanel";
+import type { Resource } from "@/features/agents/resources/types";
 
 interface ResourcePickerWindowProps {
   isOpen: boolean;
   onClose: () => void;
-  // MATRX-EXCEPTION: pure passthrough of ResourcePickerMenu's own
-  // `onResourceSelected(resource: any)` prop (features/resource-manager,
-  // out of this scope) — that component calls it with a dozen different
-  // ad-hoc `{ type, data }` shapes with no shared union type declared.
-  // Fixing this honestly means introducing a `ResourceSelection`
-  // discriminated union there first; tracked as a decision brief.
   onResourceSelected: (
-    resource: any,
+    resource: Resource,
   ) => boolean | void | Promise<boolean | void>;
   attachmentCapabilities?: {
     supportsImageUrls?: boolean;

@@ -53,6 +53,8 @@ import {
   extractRecordError,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { normalizeContentBlocks } from "@/features/agents/redux/execution-system/utils/normalize-content-blocks";
+import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
+import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
 import {
   buildMessageCitationIndex,
   type MessageCitationSource,
@@ -212,6 +214,10 @@ export function AgentAssistantMessage({
     ? extractFlatText(record, { withCitationMarkers: true })
     : flatText;
 
+  const attachmentParts = extractContentBlocks(record).filter(
+    isAttachmentMessagePart,
+  );
+
   // Live-stream citations: while this turn renders from the streaming source
   // (requestId set — the whole session, per the lifetime rule), sources come
   // from the request's accumulated `citation` events via the SAME dedupe/
@@ -248,7 +254,7 @@ export function AgentAssistantMessage({
       "tool_result",
     ]);
     const mediaBlocks = extractContentBlocks(record).filter(
-      (b) => !EXCLUDED.has(b.type ?? ""),
+      (b) => !EXCLUDED.has(b.type ?? "") && !isAttachmentMessagePart(b),
     );
     if (mediaBlocks.length === 0) return undefined;
     return normalizeContentBlocks(mediaBlocks);
@@ -358,6 +364,7 @@ export function AgentAssistantMessage({
   const hasInlineError = useAppSelector(hasInlineErrorSelector);
   const hasBody =
     flatText.length > 0 ||
+    attachmentParts.length > 0 ||
     (serverProcessedBlocks?.length ?? 0) > 0 ||
     streamedBlockCount > 0;
 
@@ -498,6 +505,11 @@ export function AgentAssistantMessage({
               onRetryNow={() => handleProviderRetryControl("retry_now")}
             />
           )}
+          <MessageAttachmentStrip
+            conversationId={conversationId}
+            parts={attachmentParts}
+            className="mb-2"
+          />
           <MarkdownStream
             requestId={effectiveRequestId}
             turnId={messageId}

@@ -26,7 +26,6 @@ import type {
   InfoPayload,
   TypedDataPayload,
   UntypedDataPayload,
-  MessagePart,
   ToolEventPayload,
   ErrorPayload,
   EndPayload,
@@ -818,16 +817,12 @@ export type UserOverrides = components["schemas"]["UserOverrides"];
  * The client only sends overrides and relies on server defaults, so the
  * assembled shape is `Partial` of the wire schema.
  *
- * `user_input` is refined: OpenAPI collapses message parts to
- * `{ [key: string]: unknown }[]` (lossy codegen). The real part union is
- * `MessagePart` from stream-events (same Python source). Escalate upstream
- * if OpenAPI gains a proper MessagePart schema — then drop this Omit.
+ * The generated OpenAPI contract now carries the exact request-side union,
+ * including inline media bytes before the server stores a durable media ref.
  */
-export type AssembledAgentStartRequest = Omit<
-  Partial<components["schemas"]["AgentStartRequest"]>,
-  "user_input"
+export type AssembledAgentStartRequest = Partial<
+  components["schemas"]["AgentStartRequest"]
 > & {
-  user_input?: string | MessagePart[] | null;
   /**
    * Additive aidream field for instance-targeted desktop tool delegation.
    * Omitted for Auto/default routing.
@@ -839,19 +834,23 @@ export type AssembledAgentStartRequest = Omit<
 
 /**
  * Outbound body for POST /ai/conversations/{conversation_id} while assembling.
- * Same Partial + MessagePart refinement as `AssembledAgentStartRequest`.
+ * Same partial assembly contract as `AssembledAgentStartRequest`.
  */
-export type AssembledConversationRequest = Omit<
-  Partial<components["schemas"]["ConversationContinueRequest"]>,
-  "user_input"
+export type AssembledConversationRequest = Partial<
+  components["schemas"]["ConversationContinueRequest"]
 > & {
-  user_input?: string | MessagePart[] | null;
   /**
    * Additive aidream field for instance-targeted desktop tool delegation.
    * Omitted for Auto/default routing.
    */
   target_instance_id?: string;
 };
+
+/** One structured item accepted by every generated agent user-input route. */
+export type UserInputPart = Exclude<
+  NonNullable<components["schemas"]["AgentStartRequest"]["user_input"]>,
+  string
+>[number];
 
 /**
  * Wire shape for one client tool result

@@ -7,6 +7,10 @@
  * prompts feature can be deleted without breaking live agent/chat code.
  */
 
+import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
+import type { Note } from "@/features/notes/types";
+import type { DatabaseTask, ProjectWithTasks } from "@/features/tasks/types";
+
 // ===========================
 // Base Resource Interfaces
 // ===========================
@@ -22,44 +26,17 @@ export interface BaseResourceData {
 /**
  * Note resource data structure
  */
-export interface NoteResourceData {
-  id: string;
-  label: string;
-  content: string;
-  folder_name?: string;
-  tags?: string[];
-  created_at?: string;
-  updated_at?: string;
-}
+export type NoteResourceData = Note;
 
 /**
  * Task resource data structure
  */
-export interface TaskResourceData {
-  id: string;
-  title: string;
-  description?: string;
-  status: "incomplete" | "complete" | "in_progress" | string;
-  priority?: string;
-  due_date?: string;
-  project_id?: string;
-  project_name?: string;
-  subtasks?: any[];
-  created_at?: string;
-  updated_at?: string;
-}
+export type TaskResourceData = DatabaseTask;
 
 /**
  * Project resource data structure
  */
-export interface ProjectResourceData {
-  id: string;
-  name: string;
-  description?: string;
-  tasks?: any[];
-  created_at?: string;
-  updated_at?: string;
-}
+export type ProjectResourceData = ProjectWithTasks;
 
 /**
  * Table resource data structure
@@ -130,13 +107,7 @@ export interface FileResourceData {
 /**
  * Webpage (scraped content) resource data structure
  */
-export interface WebpageResourceData {
-  url: string;
-  title?: string;
-  textContent?: string;
-  charCount?: number;
-  scrapedAt?: string;
-}
+export type WebpageResourceData = PreFetchedUrl;
 
 /**
  * YouTube video resource data structure
@@ -148,7 +119,7 @@ export interface YouTubeResourceData {
   title?: string;
   channelName?: string;
   transcript?: string;
-  duration?: number;
+  duration?: string;
 }
 
 /**
@@ -185,6 +156,17 @@ export interface AudioResourceData {
   duration?: number;
   transcript?: string;
   created_at?: string;
+}
+
+/**
+ * Plain text captured by an attachment-style picker (for example Voice Pad).
+ * It travels as a canonical text message part, not as fake audio with no
+ * resolvable media URL or file id.
+ */
+export interface TextResourceData {
+  id: string;
+  label: string;
+  text: string;
 }
 
 /**
@@ -274,6 +256,7 @@ export type Resource =
   | { type: "image_url"; data: ImageUrlResourceData }
   | { type: "file_url"; data: FileUrlResourceData }
   | { type: "audio"; data: AudioResourceData }
+  | { type: "text"; data: TextResourceData }
   | { type: "agent"; data: AgentResourceData }
   | { type: "agent_app"; data: AgentAppResourceData }
   | { type: "transcript"; data: TranscriptResourceData }

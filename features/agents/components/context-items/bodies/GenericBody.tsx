@@ -14,6 +14,7 @@ import type { ContextItemBodyProps } from "../types";
 
 function countRefs(item: ContextItemBodyProps["item"]): [string, number][] {
   const r = item.refs;
+  if (r.entityRefs?.length) return [["references", r.entityRefs.length]];
   return (
     [
       ["projects", r.projectIds?.length ?? 0],

@@ -12,8 +12,12 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type { ManagedResource } from "@/features/agents/types/instance.types";
-import type { MessagePart } from "@/types/python-generated/stream-events";
-import type { MediaRef } from "@/features/files/types";
+import type {
+  MessagePart,
+  PreFetchedUrl,
+} from "@/types/python-generated/stream-events";
+import type { UserInputPart } from "@/features/agents/types/request.types";
+import { isPreFetchedUrl } from "@/features/resource-manager/webpage/webpage-snapshot";
 import {
   isEditorXmlResource,
   serializeEditorResourcesAsXml,
@@ -21,7 +25,77 @@ import {
 
 const EMPTY_RESOURCES: ManagedResource[] = [];
 const EMPTY_EDITOR_RESOURCES: ManagedResource[] = [];
-const EMPTY_PAYLOADS: MessagePart[] = [];
+const EMPTY_PAYLOADS: UserInputPart[] = [];
+
+type TableBookmark = NonNullable<
+  Extract<UserInputPart, { type: "input_table" }>["bookmarks"]
+>[number];
+type ListBookmark = NonNullable<
+  Extract<UserInputPart, { type: "input_list" }>["bookmarks"]
+>[number];
+type RequestWebpage = Exclude<
+  NonNullable<
+    Extract<UserInputPart, { type: "input_webpage" }>["urls"]
+  >[number],
+  string
+>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function optionalString(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  return typeof value === "string" && value ? value : undefined;
+}
+
+function invalidResource(resource: ManagedResource, reason: string): never {
+  console.error("[instance-resources] Invalid ready resource payload", {
+    resourceId: resource.resourceId,
+    blockType: resource.blockType,
+    reason,
+  });
+  throw new TypeError(
+    `Cannot send ${resource.blockType} attachment ${resource.resourceId}: ${reason}`,
+  );
+}
+
+function resourceMetadata(
+  resource: ManagedResource,
+  content: unknown,
+): Record<string, unknown> | undefined {
+  const sourceMetadata =
+    isRecord(content) && isRecord(content.metadata)
+      ? content.metadata
+      : undefined;
+  const sourceTitle = isRecord(content)
+    ? (optionalString(content, "title") ??
+      optionalString(content, "name") ??
+      optionalString(content, "label") ??
+      optionalString(content, "filename"))
+    : undefined;
+  const displayTitle =
+    typeof resource.preview === "string" && resource.preview
+      ? resource.preview
+      : sourceTitle;
+  if (!sourceMetadata && !displayTitle) return undefined;
+  return {
+    ...sourceMetadata,
+    ...(displayTitle ? { display_title: displayTitle } : {}),
+  };
+}
+
+function inputControls(resource: ManagedResource) {
+  return {
+    ...(resource.options.keepFresh ? { keep_fresh: true } : {}),
+    ...(resource.options.editable ? { editable: true } : {}),
+    ...(!resource.options.convertToText ? { convert_to_text: false } : {}),
+    ...(resource.options.optionalContext ? { optional_context: true } : {}),
+    ...(resource.options.template
+      ? { template: resource.options.template }
+      : {}),
+  };
+}
 
 /**
  * Reduce attached note/task resources to the lean reference shape the backend
@@ -45,7 +119,7 @@ function toResourceIdList(content: unknown): string[] {
     if (typeof entry === "string" && entry) {
       ids.push(entry);
     } else if (entry && typeof entry === "object") {
-      const id = (entry as Record<string, unknown>).id;
+      const id = isRecord(entry) ? entry.id : undefined;
       if (typeof id === "string" && id) ids.push(id);
     }
   }
@@ -62,11 +136,413 @@ function toResourceIdList(content: unknown): string[] {
  * `extra="allow"` display hints per docs/protocol/MATRX_REFERENCES.md), so we
  * only array-wrap and drop empties; we never strip hint fields.
  */
-function toBookmarkList(content: unknown): Record<string, unknown>[] {
+function isTableBookmark(value: unknown): value is TableBookmark {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  if (typeof value.table_id !== "string" || !value.table_id) return false;
+  switch (value.type) {
+    case "full_table":
+    case "table_schema":
+      return true;
+    case "table_column":
+      return typeof value.column_name === "string";
+    case "table_row":
+      return typeof value.row_id === "string";
+    case "table_cell":
+      return (
+        typeof value.row_id === "string" &&
+        typeof value.column_name === "string"
+      );
+    default:
+      return false;
+  }
+}
+
+function isListBookmark(value: unknown): value is ListBookmark {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  if (typeof value.list_id !== "string" || !value.list_id) return false;
+  switch (value.type) {
+    case "full_list":
+      return true;
+    case "list_group":
+      return typeof value.group_name === "string";
+    case "list_item":
+      return typeof value.item_id === "string";
+    default:
+      return false;
+  }
+}
+
+function toTableBookmarks(content: unknown): TableBookmark[] {
   const entries = Array.isArray(content) ? content : [content];
-  return entries.filter(
-    (e): e is Record<string, unknown> => !!e && typeof e === "object",
-  );
+  return entries.filter(isTableBookmark);
+}
+
+function toListBookmarks(content: unknown): ListBookmark[] {
+  const entries = Array.isArray(content) ? content : [content];
+  return entries.filter(isListBookmark);
+}
+
+function toRecordList(content: unknown): Record<string, unknown>[] {
+  const entries = Array.isArray(content) ? content : [content];
+  return entries.filter(isRecord);
+}
+
+function mediaDataUrl(base64Data: string, mimeType?: string): string {
+  return `data:${mimeType ?? "application/octet-stream"};base64,${base64Data}`;
+}
+
+function toRequestWebpage(value: PreFetchedUrl): RequestWebpage {
+  return {
+    ...(isRecord(value) ? value : {}),
+    url: value.url,
+    textContent: value.textContent,
+    title: value.title,
+    scrapedAt: value.scrapedAt,
+    charCount: value.charCount,
+  };
+}
+
+function toRequestResourceRef(
+  value: string | { id?: string | null; mode?: "reference" | "snapshot" },
+) {
+  if (typeof value === "string") return value;
+  return {
+    ...(isRecord(value) ? value : {}),
+    id: value.id,
+    mode: value.mode,
+  };
+}
+
+/** Convert an already-persisted part back to the generated request contract. */
+export function messagePartToUserInputPart(part: MessagePart): UserInputPart {
+  switch (part.type) {
+    case "input_webpage":
+      return {
+        ...part,
+        urls: part.urls?.map((value) =>
+          typeof value === "string" ? value : toRequestWebpage(value),
+        ),
+      };
+    case "input_notes":
+      return {
+        ...part,
+        note_ids: part.note_ids?.map(toRequestResourceRef),
+      };
+    case "input_task":
+      return {
+        ...part,
+        task_ids: part.task_ids?.map(toRequestResourceRef),
+      };
+    case "input_workbook":
+      return {
+        ...part,
+        workbook_ids: part.workbook_ids?.map(toRequestResourceRef),
+      };
+    case "input_document":
+      return {
+        ...part,
+        document_ids: part.document_ids?.map(toRequestResourceRef),
+      };
+    case "input_table":
+      return {
+        ...part,
+        bookmarks: part.bookmarks?.map((bookmark) => ({ ...bookmark })),
+      };
+    case "input_list":
+      return {
+        ...part,
+        bookmarks: part.bookmarks?.map((bookmark) => ({ ...bookmark })),
+      };
+    default:
+      return part;
+  }
+}
+
+/**
+ * Project a request-side part into the durable shape used by the optimistic
+ * message bubble. Inline media bytes are represented by a local data URL until
+ * the server replaces them with the stored file/url reference.
+ */
+export function userInputPartToMessagePart(part: UserInputPart): MessagePart {
+  if (part.type !== "media") return part;
+  if (part.kind === "youtube") {
+    return {
+      metadata: part.metadata,
+      type: "media",
+      kind: "youtube",
+      url: part.url,
+      external_url: part.external_url,
+      origin: part.origin,
+      mime_type: part.mime_type,
+    };
+  }
+  const url =
+    part.url ??
+    ("base64_data" in part && part.base64_data
+      ? mediaDataUrl(part.base64_data, part.mime_type ?? undefined)
+      : undefined);
+  const common = {
+    metadata: part.metadata,
+    origin: part.origin,
+    file_id: part.file_id,
+    url,
+    mime_type: part.mime_type,
+    size_bytes: part.size_bytes,
+  };
+  switch (part.kind) {
+    case "image":
+      return {
+        ...common,
+        type: "media",
+        kind: "image",
+        width: part.width,
+        height: part.height,
+      };
+    case "audio":
+      return {
+        ...common,
+        type: "media",
+        kind: "audio",
+        duration_ms: part.duration_ms,
+        transcription_result: part.transcription_result,
+      };
+    case "video":
+      return {
+        ...common,
+        type: "media",
+        kind: "video",
+        width: part.width,
+        height: part.height,
+        duration_ms: part.duration_ms,
+      };
+    case "document":
+      return {
+        ...common,
+        type: "media",
+        kind: "document",
+        width: part.width,
+        height: part.height,
+        page_count: part.page_count,
+      };
+  }
+}
+
+function buildResourcePayload(resource: ManagedResource): UserInputPart | null {
+  if (resource.finalPayload) return resource.finalPayload;
+
+  const content = resource.userEdited
+    ? resource.editedContent
+    : resource.source;
+  const metadata = resourceMetadata(resource, content);
+  const controls = inputControls(resource);
+
+  switch (resource.blockType) {
+    case "text": {
+      if (typeof content !== "string") {
+        invalidResource(resource, "text content must be a string");
+      }
+      return { type: "text", text: content, metadata };
+    }
+    case "image":
+    case "audio":
+    case "video":
+    case "document": {
+      const record = isRecord(content) ? content : undefined;
+      const url =
+        typeof content === "string"
+          ? content
+          : record
+            ? optionalString(record, "url")
+            : undefined;
+      const fileId = record ? optionalString(record, "file_id") : undefined;
+      const base64Data = record
+        ? optionalString(record, "base64_data")
+        : undefined;
+      const mimeType = record ? optionalString(record, "mime_type") : undefined;
+
+      // Backward compatibility for drafts created by the old Voice Pad path:
+      // a transcript is text, never an empty audio reference.
+      if (
+        resource.blockType === "audio" &&
+        !url &&
+        !fileId &&
+        !base64Data &&
+        record
+      ) {
+        const transcript =
+          optionalString(record, "transcript") ??
+          optionalString(record, "transcription_result");
+        if (transcript) return { type: "text", text: transcript, metadata };
+      }
+
+      if (!url && !fileId && !base64Data) {
+        invalidResource(
+          resource,
+          "media requires a URL, file id, or inline bytes",
+        );
+      }
+      const common = {
+        type: "media" as const,
+        metadata,
+        url,
+        file_id: fileId,
+        base64_data: base64Data,
+        mime_type: mimeType,
+      };
+      switch (resource.blockType) {
+        case "image":
+          return { ...common, kind: "image" };
+        case "audio":
+          return { ...common, kind: "audio" };
+        case "video":
+          return { ...common, kind: "video" };
+        case "document":
+          return { ...common, kind: "document" };
+      }
+    }
+    case "youtube_video": {
+      const url =
+        typeof content === "string"
+          ? content
+          : isRecord(content)
+            ? optionalString(content, "url")
+            : undefined;
+      if (!url) invalidResource(resource, "YouTube attachment requires a URL");
+      return {
+        type: "media",
+        kind: "youtube",
+        url,
+        origin: "external",
+        metadata,
+      };
+    }
+    case "input_webpage": {
+      const entries = Array.isArray(content) ? content : [content];
+      const validEntries = entries.filter(
+        (entry): entry is string | PreFetchedUrl =>
+          typeof entry === "string" || isPreFetchedUrl(entry),
+      );
+      if (validEntries.length !== entries.length || validEntries.length === 0) {
+        invalidResource(
+          resource,
+          "webpage entries must be URLs or saved snapshots",
+        );
+      }
+      const urls = validEntries.map((entry) =>
+        typeof entry === "string" ? entry : toRequestWebpage(entry),
+      );
+      return { type: "input_webpage", urls, metadata, ...controls };
+    }
+    case "input_notes": {
+      const noteIds = toResourceIdList(content);
+      if (noteIds.length === 0) invalidResource(resource, "note id is missing");
+      return { type: "input_notes", note_ids: noteIds, metadata, ...controls };
+    }
+    case "input_task": {
+      const taskIds = toResourceIdList(content);
+      if (taskIds.length === 0) invalidResource(resource, "task id is missing");
+      return { type: "input_task", task_ids: taskIds, metadata, ...controls };
+    }
+    case "input_table": {
+      const bookmarks = toTableBookmarks(content);
+      if (bookmarks.length === 0)
+        invalidResource(resource, "table bookmark is malformed");
+      return { type: "input_table", bookmarks, metadata, ...controls };
+    }
+    case "input_list": {
+      const bookmarks = toListBookmarks(content);
+      if (bookmarks.length === 0)
+        invalidResource(resource, "list bookmark is malformed");
+      return { type: "input_list", bookmarks, metadata, ...controls };
+    }
+    case "input_data": {
+      const refs = toRecordList(content);
+      if (refs.length === 0)
+        invalidResource(resource, "data reference is malformed");
+      return { type: "input_data", refs, metadata, ...controls };
+    }
+    case "input_agent": {
+      const agentIds = toResourceIdList(content);
+      if (agentIds.length === 0)
+        invalidResource(resource, "agent id is missing");
+      return {
+        type: "input_agent",
+        agent_ids: agentIds,
+        metadata,
+        ...controls,
+      };
+    }
+    case "input_project": {
+      const projectIds = toResourceIdList(content);
+      if (projectIds.length === 0)
+        invalidResource(resource, "project id is missing");
+      return {
+        type: "input_project",
+        project_ids: projectIds,
+        metadata,
+        ...controls,
+      };
+    }
+    case "input_agent_app": {
+      const appIds = toResourceIdList(content);
+      if (appIds.length === 0)
+        invalidResource(resource, "agent app id is missing");
+      return {
+        type: "input_agent_app",
+        agent_app_ids: appIds,
+        metadata,
+        ...controls,
+      };
+    }
+    case "input_transcript": {
+      const transcriptIds = toResourceIdList(content);
+      if (transcriptIds.length === 0)
+        invalidResource(resource, "transcript id is missing");
+      return {
+        type: "input_transcript",
+        transcript_ids: transcriptIds,
+        metadata,
+        ...controls,
+      };
+    }
+    case "input_transcript_session": {
+      const sessionIds = toResourceIdList(content);
+      if (sessionIds.length === 0)
+        invalidResource(resource, "transcript session id is missing");
+      return {
+        type: "input_transcript_session",
+        transcript_session_ids: sessionIds,
+        metadata,
+        ...controls,
+      };
+    }
+    case "input_workbook": {
+      const workbookIds = toResourceIdList(content);
+      if (workbookIds.length === 0)
+        invalidResource(resource, "workbook id is missing");
+      return {
+        type: "input_workbook",
+        workbook_ids: workbookIds,
+        metadata,
+        ...controls,
+      };
+    }
+    case "input_document": {
+      const documentIds = toResourceIdList(content);
+      if (documentIds.length === 0)
+        invalidResource(resource, "document id is missing");
+      return {
+        type: "input_document",
+        document_ids: documentIds,
+        metadata,
+        ...controls,
+      };
+    }
+    case "processed_document":
+    case "editor_error":
+    case "editor_code_snippet":
+      return null;
+  }
 }
 
 /**
@@ -100,7 +576,8 @@ export const selectHasUnsentResources =
     if (!resources) return false;
     const ids = Object.keys(resources);
     if (ids.length === 0) return false;
-    const submitted = state.instanceResources.submittedIds[conversationId] ?? [];
+    const submitted =
+      state.instanceResources.submittedIds[conversationId] ?? [];
     return ids.some((id) => !submitted.includes(id));
   };
 
@@ -178,108 +655,13 @@ export const selectResourcePayloads = (conversationId: string) =>
         // XML in the user message text — not via structured ContentBlocks —
         // so they're excluded from the API payload here. The XML weave
         // happens in `assembleRequest` via `selectEditorResourceXml`.
-        .filter((r) => !isEditorXmlResource(r))
+        .filter(
+          (r) =>
+            !isEditorXmlResource(r) && r.blockType !== "processed_document",
+        )
         .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((r): MessagePart => {
-          if (r.finalPayload) return r.finalPayload;
-
-          const payload: Record<string, unknown> = { type: r.blockType };
-          const content = r.userEdited ? r.editedContent : r.source;
-
-          if (r.options.keepFresh) payload.keep_fresh = true;
-          if (r.options.editable) payload.editable = true;
-          if (!r.options.convertToText) payload.convert_to_text = false;
-          if (r.options.optionalContext) payload.optional_context = true;
-          if (r.options.template) payload.template = r.options.template;
-
-          switch (r.blockType) {
-            case "text":
-              payload.text = content;
-              break;
-            case "image":
-            case "audio":
-            case "video":
-            case "document": {
-              // Media blocks carry a `MediaRef`-shaped source for files we
-              // own (so the backend can resolve `file_id` directly without
-              // a share-link redirect). Legacy callsites still pass a raw
-              // URL string or a partial object — both are handled here.
-              //
-              // Resolution order matches the backend's `MediaRef` contract:
-              //   1. file_id  — preferred, skip the redirect
-              //   2. url      — public or signed URL
-              //   3. base64_data — only if a callsite hand-rolls one
-              //
-              // We extract the recognized fields explicitly instead of
-              // spreading the whole source — this drops the legacy
-              // `details` / `metadata` / `localId` payload bloat
-              // (~3 KB per content block on the wire) that the backend
-              // ignores anyway.
-              if (typeof content === "string") {
-                // Legacy path: bare URL string. The MediaRef.url field
-                // accepts any URL, so this still works — but new callsites
-                // should pass a MediaRef object instead.
-                payload.url = content;
-              } else if (content && typeof content === "object") {
-                const ref = content as Partial<MediaRef> & {
-                  base64_data?: string;
-                };
-                if (ref.file_id) payload.file_id = ref.file_id;
-                if (ref.url) payload.url = ref.url;
-                if (ref.base64_data) payload.base64_data = ref.base64_data;
-                if (ref.mime_type) payload.mime_type = ref.mime_type;
-                if (ref.metadata) payload.metadata = ref.metadata;
-              }
-              break;
-            }
-            case "youtube_video":
-              payload.url = content;
-              break;
-            case "input_webpage":
-              payload.urls = Array.isArray(content) ? content : [content];
-              break;
-            case "input_notes":
-              payload.note_ids = toResourceIdList(content);
-              break;
-            case "input_task":
-              payload.task_ids = toResourceIdList(content);
-              break;
-            case "input_table":
-              payload.bookmarks = toBookmarkList(content);
-              break;
-            case "input_list":
-              payload.bookmarks = toBookmarkList(content);
-              break;
-            case "input_data":
-              payload.refs = content;
-              break;
-            // ── Matrx entity references (pending backend support; see
-            //    RESOURCE_WIRE_SPEC.md). All ship a lean id list. ──
-            case "input_agent":
-              payload.agent_ids = toResourceIdList(content);
-              break;
-            case "input_project":
-              payload.project_ids = toResourceIdList(content);
-              break;
-            case "input_agent_app":
-              payload.agent_app_ids = toResourceIdList(content);
-              break;
-            case "input_transcript":
-              payload.transcript_ids = toResourceIdList(content);
-              break;
-            case "input_transcript_session":
-              payload.transcript_session_ids = toResourceIdList(content);
-              break;
-            case "input_workbook":
-              payload.workbook_ids = toResourceIdList(content);
-              break;
-            case "input_document":
-              payload.document_ids = toResourceIdList(content);
-              break;
-          }
-
-          return payload as MessagePart;
-        });
+        .map(buildResourcePayload)
+        .filter((part): part is UserInputPart => part !== null);
 
       return arr.length === 0 ? EMPTY_PAYLOADS : arr;
     },

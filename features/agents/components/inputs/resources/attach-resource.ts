@@ -50,7 +50,7 @@ import type { Json } from "@/types/database.types";
 export function resourceTypeToBlockType(
   type: Resource["type"],
 ): ResourceBlockType {
-  const map: Record<string, ResourceBlockType> = {
+  const map = {
     note: "input_notes",
     task: "input_task",
     project: "input_project",
@@ -61,6 +61,7 @@ export function resourceTypeToBlockType(
     image_url: "image",
     file_url: "document",
     audio: "audio",
+    text: "text",
     agent: "input_agent",
     agent_app: "input_agent_app",
     transcript: "input_transcript",
@@ -68,8 +69,8 @@ export function resourceTypeToBlockType(
     workbook: "input_workbook",
     document: "input_document",
     context_value: "text",
-  };
-  return map[type] ?? "text";
+  } satisfies Record<Resource["type"], ResourceBlockType>;
+  return map[type];
 }
 
 /** Extract the display label from a Resource (used for the chip preview). */
@@ -95,6 +96,8 @@ export function resourceLabel(resource: Resource): string {
       return resource.data.filename ?? "File";
     case "audio":
       return resource.data.filename ?? "Audio";
+    case "text":
+      return resource.data.label;
     case "agent":
       return resource.data.name ?? "Agent";
     case "agent_app":
@@ -241,9 +244,15 @@ export function useAttachResource(
         // Always refresh before a duplicate attach. A "ready" cache may be
         // stale after another tab or server-side variable attachment.
         await dispatch(
-          loadAssociations({ type: "conversation", id: conversationId, force: true }),
+          loadAssociations({
+            type: "conversation",
+            id: conversationId,
+            force: true,
+          }),
         );
-        if (getState().scopesTree.associationsByKey[cacheKey]?.status !== "ready") {
+        if (
+          getState().scopesTree.associationsByKey[cacheKey]?.status !== "ready"
+        ) {
           toast.error("Couldn't verify existing document attachment metadata");
           return false;
         }
@@ -291,7 +300,9 @@ export function useAttachResource(
       blockType,
       resource.type === "context_value"
         ? resource.data.referenceFence
-        : resource.data,
+        : resource.type === "text"
+          ? resource.data.text
+          : resource.data,
       resourcePreviewLabel,
     );
     return true;

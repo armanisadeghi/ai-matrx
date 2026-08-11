@@ -81,6 +81,7 @@ import type {
   SystemInstruction,
 } from "@/features/agents/types/agent-api-types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { UserInputPart } from "@/features/agents/types/request.types";
 import type { MessageRecord } from "../messages/messages.slice";
 import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
 import { selectMessageCount } from "../messages/messages.selectors";
@@ -95,7 +96,11 @@ import {
 import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
-import { selectResourcePayloads } from "../instance-resources/instance-resources.selectors";
+import {
+  messagePartToUserInputPart,
+  selectResourcePayloads,
+  userInputPartToMessagePart,
+} from "../instance-resources/instance-resources.selectors";
 import {
   resolveBackendForConversation,
   warmLocalEngineForConversation,
@@ -301,9 +306,11 @@ export async function assembleManualRequest(
   const resourcePayloads = selectResourcePayloads(conversationId)(state);
 
   if (textInput || userMessageParts || resourcePayloads.length > 0) {
-    const parts: MessagePart[] = [];
+    const parts: UserInputPart[] = [];
     if (textInput) parts.push({ type: "text", text: textInput });
-    if (userMessageParts) parts.push(...userMessageParts);
+    if (userMessageParts) {
+      parts.push(...userMessageParts.map(messagePartToUserInputPart));
+    }
     if (resourcePayloads.length > 0) parts.push(...resourcePayloads);
     messages.push({ role: "user", content: parts });
   }
@@ -587,12 +594,27 @@ export const executeManualInstance = createAsyncThunk<
       // real server id (no duplicate).
       // ─────────────────────────────────────────────────────────────────────
       const resourcePayloads = selectResourcePayloads(conversationId)(state);
-      const resourceBlocks = resourcePayloads.filter((b) => b.type !== "text");
+      const requestParts: UserInputPart[] = [
+        ...(userMessageParts?.map(messagePartToUserInputPart) ?? []),
+        ...resourcePayloads,
+      ];
+      const resourceBlocks = requestParts
+        .filter((part) => part.type !== "text")
+        .map(userInputPartToMessagePart);
+      const displayContent = [
+        userInputText,
+        ...requestParts
+          .filter((part) => part.type === "text")
+          .map((part) => part.text ?? ""),
+      ]
+        .filter(Boolean)
+        .join("\n\n");
       let userMessageClientTempId: string | undefined;
-      if (userInputText || userMessageParts || resourceBlocks.length > 0) {
+      if (displayContent || resourceBlocks.length > 0) {
         const content: MessagePart[] = [];
-        if (userInputText) content.push({ type: "text", text: userInputText });
-        if (userMessageParts) content.push(...userMessageParts);
+        if (displayContent) {
+          content.push({ type: "text", text: displayContent });
+        }
         if (resourceBlocks.length > 0) content.push(...resourceBlocks);
         userMessageClientTempId = uuidv4();
         const nextPosition = selectMessageCount(conversationId)(

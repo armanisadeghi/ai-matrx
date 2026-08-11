@@ -22,7 +22,7 @@ import type {
   ResourceOptions,
   ResourceStatus,
 } from "@/features/agents/types/instance.types";
-import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { UserInputPart } from "@/features/agents/types/request.types";
 import { generateResourceId } from "../utils/ids";
 import { destroyInstance } from "../conversations/conversations.slice";
 import { createInstanceFull } from "../create-instance-full";
@@ -189,7 +189,7 @@ const instanceResourcesSlice = createSlice({
       action: PayloadAction<{
         conversationId: string;
         resourceId: string;
-        payload: MessagePart;
+        payload: UserInputPart;
       }>,
     ) {
       const { conversationId, resourceId, payload } = action.payload;

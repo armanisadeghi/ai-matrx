@@ -23,10 +23,11 @@ import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 interface TasksResourcePickerProps {
   onBack: () => void;
-  onSelect: (selection: {
-    type: "task" | "project";
-    data: DatabaseTask | ProjectWithTasks;
-  }) => void;
+  onSelect: (
+    selection:
+      | { type: "task"; data: DatabaseTask }
+      | { type: "project"; data: ProjectWithTasks },
+  ) => void;
 }
 
 export function TasksResourcePicker({

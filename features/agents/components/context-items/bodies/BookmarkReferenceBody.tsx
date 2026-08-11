@@ -7,47 +7,16 @@
  * the in-content matrx fences use — chips that resolve their value from Supabase
  * and open the underlying table / list on click. No bespoke table/list preview.
  *
- * Reads bookmarks from every representation it can arrive in:
- *   - a post-submit block          → `raw.data.bookmarks`
- *   - a pre-submit resource bag    → `raw.bookmarks`
- *   - a single table/list resource → `raw` IS one bookmark-shaped object
- * (each normalized to an array). `bookmarkToReference` ignores anything that
- * isn't a known bookmark type, so over-broad input is safe.
+ * The canonical attachment projection validates and places exactly one
+ * bookmark on each drawer item. This body never shape-sniffs raw payloads.
  */
 
 import type { ContextItemBodyProps } from "../types";
 import { bookmarksToReferenceEnvelopes } from "@/features/matrx-envelope/bookmarkToReference";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 
-function asBookmarkArray(value: unknown): unknown[] | null {
-  if (Array.isArray(value)) return value;
-  if (value && typeof value === "object") return [value];
-  return null;
-}
-
-function extractBookmarks(raw: unknown): unknown[] {
-  if (!raw || typeof raw !== "object") return [];
-  const r = raw as Record<string, unknown>;
-
-  // 1. Post-submit block: raw.data.bookmarks.
-  const data = r.data;
-  if (data && typeof data === "object") {
-    const fromData = asBookmarkArray((data as Record<string, unknown>).bookmarks);
-    if (fromData) return fromData;
-  }
-
-  // 2. Pre-submit resource bag: raw.bookmarks.
-  const fromBag = asBookmarkArray(r.bookmarks);
-  if (fromBag) return fromBag;
-
-  // 3. The source IS a single bookmark-shaped object (e.g. TableResourceData).
-  if (typeof r.type === "string") return [r];
-
-  return [];
-}
-
 export function BookmarkReferenceBody({ item }: ContextItemBodyProps) {
-  const envelopes = bookmarksToReferenceEnvelopes(extractBookmarks(item.raw));
+  const envelopes = bookmarksToReferenceEnvelopes(item.refs.bookmarks ?? []);
 
   if (envelopes.length === 0) {
     return (

@@ -99,6 +99,7 @@ export function ContextItemDrawer({ controller }: ContextItemDrawerProps) {
       position="right"
       defaultSize={40}
       expandButtonLabel={activeItem.typeLabel}
+      initialFocus
       title={
         Title ? (
           <span className="inline-flex min-w-0 items-center gap-1">

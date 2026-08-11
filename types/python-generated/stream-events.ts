@@ -3364,7 +3364,7 @@ export interface NormalizedCitation {
 
 export interface TextPart {
   metadata?: Record<string, unknown>;
-  type?: "text";
+  type: "text";
   text?: string;
   id?: string;
   citations?: NormalizedCitation[];
@@ -3372,7 +3372,7 @@ export interface TextPart {
 
 export interface ThinkingPart {
   metadata?: Record<string, unknown>;
-  type?: "thinking";
+  type: "thinking";
   text?: string;
   id?: string;
   provider?: "openai" | "anthropic" | "google" | "cerebras" | "moonshot" | "together" | "groq" | "xai" | "generic_openai" | null;
@@ -3383,7 +3383,7 @@ export interface ThinkingPart {
 
 export interface ToolCallPart {
   metadata?: Record<string, unknown>;
-  type?: "tool_call";
+  type: "tool_call";
   call_id?: string;
   name?: string;
   arguments?: Record<string, unknown>;
@@ -3391,7 +3391,7 @@ export interface ToolCallPart {
 
 export interface ToolResultPart {
   metadata?: Record<string, unknown>;
-  type?: "tool_result";
+  type: "tool_result";
   call_id?: string;
   tool_use_id?: string;
   name?: string;
@@ -3407,8 +3407,8 @@ export interface ImageMediaPart {
   url?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
-  type?: "media";
-  kind?: "image";
+  type: "media";
+  kind: "image";
   width?: number | null;
   height?: number | null;
 }
@@ -3420,8 +3420,8 @@ export interface AudioMediaPart {
   url?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
-  type?: "media";
-  kind?: "audio";
+  type: "media";
+  kind: "audio";
   duration_ms?: number | null;
   transcription_result?: string | null;
 }
@@ -3433,8 +3433,8 @@ export interface VideoMediaPart {
   url?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
-  type?: "media";
-  kind?: "video";
+  type: "media";
+  kind: "video";
   width?: number | null;
   height?: number | null;
   duration_ms?: number | null;
@@ -3447,8 +3447,8 @@ export interface DocumentMediaPart {
   url?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
-  type?: "media";
-  kind?: "document";
+  type: "media";
+  kind: "document";
   width?: number | null;
   height?: number | null;
   page_count?: number | null;
@@ -3456,33 +3456,33 @@ export interface DocumentMediaPart {
 
 export interface YouTubeMediaPart {
   metadata?: Record<string, unknown>;
+  type: "media";
+  kind: "youtube";
+  url: string;
+  external_url?: string | null;
   origin?: "external";
   file_id?: string | null;
-  url: string;
   mime_type?: string | null;
   size_bytes?: number | null;
-  type?: "media";
-  kind?: "youtube";
-  external_url?: string | null;
 }
 
 export interface CodeExecPart {
   metadata?: Record<string, unknown>;
-  type?: "code_exec";
+  type: "code_exec";
   language?: string;
   code?: string;
 }
 
 export interface CodeResultPart {
   metadata?: Record<string, unknown>;
-  type?: "code_result";
+  type: "code_result";
   output?: string;
   outcome?: string;
 }
 
 export interface WebSearchPart {
   metadata?: Record<string, unknown>;
-  type?: "web_search";
+  type: "web_search";
   id?: string;
   status?: string;
 }
@@ -3497,7 +3497,7 @@ export interface PreFetchedUrl {
 
 export interface WebpageInputPart {
   metadata?: Record<string, unknown>;
-  type?: "input_webpage";
+  type: "input_webpage";
   urls?: (string | PreFetchedUrl)[];
   convert_to_text?: boolean;
   optional_context?: boolean;
@@ -3512,7 +3512,7 @@ export interface ResourceRefInput {
 
 export interface NotesInputPart {
   metadata?: Record<string, unknown>;
-  type?: "input_notes";
+  type: "input_notes";
   note_ids?: (string | ResourceRefInput)[];
   template?: string;
   convert_to_text?: boolean;
@@ -3523,7 +3523,7 @@ export interface NotesInputPart {
 
 export interface TaskInputPart {
   metadata?: Record<string, unknown>;
-  type?: "input_task";
+  type: "input_task";
   task_ids?: (string | ResourceRefInput)[];
   template?: string;
   convert_to_text?: boolean;
@@ -3532,14 +3532,91 @@ export interface TaskInputPart {
   editable?: boolean | null;
 }
 
+export interface AgentInputPart {
+  metadata?: Record<string, unknown>;
+  convert_to_text?: boolean;
+  optional_context?: boolean;
+  keep_fresh?: boolean;
+  editable?: boolean | null;
+  template?: "full" | "compact" | "minimal" | null;
+  type: "input_agent";
+  agent_ids?: string[];
+}
+
+export interface ProjectInputPart {
+  metadata?: Record<string, unknown>;
+  convert_to_text?: boolean;
+  optional_context?: boolean;
+  keep_fresh?: boolean;
+  editable?: boolean | null;
+  template?: "full" | "compact" | "minimal" | null;
+  type: "input_project";
+  project_ids?: string[];
+}
+
+export interface AgentAppInputPart {
+  metadata?: Record<string, unknown>;
+  convert_to_text?: boolean;
+  optional_context?: boolean;
+  keep_fresh?: boolean;
+  editable?: boolean | null;
+  template?: "full" | "compact" | "minimal" | null;
+  type: "input_agent_app";
+  agent_app_ids?: string[];
+}
+
+export interface TranscriptInputPart {
+  metadata?: Record<string, unknown>;
+  convert_to_text?: boolean;
+  optional_context?: boolean;
+  keep_fresh?: boolean;
+  editable?: boolean | null;
+  template?: "full" | "compact" | "minimal" | null;
+  type: "input_transcript";
+  transcript_ids?: string[];
+}
+
+export interface TranscriptSessionInputPart {
+  metadata?: Record<string, unknown>;
+  convert_to_text?: boolean;
+  optional_context?: boolean;
+  keep_fresh?: boolean;
+  editable?: boolean | null;
+  template?: "full" | "compact" | "minimal" | null;
+  type: "input_transcript_session";
+  transcript_session_ids?: string[];
+}
+
+export interface WorkbookInputPart {
+  metadata?: Record<string, unknown>;
+  convert_to_text?: boolean;
+  optional_context?: boolean;
+  keep_fresh?: boolean;
+  editable?: boolean | null;
+  template?: "full" | "compact" | "minimal" | null;
+  type: "input_workbook";
+  workbook_ids?: (string | ResourceRefInput)[];
+}
+
+export interface DocumentInputPart {
+  metadata?: Record<string, unknown>;
+  convert_to_text?: boolean;
+  optional_context?: boolean;
+  keep_fresh?: boolean;
+  editable?: boolean | null;
+  template?: "full" | "compact" | "minimal" | null;
+  type: "input_document";
+  document_ids?: (string | ResourceRefInput)[];
+}
+
 export interface FullTableBookmark {
-  type?: "full_table";
+  type: "full_table";
   table_id: string;
   table_name?: string | null;
 }
 
 export interface TableCellBookmark {
-  type?: "table_cell";
+  type: "table_cell";
   table_id: string;
   row_id: string;
   column_name: string;
@@ -3547,28 +3624,28 @@ export interface TableCellBookmark {
 }
 
 export interface TableColumnBookmark {
-  type?: "table_column";
+  type: "table_column";
   table_id: string;
   column_name: string;
   table_name?: string | null;
 }
 
 export interface TableRowBookmark {
-  type?: "table_row";
+  type: "table_row";
   table_id: string;
   row_id: string;
   table_name?: string | null;
 }
 
 export interface TableSchemaBookmark {
-  type?: "table_schema";
+  type: "table_schema";
   table_id: string;
   table_name?: string | null;
 }
 
 export interface TableInputPart {
   metadata?: Record<string, unknown>;
-  type?: "input_table";
+  type: "input_table";
   bookmarks?: (FullTableBookmark | TableColumnBookmark | TableRowBookmark | TableCellBookmark | TableSchemaBookmark)[];
   convert_to_text?: boolean;
   optional_context?: boolean;
@@ -3577,20 +3654,20 @@ export interface TableInputPart {
 }
 
 export interface FullListBookmark {
-  type?: "full_list";
+  type: "full_list";
   list_id: string;
   list_name?: string | null;
 }
 
 export interface ListGroupBookmark {
-  type?: "list_group";
+  type: "list_group";
   list_id: string;
   group_name: string;
   list_name?: string | null;
 }
 
 export interface ListItemBookmark {
-  type?: "list_item";
+  type: "list_item";
   list_id: string;
   item_id: string;
   list_name?: string | null;
@@ -3598,7 +3675,7 @@ export interface ListItemBookmark {
 
 export interface ListInputPart {
   metadata?: Record<string, unknown>;
-  type?: "input_list";
+  type: "input_list";
   bookmarks?: (FullListBookmark | ListGroupBookmark | ListItemBookmark)[];
   convert_to_text?: boolean;
   optional_context?: boolean;
@@ -3608,7 +3685,7 @@ export interface ListInputPart {
 
 export interface DataInputPart {
   metadata?: Record<string, unknown>;
-  type?: "input_data";
+  type: "input_data";
   refs?: Record<string, unknown>[];
   convert_to_text?: boolean;
   optional_context?: boolean;
@@ -3618,7 +3695,7 @@ export interface DataInputPart {
 
 export interface ContextInputPart {
   metadata?: Record<string, unknown>;
-  type?: "input_context";
+  type: "input_context";
   context_id?: string;
   context_name?: string;
   context_data?: Record<string, unknown>;
@@ -3644,14 +3721,209 @@ export type MessagePart =
   | WebpageInputPart
   | NotesInputPart
   | TaskInputPart
+  | AgentInputPart
+  | ProjectInputPart
+  | AgentAppInputPart
+  | TranscriptInputPart
+  | TranscriptSessionInputPart
+  | WorkbookInputPart
+  | DocumentInputPart
   | TableInputPart
   | ListInputPart
   | DataInputPart
   | ContextInputPart;
 
-/** Parse the content array from a cx_message DB row. */
+const MESSAGE_PART_TYPES = new Set<string>(["code_exec", "code_result", "input_agent", "input_agent_app", "input_context", "input_data", "input_document", "input_list", "input_notes", "input_project", "input_table", "input_task", "input_transcript", "input_transcript_session", "input_webpage", "input_workbook", "media", "text", "thinking", "tool_call", "tool_result", "web_search"]);
+const MEDIA_PART_KINDS = new Set<string>(["audio", "document", "image", "video", "youtube"]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || value === null || typeof value === "string";
+}
+
+function isResourceRefInput(value: unknown): boolean {
+  if (typeof value === "string") return true;
+  if (!isRecord(value)) return false;
+  return (
+    isOptionalString(value.id) &&
+    (typeof value.id === "string" || value.mode === "snapshot") &&
+    (value.mode === undefined || value.mode === "reference" || value.mode === "snapshot")
+  );
+}
+
+function hasValidCommonFields(value: Record<string, unknown>): boolean {
+  return (
+    (value.metadata === undefined || isRecord(value.metadata)) &&
+    (value.convert_to_text === undefined || typeof value.convert_to_text === "boolean") &&
+    (value.optional_context === undefined || typeof value.optional_context === "boolean") &&
+    (value.keep_fresh === undefined || typeof value.keep_fresh === "boolean") &&
+    (value.editable === undefined ||
+      value.editable === null ||
+      typeof value.editable === "boolean") &&
+    (value.template === undefined ||
+      value.template === null ||
+      value.template === "full" ||
+      value.template === "compact" ||
+      value.template === "minimal")
+  );
+}
+
+function isPrefetchedUrl(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.url === "string" &&
+    typeof value.textContent === "string" &&
+    isOptionalString(value.title) &&
+    isOptionalString(value.scrapedAt) &&
+    (value.charCount === undefined || typeof value.charCount === "number")
+  );
+}
+
+function isTableBookmark(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  if (typeof value.table_id !== "string") return false;
+  switch (value.type) {
+    case "full_table":
+    case "table_schema":
+      return true;
+    case "table_column":
+      return typeof value.column_name === "string";
+    case "table_row":
+      return typeof value.row_id === "string";
+    case "table_cell":
+      return (
+        typeof value.row_id === "string" && typeof value.column_name === "string"
+      );
+    default:
+      return false;
+  }
+}
+
+function isListBookmark(value: unknown): boolean {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  if (typeof value.list_id !== "string") return false;
+  switch (value.type) {
+    case "full_list":
+      return true;
+    case "list_group":
+      return typeof value.group_name === "string";
+    case "list_item":
+      return typeof value.item_id === "string";
+    default:
+      return false;
+  }
+}
+
+function isOptionalArray(
+  value: unknown,
+  predicate: (item: unknown) => boolean,
+): boolean {
+  return value === undefined || (Array.isArray(value) && value.every(predicate));
+}
+
+/** Runtime guard for persisted chat.message.content entries. */
+export function isMessagePart(value: unknown): value is MessagePart {
+  if (!isRecord(value) || typeof value.type !== "string") return false;
+  if (!MESSAGE_PART_TYPES.has(value.type)) return false;
+  if (!hasValidCommonFields(value)) return false;
+  switch (value.type) {
+    case "media":
+      return (
+        typeof value.kind === "string" &&
+        MEDIA_PART_KINDS.has(value.kind) &&
+        (typeof value.url === "string" || typeof value.file_id === "string") &&
+        (value.kind !== "youtube" || typeof value.url === "string")
+      );
+    case "text":
+    case "thinking":
+      return value.text === undefined || typeof value.text === "string";
+    case "tool_call":
+      return (
+        (value.call_id === undefined || typeof value.call_id === "string") &&
+        (value.name === undefined || typeof value.name === "string") &&
+        (value.arguments === undefined || isRecord(value.arguments))
+      );
+    case "tool_result":
+      return (
+        (value.call_id === undefined || typeof value.call_id === "string") &&
+        (value.tool_use_id === undefined || typeof value.tool_use_id === "string") &&
+        (value.name === undefined || typeof value.name === "string") &&
+        (value.is_error === undefined || typeof value.is_error === "boolean")
+      );
+    case "code_exec":
+      return (
+        (value.language === undefined || typeof value.language === "string") &&
+        (value.code === undefined || typeof value.code === "string")
+      );
+    case "code_result":
+      return (
+        (value.output === undefined || typeof value.output === "string") &&
+        (value.outcome === undefined || typeof value.outcome === "string")
+      );
+    case "web_search":
+      return (
+        (value.id === undefined || typeof value.id === "string") &&
+        (value.status === undefined || typeof value.status === "string")
+      );
+    case "input_webpage":
+      return isOptionalArray(
+        value.urls,
+        (entry) => typeof entry === "string" || isPrefetchedUrl(entry),
+      );
+    case "input_notes":
+      return isOptionalArray(value.note_ids, isResourceRefInput);
+    case "input_task":
+      return isOptionalArray(value.task_ids, isResourceRefInput);
+    case "input_agent":
+      return value.agent_ids === undefined || isStringArray(value.agent_ids);
+    case "input_project":
+      return value.project_ids === undefined || isStringArray(value.project_ids);
+    case "input_agent_app":
+      return value.agent_app_ids === undefined || isStringArray(value.agent_app_ids);
+    case "input_transcript":
+      return value.transcript_ids === undefined || isStringArray(value.transcript_ids);
+    case "input_transcript_session":
+      return (
+        value.transcript_session_ids === undefined ||
+        isStringArray(value.transcript_session_ids)
+      );
+    case "input_workbook":
+      return isOptionalArray(value.workbook_ids, isResourceRefInput);
+    case "input_document":
+      return isOptionalArray(value.document_ids, isResourceRefInput);
+    case "input_table":
+      return isOptionalArray(value.bookmarks, isTableBookmark);
+    case "input_list":
+      return isOptionalArray(value.bookmarks, isListBookmark);
+    case "input_data":
+      return isOptionalArray(value.refs, isRecord);
+    case "input_context":
+      return (
+        isOptionalString(value.context_id) &&
+        isOptionalString(value.context_name) &&
+        (value.context_data === undefined || isRecord(value.context_data))
+      );
+  }
+  return false;
+}
+
+/** Validate and parse the content array from a chat.message DB row. */
 export function parseMessageContent(content: unknown[]): MessagePart[] {
-  return content as MessagePart[];
+  return content.map((part, index) => {
+    if (!isMessagePart(part)) {
+      throw new TypeError(
+        `Invalid chat.message.content[${index}]: unknown or malformed message part`,
+      );
+    }
+    return part;
+  });
 }
 
 export interface ChunkEvent {

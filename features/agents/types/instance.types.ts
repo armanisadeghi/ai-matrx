@@ -11,8 +11,13 @@
  */
 
 import type { AgentType } from "./agent-definition.types";
-import type { ContextObjectType, LLMParams, SystemInstruction } from "./agent-api-types";
+import type {
+  ContextObjectType,
+  LLMParams,
+  SystemInstruction,
+} from "./agent-api-types";
 import type { ApplicationScope } from "./scope.types";
+import type { UserInputPart } from "./request.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
@@ -28,7 +33,6 @@ import {
   type SourceApp,
   type SourceFeature,
 } from "@/types/python-generated/source-attribution";
-
 
 // =============================================================================
 // Completion Stats — re-exported from auto-generated stream-events.ts
@@ -438,7 +442,7 @@ export interface ManagedResource {
   options: ResourceOptions;
 
   /** The assembled ContentBlock payload ready for the API call */
-  finalPayload: MessagePart | null;
+  finalPayload: UserInputPart | null;
 
   /** Sort order for display and payload assembly */
   sortOrder: number;

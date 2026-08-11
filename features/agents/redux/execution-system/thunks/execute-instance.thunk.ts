@@ -24,6 +24,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type {
   AssembledAgentStartRequest,
+  UserInputPart,
   UserOverrides,
 } from "@/features/agents/types/request.types";
 import { toast } from "@/lib/toast";
@@ -44,8 +45,10 @@ import {
   warnRequestContextDrift,
 } from "../utils/warn-request-context-drift";
 import {
+  messagePartToUserInputPart,
   selectEditorResourceXml,
   selectResourcePayloads,
+  userInputPartToMessagePart,
 } from "../instance-resources/instance-resources.selectors";
 import {
   selectRuntimeVariableResourcePolicies,
@@ -205,15 +208,16 @@ export function assembleRequest(
   // Build user_input
   let user_input: AssembledAgentStartRequest["user_input"];
   if (resourcePayloads.length > 0) {
-    const parts: MessagePart[] = [];
+    const parts: UserInputPart[] = [];
     if (textInput) parts.push({ type: "text", text: textInput });
-    if (messageParts) parts.push(...messageParts);
+    if (messageParts)
+      parts.push(...messageParts.map(messagePartToUserInputPart));
     parts.push(...resourcePayloads);
     user_input = parts;
   } else if (messageParts && messageParts.length > 0) {
-    const parts: MessagePart[] = [];
+    const parts: UserInputPart[] = [];
     if (textInput) parts.push({ type: "text", text: textInput });
-    parts.push(...messageParts);
+    parts.push(...messageParts.map(messagePartToUserInputPart));
     user_input = parts;
   } else if (textInput) {
     user_input = textInput;
@@ -243,7 +247,8 @@ export function assembleRequest(
   // right org even if appContextSlice hasn't bootstrapped yet (both
   // organization_id and personal_organization_id are null during that window,
   // so the ambient read would have silently omitted the field entirely).
-  const ambientOrganizationId = selectEffectiveOrganizationId(state) ?? undefined;
+  const ambientOrganizationId =
+    selectEffectiveOrganizationId(state) ?? undefined;
   const organization_id = instance.organizationId ?? ambientOrganizationId;
   if (!organization_id && instance.messageCount) {
     // A continuation with NO org from either source is a defect, not a shrug:
@@ -569,28 +574,27 @@ export const executeInstance = createAsyncThunk<
         );
       }
       const resourceBlocks = Array.isArray(payload.user_input)
-        ? payload.user_input.filter((b) => b.type !== "text")
+        ? payload.user_input
+            .filter((part) => part.type !== "text")
+            .map(userInputPartToMessagePart)
         : [];
       const assembledUserText = Array.isArray(payload.user_input)
-        ? ((
-            payload.user_input.find((b) => b.type === "text") as
-              (MessagePart & { text?: string }) | undefined
-          )?.text ?? "")
+        ? payload.user_input
+            .filter((part) => part.type === "text")
+            .map((part) => part.text ?? "")
+            .filter(Boolean)
+            .join("\n\n")
         : typeof payload.user_input === "string"
           ? payload.user_input
           : "";
       const displayContent = assembledUserText;
 
       let userMessageClientTempId: string | undefined;
-      if (
-        !retry &&
-        (displayContent || userMessageParts || resourceBlocks.length > 0)
-      ) {
+      if (!retry && (displayContent || resourceBlocks.length > 0)) {
         const content: MessagePart[] = [];
         if (displayContent) {
           content.push({ type: "text", text: displayContent });
         }
-        if (userMessageParts) content.push(...userMessageParts);
         content.push(...resourceBlocks);
         userMessageClientTempId = uuidv4();
         const stateAtSubmit = getState() as RootState;

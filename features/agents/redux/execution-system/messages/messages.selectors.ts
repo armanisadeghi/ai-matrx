@@ -516,7 +516,7 @@ export const selectMessageInterleavedContent = (
       if ((record.role as string) === "tool") return EMPTY_SEGMENTS;
 
       const parts = Array.isArray(record.content)
-        ? (record.content as MessagePart[])
+        ? parseMessageContent(record.content)
         : [];
       if (parts.length === 0) return EMPTY_SEGMENTS;
 

@@ -14,6 +14,27 @@
 
 import type { ComponentType } from "react";
 import type { DataRef } from "@/features/agents/types/message-types";
+import type {
+  ListInputPart,
+  PreFetchedUrl,
+  TableInputPart,
+} from "@/types/python-generated/stream-events";
+
+export type ContextBookmark =
+  | NonNullable<TableInputPart["bookmarks"]>[number]
+  | NonNullable<ListInputPart["bookmarks"]>[number];
+
+export interface ContextEntityRef {
+  token: string;
+  id: string;
+  name?: string | null;
+}
+
+export interface ContextInputSnapshot {
+  id: string | null;
+  name: string | null;
+  data: Record<string, unknown>;
+}
 
 /** Where a normalized item came from in the message lifecycle. */
 export type ContextItemOrigin = "resource" | "block";
@@ -22,8 +43,12 @@ export type ContextItemOrigin = "resource" | "block";
 export interface ContextItemRefs {
   noteIds?: string[];
   taskIds?: string[];
-  urls?: string[];
+  /** Exact persisted webpage values; never narrow PreFetchedUrl to a string. */
+  webpages?: (string | PreFetchedUrl)[];
   dataRefs?: DataRef[];
+  bookmarks?: ContextBookmark[];
+  entityRefs?: ContextEntityRef[];
+  contextInput?: ContextInputSnapshot;
   /** cld_files UUID for media blocks (MediaRef contract). */
   fileId?: string | null;
   /** Direct durable URL when no file_id is present. */

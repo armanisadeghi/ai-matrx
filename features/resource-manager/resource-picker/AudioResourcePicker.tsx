@@ -33,10 +33,11 @@ export function AudioResourcePicker({
         className="min-h-0 flex-1"
         onAttachTranscript={(transcript) => {
           onSelect({
-            type: "audio",
+            type: "text",
             data: {
-              filename: "Voice Pad",
-              transcript,
+              id: `voice-pad-${Date.now()}`,
+              label: "Voice Pad transcript",
+              text: transcript,
             },
           });
         }}
