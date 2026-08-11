@@ -23,7 +23,7 @@ import {
   Target,
   X,
 } from "lucide-react";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
@@ -419,6 +419,16 @@ export function ReputationWorkspace() {
   const brief = analysis.run.result?.brief ?? data?.latestBrief ?? null;
   const running = analysis.run.status === "running";
 
+  // THE FLOATING LAW: the run streams in the floating LiveRunWindow. It used to
+  // render inline above the KPI band and the brief, pushing both down the
+  // instant the user pressed "Run intelligence".
+  useFloatingLiveRun({
+    active: running,
+    instanceId: `reputation:${site.id}`,
+    requestId: analysis.run.requestId,
+    label: analysis.run.stage || "Building the evidence bundle",
+  });
+
   const setTab = (next: Tab) => {
     const query = new URLSearchParams(searchParams.toString());
     if (next === "brief") query.delete("tab");
@@ -524,13 +534,6 @@ export function ReputationWorkspace() {
                 {analysis.run.error}
               </div>
             ) : null}
-            <LiveRunDisplay
-              requestId={analysis.run.requestId}
-              pending={running}
-              label={analysis.run.stage || "Building the evidence bundle"}
-              bodyClassName="max-h-[32rem]"
-            />
-
             <KpiBand data={data} />
 
             {tab === "brief" ? (

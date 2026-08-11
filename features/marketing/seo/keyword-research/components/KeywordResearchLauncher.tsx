@@ -30,6 +30,7 @@ import {
   useSavedKeywordResearch,
 } from "../useSavedKeywordResearch";
 import MarkdownStream from "@/components/MarkdownStream";
+import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import SavedResearchFeed from "./SavedResearchFeed";
 
@@ -59,6 +60,15 @@ export interface KeywordResearchLauncherProps {
    * underneath can never type into a window that page does not own.
    */
   writeTargetSurfaceName?: string | null;
+  /**
+   * Where the live run renders. THE FLOATING LAW
+   * (features/window-panels/FEATURE.md): a host whose own content sits BELOW
+   * the launcher must pass `"floating"` — an inline feed expands the moment a
+   * run starts and shoves that content down the page. `"inline"` is correct
+   * only where nothing of the user's sits underneath (the window panel, the
+   * bottom-of-page tab).
+   */
+  liveFeed?: "inline" | "floating";
 }
 
 export default function KeywordResearchLauncher({
@@ -70,6 +80,7 @@ export default function KeywordResearchLauncher({
   onKeywordChange,
   organizationId,
   writeTargetSurfaceName = null,
+  liveFeed = "inline",
 }: KeywordResearchLauncherProps) {
   const [primaryInput, setPrimaryInput] = useState(initialKeyword ?? "");
   const autoRanRef = useRef(false);
@@ -101,6 +112,15 @@ export default function KeywordResearchLauncher({
       });
     }
   }, [run.status, queryClient, saved.organizationId, savedPhrase]);
+
+  // Floating hosts stream into the canonical LiveRunWindow instead of growing
+  // an inline feed that would push the host's own content down.
+  useFloatingLiveRun({
+    active: liveFeed === "floating" && run.status === "running",
+    instanceId: "keyword-research-launcher",
+    requestId: run.requestId,
+    label: run.stage ?? `Researching “${run.primaryKeyword ?? primaryInput}”`,
+  });
 
   const handleRun = useCallback(() => {
     if (!primaryInput.trim() || run.status === "running") return;
@@ -194,7 +214,7 @@ export default function KeywordResearchLauncher({
           components key-by-key while streaming — never raw JSON. Stays
           visible after completion or failure so the run never vanishes while
           the user is trying to understand what happened. */}
-      {run.status !== "idle" && (
+      {run.status !== "idle" && liveFeed === "inline" && (
         <div
           className={`mt-2 min-h-16 overflow-y-auto rounded-md border border-border bg-muted/20 ${feedMaxHeightClassName}`}
           aria-live="polite"

@@ -20,7 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
@@ -50,6 +50,16 @@ export function AuthorityRouterWorkspace() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [working, setWorking] = useState<string | null>(null);
   const result = authority.result;
+
+  // THE FLOATING LAW: the run streams in the floating LiveRunWindow. It used to
+  // render inline above the KPI band, which shoved every result section down
+  // the instant the user pressed the button.
+  useFloatingLiveRun({
+    active: authority.run.status === "running",
+    instanceId: `authority-router:${site.id}`,
+    requestId: authority.run.requestId,
+    label: authority.run.stage ?? "Analyzing authority flow",
+  });
 
   const metrics = useMemo(() => summarize(result), [result]);
   const visibleRecommendations = result?.recommendations.filter(
@@ -171,14 +181,6 @@ export function AuthorityRouterWorkspace() {
             </div>
           </div>
         </section>
-
-        <LiveRunDisplay
-          requestId={authority.run.requestId}
-          pending={authority.run.status === "running"}
-          label={authority.run.stage ?? "Analyzing authority flow"}
-          className="border-emerald-500/25"
-          bodyClassName="max-h-[30rem]"
-        />
 
         {authority.run.status === "error" ? (
           <QueryError

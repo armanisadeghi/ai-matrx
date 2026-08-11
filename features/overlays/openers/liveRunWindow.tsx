@@ -14,6 +14,11 @@
  *   and `close()`.
  * - `<LiveRunWindowController />` — declarative: mount to open, unmount to
  *   close, props flow straight through.
+ * - `useFloatingLiveRun({active, instanceId, …})` — the one-hook migration for a
+ *   surface whose run state already lives in React.
+ * - `openLiveRunWindowAction({instanceId, …})` — the plain action, for
+ *   thunk-style code that launches an agent and must float its own run without
+ *   threading a callback up to a component just to call a hook.
  *
  * Pass a STABLE `instanceId` (e.g. `brief:${nodeId}`) when a surface should
  * reuse one window per subject rather than stacking a new one per click.
@@ -53,6 +58,32 @@ export interface LiveRunWindowHandle {
   close: () => void;
 }
 
+/**
+ * The plain action — the same window, opened from anywhere a hook cannot run
+ * (a thunk, a middleware, a callback outside React). Dispatching it again with
+ * the same `instanceId` re-binds the open window to a new run, which is how a
+ * long multi-step pipeline keeps ONE window instead of stacking one per step.
+ */
+export function openLiveRunWindowAction(
+  opts: OpenLiveRunWindowOptions & { instanceId: string },
+) {
+  return openOverlay({
+    overlayId: OVERLAY_ID,
+    instanceId: opts.instanceId,
+    data: {
+      windowInstanceId: opts.instanceId,
+      conversationId: opts.conversationId ?? null,
+      requestId: opts.requestId ?? null,
+      label: opts.label ?? null,
+      pending: opts.pending ?? false,
+      // Undefined (not null) so the component's chat-matched defaults
+      // apply — an explicit null would be passed through as a size.
+      width: opts.width,
+      height: opts.height,
+    },
+  });
+}
+
 export function useOpenLiveRunWindow() {
   const dispatch = useAppDispatch();
   return useCallback(
@@ -61,23 +92,7 @@ export function useOpenLiveRunWindow() {
       let current: OpenLiveRunWindowOptions = { ...opts };
 
       const push = () =>
-        dispatch(
-          openOverlay({
-            overlayId: OVERLAY_ID,
-            instanceId,
-            data: {
-              windowInstanceId: instanceId,
-              conversationId: current.conversationId ?? null,
-              requestId: current.requestId ?? null,
-              label: current.label ?? null,
-              pending: current.pending ?? false,
-              // Undefined (not null) so the component's chat-matched defaults
-              // apply — an explicit null would be passed through as a size.
-              width: current.width,
-              height: current.height,
-            },
-          }),
-        );
+        dispatch(openLiveRunWindowAction({ ...current, instanceId }));
 
       push();
       return {
@@ -90,6 +105,66 @@ export function useOpenLiveRunWindow() {
       };
     },
     [dispatch],
+  );
+}
+
+export interface FloatingLiveRunOptions
+  extends Omit<OpenLiveRunWindowOptions, "pending" | "instanceId"> {
+  /** True while the run is in flight. The window opens on the false→true edge. */
+  active: boolean;
+  /** Stable per-subject id so re-running reuses ONE window instead of stacking. */
+  instanceId: string;
+}
+
+/**
+ * 🚨 THE FLOATING LAW, as one hook — the migration for a surface that renders
+ * `<LiveRunDisplay>` inline ABOVE its own content.
+ *
+ * An inline block shifts everything below it the instant a run starts; this
+ * opens the canonical floating window instead, so the page never moves. It:
+ *
+ * - opens on the run's false→true edge (`pending`, before a requestId exists),
+ * - pushes the `requestId` / `conversationId` / `label` in as they land,
+ * - **never auto-closes on completion** — the finished output is what the user
+ *   came for, so the user dismisses the window, not the run's end,
+ * - closes on unmount, so navigating away never orphans a window.
+ */
+export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
+  const open = useOpenLiveRunWindow();
+  const handleRef = useRef<LiveRunWindowHandle | null>(null);
+  const { active, instanceId, conversationId, requestId, label, width, height } =
+    opts;
+
+  useEffect(() => {
+    if (!active) return;
+    if (!handleRef.current) {
+      handleRef.current = open({ instanceId, pending: true, width, height });
+    }
+    handleRef.current.update({
+      conversationId,
+      requestId,
+      label,
+      // `pending` only until a stream handle exists to bind.
+      pending: !requestId && !conversationId,
+    });
+  }, [
+    active,
+    open,
+    instanceId,
+    conversationId,
+    requestId,
+    label,
+    width,
+    height,
+  ]);
+
+  // A finished run keeps its window; an unmounted host never leaves one behind.
+  useEffect(
+    () => () => {
+      handleRef.current?.close();
+      handleRef.current = null;
+    },
+    [],
   );
 }
 

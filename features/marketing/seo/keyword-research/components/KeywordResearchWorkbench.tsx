@@ -513,6 +513,10 @@ export default function KeywordResearchWorkbench() {
           // This page mounts the surface, so the launcher services its
           // `research_input_keyword` target here (the window mount does not).
           writeTargetSurfaceName="matrx-user/keyword-research"
+          // THE FLOATING LAW: the keyword table lives directly under this bar,
+          // so the run streams in the floating LiveRunWindow. An inline feed
+          // pushed the table the user is reading down the page on every run.
+          liveFeed="floating"
           onKeywordChange={(keyword) => {
             stagedKeywordRef.current = keyword;
           }}
