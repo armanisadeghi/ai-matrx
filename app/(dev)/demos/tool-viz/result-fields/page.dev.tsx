@@ -1042,6 +1042,46 @@ const AGENT_CALL_ENTRY = entry({
   },
 });
 
+// Image-generation `agent_call` — the EXACT wire result aidream returns
+// (agent_call.py: agent_id / agent_name / result / model_id), where `result` is
+// the child image agent's signed S3 URL. This shipped as a key/value grid whose
+// "Result" row was a link chip reading "matrx-user-files.s3.amazonaws.com" — our
+// storage host printed in place of the user's image, on a URL that dies when its
+// signature expires. It must render the image via the canonical component.
+const IMAGE_AGENT_CALL_ENTRY = entry({
+  callId: "agent-call-image-demo",
+  toolName: "agent_call",
+  displayName: "Sub-agent",
+  arguments: {
+    agent_id: "bcc69216-d4fa-4e28-a090-8a7749123bc5",
+    variables: { image_description: "A TikTok algorithm infographic" },
+  },
+  result: {
+    agent_id: "bcc69216-d4fa-4e28-a090-8a7749123bc5",
+    agent_name: "Matrx Image Ultra",
+    result:
+      "https://matrx-user-files.s3.amazonaws.com/4cf62e4e-2679-484f-b652-034e697418df/6feae31a-945b-4dcc-8fc0-2041bb76c6b1?response-content-disposition=inline%3B%20filename%3D%22tiktok-algorithm.png%22&response-content-type=image%2Fpng&AWSAccessKeyId=AKIA4WJPWQC7PVFDDC42&Signature=RpqmXw%2Fg0Se8uAR3SMVcp9gg7MY%3D&Expires=1786485620",
+    model_id: "0386fcae-1cf5-4d31-9a05-3b8ba61b2f3a",
+  },
+});
+
+// The canonical server-normalized image tool output (aidream
+// `matrx_ai/tools/image_outputs.py`) — identity nested under `media_ref`.
+const IMAGE_REF_ENTRY = entry({
+  callId: "image-ref-demo",
+  toolName: "generate_image",
+  displayName: "Generate Image",
+  result: {
+    kind: "image_ref",
+    media_ref: {
+      file_id: "6feae31a-945b-4dcc-8fc0-2041bb76c6b1",
+      mime_type: "image/png",
+    },
+    source_width: 1024,
+    source_height: 1024,
+  },
+});
+
 // Skill tool fixtures — exact live wire shapes (chat.tool_call, 2026-07-15).
 const SKILL_ENTRIES: ToolLifecycleEntry[] = [
   entry({
@@ -2134,6 +2174,31 @@ export default function ResultFieldsGalleryPage() {
         <div>
           <ToolCallVisualization
             entries={[AGENT_CALL_ENTRY]}
+            isPersisted
+            hasContent
+          />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Our own files never render as a link (click to expand)
+        </h2>
+        <p className="-mt-2 text-xs text-muted-foreground">
+          Both results carry one of OUR files. Neither may ever show a storage
+          host or a signed link: the URL resolves to its `file_id` and renders
+          through the canonical media component, which re-mints forever.
+        </p>
+        <div>
+          <ToolCallVisualization
+            entries={[IMAGE_AGENT_CALL_ENTRY]}
+            isPersisted
+            hasContent
+          />
+        </div>
+        <div>
+          <ToolCallVisualization
+            entries={[IMAGE_REF_ENTRY]}
             isPersisted
             hasContent
           />

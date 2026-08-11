@@ -65,6 +65,26 @@ export function mimeFromUrl(url: string): string | null {
   return ext ? (EXT_MIME[ext] ?? null) : null;
 }
 
+/**
+ * Best-effort file NAME from a URL: prefer the `filename="…"` carried in our
+ * signed URLs' `response-content-disposition`, else the last path segment when
+ * it actually looks like a name (has an extension). Returns null otherwise —
+ * a UUID path segment is an id, not a name, and must never be shown as one.
+ */
+export function fileNameFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const disposition = u.searchParams.get("response-content-disposition");
+    const named = disposition?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+    if (named?.[1]) return decodeURIComponent(named[1]).trim() || null;
+  } catch {
+    // fall through to path sniffing on the raw string
+  }
+  const last = url.split(/[?#]/)[0].split("/").filter(Boolean).pop();
+  if (!last || !/\.[a-z0-9]{1,5}$/i.test(last)) return null;
+  return decodeURIComponent(last);
+}
+
 const EXT_MIME: Record<string, string> = {
   png: "image/png",
   jpg: "image/jpeg",

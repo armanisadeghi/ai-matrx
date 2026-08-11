@@ -16,6 +16,10 @@
  */
 
 import type { MediaRef } from "@/features/files/types";
+import {
+    fileNameFromUrl,
+    recognizeOurFileUrl,
+} from "@/lib/media/our-file-sources";
 
 // ─── Discriminated union ────────────────────────────────────────────────────
 
@@ -185,6 +189,67 @@ export function looksLikeMarkdown(value: string): boolean {
     return signals.some((re) => re.test(value));
 }
 
+// ─── OUR files — never a link, always the canonical component ───────────────
+
+/**
+ * A URL pointing at one of OUR files (signed S3, CDN, share link) is NEVER a
+ * hyperlink. It is promoted to the durable identity we can recover from it
+ * (`file_id` / share token) and rendered by the canonical component.
+ *
+ * Two invariants ride on this — both were violated by the plain `url` shape:
+ *
+ *   1. WHERE WE STORE BYTES IS NOT USER-FACING. A `UrlChip` prints the URL's
+ *      hostname, so an image tool result rendered as "matrx-user-files.s3.
+ *      amazonaws.com" — our storage provider, leaked into the chat, in place of
+ *      the image the user asked for.
+ *   2. A SIGNED URL DIES. Rendered as a link it is broken within hours; routed
+ *      through the handler by `file_id` it re-mints forever.
+ *
+ * Returns the media/file shape, or null when the URL is not ours (third-party
+ * links keep their `UrlChip` — that IS the useful rendering for those).
+ */
+function ourFileShape(url: string): ResultShape | null {
+    const match = recognizeOurFileUrl(url);
+    if (!match) return null;
+
+    // Require real evidence before overriding the link rendering: a recoverable
+    // identity, or a known type. A bare `/share/<token>` with neither is just as
+    // likely a shared CONVERSATION as a file — those keep their UrlChip.
+    if (!match.fileId && match.mime === null) return null;
+
+    // The mime is sniffed from the URL itself (our signed URLs carry
+    // `response-content-type`). Unknown mime → treat as media: the handler
+    // hydrates the real type from the file row and renders accordingly.
+    const isMedia = match.mime === null || isMediaMime(match.mime);
+
+    if (isMedia) {
+        const ref: MediaRef = match.fileId
+            ? { file_id: match.fileId }
+            : { url };
+        if (match.mime !== null) ref.mime_type = match.mime;
+        return { kind: "media", ref };
+    }
+
+    const file: ResultFileRef = {};
+    if (match.fileId) file.file_id = match.fileId;
+    if (match.mime !== null) file.mime_type = match.mime;
+    const name = fileNameFromUrl(url);
+    if (name) file.file_name = name;
+    // Only a DURABLE url is worth carrying; a signed one would be a dead link
+    // the moment its signature expires (the file_id is what re-mints).
+    if (!match.fileId && match.durableUrl) file.url = url;
+    // Nothing to resolve by — fall back to the caller's default handling
+    // rather than render a card that can't load anything.
+    if (!file.file_id && !file.url) return null;
+    return { kind: "file", file };
+}
+
+/** {@link ourFileShape}, narrowed to the media case (for `coerceMediaRef`). */
+function ourMediaRef(url: string): MediaRef | null {
+    const shape = ourFileShape(url);
+    return shape?.kind === "media" ? shape.ref : null;
+}
+
 // ─── Media coercion ─────────────────────────────────────────────────────────
 
 const MEDIA_KEYS = ["url", "src", "image_url", "imageUrl", "href", "link"] as const;
@@ -220,16 +285,29 @@ const FILE_URL_KEYS = ["url", "signed_url", "signedUrl", "cdn_url", "cdnUrl", "h
  * to {@link coerceFileRef}. Only call this when you actually want media detection.
  */
 export function coerceMediaRef(value: unknown): MediaRef | null {
-    // Bare string: data URI or image-extension URL.
+    // Bare string: data URI, image-extension URL, or one of OUR file URLs.
     if (typeof value === "string") {
         const s = value.trim();
         if (DATA_URI_RE.test(s)) return { url: s };
+        const ours = ourMediaRef(s);
+        if (ours) return ours;
         if (looksLikeImageUrl(s)) return { url: s };
         return null;
     }
 
     if (!isPlainObject(value)) return null;
     const obj = value;
+
+    // The canonical server media envelope carries the identity one level down:
+    // `{ kind: "image_ref", media_ref: { file_id, mime_type }, … }` (aidream
+    // `matrx_ai/tools/image_outputs.py` normalizes every image-shaped tool
+    // output into this). Unwrap it so the shape system sees the file_id.
+    const nested = obj.media_ref ?? obj.mediaRef;
+    if (isPlainObject(nested)) {
+        const inner = coerceMediaRef(nested);
+        if (inner) return inner;
+    }
+
     const mimeHint = readStringKey(obj, MIME_KEYS);
 
     // Owned-file reference wins — but only as MEDIA when the type says so.
@@ -257,6 +335,9 @@ export function coerceMediaRef(value: unknown): MediaRef | null {
         const candidate = obj[key];
         if (typeof candidate !== "string") continue;
         const s = candidate.trim();
+        // OUR OWN url under a media key → promote to the durable identity.
+        const ours = ourMediaRef(s);
+        if (ours) return ours;
         const isData = DATA_URI_RE.test(s);
         if (isData || looksLikeImageUrl(s) || (hasMediaMimeHint && looksLikeUrl(s))) {
             const ref: MediaRef = { url: s };
@@ -356,8 +437,12 @@ export function detectResultShape(value: unknown): ResultShape {
         return { kind: "file", file: objectFile };
     }
 
-    // 3. Strings: media URI → uuid → url → markdown text → plain scalar/text.
+    // 3. Strings: OUR file → media URI → uuid → url → markdown → scalar/text.
+    //    Ours goes FIRST: a signed S3 link must never reach the `url` branch,
+    //    which would print our storage host and expire into a dead link.
     if (typeof value === "string") {
+        const ours = ourFileShape(value.trim());
+        if (ours) return ours;
         const stringMedia = coerceMediaRef(value);
         if (stringMedia) return { kind: "media", ref: stringMedia };
         if (looksLikeUuid(value)) return { kind: "uuid", value };
