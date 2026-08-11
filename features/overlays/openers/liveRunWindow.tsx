@@ -39,6 +39,13 @@ export interface OpenLiveRunWindowOptions {
   subtitle?: string | null;
   /** Stable id to reuse one window per subject. Omit for a fresh window. */
   instanceId?: string;
+  /**
+   * Per-kind size override — only after watching that kind render in the
+   * default box and seeing it be wrong. The default matches the `/chat`
+   * reading column, which is what every kind component is tuned against.
+   */
+  width?: number | string;
+  height?: number | string;
 }
 
 export interface LiveRunWindowHandle {
@@ -67,6 +74,10 @@ export function useOpenLiveRunWindow() {
               label: current.label ?? null,
               pending: current.pending ?? false,
               subtitle: current.subtitle ?? null,
+              // Undefined (not null) so the component's chat-matched defaults
+              // apply — an explicit null would be passed through as a size.
+              width: current.width,
+              height: current.height,
             },
           }),
         );
@@ -94,7 +105,8 @@ export function LiveRunWindowController(
 ): null {
   const open = useOpenLiveRunWindow();
   const handleRef = useRef<LiveRunWindowHandle | null>(null);
-  const { instanceId, conversationId, requestId, label, pending, subtitle } = props;
+  const { instanceId, conversationId, requestId, label, pending, subtitle, width, height } =
+    props;
 
   useEffect(() => {
     const handle = open({ instanceId });
@@ -112,8 +124,10 @@ export function LiveRunWindowController(
       label,
       pending,
       subtitle,
+      width,
+      height,
     });
-  }, [conversationId, requestId, label, pending, subtitle]);
+  }, [conversationId, requestId, label, pending, subtitle, width, height]);
 
   return null;
 }

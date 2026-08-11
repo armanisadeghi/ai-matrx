@@ -4468,6 +4468,18 @@ export default function OverlayController() {
             label={typeof data?.label === "string" ? data.label : null}
             pending={data?.pending === true}
             subtitle={typeof data?.subtitle === "string" ? data.subtitle : null}
+            // Undefined when unset so the window's chat-matched size defaults
+            // apply; a per-kind override arrives as a number or "70vh".
+            width={
+              typeof data?.width === "number" || typeof data?.width === "string"
+                ? data.width
+                : undefined
+            }
+            height={
+              typeof data?.height === "number" || typeof data?.height === "string"
+                ? data.height
+                : undefined
+            }
           />
         );
       })}
