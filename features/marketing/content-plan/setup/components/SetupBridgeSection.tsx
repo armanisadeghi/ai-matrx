@@ -116,7 +116,10 @@ export function SetupBridgeSection({
   // The server's own answer to "what already happened here" — the paired CMS
   // site's pages, read on mount. Every rung shows its REAL state from this on
   // load, so returning to Setup after work was done never looks like day zero.
-  const pageMap = useCmsPageMap(linked ? site.id : null);
+  const pageMap = useCmsPageMap(
+    linked ? site.id : null,
+    linked ? (cms?.link.cmsSiteId ?? null) : null,
+  );
   const planLinkedPages = (pageMap.map?.pages ?? []).filter((page) =>
     page.planNodeId !== null && planNodeIds.includes(page.planNodeId),
   );

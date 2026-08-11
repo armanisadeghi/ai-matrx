@@ -327,8 +327,12 @@ export interface MatrxDataTableDetailConfig<T> {
 export interface MatrxDataTableRecordControls {
   /** Close the row's side-panel detail, if open. */
   closeDetail: () => void;
+  /** Open the row in the canonical adjustable side panel. */
+  openDetail: () => void;
   /** Open the row in its canonical table-owned WindowPanel. */
   openWindow: () => void;
+  /** Close the row's table-owned WindowPanel, if open. */
+  closeWindow: () => void;
 }
 
 export interface MatrxDataTableWindowConfig<T> {
@@ -338,20 +342,27 @@ export interface MatrxDataTableWindowConfig<T> {
    * @deprecated Prefer `renderView` + `renderEdit` so the window stays editable.
    * Full-body override with no View/Edit tabs.
    */
-  render?: (row: T) => ReactNode;
+  render?: (row: T, controls: MatrxDataTableRecordControls) => ReactNode;
   /** View tab body. Defaults to DataRowInspector. */
-  renderView?: (row: T) => ReactNode;
+  renderView?: (row: T, controls: MatrxDataTableRecordControls) => ReactNode;
   /**
    * Edit tab body. When set, the WindowPanel shows View / Edit sidebar tabs
    * (WindowPanel built-in sidebar). Defaults to `detail.render` when present.
    * Pass `false` to keep a view-only window even when `detail.render` exists.
    */
-  renderEdit?: ((row: T) => ReactNode) | false;
+  renderEdit?:
+    ((row: T, controls: MatrxDataTableRecordControls) => ReactNode) | false;
   /**
    * Called when the panel icon opens the window — hydrate edit state here
    * without opening the side panel (prefer this over `onRowOpen` for windows).
    */
   onOpen?: (row: T) => void;
+  /**
+   * Make full-row click open the WindowPanel instead of the side panel.
+   * The trailing row action and the window header then expose the side panel
+   * as the explicit secondary presentation. Default false.
+   */
+  openOnRowClick?: boolean;
   /** Which tab to open. Default: `"edit"` when an edit body exists. */
   defaultTab?: "view" | "edit";
   /** Show the panel-icon that opens the window. Default true when detail enabled. */
@@ -399,7 +410,7 @@ export interface MatrxDataTableProps<T> {
   query?: MatrxDataTableQueryControl;
 
   toolbar?: MatrxDataTableToolbar;
-  /** Row click opens the side panel (MatrxDynamicPanelHost via SidePanelSurface). */
+  /** Row click opens the side panel unless `window.openOnRowClick` is true. */
   detail?: MatrxDataTableDetailConfig<T>;
   /** Panel icon opens a WindowPanel (page-local; supports ReactNode override). */
   window?: MatrxDataTableWindowConfig<T>;

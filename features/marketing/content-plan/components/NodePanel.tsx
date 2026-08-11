@@ -72,6 +72,7 @@ export function NodePanel({
   deepen,
   cmsPage,
   cmsSiteId,
+  hosted = false,
 }: {
   node: PlanNodeRow;
   siteId: string;
@@ -85,6 +86,12 @@ export function NodePanel({
   cmsPage?: CmsPageMapEntry | null;
   /** The paired CMS site id — the "Edit in CMS" link target. */
   cmsSiteId?: string | null;
+  /**
+   * The canonical side panel / WindowPanel already owns title and close chrome.
+   * Keep only this editor's action toolbar when hosted so controls never stack
+   * under the host close button.
+   */
+  hosted?: boolean;
 }) {
   const update = useUpdatePlanNode(siteId);
   const remove = useDeletePlanNode(siteId);
@@ -263,26 +270,28 @@ export function NodePanel({
       data-surface-value="selected_node"
       className="flex h-full flex-col bg-background"
     >
-      <div className="flex items-start gap-2 border-b border-border px-4 py-2.5">
-        <div className="min-w-0 flex-1">
-          <p className="break-words text-sm font-semibold leading-snug text-foreground">
-            {node.label}
-          </p>
-          <p className="break-all font-mono text-xs text-muted-foreground">
-            {node.route ?? "(no route yet)"}
-          </p>
-          {node.pillar_label || node.cluster_label ? (
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {[
-                node.pillar_label ? `Pillar: ${node.pillar_label}` : null,
-                node.cluster_label ? `Cluster: ${node.cluster_label}` : null,
-                `Depth ${node.depth}`,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+      <div className="flex flex-wrap items-start justify-end gap-2 border-b border-border px-4 py-2.5">
+        {!hosted ? (
+          <div className="min-w-0 flex-1">
+            <p className="break-words text-sm font-semibold leading-snug text-foreground">
+              {node.label}
             </p>
-          ) : null}
-        </div>
+            <p className="break-all font-mono text-xs text-muted-foreground">
+              {node.route ?? "(no route yet)"}
+            </p>
+            {node.pillar_label || node.cluster_label ? (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {[
+                  node.pillar_label ? `Pillar: ${node.pillar_label}` : null,
+                  node.cluster_label ? `Cluster: ${node.cluster_label}` : null,
+                  `Depth ${node.depth}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         <Button
           variant="outline"
           size="sm"

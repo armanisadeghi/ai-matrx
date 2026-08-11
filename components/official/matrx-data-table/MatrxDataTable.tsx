@@ -10,7 +10,14 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { ChevronRight, Eraser, PanelRight, Search, X } from "lucide-react";
+import {
+  ChevronRight,
+  Eraser,
+  PanelRight,
+  PanelRightOpen,
+  Search,
+  X,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +75,7 @@ import type {
  * Sticky headers · every-column sort/filter (searchable selects) · toolbar
  * facets with per-facet + global clear · any-of cross-column search ·
  * Copy/Copy-for-AI (row + this view) · inline edit with dirty Save/Cancel pill ·
- * row → SidePanelSurface · panel icon → WindowPanel.
+ * row → SidePanelSurface or WindowPanel · trailing icon → the secondary view.
  */
 export function MatrxDataTable<T>({
   data,
@@ -325,6 +332,9 @@ export function MatrxDataTable<T>({
   const detailEnabled = detail?.enabled !== false;
   const windowEnabled =
     windowConfig?.enabled !== false && (detailEnabled || Boolean(windowConfig));
+  const opensWindowOnRowClick = Boolean(
+    windowEnabled && windowConfig?.openOnRowClick,
+  );
   const editEnabled = Boolean(edit?.enabled && edit.onSave);
   const copyEnabled = Boolean(copy);
   const showRowCopy = copyEnabled && copy?.showRow !== false;
@@ -367,11 +377,24 @@ export function MatrxDataTable<T>({
     // opening the side panel (onRowOpen is reserved for row-click → detail).
     if (windowConfig?.onOpen) {
       windowConfig.onOpen(row);
-    } else {
+    } else if (!windowConfig?.openOnRowClick) {
       onRowOpen?.(row);
     }
     setWindowRowSnapshot(row);
     setWindowRowId(getRowId(row));
+  };
+
+  const closeWindow = () => {
+    setWindowRowId(null);
+    setWindowRowSnapshot(null);
+  };
+
+  const openRow = (row: T) => {
+    if (opensWindowOnRowClick) {
+      openWindow(row);
+      return;
+    }
+    openDetail(row);
   };
 
   const clearAllFilters = () => {
@@ -723,7 +746,7 @@ export function MatrxDataTable<T>({
                       // anchor, an FK cell link) must not ALSO fire the
                       // row-open — the anchor owns that navigation.
                       if ((e.target as HTMLElement).closest("a")) return;
-                      openDetail(row);
+                      openRow(row);
                     }}
                     className={cn(
                       // bg-card is a visual no-op (the container is bg-card) but
@@ -822,7 +845,9 @@ export function MatrxDataTable<T>({
                           ) : null}
                           {rowActions?.(row, {
                             closeDetail: () => setSelectedId(null),
+                            openDetail: () => openDetail(row),
                             openWindow: () => openWindow(row),
+                            closeWindow,
                           })}
                           {windowEnabled ? (
                             <Button
@@ -830,11 +855,30 @@ export function MatrxDataTable<T>({
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                              aria-label="Open in window"
-                              title="Open in window"
-                              onClick={(e) => openWindow(row, e)}
+                              aria-label={
+                                opensWindowOnRowClick
+                                  ? "Open in side panel"
+                                  : "Open in window"
+                              }
+                              title={
+                                opensWindowOnRowClick
+                                  ? "Open in side panel"
+                                  : "Open in window"
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (opensWindowOnRowClick) {
+                                  openDetail(row);
+                                } else {
+                                  openWindow(row);
+                                }
+                              }}
                             >
-                              <PanelRight className="h-3.5 w-3.5" />
+                              {opensWindowOnRowClick ? (
+                                <PanelRightOpen className="h-3.5 w-3.5" />
+                              ) : (
+                                <PanelRight className="h-3.5 w-3.5" />
+                              )}
                             </Button>
                           ) : null}
                         </div>
@@ -926,7 +970,9 @@ export function MatrxDataTable<T>({
         >
           {detail?.render?.(selectedRow, {
             closeDetail: () => setSelectedId(null),
+            openDetail: () => openDetail(selectedRow),
             openWindow: () => openWindow(selectedRow),
+            closeWindow,
           }) ?? (
             <DataRowInspector
               row={selectedRow}
@@ -942,10 +988,7 @@ export function MatrxDataTable<T>({
       {windowRow ? (
         <DataRowWindow
           isOpen
-          onClose={() => {
-            setWindowRowId(null);
-            setWindowRowSnapshot(null);
-          }}
+          onClose={closeWindow}
           title={
             windowConfig?.title?.(windowRow) ??
             defaultRowTitle(windowRow, visibleColumns)
@@ -956,20 +999,43 @@ export function MatrxDataTable<T>({
           windowId={`matrx-data-row-${getRowId(windowRow)}`}
           defaultTab={windowConfig?.defaultTab}
           headerActions={
-            copy ? (
-              <CopyButtons
-                size="icon"
-                label={copy.label}
-                human={() => copy.humanRow(windowRow)}
-                json={() =>
-                  copy.agentRow ? copy.agentRow(windowRow) : windowRow
-                }
-                agent={() => buildRowAgentInput(copy, windowRow)}
-              />
-            ) : undefined
+            <div className="flex items-center gap-1">
+              {opensWindowOnRowClick && detailEnabled ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  aria-label="Open in side panel"
+                  title="Open in side panel"
+                  onClick={() => {
+                    closeWindow();
+                    openDetail(windowRow);
+                  }}
+                >
+                  <PanelRightOpen className="h-3.5 w-3.5" />
+                </Button>
+              ) : null}
+              {copy ? (
+                <CopyButtons
+                  size="icon"
+                  label={copy.label}
+                  human={() => copy.humanRow(windowRow)}
+                  json={() =>
+                    copy.agentRow ? copy.agentRow(windowRow) : windowRow
+                  }
+                  agent={() => buildRowAgentInput(copy, windowRow)}
+                />
+              ) : null}
+            </div>
           }
           viewContent={
-            windowConfig?.renderView?.(windowRow) ??
+            windowConfig?.renderView?.(windowRow, {
+              closeDetail: () => setSelectedId(null),
+              openDetail: () => openDetail(windowRow),
+              openWindow: () => openWindow(windowRow),
+              closeWindow,
+            }) ??
             (copy ? (
               <DataRowInspector
                 row={windowRow}
@@ -984,14 +1050,26 @@ export function MatrxDataTable<T>({
             windowConfig?.renderEdit === false
               ? undefined
               : windowConfig?.renderEdit
-                ? windowConfig.renderEdit(windowRow)
+                ? windowConfig.renderEdit(windowRow, {
+                    closeDetail: () => setSelectedId(null),
+                    openDetail: () => openDetail(windowRow),
+                    openWindow: () => openWindow(windowRow),
+                    closeWindow,
+                  })
                 : detail?.render?.(windowRow, {
                     closeDetail: () => setSelectedId(null),
+                    openDetail: () => openDetail(windowRow),
                     openWindow: () => openWindow(windowRow),
+                    closeWindow,
                   })
           }
         >
-          {windowConfig?.render?.(windowRow)}
+          {windowConfig?.render?.(windowRow, {
+            closeDetail: () => setSelectedId(null),
+            openDetail: () => openDetail(windowRow),
+            openWindow: () => openWindow(windowRow),
+            closeWindow,
+          })}
         </DataRowWindow>
       ) : null}
 

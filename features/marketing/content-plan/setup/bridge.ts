@@ -540,17 +540,20 @@ export interface CmsPageMap {
 export async function bridgeCmsPages(
   dispatch: AppDispatch,
   siteId: string,
+  cmsSite: string,
 ): Promise<CmsPageMap | null> {
   const result = await dispatch(
     callApi({
       path: "/content-plan/sites/{site_id}/cms-pages",
       method: "GET",
       pathParams: { site_id: siteId },
+      // The plan resolver already proved this exact CMS choice. Omitting it
+      // makes a half-linked site fail even though settings.cms records the id.
+      queryParams: { cms_site: cmsSite },
     }),
   );
   if (result.error) {
     const message = result.error.message || "";
-    if (/unpaired|no cms site/i.test(message)) return null;
     throw new Error(message || "The cms-pages call failed.");
   }
   const data = requireBody(result, "cms-pages");

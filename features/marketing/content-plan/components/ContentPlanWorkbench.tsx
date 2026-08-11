@@ -62,6 +62,7 @@ import { NodePanel } from "./NodePanel";
 import { PlanNodesTable } from "./PlanNodesTable";
 import { PlanTree } from "./PlanTree";
 import { SetupView } from "../setup/components/SetupView";
+import { useCmsLink } from "../setup/hooks";
 
 // React Flow is heavy and browser-only; the map chunk loads only when the
 // user switches to it (the conditional render below is the deferral,
@@ -120,8 +121,15 @@ export function ContentPlanWorkbench({
     () => liveMatchesById(reality.report),
     [reality.report],
   );
-  // WF-11: what each node became on the paired CMS site (null = unpaired).
-  const cmsPages = useCmsPageMap(siteId);
+  // WF-11: resolve the CMS prerequisite BEFORE asking for CMS-only data.
+  // Planning itself does not require a CMS site, so an unlinked plan stays a
+  // normal no-overlay state instead of manufacturing a red HTTP error.
+  const usesCmsOverlay = view === "tree" || view === "table" || view === "map";
+  const cmsLink = useCmsLink(site, usesCmsOverlay);
+  const cmsPages = useCmsPageMap(
+    siteId,
+    cmsLink.data?.linked ? cmsLink.data.cmsSiteId : null,
+  );
 
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,

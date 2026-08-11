@@ -8,12 +8,13 @@
  * so the table runs in CONTROLLED mode over the canonical local engine
  * (`filterAndSortRows`): every column sorts AND filters against the WHOLE
  * plan, finite columns get real option lists with counts, and full-row click
- * opens the node in the same NodePanel sheet the map view uses. Style
+ * opens the node in a WindowPanel. The row's panel action switches the same
+ * canonical NodePanel into the adjustable SidePanelSurface. Style
  * (sort, page size, hidden columns) persists via useListViewPrefs
  * ("content-plan-nodes"); search/filters/page are query state and never
  * persist.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Columns3 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -72,19 +73,18 @@ export interface PlanNodesTableProps {
   nodes: PlanNodeRow[];
   isLoading: boolean;
   isFetching: boolean;
-  selectedId: string | null;
   /** node_id → its realized CMS page (WF-11 overlay; absent = no pairing). */
   cmsPageById?: Map<string, { isPublished: boolean; route: string | null }>;
-  onSelect: (id: string) => void;
+  /** One editor body, hosted by both the canonical window and side panel. */
+  renderNodePanel: (node: PlanNodeRow, onDeleted: () => void) => ReactNode;
 }
 
 export function PlanNodesTable({
   nodes,
   isLoading,
   isFetching,
-  selectedId,
   cmsPageById,
-  onSelect,
+  renderNodePanel,
 }: PlanNodesTableProps) {
   const { prefs, setPrefs } = useListViewPrefs(
     "content-plan-nodes",
@@ -433,12 +433,19 @@ export function PlanNodesTable({
         totalItems: processed.length,
         onStateChange: handleQueryChange,
       }}
-      selectedId={selectedId}
-      // Full-row click opens the SAME NodePanel (right sheet, wired by the
-      // workbench) — the built-in inspector panel/window stay off so there is
-      // exactly one detail surface.
-      detail={{ enabled: false }}
-      onRowOpen={(row) => onSelect(row.id)}
+      detail={{
+        title: (row) => row.label,
+        description: (row) => row.route ?? "No route yet",
+        defaultWidth: 620,
+        render: (row, controls) => renderNodePanel(row, controls.closeDetail),
+      }}
+      window={{
+        title: (row) => row.label,
+        render: (row, controls) => renderNodePanel(row, controls.closeWindow),
+        openOnRowClick: true,
+        width: 920,
+        height: 760,
+      }}
       copy={{
         label: "Plan node",
         listLabel: "Plan nodes",

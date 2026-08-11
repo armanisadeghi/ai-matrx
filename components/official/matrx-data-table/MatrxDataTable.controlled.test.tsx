@@ -99,6 +99,21 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain('aria-label="Open in window"');
   });
 
+  it("exposes the adjustable side panel as the secondary action in window-first mode", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Alpha" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        detail={{}}
+        window={{ openOnRowClick: true }}
+      />,
+    );
+
+    expect(markup).toContain('aria-label="Open in side panel"');
+    expect(markup).not.toContain('aria-label="Open in window"');
+  });
+
   it("freezes the first (identity) column below sm by default", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable

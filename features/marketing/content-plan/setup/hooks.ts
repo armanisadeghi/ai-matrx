@@ -15,13 +15,20 @@ import {
   CmsSiteService,
 } from "@/features/cms/services/cmsService";
 
-import { resolveCmsLink, type CmsFacts } from "./readiness";
+import { resolveCmsLink, type CmsFacts, type CmsLink } from "./readiness";
 import { loadArchetypeLibrary } from "./service";
+
+type CmsLinkTarget = {
+  id: string;
+  domain: string | null;
+  settings: unknown;
+};
 
 export const setupKeys = {
   all: ["content-plan", "setup"] as const,
   library: (orgId: string) => ["content-plan", "setup", "library", orgId] as const,
   cms: (siteId: string) => ["content-plan", "setup", "cms", siteId] as const,
+  cmsLink: (siteId: string) => ["content-plan", "setup", "cms-link", siteId] as const,
 };
 
 export function useArchetypeLibrary(organizationId: string | null) {
@@ -29,6 +36,30 @@ export function useArchetypeLibrary(organizationId: string | null) {
     queryKey: setupKeys.library(organizationId ?? "none"),
     queryFn: ({ signal }) => loadArchetypeLibrary(organizationId, signal),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Resolve the CMS counterpart from the site's recorded choice first, then the
+ * existing domain match. CMS-only reads wait for this prerequisite instead of
+ * probing the bridge with an unknown site.
+ */
+export async function loadCmsLink(site: CmsLinkTarget): Promise<CmsLink> {
+  const cmsSites = await CmsSiteService.listSites();
+  return resolveCmsLink(site, cmsSites);
+}
+
+/** An unlinked site is successful data, not a failed CMS-pages request. */
+export function useCmsLink(site: CmsLinkTarget | null, enabled = true) {
+  return useQuery<CmsLink>({
+    queryKey: setupKeys.cmsLink(site?.id ?? "none"),
+    enabled: Boolean(site) && enabled,
+    staleTime: 60 * 1000,
+    retry: false,
+    queryFn: () => {
+      if (!site) throw new Error("A site is required to resolve its CMS link.");
+      return loadCmsLink(site);
+    },
   });
 }
 
@@ -50,9 +81,8 @@ export function useCmsFacts(
     staleTime: 60 * 1000,
     retry: false,
     queryFn: async () => {
-      const target = site as NonNullable<typeof site>;
-      const cmsSites = await CmsSiteService.listSites();
-      const link = resolveCmsLink(target, cmsSites);
+      if (!site) throw new Error("A site is required to load CMS facts.");
+      const link = await loadCmsLink(site);
       if (!link.linked || !link.cmsSiteId) {
         return { link, site: null, components: [], assets: [] };
       }
