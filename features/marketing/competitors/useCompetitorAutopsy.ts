@@ -13,6 +13,7 @@ import {
 } from "@/lib/api/errors";
 import { isErrorEvent, type TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { isJsonObject } from "@/types/json";
 
 import { listCompetitorSites, loadCompetitorWorkspace } from "./data";
 
@@ -96,11 +97,14 @@ export function useCompetitorAutopsy(siteId: string | null) {
               setRun((current) => ({ ...current, status: "error", error: streamError ?? undefined }));
               return;
             }
-            if (event.event !== "data" || !event.data || typeof event.data !== "object") return;
-            const data = event.data as Record<string, unknown>;
+            if (event.event !== "data") return;
+            const data: unknown = event.data;
+            if (!isJsonObject(data)) return;
             const kind = typeof data.kind === "string" ? data.kind : "";
-            if (kind === "seo.command_run" && typeof data.run_id === "string") {
-              setRun((current) => ({ ...current, runId: data.run_id as string }));
+            const commandRunId =
+              typeof data.run_id === "string" ? data.run_id : null;
+            if (kind === "seo.command_run" && commandRunId) {
+              setRun((current) => ({ ...current, runId: commandRunId }));
             }
             if (kind) setRun((current) => ({ ...current, stage: STAGES[kind] ?? kind }));
             if (kind === "seo.competitor_autopsy_completed") {

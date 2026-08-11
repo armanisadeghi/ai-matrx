@@ -426,10 +426,12 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/marketing/sites/[siteId]/cost",
-      label: "Site cost",
-      description: "Runtime cost by page, run, and batch execution item.",
-      filePath: "app/(core)/marketing/sites/[siteId]/cost/page.tsx",
+      url: "/marketing/brands/[brandId]/sites/[siteId]/ai-visibility",
+      label: "Site AI visibility",
+      description:
+        "Live ChatGPT, Claude, Gemini, and Perplexity answers for this site: who gets cited, and the captured evidence behind it.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/ai-visibility/page.tsx",
       status: "Live",
     },
     {
@@ -444,20 +446,6 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       label: "Site settings",
       description: "Identity, visibility, lifecycle, and crawl defaults.",
       filePath: "app/(core)/marketing/sites/[siteId]/settings/page.tsx",
-      status: "Live",
-    },
-    {
-      url: "/marketing/batches",
-      label: "Batch operations",
-      description: "Cross-site queued, processing, completed, and failed jobs.",
-      filePath: "app/(core)/marketing/batches/page.tsx",
-      status: "Live",
-    },
-    {
-      url: "/marketing/batches/[batchId]",
-      label: "Batch detail",
-      description: "Execution units, results, failures, and attributed cost.",
-      filePath: "app/(core)/marketing/batches/[batchId]/page.tsx",
       status: "Live",
     },
     {

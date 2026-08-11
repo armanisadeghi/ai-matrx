@@ -14,12 +14,14 @@ import {
 } from "@/lib/api/errors";
 import { isErrorEvent, type TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { isJsonObject, type JsonObject } from "@/types/json";
 
 import { listAiVisibilityEvidence } from "./data";
 import type {
   AiVisibilityAnalyzeBody,
   AiVisibilityEngine,
   AiVisibilityLiveAnswer,
+  AiVisibilityProviderResult,
   AiVisibilityResult,
   AiVisibilityRunState,
 } from "./types";
@@ -55,10 +57,10 @@ function readRun(): StoredRun | null {
   }
 }
 
-function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
-  return event.event === "data"
-    ? (event.data as Record<string, unknown>)
-    : null;
+function streamData(event: TypedStreamEvent): JsonObject | null {
+  if (event.event !== "data") return null;
+  const data: unknown = event.data;
+  return isJsonObject(data) ? data : null;
 }
 
 function engineValue(value: unknown): AiVisibilityEngine | null {
@@ -81,6 +83,69 @@ function numberValue(value: unknown): number {
 function booleanValue(value: unknown): boolean {
   return value === true;
 }
+
+/**
+ * Narrow one streamed provider entry onto the generated contract. Returns null
+ * when the payload cannot be a provider result, so a malformed run is reported
+ * rather than half-accepted.
+ */
+function readProviderResult(value: unknown): AiVisibilityProviderResult | null {
+  if (!isJsonObject(value)) return null;
+  const engine = stringValue(value.engine);
+  const status = value.status;
+  if (!engine || (status !== "completed" && status !== "failed")) return null;
+  return {
+    engine,
+    status,
+    model_name: stringValue(value.model_name) ?? null,
+    response_id: stringValue(value.response_id) ?? null,
+    provider_run_id: stringValue(value.provider_run_id) ?? null,
+    answer_text: stringValue(value.answer_text) ?? "",
+    target_mentioned: booleanValue(value.target_mentioned),
+    target_cited: booleanValue(value.target_cited),
+    citation_count: numberValue(value.citation_count),
+    analysis: isJsonObject(value.analysis) ? value.analysis : undefined,
+    error: stringValue(value.error) ?? null,
+  };
+}
+
+/**
+ * Narrow the streamed/persisted analysis payload onto the generated
+ * `AiVisibilityResult`. Built field by field so the compiler checks this
+ * against the OpenAPI contract — no assertion, and a payload that cannot be a
+ * result is rejected instead of silently typed.
+ */
+function readAiVisibilityResult(value: unknown): AiVisibilityResult | null {
+  if (!isJsonObject(value)) return null;
+  const siteId = stringValue(value.site_id);
+  const query = stringValue(value.query);
+  const resultKind = stringValue(value.result_kind);
+  if (!siteId || !query) return null;
+  if (resultKind && resultKind !== "ai_visibility.analyze") return null;
+  const providers = Array.isArray(value.providers)
+    ? value.providers
+        .map(readProviderResult)
+        .filter((provider): provider is AiVisibilityProviderResult =>
+          Boolean(provider),
+        )
+    : undefined;
+  const engines = Array.isArray(value.engines)
+    ? value.engines.filter((engine): engine is string =>
+        typeof engine === "string",
+      )
+    : undefined;
+  return {
+    result_kind: "ai_visibility.analyze",
+    site_id: siteId,
+    query,
+    engines,
+    providers,
+    summary: isJsonObject(value.summary) ? value.summary : undefined,
+  };
+}
+
+const MALFORMED_RESULT =
+  "The analysis finished but returned a result this app could not read. Retry the query; if it repeats, report the stream defect.";
 
 const STAGES: Record<string, string> = {
   "seo.ai_visibility_started": "Starting the comparison",
@@ -169,22 +234,28 @@ export function useAiVisibility(siteId: string, organizationId: string) {
           const data = streamData(event);
           const kind = stringValue(data?.kind);
           if (!data || !kind) return;
-          if (kind === "seo.command_run" && typeof data.run_id === "string") {
-            storeRun({ runId: data.run_id, siteId, query });
-            setRun((current) => ({ ...current, runId: data.run_id as string }));
+          const commandRunId = stringValue(data.run_id);
+          if (kind === "seo.command_run" && commandRunId) {
+            storeRun({ runId: commandRunId, siteId, query });
+            setRun((current) => ({ ...current, runId: commandRunId }));
           }
           if (kind === "seo.run_in_progress") {
             serverBusy = true;
           }
           if (kind === "seo.run_snapshot") {
             if (data.status === "completed" && data.result) {
-              finalResult = data.result as AiVisibilityResult;
-              setRun((current) => ({
-                ...current,
-                status: "done",
-                stage: "Analysis recovered",
-                result: finalResult ?? undefined,
-              }));
+              const recovered = readAiVisibilityResult(data.result);
+              if (recovered) {
+                finalResult = recovered;
+                setRun((current) => ({
+                  ...current,
+                  status: "done",
+                  stage: "Analysis recovered",
+                  result: recovered,
+                }));
+              } else {
+                streamFailure = MALFORMED_RESULT;
+              }
             } else if (data.status === "failed") {
               const persisted = parsePersistedBackendError(data.error);
               streamFailure = persisted
@@ -222,10 +293,7 @@ export function useAiVisibility(siteId: string, organizationId: string) {
                     targetCited: answer?.targetCited ?? false,
                     citationCount: answer?.citationCount ?? 0,
                     ...answer,
-                    analysis:
-                      data.analysis && typeof data.analysis === "object"
-                        ? (data.analysis as Record<string, unknown>)
-                        : {},
+                    analysis: isJsonObject(data.analysis) ? data.analysis : {},
                   },
                 },
               };
@@ -251,13 +319,18 @@ export function useAiVisibility(siteId: string, organizationId: string) {
             }));
           }
           if (kind === "seo.ai_visibility_completed" && data.result) {
-            finalResult = data.result as AiVisibilityResult;
-            setRun((current) => ({
-              ...current,
-              status: "done",
-              stage: "Analysis complete",
-              result: finalResult ?? undefined,
-            }));
+            const completed = readAiVisibilityResult(data.result);
+            if (completed) {
+              finalResult = completed;
+              setRun((current) => ({
+                ...current,
+                status: "done",
+                stage: "Analysis complete",
+                result: completed,
+              }));
+            } else {
+              streamFailure = MALFORMED_RESULT;
+            }
           } else {
             setRun((current) => ({
               ...current,

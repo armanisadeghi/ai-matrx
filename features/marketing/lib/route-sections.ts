@@ -182,18 +182,19 @@ export const MARKETING_SITE_SECTIONS = [
     letter: "Rn",
   },
   {
+    slug: "ai-visibility",
+    name: "AI Visibility",
+    titlePrefix: "AI Visibility",
+    description:
+      "See where AI assistants cite this site, which competitors answer instead, and what closes the gap.",
+    letter: "Av",
+  },
+  {
     slug: "integrations",
     name: "Integrations",
     titlePrefix: "Integrations",
     description: "Configure this site's marketing data providers.",
     letter: "In",
-  },
-  {
-    slug: "cost",
-    name: "Cost",
-    titlePrefix: "Site Cost",
-    description: "Review cost attribution for this site.",
-    letter: "Sc",
   },
   {
     slug: "access",
