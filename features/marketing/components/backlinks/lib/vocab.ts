@@ -1,35 +1,47 @@
 /**
- * Backlink workspace vocabulary — tabs, lenses, anchor classes, tones.
+ * Backlink workspace vocabulary — tabs, views, anchor groups, tones, and every
+ * label a human reads on this surface.
  *
  * Follows the GSC vocabulary-as-const-array pattern
- * (features/marketing/search-console/types.ts): every tab/lens/class is one
- * entry here; rendering is a `.map()`. Adding a lens = one entry + one filter
+ * (features/marketing/search-console/types.ts): every tab/view/group is one
+ * entry here; rendering is a `.map()`. Adding a view = one entry + one filter
  * branch in `backlinks-queries.ts`.
+ *
+ * PLAIN LANGUAGE IS THE CONTRACT. The person reading this page is world-best
+ * at something that is very probably not SEO (root CLAUDE.md, THE MISMATCH
+ * RULE). Keys are machine values and never change; labels are written for a
+ * smart person who has never heard of a dead-letter queue, an enrichment
+ * pipeline, or DR. Where an SEO word IS the thing they came for (backlink,
+ * anchor text, referring domain, nofollow) we keep it and explain it once,
+ * where it is first shown.
  */
+
+import { humanizeAssessmentValue } from "@/features/marketing/components/backlinks/lib/enrichment";
 
 export const BACKLINK_TABS = [
   {
     key: "overview",
     label: "Overview",
-    description: "Profile health, growth trend, and top movers at a glance.",
+    description:
+      "How your links are doing overall — totals, growth, and the biggest names.",
   },
   {
     key: "links",
     label: "Backlinks",
     description:
-      "Every stable backlink with provider facts, source-page judgment, and a next action.",
+      "Every link we know about, what we found on the page it comes from, and what to do about it.",
   },
   {
     key: "domains",
     label: "Referring domains",
     description:
-      "The known-site directory: what links here, what its pages are like, and our opinion.",
+      "Every website that links to you, what its pages are like, and what we think of it.",
   },
   {
     key: "anchors",
     label: "Anchors",
     description:
-      "Anchor-text distribution and classification — the over-optimization radar.",
+      "The words other sites use when they link to you, and whether any one phrase is over-used.",
   },
   {
     key: "pages",
@@ -40,13 +52,13 @@ export const BACKLINK_TABS = [
     key: "competitors",
     label: "Competitors",
     description:
-      "Domains with overlapping link profiles — your outreach prospect seed.",
+      "Sites that link to your competitors too — good places to ask for a link of your own.",
   },
   {
     key: "insights",
     label: "Insights",
     description:
-      "Curated lenses: strongest links, losses, breakage, relevance, control, actions, and risk review.",
+      "Ready-made views of your links: the strongest, the lost, the broken, the risky, and the ones worth acting on.",
   },
 ] as const;
 
@@ -59,58 +71,60 @@ export function isBacklinkTabKey(
 }
 
 /**
- * Insight lenses — each is a server-filtered slice of the observation table.
- * The filter itself lives in `backlinks-queries.ts#applyBacklinkLens` so the
- * database does the work; a lens is never a client-side re-sort.
+ * Insight views — each is a server-filtered slice of the backlink table. The
+ * filter itself lives in `backlinks-queries.ts#applyBacklinkLens` so the
+ * database does the work; a view is never a client-side re-sort. (`lens` is
+ * kept as the internal name and the URL key; the user only ever reads
+ * "view".)
  */
 export const BACKLINK_LENSES = [
   {
     key: "best",
     label: "Strongest links",
     description:
-      "Highest-authority active dofollow links — the equity you must protect.",
+      "Your most valuable live links — the ones worth protecting first.",
   },
   {
     key: "new",
     label: "New links",
     description:
-      "Recently gained links — verify quality and celebrate the wins.",
+      "Links you picked up since our last check — worth a quick quality look.",
   },
   {
     key: "lost",
     label: "Lost links",
     description:
-      "Links that disappeared — prime reclaim-outreach candidates (the site already linked once).",
+      "Links that disappeared. These sites linked to you once, so they are the best places to ask again.",
   },
   {
     key: "broken",
     label: "Broken links",
     description:
-      "Links pointing at dead or redirecting targets — fix or 301 to reclaim the equity.",
+      "Links pointing at a page of yours that no longer works. Fix the page, or send that address somewhere that does, and the link counts again.",
   },
   {
     key: "toxic",
-    label: "Risk review",
+    label: "Worth a second look",
     description:
-      "Captured links whose content evidence warrants review — never an automatic disavow list.",
+      "Links where something about the page gave us pause. Nothing here is judged bad automatically — you decide.",
   },
   {
     key: "actionable",
     label: "Act now",
     description:
-      "High-priority fixes, reclamation, listing updates, and edit requests identified from the source page.",
+      "Links where we found something worth doing now — a fix, a request, or an update.",
   },
   {
     key: "relevant",
-    label: "Highly relevant",
+    label: "Closest topic match",
     description:
-      "Source pages whose captured topics strongly align with the page they link to.",
+      "The page linking to you covers closely related subjects to the page it links to.",
   },
   {
     key: "controllable",
-    label: "You may control",
+    label: "You can probably edit",
     description:
-      "Listings, profiles, and placements with a plausible direct or likely edit path.",
+      "Listings, profiles, and placements you can most likely change yourself.",
   },
 ] as const;
 
@@ -122,9 +136,55 @@ export function isBacklinkLensKey(
   return BACKLINK_LENSES.some((lens) => lens.key === value);
 }
 
-/** DataForSEO backlink_spam_score is 0–100. These cut points drive provider-signal tones only. */
+/**
+ * The three refresh depths. Keys are the API's `profile` values and never
+ * change; the labels say what the user GETS, because "bootstrap" and "core"
+ * are engineering words that mean nothing to the person paying for this.
+ */
+export const BACKLINK_REFRESH_PROFILES = [
+  {
+    key: "weekly",
+    label: "Quick check (weekly)",
+    description: "Totals and what changed since last time. Fast.",
+  },
+  {
+    key: "monthly",
+    label: "Full detail (monthly)",
+    description:
+      "Every individual link, plus the domain, anchor, page, and competitor breakdowns.",
+  },
+  {
+    key: "bootstrap",
+    label: "Complete history (first run)",
+    description:
+      "Everything above plus the full history we can get. Use this the first time, or after a long gap.",
+  },
+] as const;
+
+export function backlinkRefreshProfileLabel(value: string): string {
+  return (
+    BACKLINK_REFRESH_PROFILES.find((profile) => profile.key === value)?.label ??
+    value
+  );
+}
+
+/**
+ * THE one empty-state sentence for this whole workspace. Eleven surfaces used
+ * to repeat "run a Monthly detail or Full bootstrap refresh" verbatim; when
+ * the wording is wrong it was wrong in eleven files. Every empty state calls
+ * this, so it is written once and reads the same everywhere.
+ */
+export function backlinkEmptyHint(what: string): string {
+  return `We have not collected ${what} yet. Use Refresh at the top of this page — pick "Full detail" or "Complete history" for the deepest look.`;
+}
+
+/** Spam-signal cut points (score is 0–100). Tones only — never a verdict. */
 export const SPAM_SCORE_WARN_MIN = 16;
 export const SPAM_SCORE_TOXIC_MIN = 46;
+
+/** Shown wherever a spam number renders, so "is high bad?" is never a guess. */
+export const SPAM_SCORE_EXPLAINER =
+  "Spam signals, 0–100. Higher means more of the patterns search engines associate with junk links — lower is better.";
 
 export type SpamTone = "ok" | "warn" | "toxic";
 
@@ -136,17 +196,17 @@ export function spamTone(score: number | null | undefined): SpamTone | null {
 }
 
 /**
- * DataForSEO rank scales (backlinks API): 0–1000, logarithmic — comparable in
- * spirit to Ahrefs DR / Moz DA but on a wider scale. Shown wherever a rank
- * number renders so a three-digit rank is never a mystery again.
+ * Authority scale: 0–1000, and it climbs steeply — the difference between 700
+ * and 800 is far larger than between 100 and 200. Shown wherever an authority
+ * number renders so a three-digit number is never a mystery.
  */
 export const RANK_SCALE_EXPLAINER =
-  "DataForSEO Rank, 0–1000 (logarithmic). Roughly comparable to DR/DA × 10 — higher is more authoritative.";
+  "Scored 0–1000 — higher means more authority, and the top of the scale is much harder to reach than the bottom.";
 
-export const DOMAIN_RANK_EXPLAINER = `Authority of the linking domain. ${RANK_SCALE_EXPLAINER}`;
-export const PAGE_RANK_EXPLAINER = `Authority of the exact linking page. ${RANK_SCALE_EXPLAINER}`;
+export const DOMAIN_RANK_EXPLAINER = `How much authority the whole linking website carries. ${RANK_SCALE_EXPLAINER}`;
+export const PAGE_RANK_EXPLAINER = `How much authority the exact page carrying the link has. ${RANK_SCALE_EXPLAINER}`;
 
-/** Semantic placements DataForSEO reports for a link (`semantic_location`). */
+/** Where on the page the link sits (the data service's `semantic_location`). */
 export const LINK_PLACEMENTS = [
   { key: "article", label: "Article" },
   { key: "main", label: "Main content" },
@@ -170,22 +230,42 @@ export const BACKLINK_STATES = [
   { key: "lost", label: "Lost" },
 ] as const;
 
+/**
+ * How far we have got with reading and reviewing the page a link comes from.
+ * These are pipeline states; the labels are what they MEAN to the user —
+ * "dead letter" is a message-queue term and must never reach a screen.
+ */
 export const BACKLINK_ENRICHMENT_STATUSES = [
-  { key: "pending", label: "Pending" },
-  { key: "capturing", label: "Capturing" },
-  { key: "analyzing", label: "Analyzing" },
-  { key: "completed", label: "Completed" },
-  { key: "failed", label: "Failed" },
-  { key: "dead_letter", label: "Dead letter" },
+  { key: "pending", label: "Not reviewed yet" },
+  { key: "capturing", label: "Reading the page" },
+  { key: "analyzing", label: "Reviewing it" },
+  { key: "completed", label: "Reviewed" },
+  { key: "failed", label: "Could not finish" },
+  { key: "dead_letter", label: "Gave up — needs help" },
 ] as const;
 
+export function backlinkReviewStatusLabel(value: string | null): string {
+  return (
+    BACKLINK_ENRICHMENT_STATUSES.find((status) => status.key === value)
+      ?.label ?? humanizeAssessmentValue(value)
+  );
+}
+
+/** How close the linking page's subject is to the page it links to. */
 export const BACKLINK_RELEVANCE_VERDICTS = [
-  { key: "strong", label: "Strong" },
-  { key: "moderate", label: "Moderate" },
-  { key: "weak", label: "Weak" },
-  { key: "irrelevant", label: "Irrelevant" },
-  { key: "unknown", label: "Unknown" },
+  { key: "strong", label: "Strong match" },
+  { key: "moderate", label: "Some match" },
+  { key: "weak", label: "Weak match" },
+  { key: "irrelevant", label: "Unrelated" },
+  { key: "unknown", label: "Not sure" },
 ] as const;
+
+export function backlinkRelevanceLabel(value: string | null): string {
+  return (
+    BACKLINK_RELEVANCE_VERDICTS.find((verdict) => verdict.key === value)
+      ?.label ?? humanizeAssessmentValue(value)
+  );
+}
 
 export const BACKLINK_PAGE_TYPES = [
   "article",
