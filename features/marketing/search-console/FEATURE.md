@@ -313,8 +313,10 @@ class into it (`Classify →` / `Review →`,
     `gsc_set_keyword_class` server-side (one mapping, one home).
   - **Classify with AI** — the EXISTING universal classifier
     (`seo.keyword_classifier` slot via aidream
-    `POST /seo/keywords/classify`, 200-id chunks, admin-gated
-    server-side): selection or filtered-unclassified batch; results land
+    `POST /seo/keywords/classify`, **40-id chunks = ONE server batch**, with an
+    explicit 90s header budget: the route is synchronous and Cloudflare cuts a
+    request at ~100s — see `lib/api/FEATURE.md` § Long synchronous compute;
+    admin-gated server-side): selection or filtered-unclassified batch; results land
     as `intent_class` = "AI intent" provenance, overridable like any
     machine signal. The Site Intake Wizard (`intake/`) stays the
     whole-site AI interview; this is the surgical batch complement.
@@ -515,6 +517,15 @@ its dismiss-layer race — the input "flashed and disappeared").
 
 ## Change Log
 
+- 2026-08-11 — **"Classify with AI" never worked.** The `seo.keyword_classifier`
+  slot refused its pinned agent on every call (agent declared no structured
+  `output_schema`, slot contract requires the `results` key), aidream answered
+  502, and Cloudflare replaced that response with a CORS-less error page — so the
+  browser could only say *"AI classification failed — Failed to fetch"*. Fixed at
+  three layers: the agent got a real output schema (verified live), aidream now
+  sends app failures as 500 (`api/FEATURE.md`), and this client sends one
+  server batch per request with a 90s header budget. Same repair applied to the
+  Topic Assigner and Site Strategy Interviewer slots, which were dead the same way.
 - 2026-08-11 — Portfolio truth + actions: `web.v_site_kpis` now reads the
   canonical `seo.search_performance_daily` spine through
   `seo.gsc_perf_site_portfolio`, eliminating the false stale July 26 cards

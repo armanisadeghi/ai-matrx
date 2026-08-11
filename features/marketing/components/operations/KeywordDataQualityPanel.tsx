@@ -19,6 +19,9 @@ import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { extractErrorMessage } from "@/utils/errors";
+// Both routes wait on provider calls inside the request — the shared header
+// budget lives with the classifier service, never re-invented per surface.
+import { SEO_COMPUTE_CONNECT_TIMEOUT_MS } from "@/features/marketing/search-console/data-classification";
 
 const CLASSIFY_PATH = "/seo/keywords/classify";
 const ASSIGN_TOPICS_PATH = "/seo/keywords/assign-topics";
@@ -53,6 +56,8 @@ function ClassifyCard() {
           path: CLASSIFY_PATH,
           method: "POST",
           body: { language: "en", limit },
+          connectTimeoutMs: SEO_COMPUTE_CONNECT_TIMEOUT_MS,
+          totalTimeoutMs: null,
         }),
       );
       if (response.error) throw new Error(response.error.message);
@@ -147,6 +152,8 @@ function AssignTopicsCard() {
           path: ASSIGN_TOPICS_PATH,
           method: "POST",
           body: { territory: territoryValue, language: "en", limit },
+          connectTimeoutMs: SEO_COMPUTE_CONNECT_TIMEOUT_MS,
+          totalTimeoutMs: null,
         }),
       );
       if (response.error) throw new Error(response.error.message);

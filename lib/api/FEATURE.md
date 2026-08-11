@@ -169,6 +169,30 @@ payload's `message`, often as a stringified upstream service payload
 Guard: [`__tests__/failure-explanation.test.ts`](./__tests__/failure-explanation.test.ts)
 pins the real 2026-07-25 GSC payload end-to-end.
 
+## Long synchronous compute — the two ceilings, and why a real failure can arrive as "Failed to fetch"
+
+`callApi` defaults to **15s to headers / 30s total**. A route that waits on a
+provider call inside the request (the SEO keyword classifier, keyword research,
+agent-slot bench runs) blows both — the caller MUST pass `connectTimeoutMs`
+(and `totalTimeoutMs: null`). Exemplar: `SEO_COMPUTE_CONNECT_TIMEOUT_MS` in
+[`features/marketing/search-console/data-classification.ts`](../../features/marketing/search-console/data-classification.ts).
+
+**The ceiling above ours is Cloudflare's ~100s**, and it is not ours to raise:
+past it the edge severs the connection. Chunk the work so ONE request is one
+unit of server-side work (the classifier sends 40 ids — aidream's own batch
+size) rather than raising a timeout the edge will ignore.
+
+🚨 **`network_error` / "Failed to fetch" does NOT prove the request never
+arrived.** Cloudflare replaces an origin 502/504 (and its own 524) with a
+branded error page carrying **no CORS headers**, so the browser rejects a
+response the server really sent and `fetch` throws `TypeError`. Verified
+2026-08-11: `POST /seo/keywords/classify` answered 502 with
+`{"error":"keyword_classify_failed", …}` naming a broken agent-slot pin; the FE
+could only show "AI classification failed — Failed to fetch". Before blaming
+the network, **read the server log for that route** — and fix the status at the
+source (aidream `errors.py` `wire_status()` now downgrades app-raised 502/504
+to 500 for exactly this reason; see aidream `api/FEATURE.md`).
+
 ## Proof / guardrail
 
 [`typed-client.contract-test.ts`](./typed-client.contract-test.ts) is a
@@ -219,6 +243,10 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-08-11 — Documented the two request ceilings (our 15s/30s defaults vs
+  Cloudflare's ~100s) and the "Failed to fetch" trap: an edge-replaced origin
+  502/504 loses its CORS headers, so a real server answer reaches the client as
+  a network error.
 - 2026-07-27 — Documented the organization-propagation contract after the
   application-wide compute audit: entity-local overrides, explicit typed/raw
   bodies, and explicit GET query scoping.

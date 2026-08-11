@@ -16,6 +16,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { z } from "zod";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -52,6 +53,8 @@ export interface GscClassReviewQuery {
   matchKind?: ClassRuleMatchKind | null;
   /** true = only confirmed rulings; false = only unconfirmed (auto-applied). */
   confirmed?: boolean | null;
+  /** Exact saved brand alias — uses the canonical brand matcher server-side. */
+  brandAlias?: string | null;
 }
 
 export interface GscClassReviewPage {
@@ -59,7 +62,11 @@ export interface GscClassReviewPage {
   total: number;
 }
 
-function reviewParams(siteId: string, range: GscDateRange, query: GscClassReviewQuery) {
+function reviewParams(
+  siteId: string,
+  range: GscDateRange,
+  query: GscClassReviewQuery,
+) {
   return {
     p_site_id: siteId,
     p_start: range.start,
@@ -72,8 +79,11 @@ function reviewParams(siteId: string, range: GscDateRange, query: GscClassReview
     p_limit: query.pageSize,
     p_offset: (query.page - 1) * query.pageSize,
     p_pattern: query.pattern?.trim() || undefined,
-    p_match: query.pattern?.trim() ? (query.matchKind ?? "contains") : undefined,
+    p_match: query.pattern?.trim()
+      ? (query.matchKind ?? "contains")
+      : undefined,
     p_confirmed: query.confirmed ?? undefined,
+    p_brand_alias: query.brandAlias?.trim() || undefined,
   };
 }
 
@@ -83,7 +93,9 @@ export async function getGscClassReview(
   query: GscClassReviewQuery,
   signal?: AbortSignal,
 ): Promise<GscClassReviewPage> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_keyword_class_review", reviewParams(siteId, range, query))
     .abortSignal(signal ?? new AbortController().signal);
   const rows = assertData(response.data, response.error);
@@ -142,7 +154,9 @@ export async function setGscKeywordClass(
     confirmed?: boolean;
   } = {},
 ): Promise<GscSetKeywordClassRow[]> {
-  const response = await (await seoDb()).rpc("gsc_set_keyword_class", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_set_keyword_class", {
     p_site_id: siteId,
     p_keyword_ids: keywordIds,
     p_class: ruling,
@@ -160,7 +174,9 @@ export async function confirmGscKeywordClass(
   siteId: string,
   keywordIds: string[],
 ): Promise<number> {
-  const response = await (await seoDb()).rpc("gsc_confirm_keyword_class", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_confirm_keyword_class", {
     p_site_id: siteId,
     p_keyword_ids: keywordIds,
   });
@@ -182,10 +198,59 @@ export async function getGscBrandIdentity(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<GscBrandIdentityRow[]> {
-  const response = await (await seoDb())
+  const response = await (
+    await seoDb()
+  )
     .rpc("gsc_brand_identity", { p_site_id: siteId })
     .abortSignal(signal ?? new AbortController().signal);
   return assertData(response.data, response.error);
+}
+
+const gscBrandAliasPreviewSchema = z.object({
+  alias: z.string(),
+  eligible: z.boolean(),
+  alias_exists: z.boolean(),
+  demoted: z.boolean(),
+  corpus_matches: z.number(),
+  effective_matches: z.number(),
+  active_matches: z.number(),
+  new_matches: z.number(),
+  matches: z.array(
+    z.object({
+      keyword_id: z.string().uuid(),
+      query: z.string(),
+      clicks: z.number(),
+      impressions: z.number(),
+    }),
+  ),
+});
+
+export type GscBrandAliasPreview = z.infer<typeof gscBrandAliasPreviewSchema>;
+
+/**
+ * Preview one draft alias through the SAME server matcher used by the brand
+ * classifier. `matches` contains only current-window keywords not already
+ * covered by the site's existing identity.
+ */
+export async function getGscBrandAliasPreview(
+  siteId: string,
+  alias: string,
+  range: GscDateRange,
+  signal?: AbortSignal,
+): Promise<GscBrandAliasPreview> {
+  const response = await (
+    await seoDb()
+  )
+    .rpc("gsc_brand_alias_preview", {
+      p_site_id: siteId,
+      p_alias: alias,
+      p_start: range.start,
+      p_end: range.end,
+      p_limit: 8,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const data = assertData(response.data, response.error);
+  return gscBrandAliasPreviewSchema.parse(data);
 }
 
 /**
@@ -198,7 +263,9 @@ export async function setGscBrandAliases(
   siteId: string,
   aliases: string[],
 ): Promise<string[]> {
-  const response = await (await seoDb()).rpc("gsc_set_brand_aliases", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_set_brand_aliases", {
     p_site_id: siteId,
     p_aliases: aliases,
   });
@@ -227,7 +294,9 @@ export async function importGscKeywordClasses(
   rows: GscClassImportRow[],
   dryRun: boolean,
 ): Promise<GscClassImportResultRow[]> {
-  const response = await (await seoDb()).rpc("gsc_class_import", {
+  const response = await (
+    await seoDb()
+  ).rpc("gsc_class_import", {
     p_site_id: siteId,
     p_rows: rows.map((row) => ({
       query: row.query,
@@ -249,11 +318,30 @@ export interface AiClassifyResult {
   missing_keyword_ids: string[];
 }
 
-const AI_CLASSIFY_CHUNK = 200; // server hard cap per call
+/**
+ * One request = ONE server-side LLM batch. aidream's `classify_keywords`
+ * runs `ceil(len / 40)` sequential provider calls INSIDE one request
+ * (`CLASSIFY_BATCH_SIZE = 40`), and the route is synchronous — it answers only
+ * when the last batch lands. Sending the server's 200-id cap therefore stacks
+ * five provider round-trips into a single request that no client can wait out:
+ * Cloudflare severs the connection at ~100s and substitutes its own error page
+ * (no CORS headers), which a browser can only report as
+ * `TypeError: Failed to fetch`. Matching the server's batch size keeps every
+ * request inside that ceiling and makes `onProgress` mean something.
+ */
+const AI_CLASSIFY_CHUNK = 40;
+
+/**
+ * Header budget for the SEO compute routes. `callApi` defaults to 15s connect
+ * / 30s total, which a route that waits on a provider call always blows (a
+ * single keyword measured ~4s end-to-end on 2026-08-11). 90s sits just under
+ * Cloudflare's ~100s cut — past that the edge, not the timeout, decides.
+ */
+export const SEO_COMPUTE_CONNECT_TIMEOUT_MS = 90_000;
 
 /**
  * Run the universal AI classifier (`seo.keyword_classifier` agent slot) over
- * a list of keyword ids, chunked to the server's 200-id cap. Writes the
+ * a list of keyword ids, one server batch per request. Writes the
  * 13-column universal layer (incl. `intent_class`) — results surface in the
  * review table as "AI intent" provenance, overridable like any machine
  * signal. Server-gated to admins today.
@@ -277,6 +365,8 @@ export async function classifyKeywordsWithAi(
         path: "/seo/keywords/classify",
         method: "POST",
         body: { keyword_ids: chunk, limit: chunk.length },
+        connectTimeoutMs: SEO_COMPUTE_CONNECT_TIMEOUT_MS,
+        totalTimeoutMs: null,
       }),
     );
     if (result.error || !result.data) {
@@ -288,7 +378,10 @@ export async function classifyKeywordsWithAi(
     totals.updated += data.updated;
     totals.skipped_error += data.skipped_error;
     totals.missing_keyword_ids.push(...(data.missing_keyword_ids ?? []));
-    onProgress?.(Math.min(i + chunk.length, keywordIds.length), keywordIds.length);
+    onProgress?.(
+      Math.min(i + chunk.length, keywordIds.length),
+      keywordIds.length,
+    );
   }
   return totals;
 }
