@@ -429,4 +429,3 @@ COMMENT ON FUNCTION seo.gsc_keyword_class_review(
   uuid, date, date, text[], text[], text, text, text, int, int,
   text, text, boolean, text, jsonb, text
 ) IS 'GSC-active keyword classification review with explicit contains/whole-word primary search and validated ordered AND filters; CTR filter values are percentage points.';
-
