@@ -13,6 +13,47 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D164 — `keyword_set` and `keyword_variant_set` are byte-identical kinds (2026-08-11)
+
+Surfaced by the D156 fix: with fieldless kinds in the binder's fingerprint
+index, these two slugs canonicalize to the SAME fingerprint
+(`9q-183lvc51ku2s37`) because their `emitted_json_schema` values are byte-for-
+byte identical — `{primary_keyword, alternate_keywords[{keyword, rationale}]}`,
+same required list, same `additionalProperties:false`.
+
+Two kinds for one shape is the duplication the platform forbids, and the
+consequence is visible: `matchKindForSchema` is first-writer-wins, so an agent
+bound to `keyword_variant_set` displays as `keyword_set`. Not a code bug — the
+collision handling is deliberate and documented — but the DATA needs a ruling:
+merge the two (repoint consumers to the survivor, graveyard the other) or give
+them genuinely different schemas. **Arman's call, since it is a product-
+semantics question about what the two names mean.**
+
+### D163 — 12 stored `emitted_block_schema` rows are stale against the live emitter (2026-08-11)
+
+Found by `pnpm shape:reemit-discriminator`
+(`scripts/shape/regenerate-kind-block-schemas.ts`), whose self-verifying gate
+refuses any row that differs from a fresh emission by more than the `__kind`
+discriminator form. Three classes:
+
+- **10 rows** — `additionalDetails.additionalProperties` stored `false`, emitter
+  now produces `true` (`presentation_deck`, `diagram_spec`, `schema_proposal`,
+  `cooking_recipe`, `research_report`, `transcript`, `comparison_set`,
+  `decision_tree`, `item_presentation`, `math_problem`). One emitter change to
+  open-object handling that was never carried into the stored rows.
+- **`study_pack_set`** — its stored `$defs` still carries the dangling
+  `flashcard_set_beta` stub (a pre-existing known ref, see the 2026-07-05
+  migration note).
+- **`video_transcript_research`** — the client cannot reconstruct its
+  python-owned `claim_evidence` child at all (D156's other half), so its whole
+  `$defs` entry would be blanked by a naive re-emit. Correctly refused.
+
+`emitted_block_schema` has NO runtime reader today, so none of this is a live
+correctness problem — it is a code↔DB drift guard that is currently blind
+because nothing routinely re-emits. Fixing the 10 needs a decision on whether
+the emitter's `additionalProperties:true` for open objects is the intended
+behavior; the other two need their upstream data fixed first.
+
 ### D162 — Two more slot agents carry an `output_schema` that NEVER reaches the provider (2026-08-11)
 
 Same trap found and fixed on `seo.keyword_researcher` during the output-kind
@@ -253,131 +294,6 @@ Also worth testing: the forum reports 2.5-flash unaffected (0/5).
 `run-headless-agent-json` settles `noJson` and `KindRequestDialog` shows
 reasoning and no result. Incident: `chat.request
 c665e986-a1ca-4796-a61e-89204caad0b7`, message `21c2d9cc-…`.
-
-### D156 — Python-owned kinds are FIELDLESS to the frontend (140 active rows) (2026-08-11) — FIXED
-
-The FE Shape registry reads **only** `content_ir.kind_definition.data` +
-`kind_edge` (`schema-source-kind-tables.ts` `DEF_COLUMNS`) — it never reads
-`emitted_json_schema`. Every kind registered from Python leaves `data` NULL
-unless its schema is flat enough for `fields_from_json_schema`
-(aidream `tools/implementations/kind_shared.py`, honest all-or-nothing: any
-nested object or array-of-objects declines). Consequences for those rows:
-
-- `isKindBindable` (`features/agents/.../output-schema/kindBinding.ts`) returns
-  false on `Object.keys(entry.fields).length === 0`, so **the kind cannot be
-  bound to an agent's `output_schema` from the picker at all**;
-- `/shapes` Test renders a raw JSON textarea instead of a per-field form.
-
-Live counts 2026-08-11: 838 active kinds, 805 with `data IS NULL`, **140 of
-them non-contract** (the other 665 are machine-minted
-`is_contract_artifact` rows where `data` is correctly irrelevant). Every one of
-the 140 is `authoring_owner='python'`; **zero** `authoring_owner='ts'` rows have
-NULL `data`, and **zero** active kinds lack `emitted_json_schema`. So the schema
-is never missing — only the client-side field declaration is.
-
-`topic_ideas` was fixed as the worked instance
-(`migrations/content_ir_declare_topic_ideas_fields.sql`) via the sanctioned TS
-emitter `planKindMigration` (`scripts/shape/plan-topic-ideas.ts`).
-
-**Count unchanged at 140 as of 2026-08-11 after the slot-binding pass** — binding
-an agent's `output_schema` is a DIFFERENT axis and does not touch `data`.
-`research_tag_suggestions`, `keyword_relationship_research` and
-`research_setup_suggestion` were all confirmed `data IS NULL`, which is precisely
-why their bindings had to be written as migrations
-(`migrations/agent_bind_*.sql`): `isKindBindable` still refuses them in the FE
-picker, so an owner opening those agents in the builder cannot see or re-make the
-binding. That gap is this defect, not the bindings.
-
-**Measured 2026-08-11 — a backfill is NOT the fix.** Running the existing
-sanctioned converter (`fields_from_json_schema`) over all 140: **7 are
-flat-convertible, 133 are nested.** So a mechanical backfill closes 5% and
-leaves an inconsistent half-state; the other 133 would each need a CHILD kind
-row per nested object plus `kind_edge` rows — minting 100+ registry rows, which
-is not a sweep.
-
-**The fix is the other direction: carry `emitted_json_schema` on the catalog
-entry.** Note the shape of it — do NOT convert schema → fields and then rebuild
-the schema from those fields (`kindSchemaToJsonSchema`), which is a lossy round
-trip on exactly the nested schemas that matter. Instead let
-`isKindBindable` pass on "has fields OR has an emitted schema", and let
-`buildKindOutputSchema` return the STORED emitted schema verbatim for those
-rows. Touches the registry read (one more column in `DEF_COLUMNS`), the catalog
-entry type, `isKindBindable`, `buildKindOutputSchema`, the fingerprint index and
-`matchKindForSchema`, plus their tests. The `/shapes` Test per-field form is a
-SEPARATE concern — it genuinely needs `fields`, and the JSON textarea remains
-the correct fallback there.
-
-**FIXED 2026-08-11 — `emitted_json_schema` now rides on the catalog entry.**
-`DEF_COLUMNS` reads it, `BlockSchemaEntry.emittedJsonSchema` /
-`KindCatalogEntry.emittedJsonSchema` carry it VERBATIM, `isKindBindable`
-passes on "has fields OR has a stored schema", and `buildKindOutputSchema`
-(now entry-keyed, not slug-keyed) returns the stored schema untouched for
-fieldless rows — the same thing `topic_ideas` was hand-bound to. No
-schema→fields→schema round trip anywhere, so the nesting the 133 kinds are
-made of survives. The fingerprint index and `matchKindForSchema` follow for
-free because they build on `buildKindOutputSchema`.
-
-**One thing the original write-up did not anticipate:** reading
-`emitted_json_schema` also makes the 665 machine-minted
-`is_contract_artifact` rows buildable, and 68 active
-`agent_io_<uuid>_output` snapshots would have flooded the picker. They had
-been excluded only as a SIDE EFFECT of the old fields check, so the exclusion
-is now stated (`entry.isContractArtifact`) rather than inherited.
-
-Verified live: bindable kinds 32 → **146**, of which **114 are newly
-reachable** and all 114 build; 113 of 114 round-trip through
-`matchKindForSchema` (the one miss is D164, a duplicate-schema data defect).
-Browser-confirmed end to end in the agent builder's Output Schema tab: the
-picker reads "146 bindable kinds", a previously-invisible python-owned kind
-(`web_meta_description_duplication_v1`) selects, and the written envelope
-keeps `$schema` / `title` / the nested `properties` intact.
-
-### D164 — `keyword_set` and `keyword_variant_set` are byte-identical kinds (2026-08-11)
-
-Surfaced by the D156 fix: with fieldless kinds in the binder's fingerprint
-index, these two slugs canonicalize to the SAME fingerprint
-(`9q-183lvc51ku2s37`) because their `emitted_json_schema` values are byte-for-
-byte identical — `{primary_keyword, alternate_keywords[{keyword, rationale}]}`,
-same required list, same `additionalProperties:false`.
-
-Two kinds for one shape is the duplication the platform forbids, and the
-consequence is visible: `matchKindForSchema` is first-writer-wins, so an agent
-bound to `keyword_variant_set` displays as `keyword_set`. Not a code bug — the
-collision handling is deliberate and documented — but the DATA needs a ruling:
-merge the two (repoint consumers to the survivor, graveyard the other) or give
-them genuinely different schemas. **Arman's call, since it is a product-
-semantics question about what the two names mean.**
-
-### D163 — 12 stored `emitted_block_schema` rows are stale against the live emitter (2026-08-11)
-
-Found by `pnpm shape:reemit-discriminator`
-(`scripts/shape/regenerate-kind-block-schemas.ts`), whose self-verifying gate
-refuses any row that differs from a fresh emission by more than the `__kind`
-discriminator form. Three classes:
-
-- **10 rows** — `additionalDetails.additionalProperties` stored `false`, emitter
-  now produces `true` (`presentation_deck`, `diagram_spec`, `schema_proposal`,
-  `cooking_recipe`, `research_report`, `transcript`, `comparison_set`,
-  `decision_tree`, `item_presentation`, `math_problem`). One emitter change to
-  open-object handling that was never carried into the stored rows.
-- **`study_pack_set`** — its stored `$defs` still carries the dangling
-  `flashcard_set_beta` stub (a pre-existing known ref, see the 2026-07-05
-  migration note).
-- **`video_transcript_research`** — the client cannot reconstruct its
-  python-owned `claim_evidence` child at all (D156's other half), so its whole
-  `$defs` entry would be blanked by a naive re-emit. Correctly refused.
-
-`emitted_block_schema` has NO runtime reader today, so none of this is a live
-correctness problem — it is a code↔DB drift guard that is currently blind
-because nothing routinely re-emits. Fixing the 10 needs a decision on whether
-the emitter's `additionalProperties:true` for open objects is the intended
-behavior; the other two need their upstream data fixed first.
-
-**Not urgent, and specifically NOT a live breakage.** Checked 2026-08-11: 102
-agents carry an `output_schema`; only 4 bind a `__kind`-injected block export,
-all 4 run on Gemini (where `const` is unenforced — see D155), and **all 4 teach
-`__kind` in their system prompt**, so the discriminator arrives correctly
-regardless. Nothing is misrouting today.
 
 ### D157 — RESOLVED 2026-08-11 — Gemini ignores `const`; rewritten to `enum` at the Google request boundary
 
@@ -1173,6 +1089,10 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+### D156 — Python-owned kinds were FIELDLESS to the frontend (140 active rows) — RESOLVED 2026-08-11
+
+`emitted_json_schema` now rides on the catalog entry (`DEF_COLUMNS` → `BlockSchemaEntry.emittedJsonSchema` → `KindCatalogEntry.emittedJsonSchema`), carried VERBATIM — no lossy schema→fields→schema round trip. `isKindBindable` passes on "fields OR a stored schema" and excludes the machine-minted `is_contract_artifact` rows the change would otherwise have surfaced; `buildKindOutputSchema` is entry-keyed and returns the stored schema untouched for fieldless rows. Bindable kinds 32 → 146 (114 newly reachable, all build); browser-verified in the agent builder's Output Schema tab. Leftovers filed as D163 + D164.
 
 One line per fix — title, date, pointer. History lives in git.
 
