@@ -13,6 +13,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D153 — the canonical code block's Collapse/Copy buttons are `position: fixed` and land on the shell header (2026-08-11)
+
+`features/code-editor/components/code-block/StickyButtons.tsx` positions its toolbar with `position: "fixed", top: isMobile ? "50px" : "5px"` and a right offset measured off the container — so ANY code block rendered through the pipeline parks its Collapse/Copy buttons at the top of the VIEWPORT, not at the top of its own scroll container. Seen while verifying the /shapes Test-tab live run: the streamed JSON's toolbar sat directly over the `(core)` glass header, covering the Preview | Test | Instances mode nav. It is not specific to that surface — every surface that renders a >5-line code block inherits it, chat included. Fix: make the toolbar sticky/absolute inside the block's own scroll container instead of viewport-fixed, and re-verify in chat + a scrolled panel (this component is heavily shared — do not change it as a drive-by).
+
 ### D152 — Agent-app auto-create: generators omit code fences, and the form can double-fire an empty run (2026-08-11)
 
 Both found while fixing auto-create persistence (that fix is DONE — see `features/agent-apps/services/auto-create-draft.ts`; the app-builder chip named in D151 is closed).

@@ -1,7 +1,14 @@
 /**
  * URL-quality evaluation — deterministic checks on the URL string itself.
- * Mirror of `matrx_scraper/audit_metrics.py` `evaluate_url_quality`
- * (thresholds + issue strings byte-identical).
+ *
+ * ONE rule, THREE mirrors — thresholds and issue strings byte-identical.
+ * Change one, change all three:
+ *   * here
+ *   * `matrx_scraper/audit_metrics.py` `evaluate_url_quality` (the writer)
+ *   * `web.url_quality_metrics(text)` (SQL, migration
+ *     `web_site_audit_rollup_server_side.sql`) — the server-side site-audit
+ *     rollup needs it for every page whose stored payload predates the `url`
+ *     section. Parity was proved over all 10,437 distinct registry URLs.
  *
  * Every finding is a warning — a URL never blocks indexing by shape alone —
  * so `ok` means "no warnings" for this section (unlike the other sections,

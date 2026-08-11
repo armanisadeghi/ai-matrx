@@ -46,6 +46,7 @@ export default async function ShapeTestPage({ params }: PageProps) {
               kindDefinitionId={detail.id}
               kindVersion={detail.version}
               titleKey={detail.titleKey}
+              emittedJsonSchema={detail.emittedJsonSchema}
             />
           </ShapeSurfaceRuntime>
         </div>

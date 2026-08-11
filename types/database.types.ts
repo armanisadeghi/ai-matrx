@@ -45264,6 +45264,20 @@ export type Database = {
           traffic_class: string
         }[]
       }
+      gsc_perf_site_portfolio: {
+        Args: { p_days?: number; p_site_id: string }
+        Returns: {
+          avg_position: number
+          clicks: number
+          cmp_clicks: number
+          cmp_impressions: number
+          compare_days: number
+          current_days: number
+          impressions: number
+          latest_date: string
+          pages_in_gsc: number
+        }[]
+      }
       gsc_perf_summary: {
         Args: {
           p_compare_end?: string
@@ -52385,6 +52399,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      site_audit_rollup: { Args: { p_site_id: string }; Returns: Json }
+      site_audit_trend: { Args: { p_site_id: string }; Returns: Json }
       site_gsc_daily: {
         Args: { p_days?: number; p_site_id: string }
         Returns: {
@@ -52405,6 +52421,7 @@ export type Database = {
           url: string
         }[]
       }
+      url_quality_metrics: { Args: { page_url: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
