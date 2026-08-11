@@ -213,6 +213,19 @@ aidream-only deploy could otherwise regress the shared trigger with nothing asse
 The failure mode being covered is precisely a silent one: the array branch was already
 lost in production once (above) and no error was raised.
 
+Live callers: `pnpm check:media-durability` here (advisory), and
+`scripts/check_media_durability_health.py` in aidream's `release.sh` (**blocking**).
+**Do not "consolidate" to one caller.** Two callers of one authority is the intended end
+state, and removing one looks exactly like cleanup.
+
+**Why a second CALLER is right where a second IMPLEMENTATION would be wrong — measured,
+not argued.** When `heal_queue_no_failures` was added to the function, aidream's gate went
+from 5 checks to 6 **without a line changing in aidream**. A second implementation would
+have had to be found, understood, and updated by whoever added the check — and the whole
+reason that check exists is that a terminal `failed` state is easy to *not* think of. A
+caller inherits improvements for free; a copy inherits only the bugs you remember to go
+fix in it.
+
 ### The healer is NOT pg_cron anymore (2026-08-11)
 
 The original migration's comment promised "a pg_cron + pg_net + backend publish endpoint
