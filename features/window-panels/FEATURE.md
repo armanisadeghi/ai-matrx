@@ -56,6 +56,19 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 
 ## Change Log
 
+- 2026-08-11 — **`useFloatingLiveRun` is the migration off an inline live-run
+  block, and a floating run window NEVER auto-closes.** The three page-shifting
+  surfaces (`/marketing/keyword-research`, a site's `authority` and
+  `reputation` workspaces) now float their runs through one hook in
+  [`features/overlays/openers/liveRunWindow.tsx`](../overlays/openers/liveRunWindow.tsx):
+  it opens the window on the run's false→true edge, pushes the
+  `requestId` / `conversationId` in as they land, and re-binds the SAME window
+  on a host remount because the `instanceId` is stable. The first version also
+  closed the window on unmount — and the window vanished at the exact moment
+  the content completed, because the keyword-research results refetch remounts
+  its host. **Closing on unmount is the same defect as closing on completion:
+  the user dismisses the window, nothing else does.**
+
 - 2026-08-11 — **THE FLOATING LAW documented; `LiveRunWindow` resized to the
   chat reading column.** The window shipped at a hardcoded `620×480`, which
   rendered kind components ~100px narrower than the `/chat` column they are

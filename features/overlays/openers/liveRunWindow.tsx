@@ -125,9 +125,16 @@ export interface FloatingLiveRunOptions
  *
  * - opens on the run's false→true edge (`pending`, before a requestId exists),
  * - pushes the `requestId` / `conversationId` / `label` in as they land,
- * - **never auto-closes on completion** — the finished output is what the user
- *   came for, so the user dismisses the window, not the run's end,
- * - closes on unmount, so navigating away never orphans a window.
+ * - **never auto-closes** — not on completion, and NOT on unmount. The finished
+ *   output is what the user came for, and a host that remounts when its results
+ *   land (a query invalidation, a route re-render) would otherwise close the
+ *   window at the exact moment the content completed. Verified on
+ *   `/marketing/keyword-research`, where the results refetch remounts the
+ *   launcher. The window is ephemeral and has its own close button; the USER
+ *   dismisses it, and a long run keeps streaming while they work elsewhere.
+ *
+ * Because the `instanceId` is stable, a remount mid-run re-binds the SAME
+ * window instead of stacking a second one.
  */
 export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
   const open = useOpenLiveRunWindow();
@@ -158,14 +165,6 @@ export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
     height,
   ]);
 
-  // A finished run keeps its window; an unmounted host never leaves one behind.
-  useEffect(
-    () => () => {
-      handleRef.current?.close();
-      handleRef.current = null;
-    },
-    [],
-  );
 }
 
 /**

@@ -218,6 +218,19 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
+- 2026-08-11 — **The workbench floats its run (THE FLOATING LAW).**
+  `KeywordResearchLauncher` gained `liveFeed="inline" | "floating"`. The
+  workbench passes `floating` — its keyword table sits directly under the
+  launcher bar, and the inline feed expanded on every run and shoved that table
+  down the page. The window panel and the bottom-of-page Keyword Intelligence
+  tab keep `inline`, which is compliant there (nothing of the user's sits
+  below). The streaming itself was already correct and is unchanged; only the
+  placement moved, into the canonical `LiveRunWindow` via `useFloatingLiveRun`.
+  **Known gap found while verifying:** this hook's unmount effect
+  `removeRequest`s the adopted row, so a host REMOUNT reaps the stream out from
+  under anything still bound to it — the inline feed hid that behind its
+  saved-artifact fallback; the floating window shows it as an empty box.
+
 - 2026-08-11 — **Performance table timeout fixed at the actual query boundary.**
   The view was present and its 2026-08-09 `NOT MATERIALIZED`/set-based-RLS fixes
   were live; the new failure was a scale cliff. `allgreenrecycling.com` held

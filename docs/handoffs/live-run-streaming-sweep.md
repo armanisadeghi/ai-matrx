@@ -30,7 +30,7 @@ defect as a spinner**.
 |---|---|---|
 | **A** | Spinner-only, stream handle already available (`requestId` / `conversationId` / ignored `onEvent`) | **31 surfaces** (Transcript Studio's 4 fixed 2026-08-11) |
 | **B** | Spinner-only, no stream handle yet — needs `adoptForeignStream` or a `useRunAgent`→`useLiveAgentRun` migration first | **5** |
-| **C** | Page-shifting live-run block (live output above the page's own content) | **3** |
+| **C** | Page-shifting live-run block (live output above the page's own content) | **0 — all 3 fixed 2026-08-11** |
 | **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **12** (11 overlap A) |
 | **E** | Needs a content-IR kind before it can stream well — **title options, the SEO package, and the slide deck all shipped 2026-08-11**; only podcast chapters remain | **1** |
 
@@ -190,13 +190,30 @@ output. Each is the two-line `useLiveAgentRun` + `<LiveRunDisplay>` migration.
 
 **Exemplar already fixed:** `features/education/assessment/components/create/AssessmentCreate.tsx`.
 
-### 3. Flashcards — 4 spinner-only runs — A, S–M
+### 3. Flashcards — DONE 2026-08-11
 
-- `features/flashcards/data/enhanceCard.ts` → `.../components/set-detail/EnhanceSetDialog.tsx`
-- `features/flashcards/fast-fire/agents/gradeCard.thunk.ts`, `.../grading-core.ts` → `FastFireLiveCard.tsx`, `SingleCardVoiceTest.tsx`
-- `features/flashcards/data/useGenerateCards.ts` → `.../create/CreateFromSource.tsx` (`CreateFromTopic` already uses the progressive-kind pattern — copy it)
+- **Generate from a document** (`CreateFromSource`) reads the same
+  `flashcard_set` envelope `CreateFromTopic` does (Redux `selectKindEnvelope`
+  only — no second parse session) and renders `LiveGenerationPreview`, so
+  grounded cards appear card-by-card.
+- **Enhance a card** (`enrichCard` / `expandCard` → `EnhanceSetDialog`): the
+  thunks take an optional `onConversationCreated` and switch to the live
+  posture only when a caller passes it; the dialog mounts `LiveRunDisplay`
+  under the card being enhanced and owns the kept instances (released on
+  re-run, save, discard, unmount).
+- **Single-card voice test** (`runSpokenGrader` / `gradeSpokenAnswer` →
+  `SingleCardVoiceTest`): same opt-in handle; the grade streams where the
+  "Grading your answer…" pulser sat.
 
-Route family: `/education/flashcards/*`, `/education/fastfire`.
+**FastFire's drill lane deliberately still does not stream its grades, and that
+is correct** — `gradeCard.thunk` is fire-and-forget by design (REQUIREMENTS §7):
+grading happens WHILE the learner speaks the next card, so surfacing the
+previous card's grade would both leak the answer and fight the timer. What
+`FastFireLiveCard` shows is a live count that decrements plus a live scoreboard,
+not a dead spinner. Do not "fix" it.
+
+`features/flashcards/data/quiz/makeQuizItems.ts` stays out of scope (headless
+fallback distractor source, never rendered — see Class E below).
 
 ### 4. Research Outputs Studio — DONE 2026-08-11
 
@@ -253,25 +270,38 @@ They split three ways once the payloads were actually read:
   blocked by dev-server contention and has not been run.
   See `features/podcasts/FEATURE.md`.
 
-### 6. Page-shifting live blocks — C, S each
+### 6. Page-shifting live blocks — DONE 2026-08-11
 
-The live block sits above the page's own results and pushes them down the
-instant a run starts.
+All three floated. `/marketing/keyword-research`, `…/sites/[siteId]/authority`,
+and `…/sites/[siteId]/reputation` no longer insert a live block above the
+keyword table / KPI band / brief.
 
-| File:line | Route | Note |
-|---|---|---|
-| `features/marketing/seo/keyword-research/components/KeywordResearchWorkbench.tsx:510` | `/marketing/keyword-research` | Hosts `KeywordResearchLauncher` in a top bar; the launcher's live feed (`KeywordResearchLauncher.tsx:197`) expands on run and pushes the keyword table down. **The streaming itself is correct** — only the placement violates. |
-| `features/marketing/authority/AuthorityRouterWorkspace.tsx:175` | `…/sites/[siteId]/authority` | `LiveRunDisplay` above the KPI band and every result section |
-| `features/marketing/components/reputation/ReputationWorkspace.tsx:527` | `…/sites/[siteId]/reputation` | `LiveRunDisplay` above `<KpiBand>` and the brief |
+The migration is one hook — **`useFloatingLiveRun`**
+(`features/overlays/openers/liveRunWindow.tsx`), the canonical replacement for
+an inline `LiveRunDisplay` that sits above a host's own content. It opens the
+window on the run's false→true edge (pending, before a requestId exists), pushes
+the handle in when it lands, and re-binds the SAME window on a remount because
+the `instanceId` is stable. `KeywordResearchLauncher` gained
+`liveFeed="inline" | "floating"` so its window and bottom-of-page tab hosts keep
+their (compliant) inline feed.
 
-**Fix:** float it — `useOpenLiveRunWindow()` on run start — or move the block
-below the results so the page only grows downward. The inline exception has to
-be *earned*; none of these three is purpose-built enough to qualify.
+**The trap this exposed, verified live on `/marketing/keyword-research`:** the
+first version closed the window on unmount, and the window vanished at the exact
+moment the content completed — the results refetch remounts the launcher. **A
+floating run window must never auto-close**, not on completion and not on
+unmount; it is ephemeral, it has a close button, and a long run should keep
+streaming while the user works elsewhere.
 
 **Verified compliant, do not touch:** `CompetitorAutopsyWorkspace.tsx:322`
 (gated to `status === "running"`, sits below the launcher card and above only
 historical output) and `AiVisibilityWorkspace.tsx:599` (inside the run section,
 with a real empty-state). `KeywordResearchTab.tsx:267` renders at the bottom.
+
+**Still open here, found while verifying:** `useKeywordResearch`'s unmount
+effect calls `removeRequest(adoptedRequestId)`, so a HOST REMOUNT (not just
+leaving the page) reaps the adopted row out from under anything still bound to
+it. The inline feed hid this behind its saved-artifact fallback; a floating
+window shows it as an empty box. Chip it with the class-D durability work.
 
 ### 7. Marketing miscellaneous — A, S–M
 
