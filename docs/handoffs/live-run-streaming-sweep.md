@@ -32,7 +32,7 @@ defect as a spinner**.
 | **B** | Spinner-only, no stream handle yet — needs `adoptForeignStream` or a `useRunAgent`→`useLiveAgentRun` migration first | **5** |
 | **C** | Page-shifting live-run block (live output above the page's own content) | **3** |
 | **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **12** (11 overlap A) |
-| **E** | No content-IR kind exists for the payload — streaming prettily also needs a kind + schema + component | **6** |
+| **E** | Needs a content-IR kind before it can stream well — 4 confirmed (2 of the original 6 resolved as text/headless, see below) | **4** |
 
 Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L** ≈ a day+.
 
@@ -118,10 +118,9 @@ Routes: `/transcripts/studio/[sessionId]`, `/transcripts/scribe`.
 and render `<LiveRunDisplay requestId>` in the owning column. These are long
 runs on a page the user watches — high pain per occurrence.
 
-### 4. Flashcards — 5 spinner-only runs — A (+E for the JSON ones), S–M
+### 4. Flashcards — 4 spinner-only runs — A, S–M
 
 - `features/flashcards/data/enhanceCard.ts` → `.../components/set-detail/EnhanceSetDialog.tsx`
-- `features/flashcards/data/quiz/makeQuizItems.ts` — **E**: raw JSON, no kind
 - `features/flashcards/fast-fire/agents/gradeCard.thunk.ts`, `.../grading-core.ts` → `FastFireLiveCard.tsx`, `SingleCardVoiceTest.tsx`
 - `features/flashcards/data/useGenerateCards.ts` → `.../create/CreateFromSource.tsx` (`CreateFromTopic` already uses the progressive-kind pattern — copy it)
 
@@ -134,14 +133,15 @@ is the shared spinner for the Slides and SEO-card generators.
 Route: `/research/topics/[topicId]/outputs`.
 
 Blog generation on the same page already streams (`:930`), so the contrast is
-visible to the user inside one screen. Payloads are structured JSON → use the
-`selectKindEnvelope` progressive-kind pattern, not raw text. **E**: neither
-slides nor SEO cards has a registered kind.
+visible to the user inside one screen. Both payloads are structured JSON → the
+`selectKindEnvelope` progressive-kind pattern. **Both are chipped (class E):**
+slides binds to the EXISTING `presentation_deck` kind; the SEO package needs a
+new kind. See "Class E — resolved" below.
 
 Also on this file: `AnalysisList.tsx:703` truncates its live stream to 200
 characters — unfix it while here.
 
-### 6. Podcasts — three generators, silent by design — B + E, M each
+### 6. Podcasts — three generators, silent by design — B (+E for two), S–M each
 
 `useEpisodeArticles.ts:67`, `useEpisodeTitleOptions.ts:70`,
 `useEpisodeChapters.ts:49` all use `useRunAgent`, which **produces no
@@ -149,11 +149,16 @@ characters — unfix it while here.
 this is class B: migrate to `useLiveAgentRun` first.
 Hosts: `features/podcasts/studio/components/{EpisodeContentStudio,EpisodeTitlePanel,EpisodeChaptersPanel}.tsx`.
 
-**E**: the payloads are article lists / title options / chapter lists with no
-registered kind. Observed shapes — articles: `{ articles: [{ title, url,
-summary }] }`; titles: `{ options: [{ title, rationale }] }`; chapters:
-`{ chapters: [{ start, title }] }`. They were left silent deliberately because
-raw JSON is ugly; defining the three kinds is the real fix.
+They split three ways once the payloads were actually read:
+
+- **Articles (blog / show notes) — plain markdown.** No kind, no schema. The
+  hook already holds the assembled markdown in `drafts`; migrating to
+  `useLiveAgentRun` and streaming it is the WHOLE fix. **S.**
+- **Title options** — pick-one-and-apply, persisted to `pc_episodes.title`. Kind
+  required. **Chipped.**
+- **Chapters** — timestamped segments persisted to `pc_episodes.chapters`,
+  used to seek the player. Kind required (check `timeline.ts` for reuse).
+  **Chipped.**
 
 ### 7. Page-shifting live blocks — C, S each
 
@@ -220,14 +225,31 @@ the false-positive rate on genuinely headless plumbing is high.
 - `NewCrawlWorkspace.tsx` — the class-D reference implementation.
 - Content-plan surfaces, `AssessmentCreate`, `CreateFromTopic`, `ShapeTestTab`.
 
-## Decisions needed
+## Class E — resolved 2026-08-11, no open decision
 
-**Situation.** Six of these surfaces produce structured JSON with no registered
-content-IR kind (podcast articles / titles / chapters, research slides, research
-SEO cards, flashcard quiz items). Streaming them as raw text would look worse
-than the current spinner; making them look good means defining a kind, schema,
-and component for each — roughly a day apiece on top of the streaming fix.
+**Text does not need a kind.** `MarkdownStream` in a window panel renders
+anything — plain markdown, and any content-IR envelope it encounters routes to
+the registered component or artifact automatically. Unknown text is not ugly; it
+is beautiful when rendered through the canonical pipeline. A kind is earned only
+when the output is consumed STRUCTURALLY (persisted to typed columns, driving a
+player, powering a pick-one interaction) — and then it is a full end-to-end job:
+schema, agent instructions updated, every usage moved to the latest version,
+kind + component registered, tested live. That is a focused session, never a
+note.
 
-**Decide.** Define the six kinds as part of this sweep, or ship the streaming
-fixes everywhere a kind already exists and queue the six as a separate
-kind-authoring batch?
+Each of the six was read in code. Verdicts:
+
+| Item | Verdict |
+|---|---|
+| Podcast articles (blog / show notes) — `useEpisodeArticles.ts` | **Text — no kind.** The agent returns markdown, already held in `drafts`. Fix is the §6 class-B migration plus `MarkdownStream`, nothing more. |
+| Flashcard quiz items — `makeQuizItems.ts` | **Not applicable — removed from the sweep.** It is the optional FALLBACK distractor source for sets too small to have sibling cards; the result feeds `buildQuizQuestions` and is never rendered. Genuinely headless plumbing. |
+| Research slide deck — `OutputsStudio.tsx:1069` | **Kind already exists.** The agent returns `{ title, slides[] }` — exactly `presentation_deck` (`features/content-ir/kinds/presentation-deck.ts` → Slideshow). No new kind; bind it. → chip |
+| Research SEO package — `OutputsStudio.tsx:1215` | **New kind.** `{ title, meta_description, slug, primary_keyword, keywords[], schema_org, open_graph, faq[] }` with character-limit validation UI (`SeoView:1391`). `page_brief` does not fit (content-plan specific). → chip |
+| Podcast chapters — `useEpisodeChapters.ts:49` | **Kind.** Timestamped segments persisted to `pc_episodes.chapters`, used to seek the player. Check `timeline.ts` for reuse first. → chip |
+| Podcast title options — `useEpisodeTitleOptions.ts:70` | **Kind.** Pick-one-and-apply; `video_prompt_options` is the action-carrying precedent to model on. → chip |
+
+Four focused sessions are queued as chips (slide deck, SEO package, chapters,
+title options). Each carries the full end-to-end contract: schema, agent
+instruction rewrite via `agent_author`, every usage repinned, kind + component +
+dual-gate example, live posture, real end-to-end test. **Do not start one of
+these inline in a sweep session** — that is how a half-authored kind ships.
