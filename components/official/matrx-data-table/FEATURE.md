@@ -30,6 +30,12 @@ tables (AI Models, relationships, …) can cut over to one contract.
   direct database query and returns only the current rows.
 - **Controlled search feedback is immediate.** Consumers may debounce the query
   state, but must pass the immediate display state back to the table.
+- **Primary search semantics are explicit when enabled.** Set
+  `toolbar.searchMatch`; the input gains a connected Contains / Whole words
+  control and emits `query.state.searchMatchMode`. Contains preserves substring
+  matching. Whole words tokenizes Unicode letters/numbers and requires every
+  entered word as a complete token (`are` never matches `hardware`). Controlled
+  data sources must enforce the same mode before count and pagination.
 - **Layered filters use one shared rule contract.** Set
   `toolbar.layeredFilters.fields`; the compact Advanced control emits ordered,
   AND-combined text/select/number rules into `query.state.layeredFilters`.
@@ -108,6 +114,7 @@ expose `aria-sort` on the `<th>` automatically.
   toolbar={{
     facets: […],
     anyOf: { columnIds: ["a", "b"] },
+    searchMatch: {},
     layeredFilters: { fields: [{ id: "name", label: "Name", kind: "text" }] },
   }}
   copy={{ label, location, rowKind, listKind, humanRow }}
@@ -157,8 +164,10 @@ Do not drop these when replacing `AiModelTable`:
   numeric comparisons/ranges, ordered chips, drag/keyboard reorder, and one
   global clear path. The keyword classification workbench is the first
   server-backed consumer.
-| RunControlsWindow             | WindowPanel sidebar tab pattern             | —                                       |
-| `CopyButtons`                 | agent envelope                              | —                                       |
+- 2026-08-11 — Added an opt-in visible Contains / Whole words primary-search
+  control, reusable local matching semantics, and controlled-query state.
+  | RunControlsWindow | WindowPanel sidebar tab pattern | — |
+  | `CopyButtons` | agent envelope | — |
 
 ## Change Log
 

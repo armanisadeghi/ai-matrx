@@ -21,6 +21,28 @@ const CONTROLLED_STATE: MatrxDataTableQueryState = {
 };
 
 describe("MatrxDataTable controlled mode", () => {
+  it("shows an explicit primary-search matching mode when enabled", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: "Hardware" }]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        query={{
+          mode: "controlled",
+          state: { ...CONTROLLED_STATE, searchMatchMode: "whole_words" },
+          totalItems: 1,
+          onStateChange: jest.fn(),
+        }}
+        toolbar={{ searchMatch: {} }}
+        detail={{ enabled: false }}
+      />,
+    );
+
+    expect(markup).toContain('aria-label="Search match: whole words"');
+    expect(markup).toContain('aria-pressed="true"');
+    expect(markup).toContain("Whole words");
+  });
+
   it("renders the supplied remote page without filtering or slicing it again", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable

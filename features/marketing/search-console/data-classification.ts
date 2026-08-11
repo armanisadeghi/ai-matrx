@@ -29,6 +29,7 @@ import type {
 } from "@/features/marketing/search-console/types";
 import type { ClassRuleMatchKind } from "@/features/marketing/search-console/lib/class-rules";
 import type { LayeredFilterRule } from "@/components/official/matrx-data-table/layered-filters";
+import type { TableSearchMatchMode } from "@/components/official/matrx-data-table/types";
 import type { Json } from "@/types/database.types";
 
 async function seoDb() {
@@ -64,6 +65,7 @@ export interface GscClassReviewQuery {
   trafficClasses: GscTrafficClass[] | null;
   sources: GscClassSource[] | null;
   search: string;
+  searchMatchMode: TableSearchMatchMode;
   sort: GscClassReviewSort;
   sortDir: "asc" | "desc";
   page: number;
@@ -105,6 +107,7 @@ function reviewParams(
     p_classes: query.trafficClasses?.length ? query.trafficClasses : undefined,
     p_sources: query.sources?.length ? query.sources : undefined,
     p_search: query.search.trim() || undefined,
+    p_search_mode: query.searchMatchMode,
     p_sort: query.sort,
     p_sort_dir: query.sortDir,
     p_limit: query.pageSize,

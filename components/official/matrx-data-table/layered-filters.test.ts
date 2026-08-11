@@ -1,4 +1,4 @@
-import { filterAndSortRows } from "./filter-engine";
+import { filterAndSortRows, matchesTableSearch } from "./filter-engine";
 import {
   columnFiltersToLayeredRules,
   decodeLayeredFilterRules,
@@ -24,6 +24,53 @@ const RULES: LayeredFilterRule[] = [
 ];
 
 describe("MatrxDataTable layered filters", () => {
+  it("distinguishes substring search from complete-word search", () => {
+    expect(matchesTableSearch("hardware recycling", "are", "contains")).toBe(
+      true,
+    );
+    expect(matchesTableSearch("hardware recycling", "are", "whole_words")).toBe(
+      false,
+    );
+    expect(matchesTableSearch("we are ready", "are", "whole_words")).toBe(true);
+  });
+
+  it("requires every entered term in whole-word mode", () => {
+    expect(
+      matchesTableSearch(
+        "secure ITAD services near me",
+        "itad me",
+        "whole_words",
+      ),
+    ).toBe(true);
+    expect(
+      matchesTableSearch(
+        "secure ITAD services nearby",
+        "itad me",
+        "whole_words",
+      ),
+    ).toBe(false);
+  });
+
+  it("applies whole-word mode through the local table engine", () => {
+    const columns: MatrxColumnDef<{ query: string }>[] = [
+      { accessorKey: "query", header: "Keyword" },
+    ];
+    const rows = [{ query: "hardware" }, { query: "we are ready" }];
+
+    expect(
+      filterAndSortRows(
+        rows,
+        columns,
+        {},
+        null,
+        "are",
+        undefined,
+        undefined,
+        "whole_words",
+      ),
+    ).toEqual([{ query: "we are ready" }]);
+  });
+
   it("round-trips ordered rules through URL state", () => {
     expect(decodeLayeredFilterRules(encodeLayeredFilterRules(RULES))).toEqual(
       RULES,

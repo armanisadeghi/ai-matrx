@@ -262,7 +262,10 @@ class into it (`Classify →` / `Review →`,
   ACCURACY CONTRACT; server-paged/sorted/filtered (class + source accept
   arrays because the table's select filters are multi-choice — a filter the
   server can't serve must not render). The ordinary keyword search stays the
-  primary control; Advanced adds up to 20 ordered AND layers over keyword,
+  primary control and now exposes Contains / Whole words directly beside the
+  input; `q_match=whole_words` is URL-stable and the live RPC applies every
+  entered token as a complete word before count/pagination. Advanced adds up
+  to 20 ordered AND layers over keyword,
   class/source, impressions, clicks, CTR percentage, AI intent, notes, ruling
   origin, and confirmation state. Whole-word include/exclude semantics support
   workflows such as `ITAD` minus `what` / `how` / `meaning`; numeric column
@@ -385,13 +388,13 @@ clicks — the doctrine's named failure ("raw totals lie").
 `components/ambassador/` is the embed layer. Hosts pass a `siteId`; the layer
 owns the period/compare machinery so no host has to learn it.
 
-| Export | Use |
-|---|---|
-| `useGscClassRollup(siteId, range)` | One site. Clamps the window to that site's freshest day, forces the prev-period compare `gsc_perf_class_summary` requires, zero-fills to canonical class order. |
-| `shapeGscClassRollup(rows, periods)` | Pure core of the above — unit-tested arithmetic. |
-| `GscClassBar` | The embeddable strip (`bar` \| `tiles`). Segments drill into `GscDrilldownWindow`; header links back here. |
-| `useGscPortfolioRollup(siteIds, range)` | Many sites, via `seo.gsc_perf_class_summary_multi`. |
-| `GscPortfolioClassBar` | Brand/portfolio strip; states how many sites contributed. |
+| Export                                  | Use                                                                                                                                                             |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useGscClassRollup(siteId, range)`      | One site. Clamps the window to that site's freshest day, forces the prev-period compare `gsc_perf_class_summary` requires, zero-fills to canonical class order. |
+| `shapeGscClassRollup(rows, periods)`    | Pure core of the above — unit-tested arithmetic.                                                                                                                |
+| `GscClassBar`                           | The embeddable strip (`bar` \| `tiles`). Segments drill into `GscDrilldownWindow`; header links back here.                                                      |
+| `useGscPortfolioRollup(siteIds, range)` | Many sites, via `seo.gsc_perf_class_summary_multi`.                                                                                                             |
+| `GscPortfolioClassBar`                  | Brand/portfolio strip; states how many sites contributed.                                                                                                       |
 
 Mounted on: `SiteOverview` (under the KPI grid), `SiteKpiPeeks` (inside the
 lazy hovercard, so a 22-row table costs nothing until hovered), and
@@ -530,6 +533,7 @@ its dismiss-layer race — the input "flashed and disappeared").
   the fast keyword search, added compact ordered AND rules with removable
   chips/reorder/clear, wired whole-word exclusions and numeric ranges through
   the live review RPC, enabled sort/filter for every visible data column, and
+  added explicit Contains / Whole words semantics to primary keyword search,
   moved the narrow Class column directly after selection and before Keyword.
   Keyword names now open the canonical Keyword Intelligence window. Live SQL
   verification: ITAD minus what/how/meaning returned 230 matches with zero
@@ -548,7 +552,7 @@ its dismiss-layer race — the input "flashed and disappeared").
   slot refused its pinned agent on every call (agent declared no structured
   `output_schema`, slot contract requires the `results` key), aidream answered
   502, and Cloudflare replaced that response with a CORS-less error page — so the
-  browser could only say *"AI classification failed — Failed to fetch"*. Fixed at
+  browser could only say _"AI classification failed — Failed to fetch"_. Fixed at
   three layers: the agent got a real output schema (verified live), aidream now
   sends app failures as 500 (`api/FEATURE.md`), and this client sends one
   server batch per request with a 90s header budget. Same repair applied to the

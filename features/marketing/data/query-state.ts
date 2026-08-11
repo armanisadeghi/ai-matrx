@@ -89,6 +89,7 @@ export function clearTableUrlParams(params: URLSearchParams): void {
     "page",
     "pageSize",
     "q",
+    "q_match",
     "anyOf",
     "layers",
     "sort",
@@ -117,6 +118,9 @@ function writeState(
     ? next.delete("pageSize")
     : next.set("pageSize", String(state.pageSize));
   state.search ? next.set("q", state.search) : next.delete("q");
+  state.search && state.searchMatchMode === "whole_words"
+    ? next.set("q_match", "whole_words")
+    : next.delete("q_match");
   state.anyOf ? next.set("anyOf", state.anyOf) : next.delete("anyOf");
   const encodedLayers = encodeLayeredFilterRules(state.layeredFilters);
   encodedLayers ? next.set("layers", encodedLayers) : next.delete("layers");
@@ -157,6 +161,8 @@ function readState(
     page: positiveInt(params.get("page"), 1),
     pageSize,
     search: params.get("q") ?? "",
+    searchMatchMode:
+      params.get("q_match") === "whole_words" ? "whole_words" : "contains",
     anyOf: params.get("anyOf") ?? "",
     layeredFilters: decodeLayeredFilterRules(params.get("layers")),
     columnFilters: readFilters(params),

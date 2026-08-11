@@ -12,6 +12,9 @@ export type ColumnFilterKind =
 
 export type SortDirection = "asc" | "desc";
 
+/** How the table's primary search text is matched. */
+export type TableSearchMatchMode = "contains" | "whole_words";
+
 /** Cell value type for typed inline editors (Supabase-style popovers for non-strings). */
 export type CellEditType =
   | "string"
@@ -186,6 +189,8 @@ export interface MatrxDataTableQueryState {
   page: number;
   pageSize: number;
   search: string;
+  /** Defaults to `contains` when omitted, preserving every existing table. */
+  searchMatchMode?: TableSearchMatchMode;
   anyOf: string;
   /** Ordered AND rules from the compact advanced-filter builder. */
   layeredFilters?: LayeredFilterRule[];
@@ -251,6 +256,13 @@ export interface MatrxDataTableToolbar {
   searchPlaceholder?: string;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  /**
+   * Show a compact, visible choice between substring and whole-word search.
+   * Omit it when a data source cannot honor both modes server-side.
+   */
+  searchMatch?: {
+    defaultMode?: TableSearchMatchMode;
+  };
   /**
    * OR-search across specific columns (e.g. source_type OR target_type).
    * Shown as its own input beside global search when set.

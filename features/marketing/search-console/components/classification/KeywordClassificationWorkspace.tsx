@@ -314,6 +314,7 @@ export function KeywordClassificationWorkspace({
     trafficClasses: selectValues(classFilter) as GscTrafficClass[] | null,
     sources: selectValues(sourceFilter) as GscClassSource[] | null,
     search: state.search,
+    searchMatchMode: state.searchMatchMode ?? "contains",
     sort: sortId,
     sortDir: state.sort?.direction === "asc" ? "asc" : "desc",
     pattern: preview?.pattern ?? null,
@@ -523,6 +524,7 @@ export function KeywordClassificationWorkspace({
               trafficClasses: ["unclassified"],
               sources: null,
               search: "",
+              searchMatchMode: "contains",
               sort: "impressions",
               sortDir: "desc",
               pattern: autoRule.pattern,
@@ -1055,6 +1057,7 @@ export function KeywordClassificationWorkspace({
           }}
           toolbar={{
             searchPlaceholder: "Search keywords…",
+            searchMatch: {},
             layeredFilters: {
               fields: CLASSIFICATION_LAYERED_FIELDS,
               maxRules: 20,

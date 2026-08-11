@@ -46,6 +46,7 @@ export function buildViewAgentInput<T>(
   all: T[],
   meta?: {
     search?: string;
+    searchMatchMode?: string;
     anyOf?: string;
     filterCount?: number;
     sort?: string | null;
@@ -63,6 +64,7 @@ export function buildViewAgentInput<T>(
       visible_count: visible.length,
       total_count: all.length,
       search: meta?.search || undefined,
+      search_match: meta?.search ? meta.searchMatchMode : undefined,
       any_of: meta?.anyOf || undefined,
       active_filters: meta?.filterCount ?? 0,
       sort: meta?.sort || undefined,
@@ -81,9 +83,7 @@ export function rowsToCsvFromColumns<T>(
     /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
   const lines = [
     cols
-      .map((c) =>
-        escape(typeof c.header === "string" ? c.header : columnId(c)),
-      )
+      .map((c) => escape(typeof c.header === "string" ? c.header : columnId(c)))
       .join(","),
   ];
   for (const row of rows) {

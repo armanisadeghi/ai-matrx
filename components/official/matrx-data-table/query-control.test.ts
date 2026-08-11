@@ -17,6 +17,7 @@ const BASE_STATE: MatrxDataTableQueryState = {
 describe("MatrxDataTable controlled query state", () => {
   it.each([
     ["search", { search: "pricing" }],
+    ["search match mode", { searchMatchMode: "whole_words" }],
     ["any-of search", { anyOf: "example.com" }],
     [
       "column filters",

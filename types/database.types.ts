@@ -45180,6 +45180,7 @@ export type Database = {
           p_offset?: number
           p_pattern?: string
           p_search?: string
+          p_search_mode?: string
           p_site_id: string
           p_sort?: string
           p_sort_dir?: string

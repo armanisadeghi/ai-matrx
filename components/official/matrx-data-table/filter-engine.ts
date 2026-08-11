@@ -3,6 +3,7 @@ import type {
   ColumnFiltersState,
   MatrxColumnDef,
   SortState,
+  TableSearchMatchMode,
 } from "./types";
 import {
   completeLayeredFilterRules,
@@ -44,6 +45,37 @@ export function stringifyCellValue(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+/** Unicode-aware tokenization shared by whole-word table search. */
+export function tableSearchWords(value: string): string[] {
+  return value
+    .toLocaleLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean);
+}
+
+/**
+ * Match the primary table search against one row's searchable text. In
+ * whole-word mode every entered word must exist as a complete token, so
+ * `are` matches `we are ready` but never `hardware`.
+ */
+export function matchesTableSearch(
+  searchableText: string,
+  query: string,
+  mode: TableSearchMatchMode = "contains",
+): boolean {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  if (!normalizedQuery) return true;
+  if (mode === "contains") {
+    return searchableText.toLocaleLowerCase().includes(normalizedQuery);
+  }
+  const actualWords = new Set(tableSearchWords(searchableText));
+  const expectedWords = tableSearchWords(normalizedQuery);
+  return (
+    expectedWords.length > 0 &&
+    expectedWords.every((word) => actualWords.has(word))
+  );
 }
 
 function compareValues(a: unknown, b: unknown): number {
@@ -112,6 +144,7 @@ export function filterAndSortRows<T>(
   globalSearch: string,
   anyOf?: { columnIds: string[]; query: string },
   layeredFilters?: readonly LayeredFilterRule[],
+  globalSearchMode: TableSearchMatchMode = "contains",
 ): T[] {
   const colById = new Map(columns.map((c) => [columnId(c), c]));
   const q = globalSearch.trim().toLowerCase();
@@ -145,14 +178,18 @@ export function filterAndSortRows<T>(
     }
 
     if (!q) return true;
-    return columns.some((col) => {
-      if (col.filter === false && !col.accessorKey && !col.accessorFn) {
-        return false;
-      }
-      return stringifyCellValue(getCellValue(row, col))
-        .toLowerCase()
-        .includes(q);
-    });
+    const searchableValues = columns
+      .filter(
+        (col) =>
+          col.filter !== false || Boolean(col.accessorKey || col.accessorFn),
+      )
+      .map((col) => stringifyCellValue(getCellValue(row, col)));
+    if (globalSearchMode === "contains") {
+      return searchableValues.some((value) =>
+        matchesTableSearch(value, q, "contains"),
+      );
+    }
+    return matchesTableSearch(searchableValues.join(" "), q, "whole_words");
   });
 
   if (sort) {

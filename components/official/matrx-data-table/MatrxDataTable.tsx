@@ -16,6 +16,7 @@ import {
   PanelRight,
   PanelRightOpen,
   Search,
+  WholeWord,
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -72,6 +73,7 @@ import type {
   MatrxDataTableProps,
   MatrxDataTableQueryState,
   SortState,
+  TableSearchMatchMode,
 } from "./types";
 
 /**
@@ -135,6 +137,22 @@ export function MatrxDataTable<T>({
       setInternalSearch(v);
     }
     toolbar?.onSearchChange?.(v);
+  };
+  const [internalSearchMatchMode, setInternalSearchMatchMode] =
+    useState<TableSearchMatchMode>(
+      toolbar?.searchMatch?.defaultMode ?? "contains",
+    );
+  const searchMatchMode = controlledQuery
+    ? (controlledQuery.state.searchMatchMode ??
+      toolbar?.searchMatch?.defaultMode ??
+      "contains")
+    : internalSearchMatchMode;
+  const setSearchMatchMode = (mode: TableSearchMatchMode) => {
+    if (controlledQuery) {
+      emitControlledQueryChange({ searchMatchMode: mode }, { resetPage: true });
+      return;
+    }
+    setInternalSearchMatchMode(mode);
   };
 
   const [internalAnyOf, setInternalAnyOf] = useState("");
@@ -284,6 +302,7 @@ export function MatrxDataTable<T>({
         ? { columnIds: toolbar.anyOf.columnIds, query: anyOfValue }
         : undefined,
       layeredFilters,
+      searchMatchMode,
     );
   }, [
     data,
@@ -294,6 +313,7 @@ export function MatrxDataTable<T>({
     toolbar,
     anyOfValue,
     layeredFilters,
+    searchMatchMode,
     controlledQuery,
   ]);
 
@@ -303,6 +323,7 @@ export function MatrxDataTable<T>({
     setInternalPage(1);
   }, [
     searchValue,
+    searchMatchMode,
     anyOfValue,
     layeredFilters,
     columnFilters,
@@ -430,7 +451,13 @@ export function MatrxDataTable<T>({
   const clearAllFilters = () => {
     if (controlledQuery) {
       emitControlledQueryChange(
-        { search: "", anyOf: "", layeredFilters: [], columnFilters: {} },
+        {
+          search: "",
+          searchMatchMode: toolbar?.searchMatch?.defaultMode ?? "contains",
+          anyOf: "",
+          layeredFilters: [],
+          columnFilters: {},
+        },
         { resetPage: true },
       );
       toolbar?.onSearchChange?.("");
@@ -438,6 +465,9 @@ export function MatrxDataTable<T>({
     } else {
       setInternalColumnFilters({});
       setSearchValue("");
+      setInternalSearchMatchMode(
+        toolbar?.searchMatch?.defaultMode ?? "contains",
+      );
       setAnyOfValue("");
       setInternalLayeredFilters([]);
     }
@@ -506,24 +536,63 @@ export function MatrxDataTable<T>({
         showToolbarCopy) && (
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {showSearch ? (
-            <div className="relative w-full max-w-xs">
-              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                placeholder={toolbar?.searchPlaceholder ?? "Search…"}
-                className="h-8 pl-7 pr-7 text-sm"
-                style={{ fontSize: "16px" }}
-              />
-              {searchValue ? (
-                <button
+            <div
+              className={cn(
+                "flex w-full",
+                toolbar?.searchMatch ? "max-w-md" : "max-w-xs",
+              )}
+            >
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  placeholder={toolbar?.searchPlaceholder ?? "Search…"}
+                  className={cn(
+                    "h-8 pl-7 pr-7 text-sm",
+                    toolbar?.searchMatch && "rounded-r-none",
+                  )}
+                  style={{ fontSize: "16px" }}
+                />
+                {searchValue ? (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                    onClick={() => setSearchValue("")}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </div>
+              {toolbar?.searchMatch ? (
+                <Button
                   type="button"
-                  aria-label="Clear search"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
-                  onClick={() => setSearchValue("")}
+                  variant={
+                    searchMatchMode === "whole_words" ? "secondary" : "outline"
+                  }
+                  size="sm"
+                  className="h-8 shrink-0 gap-1 rounded-l-none border-l-0 px-2 text-xs"
+                  aria-pressed={searchMatchMode === "whole_words"}
+                  aria-label={`Search match: ${searchMatchMode === "whole_words" ? "whole words" : "contains text"}`}
+                  title={
+                    searchMatchMode === "whole_words"
+                      ? "Whole words — click to match text anywhere"
+                      : "Contains text — click to require whole words"
+                  }
+                  onClick={() =>
+                    setSearchMatchMode(
+                      searchMatchMode === "whole_words"
+                        ? "contains"
+                        : "whole_words",
+                    )
+                  }
                 >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                  <WholeWord className="h-3.5 w-3.5" />
+                  {searchMatchMode === "whole_words"
+                    ? "Whole words"
+                    : "Contains"}
+                </Button>
               ) : null}
             </div>
           ) : null}
@@ -590,6 +659,7 @@ export function MatrxDataTable<T>({
                   agent={() =>
                     buildViewAgentInput(copy, processed, data, {
                       search: searchValue,
+                      searchMatchMode,
                       anyOf: anyOfValue,
                       filterCount:
                         activeFilterCount +
