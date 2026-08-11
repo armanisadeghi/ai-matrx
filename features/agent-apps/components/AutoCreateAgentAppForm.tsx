@@ -38,7 +38,11 @@ import {
   ResponseMode,
 } from "../config-instructions";
 import Link from "next/link";
-import { useAutoCreateApp } from "../hooks/useAutoCreateApp";
+import {
+  useAutoCreateApp,
+  isAgentPayloadReady,
+  EMPTY_PAYLOAD_ERROR,
+} from "../hooks/useAutoCreateApp";
 import { draftRecoveryHref } from "../services/auto-create-draft";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
@@ -71,6 +75,47 @@ interface AutoCreateAgentAppFormProps {
 }
 
 type CreationMode = "initial" | "select" | "describe";
+
+/**
+ * Remount-proof auto-fire guard.
+ *
+ * The per-mount `useRef` below stops the effect from firing twice within ONE
+ * mount — it cannot stop the form from being unmounted and remounted (a parent
+ * re-render, a StrictMode double-mount, an agent row arriving late), which is
+ * how one click on "Let Us Handle It" produced TWO billed runs 2 seconds apart
+ * on 2026-08-11 (D152). A module-scoped claim survives that.
+ *
+ * Auto-fire is mount-triggered by definition: the user never *intends* two
+ * auto-fires for the same agent seconds apart. Explicit paths (the Retry
+ * button, the "Let Us Handle It" card inside the form, Generate My App) do not
+ * go through this claim and are never blocked.
+ */
+const AUTO_FIRE_CLAIM_WINDOW_MS = 60_000;
+const autoFireClaims = new Map<string, number>();
+
+function claimAutoFire(agentId: string): boolean {
+  const now = Date.now();
+  for (const [id, at] of autoFireClaims) {
+    if (now - at > AUTO_FIRE_CLAIM_WINDOW_MS) autoFireClaims.delete(id);
+  }
+  const last = autoFireClaims.get(agentId);
+  if (last !== undefined && now - last < AUTO_FIRE_CLAIM_WINDOW_MS) {
+    // Loud on purpose: a blocked claim means a remount tried to bill a second
+    // run for a single click.
+    console.warn(
+      `[AutoCreateAgentAppForm] Blocked a duplicate auto-fire for agent ${agentId} ` +
+        `(${now - last}ms after the first). A remount tried to launch a second paid run.`,
+    );
+    return false;
+  }
+  autoFireClaims.set(agentId, now);
+  return true;
+}
+
+/** Explicit user retry — clears the claim so the next auto-fire may proceed. */
+function releaseAutoFireClaim(agentId: string | undefined | null): void {
+  if (agentId) autoFireClaims.delete(agentId);
+}
 
 /**
  * The "no agent selected" screen is its OWN component, above the hooked form.
@@ -231,21 +276,43 @@ function AutoCreateAgentAppFormWithAgent({
 
   // Auto-fire: when the wrapper's "Let Us Handle It" card mounts this form
   // with initialMode="auto-fire", trigger the AI auto-flow immediately on
-  // mount (deduped via ref so React strict-mode's double-mount doesn't
-  // submit twice).
-  const autoFireRef = React.useRef(false);
+  // mount.
+  //
+  // Three things must ALL hold before a paid run starts:
+  //  1. this mount hasn't already fired for this agent (`autoFiredForAgentRef`),
+  //  2. no other mount fired for this agent moments ago (`claimAutoFire`) —
+  //     the per-mount ref alone cannot survive a remount, which is how one
+  //     click produced two billed runs (D152),
+  //  3. the agent is genuinely loaded — never a `{}` snapshot.
+  // When (3) fails we simply wait: the effect re-runs when the agent arrives.
+  const autoFiredForAgentRef = React.useRef<string | null>(null);
   useEffect(() => {
     if (initialMode !== "auto-fire") return;
-    if (autoFireRef.current) return;
-    if (!agent?.id) return;
-    autoFireRef.current = true;
+    if (!isAgentPayloadReady(agent)) return;
+    const agentId: string = agent.id;
+    if (autoFiredForAgentRef.current === agentId) return;
+    if (!claimAutoFire(agentId)) {
+      autoFiredForAgentRef.current = agentId;
+      return;
+    }
+    autoFiredForAgentRef.current = agentId;
     void handleAutoCreate();
     // handleAutoCreate is closed-over via the function declared below; it
     // reads state via captured setters, so leaving it out of the dep array
     // is intentional (this effect should fire once, not whenever any state
     // changes).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialMode, agent?.id]);
+  }, [initialMode, agent?.id, agent]);
+
+  /**
+   * Explicit retry — the ONE path allowed to re-launch after an auto-fire.
+   * Clears both guards so the run the user just asked for is never swallowed.
+   */
+  const handleRetry = () => {
+    autoFiredForAgentRef.current = null;
+    releaseAutoFireClaim(agent?.id);
+    retry();
+  };
 
   const handleSubmit = async () => {
     setError(null);
@@ -299,11 +366,38 @@ function AutoCreateAgentAppFormWithAgent({
     );
 
     // Create the app using the hook
-    await createApp({
-      agent,
-      builtinVariables,
-      mode: useLightningMode ? "lightning" : "standard",
-    });
+    await launchCreate(builtinVariables);
+  };
+
+  /**
+   * The single launch seam. Refuses an empty payload up front (so the user
+   * sees the error surface instead of paying for a run against `{}`) and
+   * routes a rejected createApp into the same ErrorCard.
+   */
+  const launchCreate = async (
+    builtinVariables: Parameters<
+      typeof createApp
+    >[0]["builtinVariables"],
+  ) => {
+    if (!isAgentPayloadReady(agent)) {
+      setError(EMPTY_PAYLOAD_ERROR);
+      setErrorModelResponse(null);
+      setShowFullResponse(false);
+      setCreationMode((prev) => (prev === "initial" ? "describe" : prev));
+      return;
+    }
+    try {
+      await createApp({
+        agent,
+        builtinVariables,
+        mode: useLightningMode ? "lightning" : "standard",
+      });
+    } catch (err) {
+      // createApp reports its own failures through onError; it only *rejects*
+      // when the payload guard fires before anything was spent.
+      setError(err instanceof Error ? err.message : String(err));
+      setCreationMode((prev) => (prev === "initial" ? "describe" : prev));
+    }
   };
 
   const isValid =
@@ -346,11 +440,7 @@ function AutoCreateAgentAppFormWithAgent({
     );
 
     // Create the app using the hook
-    await createApp({
-      agent,
-      builtinVariables,
-      mode: useLightningMode ? "lightning" : "standard",
-    });
+    await launchCreate(builtinVariables);
   };
 
   // Show loading screen while creating app
@@ -578,7 +668,7 @@ function AutoCreateAgentAppFormWithAgent({
               showFullResponse={showFullResponse}
               onToggleFullResponse={() => setShowFullResponse((v) => !v)}
               canRetry={canRetry}
-              onRetry={retry}
+              onRetry={handleRetry}
               draftAppId={draftAppId}
             />
           )}
@@ -680,7 +770,7 @@ function AutoCreateAgentAppFormWithAgent({
           showFullResponse={showFullResponse}
           onToggleFullResponse={() => setShowFullResponse((v) => !v)}
           canRetry={canRetry}
-          onRetry={retry}
+          onRetry={handleRetry}
           draftAppId={draftAppId}
         />
       )}

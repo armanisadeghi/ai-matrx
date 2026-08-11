@@ -100,6 +100,60 @@ interface AutoCreateAppData {
 }
 
 /**
+ * Is this JSON snapshot genuinely carrying an agent, or is it the empty shell
+ * `generateBuiltinVariables` emits when the agent hasn't loaded yet?
+ *
+ * Exported so callers (the auto-create form) can refuse to *start* a run for
+ * the same reason the hook would refuse to run one.
+ */
+export function isEmptyJsonSnapshot(value: string | undefined | null): boolean {
+  const trimmed = (value ?? "").trim();
+  return (
+    trimmed === "" ||
+    trimmed === "{}" ||
+    trimmed === "[]" ||
+    trimmed === "null" ||
+    trimmed === "undefined"
+  );
+}
+
+/** True when `agent` is a real, loaded agent row we can safely generate from. */
+export function isAgentPayloadReady(agent: unknown): boolean {
+  if (!agent || typeof agent !== "object") return false;
+  if (typeof (agent as { id?: unknown }).id !== "string") return false;
+  if (!(agent as { id: string }).id) return false;
+  try {
+    return !isEmptyJsonSnapshot(JSON.stringify(agent));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Thrown before a single token is spent when the generation payload is not
+ * genuinely loaded. Message is user-facing — it lands in the form's ErrorCard.
+ */
+export const EMPTY_PAYLOAD_ERROR =
+  "The agent hasn't finished loading, so there is nothing to build an app from. " +
+  "Wait for the agent to load and try again.";
+
+function assertGenerationPayloadReady(data: AutoCreateAppData): void {
+  if (
+    !isAgentPayloadReady(data.agent) ||
+    isEmptyJsonSnapshot(data.builtinVariables?.prompt_object)
+  ) {
+    console.error(
+      "[AutoCreateApp] Refused to launch a paid generation with an empty agent payload:",
+      {
+        agentId: (data.agent as { id?: unknown } | undefined)?.id ?? null,
+        promptObjectLength: data.builtinVariables?.prompt_object?.length ?? 0,
+      },
+    );
+    throw new Error(EMPTY_PAYLOAD_ERROR);
+  }
+}
+
+/**
  * Acquire a Web Lock to discourage the browser from freezing this tab.
  * Returns a release function. If Web Locks API is unavailable, returns a no-op.
  */
@@ -189,6 +243,16 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
 
   const createApp = useCallback(
     async (data: AutoCreateAppData) => {
+      // 🚨 Refuse to spend money on an empty payload. `generateBuiltinVariables`
+      // stringifies whatever it is handed (`JSON.stringify(promptObject || {})`),
+      // so a form that renders before its agent row has loaded produces a
+      // perfectly well-formed run whose `prompt_object` is the string "{}" —
+      // the model answers "the prompt object you pasted is empty" and the user
+      // is billed for it (observed live 2026-08-11, D152). This guard sits
+      // ABOVE every state write, dispatch, and draft insert so ANY caller is
+      // protected, not just the auto-fire form.
+      assertGenerationPayloadReady(data);
+
       setIsCreating(true);
       isCreatingRef.current = true;
       tabWasHiddenDuringCreation.current = false;
@@ -419,9 +483,15 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
   );
 
   const retry = useCallback(() => {
-    if (lastAttemptData) {
-      createApp(lastAttemptData);
-    }
+    if (!lastAttemptData) return;
+    // createApp rejects (rather than reporting through onError) when the
+    // payload guard fires — surface that instead of leaking an unhandled
+    // rejection.
+    void createApp(lastAttemptData).catch((error: unknown) => {
+      onErrorRef.current?.(
+        error instanceof Error ? error.message : String(error),
+      );
+    });
   }, [lastAttemptData, createApp]);
 
   return {
