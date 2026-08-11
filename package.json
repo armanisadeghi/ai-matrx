@@ -165,6 +165,7 @@
     "lab:run": "bash scripts/build-lab/run.sh"
   },
   "dependencies": {
+    "@matrx/agents": "workspace:*",
     "@ai-sdk/google": "^3.0.43",
     "@anthropic-ai/sdk": "latest",
     "@babel/standalone": "^7.29.1",

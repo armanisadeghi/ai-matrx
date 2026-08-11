@@ -39,26 +39,13 @@ import {
   isRenderBlockEvent,
   isRecordReservedEvent,
   isRecordUpdateEvent,
-  expandCompactEvent,
-  isCompactEvent,
 } from "./types";
+import { readMatrxNdjsonStream } from "@matrx/agents/stream/ndjson";
 import { BackendApiError } from "./errors";
 import {
   captureStreamEvent,
   captureStreamTransportError,
 } from "@/lib/diagnostics/captureStreamError";
-
-// ============================================================================
-// COMPACT EVENT NORMALIZATION (wire format → TypedStreamEvent)
-// ============================================================================
-
-/** Single NDJSON object after JSON.parse — expand compact `e`/`t` lines per python-generated types. */
-function normalizeWireEvent(parsed: unknown): TypedStreamEvent {
-  if (isCompactEvent(parsed)) {
-    return expandCompactEvent(parsed);
-  }
-  return parsed as TypedStreamEvent;
-}
 
 // ============================================================================
 // NDJSON STREAM PARSER
@@ -109,137 +96,21 @@ async function* _parseNdjsonStream(
     });
   }
 
-  // Read-ahead queue: the reader loop runs independently of the consumer so
-  // that TCP flow-control backpressure never causes the server to see a stall
-  // (and emit GeneratorExit). Large payloads (e.g. Brave search results) used
-  // to suspend reader.read() while React processed the previous yield, which
-  // filled the server-side send buffer and dropped all subsequent events.
-  //
-  // Notification design: we use a "pending wakeups" counter rather than a
-  // single resolve callback to avoid the race where notify() fires while the
-  // consumer is between the queue-empty check and the await-new-Promise.
-  // Each push increments the counter; each consumer wakeup decrements it.
-  // If the counter is already > 0 when the consumer would sleep, it skips
-  // the sleep entirely — no wakeup is ever lost.
-  const queue: Array<TypedStreamEvent | BackendApiError | null> = []; // null = done
-  let pendingWakeups = 0;
-  let resolveWaiter: (() => void) | null = null;
-
-  const pushItem = (item: TypedStreamEvent | BackendApiError | null) => {
-    queue.push(item);
-    pendingWakeups++;
-    if (resolveWaiter) {
-      const r = resolveWaiter;
-      resolveWaiter = null;
-      r();
-    }
-  };
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-
-  // Background reader — never yields, never pauses on consumer backpressure.
-  const readLoop = async () => {
-    let buffer = "";
-    try {
-      while (true) {
-        if (signal?.aborted) break;
-
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-
-          try {
-            const parsed: unknown = JSON.parse(trimmed);
-            pushItem(normalizeWireEvent(parsed));
-          } catch {
-            console.warn(
-              "[stream-parser] Failed to parse NDJSON line:",
-              trimmed.slice(0, 100),
-            );
-          }
-        }
-      }
-
-      // Required: flush pending UTF-8 code units when { stream: true } was used.
-      // Without this, multi-byte characters split across chunk boundaries can drop
-      // the tail of the stream (including the final NDJSON line and "end" event).
-      buffer += decoder.decode();
-
-      // Flush any remaining partial line (no trailing newline from server).
-      const remaining = buffer.trim();
-      if (remaining) {
-        try {
-          pushItem(normalizeWireEvent(JSON.parse(remaining)));
-        } catch (parseErr) {
-          console.warn(
-            "[stream-parser] Trailing NDJSON incomplete or invalid (len=%s): %s",
-            String(remaining.length),
-            remaining.slice(0, 500),
-            parseErr,
-          );
-        }
-      }
-    } catch (err) {
-      if (err instanceof BackendApiError) {
-        pushItem(err);
-      } else if (
-        !signal?.aborted &&
-        !(err instanceof Error && err.name === "AbortError")
-      ) {
-        // Cancellation is the normal path. Chromium commonly rejects the
-        // pending read with AbortError; Safari may reject the same aborted read
-        // with TypeError("Load failed"). The signal is the cross-browser source
-        // of truth, so only log failures when it is still live.
-        console.error("[stream-parser] readLoop error:", err);
-      }
-    } finally {
-      reader.releaseLock();
-      pushItem(null); // sentinel: stream finished
-    }
-  };
-
-  // Start the background reader immediately — do not await it here.
-  const readerPromise = readLoop();
-
-  // Consumer loop: yield queued events as fast as the caller processes them.
-  // The reader above never waits on the caller — it always keeps reading.
   try {
-    while (true) {
-      // If no pending wakeups, sleep until the reader pushes something.
-      if (pendingWakeups === 0) {
-        await new Promise<void>((resolve) => {
-          resolveWaiter = resolve;
-          // Guard: if a wakeup arrived between the check above and
-          // setting resolveWaiter, resolve immediately.
-          if (pendingWakeups > 0) {
-            resolveWaiter = null;
-            resolve();
-          }
-        });
-      }
-
-      pendingWakeups--;
-
-      const item = queue.shift();
-      if (item === null || item === undefined) break; // null = done sentinel
-
-      if (item instanceof BackendApiError) {
-        // Transport-level stream failure → Error Inspector, then propagate.
-        // MATRX-EXCEPTION: `ctx` is optional (default context); "" (no
-        // requestId/conversationId) is honest, not a masked failure.
-        captureStreamTransportError(item, ctx ?? {});
-        throw item;
-      }
-
+    for await (const envelope of readMatrxNdjsonStream(response.body, {
+      ...(signal ? { signal } : {}),
+      onMalformedLine: ({ line, error }) => {
+        console.warn(
+          "[stream-parser] Failed to parse NDJSON line:",
+          line.slice(0, 500),
+          error,
+        );
+      },
+      onUnknownEnvelope: (value) => {
+        console.warn("[stream-parser] Unknown NDJSON event envelope:", value);
+      },
+    })) {
+      const item = envelope as TypedStreamEvent;
       // Universal stream-error capture: every consumer (agent processStream,
       // consumeStream, podcast, research) pulls events through here, so this
       // single call feeds the Inspector with every server-emitted typed error
@@ -248,9 +119,28 @@ async function* _parseNdjsonStream(
 
       yield item;
     }
-  } finally {
-    // Ensure the background reader is awaited to avoid unhandled rejections.
-    await readerPromise;
+  } catch (error) {
+    if (
+      signal?.aborted ||
+      (error instanceof Error && error.name === "AbortError")
+    ) {
+      return;
+    }
+    const transportError =
+      error instanceof BackendApiError
+        ? error
+        : new BackendApiError({
+            code: "internal_error",
+            detail:
+              error instanceof Error
+                ? error.message
+                : "The response stream ended unexpectedly.",
+            userMessage: "The connection to the AI response was lost.",
+            details: error,
+            requestId: ctx?.requestId ?? undefined,
+          });
+    captureStreamTransportError(transportError, ctx ?? {});
+    throw transportError;
   }
 }
 

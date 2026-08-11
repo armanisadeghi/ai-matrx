@@ -105,12 +105,17 @@ export {
 export { default as instanceUIStateReducer } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 export { default as instanceClientToolsReducer } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 export { default as instanceContextReducer } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+export { default as instanceWorkingDocumentReducer } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 export { default as instanceModelOverridesReducer } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 export { default as instanceVariableValuesReducer } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 export { default as instanceResourcesReducer } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 export { default as instanceUserInputReducer } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 export { default as conversationFocusReducer } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 export { default as activeRequestsReducer } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+export { default as conversationInboxReducer } from "@/features/agents/redux/execution-system/inbox/inbox.slice";
+export { activeToolsReducer } from "@/features/agents/redux/execution-system/active-tools/active-tools.slice";
+export { default as contextStateReducer } from "@/features/agents/redux/execution-system/context-state/context-state.slice";
+export { default as observationalMemoryReducer } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.slice";
 export {
   messageActionsReducer,
   messageActionsActions,
