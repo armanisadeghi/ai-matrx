@@ -49,7 +49,25 @@ interface JsonExtractionResult<T = unknown> {
 function extractCodeFromResponse(response: string): string | null {
   const normalized = response.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const match = normalized.match(/```(?:\w+)?[^\S\n]*\n([\s\S]*?)```/);
-  return match?.[1]?.trim() ?? null;
+  if (match?.[1]) return match[1].trim();
+
+  // Unfenced module fallback (LOUD). The generators frequently answer with a
+  // bare TSX module and no ``` fence at all — every such run used to be thrown
+  // away as "No code block found in response" after paying for it. Accept the
+  // response only when it IS a module: it must start with `import`/`export`
+  // and carry a default export, so prose can never be mistaken for code.
+  const trimmed = normalized.trim();
+  if (
+    /^(import|export)\s/.test(trimmed) &&
+    /export\s+default\s/.test(trimmed)
+  ) {
+    console.warn(
+      "[executeBuiltinWithCodeExtraction] Recovered an UNFENCED module from the response — the generator omitted its code fence. Recovery fired; fix the generator prompt.",
+    );
+    return trimmed;
+  }
+
+  return null;
 }
 
 async function waitForAgentCompletion(

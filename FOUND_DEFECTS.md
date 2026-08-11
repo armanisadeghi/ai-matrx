@@ -13,6 +13,13 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D152 — Agent-app auto-create: generators omit code fences, and the form can double-fire an empty run (2026-08-11)
+
+Both found while fixing auto-create persistence (that fix is DONE — see `features/agent-apps/services/auto-create-draft.ts`; the app-builder chip named in D151 is closed).
+
+1. **The code generators answer with a bare TSX module and no ``` fence.** Four consecutive live runs of `prompt-app-auto-create` (agent "Quick Test Agent") all returned 10–13k chars starting `import React…` with `export default`, and `extractCodeFromResponse` rejected every one as "No code block found in response" — auto-create could not succeed at all. Mitigated LOUDLY in `features/agents/redux/execution-system/thunks/execute-builtin-with-extraction.thunks.ts`: an unfenced response is accepted only when it starts with `import`/`export` AND has a default export, with a `console.warn` when the recovery fires. **The recovery firing means the generator prompt is wrong** — fix the `prompt-app-auto-create` / `-lightning` system agents to always fence their output, then watch for the warning going quiet.
+2. **`AutoCreateAgentAppForm` in `auto-fire` mode can start a second run on remount with an empty `prompt_object`.** Observed live: two runs 2 seconds apart from one click (HMR remount), the second sending `{}` as the agent snapshot — the model correctly answered "the prompt object you pasted is empty" and the run was wasted. Fires the paid generation from a mount effect (`initialMode: "auto-fire"`) with no in-flight/once guard and no check that the agent row actually loaded. Fix: guard the auto-fire effect on a ref AND refuse to launch when `data.agent` has no `id`/definition.
+
 ### D151 — Paid AI results die in component state across education, flashcards and content-plan (2026-08-11)
 
 Found by an audit run while moving the content-plan brief writer server-side (that one is FIXED —
