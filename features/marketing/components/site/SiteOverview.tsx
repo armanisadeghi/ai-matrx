@@ -25,15 +25,16 @@ import {
   Loader2,
   Map,
   Network,
+  Newspaper,
   Pencil,
   Play,
   Plug,
   RefreshCw,
+  Rocket,
   ScanSearch,
   Search,
   Settings,
   ShieldCheck,
-  Sparkles,
   TrendingUp,
   TriangleAlert,
 } from "lucide-react";
@@ -776,7 +777,7 @@ function SiteHero({
                 </Link>
                 {site.initialized_at ? (
                   <span className="inline-flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <Rocket className="h-3.5 w-3.5" />
                     Initialized {formatDate(site.initialized_at)}
                   </span>
                 ) : null}
@@ -1186,6 +1187,12 @@ function WorkspaceDirectory({
       icon: <BadgeCheck className="h-4 w-4" />,
     },
     {
+      name: "Digital PR & Reputation",
+      detail: "Publication opportunities & response decisions",
+      href: `${sitePath}/reputation`,
+      icon: <Newspaper className="h-4 w-4" />,
+    },
+    {
       name: "Keywords",
       detail: "Search Console keyword performance",
       href: `${sitePath}/keywords`,
@@ -1587,7 +1594,7 @@ function InitializeCard({
     <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
       <div className="flex flex-wrap items-start gap-4">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
-          <Sparkles className="h-5 w-5" />
+          <Rocket className="h-5 w-5" />
         </span>
         <div className="min-w-64 flex-1">
           <h2 className="text-sm font-semibold text-foreground">

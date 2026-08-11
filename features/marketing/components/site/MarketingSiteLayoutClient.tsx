@@ -21,6 +21,7 @@ import {
   ListTree,
   Map,
   Network,
+  Newspaper,
   Plug,
   Route,
   ScanSearch,
@@ -90,6 +91,7 @@ function sectionSuffix(
     "authority",
     "backlinks",
     "changes",
+    "reputation",
     "keywords",
     "ranks",
     "integrations",
@@ -269,6 +271,11 @@ export function MarketingSiteLayoutClient({
             name: "Changes",
             href: marketingRoutes.siteChanges(brandId, siteId),
             icon: FlaskConical,
+          },
+          {
+            name: "Reputation",
+            href: `${base}/reputation`,
+            icon: Newspaper,
           },
           {
             name: "Keywords",

@@ -1699,6 +1699,79 @@
     "title": "AssignmentProgressData",
     "type": "object"
   },
+  "ClaudeManagedSdkMessageData": {
+    "$defs": {
+      "JsonValue": {}
+    },
+    "additionalProperties": false,
+    "description": "One opaque official Claude Agent SDK message on the managed-runtime wire.",
+    "properties": {
+      "type": {
+        "const": "claude_managed_sdk_message",
+        "default": "claude_managed_sdk_message",
+        "title": "Type",
+        "type": "string"
+      },
+      "runtime_id": {
+        "title": "Runtime Id",
+        "type": "string"
+      },
+      "session_id": {
+        "title": "Session Id",
+        "type": "string"
+      },
+      "sdk_message_type": {
+        "title": "Sdk Message Type",
+        "type": "string"
+      },
+      "message": {
+        "additionalProperties": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "title": "Message",
+        "type": "object"
+      }
+    },
+    "required": [
+      "runtime_id",
+      "session_id",
+      "sdk_message_type",
+      "message"
+    ],
+    "title": "ClaudeManagedSdkMessageData",
+    "type": "object"
+  },
+  "ClaudeManagedWarningData": {
+    "additionalProperties": false,
+    "description": "A recoverable managed-runtime warning with stable machine-readable identity.",
+    "properties": {
+      "type": {
+        "const": "claude_managed_warning",
+        "default": "claude_managed_warning",
+        "title": "Type",
+        "type": "string"
+      },
+      "code": {
+        "title": "Code",
+        "type": "string"
+      },
+      "runtime_id": {
+        "title": "Runtime Id",
+        "type": "string"
+      },
+      "session_id": {
+        "title": "Session Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "code",
+      "runtime_id",
+      "session_id"
+    ],
+    "title": "ClaudeManagedWarningData",
+    "type": "object"
+  },
   "ConversationIdData": {
     "additionalProperties": false,
     "properties": {
@@ -6999,6 +7072,217 @@
       "level"
     ],
     "title": "DictionaryPublishCompleteData",
+    "type": "object"
+  },
+  "DeskCompileProgressData": {
+    "additionalProperties": false,
+    "description": "One step of compiling an Expertise Pack into a desk (agents + workflow).",
+    "properties": {
+      "type": {
+        "const": "desk_compile_progress",
+        "default": "desk_compile_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "agent_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Agent Id"
+      },
+      "agent_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Agent Name"
+      }
+    },
+    "required": [
+      "step",
+      "message"
+    ],
+    "title": "DeskCompileProgressData",
+    "type": "object"
+  },
+  "DeskCompileCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /expertise-desks/compile.",
+    "properties": {
+      "type": {
+        "const": "desk_compile_complete",
+        "default": "desk_compile_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "workflow_id": {
+        "title": "Workflow Id",
+        "type": "string"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "desk_kind": {
+        "title": "Desk Kind",
+        "type": "string"
+      },
+      "pack_id": {
+        "title": "Pack Id",
+        "type": "string"
+      },
+      "pack_slug": {
+        "title": "Pack Slug",
+        "type": "string"
+      },
+      "pack_version": {
+        "title": "Pack Version",
+        "type": "integer"
+      },
+      "agent_ids": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Agent Ids",
+        "type": "array"
+      }
+    },
+    "required": [
+      "workflow_id",
+      "name",
+      "desk_kind",
+      "pack_id",
+      "pack_slug",
+      "pack_version"
+    ],
+    "title": "DeskCompileCompleteData",
+    "type": "object"
+  },
+  "ExpertiseIngestProgressData": {
+    "additionalProperties": false,
+    "description": "One step of distilling a source into draft pack rules.",
+    "properties": {
+      "type": {
+        "const": "expertise_ingest_progress",
+        "default": "expertise_ingest_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "chunk_index": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Chunk Index"
+      },
+      "total_chunks": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Chunks"
+      },
+      "rules_found": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Rules Found"
+      }
+    },
+    "required": [
+      "step",
+      "message"
+    ],
+    "title": "ExpertiseIngestProgressData",
+    "type": "object"
+  },
+  "ExpertiseIngestCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /expertise-desks/ingest.",
+    "properties": {
+      "type": {
+        "const": "expertise_ingest_complete",
+        "default": "expertise_ingest_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "pack_id": {
+        "title": "Pack Id",
+        "type": "string"
+      },
+      "pack_version": {
+        "title": "Pack Version",
+        "type": "integer"
+      },
+      "added": {
+        "default": 0,
+        "title": "Added",
+        "type": "integer"
+      },
+      "duplicates_skipped": {
+        "default": 0,
+        "title": "Duplicates Skipped",
+        "type": "integer"
+      },
+      "quotes_verified": {
+        "default": 0,
+        "title": "Quotes Verified",
+        "type": "integer"
+      },
+      "quotes_unverified": {
+        "default": 0,
+        "title": "Quotes Unverified",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "pack_id",
+      "pack_version"
+    ],
+    "title": "ExpertiseIngestCompleteData",
     "type": "object"
   },
   "PdfExtractStartedData": {

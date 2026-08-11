@@ -50,6 +50,7 @@ describe("surfaceFromPathname — marketing tree", () => {
       ["findings", "matrx-user/marketing-findings"],
       ["links", "matrx-user/marketing-links"],
       ["backlinks", "matrx-user/marketing-backlinks"],
+      ["reputation", "matrx-user/marketing-reputation"],
       ["coverage", "matrx-user/marketing-coverage"],
       ["sitemaps", "matrx-user/marketing-sitemaps"],
       [`sitemaps/${P}`, "matrx-user/marketing-sitemaps"],

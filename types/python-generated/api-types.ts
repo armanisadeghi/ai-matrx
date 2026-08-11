@@ -4248,6 +4248,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/reputation/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Site Reputation
+         * @description Compose the site's grounded evidence lanes and stream the dedicated
+         *     Content IR reputation adjudicator. The final brief and accepted case
+         *     projections persist durably; weak or unresolvable output is excluded.
+         */
+        post: operations["analyze_site_reputation_seo_sites__site_id__reputation_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/backlinks/refresh": {
         parameters: {
             query?: never;
@@ -26371,6 +26393,69 @@ export interface components {
             /** Key Spec */
             key_spec: string;
         };
+        /** EvidenceCoverage */
+        EvidenceCoverage: {
+            /**
+             * Backlinks Reviewed
+             * @default 0
+             */
+            backlinks_reviewed?: number;
+            /**
+             * Domains Reviewed
+             * @default 0
+             */
+            domains_reviewed?: number;
+            /**
+             * Competitor Intersections Reviewed
+             * @default 0
+             */
+            competitor_intersections_reviewed?: number;
+            /**
+             * Ai Citations Reviewed
+             * @default 0
+             */
+            ai_citations_reviewed?: number;
+            /**
+             * Brand Facts Reviewed
+             * @default 0
+             */
+            brand_facts_reviewed?: number;
+            /**
+             * Rag Hits Reviewed
+             * @default 0
+             */
+            rag_hits_reviewed?: number;
+            /**
+             * Captured Pages Reviewed
+             * @default 0
+             */
+            captured_pages_reviewed?: number;
+            /**
+             * Excluded Low Quality Inputs
+             * @default 0
+             */
+            excluded_low_quality_inputs?: number;
+        };
+        /** EvidenceReference */
+        EvidenceReference: {
+            /**
+             * Source Kind
+             * @enum {string}
+             */
+            source_kind: "backlink" | "referring_domain" | "competitor" | "competitor_opportunity" | "ai_citation" | "ai_claim" | "brand_fact" | "rag_chunk" | "crawl_capture" | "other";
+            /** Source Id */
+            source_id?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Exact Excerpt */
+            exact_excerpt: string;
+            /** Observed At */
+            observed_at?: string | null;
+            /** Supports */
+            supports: string;
+        };
         /** ExcludePageBody */
         ExcludePageBody: {
             /** Reason */
@@ -32091,6 +32176,26 @@ export interface components {
              */
             created_at: string;
         };
+        /** Narrative */
+        Narrative: {
+            /** Narrative */
+            narrative: string;
+            /** Stance */
+            stance: string;
+            /**
+             * Verification Status
+             * @enum {string}
+             */
+            verification_status: "verified" | "partially_verified" | "unverified" | "contradicted" | "opinion" | "unknown";
+            /** Prevalence */
+            prevalence: string;
+            /** Severity */
+            severity: string;
+            /** Recommended Handling */
+            recommended_handling: string;
+            /** Evidence Refs */
+            evidence_refs: components["schemas"]["EvidenceReference"][];
+        };
         /** NavLink */
         NavLink: {
             /** Label */
@@ -35215,6 +35320,27 @@ export interface components {
             /** Version */
             version?: number | null;
         };
+        /** PublicationOpportunity */
+        PublicationOpportunity: {
+            /** Domain */
+            domain: string;
+            /** Publication Name */
+            publication_name: string;
+            /** Referring Domain Profile Id */
+            referring_domain_profile_id?: string | null;
+            /** Relationship Basis */
+            relationship_basis: string;
+            /** Demonstrated Topics */
+            demonstrated_topics: string[];
+            /** Suggested Angle */
+            suggested_angle: string;
+            /** Supporting Assets */
+            supporting_assets: string[];
+            /** Confidence */
+            confidence: number;
+            /** Evidence Refs */
+            evidence_refs: components["schemas"]["EvidenceReference"][];
+        };
         /** PublicationStatus */
         PublicationStatus: {
             /** Provider */
@@ -35288,6 +35414,31 @@ export interface components {
              * @description Schema-mismatch warnings (warn-not-block, spec §7.2): the sample was stored, but these fields disagree with the node's output schema.
              */
             warnings?: string[];
+        };
+        /** QualitySummary */
+        QualitySummary: {
+            /** Overall Confidence */
+            overall_confidence: number;
+            /**
+             * Accepted Cases
+             * @default 0
+             */
+            accepted_cases?: number;
+            /**
+             * Rejected Cases
+             * @default 0
+             */
+            rejected_cases?: number;
+            /**
+             * Accepted Publication Opportunities
+             * @default 0
+             */
+            accepted_publication_opportunities?: number;
+            /**
+             * Rejected Publication Opportunities
+             * @default 0
+             */
+            rejected_publication_opportunities?: number;
         };
         /** QuarantinedRowSummary */
         QuarantinedRowSummary: {
@@ -36550,6 +36701,162 @@ export interface components {
             indexed_file_count: number;
             /** Last Synced At */
             last_synced_at: string | null;
+        };
+        /** ReputationBrief */
+        ReputationBrief: {
+            /**
+             * Kind
+             * @default digital_pr_reputation_brief_v1
+             * @constant
+             */
+            __kind?: "digital_pr_reputation_brief_v1";
+            /** Analyst Version */
+            analyst_version: string;
+            /** Site Id */
+            site_id: string;
+            /** Site Domain */
+            site_domain: string;
+            /** Executive Verdict */
+            executive_verdict: string;
+            evidence_coverage: components["schemas"]["EvidenceCoverage"];
+            /** Cases */
+            cases?: components["schemas"]["ReputationCase"][];
+            /** Publication Opportunities */
+            publication_opportunities?: components["schemas"]["PublicationOpportunity"][];
+            /** Narratives */
+            narratives?: components["schemas"]["Narrative"][];
+            quality: components["schemas"]["QualitySummary"];
+            /** Limitations */
+            limitations?: string[];
+        };
+        /** ReputationCase */
+        ReputationCase: {
+            /** Case Key */
+            case_key: string;
+            /**
+             * Source Kind
+             * @enum {string}
+             */
+            source_kind: "backlink" | "ai_citation" | "competitor_intersection" | "media_coverage" | "directory_listing" | "brand_gap" | "other";
+            /** Source Id */
+            source_id?: string | null;
+            /** Source Url */
+            source_url?: string | null;
+            /** Source Domain */
+            source_domain?: string | null;
+            /** Source Title */
+            source_title?: string | null;
+            /**
+             * Case Type
+             * @enum {string}
+             */
+            case_type: "positive_opportunity" | "negative_risk" | "correction_needed" | "relationship_opportunity" | "citation_opportunity" | "neutral_monitoring";
+            /**
+             * Sentiment
+             * @enum {string}
+             */
+            sentiment: "positive" | "negative" | "neutral" | "mixed" | "unknown";
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "protect" | "correct" | "respond" | "request_update" | "leave_alone" | "pitch" | "strengthen" | "monitor" | "investigate";
+            /** Headline */
+            headline: string;
+            /** Summary */
+            summary: string;
+            /**
+             * Controllability
+             * @enum {string}
+             */
+            controllability: "direct" | "likely" | "possible" | "unlikely" | "unknown";
+            /** Priority */
+            priority: number;
+            /** Confidence */
+            confidence: number;
+            /** Evidence Quality */
+            evidence_quality: number;
+            /** Risk Score */
+            risk_score: number;
+            /** Opportunity Score */
+            opportunity_score: number;
+            /** Recommended Action */
+            recommended_action: string;
+            /** Action Reason */
+            action_reason: string;
+            /** Pitch Angle */
+            pitch_angle?: string | null;
+            /** Target Page Id */
+            target_page_id?: string | null;
+            /** Target Page Url */
+            target_page_url?: string | null;
+            /** Facts */
+            facts?: string[];
+            /** Inferences */
+            inferences?: string[];
+            /** Evidence Refs */
+            evidence_refs: components["schemas"]["EvidenceReference"][];
+            /** Contradictions */
+            contradictions?: string[];
+            /** Missing Evidence */
+            missing_evidence?: string[];
+            /**
+             * Requires Human Review
+             * @default false
+             */
+            requires_human_review?: boolean;
+        };
+        /** ReputationIntelligenceBody */
+        ReputationIntelligenceBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+        };
+        /** ReputationRunResult */
+        ReputationRunResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "reputation.intelligence";
+            /** Site Id */
+            site_id: string;
+            /** Kind Instance Id */
+            kind_instance_id?: string | null;
+            /**
+             * Accepted Cases
+             * @default 0
+             */
+            accepted_cases?: number;
+            /**
+             * Rejected Cases
+             * @default 0
+             */
+            rejected_cases?: number;
+            /**
+             * Publication Opportunities
+             * @default 0
+             */
+            publication_opportunities?: number;
+            evidence_coverage: components["schemas"]["EvidenceCoverage"];
+            brief: components["schemas"]["ReputationBrief"];
         };
         /** RequestRecord */
         RequestRecord: {
@@ -38429,7 +38736,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
+            result?: (components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["AuthorityRouterResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["ReputationRunResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
         };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
@@ -52521,6 +52828,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BacklinkEnrichmentBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_site_reputation_seo_sites__site_id__reputation_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReputationIntelligenceBody"];
             };
         };
         responses: {

@@ -170,6 +170,12 @@ const SITE_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
       "Inspect persisted backlink authority, referring domains, anchors, linked pages, and competitors.",
     letter: "Bl",
   },
+  reputation: {
+    titlePrefix: "Digital PR & Reputation",
+    description:
+      "Review evidence-backed publication opportunities and reputation handling decisions.",
+    letter: "Pr",
+  },
   coverage: {
     titlePrefix: "Coverage",
     description: "Compare sitemap, crawl, and search coverage for this site.",
