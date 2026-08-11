@@ -32,7 +32,7 @@ defect as a spinner**.
 | **B** | Spinner-only, no stream handle yet — needs `adoptForeignStream` or a `useRunAgent`→`useLiveAgentRun` migration first | **5** |
 | **C** | Page-shifting live-run block (live output above the page's own content) | **3** |
 | **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **12** (11 overlap A) |
-| **E** | Needs a content-IR kind before it can stream well — 4 confirmed (2 of the original 6 resolved as text/headless, see below); **title options shipped 2026-08-11** | **3** |
+| **E** | Needs a content-IR kind before it can stream well — **title options AND the SEO package shipped 2026-08-11**; chapters + slide deck remain (the deck needs no new kind) | **2** |
 
 Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L** ≈ a day+.
 
@@ -59,20 +59,83 @@ Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L*
 
 ---
 
-## Coverage — what this sweep did NOT cover
-
-**Multi-step AI pipelines were not systematically audited.** This sweep searched
-for a spinner next to a single agent/pipeline call. Pipelines that show a step
-counter, a stage list, a progress bar, or POLL the DB for completion were not
-swept — and Arman's rule covers every step of them, not just the last one.
-Two confirmed offenders found while checking:
-`features/transcription-cleanup/components/CleanupPad.tsx` (7 spinners over
-record → auto-clean → refine-with-N-agents) and
-`features/pdf/scanner/components/ProcessingView.tsx` (the "AI clean" step is a
-DB poll for per-page counts). **A dedicated chip owns finishing that sweep.**
-
 Every section below is chipped to a focused session. The chips are the delivery
 mechanism — this doc is only the target list.
+
+---
+
+## Multi-step pipelines — swept 2026-08-11, three fixed
+
+The original sweep looked for a spinner beside a SINGLE agent call. This pass
+covered the class it missed: pipelines with a step counter, a stage list, a
+progress bar, or a DB poll for completion. **Arman's rule covers every step,
+not just the last one** — two seconds is already too long, and the expensive
+step is the one that must show output.
+
+**Searched:** every `setInterval` in `features/**` + `app/**` (incl. `(admin)`
+and `(dev)`) — 98 files, each classified; `currentStep` / `stepIndex` /
+`activeStep` / `stages[`; `status === 'processing'|'queued'|'pending'|'running'`
+polls; "N of M" counters and `Math.round(x/y*100)` progress bars. Then the
+cross-product: every file calling `useHeadlessAgentJson` / `runHeadlessAgentJson`
+/ `launchAgentExecution` / `useRunAgent` / `useLiveAgentRun` (80 files) filtered
+for step-or-progress UI — **zero hits**, which is why this class hid from the
+first sweep: the offenders poll a pipeline the client never launched, so they
+carry no agent-run import at all. That is the signature to search on next time.
+
+### Fixed (commit `ddfe1cd4d`)
+
+| Surface | Was | Now |
+|---|---|---|
+| `features/pdf/scanner/{processing.ts,useScanSaveFlow.ts,components/ProcessingView.tsx}` — `/tools/scanner` | Step 3 "AI cleanup" = 2s DB poll for per-page cleaned_text COUNTS + a progress bar. The multi-LLM step, the expensive one, showed a percentage while the model's rewrite of the user's own scan stayed invisible. | The poll pulls each page's cleaned TEXT once it lands (`fetchCleanedPageText`, only pages that newly turned cleaned — one small select per page, never the whole doc per tick) and the step renders it in an auto-following pane. Counter + ledger stay, **under** the output. |
+| `features/transcription-cleanup/components/CleanupPad.tsx` — `/transcripts/cleanup` | "record → auto-clean → refine with ANY number of agents" fires up to 4 runs at once, but custom slots are tab pills (one visible) and an embedded host can hide Clean entirely. Every hidden pass streamed into a pane nobody could see, behind a 12px tab spinner. | A pass whose pane is not visible floats in `LiveRunWindow` — one per slot, stable `instanceId` so a re-run rebinds instead of stacking. Switching to a pass's own tab closes its window (the pane is the better home when it is on screen). |
+| `features/marketing/discovery/youtube/{service.ts,YouTubeResearchActions.tsx}` | Minutes of AI work (watch → transcribe → analyze → check claims) narrated real phases and threw the stream body away. | `adoptForeignStream` + floated `LiveRunWindow`. Phase/info events still drive the stage line; content never goes through `onEvent`. |
+
+### Verified compliant — do not re-audit
+
+- **`features/marketing/content-plan/hooks/useRunStage.ts`** and every consumer
+  (`SetupBridgeSection`): approximate stages over one-shot request/response
+  endpoints — the platform's *sanctioned* fallback, documented in the file.
+- **`features/rag/components/library/ProcessingProgressDialog.tsx`** (+
+  `ProcessingJobView`, `StageAnimations`): a 4-stage AI pipeline that renders
+  each page's **raw vs cleaned text** from its stage stream. This is the
+  positive reference for multi-step — copy its shape. Its `setInterval`s are
+  elapsed-time tickers, not polls.
+- **`features/rag/api/stages.ts`** — `POST /rag/library/{id}/{stage}` streams
+  `rag.stage.progress` with `page_clean` previews. The only streaming source
+  the docproc clean pipeline exposes today (see the open item below).
+- `(admin)`/`(dev)` `setInterval`s: events dashboard, sandbox infra health,
+  scanner health, sync/popup/mermaid demos, webhook logs, local-shell polling —
+  none awaits an AI result. The `api-tests` demos render their streams.
+- `features/ai-runs/hooks/useAiTasks.ts` — a 10s refresh of a task LIST, not a
+  run the user is waiting on.
+- `features/agents/agent-sets/run/useSetMemberRunStatus.ts` — derived from wire
+  events, explicitly never polled.
+
+### Open — found, not fixed
+
+- **`features/education/study/components/SessionDetailView.tsx:158`** — the
+  FastFire holistic coach review is launched fire-and-forget when the drill
+  completes; this page then polls `studyService.getSession` every 3s for up to
+  **2 minutes** waiting for `session_review` to land. A textbook
+  poll-the-DB-for-an-AI-result. **Not fixable here:** the launcher discards the
+  run's identity, and the learner can arrive after it started, so the fix needs
+  a DURABLE handle (persist the conversation/request id on the session row, then
+  reattach + float on load) — the `useSiteCrawlActivity` shape, class D. Chip it.
+- **The scanner's clean step still cannot truly stream.** The pipeline runs
+  detached server-side after `/pdf/from-images` returns and exposes no
+  client-reachable stream, so reading its rows as it writes them is the ceiling.
+  The real upgrade is an aidream change: emit the docproc clean pipeline as a
+  stream (it already has the shape — `rag.stage.progress` / `page_clean`), then
+  the scanner adopts it and the poll dies. Cross-repo, own session.
+- **A refresh still kills a cleanup pass.** `useAiPostProcess` holds its
+  conversationId in local state; reload mid-run and the output is lost (the
+  persist happens client-side on completion). Class D, unchanged by this pass.
+- **Consolidation candidate:** a parallel session landed
+  `features/agents/hooks/useFloatingAgentRun.ts` (`useFloatingRunWindow`) — a
+  *launch-time* float primitive. CleanupPad needed a *visibility-gated* float
+  (float only while the run's own pane is off screen), which that hook does not
+  express, so it carries a local `syncFloatingRun`. Fold one into the other once
+  both are committed.
 
 ## Remaining work — ranked by pain × reach
 
@@ -146,20 +209,25 @@ runs on a page the user watches — high pain per occurrence.
 
 Route family: `/education/flashcards/*`, `/education/fastfire`.
 
-### 5. Research Outputs Studio — slides + SEO cards — A + E, M
+### 5. Research Outputs Studio — slides card — A + E, M
 
-`features/research/components/outputs/OutputsStudio.tsx:1058` (`GeneratingNote`)
-is the shared spinner for the Slides and SEO-card generators.
+**SEO card: DONE 2026-08-11.** New `seo_package` kind (+ child `faq_item`) and
+`SeoPackageBlock`; the run moved to `useLiveAgentRun({ slotKey })` +
+`LiveRunWindowController`, the agent emits the envelope, and persisted assets
+replay through `KindInstanceRender`. See `features/research/FEATURE.md`.
+
+**Slides card: still open.** `GeneratingNote` remains its spinner. The payload is
+already the EXISTING `presentation_deck` kind — no new kind needed, just the same
+migration the SEO card took. Copy `SeoOutputCard` verbatim.
 Route: `/research/topics/[topicId]/outputs`.
-
-Blog generation on the same page already streams (`:930`), so the contrast is
-visible to the user inside one screen. Both payloads are structured JSON → the
-`selectKindEnvelope` progressive-kind pattern. **Both are chipped (class E):**
-slides binds to the EXISTING `presentation_deck` kind; the SEO package needs a
-new kind. See "Class E — resolved" below.
 
 Also on this file: `AnalysisList.tsx:703` truncates its live stream to 200
 characters — unfix it while here.
+
+**Toll every migration on this list now pays (D165):** the Redux execution system
+has no `context_anchor`, so moving a surface off `useSlotRunner` / `useRunAgent`
+DROPS its durable-entity anchor. Land D165 first if that anchor is load-bearing
+for the surface you are migrating.
 
 ### 6. Podcasts — three generators, silent by design — B (+E for two), S–M each
 
@@ -269,12 +337,12 @@ Each of the six was read in code. Verdicts:
 | Podcast articles (blog / show notes) — `useEpisodeArticles.ts` | **Text — no kind.** The agent returns markdown, already held in `drafts`. Fix is the §6 class-B migration plus `MarkdownStream`, nothing more. |
 | Flashcard quiz items — `makeQuizItems.ts` | **Not applicable — removed from the sweep.** It is the optional FALLBACK distractor source for sets too small to have sibling cards; the result feeds `buildQuizQuestions` and is never rendered. Genuinely headless plumbing. |
 | Research slide deck — `OutputsStudio.tsx:1069` | **Kind already exists.** The agent returns `{ title, slides[] }` — exactly `presentation_deck` (`features/content-ir/kinds/presentation-deck.ts` → Slideshow). No new kind; bind it. → chip |
-| Research SEO package — `OutputsStudio.tsx:1215` | **New kind.** `{ title, meta_description, slug, primary_keyword, keywords[], schema_org, open_graph, faq[] }` with character-limit validation UI (`SeoView:1391`). `page_brief` does not fit (content-plan specific). → chip |
+| Research SEO package — `OutputsStudio.tsx:1215` | **DONE 2026-08-11.** Kind `seo_package` (+ child `faq_item`) authored, activated through `content_ir.set_kind_activation`, and consumed. The character-limit UX moved onto the kind component and gained a VERDICT (too long / too short / inside the window) instead of a bare count. |
 | Podcast chapters — `useEpisodeChapters.ts:49` | **Kind.** Timestamped segments persisted to `pc_episodes.chapters`, used to seek the player. Check `timeline.ts` for reuse first. → chip |
 | Podcast title options — `useEpisodeTitleOptions.ts:70` | **DONE 2026-08-11.** Kind `episode_title_options` shipped end to end (schema + component + dual gate, agent v4, live posture, real-run verification). It went further than the precedent: the apply is a surface WRITE, not an agent launch, and the target is a component constant rather than payload data — see `features/content-ir/FEATURE.md`. |
 
-Three focused sessions remain as chips (slide deck, SEO package, chapters);
-**title options shipped 2026-08-11**. Each carries the full end-to-end contract: schema, agent
+Two focused sessions remain as chips (slide deck, chapters); **title options and
+the SEO package shipped 2026-08-11**. Each carries the full end-to-end contract: schema, agent
 instruction rewrite via `agent_author`, every usage repinned, kind + component +
 dual-gate example, live posture, real end-to-end test. **Do not start one of
 these inline in a sweep session** — that is how a half-authored kind ships.

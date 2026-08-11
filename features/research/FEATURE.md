@@ -288,6 +288,29 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-11 — **Outputs Studio: the SEO package streams live instead of sitting
+  behind a spinner.** The card ran `useSlotRunner` (the one-shot `callApi` path,
+  which yields no `requestId`), awaited the whole run showing only
+  `GeneratingNote`, hand-parsed the result with `parseJsonLoose`, and rendered it
+  with a bespoke `SeoView` card — a violation of THE FLOATING LAW and of the
+  CANONICAL COMPONENT LAW at once. Now: the payload is the registered
+  `seo_package` content-IR kind (`features/content-ir/kinds/seo-package.ts`), the
+  run goes through `useLiveAgentRun({ slotKey })`, and the output streams into the
+  floating `LiveRunWindow` where the pipeline routes it to `SeoPackageBlock` token
+  by token — the title appears with its 60-character budget already measured while
+  the FAQ is still being written. The page never shifts; the card shows only a
+  one-line pointer at the window. The persisted `OutputAsset.meta.seo` replays
+  through the SAME path (`KindInstanceRender`), and pre-kind assets map without a
+  shim because the stored keys ARE the canonical snake_case ones.
+  `SeoView` / `SeoField` / `SlugCopyButton` and the local `SeoPackage` interface
+  are deleted. Agent instructions rewritten via `agent_author` (v3, `__kind` first,
+  `title` second); the slot declares `output_kind="seo_package"` in aidream's
+  `client_slots.py`. **Cost of the migration, filed as D165:** the Redux execution
+  system carries no `context_anchor`, so the `research_topic` anchor the one-shot
+  runner passed is not sent on the live path — the report still travels in
+  `userInput`. Every remaining class-A migration in
+  `docs/handoffs/live-run-streaming-sweep.md` pays the same price until D165 lands.
+
 - 2026-08-10 — Per-topic agents page (W3) became a thin consumer of the canonical
   agent-slots primitives (`features/agents/slots/`): `compareContracts` /
   `systemContractRows` / `ComparisonResult` moved to
