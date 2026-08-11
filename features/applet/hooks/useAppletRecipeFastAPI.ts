@@ -22,7 +22,7 @@
  * - conversationId: expose resolvedConversationId for follow-up turns
  */
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { NeededBroker, RecipeSourceConfig } from "@/types/customAppTypes";
 import { brokerSelectors } from "@/lib/redux/brokerSlice/selectors";
@@ -107,9 +107,10 @@ export function useAppletRecipeFastAPI({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Keep a ref to neededBrokers so submitRecipe can access names without being
-  // a dependency (prevents stale closure without extra re-renders)
-  const neededBrokersRef = useRef<NeededBroker[]>([]);
+  // `notReadyBrokers` is rendered, so the broker list lives in state — a ref
+  // mutation would leave the rendered list stuck at whatever it held during
+  // the last unrelated render.
+  const [neededBrokers, setNeededBrokers] = useState<NeededBroker[]>([]);
 
   // Subscribe to broker values from Redux
   const rawBrokerValues = useAppSelector((state) =>
@@ -126,7 +127,7 @@ export function useAppletRecipeFastAPI({
     return acc;
   }, {});
 
-  const notReadyBrokers = neededBrokersRef.current.filter(
+  const notReadyBrokers = neededBrokers.filter(
     (b) => b.required && !rawBrokerValues?.[b.id],
   );
 
@@ -153,7 +154,7 @@ export function useAppletRecipeFastAPI({
 
     const ids = config.neededBrokers.map((b) => b.id);
     setNeededBrokerIds(ids);
-    neededBrokersRef.current = config.neededBrokers;
+    setNeededBrokers(config.neededBrokers);
 
     if (config.promptId) {
       setAgentId(config.promptId);

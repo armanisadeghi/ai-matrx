@@ -41,12 +41,11 @@ export const use2048 = () => {
     const [status, setStatus] = useState<GameStatus>('playing');
     const [keepGoing, setKeepGoing] = useState(false);
 
-    const historyRef = useRef<Snapshot[]>([]);
+    // History drives the Undo button's enabled state, so it lives in state, not
+    // a ref — a ref mutation would leave `canUndo` showing whatever it was at
+    // the last unrelated render.
+    const [history, setHistory] = useState<Snapshot[]>([]);
     const lockRef = useRef(false);
-    const statusRef = useRef<GameStatus>('playing');
-    const keepGoingRef = useRef(false);
-    statusRef.current = status;
-    keepGoingRef.current = keepGoing;
 
     const spawnTile = useCallback((grid: Grid): Tile | null => {
         const cells = emptyCells(grid);
@@ -66,7 +65,7 @@ export const use2048 = () => {
 
     const newGame = useCallback(() => {
         lockRef.current = false;
-        historyRef.current = [];
+        setHistory([]);
         const grid = createEmptyGrid();
         spawnTile(grid);
         spawnTile(grid);
@@ -91,66 +90,61 @@ export const use2048 = () => {
     const move = useCallback(
         (dir: Direction) => {
             if (lockRef.current) return;
-            if (statusRef.current === 'over') return;
-            if (statusRef.current === 'won' && !keepGoingRef.current) return;
+            if (status === 'over') return;
+            if (status === 'won' && !keepGoing) return;
 
-            setTiles((current) => {
-                const grid = tilesToGrid(cloneTiles(current));
-                const result = applyMove(grid, dir);
-                if (!result.moved) return current;
+            const grid = tilesToGrid(cloneTiles(tiles));
+            const result = applyMove(grid, dir);
+            if (!result.moved) return;
 
-                // Snapshot the pre-move board for undo.
-                historyRef.current.push({ tiles: cloneTiles(current), score, status: statusRef.current });
-                if (historyRef.current.length > 20) historyRef.current.shift();
+            // Snapshot the pre-move board for undo (last 20 moves).
+            setHistory((prev) => [...prev, { tiles: cloneTiles(tiles), score, status }].slice(-20));
 
-                const gainedScore = score + result.gained;
-                setScore(gainedScore);
-                if (gainedScore > best) {
-                    setBest(gainedScore);
-                    try {
-                        localStorage.setItem(BEST_SCORE_KEY, String(gainedScore));
-                    } catch {
-                        /* ignore persistence failure */
-                    }
+            const gainedScore = score + result.gained;
+            setScore(gainedScore);
+            if (gainedScore > best) {
+                setBest(gainedScore);
+                try {
+                    localStorage.setItem(BEST_SCORE_KEY, String(gainedScore));
+                } catch {
+                    /* ignore persistence failure */
                 }
+            }
 
-                // Show survivors at their new spots + ghosts sliding into merges.
-                setGhosts(result.ghosts);
-                lockRef.current = true;
+            // Show survivors at their new spots + ghosts sliding into merges.
+            setTiles(result.tiles);
+            setGhosts(result.ghosts);
+            lockRef.current = true;
 
-                // After the slide: drop ghosts, clear flags, spawn, evaluate end state.
-                window.setTimeout(() => {
-                    setTiles((sliding) => {
-                        const settled = tilesToGrid(sliding.map((t) => ({ ...t, isNew: false, isMerged: false })));
-                        spawnTile(settled);
-                        const nextTiles = gridToTiles(settled);
+            // After the slide: drop ghosts, clear flags, spawn, evaluate end state.
+            window.setTimeout(() => {
+                const settled = tilesToGrid(result.tiles.map((t) => ({ ...t, isNew: false, isMerged: false })));
+                spawnTile(settled);
+                const nextTiles = gridToTiles(settled);
 
-                        if (!keepGoingRef.current && hasWon(nextTiles)) {
-                            setStatus('won');
-                        } else if (!hasMoves(settled)) {
-                            setStatus('over');
-                        }
-                        return nextTiles;
-                    });
-                    setGhosts([]);
-                    lockRef.current = false;
-                }, MOVE_ANIMATION_MS);
-
-                return result.tiles;
-            });
+                if (!keepGoing && hasWon(nextTiles)) {
+                    setStatus('won');
+                } else if (!hasMoves(settled)) {
+                    setStatus('over');
+                }
+                setTiles(nextTiles);
+                setGhosts([]);
+                lockRef.current = false;
+            }, MOVE_ANIMATION_MS);
         },
-        [best, score, spawnTile],
+        [best, keepGoing, score, spawnTile, status, tiles],
     );
 
     const undo = useCallback(() => {
         if (lockRef.current) return;
-        const prev = historyRef.current.pop();
+        const prev = history[history.length - 1];
         if (!prev) return;
+        setHistory((h) => h.slice(0, -1));
         setGhosts([]);
         setTiles(prev.tiles);
         setScore(prev.score);
         setStatus(prev.status);
-    }, []);
+    }, [history]);
 
     const continueAfterWin = useCallback(() => {
         setKeepGoing(true);
@@ -183,7 +177,7 @@ export const use2048 = () => {
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [move]);
 
-    const canUndo = historyRef.current.length > 0;
+    const canUndo = history.length > 0;
 
     return {
         tiles,

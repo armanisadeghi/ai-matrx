@@ -59,10 +59,20 @@ function CodeInlinePreview({ adapterId, id, fieldId, name }: Props) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
-  const lastSavedRef = useRef<string>("");
+  // The last-saved text drives the dirty indicator and the Save button, so it
+  // is state — a ref mutation would leave both showing whatever they said at
+  // the last unrelated render.
+  const [lastSaved, setLastSaved] = useState<string>("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syntheticId = makeSyntheticId(adapterId, id, fieldId);
-  const isDirty = content !== lastSavedRef.current;
+  const isDirty = content !== lastSaved;
+
+  // Latest values for the unmount/target-change flush below, which runs after
+  // the render that changed them. Written in an effect, never read in render.
+  const latestRef = useRef({ content, lastSaved, error });
+  useEffect(() => {
+    latestRef.current = { content, lastSaved, error };
+  });
 
   // Load on mount / target change. Routes through the source-aware `readAny`
   // thunk, which dispatches to the correct adapter under the hood.
@@ -76,7 +86,7 @@ function CodeInlinePreview({ adapterId, id, fieldId, name }: Props) {
         if (cancelled) return;
         setContent(result.content);
         setLanguage(result.language || "plaintext");
-        lastSavedRef.current = result.content;
+        setLastSaved(result.content);
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -95,14 +105,14 @@ function CodeInlinePreview({ adapterId, id, fieldId, name }: Props) {
 
   const flushSave = useCallback(
     async (next: string) => {
-      if (next === lastSavedRef.current) return;
+      if (next === latestRef.current.lastSaved) return;
       setSaving(true);
       setSaveError(null);
       try {
         await dispatch(
           writeAny({ id: syntheticId, content: next }),
         ).unwrap();
-        lastSavedRef.current = next;
+        setLastSaved(next);
         setSavedAt(Date.now());
       } catch (err) {
         // Surface the error so the user sees that the save failed instead
@@ -145,16 +155,16 @@ function CodeInlinePreview({ adapterId, id, fieldId, name }: Props) {
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (content !== lastSavedRef.current && !error) {
-        void dispatch(
-          writeAny({ id: syntheticId, content }),
-        )
+      // latestRef holds the values from the render before this cleanup, i.e.
+      // the state of the target we are leaving.
+      const { content: pending, lastSaved: saved, error: err } = latestRef.current;
+      if (pending !== saved && !err) {
+        void dispatch(writeAny({ id: syntheticId, content: pending }))
           .unwrap()
           .catch(() => undefined);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [syntheticId]);
+  }, [dispatch, syntheticId]);
 
   if (error) {
     return (

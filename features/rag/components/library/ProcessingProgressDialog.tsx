@@ -35,7 +35,7 @@ import {
   Zap,
   X as XIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -265,7 +265,6 @@ function FullOverlay({
     () => deriveStageStates(frame, !!result, !!error),
     [frame, result, error],
   );
-  const elapsedRef = useElapsedSinceLastUpdate(frame?.lastUpdate ?? null);
   const finished = !!result || !!error;
 
   return (
@@ -318,7 +317,7 @@ function FullOverlay({
           ) : result ? (
             <ResultView result={result} />
           ) : (
-            <RunningView frame={frame} elapsedRef={elapsedRef} />
+            <RunningView frame={frame} />
           )}
 
           {/* Reassurance footer */}
@@ -501,26 +500,23 @@ function StagePreviewPanel({ preview }: { preview: StagePreview }) {
   return null;
 }
 
-function RunningView({
-  frame,
-  elapsedRef,
-}: {
-  frame: ProcessingFrame | null;
-  elapsedRef: { current: number };
-}) {
+function RunningView({ frame }: { frame: ProcessingFrame | null }) {
   const stageDef = STAGES.find((s) => s.id === frame?.activeStage);
   const Icon = stageDef?.Icon ?? Cloud;
   const pct =
     frame?.fraction != null
       ? Math.min(100, Math.round(frame.fraction * 100))
       : null;
-  const [, force] = useState(0);
-  // Re-render once per second so the "Xs ago" indicator advances.
+  // Tick once per second so the "Xs ago" indicator advances. The clock is
+  // state, not a ref: the readout is rendered, so it has to drive the render.
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const t = window.setInterval(() => force((n) => n + 1), 1000);
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(t);
   }, []);
-  const sinceUpdate = elapsedRef.current;
+  const lastUpdate = frame?.lastUpdate ?? null;
+  const sinceUpdate =
+    lastUpdate == null ? 0 : Math.max(0, Math.floor((now - lastUpdate) / 1000));
 
   return (
     <div className="space-y-5">
@@ -840,20 +836,3 @@ function deriveStageStates(
   return out;
 }
 
-/** A ref that holds (in seconds) how long since the last update tick.
- *  Recomputed on every render — caller wraps RunningView in an interval
- *  to force re-render so this updates smoothly. */
-function useElapsedSinceLastUpdate(lastUpdate: number | null): {
-  current: number;
-} {
-  const ref = useRef<{ current: number }>({ current: 0 });
-  if (lastUpdate == null) {
-    ref.current.current = 0;
-  } else {
-    ref.current.current = Math.max(
-      0,
-      Math.floor((Date.now() - lastUpdate) / 1000),
-    );
-  }
-  return ref.current;
-}

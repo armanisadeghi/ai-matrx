@@ -12,7 +12,7 @@
  *     (updatePageDesiredValues), so sibling areas are never clobbered.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { useUpdatePageDesiredValues } from "@/features/marketing/data/hooks";
@@ -46,17 +46,19 @@ export function useDesiredValueSlice<K extends PageDesiredValuesKey>(
   const [draft, setDraft] = useState<PageDesiredValues[K] | undefined>(
     serverValue,
   );
-  const seededFromRef = useRef(serverJson);
-  const dirty = stable(draft) !== seededFromRef.current;
+  // The seed is state, not a ref: `dirty` is rendered (it enables Save), so a
+  // ref mutation would leave it showing a stale answer until something else
+  // re-rendered the card.
+  const [seededFrom, setSeededFrom] = useState(serverJson);
+  const dirty = stable(draft) !== seededFrom;
 
-  useEffect(() => {
-    if (serverJson !== seededFromRef.current && !dirty) {
-      seededFromRef.current = serverJson;
-      setDraft(serverValue);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- serverValue is
-    // re-derived per render; serverJson is its stable identity.
-  }, [serverJson, dirty]);
+  // Reseed while clean — adjusted during render (React's documented
+  // "derive state from props" pattern), never via an effect, so there is no
+  // second render pass and no cascade.
+  if (serverJson !== seededFrom && !dirty) {
+    setSeededFrom(serverJson);
+    setDraft(serverValue);
+  }
 
   const mutation = useUpdatePageDesiredValues();
 
@@ -68,7 +70,7 @@ export function useDesiredValueSlice<K extends PageDesiredValuesKey>(
         pageId: page.id,
         patch,
       });
-      seededFromRef.current = stable(draft);
+      setSeededFrom(stable(draft));
       toast.success("Desired values saved");
     } catch (error) {
       toast.error("Could not save desired values", {
@@ -78,7 +80,7 @@ export function useDesiredValueSlice<K extends PageDesiredValuesKey>(
   };
 
   const reset = () => {
-    seededFromRef.current = serverJson;
+    setSeededFrom(serverJson);
     setDraft(serverValue);
   };
 
