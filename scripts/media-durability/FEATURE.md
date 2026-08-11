@@ -120,10 +120,30 @@ whatever the other taught it:
 2. **Schema awareness** (`mtx_public_url_guard_schema_aware.sql`) — the registry lookup
    keyed on `(schema_name, table_name)`.
 
-**This already went wrong once.** The schema-aware migration first shipped with a
-scalar-only body and would have reverted the array branch on any re-apply; a parallel
-session working the podcast half caught it. Both branches now live in
-`mtx_public_url_guard_schema_aware.sql`, which is the file to edit. Regression-tested
+**This already went wrong once, and the array branch was ACTUALLY LOST IN PRODUCTION —
+not almost-lost.** Recording the sequence precisely, because a fuzzy version of it invites
+someone to drop aidream migration `0333` as redundant:
+
+1. `mtx_public_url_guard_schema_aware.sql` applied with a scalar-only body. The live
+   function became **schema-aware but scalar-only** — the per-element array branch was
+   gone from the database. Measured directly with `pg_get_functiondef`:
+   `jsonb_array_elements_text` absent, `TG_TABLE_SCHEMA` present.
+2. aidream migration **`0333`** restored the union: array branch + schema match +
+   JSON-null skip + `schema_name` on the queued row. That is what `0333` is FOR — it is
+   not precautionary and must not be dropped.
+3. This file was then updated to carry the merged body too, so a re-apply can no longer
+   revert it.
+
+During step (1) the guard was silently blind to per-element checking on exactly the
+`text[]` columns this defect class is about. Nothing errored. **Do not record this as
+"the live body was never scalar-only" — it was**, between the two applies. (An earlier
+draft of this doc said exactly that, inferred from a single reading taken after `0333`
+had already landed; the podcast session had the direct measurement.)
+
+Both branches now live in `mtx_public_url_guard_schema_aware.sql`, which is the file to
+edit, and `public.mtx_media_durability_health()` asserts all four properties out of the
+LIVE `prosrc` on every `pnpm check:media-durability` run — so this window cannot reopen
+unnoticed. Regression-tested
 2026-08-11 on a throwaway table (`public.mtx_guard_selftest`, created and dropped in the
 same run so no live row is touched) across six cases — array with one signed element
 among durable ones, all-durable array, empty array, SQL NULL, scalar signed, scalar
