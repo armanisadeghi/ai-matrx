@@ -82,12 +82,30 @@ is never missing — only the client-side field declaration is.
 (`migrations/content_ir_declare_topic_ideas_fields.sql`) via the sanctioned TS
 emitter `planKindMigration` (`scripts/shape/plan-topic-ideas.ts`).
 
-**The general fix is not a blind backfill** and needs a ruling: the flat subset
-could be regenerated from `emitted_json_schema` mechanically, but nested kinds
-need a CHILD kind row per nested object plus `kind_edge` rows — i.e. minting
-registry rows, which is a product decision, not a sweep. The alternative — teach
-the FE registry to fall back to `emitted_json_schema` when `data` is NULL —
-is one change instead of 140 and is probably the right one. Arman decides.
+**Measured 2026-08-11 — a backfill is NOT the fix.** Running the existing
+sanctioned converter (`fields_from_json_schema`) over all 140: **7 are
+flat-convertible, 133 are nested.** So a mechanical backfill closes 5% and
+leaves an inconsistent half-state; the other 133 would each need a CHILD kind
+row per nested object plus `kind_edge` rows — minting 100+ registry rows, which
+is not a sweep.
+
+**The fix is the other direction: carry `emitted_json_schema` on the catalog
+entry.** Note the shape of it — do NOT convert schema → fields and then rebuild
+the schema from those fields (`kindSchemaToJsonSchema`), which is a lossy round
+trip on exactly the nested schemas that matter. Instead let
+`isKindBindable` pass on "has fields OR has an emitted schema", and let
+`buildKindOutputSchema` return the STORED emitted schema verbatim for those
+rows. Touches the registry read (one more column in `DEF_COLUMNS`), the catalog
+entry type, `isKindBindable`, `buildKindOutputSchema`, the fingerprint index and
+`matchKindForSchema`, plus their tests. The `/shapes` Test per-field form is a
+SEPARATE concern — it genuinely needs `fields`, and the JSON textarea remains
+the correct fallback there.
+
+**Not urgent, and specifically NOT a live breakage.** Checked 2026-08-11: 102
+agents carry an `output_schema`; only 4 bind a `__kind`-injected block export,
+all 4 run on Gemini (where `const` is unenforced — see D155), and **all 4 teach
+`__kind` in their system prompt**, so the discriminator arrives correctly
+regardless. Nothing is misrouting today.
 
 ### D154 — React hydration mismatch (#418) reported on the marketing site shell, not reproducible (2026-08-11)
 
