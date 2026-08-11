@@ -308,7 +308,7 @@ export const STAGES: LoopStage[] = [
         pipes: {
             code: {
                 state: "partial",
-                note: "GSC, backlinks and ranks sync nightly; GA4 and PageSpeed have NO scheduler and are on-demand only.",
+                note: "GSC, backlinks and ranks sync nightly; PageSpeed coverage runs in small resumable ten-minute batches; GA4 remains on-demand only.",
                 ref: "aidream/aidream/services/scheduling/system_task_runner.py#register_builtin_system_tasks",
             },
             human: {
@@ -826,12 +826,12 @@ export const GAPS: LoopGap[] = [
     },
     {
         id: "G-MEASURE-SCHEDULE",
-        title: "GA4 and PageSpeed never refresh themselves",
+        title: "GA4 never refreshes itself",
         severity: "minor",
         status: "open",
         at: "measure",
         breaks: ["code"],
-        detail: "GSC, backlinks and ranks are scheduled. GA4 and PageSpeed are on-demand only, so half the measurement picture is as stale as the last click.",
+        detail: "GSC, backlinks, ranks, and PageSpeed coverage are scheduled. GA4 is still on-demand only, so that portion of the measurement picture is as stale as the last click.",
         lane: "L1",
     },
 ];

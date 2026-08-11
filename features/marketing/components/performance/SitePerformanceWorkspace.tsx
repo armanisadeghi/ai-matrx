@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  CircleAlert,
+  CircleCheckBig,
+  Clock3,
   Gauge,
   Loader2,
   Monitor,
@@ -38,6 +41,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 type ChangePage = NonNullable<SitePerformanceResponse["most_improved"]>[number];
+type SuggestedPage = NonNullable<SitePerformanceResponse["suggested_action"]>;
 
 const distributionConfig = {
   count: { label: "Pages" },
@@ -63,6 +67,14 @@ function compactNumber(value: number): string {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(value);
+}
+
+function formatRunTime(value: string | null | undefined): string {
+  if (!value) return "soon";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function PercentileCard({
@@ -170,7 +182,7 @@ export function SitePerformanceWorkspace() {
   const dispatch = useAppDispatch();
   const { site } = useMarketingSite();
   const performance = useSitePerformance(site.id);
-  const [testing, setTesting] = useState(false);
+  const [testingPageId, setTestingPageId] = useState<string | null>(null);
 
   if (performance.isLoading && !performance.data) {
     return <LoadingSurface label="Loading site performance…" />;
@@ -191,6 +203,10 @@ export function SitePerformanceWorkspace() {
   const distribution = data.mobile_distribution;
   const worstPages = data.worst_pages_with_traffic ?? [];
   const suggested = data.suggested_action;
+  const suggestedPages = data.suggested_pages ?? [];
+  const automation = data.automation;
+  const automationReady =
+    automation.enabled && automation.schedule_matches_expected;
   const brandId = site.brand_id;
   const chartData = [
     {
@@ -210,24 +226,24 @@ export function SitePerformanceWorkspace() {
     },
   ];
 
-  const runFirstTest = async () => {
-    if (!suggested || testing) return;
-    setTesting(true);
+  const runPageTest = async (page: SuggestedPage) => {
+    if (testingPageId) return;
+    setTestingPageId(page.page_id);
     try {
       await syncPagespeed(
         dispatch,
-        suggested.page_id,
+        page.page_id,
         site.organization_id,
         "mobile",
       );
       await performance.refetch();
-      toast.success("First performance test complete");
+      toast.success("Performance test complete");
     } catch (error) {
       toast.error("Performance test failed", {
         description: error instanceof Error ? error.message : String(error),
       });
     } finally {
-      setTesting(false);
+      setTestingPageId(null);
     }
   };
 
@@ -249,7 +265,7 @@ export function SitePerformanceWorkspace() {
                 {coverage.pages_measured_last_30_days.toLocaleString()} tested
                 in the last 30 days
                 {coverage.estimated_cycles_remaining > 0
-                  ? ` · about ${coverage.estimated_cycles_remaining.toLocaleString()} sweep cycles remaining`
+                  ? ` · about ${coverage.estimated_cycles_remaining.toLocaleString()} automatic batches remaining`
                   : " · full coverage reached"}
               </p>
             </div>
@@ -269,6 +285,126 @@ export function SitePerformanceWorkspace() {
           />
         </section>
 
+        <section
+          className={cn(
+            "rounded-xl border p-4 shadow-sm",
+            automationReady
+              ? "border-emerald-500/30 bg-emerald-500/5"
+              : "border-amber-500/40 bg-amber-500/5",
+          )}
+        >
+          <div className="flex items-start gap-3">
+            {automationReady ? (
+              <CircleCheckBig className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            )}
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-semibold text-foreground">
+                {automationReady
+                  ? "Automatic testing is active"
+                  : "Automatic testing needs attention"}
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {automationReady
+                  ? `${automation.requests_per_cycle.toLocaleString()} PageSpeed requests run every ${automation.cadence_minutes} minutes — up to ${automation.daily_request_target.toLocaleString()} each day.`
+                  : "The saved testing schedule is paused or differs from the platform coverage plan."}
+              </p>
+              <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Clock3 className="h-3.5 w-3.5" />
+                Next automatic run: {formatRunTime(automation.next_run_at)}
+                {automation.last_status === "failed"
+                  ? " · the last run was interrupted and will retry"
+                  : null}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {coverage.pages_ever_measured < coverage.total_measurable_pages &&
+        suggestedPages.length ? (
+          <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Next in line
+                </p>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">
+                  Test the pages with the most search opportunity
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Ranked by real Search Console clicks and impressions, then
+                  internal importance. Automatic coverage uses this same queue.
+                </p>
+              </div>
+              {suggested ? (
+                <Button
+                  onClick={() => void runPageTest(suggested)}
+                  disabled={testingPageId !== null}
+                >
+                  {testingPageId === suggested.page_id ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="mr-2 h-4 w-4" />
+                  )}
+                  Test next page
+                </Button>
+              ) : null}
+            </div>
+            <div className="divide-y divide-border">
+              {suggestedPages.map((page, index) => (
+                <div
+                  key={page.page_id}
+                  className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:grid-cols-[2rem_minmax(0,1fr)_5rem_7rem_auto_auto]"
+                >
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {index + 1}
+                  </span>
+                  <Link
+                    href={marketingRoutes.sitePage(
+                      brandId,
+                      site.id,
+                      page.page_id,
+                    )}
+                    className="min-w-0 truncate text-sm font-medium text-foreground hover:text-primary"
+                    title={page.url}
+                  >
+                    {page.url}
+                  </Link>
+                  <span className="hidden text-right text-xs text-muted-foreground sm:block">
+                    <strong className="block text-foreground">
+                      {compactNumber(page.gsc_clicks ?? 0)}
+                    </strong>
+                    clicks
+                  </span>
+                  <span className="hidden text-right text-xs text-muted-foreground sm:block">
+                    <strong className="block text-foreground">
+                      {compactNumber(page.gsc_impressions ?? 0)}
+                    </strong>
+                    impressions
+                  </span>
+                  <Badge variant="outline" className="hidden capitalize sm:inline-flex">
+                    {page.tier}
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant={index === 0 ? "default" : "outline"}
+                    onClick={() => void runPageTest(page)}
+                    disabled={testingPageId !== null}
+                  >
+                    {testingPageId === page.page_id ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Zap className="mr-1.5 h-3.5 w-3.5" />
+                    )}
+                    Test now
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {(distribution.total ?? 0) === 0 ? (
           <section className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-6 text-center">
             <Gauge className="mx-auto h-9 w-9 text-primary" />
@@ -282,8 +418,11 @@ export function SitePerformanceWorkspace() {
             </p>
             {suggested ? (
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                <Button onClick={() => void runFirstTest()} disabled={testing}>
-                  {testing ? (
+                <Button
+                  onClick={() => void runPageTest(suggested)}
+                  disabled={testingPageId !== null}
+                >
+                  {testingPageId === suggested.page_id ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Zap className="mr-2 h-4 w-4" />

@@ -26,6 +26,29 @@ function isPageRow(value: unknown): boolean {
   );
 }
 
+function isSuggestedPageRow(value: unknown): boolean {
+  return (
+    isPageRow(value) &&
+    isRecord(value) &&
+    isNumber(value.gsc_clicks) &&
+    isNumber(value.gsc_impressions) &&
+    typeof value.tier === "string"
+  );
+}
+
+function isAutomationStatus(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    typeof value.enabled === "boolean" &&
+    typeof value.schedule_matches_expected === "boolean" &&
+    isNumber(value.cadence_minutes) &&
+    isNumber(value.requests_per_cycle) &&
+    isNumber(value.daily_request_target) &&
+    (value.next_run_at === null || typeof value.next_run_at === "string") &&
+    (value.last_status === null || typeof value.last_status === "string")
+  );
+}
+
 function isSitePerformanceResponse(
   value: unknown,
 ): value is SitePerformanceResponse {
@@ -49,7 +72,11 @@ function isSitePerformanceResponse(
     value.most_improved.every(isPageRow) &&
     Array.isArray(value.most_regressed) &&
     value.most_regressed.every(isPageRow) &&
-    (value.suggested_action === null || isPageRow(value.suggested_action))
+    Array.isArray(value.suggested_pages) &&
+    value.suggested_pages.every(isSuggestedPageRow) &&
+    isAutomationStatus(value.automation) &&
+    (value.suggested_action === null ||
+      isSuggestedPageRow(value.suggested_action))
   );
 }
 

@@ -54,6 +54,7 @@ Rules (also stated at the top of the file):
 
 ## Change log
 
+- 2026-08-11 — Codex: corrected the Measure pipe and `G-MEASURE-SCHEDULE` after PageSpeed gained a live resumable ten-minute coverage scheduler; the remaining scheduling gap is GA4 only.
 - 2026-08-09 — claude: feature created. Loop mapped from live code by six parallel explorers
   (research, content-plan, CMS, crawler/SEO, suggestions/write-back, workflow substrate);
   `loop-map.ts` seeded with 12 stages, 14 connections, 20 gaps, 6 lanes; React Flow map shipped
