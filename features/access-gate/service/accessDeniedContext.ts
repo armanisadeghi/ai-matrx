@@ -41,6 +41,7 @@ function parseOwner(raw: unknown): AccessDeniedOwner | null {
     userId,
     displayName: str(row?.display_name),
     avatarUrl: str(row?.avatar_url),
+    creatorHandle: str(row?.creator_handle),
   };
 }
 
@@ -52,6 +53,7 @@ function parseOrg(raw: unknown): AccessDeniedOrganization | null {
     id,
     name: str(row?.name),
     isPersonal: row?.is_personal === true,
+    viewerIsMember: row?.viewer_is_member === true,
   };
 }
 

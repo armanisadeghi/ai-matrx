@@ -154,7 +154,13 @@ begin
       select jsonb_build_object(
                'user_id', pr.id,
                'display_name', nullif(pr.display_name, ''),
-               'avatar_url', nullif(pr.avatar_url, '')
+               'avatar_url', nullif(pr.avatar_url, ''),
+               -- The ONE reachable door for another person: their public
+               -- creator profile, and only if they made it public. Without
+               -- this the UI would have to link a route that doesn't exist —
+               -- which the first cut did, and browser verification caught.
+               'creator_handle', case when coalesce(pr.creator_public, false)
+                                      then nullif(pr.creator_handle, '') end
              )
         into v_owner_json
       from users.profiles pr
@@ -163,14 +169,21 @@ begin
       -- A missing profile row must not erase the fact that someone owns it.
       v_owner_json := coalesce(
         v_owner_json,
-        jsonb_build_object('user_id', v_attrs.o_owner,
-                           'display_name', null, 'avatar_url', null)
+        jsonb_build_object('user_id', v_attrs.o_owner, 'display_name', null,
+                           'avatar_url', null, 'creator_handle', null)
       );
     end if;
 
     if v_attrs.o_org is not null then
-      select jsonb_build_object('id', o.id, 'name', o.name,
-                                'is_personal', coalesce(o.is_personal, false))
+      select jsonb_build_object(
+               'id', o.id, 'name', o.name,
+               'is_personal', coalesce(o.is_personal, false),
+               -- Whether the VIEWER can open the org, so the UI never links
+               -- into a second locked door. Usually false here: being outside
+               -- the org is often exactly why they were denied.
+               'viewer_is_member', v_uid is not null
+                                   and iam.has_org_access_for(v_uid, o.id)
+             )
         into v_org_json
       from iam.organizations o
       where o.id = v_attrs.o_org;

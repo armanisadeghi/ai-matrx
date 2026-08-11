@@ -395,6 +395,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Chat + Conversation | **Live `/chat` route:** `features/agents/components/chat/FEATURE.md` (the real route, on `features/agents/`). Unified shell (future) + legacy surfaces: `features/conversation/FEATURE.md` |
 | Notes | `features/notes/FEATURE.md` |
 | Permissions & Sharing | `features/sharing/FEATURE.md` |
+| **Access Gate** — nobody ever sees an access error. A failed read resolves to the TRUE state (denied / deleted / missing / signed-out / transient) with a way forward, and a blocked user can ask the owner in one click. Drop `<AccessGate token id/>` into any hand-rolled "couldn't load it" branch | `features/access-gate/FEATURE.md` |
 | Code editor | `features/code-editor/FEATURE.md` |
 | Overlay system (controller, openers, catalogue) | `features/overlays/FEATURE.md` |
 | Window Panels (component + window manager) | `features/window-panels/FEATURE.md` |

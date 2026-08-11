@@ -51,6 +51,12 @@ export interface AccessDeniedOwner {
   /** Null when the person has no profile row yet — render "the owner", never a uuid. */
   displayName: string | null;
   avatarUrl: string | null;
+  /**
+   * Their public creator handle (`/c/{handle}`), when they have made one public.
+   * The ONLY user-facing route that exists for another person — absent it, the
+   * owner is rendered as identity with no link rather than as a broken door.
+   */
+  creatorHandle: string | null;
 }
 
 export interface AccessDeniedOrganization {
@@ -58,6 +64,12 @@ export interface AccessDeniedOrganization {
   name: string | null;
   /** A personal workspace: its "admins" are just the owner, so we never name it as a team. */
   isPersonal: boolean;
+  /**
+   * Whether the VIEWER can open the org. Usually false here — being outside it
+   * is often why they're denied — and a link into a second locked door is a
+   * dead end, so the UI only links when this is true.
+   */
+  viewerIsMember: boolean;
 }
 
 export interface AccessDeniedEntity {

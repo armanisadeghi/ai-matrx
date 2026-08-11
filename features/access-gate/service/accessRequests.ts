@@ -272,6 +272,10 @@ function parseRow(raw: unknown): AccessRequestRow | null {
           userId: requesterId,
           displayName: str(requester?.display_name),
           avatarUrl: str(requester?.avatar_url),
+          // The inbox names the requester but never links to them: no
+          // per-user route exists, and inventing one is the dead end this
+          // whole feature is about.
+          creatorHandle: null,
         }
       : null,
   };

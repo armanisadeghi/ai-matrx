@@ -112,6 +112,48 @@ function StatusIcon({ status }: { status: AccessDeniedContext["status"] }) {
 }
 
 /**
+ * One identity — owner or organization — rendered as a door when we know the
+ * viewer can walk through it, and as plain text when we don't. Rendering a
+ * `<Link>` to a route this viewer cannot open (or that doesn't exist) is the
+ * dead end THE DOOR LAW is about; a name with no link is honest.
+ */
+function IdentityBlock({
+  label,
+  name,
+  href,
+  avatar,
+}: {
+  label: string;
+  name: string;
+  href: string | null;
+  avatar: React.ReactNode;
+}) {
+  const body = (
+    <>
+      {avatar}
+      <span className="min-w-0">
+        <span className="block text-[11px] uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
+        <span className="block truncate text-foreground">{name}</span>
+      </span>
+    </>
+  );
+
+  if (!href) {
+    return <span className="flex min-w-0 items-center gap-2 text-sm">{body}</span>;
+  }
+  return (
+    <Link
+      href={href}
+      className="flex min-w-0 items-center gap-2 text-sm hover:underline"
+    >
+      {body}
+    </Link>
+  );
+}
+
+/**
  * The resolved surface. Split from the loader so a bespoke variant can reuse
  * the same body with different chrome.
  */
@@ -131,6 +173,10 @@ export function AccessDeniedView({
   onChanged: () => void;
 }) {
   const router = useRouter();
+  // A personal workspace IS its owner — naming it just repeats them back.
+  const showOrg = Boolean(
+    context.organization && !context.organization.isPersonal,
+  );
   const ancestor = context.ancestor;
   const ancestorInfo = ancestor ? tryGetEntityInfo(ancestor.token) : null;
   const ancestorHref = ancestorInfo?.hrefFor?.(ancestor?.id ?? "") ?? null;
@@ -168,58 +214,56 @@ export function AccessDeniedView({
           </div>
         </div>
 
-        {/* Who has it — every identity we name is reachable. */}
-        {context.owner || context.organization ? (
+        {/* Who has it.
+            THE DOOR LAW cuts both ways here: a link the viewer cannot open is a
+            worse dead end than no link. A denied viewer is, by definition,
+            usually outside the owning org — so each identity is a door only when
+            we know it actually opens. */}
+        {context.owner || showOrg ? (
           <div className="mt-5 flex flex-wrap items-center gap-4 rounded-lg border border-border bg-muted/30 px-4 py-3">
             {context.owner ? (
-              <Link
-                href={`/users/${context.owner.userId}`}
-                className="flex min-w-0 items-center gap-2 text-sm hover:underline"
-              >
-                <Avatar className="h-7 w-7">
-                  {context.owner.avatarUrl ? (
-                    <AvatarImage
-                      src={context.owner.avatarUrl}
-                      alt={context.owner.displayName ?? "Owner"}
-                    />
-                  ) : null}
-                  <AvatarFallback className="text-[11px]">
-                    {initials(context.owner.displayName)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="min-w-0">
-                  <span className="block text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Owner
-                  </span>
-                  <span className="block truncate text-foreground">
-                    {context.owner.displayName ?? "Someone else"}
-                  </span>
-                </span>
-              </Link>
+              <IdentityBlock
+                label="Owner"
+                name={context.owner.displayName ?? "Someone else"}
+                href={
+                  context.owner.creatorHandle
+                    ? `/c/${context.owner.creatorHandle}`
+                    : null
+                }
+                avatar={
+                  <Avatar className="h-7 w-7">
+                    {context.owner.avatarUrl ? (
+                      <AvatarImage
+                        src={context.owner.avatarUrl}
+                        alt={context.owner.displayName ?? "Owner"}
+                      />
+                    ) : null}
+                    <AvatarFallback className="text-[11px]">
+                      {initials(context.owner.displayName)}
+                    </AvatarFallback>
+                  </Avatar>
+                }
+              />
             ) : null}
 
-            {/* A personal workspace is that person, not a team — naming it
-                would just repeat the owner back to the user. */}
-            {context.organization && !context.organization.isPersonal ? (
-              <Link
-                href={`/organizations/${context.organization.id}`}
-                className="flex min-w-0 items-center gap-2 text-sm hover:underline"
-              >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-background">
-                  <Building2
-                    className="h-3.5 w-3.5 text-muted-foreground"
-                    aria-hidden
-                  />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Organization
+            {showOrg && context.organization ? (
+              <IdentityBlock
+                label="Organization"
+                name={context.organization.name ?? "An organization"}
+                href={
+                  context.organization.viewerIsMember
+                    ? `/organizations/${context.organization.id}`
+                    : null
+                }
+                avatar={
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-background">
+                    <Building2
+                      className="h-3.5 w-3.5 text-muted-foreground"
+                      aria-hidden
+                    />
                   </span>
-                  <span className="block truncate text-foreground">
-                    {context.organization.name ?? "An organization"}
-                  </span>
-                </span>
-              </Link>
+                }
+              />
             ) : null}
           </div>
         ) : null}
