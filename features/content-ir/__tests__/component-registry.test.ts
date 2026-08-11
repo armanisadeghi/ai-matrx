@@ -112,6 +112,7 @@ describe("compiled bootstrap (system-components)", () => {
       video_prompt_options: "video_prompt_options",
       keyword_relationship_research: "keyword_research",
       keyword_classification_batch_v1: "keyword_classification_batch",
+      page_brief: "page_brief",
     });
   });
 });

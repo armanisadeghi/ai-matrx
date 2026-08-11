@@ -19,6 +19,7 @@ import FlashcardsBlock from "../../blocks/flashcards/FlashcardsBlock";
 import VideoPromptOptionsBlock from "../../blocks/video-prompt-options/VideoPromptOptionsBlock";
 import KeywordResearchBlock from "../../blocks/keyword-research/KeywordResearchBlock";
 import KeywordClassificationBatchBlock from "../../blocks/keyword-research/KeywordClassificationBatchBlock";
+import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import MultipleChoiceQuiz from "../../blocks/quiz/MultipleChoiceQuiz";
 import Slideshow from "../../blocks/presentations/Slideshow";
 import RecipeViewer from "../../blocks/cooking-recipes/cookingRecipeDisplay";
@@ -234,6 +235,11 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <KeywordClassificationBatchBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  PageBriefBlock: (props: React.ComponentProps<typeof PageBriefBlock>) => (
+    <LazyBlockWrapper>
+      <PageBriefBlock {...props} />
     </LazyBlockWrapper>
   ),
   MultipleChoiceQuiz: (props: React.ComponentProps<typeof MultipleChoiceQuiz>) => (

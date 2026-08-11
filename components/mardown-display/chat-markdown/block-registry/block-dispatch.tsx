@@ -254,12 +254,17 @@ export function isBlockLoading(block: {
  *    emitted upstream. Shape-classified by construction. STREAMING bridges:
  *    serverData exists (and grows) mid-stream, so the components render
  *    item-by-item live.
+ *  - `page_brief` — produced ONLY by `applyIrKindRoute`'s compiled-bridge flip
+ *    for the registered `page_brief` kind (`__kind` JSON arrival only — no
+ *    tag/fence surface); never emitted upstream. Shape-classified by
+ *    construction. STREAMING bridge, same contract as the keyword pair.
  */
 export type FeSynthesizedBlockType =
   | "media_block"
   | "video_prompt_options"
   | "keyword_research"
   | "keyword_classification_batch"
+  | "page_brief"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
 
@@ -335,6 +340,7 @@ export type ShapeBlockType =
   | "video_prompt_options"
   | "keyword_research"
   | "keyword_classification_batch"
+  | "page_brief"
   | "chart"
   | "map"
   | "stats"
@@ -1318,6 +1324,29 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.KeywordClassificationBatchBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (page_brief → page_brief): STREAMING bridge, same contract as
+  // the two above — the angle, brief, and warnings appear as they parse.
+  page_brief: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.PageBriefBlock
           key={index}
           serverData={block.serverData}
         />
