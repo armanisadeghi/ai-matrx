@@ -13,6 +13,34 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D154 — React hydration mismatch (#418) reported on the marketing site shell, not reproducible (2026-08-11)
+
+Arman sees `Minified React error #418` (hydration mismatch) in production on
+`/marketing/brands/<id>/sites/<id>` and `/sites/<id>/audit` — deployment
+`dpl_B6VsN78oPEKoyQF2Cbc12P3d1SBf` (v0.4.422), pre-existing, not from the
+site-audit rollup change. **Investigated 2026-08-11 and NOT reproduced**, on
+current prod (`dpl_7uCMGnsZLN69YW6AsEM5tZYYerpz`, v0.4.426) or in dev:
+
+- Both routes SSR only the shell plus `Loading site…` (`MarketingSiteLayoutClient`
+  renders its loading branch — react-query has no server data), so the mismatch
+  cannot come from marketing page content. Its SSR body has **zero** digit- or
+  date-bearing text nodes, which rules out the usual `toLocaleString`/timezone
+  cause on these routes.
+- Real hydration replay on production (fetch the route's SSR HTML, `document.write`
+  it into a same-origin iframe with `console.error` patched **before** any script
+  runs, let the real prod bundle hydrate): **zero** console errors. Same for a
+  cold dev load at desktop and small viewports.
+- Known theme/favorites mismatch sources are already mount-gated
+  (`ThemeToggleMenuItem`, `FavoritesNavGroup`); `AdminMenu` and window persistence
+  are `ssr:false` dynamics, so their post-hydration appearance is legitimate.
+
+Remaining hypothesis: session-specific state (the test session is
+`admin@admin.com`, not Arman's account) or a browser extension mutating the DOM
+before hydration. **Next step is data, not more guessing:** hydration capture now
+installs pre-hydration (commit `20e226f37`), so once that reaches production the
+Error Inspector records the #418 with its route, stack and occurrence count —
+reopen this with that capture attached.
+
 ### D153 — the canonical code block's Collapse/Copy buttons are `position: fixed` and land on the shell header (2026-08-11)
 
 `features/code-editor/components/code-block/StickyButtons.tsx` positions its toolbar with `position: "fixed", top: isMobile ? "50px" : "5px"` and a right offset measured off the container — so ANY code block rendered through the pipeline parks its Collapse/Copy buttons at the top of the VIEWPORT, not at the top of its own scroll container. Seen while verifying the /shapes Test-tab live run: the streamed JSON's toolbar sat directly over the `(core)` glass header, covering the Preview | Test | Instances mode nav. It is not specific to that surface — every surface that renders a >5-line code block inherits it, chat included. Fix: make the toolbar sticky/absolute inside the block's own scroll container instead of viewport-fixed, and re-verify in chat + a scrolled panel (this component is heavily shared — do not change it as a drive-by).
