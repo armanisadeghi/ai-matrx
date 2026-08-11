@@ -16,6 +16,10 @@ status must come from an existing hook/service. Catalogue execution reuses
 `CatalogueAnalysisPanel`, including its canonical `analyzeSite` action and
 query invalidation behavior; never add a second runner here.
 
+The managed-site overview workspace directory is the hub's required
+discoverability door. The site mode header may also list it, but the feature
+must remain reachable even when the mode list is condensed.
+
 The parent marketing rules remain canonical in `features/marketing/FEATURE.md`.
 This feature adds no schema, service, or duplicate registry.
 

@@ -21,6 +21,7 @@ import {
   Grid3x3,
   KeyRound,
   Link2,
+  ListChecks,
   Loader2,
   Map,
   Network,
@@ -1133,6 +1134,12 @@ function WorkspaceDirectory({
   sitePath: string;
 }) {
   const entries: DirectoryEntry[] = [
+    {
+      name: "SEO capabilities",
+      detail: "Every check system, provider, result, and run control",
+      href: `${sitePath}/capabilities`,
+      icon: <ListChecks className="h-4 w-4" />,
+    },
     {
       name: "Audit",
       detail:
