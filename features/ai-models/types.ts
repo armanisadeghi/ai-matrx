@@ -286,6 +286,13 @@ export type AiModelOfferingView = AiModelOfferingViewRow;
 export type AiModelFormData = {
   name: string;
   common_name: string;
+  // Registry prose shown to USERS as the secondary line of a model picker row
+  // (features/ai-models/components/lab/ModelListDropdown.tsx). Empty string =
+  // NULL in the DB. This field is also the human correction path for the
+  // `model_description` surface write target — do not drop it without also
+  // dropping that target (see the writeTargets block in
+  // features/surfaces/manifests/admin-ai-models.manifest.ts).
+  description: string;
   context_window: string;
   max_tokens: string;
   // The model's maker/brand is set via this FK (ai.provider). The old free-text
