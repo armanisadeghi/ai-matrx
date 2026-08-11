@@ -42,7 +42,10 @@ import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPic
 import MarkdownStream from "@/components/MarkdownStream";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
-import Slideshow from "@/components/mardown-display/blocks/presentations/Slideshow";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
+import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
 import {
   parseOutputs,
   assetsFor,
@@ -1064,7 +1067,15 @@ function GeneratingNote({ label }: { label: string }) {
   );
 }
 
-// ── Slides output (live: runs research_to_slides → renders a Slideshow) ───────
+// ── Slides output ────────────────────────────────────────────────────────────
+//
+// The deck IS the `presentation_deck` content-IR kind: the slot's agent emits a
+// canonical `{__kind:"presentation_deck", slides:[{__kind:"presentation_slide"}]}`
+// envelope, so the run streams into the FLOATING LiveRunWindow and the pipeline
+// routes it to the real Slideshow token by token — no spinner, no page shift,
+// and no second renderer for a shape that already has one. The persisted asset
+// replays through the SAME path (`KindInstanceRender`), so a reload shows the
+// identical component the live run did.
 
 function SlidesOutputCard({
   topicId,
@@ -1085,7 +1096,17 @@ function SlidesOutputCard({
   existing: OutputAsset[];
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
-  const { runSlot, running, unavailable, slotError } = useSlotRunner(SLIDES_SLOT);
+  // Slot resolution stays the identity layer (the header's SlotAgentPicker
+  // still swaps the agent); the RUN goes through the live posture so the deck
+  // streams instead of hiding behind a spinner.
+  const { error: slotError } = useAgentSlot(SLIDES_SLOT);
+  const unavailable = slotError !== null;
+  const {
+    run,
+    isRunning: running,
+    conversationId,
+    hasLiveRun,
+  } = useLiveAgentRun();
   const [viewing, setViewing] = useState<OutputAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -1094,28 +1115,46 @@ function SlidesOutputCard({
     setViewing(null);
     setError(null);
     try {
-      const raw = await runSlot({
+      const deck = await run<PresentationDeck>({
+        slotKey: SLIDES_SLOT,
+        surfaceKey: `research-outputs-slides:${topicId}`,
+        sourceFeature: "research",
         userInput: buildGeneratorInput(reportMarkdown, toneProfile),
         organizationId,
         contextAnchor: {
           resource_type: "research_topic",
           resource_id: topicId,
         },
-        sourceApp: "matrx-frontend",
-        sourceFeature: "research",
+        // A 10-14 slide deck on a long report runs well past the 120s default.
+        timeoutMs: 300_000,
+        coerce: (value) => {
+          const candidate = value as PresentationDeck | null;
+          if (
+            !candidate ||
+            !Array.isArray(candidate.slides) ||
+            candidate.slides.length === 0
+          ) {
+            throw new Error(
+              "The slides generator didn't return a valid deck. Try again.",
+            );
+          }
+          return candidate;
+        },
+        failureMessages: {
+          noJson:
+            "The slides generator didn't return a valid deck. Try again.",
+        },
       });
-      const deck = parseJsonLoose<PresentationDeck>(raw);
-      if (!deck || !Array.isArray(deck.slides) || deck.slides.length === 0) {
-        setError("The slides generator didn't return a valid deck. Try again.");
-        return;
-      }
       const asset: OutputAsset = {
         id: crypto.randomUUID(),
         kind: "slides",
+        // The envelope is persisted AS the canonical kind value (`__kind` and
+        // all) so the saved asset replays through the same render path the
+        // live run used — never a second, drifting shape.
         title: deck.title || `${defaultTitle} — slides`,
         status: "ready",
         created_at: new Date().toISOString(),
-        meta: { presentation: deck, slide_count: deck.slides.length },
+        meta: { presentation: deck, slide_count: deck.slides?.length ?? 0 },
       };
       await onPersisted(asset);
       setViewing(asset);
@@ -1154,7 +1193,22 @@ function SlidesOutputCard({
           {error}
         </span>
       )}
-      {running && <GeneratingNote label="Designing the deck…" />}
+      {/* THE FLOATING LAW: the run streams in a floating window, so this card
+          — and every card under it — never moves while the deck is built. */}
+      {hasLiveRun ? (
+        <LiveRunWindowController
+          instanceId={`research-slides:${topicId}`}
+          conversationId={conversationId}
+          label="Designing the deck"
+          pending={running && !conversationId}
+        />
+      ) : null}
+      {running && (
+        <span className="inline-flex items-center gap-1.5 text-[11px] text-primary">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          Designing the deck — watch it build in the run window.
+        </span>
+      )}
 
       {!running && viewing && deck && (
         <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
@@ -1173,8 +1227,15 @@ function SlidesOutputCard({
               Close
             </button>
           </div>
+          {/* ONE shape, ONE component: the saved deck replays through the
+              canonical route (envelope → `applyIrKindRoute` → the presentation
+              renderer), exactly what the live run showed. */}
           <div className="relative bg-background p-2">
-            <Slideshow slides={deck.slides ?? []} theme={deck.theme ?? {}} />
+            <KindInstanceRender
+              kind="presentation_deck"
+              value={deck}
+              showRoutingNote={false}
+            />
           </div>
         </div>
       )}

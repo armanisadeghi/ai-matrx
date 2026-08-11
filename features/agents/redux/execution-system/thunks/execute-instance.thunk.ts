@@ -310,6 +310,11 @@ export function assembleRequest(
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
   if (scope_ids.length > 0) request.scope_ids = scope_ids;
+  // Durable-entity identity, when the launch declared one. The SERVER reloads
+  // that row and derives authoritative org/project/task from it — this is why
+  // it is sent alongside (not instead of) the ambient scope above: conflicting
+  // ambient values become drift diagnostics there, never execution identity.
+  if (instance.contextAnchor) request.context_anchor = instance.contextAnchor;
   if (sourceApp) request.source_app = sourceApp;
   if (sourceFeature) request.source_feature = sourceFeature;
   if (block_mode) request.block_mode = true;

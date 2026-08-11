@@ -28,7 +28,10 @@
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { MessagePart } from "@/types/python-generated/stream-events";
-import type { SourceFeature } from "@/features/agents/types/instance.types";
+import type {
+  ContextAnchor,
+  SourceFeature,
+} from "@/features/agents/types/instance.types";
 import { extractFirstJson } from "@/utils/json/extract-json";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -72,6 +75,17 @@ export interface HeadlessAgentJsonOptions {
   displayMode?: "direct" | "background";
   /** Server persists nothing for this run. Default false. */
   isEphemeral?: boolean;
+  /**
+   * Explicit organization for this run — the org of the row it generates
+   * from. Without it the request falls back to the user's ambient active org.
+   */
+  organizationId?: string | null;
+  /**
+   * The durable entity this run is FOR. Sent as `context_anchor`; the server
+   * reloads that row for authoritative org/project/task. Pass it whenever a
+   * surface migrating off `useRunAgent` used to send one.
+   */
+  contextAnchor?: ContextAnchor | null;
   /** Wipe history between sends (builder/test semantics). Default false. */
   autoClearConversation?: boolean;
   /** Let the extractor fuzzy-parse at finalize. Default true. */
@@ -186,6 +200,12 @@ export async function runHeadlessAgentJson(
         surfaceKey: opts.surfaceKey,
         sourceFeature: opts.sourceFeature,
         isEphemeral: opts.isEphemeral ?? false,
+        ...(opts.organizationId !== undefined
+          ? { organizationId: opts.organizationId }
+          : {}),
+        ...(opts.contextAnchor !== undefined
+          ? { contextAnchor: opts.contextAnchor }
+          : {}),
         ...(opts.autoClearConversation !== undefined
           ? { autoClearConversation: opts.autoClearConversation }
           : {}),

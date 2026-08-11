@@ -28,6 +28,7 @@ import type {
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import type {
   ApiEndpointMode,
+  ContextAnchor,
   InstanceOrigin,
   SourceFeature,
 } from "@/features/agents/types/instance.types";
@@ -43,6 +44,22 @@ export interface CreateInstanceFullPayload {
   shortcutId?: string;
   initialAgentVersionId?: string | null;
   isEphemeral?: boolean;
+
+  /**
+   * Explicit organization scope for this run. A caller that KNOWS the owning
+   * org (the row it is generating from carries one) passes it here rather than
+   * letting `assembleRequest` fall back to the user's ambient active org —
+   * which can be a different organization entirely.
+   */
+  organizationId?: string | null;
+  /**
+   * Durable-entity identity this run belongs to (e.g. the research topic the
+   * output is generated from). The server reloads that row and derives
+   * authoritative organization/project/task from it; the browser never gets to
+   * redefine an established entity's scope. Optional everywhere — omit it and
+   * scope resolution is exactly as before.
+   */
+  contextAnchor?: ContextAnchor | null;
 
   /**
    * When set, the conversation-focus slice points this surface's focus at the

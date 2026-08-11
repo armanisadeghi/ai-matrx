@@ -22,6 +22,7 @@ import type {
   InstanceOrigin,
   SourceFeature,
   ConversationLifecycle,
+  ContextAnchor,
 } from "@/features/agents/types/instance.types";
 import {
   SOURCE_APP,
@@ -88,6 +89,8 @@ interface CreateInstanceArgs {
   organizationId?: string | null;
   projectId?: string | null;
   taskId?: string | null;
+  /** Durable entity this run belongs to — goes out as `context_anchor`. */
+  contextAnchor?: ContextAnchor | null;
   isEphemeral?: boolean;
   /** Canonical access-control dimension — `cx_conversation.visibility`. */
   visibility?: ConversationVisibility;
@@ -120,6 +123,7 @@ function applyCreateInstance(
     organizationId,
     projectId,
     taskId,
+    contextAnchor,
     isEphemeral,
     visibility,
     conversationLifecycle,
@@ -157,6 +161,7 @@ function applyCreateInstance(
     ...(organizationId !== undefined ? { organizationId } : {}),
     ...(projectId !== undefined ? { projectId } : {}),
     ...(taskId !== undefined ? { taskId } : {}),
+    ...(contextAnchor !== undefined ? { contextAnchor } : {}),
     ...(isEphemeral !== undefined ? { isEphemeral } : {}),
     ...(visibility !== undefined ? { visibility } : {}),
     ...(conversationLifecycle !== undefined ? { conversationLifecycle } : {}),
@@ -350,6 +355,8 @@ const conversationsSlice = createSlice({
         shortcutId: p.shortcutId,
         initialAgentVersionId: p.initialAgentVersionId,
         isEphemeral: p.isEphemeral,
+        organizationId: p.organizationId,
+        contextAnchor: p.contextAnchor,
         // Stamp the lifecycle from the atomic-create uiState bundle: builder /
         // tester surfaces ship autoClear or the auto-clear toggle → "iterate";
         // everything else → "continuous" (never splittable). This is the ONLY

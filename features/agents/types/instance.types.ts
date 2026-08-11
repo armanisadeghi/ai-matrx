@@ -19,6 +19,7 @@ import type {
 import type { ApplicationScope } from "./scope.types";
 import type { UserInputPart } from "./request.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { components } from "@/types/python-generated/api-types";
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import type { VariablesPanelStyle } from "../components/inputs/variable-input-variations/variable-input-options";
 import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
@@ -51,6 +52,13 @@ export type {
   ToolCallStatsResult,
   ToolCallByTool,
 } from "@/types/python-generated/stream-events";
+
+/**
+ * Durable resource identity carried on a run — the generated API contract's
+ * shape, never a hand-mirrored copy. The server reloads the named row and
+ * derives authoritative org/project/task from it.
+ */
+export type ContextAnchor = components["schemas"]["ContextAnchor"];
 
 // =============================================================================
 // Instance Shell
@@ -215,6 +223,14 @@ export interface ExecutionInstance {
   organizationId?: string | null;
   projectId?: string | null;
   taskId?: string | null;
+  /**
+   * Durable-entity identity this conversation belongs to. When present it goes
+   * out as `context_anchor` on every turn and the SERVER reloads that row to
+   * derive authoritative organization/project/task — ambient picker values are
+   * recorded as drift, never allowed to redefine an established entity
+   * (aidream `services/conversation_context/scope.py#bind_request_scope`).
+   */
+  contextAnchor?: ContextAnchor | null;
 
   // ── Invocation origin (ConversationInvocation) ──────────────────────────
   /** Stable UI-surface key (e.g. "agent-runner:<agentId>", "code-editor"). */
@@ -382,8 +398,8 @@ export type ResourceBlockType =
   | "input_table"
   | "input_list"
   | "input_data"
-  // ── Matrx entity references (added 2026-06; pending backend support — see
-  //    features/agents/redux/execution-system/instance-resources/RESOURCE_WIRE_SPEC.md) ──
+  // ── Matrx entity references. These are generated request/persisted message
+  //    variants and resolve to canonical Matrx reference envelopes server-side. ──
   | "input_agent"
   | "input_project"
   | "input_agent_app"
@@ -391,10 +407,10 @@ export type ResourceBlockType =
   | "input_transcript_session"
   | "input_workbook"
   | "input_document"
-  // A processed document (an OCR'd → AI-cleaned file) attached by REFERENCE +
-  // a chosen text representation. Unlike every block type above, it does NOT
-  // emit a content[] block — it emits a lazy context pointer into
-  // `request.context` (see processedDocumentContext.ts + RESOURCE_WIRE_SPEC.md).
+  // A processed document (an OCR'd → AI-cleaned file) attached by reference.
+  // Unlike every block type above, it emits no content[] block: attachment
+  // durability is the canonical file → conversation association edge described
+  // in RESOURCE_WIRE_SPEC.md.
   | "processed_document"
   | "editor_error"
   | "editor_code_snippet";
@@ -1051,6 +1067,25 @@ export interface ManagedAgentOptions {
    * thunk reads `instance.isEphemeral` to branch.
    */
   isEphemeral?: boolean;
+
+  /**
+   * Explicit organization for this run — the org of the ROW the launch is
+   * generating from. Pass it whenever the caller knows it: without it the
+   * request falls back to the user's ambient active org, which can file the
+   * output under a different organization entirely.
+   */
+  organizationId?: string | null;
+
+  /**
+   * The durable entity this run is FOR (e.g. `{resource_type:"research_topic",
+   * resource_id}`). Sent as `context_anchor`; the server reloads that row and
+   * derives authoritative organization/project/task from it, recording any
+   * conflicting ambient value as drift rather than obeying it. This is the
+   * execution-system equivalent of `useRunAgent`'s `contextAnchor`, so a
+   * surface migrating to the live posture keeps its scope instead of silently
+   * dropping it.
+   */
+  contextAnchor?: ContextAnchor | null;
 
   // ═══════════════════════════════════════════════════════════
   // APPLICATION UI CONFIGS

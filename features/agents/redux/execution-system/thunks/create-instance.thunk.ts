@@ -23,7 +23,10 @@ import type {
   VariableDefinition,
 } from "@/features/agents/types/agent-definition.types";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
-import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import type {
+  ApiEndpointMode,
+  ContextAnchor,
+} from "@/features/agents/types/instance.types";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { hasField } from "@/features/agents/redux/shared/field-flags";
 import { executeInstance } from "./execute-instance.thunk";
@@ -167,6 +170,13 @@ interface CreateManualInstanceArgs {
    * execute thunks branch on this flag to select endpoints and store flags.
    */
   isEphemeral?: boolean;
+  /**
+   * Explicit scope for this run — see `CreateShortcutInstanceArgs`. Both are
+   * optional; omit them and scope resolution is exactly as before (ambient
+   * active org, no anchor).
+   */
+  organizationId?: string | null;
+  contextAnchor?: ContextAnchor | null;
 }
 
 export const createManualInstance = createAsyncThunk<
@@ -199,6 +209,8 @@ export const createManualInstance = createAsyncThunk<
     jsonExtraction,
     originalText,
     isEphemeral,
+    organizationId,
+    contextAnchor,
   } = args;
 
   const conversationId = providedConversationId ?? generateConversationId();
@@ -226,6 +238,8 @@ export const createManualInstance = createAsyncThunk<
       ...(surfaceKey ? { surfaceKey } : {}),
       ...(initialAgentVersionId ? { initialAgentVersionId } : {}),
       ...(isEphemeral !== undefined ? { isEphemeral } : {}),
+      ...(organizationId !== undefined ? { organizationId } : {}),
+      ...(contextAnchor !== undefined ? { contextAnchor } : {}),
       // Manual mode (Agent Builder) reads agent.settings LIVE at submit time and
       // never touches the overrides slice — omit the bundle so it stays uninit.
       ...(apiEndpointMode !== "manual"
@@ -271,6 +285,15 @@ interface CreateShortcutInstanceArgs {
   shortcutId: string;
   uiScopes: Record<string, unknown>;
   sourceFeature?: SourceFeature;
+  /**
+   * Explicit scope for this run. `organizationId` is the org the launching
+   * row belongs to (beats the user's ambient active org); `contextAnchor` is
+   * the durable entity the run is FOR — the server reloads it and derives
+   * authoritative org/project/task, so a generated output can never be filed
+   * under whatever org the sidebar happens to be showing.
+   */
+  organizationId?: string | null;
+  contextAnchor?: ContextAnchor | null;
   displayMode?: ResultDisplayMode;
   autoRun?: boolean;
   allowChat?: boolean;
@@ -310,6 +333,8 @@ export const createInstanceFromShortcut = createAsyncThunk<
     shortcutId,
     uiScopes,
     sourceFeature,
+    organizationId,
+    contextAnchor,
     displayMode,
     autoRun,
     allowChat,
@@ -379,6 +404,8 @@ export const createInstanceFromShortcut = createAsyncThunk<
       origin: "shortcut" as InstanceOrigin,
       shortcutId,
       sourceFeature,
+      ...(organizationId !== undefined ? { organizationId } : {}),
+      ...(contextAnchor !== undefined ? { contextAnchor } : {}),
       conversationLifecycle: deriveConversationLifecycle(
         autoClearConversation,
         showAutoClearToggle,

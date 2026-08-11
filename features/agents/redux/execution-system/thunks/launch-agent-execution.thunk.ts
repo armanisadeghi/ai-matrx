@@ -341,6 +341,8 @@ export const launchAgentExecution = createAsyncThunk<
     onConversationCreated,
     conversationId: providedConversationId,
     surfaceKey,
+    organizationId,
+    contextAnchor,
   } = options;
 
   // ── Slot-first identity — resolve BOTH halves of the binding ──────────────
@@ -661,6 +663,8 @@ export const launchAgentExecution = createAsyncThunk<
         shortcutId,
         uiScopes: applicationScope ?? {},
         sourceFeature,
+        ...(organizationId !== undefined ? { organizationId } : {}),
+        ...(contextAnchor !== undefined ? { contextAnchor } : {}),
         displayMode: resolvedDisplayMode,
         autoRun,
         allowChat: allowChat ?? shortcut.allowChat,
@@ -741,6 +745,8 @@ export const launchAgentExecution = createAsyncThunk<
         jsonExtraction,
         originalText,
         ...(isEphemeral !== undefined ? { isEphemeral } : {}),
+        ...(organizationId !== undefined ? { organizationId } : {}),
+        ...(contextAnchor !== undefined ? { contextAnchor } : {}),
       }),
     ).unwrap();
 
