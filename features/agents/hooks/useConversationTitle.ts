@@ -54,23 +54,29 @@ export function resolveConversationTitle(
 export function useConversationTitle(
   conversationId: string | null | undefined,
 ): string | null {
-  const [title, setTitle] = useState<string | null>(() =>
-    conversationId ? (titleCache.get(conversationId) ?? null) : null,
-  );
+  // State carries the id it belongs to, so switching conversations shows the
+  // new one's title (or nothing) IMMEDIATELY — resetting it from an effect
+  // would render one frame of the previous conversation's title.
+  const [resolved, setResolved] = useState<{
+    id: string | null;
+    title: string | null;
+  }>({ id: null, title: null });
+
+  const currentId = conversationId ?? null;
 
   useEffect(() => {
-    if (!conversationId) {
-      setTitle(null);
-      return;
-    }
+    if (!currentId) return;
     let cancelled = false;
-    void resolveConversationTitle(conversationId).then((resolved) => {
-      if (!cancelled) setTitle(resolved);
+    void resolveConversationTitle(currentId).then((title) => {
+      if (!cancelled) setResolved({ id: currentId, title });
     });
     return () => {
       cancelled = true;
     };
-  }, [conversationId]);
+  }, [currentId]);
 
-  return title;
+  if (!currentId) return null;
+  if (resolved.id === currentId) return resolved.title;
+  // Not fetched yet this mount — the module cache may already have it.
+  return titleCache.get(currentId) ?? null;
 }

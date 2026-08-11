@@ -1358,7 +1358,7 @@ export const selectAgentCallChildStream = (requestId: string, callId: string) =>
         | undefined;
       const activeOp = completedOp ? undefined : findOp(active);
       const op = completedOp ?? activeOp;
-      if (!op) return null;
+      if (!op || op.blockAnchor === undefined) return null;
 
       const blockOrder = order ?? [];
       const end = Math.min(
@@ -1366,7 +1366,7 @@ export const selectAgentCallChildStream = (requestId: string, callId: string) =>
         blockOrder.length,
       );
       let text = "";
-      for (let i = op.blockAnchor!; i < end; i++) {
+      for (let i = op.blockAnchor; i < end; i++) {
         const block = (blocks ?? {})[blockOrder[i]];
         if (block && typeof block.content === "string") text += block.content;
       }

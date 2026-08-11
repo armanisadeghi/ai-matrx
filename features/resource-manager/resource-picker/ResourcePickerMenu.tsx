@@ -19,7 +19,14 @@ import { DocumentsResourcePicker } from "./DocumentsResourcePicker";
 import { ContextValuesResourcePicker } from "./ContextValuesResourcePicker";
 import { ToolsResourcePicker } from "./ToolsResourcePicker";
 import { SkillsResourcePicker } from "./SkillsResourcePicker";
+import {
+  ConversationReferencePicker,
+  formatConversationReference,
+} from "./ConversationReferencePicker";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   flattenResourcePickerItems,
   getVisibleResourcePickerCategories,
@@ -59,6 +66,8 @@ export function ResourcePickerMenu({
 }: ResourcePickerMenuProps) {
   const [activeView, setActiveView] = useState<ResourcePickerViewId>(null);
   const [currentUrl, setCurrentUrl] = useState<string>("");
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
   // Run-state counts for the "This run" rows only — see useRunControlCounts.
   const counts = useRunControlCounts(conversationId);
 
@@ -113,6 +122,36 @@ export function ResourcePickerMenu({
           onBack={() => setActiveView(null)}
           onSelect={async (selection) => {
             await selectOne({ type: "file", data: selection });
+          }}
+        />
+      );
+    }
+
+    if (activeView === "conversations") {
+      if (!conversationId) {
+        return (
+          <div className="p-3 text-xs text-muted-foreground">
+            Open a conversation to reference one of your chats.
+          </div>
+        );
+      }
+      return (
+        <ConversationReferencePicker
+          currentConversationId={conversationId}
+          onBack={() => setActiveView(null)}
+          onSelect={(conversation) => {
+            // A reference is TEXT, not an attachment: the agent reads the id
+            // out of the message. Written with the SAME action the user's own
+            // keystrokes dispatch, so undo / draft protection / send behave
+            // identically (mirrors ChatRoomClient's `input_draft` handler).
+            const current =
+              selectUserInputText(conversationId)(store.getState()) ?? "";
+            const mention = formatConversationReference(conversation);
+            const next = current.trim()
+              ? `${current.trimEnd()} ${mention}`
+              : mention;
+            dispatch(setUserInputText({ conversationId, text: next }));
+            onClose();
           }}
         />
       );

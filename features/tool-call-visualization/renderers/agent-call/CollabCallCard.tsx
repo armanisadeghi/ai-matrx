@@ -80,12 +80,12 @@ export function CollabCallCard(props: ToolRendererProps) {
         <Handshake className="h-4 w-4 shrink-0 text-violet-600 dark:text-violet-400" />
         <span className="min-w-0 text-sm font-medium text-foreground">
           {agentLabel} {isActive ? "is reviewing" : "reviewed"}{" "}
-          {isCurrentSource ? (
+          {isCurrentSource || !sourceId ? (
             "this conversation"
           ) : (
             <EntityRef
               token="conversation"
-              id={sourceId!}
+              id={sourceId}
               name={sourceTitle ?? "a conversation"}
               openInNewTab
               showIcon={false}

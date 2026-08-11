@@ -94,6 +94,9 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         icon: MessagesSquare,
         iconClassName: "text-emerald-600 dark:text-emerald-400",
         requiresCapability: null,
+        // The reference is written into THIS conversation's draft — with no
+        // conversation there is nowhere to put it, so don't offer the door.
+        requiresConversation: true,
       },
       {
         id: "tables",
