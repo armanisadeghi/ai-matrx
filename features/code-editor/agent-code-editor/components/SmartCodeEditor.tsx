@@ -28,8 +28,17 @@
  *     (`codeVariableKey`).
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { editor as MonacoEditorNs } from "monaco-editor";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import {
+  SurfaceRuntimeProvider,
+  type SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createSmartCodeEditorScope,
+  smartCodeEditorManifest,
+} from "@/features/surfaces/manifests/smart-code-editor.manifest";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
@@ -367,6 +376,205 @@ export function SmartCodeEditor({
     [store, dispatch, widgetHandleId],
   );
 
+  // ── Surface runtime (read scope + agent write targets) ────────────────────
+  // The live Monaco instance. Held in a ref — NOT state — because the write
+  // handlers below must read the editor as it is WHEN THE USER CONFIRMS, not
+  // as it was when the handler closure was built. The writeback seam resolves
+  // every staged handler before the first confirm dialog is answered, so a
+  // handler that read a render-closure snapshot could replace a range the user
+  // has since moved off.
+  const monacoRef = useRef<MonacoEditorNs.IStandaloneCodeEditor | null>(null);
+  const handleEditorMount = useCallback(
+    (ed: MonacoEditorNs.IStandaloneCodeEditor | null) => {
+      monacoRef.current = ed;
+    },
+    [],
+  );
+
+  // Same reason: the agent state machine gates every write, so it is read live.
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  /**
+   * The ONE edit path these handlers may use.
+   *
+   * `pushEditOperations` on the MODEL, bracketed by undo stops — not
+   * `model.setValue()`, which would throw away the user's undo history, and
+   * not the widget's `executeEdits`, which the read-only toggle (this editor
+   * opens in preview mode, pencil off) would silently swallow. A model edit
+   * fires Monaco's change event, which flows through `onContentChange` into
+   * `handleContentChange` — the exact path the user's own keystrokes take, so
+   * an agent edit lands in the same state, fires the same `code-change` emit,
+   * and ⌘Z reverses it like a paste.
+   */
+  const applyEditorEdits = useCallback(
+    (
+      source: string,
+      edits: MonacoEditorNs.IIdentifiedSingleEditOperation[],
+    ) => {
+      const ed = monacoRef.current;
+      const model = ed?.getModel();
+      if (!ed || !model)
+        throw new Error(
+          "The Smart Code Editor has no open buffer, so there is nothing to write into.",
+        );
+      model.pushStackElement();
+      model.pushEditOperations(null, edits, () => null);
+      model.pushStackElement();
+      void source;
+    },
+    [],
+  );
+
+  /** Refuse every write while the editor is showing the agent diff overlay. */
+  const assertWritableState = useCallback(() => {
+    if (stateRef.current !== "input")
+      throw new Error(
+        "The editor is not accepting edits right now — it is showing an agent diff for review. Ask the user to Apply or Discard those changes first.",
+      );
+  }, []);
+
+  /**
+   * Every target takes PLAIN TEXT. Spelled out in the throw because the
+   * inline-tool layer parses a JSON-looking argument before the handler sees
+   * it: without this sentence the agent "fixes" a rejected value by
+   * double-encoding it, and the user's buffer fills with escaped newlines.
+   */
+  const assertCodeString = useCallback(
+    (target: string, value: unknown): string => {
+      if (typeof value !== "string" || !value.trim())
+        throw new Error(
+          `${target} expects a non-empty plain text string, not JSON and not JSON-encoded. Pass raw code only — no markdown fences, no commentary, no surrounding quotes.`,
+        );
+      return value;
+    },
+    [],
+  );
+
+  const getSurfaceWriteHandlers = useCallback(
+    (): SurfaceWriteHandlers => ({
+      replace_selection: (value: unknown) => {
+        const text = assertCodeString("replace_selection", value);
+        assertWritableState();
+        const ed = monacoRef.current;
+        const sel = ed?.getSelection();
+        if (!ed || !sel || sel.isEmpty())
+          throw new Error(
+            "replace_selection needs a selection, and nothing is selected in the editor. Ask the user to highlight the code to replace, or use insert_at_cursor / content instead — do not guess a range.",
+          );
+        applyEditorEdits("agent-replace-selection", [
+          { range: sel, text, forceMoveMarkers: true },
+        ]);
+      },
+      insert_at_cursor: (value: unknown) => {
+        const text = assertCodeString("insert_at_cursor", value);
+        assertWritableState();
+        const ed = monacoRef.current;
+        const sel = ed?.getSelection();
+        const position = ed?.getPosition();
+        // With a selection, land AFTER it — never clobber what the user picked.
+        const at =
+          sel && !sel.isEmpty()
+            ? { lineNumber: sel.endLineNumber, column: sel.endColumn }
+            : position;
+        if (!ed || !at)
+          throw new Error(
+            "The editor has no cursor position to insert at. Ask the user to click into the code first.",
+          );
+        applyEditorEdits("agent-insert", [
+          {
+            range: {
+              startLineNumber: at.lineNumber,
+              startColumn: at.column,
+              endLineNumber: at.lineNumber,
+              endColumn: at.column,
+            },
+            text,
+            forceMoveMarkers: true,
+          },
+        ]);
+      },
+      content: (value: unknown) => {
+        const text = assertCodeString("content", value);
+        assertWritableState();
+        const model = monacoRef.current?.getModel();
+        if (!model)
+          throw new Error(
+            "The Smart Code Editor has no open buffer, so there is nothing to replace.",
+          );
+        // ONE edit over the full range keeps this a single undo step.
+        const lastLine = model.getLineCount();
+        applyEditorEdits("agent-replace-buffer", [
+          {
+            range: {
+              startLineNumber: 1,
+              startColumn: 1,
+              endLineNumber: lastLine,
+              endColumn: model.getLineContent(lastLine).length + 1,
+            },
+            text,
+            forceMoveMarkers: true,
+          },
+        ]);
+      },
+    }),
+    [applyEditorEdits, assertCodeString, assertWritableState],
+  );
+
+  /**
+   * Live read scope, built through the manifest's own typed builder rather
+   * than a second hand-rolled one. Re-derived on every call: the Monaco model
+   * is the truth for content and selection, so a scope taken at trigger time
+   * matches what the user is looking at.
+   */
+  const getSurfaceScope = useCallback(() => {
+    const ed = monacoRef.current;
+    const model = ed?.getModel();
+    const sel = ed?.getSelection();
+    const liveSelection =
+      model && sel && !sel.isEmpty() ? model.getValueInRange(sel) : undefined;
+
+    return createSmartCodeEditorScope({
+      content: model?.getValue() ?? currentFile?.content ?? "",
+      language: currentFile?.language ?? language,
+      files: isMultiFile
+        ? currentFiles.map((f) => ({
+            path: f.path,
+            name: f.name,
+            language: f.language,
+            content: f.content,
+          }))
+        : undefined,
+      active_file_path: isMultiFile ? (activeTab ?? undefined) : undefined,
+      editor_title: title,
+      file_path: currentFile?.path ?? filePath,
+      diagnostics,
+      workspace_name: workspaceName,
+      workspace_folders: workspaceFolders,
+      git_branch: gitBranch,
+      git_status: gitStatus,
+      agent_skills: agentSkills,
+      selection: liveSelection ?? selection,
+    });
+  }, [
+    currentFile,
+    language,
+    isMultiFile,
+    currentFiles,
+    activeTab,
+    title,
+    filePath,
+    diagnostics,
+    workspaceName,
+    workspaceFolders,
+    gitBranch,
+    gitStatus,
+    agentSkills,
+    selection,
+  ]);
+
   // ── Derived Monaco props ──────────────────────────────────────────────────
   const editorPath = currentFile ? getEditorPath(currentFile) : undefined;
   const monacoLanguage = currentFile
@@ -374,6 +582,12 @@ export function SmartCodeEditor({
     : "plaintext";
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={smartCodeEditorManifest.surfaceName}
+      getScope={getSurfaceScope}
+      isEditable
+      getWriteHandlers={getSurfaceWriteHandlers}
+    >
     <div className={`h-full w-full flex flex-col ${className ?? ""}`}>
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup
@@ -424,6 +638,7 @@ export function SmartCodeEditor({
                   onTabClick={selectTab}
                   onTabClose={closeTab}
                   onContentChange={wrappedHandleContentChange}
+                  onEditorMount={handleEditorMount}
                   editorWrapperRef={editorWrapperRef}
                   editorHeight={editorHeight}
                   editorPath={editorPath}
@@ -482,5 +697,6 @@ export function SmartCodeEditor({
         </ResizablePanelGroup>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

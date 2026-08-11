@@ -1,5 +1,7 @@
 export const siteConfig = {
   name: "AI Matrx",
+  legalOperatorName: "ALL GREEN ELECTRONICS RECYCLING, LLC",
+  legalOperatorUrl: "https://allgreenrecycling.com",
   url: "https://www.aimatrx.com",
   ogImage: "https://www.aimatrx.com/matrx/logo-option-4.jpeg",
   description:

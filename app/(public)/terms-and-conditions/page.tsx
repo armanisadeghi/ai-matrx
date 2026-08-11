@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { siteConfig } from "@/config/extras/site";
 import {
   SMS_OPT_IN_PATH,
   SMS_PRIVACY_PATH,
@@ -20,12 +21,14 @@ export default function TermsAndConditionsPage() {
       <article className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
         <h1>SMS Terms and Conditions</h1>
         <p>
-          <strong>Last updated:</strong> July 20, 2026
+          <strong>Last updated:</strong> August 11, 2026
         </p>
         <p>
-          These terms govern {SMS_PROGRAM_NAME}, operated by AI Matrx. By affirmatively
-          opting in and verifying your mobile number, you agree to receive recurring
-          automated transactional and service-related text messages from AI Matrx.
+          These terms govern {SMS_PROGRAM_NAME}. AI Matrx is a technology service owned and
+          operated by {siteConfig.legalOperatorName}. By affirmatively opting in and verifying
+          your mobile number, you agree to receive recurring automated transactional and
+          service-related text messages from {siteConfig.legalOperatorName} under the AI Matrx
+          product name.
         </p>
 
         <h2>Program description</h2>
@@ -33,7 +36,7 @@ export default function TermsAndConditionsPage() {
           Depending on the preferences and product features you enable, messages may include
           task reminders, job-completion alerts, direct-message notifications, system alerts,
           verification messages, and requested AI-agent responses. Messages may be sent from{" "}
-          {SMS_SENDER_PHONE} or another AI Matrx number registered for this program.
+          {SMS_SENDER_PHONE} or another number registered for this AI Matrx program.
         </p>
 
         <h2>Consent and eligibility</h2>
@@ -80,7 +83,12 @@ export default function TermsAndConditionsPage() {
 
         <h2>Contact</h2>
         <p>
-          AI Matrx<br />
+          {siteConfig.legalOperatorName}<br />
+          AI Matrx product<br />
+          Website:{" "}
+          <a href={siteConfig.legalOperatorUrl} rel="external noopener" target="_blank">
+            {siteConfig.legalOperatorUrl}
+          </a><br />
           Email: <a href={`mailto:${SMS_SUPPORT_EMAIL}`}>{SMS_SUPPORT_EMAIL}</a>
         </p>
       </article>

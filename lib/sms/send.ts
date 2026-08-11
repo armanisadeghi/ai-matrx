@@ -10,6 +10,7 @@ import { createAdminClient } from '@/utils/supabase/adminClient';
 import { resolveOrgIdForUserServer } from '@/lib/organizations/personalOrg';
 import type { SendSmsOptions, SendSmsResult } from './types';
 import { extractErrorMessage } from "@/utils/errors";
+import { formatSmsBody } from '@/features/sms/compliance';
 
 /**
  * Send an SMS message via Twilio Messaging Service.
@@ -69,9 +70,13 @@ export async function sendAndLogSms(options: SendSmsOptions & {
 }): Promise<SendSmsResult> {
   const { conversationId, sentByUserId, sentByType = 'system', ...sendOptions } = options;
   const supabase = createAdminClient();
+  const brandedSendOptions = {
+    ...sendOptions,
+    body: formatSmsBody(sendOptions.body),
+  };
 
   // Send via Twilio
-  const result = await sendSms(sendOptions);
+  const result = await sendSms(brandedSendOptions);
 
   // Resolve org from the parent conversation (the message belongs to its org).
   const { data: parentConversation } = await supabase
@@ -94,14 +99,14 @@ export async function sendAndLogSms(options: SendSmsOptions & {
     // MATRX-EXCEPTION: from_number is NOT NULL with no DB default; "" is the
     // deliberate sentinel when a Messaging Service (not an explicit from
     // number) picked the sender — matches Twilio's own semantics.
-    from_number: sendOptions.from || '',
-    to_number: sendOptions.to,
-    body: sendOptions.body,
+    from_number: brandedSendOptions.from || '',
+    to_number: brandedSendOptions.to,
+    body: brandedSendOptions.body,
     status: result.success ? (result.status || 'queued') : 'failed',
     error_code: result.errorCode ?? null,
     error_message: result.error ?? null,
-    num_media: sendOptions.mediaUrl?.length ?? 0,
-    media_urls: sendOptions.mediaUrl ?? null,
+    num_media: brandedSendOptions.mediaUrl?.length ?? 0,
+    media_urls: brandedSendOptions.mediaUrl ?? null,
     sent_by_user_id: sentByUserId ?? null,
     sent_by_type: sentByType,
   });

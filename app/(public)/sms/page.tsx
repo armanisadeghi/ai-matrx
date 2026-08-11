@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { siteConfig } from "@/config/extras/site";
 import {
   SMS_CONSENT_DISCLOSURE,
   SMS_PRIVACY_PATH,
@@ -27,6 +28,13 @@ export default function SmsProgramPage() {
           AI Matrx account holders can choose to receive transactional and service-related
           text messages, including task reminders, job-completion alerts, direct-message
           notifications, system alerts, and requested AI-agent responses.
+        </p>
+        <p>
+          <strong>Legal operator:</strong> AI Matrx is a technology service owned and operated
+          by {siteConfig.legalOperatorName}. The registered business website is{" "}
+          <a href={siteConfig.legalOperatorUrl} rel="external noopener" target="_blank">
+            {siteConfig.legalOperatorUrl}
+          </a>.
         </p>
 
         <h2>How to opt in</h2>
@@ -58,7 +66,7 @@ export default function SmsProgramPage() {
         <h2>Program details</h2>
         <ul>
           <li>
-            <strong>Sender:</strong> AI Matrx
+            <strong>Sender:</strong> {siteConfig.legalOperatorName}, using the AI Matrx product name
           </li>
           <li>
             <strong>Sending number:</strong> {SMS_SENDER_PHONE}

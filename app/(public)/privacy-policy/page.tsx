@@ -1,5 +1,6 @@
 import React from 'react';
 import { createRouteMetadata } from '@/utils/route-metadata';
+import { siteConfig } from '@/config/extras/site';
 
 export const metadata = createRouteMetadata('/privacy-policy', {
   title: 'Privacy Policy',
@@ -16,11 +17,12 @@ const PrivacyPolicyPage = () => {
       <div className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
       <h1>Privacy Policy</h1>
       <p>
-        <strong>Last updated:</strong> August 6, 2026
+        <strong>Last updated:</strong> August 11, 2026
       </p>
       <p>
-        AI Matrx (&quot;we&quot;, &quot;us&quot;) provides an AI-agent platform that
-        you access through our website at{' '}
+        AI Matrx is a technology product owned and operated by{' '}
+        {siteConfig.legalOperatorName} (&quot;we&quot;, &quot;us&quot;). We provide an
+        AI-agent platform that you access through our website at{' '}
         <a href="https://www.aimatrx.com/" rel="external noopener" target="_blank">
           https://www.aimatrx.com
         </a>{' '}
@@ -586,7 +588,9 @@ const PrivacyPolicyPage = () => {
 
       <h2>12. Contact</h2>
       <p>
-        AI Matrx
+        {siteConfig.legalOperatorName}
+        <br />
+        AI Matrx product
         <br />
         Email:{' '}
         <a href="mailto:support@aimatrx.com">support@aimatrx.com</a>

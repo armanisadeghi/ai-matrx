@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
-import {
-  unwrapGetUserTableComplete,
-  unwrapUserTableMutation,
-} from "@/utils/user-tables-rpc";
+import { unwrapGetUserTableComplete } from "@/utils/user-tables-rpc";
+import { updateTableMetadata } from "@/features/data-tables/service";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
-import type { ValidationMode } from "@/features/data-tables/types";
+import { isServiceFailure, type ValidationMode } from "@/features/data-tables/types";
 
 interface TableInfo {
   id: string;
@@ -115,17 +113,17 @@ export default function TableSettingsModal({
       setLoading(true);
       setError(null);
 
-      // Metadata via the existing RPC.
-      const { data, error } = await supabase.rpc("update_user_table_metadata", {
-        p_table_id: tableId,
-        p_table_name: tableName,
-        p_description: description,
-        p_is_public: isPublic,
-        p_authenticated_read: authenticatedRead,
+      // Metadata through the ONE service path — shared with EditTableModal and
+      // with the surface's `table_description` write target. `authenticatedRead`
+      // is not passed: the RPC has always ignored `p_authenticated_read` ("kept
+      // for API backwards compat"), so sending it only implied it did something.
+      const result = await updateTableMetadata({
+        tableId,
+        tableName,
+        description,
+        isPublic,
       });
-
-      if (error) throw error;
-      unwrapUserTableMutation(data ?? null);
+      if (isServiceFailure(result)) throw new Error(result.error);
 
       // validation_mode goes through the standard RLS UPDATE path on
       // udt_datasets (owner OR editor). Only sent when it actually changed.

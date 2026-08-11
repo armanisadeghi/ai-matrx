@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { siteConfig } from "@/config/extras/site";
 
 export const metadata = createRouteMetadata("/terms-of-service", {
   title: "Terms of Service",
@@ -13,13 +14,15 @@ export default function TermsOfServicePage() {
       <article className="container mx-auto max-w-3xl p-6 prose prose-neutral dark:prose-invert">
         <h1>Terms of Service</h1>
         <p>
-          <strong>Last updated:</strong> August 7, 2026
+          <strong>Last updated:</strong> August 11, 2026
         </p>
         <p>
-          These Terms of Service govern your use of AI Matrx websites, applications,
-          agents, and related services (the &quot;Services&quot;). By creating an account or
-          using the Services, you agree to these terms. If you use the Services for an
-          organization, you represent that you are authorized to accept these terms for it.
+          AI Matrx is a technology product owned and operated by {siteConfig.legalOperatorName}.
+          These Terms of Service govern your use of AI Matrx websites, applications, agents,
+          and related services (the &quot;Services&quot;). By creating an account or using the
+          Services, you agree to these terms with {siteConfig.legalOperatorName}. If you use
+          the Services for an organization, you represent that you are authorized to accept
+          these terms for it.
         </p>
 
         <h2>1. The Services</h2>
@@ -141,6 +144,8 @@ export default function TermsOfServicePage() {
 
         <h2>14. Contact</h2>
         <p>
+          {siteConfig.legalOperatorName}<br />
+          AI Matrx product<br />
           Questions about these terms can be sent to{" "}
           <a href="mailto:info@aimatrx.com">info@aimatrx.com</a>.
         </p>

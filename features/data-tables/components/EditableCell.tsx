@@ -87,7 +87,7 @@ export function EditableCell({
   const commitEdit = useCallback(async () => {
     if (saving) return;
 
-    const normalized = normalize(draft, dataType);
+    const normalized = normalizeCellValue(draft, dataType);
 
     // Skip the write if nothing actually changed.
     if (valuesEqual(normalized, value)) {
@@ -253,7 +253,18 @@ export function EditableCell({
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-function normalize(raw: unknown, dataType: FieldDataType | string): unknown {
+/**
+ * Coerce a raw editor value to what the column's `data_type` expects.
+ *
+ * Exported because the `matrx-user/data-tables` surface write target
+ * (`cell_value`) must coerce EXACTLY the way the user's own typing does — a
+ * second, parallel normalizer is how an agent write and a hand edit end up
+ * storing different things for the same keystrokes.
+ */
+export function normalizeCellValue(
+  raw: unknown,
+  dataType: FieldDataType | string,
+): unknown {
   if (raw === "" || raw === undefined) return null;
   if (raw === null) return null;
 
