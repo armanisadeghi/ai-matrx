@@ -67,13 +67,9 @@ import {
 import type { Concept } from "../concepts";
 import {
   buildArchetypeOptionsJson,
-  buildAvailableKeywordLines,
-  buildCurrentPlanLines,
   buildCurrentPlanSummary,
   buildGuidanceInputs,
-  buildKeywordPlanLines,
   buildSiteContext,
-  REVIEWER_OUTPUT_CONTRACT,
   useSetupAgents,
   type EntityAttachPlan,
   type KeywordStrategyResult,
@@ -95,7 +91,13 @@ import {
   saveSetupDraft,
   type SetupDraft,
 } from "../draft";
+import { useSetupPasses } from "../../hooks/useSetupPasses";
 import { useArchetypeLibrary, useCmsFacts } from "../hooks";
+import {
+  readEntityAttachProposal,
+  readKeywordStrategyProposal,
+  readPlanReviewProposal,
+} from "../proposals";
 import { buildPreview } from "../preview";
 import { buildReadiness, normalizeDomain } from "../readiness";
 import {
@@ -310,6 +312,11 @@ export function SetupView() {
   const researchDoc = useLatestSuccessfulResearchDocument(researchTopicId ?? "");
   const quickResearch = useCompanyQuickResearch();
   const agents = useSetupAgents(siteId);
+  // The three WHOLE-PLAN passes run on the SERVER (aidream), which records the
+  // run on `chat.agent_run` and persists the proposal on the site before it
+  // streams. `agents` still owns the small client-side steps (shape,
+  // family names, entity curation).
+  const passes = useSetupPasses(siteId);
   const researchReport =
     researchDoc.data?.status === "success" && researchDoc.data.content?.trim()
       ? researchDoc.data.content
@@ -320,9 +327,7 @@ export function SetupView() {
     agents.shapeBusy ||
     agents.namingFamilyKey !== null ||
     agents.entitiesBusy ||
-    agents.reviewBusy ||
-    agents.keywordsBusy ||
-    agents.attachBusy;
+    passes.busy;
 
   // ── draft persistence — every step saves, nothing is lost on navigation ─
   // Seed ONCE per site from the FRESH row (never the siteOptions query cache
@@ -383,6 +388,22 @@ export function SetupView() {
             setEntityPlan(draft.entityPlan);
             setEntitiesAppliedAt(draft.entitiesAppliedAt);
           }
+        }
+        // THE RECOVERY COPY. aidream persists each whole-plan proposal onto
+        // the site the moment the model answers, so a run whose tab died
+        // before the draft could stage it is NOT lost — it is here. The draft
+        // (what the user has been working with) wins whenever both exist.
+        if (!draft?.review) {
+          const stored = readPlanReviewProposal(fresh.settings);
+          if (stored) setReview(stored.result);
+        }
+        if (!draft?.keywordStrategy) {
+          const stored = readKeywordStrategyProposal(fresh.settings);
+          if (stored) setKeywordStrategy(stored.result);
+        }
+        if (!draft?.entityPlan) {
+          const stored = readEntityAttachProposal(fresh.settings);
+          if (stored) setEntityPlan(stored.result);
         }
         // No in-progress draft topic → the site's recorded research link
         // (the same one aidream's generator/deepen read) is the default.
@@ -1171,47 +1192,20 @@ export function SetupView() {
   };
 
   // ── E-E-A-T attachments (whole-plan, roster-constrained) ────────────────
+  // SERVER-side: aidream reads the plan, the roster and the research report,
+  // records the run on `chat.agent_run`, and persists the proposal onto the
+  // site before it streams. Closing this tab mid-run no longer destroys it.
   const handleAttachEntities = async () => {
-    if (!researchReport || !siteId || nodeRows.length === 0) return;
+    if (!siteId) return;
     setAttachError(null);
     try {
-      const roster = await listPlanEntities(siteId);
-      if (roster.length === 0) {
-        setAttachError(
-          "This site has no entities yet — add them in the Entities view first.",
-        );
-        return;
-      }
-      const roleByRoute = new Map<string, string>();
-      for (const node of nodeRows) {
-        const strategy = readNodeKeywordStrategy(node);
-        if (node.route && strategy) roleByRoute.set(node.route, strategy.page_role);
-      }
-      const outcome = await agents.attachEntities({
-        current_plan: nodeRows
-          .slice()
-          .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
-          .map((node) =>
-            [
-              node.route ?? "(no route)",
-              node.label,
-              node.node_type,
-              roleByRoute.get(node.route ?? "") ?? "unassigned",
-            ].join(" | "),
-          )
-          .join("\n"),
-        entity_roster: roster
-          .map((entity) => `${entity.label} | ${entity.entity_type} | `)
-          .join("\n"),
-        research_report: researchReport,
-        guidance: "",
-      });
-      setEntityPlan(outcome);
+      const proposal = await passes.attachEntities();
+      setEntityPlan(proposal.result);
       setEntitiesAppliedAt(null);
       setLastAiRun({
         kind: "entities",
-        headline: `Proposed ${outcome.attachments.length} entity attachment(s).`,
-        detail: outcome.notes,
+        headline: `Proposed ${proposal.result.attachments.length} entity attachment(s).`,
+        detail: proposal.result.notes,
       });
     } catch (error) {
       setAttachError(extractErrorMessage(error));
@@ -1267,52 +1261,20 @@ export function SetupView() {
   };
 
   // ── keyword strategy (WHOLE-PLAN, top-down) ─────────────────────────────
+  // SERVER-side: the plan, the site's own keyword library and the research
+  // report are assembled by aidream, the run is recorded, and the strategy is
+  // stored on the site the instant it arrives.
   const handlePlanKeywords = async () => {
-    if (!researchReport || !site || nodeRows.length === 0) return;
+    if (!siteId) return;
     setKeywordError(null);
     try {
-      // The library the strategist should prefer (real data behind it) plus
-      // the phrases already bound, so it can see what it is changing.
-      const boundIds = nodeRows
-        .map((node) => node.primary_keyword_id)
-        .filter((id): id is string => Boolean(id));
-      const [siteValues, boundLabels] = await Promise.all([
-        listSiteKeywordValues(siteId as string),
-        listKeywordLabels(Array.from(new Set(boundIds))),
-      ]);
-      const valueByKeywordId = new Map(
-        siteValues.map((row) => [row.keyword_id, row]),
-      );
-      const libraryLabels = await listKeywordLabels(
-        Array.from(valueByKeywordId.keys()),
-      );
-      const phraseById = new Map<string, string>();
-      for (const row of [...libraryLabels, ...boundLabels]) {
-        phraseById.set(row.id, row.phrase);
-      }
-      const available = libraryLabels.map((row) => {
-        const value = valueByKeywordId.get(row.id);
-        return {
-          phrase: row.phrase,
-          intent: null,
-          contentRole: value?.content_role ?? null,
-          priority: value?.priority_score ?? null,
-        };
-      });
-
-      const outcome = await agents.planKeywords({
-        research_report: researchReport,
-        site_domain: site.domain ?? site.name ?? "",
-        current_plan: buildKeywordPlanLines(nodeRows, statusSlugById, phraseById),
-        available_keywords: buildAvailableKeywordLines(available),
-        guidance: "",
-      });
-      setKeywordStrategy(outcome);
+      const proposal = await passes.planKeywords();
+      setKeywordStrategy(proposal.result);
       setKeywordsAppliedAt(null);
       setLastAiRun({
         kind: "keywords",
-        headline: `Planned keywords for ${outcome.assignments.length} page(s) — review, then apply.`,
-        detail: outcome.strategySummary,
+        headline: `Planned keywords for ${proposal.result.assignments.length} page(s) — review, then apply.`,
+        detail: proposal.result.strategySummary,
       });
     } catch (error) {
       setKeywordError(extractErrorMessage(error));
@@ -1369,25 +1331,21 @@ export function SetupView() {
   };
 
   // ── plan review (semantic audit against the research report) ────────────
+  // SERVER-side. The BINDING output contract that makes the summary and the
+  // findings agree now lives beside the agent's other inputs in
+  // `aidream/services/content_plan/setup_agents.py` — one copy, never two.
   const handleReviewPlan = async () => {
-    if (!researchReport || !site) return;
+    if (!siteId) return;
     setAiError(null);
     setReviewError(null);
     try {
-      const outcome = await agents.reviewPlan({
-        research_report: researchReport,
-        site_domain: site.domain ?? site.name ?? "",
-        current_plan: buildCurrentPlanLines(nodeRows, statusSlugById),
-        // The contract is BINDING and always sent — without it the agent
-        // writes a summary naming six missing pages and returns one finding.
-        guidance: REVIEWER_OUTPUT_CONTRACT,
-      });
-      setReview(outcome);
+      const proposal = await passes.reviewPlan();
+      setReview(proposal.result);
       setAddedRoutes(new Set());
       setLastAiRun({
         kind: "review",
-        headline: `Reviewed ${nodeRows.length} planned page(s) — ${outcome.findings.length} finding(s).`,
-        detail: outcome.summary,
+        headline: `Reviewed ${nodeRows.length} planned page(s) — ${proposal.result.findings.length} finding(s).`,
+        detail: proposal.result.summary,
       });
     } catch (error) {
       setReviewError(extractErrorMessage(error));
@@ -1878,6 +1836,24 @@ export function SetupView() {
         </div>
       ) : null}
 
+      {/* The three SERVER passes stream on aidream's own wire; the adopted
+          request id renders through the same ONE live pipeline. */}
+      {passes.live.requestId || passes.live.isRunning ? (
+        <div className="border-b border-border px-3 py-2">
+          <LiveRunDisplay
+            requestId={passes.live.requestId ?? undefined}
+            label={passes.live.label ?? "Running a whole-plan pass"}
+            pending={passes.live.isRunning}
+            onDismiss={passes.live.dismiss}
+          />
+          {passes.live.stage ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {passes.live.stage}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       {site ? (
         <BuildWithAiDialog
           open={buildDialogOpen}
@@ -1969,7 +1945,7 @@ export function SetupView() {
                   <PlanLintSection nodes={nodes.data ?? []} />
                   <KeywordStrategySection
                     strategy={keywordStrategy}
-                    busy={agents.keywordsBusy}
+                    busy={passes.keywordsBusy}
                     anyBusy={anyAgentBusy}
                     aiReady={Boolean(researchReport)}
                     planEmpty={nodeRows.length === 0}
@@ -1987,7 +1963,7 @@ export function SetupView() {
                   />
                   <EntityAttachSection
                     plan={entityPlan}
-                    busy={agents.attachBusy}
+                    busy={passes.entitiesBusy}
                     anyBusy={anyAgentBusy}
                     aiReady={Boolean(researchReport)}
                     rosterEmpty={(planEntities.data ?? []).length === 0}
@@ -2007,7 +1983,7 @@ export function SetupView() {
                   <PlanReviewSection
                     nodes={nodeRows}
                     review={review}
-                    busy={agents.reviewBusy}
+                    busy={passes.reviewBusy}
                     anyBusy={anyAgentBusy}
                     aiReady={Boolean(researchReport)}
                     error={reviewError}

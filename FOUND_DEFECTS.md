@@ -13,6 +13,26 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D168 — `preview_start` dev servers are untracked, so parallel agent sessions reap each other (2026-08-11)
+
+`pnpm dev` runs `scripts/dev-cleanup.sh reap` on boot, and a server started by the
+harness's `preview_start` shows `TRACKED: no` in `pnpm dev:status`. So every time a
+second agent session starts a dev server, it kills the first session's — and vice
+versa. With three sessions active the box never holds a server long enough to finish
+compiling a route (measured 2026-08-11: servers surviving 1–3 minutes, each ballooning
+to 16–76 GB on a 16 GB machine, `.next-preview` at 155 GB). Browser verification is
+effectively impossible while more than one session is running.
+
+This is not the same thing as the runaway-memory reap, which is correct and wanted. The
+defect is the CLASSIFICATION: a harness-started server is a legitimate dev server and
+must be registered in the tracking file like `pnpm dev`'s is, so `reap` spares it and
+`preview_start` reuses it instead of racing it.
+
+**Fix:** have `preview_start`'s command path register its pid/port/distdir the way
+`pnpm dev` does (`scripts/agent-harness/` + `scripts/dev-cleanup.sh`), so the ONE
+dev-server law is actually enforceable across sessions rather than being a race.
+`scripts/agent-harness/` is the owner.
+
 ### D167 — Transcript Studio never loads its own `studio_runs` rows, so a refresh forgets every pass (2026-08-11)
 
 Nothing in `features/transcript-studio/` dispatches `runsLoaded`, and there is no

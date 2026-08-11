@@ -62,23 +62,6 @@ export const ENTITY_CURATOR_SLOT = "content_plan.entity_curator";
  */
 export const PLAN_REVIEWER_SLOT = "content_plan.plan_reviewer";
 
-/**
- * BINDING contract sent as the reviewer's `guidance` on every run.
- *
- * Measured, not guessed: without it the agent writes a summary naming six
- * missing services and returns ONE finding (or an empty array) — the summary
- * and the findings disagree, and the useful half is the one that goes
- * missing. With it the same input returns 11 evidence-cited findings, one
- * per missing page. Any operator guidance is appended AFTER this block.
- */
-export const REVIEWER_OUTPUT_CONTRACT =
-  "BINDING OUTPUT CONTRACT: summary and findings must agree. Every problem you " +
-  "name in the summary MUST appear as its own entry in findings — a summary " +
-  "naming missing pages while findings is empty or shorter than the problems " +
-  "named is a failed response. Emit ONE finding per missing page (never lump " +
-  "several missing services or locations into one finding). Only return an " +
-  "empty findings array if the plan genuinely has no problems at all.";
-
 const EXTRACTION_TIMEOUT_MS = 180_000;
 const POLL_INTERVAL_MS = 300;
 
@@ -106,9 +89,6 @@ export interface FamilyNamesResult {
  * exactly why this one takes the whole tree.
  */
 export const KEYWORD_STRATEGIST_SLOT = "content_plan.keyword_strategist";
-
-/** Whole-plan reasoning over a long report — well past the default poll. */
-const STRATEGY_TIMEOUT_MS = 420_000;
 
 export const PAGE_ROLES = ["money", "supporting", "navigational"] as const;
 export type PageRole = (typeof PAGE_ROLES)[number];
@@ -394,60 +374,6 @@ export function coerceKeywordStrategy(value: unknown): KeywordStrategyResult {
   };
 }
 
-/**
- * The plan as the strategist's `current_plan` variable expects it — one line
- * per page WITH its current keyword, so the agent can see what is already
- * assigned and keep or replace it deliberately.
- */
-export function buildKeywordPlanLines(
-  nodes: PlanNodeRow[],
-  statusSlugById: Map<string, string> | undefined,
-  keywordPhraseById: Map<string, string>,
-): string {
-  if (nodes.length === 0) return "empty plan";
-  return nodes
-    .slice()
-    .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
-    .map((node) => {
-      const status =
-        (node.status_id ? statusSlugById?.get(node.status_id) : null) ?? "unknown";
-      const keyword =
-        (node.primary_keyword_id
-          ? keywordPhraseById.get(node.primary_keyword_id)
-          : null) ?? "(none)";
-      return [
-        node.route ?? "(no route)",
-        node.label,
-        node.node_type,
-        status,
-        keyword,
-      ].join(" | ");
-    })
-    .join("\n");
-}
-
-/** The keyword library as the strategist's `available_keywords` expects it. */
-export function buildAvailableKeywordLines(
-  rows: Array<{
-    phrase: string;
-    intent: string | null;
-    contentRole: string | null;
-    priority: number | null;
-  }>,
-): string {
-  if (rows.length === 0) return "";
-  return rows
-    .map((row) =>
-      [
-        row.phrase,
-        row.intent ?? "unknown",
-        row.contentRole ?? "unassigned",
-        row.priority ?? "",
-      ].join(" | "),
-    )
-    .join("\n");
-}
-
 export function coercePlanReview(value: unknown): PlanReviewResult {
   const root = asRecord(value, "Plan Reviewer output");
   if (!Array.isArray(root.findings)) {
@@ -487,33 +413,6 @@ export function coercePlanReview(value: unknown): PlanReviewResult {
     summary: typeof root.summary === "string" ? root.summary : "",
     findings,
   };
-}
-
-/**
- * The plan as the reviewer's `current_plan` variable expects it:
- * `route | label | node_type | status`, one page per line.
- *
- * `statusSlugById` maps `plan.node.status_id` to its category slug. Passing a
- * hardcoded "planned" would tell the auditor every page is still unbuilt —
- * fabricated input on the one variable the whole audit reasons over, which
- * makes it recommend work that is already published.
- */
-export function buildCurrentPlanLines(
-  nodes: PlanNodeRow[],
-  statusSlugById?: Map<string, string>,
-): string {
-  if (nodes.length === 0) return "empty plan";
-  return nodes
-    .slice()
-    .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
-    .map((node) => {
-      const status =
-        (node.status_id ? statusSlugById?.get(node.status_id) : null) ?? "unknown";
-      return [node.route ?? "(no route)", node.label, node.node_type, status].join(
-        " | ",
-      );
-    })
-    .join("\n");
 }
 
 /** The archetype menu, serialized exactly as the Shape Planner's variable expects. */
@@ -670,9 +569,6 @@ export function useSetupAgents(siteId: string | null) {
   /** The family key currently being named, or null. */
   const [namingFamilyKey, setNamingFamilyKey] = useState<string | null>(null);
   const [entitiesBusy, setEntitiesBusy] = useState(false);
-  const [reviewBusy, setReviewBusy] = useState(false);
-  const [keywordsBusy, setKeywordsBusy] = useState(false);
-  const [attachBusy, setAttachBusy] = useState(false);
   const inFlight = useRef(false);
 
   async function run<T>(
@@ -743,65 +639,6 @@ export function useSetupAgents(siteId: string | null) {
     }
   }
 
-  async function planKeywords(
-    variables: Record<string, string>,
-  ): Promise<KeywordStrategyResult> {
-    if (inFlight.current) throw new Error("An agent run is already in progress");
-    inFlight.current = true;
-    setKeywordsBusy(true);
-    try {
-      return await run(
-        KEYWORD_STRATEGIST_SLOT,
-        "Planning keyword strategy",
-        variables,
-        coerceKeywordStrategy,
-        STRATEGY_TIMEOUT_MS,
-      );
-    } finally {
-      inFlight.current = false;
-      setKeywordsBusy(false);
-    }
-  }
-
-  async function attachEntities(
-    variables: Record<string, string>,
-  ): Promise<EntityAttachPlan> {
-    if (inFlight.current) throw new Error("An agent run is already in progress");
-    inFlight.current = true;
-    setAttachBusy(true);
-    try {
-      return await run(
-        ENTITY_ATTACHER_SLOT,
-        "Attaching entities",
-        variables,
-        coerceEntityAttachPlan,
-        STRATEGY_TIMEOUT_MS,
-      );
-    } finally {
-      inFlight.current = false;
-      setAttachBusy(false);
-    }
-  }
-
-  async function reviewPlan(
-    variables: Record<string, string>,
-  ): Promise<PlanReviewResult> {
-    if (inFlight.current) throw new Error("An agent run is already in progress");
-    inFlight.current = true;
-    setReviewBusy(true);
-    try {
-      return await run(
-        PLAN_REVIEWER_SLOT,
-        "Reviewing the plan",
-        variables,
-        coercePlanReview,
-      );
-    } finally {
-      inFlight.current = false;
-      setReviewBusy(false);
-    }
-  }
-
   async function curateEntities(
     variables: Record<string, string>,
   ): Promise<EntityCurationResult> {
@@ -839,14 +676,8 @@ export function useSetupAgents(siteId: string | null) {
     recommendShape,
     nameFamily,
     curateEntities,
-    reviewPlan,
-    planKeywords,
-    attachEntities,
     shapeBusy,
     namingFamilyKey,
     entitiesBusy,
-    reviewBusy,
-    keywordsBusy,
-    attachBusy,
   };
 }

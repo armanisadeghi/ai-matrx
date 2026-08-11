@@ -77,6 +77,22 @@ plan CRUD through it.
   useGenerateQuiz pattern). Results stage into the view's own setters — the
   USER commits. The `site_shaper` surface role is bound to the Shape Planner
   (manifest + `ui.ui_surface_agent_role`).
+- 🚨 **The three WHOLE-PLAN Setup passes RUN ON THE SERVER** (since
+  2026-08-11) — keyword strategy, entity attachment and the plan review are
+  `POST /content-plan/sites/{id}/{keyword-strategy|entity-attachments|review}`,
+  driven by `hooks/useSetupPasses.ts`. **Do not add a client-side slot run for
+  any of them, and do not build prompt variables here:** aidream assembles the
+  plan lines, the keyword library, the entity roster and the research report
+  itself, records the run on `chat.agent_run`, and persists the complete
+  proposal to `web.site.settings.content_plan.*_proposal` BEFORE it streams.
+  The hook reads that persisted proposal back (`setup/proposals.ts`) rather
+  than the stream payload, so what the user reviews is what a refresh shows.
+  The small per-step agents (shape planner, family namer, entity curator) still
+  run client-side through `useSetupAgents`.
+- **A site's AI run history** (`?view=ai-runs`,
+  `components/PlanAiRunsView.tsx` + `hooks/usePlanAiRuns.ts`) lists every
+  recorded run for the site — page briefs and deepens included — and opens any
+  one in full. A per-page run opens the page it ran for.
 - Plan↔CMS bridge (`setup/bridge.ts`, consumed by
   `setup/components/SetupBridgeSection.tsx`) — the OTHER sanctioned aidream
   calls: `POST /content-plan/sites/{id}/cms-reconcile | cms-align |
@@ -386,7 +402,10 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
   added-route receipts) ride the SAME autosave as the shape/naming steps —
   stored in the agent's own snake_case wire shape so `coerce*` in `setup/ai.ts`
   stays the one parser, with a malformed section degrading to null rather than
-  destroying the draft. Every staged run is **dismissible**, and Dismiss is what
+  destroying the draft. Since those three moved server-side the draft is the
+  WORKING copy and the server's `*_proposal` key is the RECOVERY copy: the seed
+  effect falls back to the proposal when the draft has none, which is how a run
+  whose tab died before the autosave fired comes back. Every staged run is **dismissible**, and Dismiss is what
   clears it; Apply does not. Adding a fourth step means adding its result to
   `SetupDraft`, its serializer to `draftToStorage`, its rehydration to the seed
   effect, and its `onDismiss` — not a `useState`.

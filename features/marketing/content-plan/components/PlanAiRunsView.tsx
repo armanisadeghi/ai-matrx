@@ -21,7 +21,6 @@ import { AlertTriangle, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { usePlanAiRun, usePlanAiRuns } from "../hooks/usePlanAiRuns";
-import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 
 const STATUS_TONE: Record<string, string> = {
   completed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
@@ -40,11 +39,17 @@ function money(cost: number): string {
   return cost < 0.01 ? "<$0.01" : `$${cost.toFixed(2)}`;
 }
 
-export function PlanAiRunsView({ siteId }: { siteId: string | null }) {
+export function PlanAiRunsView({
+  siteId,
+  onOpenNode,
+}: {
+  siteId: string | null;
+  /** Open the page a per-page run was made for (THE DOOR LAW). */
+  onOpenNode: (nodeId: string) => void;
+}) {
   const runs = usePlanAiRuns(siteId);
   const [openRunId, setOpenRunId] = useState<string | null>(null);
   const detail = usePlanAiRun(siteId, openRunId);
-  const { setSiteId, setView } = usePlanWorkspaceParams();
 
   if (!siteId) {
     return (
@@ -164,12 +169,11 @@ export function PlanAiRunsView({ siteId }: { siteId: string | null }) {
                             variant="link"
                             size="sm"
                             className="h-auto p-0"
-                            onClick={() => {
-                              setSiteId(siteId);
-                              setView("tree");
-                            }}
+                            onClick={() =>
+                              onOpenNode(detail.data?.nodeId as string)
+                            }
                           >
-                            Open the page this ran for
+                            Open {run.nodeRoute || "the page this ran for"}
                           </Button>
                         ) : null}
                       </div>

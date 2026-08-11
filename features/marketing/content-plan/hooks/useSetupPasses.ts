@@ -31,6 +31,7 @@ import {
 } from "@/lib/api/errors";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import type { paths } from "@/types/python-generated/api-types";
 
 import type {
   EntityAttachPlan,
@@ -49,11 +50,13 @@ import { planAiRunKeys } from "./usePlanAiRuns";
 /** Which pass is running — one at a time, per the server's own cost posture. */
 export type SetupPassKind = "keywords" | "entities" | "review";
 
-const PASS_PATHS: Record<SetupPassKind, string> = {
+// `as const` matters: callApi's `path` is the generated literal union, so a
+// widened `string` here would not typecheck against the OpenAPI contract.
+const PASS_PATHS = {
   keywords: "/content-plan/sites/{site_id}/keyword-strategy",
   entities: "/content-plan/sites/{site_id}/entity-attachments",
   review: "/content-plan/sites/{site_id}/review",
-};
+} as const;
 
 const PASS_LABELS: Record<SetupPassKind, string> = {
   keywords: "Planning keyword strategy",
@@ -194,8 +197,12 @@ export function useSetupPasses(siteId: string | null) {
         setState(IDLE);
         // The site row changed (the proposal landed on it) and the run is now
         // in this site's AI history.
-        void queryClient.invalidateQueries({ queryKey: marketingKeys.siteOptions() });
-        void queryClient.invalidateQueries({ queryKey: planAiRunKeys.list(siteId) });
+        void queryClient.invalidateQueries({
+          queryKey: marketingKeys.siteOptions(),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: planAiRunKeys.list(siteId),
+        });
       }
     },
     [dispatch, queryClient, siteId],

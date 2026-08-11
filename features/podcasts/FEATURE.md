@@ -104,6 +104,44 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-11 — **Chapters stream, and they are a Shape — the `media_chapters`
+  kind end to end.** `useEpisodeChapters` ran through `useRunAgent`, which
+  produces **no requestId at all**, so live rendering was structurally
+  impossible and the user watched a spinner while the model wrote (class B in
+  `docs/handoffs/live-run-streaming-sweep.md` §6, THE FLOATING LAW's exact
+  violation). (1) **New kind `media_chapters` (+ child `media_chapter`)** —
+  `features/content-ir/kinds/media-chapters.ts`,
+  `migrations/kind_media_chapters_full.sql`, applied + ledgered + ACTIVE
+  through the real dual gate (`content_ir.set_kind_activation`; the child
+  correctly fails the render leg and stays inactive like every nested-only
+  child). Reuse of `timeline` was checked FIRST and rejected: it is a
+  two-level roadmap with per-event completion status, and mapping a flat
+  playback index onto it needs an invented period level plus `date`
+  overloaded as an offset. Field parity is exactly `PcEpisodeChapter`, so
+  nothing is lossy. Named generically because the same index serves video.
+  (2) **`MediaChaptersBlock` is its ONE component** — the panel's hand-rolled
+  `<ol>` is deleted; saved chapters render through the same component the live
+  window streams into, so what you watch and what reloads cannot drift
+  (THE CANONICAL COMPONENT LAW). Rows become seek buttons wherever a surface
+  passes `onSeek`. (3) **The agent emits the envelope** — `podcast.chapter_marker`
+  (`2f600a25-…`, now v6 `e664397d-…`) is bound to the kind's portable block
+  export and its prompt teaches the shape; the slot declares
+  `output_kind="media_chapters"` + `required_output_keys`, and every version
+  pin moved off the stale v2 seed (aidream `client_slots.py`, the generated
+  runner, the placeholder seeder, the agent doc). (4) **The hook is
+  `useLiveAgentRun` + `useOpenLiveRunWindow`** — floating, not inline, because
+  this panel sits mid-page beside other cards and an inline block would shift
+  them under the user's cursor. **Proven on a real run against production**
+  (gemini-3.6-flash, the real "Why Is the Sky Blue?" episode script): a valid
+  `media_chapters` envelope, first offset `00:00`, strictly increasing, all
+  under the runtime, 6 chapters honoring the hint. That run also caught a real
+  defect — **the model emits keys in the schema's declared property order, so
+  `__kind` last means the discriminator arrives last and the window cannot
+  route until the run is over.** The prompt asking for it first did NOT fix
+  it; moving `__kind` to the front of `properties` did. Browser leg (watching
+  the window render live) NOT yet run — see the note in
+  `docs/handoffs/live-run-streaming-sweep.md`.
+
 - 2026-08-11 — **Title options stream, and each option applies itself — the
   `episode_title_options` kind end to end.** `useEpisodeTitleOptions` ran
   through `useRunAgent`, which produces **no requestId at all**, so live
