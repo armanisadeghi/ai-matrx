@@ -53,6 +53,7 @@ import {
   Pin,
   Play,
   Plus,
+  Radio,
   SlidersHorizontal,
   Stars,
   Blocks,
@@ -89,6 +90,10 @@ import {
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
+import {
+  useOpenLiveRunWindow,
+  type LiveRunWindowHandle,
+} from "@/features/overlays/openers/liveRunWindow";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -259,9 +264,11 @@ function SidebarSectionLabel({
  */
 function CleanUpActionButton({
   busy,
+  phase,
   onProcess,
 }: {
   busy: boolean;
+  phase: AiProcessPhase;
   onProcess: () => boolean;
 }) {
   const closeMobilePanel = useMobilePanelClose();
@@ -281,7 +288,8 @@ function CleanUpActionButton({
     >
       {busy ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
+          <Radio className="h-4 w-4 animate-pulse" />
+          {AI_PHASE_LABEL[phase] ?? "Working"}…
         </>
       ) : (
         <>
@@ -336,6 +344,51 @@ function PaneLoadingVeil({ label }: { label: string }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * THE FLOATING LAW, the second half: a spinner is for a database query, never
+ * for AI. Every in-flight pass on this page narrates the stage it is actually
+ * in, and the pulsing dot is a LIVE badge — the output is streaming into the
+ * pane (or into the pass's floating window when its pane is off screen).
+ */
+const AI_PHASE_LABEL: Record<AiProcessPhase, string | null> = {
+  idle: null,
+  launching: "Starting",
+  pending: "Queued",
+  connecting: "Connecting",
+  streaming: "Writing",
+  "awaiting-tools": "Using tools",
+  complete: null,
+  error: null,
+  cancelled: null,
+  timeout: null,
+};
+
+/** Live badge for a pass in flight — pulsing dot + the stage, never a spinner. */
+function LivePhaseBadge({
+  phase,
+  thinking = false,
+  className,
+}: {
+  phase: AiProcessPhase;
+  /** The model is inside a <thinking> block — a truer stage than "Writing". */
+  thinking?: boolean;
+  className?: string;
+}) {
+  const label = thinking ? "Thinking" : AI_PHASE_LABEL[phase];
+  if (!label) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 text-[10px] font-medium text-primary",
+        className,
+      )}
+    >
+      <Radio className="h-3 w-3 animate-pulse" />
+      {label}
+    </span>
   );
 }
 
@@ -1322,6 +1375,109 @@ export default function CleanupPad({
     slotAi2.accumulatedText,
   ]);
 
+  // ── THE FLOATING LAW: every concurrent pass is watchable ──────────────────
+  // "Record → auto-clean → refine with ANY number of custom agents" fires up
+  // to MAX_CUSTOM_SLOTS + 1 agent runs at once, but only ONE custom slot is on
+  // screen at a time (they're tab pills) and an embedded host can hide the
+  // Clean pane entirely. Every one of those runs streams into a pane the user
+  // cannot see — a tab spinner is exactly the "spinner while AI works" the law
+  // bans. So a pass whose own pane is not visible floats instead: one
+  // LiveRunWindow per slot (stable instanceId, so a re-run rebinds the same
+  // window rather than stacking), bound to the run's conversationId so the
+  // canonical pipeline renders it. Switching to a pass's own tab closes its
+  // window — the pane is the better home when it's actually on screen.
+  const openLiveRunWindow = useOpenLiveRunWindow();
+  const runWindowsRef = useRef<Record<string, LiveRunWindowHandle>>({});
+  useEffect(
+    () => () => {
+      for (const handle of Object.values(runWindowsRef.current)) handle.close();
+      runWindowsRef.current = {};
+    },
+    [],
+  );
+
+  /** Float `key`'s run when it is running out of sight; close it otherwise. */
+  const syncFloatingRun = useCallback(
+    (
+      key: string,
+      opts: {
+        visible: boolean;
+        running: boolean;
+        conversationId: string | null;
+        label: string;
+      },
+    ) => {
+      const open = runWindowsRef.current[key];
+      if (opts.visible || !opts.running) {
+        if (open) {
+          open.close();
+          delete runWindowsRef.current[key];
+        }
+        return;
+      }
+      const patch = {
+        conversationId: opts.conversationId,
+        label: opts.label,
+        pending: !opts.conversationId,
+      };
+      if (open) open.update(patch);
+      else {
+        runWindowsRef.current[key] = openLiveRunWindow({
+          ...patch,
+          instanceId: `cleanup-run-${INSTANCE_ID}-${key}`,
+        });
+      }
+    },
+    [openLiveRunWindow, INSTANCE_ID],
+  );
+
+  useEffect(() => {
+    syncFloatingRun("clean", {
+      visible: showClean,
+      running: cleanAi.isBusy,
+      conversationId: cleanAi.conversationId,
+      label: `Cleaning up${cleanAgentId && agentNames[cleanAgentId] ? ` · ${agentNames[cleanAgentId]}` : ""}`,
+    });
+  }, [
+    syncFloatingRun,
+    showClean,
+    cleanAi.isBusy,
+    cleanAi.conversationId,
+    cleanAgentId,
+    agentNames,
+  ]);
+
+  useEffect(() => {
+    slots.forEach((slot, idx) => {
+      const ai = slotAis[idx];
+      if (!ai) return;
+      const name = slot.agentId ? agentNames[slot.agentId] : null;
+      syncFloatingRun(slot.id, {
+        // A slot's pane is on screen only when the Custom section is revealed
+        // AND that slot is the selected tab.
+        visible: showCustom && idx === activeSlotIdx,
+        running: ai.isBusy,
+        conversationId: ai.conversationId,
+        label: name ?? slot.label ?? `Slot ${idx + 1}`,
+      });
+    });
+    // slotAis identities are stable per render position; the phase/conversation
+    // dependencies below are what actually change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    syncFloatingRun,
+    slots,
+    agentNames,
+    showCustom,
+    activeSlotIdx,
+    slotAi0.isBusy,
+    slotAi0.conversationId,
+    slotAi1.isBusy,
+    slotAi1.conversationId,
+    slotAi2.isBusy,
+    slotAi2.conversationId,
+  ]);
+
   // ── Mic ────────────────────────────────────────────────────────────────────
   const clearPendingInserts = useCallback(() => {
     setPendingPrefix("");
@@ -2212,7 +2368,11 @@ export default function CleanupPad({
       </div>
 
       <div className="shrink-0 border-t border-border p-3">
-        <CleanUpActionButton busy={cleanAi.isBusy} onProcess={handleProcess} />
+        <CleanUpActionButton
+          busy={cleanAi.isBusy}
+          phase={cleanAi.phase}
+          onProcess={handleProcess}
+        />
       </div>
     </div>
   );
@@ -2334,12 +2494,7 @@ export default function CleanupPad({
           )}
         </SectionHeading>
         <div className="flex items-center gap-1">
-          <Loader2
-            className={cn(
-              "h-4 w-4 text-muted-foreground",
-              cleanBusyEarly || cleanThinking ? "animate-spin" : "invisible",
-            )}
-          />
+          <LivePhaseBadge phase={cleanAi.phase} thinking={cleanThinking} />
           {responseValue.trim().length > 0 &&
             baseTextRef.current.trim().length > 0 && (
               <button
@@ -2429,12 +2584,7 @@ export default function CleanupPad({
           )}
         </SectionHeading>
         <div className="flex shrink-0 items-center gap-1">
-          <Loader2
-            className={cn(
-              "h-4 w-4 text-muted-foreground",
-              activeBusyEarly || activeThinking ? "animate-spin" : "invisible",
-            )}
-          />
+          <LivePhaseBadge phase={activeAi.phase} thinking={activeThinking} />
         </div>
       </div>
 
@@ -2460,7 +2610,11 @@ export default function CleanupPad({
                   slots.length > 1 && "pr-5",
                 )}
               >
-                {busy && <Loader2 className="h-3 w-3 shrink-0 animate-spin" />}
+                {/* Live, not blocked: this slot's run streams in its own
+                    floating window until the tab is selected. */}
+                {busy && (
+                  <Radio className="h-3 w-3 shrink-0 animate-pulse text-primary" />
+                )}
                 <span className="truncate">{label}</span>
               </button>
               {slots.length > 1 && (
@@ -2533,11 +2687,11 @@ export default function CleanupPad({
           )}
         >
           {activeAi.isBusy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Radio className="h-3.5 w-3.5 animate-pulse" />
           ) : (
             <Play className="h-3.5 w-3.5" />
           )}
-          Run
+          {activeAi.isBusy ? (AI_PHASE_LABEL[activeAi.phase] ?? "Working") : "Run"}
         </button>
       </div>
 

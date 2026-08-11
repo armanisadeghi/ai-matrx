@@ -106,6 +106,50 @@ export async function fetchPageAnalysis(
 }
 
 /**
+ * The AI's ACTUAL cleaned output for a set of pages — what the model wrote,
+ * not how many pages it got through.
+ *
+ * 🚨 THE FLOATING LAW: a count is not output. The clean step is the expensive,
+ * multi-LLM part of this pipeline and the user must watch it produce words.
+ * The clean pipeline runs DETACHED server-side (started by /pdf/from-images,
+ * no client-reachable stream), so the closest thing to a stream is reading the
+ * rows it writes as it writes them. Callers pass ONLY the page numbers they
+ * have not read yet — a page's cleaned_text is fetched exactly once, never
+ * re-pulled on every 2s tick.
+ */
+export interface CleanedPageText {
+  pageNumber: number;
+  title: string | null;
+  text: string;
+}
+
+export async function fetchCleanedPageText(
+  docId: string,
+  pageNumbers: number[],
+): Promise<CleanedPageText[]> {
+  if (pageNumbers.length === 0) return [];
+  const { data, error } = await docprocDb(supabase)
+    .from("processed_document_pages")
+    .select("page_number, section_title, cleaned_text")
+    .eq("processed_document_id", docId)
+    .in("page_number", pageNumbers)
+    .order("page_number", { ascending: true });
+  if (error) {
+    // Transient — the next tick asks for the same pages again (they stay out
+    // of the caller's "seen" set until they actually arrive).
+    console.warn(`[scanner] cleaned-text read failed for doc ${docId}`, error);
+    return [];
+  }
+  return (data ?? [])
+    .filter((row) => (row.cleaned_text ?? "").trim().length > 0)
+    .map((row) => ({
+      pageNumber: row.page_number,
+      title: row.section_title,
+      text: row.cleaned_text as string,
+    }));
+}
+
+/**
  * Recent scans for the desktop home/sidebar — processed documents born
  * from /pdf/from-images, newest first. Direct docproc read (canonical
  * UI↔DB path).

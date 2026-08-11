@@ -8,7 +8,8 @@
  * Owns everything between "user hit Save" and "landed on the extractor":
  * - the createScanPdf stream (build → per-page OCR events → ids)
  * - the ProcessingView state machine + live page ledger
- * - the 2s docproc poll (clean progress, AI page titles, entities)
+ * - the 2s docproc poll (clean progress, AI page titles, the AI's actual
+ *   cleaned TEXT page by page, entities)
  * - the verified-fetch navigation gate (3×2s, loud misses)
  * - the optional parallel context-assignment prompt
  * - background boundary detection for every uploaded photo
@@ -24,6 +25,7 @@ import type {
   ProcessingState,
 } from "./components/ProcessingView";
 import {
+  fetchCleanedPageText,
   fetchPageAnalysis,
   fetchProcessingStatus,
   fetchRawTextPreview,
@@ -177,17 +179,41 @@ export function useScanSaveFlow(
     [stopPolling, maybeNavigate],
   );
 
+  /**
+   * Page numbers whose cleaned TEXT has already been pulled. A page's output
+   * is read exactly once — the 2s tick asks only for pages that newly turned
+   * cleaned, so watching the AI work costs one small select per page, not the
+   * whole document every two seconds.
+   */
+  const cleanedTextSeenRef = useRef<Set<number>>(new Set());
+
   const startPolling = useCallback(
     (docId: string) => {
       if (!mountedRef.current) return;
       stopPolling();
       pollStartedAtRef.current = Date.now();
+      cleanedTextSeenRef.current = new Set();
       pollTimerRef.current = window.setInterval(() => {
         void Promise.all([
           fetchProcessingStatus(docId),
           fetchPageAnalysis(docId).catch(() => null),
         ])
-          .then(([status, analysis]) => {
+          .then(async ([status, analysis]) => {
+            // The AI's actual words for every page that JUST finished. This is
+            // the whole point of the clean step's UI — a count is not output.
+            const freshlyCleaned = (analysis ?? [])
+              .filter(
+                (a) => a.cleaned && !cleanedTextSeenRef.current.has(a.pageNumber),
+              )
+              .map((a) => a.pageNumber);
+            const cleanedText = await fetchCleanedPageText(
+              docId,
+              freshlyCleaned,
+            );
+            for (const row of cleanedText) {
+              cleanedTextSeenRef.current.add(row.pageNumber);
+            }
+
             setProcessing((p) => {
               if (!p) return p;
               const allCleaned =
@@ -218,10 +244,18 @@ export function useScanSaveFlow(
                   };
                 });
               }
+              const cleanedPages =
+                cleanedText.length > 0
+                  ? [...p.cleanedPages, ...cleanedText].sort(
+                      (a, b) => a.pageNumber - b.pageNumber,
+                    )
+                  : p.cleanedPages;
+
               return {
                 ...p,
                 status,
                 pages,
+                cleanedPages,
                 active: p.active === "done" ? "done" : active,
               };
             });
@@ -262,6 +296,7 @@ export function useScanSaveFlow(
       rawPreview: null,
       status: null,
       pages: [],
+      cleanedPages: [],
       finalizing: false,
     });
 

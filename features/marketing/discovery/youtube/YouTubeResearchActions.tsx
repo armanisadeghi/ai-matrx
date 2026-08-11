@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Brain,
   CheckCircle2,
@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import { toast } from "@/lib/toast";
 import {
   enrichYouTubeComments,
@@ -43,6 +44,9 @@ export function YouTubeResearchActions({
   showAnalysis?: boolean;
 }) {
   const dispatch = useAppDispatch();
+  const openLiveRunWindow = useOpenLiveRunWindow();
+  /** True once this run's stream was adopted — see the catch branch in analyze. */
+  const adoptedRef = useRef(false);
   const [record, setRecord] = useState<YouTubeVideoLibraryRecord | null>(null);
   const [status, setStatus] = useState(initialStatus ?? "unprocessed");
   const [processing, setProcessing] = useState(false);
@@ -102,8 +106,25 @@ export function YouTubeResearchActions({
     setStatus("processing");
     setProgressMessage("Connecting to the live analysis…");
     setActionError(null);
+    // THE FLOATING LAW: watching the video, transcribing it and checking its
+    // claims is minutes of AI work. It streams into the floating window (one
+    // per video, so re-running rebinds instead of stacking) — the page itself
+    // never shifts, and the stage line below stays as the summary.
+    const runWindow = openLiveRunWindow({
+      instanceId: `youtube-analysis-${videoId}`,
+      label: "Analyzing this video",
+      pending: true,
+    });
+    const abortController = new AbortController();
+    adoptedRef.current = false;
     try {
       await streamYouTubeVideoAnalysis(dispatch, videoId, force, {
+        signal: abortController.signal,
+        abortController,
+        onAdopted: ({ requestId }) => {
+          adoptedRef.current = true;
+          runWindow.update({ requestId, pending: false });
+        },
         onEvent: (event) => {
           if (event.event === "phase") {
             setProgressMessage(
@@ -161,6 +182,9 @@ export function YouTubeResearchActions({
     } catch (caught) {
       const message =
         caught instanceof Error ? caught.message : "Analysis could not start.";
+      // Never strand an empty "pending" window on a run that never began. Once
+      // the stream was adopted the window owns real output — leave it up.
+      if (!adoptedRef.current) runWindow.close();
       setActionError(message);
       try {
         const current = await getYouTubeLibraryVideo(videoId);

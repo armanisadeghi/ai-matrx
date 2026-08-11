@@ -2,6 +2,7 @@ import { apiGet, apiPost, buildPath } from "@/lib/api/typed-client";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import type { AppDispatch } from "@/lib/redux/store";
+import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
 import type {
@@ -137,6 +138,18 @@ export async function processYouTubeVideo(
   return data;
 }
 
+/**
+ * Watch a video's analysis run.
+ *
+ * 🚨 THE FLOATING LAW — this is a multi-minute, multi-step AI run (fetch the
+ * video → transcribe → analyze → check claims), and it must be WATCHABLE, not
+ * narrated at from behind a spinner. The run is orchestrated SERVER-side inside
+ * the pipeline endpoint, so its stream is ADOPTED into `activeRequests`
+ * (`adoptForeignStream`) — the caller gets a `requestId` the instant the
+ * response lands and renders it through the canonical pipeline
+ * (`LiveRunWindow` / `LiveRunDisplay`). The domain `phase` / `info` events
+ * still reach `onEvent` for the stage line; content NEVER goes through it.
+ */
 export async function streamYouTubeVideoAnalysis(
   dispatch: AppDispatch,
   videoId: string,
@@ -144,8 +157,19 @@ export async function streamYouTubeVideoAnalysis(
   options: {
     signal?: AbortSignal;
     onEvent?: (event: TypedStreamEvent) => void;
+    /** Fires with the adopted stream's ids before the first chunk is processed. */
+    onAdopted?: (ids: { requestId: string; conversationId: string }) => void;
+    /** The controller whose signal is also passed as `signal` — arms the watchdog. */
+    abortController?: AbortController;
   } = {},
 ): Promise<void> {
+  const consumeStream = dispatch(
+    adoptForeignStream({
+      onAdopted: options.onAdopted,
+      onEvent: options.onEvent,
+      abortController: options.abortController,
+    }),
+  );
   const result = await dispatch(
     callApi({
       path: "/research/youtube/videos/{video_id}/process/stream",
@@ -154,7 +178,7 @@ export async function streamYouTubeVideoAnalysis(
       body: { force },
       stream: true,
       signal: options.signal,
-      onStreamEvent: options.onEvent,
+      consumeStream,
     }),
   );
   if (result.error) {

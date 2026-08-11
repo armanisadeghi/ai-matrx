@@ -9,8 +9,10 @@
  * 1. Build   — from-images stream info events (crop/combine/convert).
  * 2. OCR     — stream `scan_pdf_extract` info; done at the terminal
  *              data event (raw text is real — a peek renders).
- * 3. AI clean— DB poll: per-page cleaned_text counts (the expensive,
- *              multi-LLM step gets the showpiece treatment).
+ * 3. AI clean— the model's ACTUAL cleaned text, page by page, as the
+ *              detached server pipeline writes it (THE FLOATING LAW: a
+ *              count is not output). The per-page ledger and the progress
+ *              bar sit UNDER that, as context — never instead of it.
  * 4. Entities— DB poll: pipeline completion + entity/chunk totals.
  *
  * Navigation happens in the surface once processing completes AND the
@@ -18,7 +20,7 @@
  * console.error on each miss).
  */
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Check,
   FileStack,
@@ -51,6 +53,13 @@ export interface ProcessingPageRow {
   cleaned: boolean;
 }
 
+/** One page of the AI's real cleaned output, in the order the model finished it. */
+export interface CleanedPageOutput {
+  pageNumber: number;
+  title: string | null;
+  text: string;
+}
+
 export interface ProcessingState {
   /** Highest step currently in progress. */
   active: ProcessingStepId | "done";
@@ -60,6 +69,11 @@ export interface ProcessingState {
   rawPreview: string | null;
   status: ProcessingStatus | null;
   pages: ProcessingPageRow[];
+  /**
+   * The AI's actual cleaned text, appended page by page as the clean pipeline
+   * writes it. THE FLOATING LAW — the expensive step shows its output.
+   */
+  cleanedPages: CleanedPageOutput[];
   /** Set while the verified fetch gate runs after completion. */
   finalizing: boolean;
 }
@@ -171,6 +185,9 @@ export function ProcessingView({
                 : "Content cleaned"
             }
           >
+            {state.cleanedPages.length > 0 && (
+              <CleanedOutputFeed pages={state.cleanedPages} />
+            )}
             {stepPhase("clean", state.active) === "active" && (
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
@@ -232,6 +249,57 @@ export function ProcessingView({
             You&apos;ll land in the extractor the moment everything is ready.
           </p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The AI's cleaned output as it lands — the clean step's real content.
+ *
+ * Plain text in a fixed-height, auto-following pane: this is the model's
+ * rewrite of the user's own scan, and it must be readable while it grows. It
+ * deliberately does NOT go through MarkdownStream — there is no requestId
+ * here (the clean pipeline is detached server-side, see processing.ts), and
+ * hand-feeding a renderer is banned. Plain text is the honest surface until
+ * aidream exposes a stream for this pipeline.
+ */
+function CleanedOutputFeed({ pages }: { pages: CleanedPageOutput[] }) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const latest = pages[pages.length - 1];
+
+  // Follow the newest page in, the way a stream follows its own tail.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [latest?.pageNumber]);
+
+  return (
+    <div className="mt-2 rounded-md border border-primary/25 bg-primary/[0.03] animate-in fade-in duration-500">
+      <div className="flex items-center justify-between gap-2 border-b border-primary/15 px-2.5 py-1.5">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-primary/80">
+          What the AI is writing
+        </p>
+        <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+          page {latest?.pageNumber}
+        </span>
+      </div>
+      <div
+        ref={scrollRef}
+        className="max-h-48 space-y-2.5 overflow-y-auto px-2.5 py-2"
+      >
+        {pages.map((page) => (
+          <div key={page.pageNumber}>
+            {page.title && (
+              <p className="text-[11px] font-medium leading-tight">
+                {page.title}
+              </p>
+            )}
+            <p className="whitespace-pre-wrap text-[11px] leading-relaxed text-foreground/85">
+              {page.text}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );
