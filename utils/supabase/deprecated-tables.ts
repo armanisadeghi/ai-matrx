@@ -17,8 +17,6 @@ export const DEPRECATED_TABLE_NAMES = [
   "workflow_node",
   "workflow_edge",
   "workflow_relay",
-  "data_broker",
-  "broker_values",
   "recipe_complete",
   "compiled_recipe",
   "conversations",
@@ -236,40 +234,6 @@ export interface DeprecatedWorkflowRelayRow {
 
 export type DeprecatedWorkflowRelayInsert = Partial<DeprecatedWorkflowRelayRow>;
 export type DeprecatedWorkflowRelayUpdate = Partial<DeprecatedWorkflowRelayRow>;
-
-export interface DeprecatedDataBrokerRow {
-  id: string;
-  name: string;
-  user_id: string | null;
-  data_type: string | null;
-  color: string | null;
-  default_value: Json | null;
-  description: string | null;
-  metadata: Json | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export type DeprecatedDataBrokerInsert = Partial<DeprecatedDataBrokerRow>;
-export type DeprecatedDataBrokerUpdate = Partial<DeprecatedDataBrokerRow>;
-
-export interface DeprecatedBrokerValuesRow {
-  id: string;
-  broker_id: string;
-  user_id: string | null;
-  organization_id: string | null;
-  project_id: string | null;
-  task_id: string | null;
-  ai_runs_id: string | null;
-  ai_tasks_id: string | null;
-  value: Json | null;
-  scope_level: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export type DeprecatedBrokerValuesInsert = Partial<DeprecatedBrokerValuesRow>;
-export type DeprecatedBrokerValuesUpdate = Partial<DeprecatedBrokerValuesRow>;
 
 export interface DeprecatedRecipeCompleteRow {
   recipe_id: string;

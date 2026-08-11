@@ -47933,6 +47933,71 @@ export type Database = {
   }
   users: {
     Tables: {
+      credential_attachments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          credential_item_id: string
+          deleted_at: string | null
+          description: string | null
+          file_name: string
+          handling: string
+          id: string
+          label: string
+          last_used_at: string | null
+          media_type: string
+          size_bytes: number
+          updated_at: string
+          updated_by: string | null
+          value_encrypted: string
+          value_version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          credential_item_id: string
+          deleted_at?: string | null
+          description?: string | null
+          file_name: string
+          handling?: string
+          id?: string
+          label: string
+          last_used_at?: string | null
+          media_type?: string
+          size_bytes: number
+          updated_at?: string
+          updated_by?: string | null
+          value_encrypted: string
+          value_version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          credential_item_id?: string
+          deleted_at?: string | null
+          description?: string | null
+          file_name?: string
+          handling?: string
+          id?: string
+          label?: string
+          last_used_at?: string | null
+          media_type?: string
+          size_bytes?: number
+          updated_at?: string
+          updated_by?: string | null
+          value_encrypted?: string
+          value_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credential_attachments_credential_item_id_fkey"
+            columns: ["credential_item_id"]
+            isOneToOne: false
+            referencedRelation: "credential_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credential_items: {
         Row: {
           access_mode: string

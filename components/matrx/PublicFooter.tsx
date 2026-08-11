@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { siteConfig } from "@/config/extras/site";
 
 const FOOTER_LINKS = [
   { href: "/privacy-policy", label: "Privacy Policy" },
@@ -19,7 +20,15 @@ export function PublicFooter() {
     >
       <div className="flex w-full flex-wrap items-center justify-center gap-x-1 px-2 py-1 sm:gap-x-2 sm:px-4">
         <span className="px-2 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} AI Matrx
+          © {new Date().getFullYear()} AI Matrx · Operated by{" "}
+          <a
+            href={siteConfig.legalOperatorUrl}
+            rel="external noopener"
+            target="_blank"
+            className="hover:text-foreground"
+          >
+            {siteConfig.legalOperatorName}
+          </a>
         </span>
         {FOOTER_LINKS.map(({ href, label }) => (
           <Link

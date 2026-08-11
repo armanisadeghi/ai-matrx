@@ -1,20 +1,21 @@
-# FEATURE.md — `agent-context` (+ `brokers`)
+# FEATURE.md — `agent-context`
 
-**Status:** `active` (brokers production) / `migrating` (agent-context is being narrowed; scope CRUD has moved to [`features/scopes/`](../scopes/FEATURE.md))
+**Status:** `migrating` (being narrowed; scope CRUD has moved to [`features/scopes/`](../scopes/FEATURE.md))
 **Tier:** `1` — foundational for every agent invocation.
-**Last updated:** `2026-07-15`
+**Last updated:** `2026-08-11`
 
-> Combined doc: **brokers** (hierarchical variable resolver) and **agent-context** (its consumer that auto-fills declared context slots on an agent at invocation time). These two cannot be understood separately, but **neither owns scope as a data concept any more** — that lives in [`features/scopes/`](../scopes/FEATURE.md). Read that first; this doc covers the resolution mechanics that *consume* scope.
+> **`features/brokers/` is DELETED (2026-08-11) — there is no broker layer.** This doc previously described brokers as a production SQL-backed resolver sitting in the invocation path. That was never true in code and is now false in the database too: aidream dropped all nine broker-value RPC overloads on 2026-08-09, every `broker*` table lives in `graveyard`, and `graveyard.broker_values` holds **0 rows** — the value store had never been written to. The frontend feature had zero importers outside itself and was never wired to an agent run. See § Removal record. **Real resolution is server-side via the `resolve_full_context` RPC**; the hierarchy below is that resolver's conceptual model, not a client-side chain.
+
+> **agent-context** is the thin consumer that auto-fills declared context slots on an agent at invocation time. It does **not** own scope as a data concept — that lives in [`features/scopes/`](../scopes/FEATURE.md). Read that first; this doc covers the resolution mechanics that *consume* scope.
 
 ---
 
 ## Purpose
 
-- **Brokers** (`features/brokers/`): hierarchical key→value resolver. A broker key declared at multiple levels resolves to the **nearest** match (most specific scope wins). SQL-backed.
 - **Agent context** (`features/agent-context/`): the thin consumer that, at invocation time, builds the agent's context payload by:
   1. Calling the scope resolver in [`features/scopes/`](../scopes/FEATURE.md) for the request's resolved scope bundle (active scopes, entity tags, project, task — already merged into `ResolvedContext`).
   2. Walking the agent's declared **variables** (required) and **context slots** (optional auto-fills).
-  3. Filling each slot from the broker chain + the resolved scope bundle + ambient sources (user profile, conversation history, selection).
+  3. Filling each slot from the resolved scope bundle + ambient sources (user profile, conversation history, selection). Resolution itself runs server-side in `resolve_full_context`.
   4. Never blocking on missing slots.
 
 Scope CRUD, scope pickers, scope assignment to entities, the active-context sidebar — **all of those moved to [`features/scopes/`](../scopes/FEATURE.md).** This module is now just resolution + slot fill at the invocation boundary.
@@ -31,7 +32,7 @@ Scope CRUD, scope pickers, scope assignment to entities, the active-context side
 
 ---
 
-## The broker hierarchy
+## The resolution hierarchy
 
 ```
 Global
@@ -44,7 +45,7 @@ Global
                                      └─ AI Task
 ```
 
-| Level | Resolves from | Example broker key |
+| Level | Resolves from | Example key |
 |---|---|---|
 | Global | platform defaults | `default_model`, platform flags |
 | User | `users` row + preferences | preferred model, language, display name |
@@ -57,20 +58,25 @@ Global
 
 **Resolution rule:** nearest match wins. Falling through returns the next level up. Unresolved at all levels → `undefined`.
 
-The **Scope** level is where the bulk of org-specific signal lives, and it's the level users actually author by hand. See [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) for the data model, contradiction rules, and resolution algorithm that produces the scope-level inputs to broker resolution.
+The **Scope** level is where the bulk of org-specific signal lives, and it's the level users actually author by hand. See [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) for the data model, contradiction rules, and resolution algorithm that produces the scope-level inputs.
 
-See [`features/brokers/INFO.md`](../brokers/INFO.md) for SQL schema, RPC functions, and concrete broker examples.
+---
+
+## Removal record — `features/brokers/` (2026-08-11)
+
+Deleted outright rather than repaired. The evidence, all live-verified against Matrx Main before deleting:
+
+- **Zero broker functions exist in any schema.** `upsert_broker_value`, `bulk_upsert_broker_values`, `get_broker_values_for_context`, `get_complete_broker_data_for_context`, and `get_missing_broker_ids` returned no rows from `pg_proc`. aidream dropped all nine overloads on 2026-08-09 after proving the tables were graveyard-only with zero call statistics.
+- **Every `broker*` table is in `graveyard`** — `data_broker` (974 stale definition rows), `broker_values` (**0 rows**), plus five older peers. No live schema has one.
+- **Zero importers.** Nothing outside `features/brokers/` referenced its service, hooks, or types. No route, no component, no Redux slice. `features/agent-context/` contained no broker code at all — the "broker chain" this doc described was never in the invocation path.
+
+So there was nothing to repoint to and nothing worth restoring: restoring would have meant recreating dropped RPCs over an empty graveyard table to serve code nothing called. Deleting the island also cleared the 10 `pnpm type-check` errors tracked as **D148**, which had been masking the type gate for every other task on `main`. `data_broker` / `broker_values` were removed from `utils/supabase/deprecated-tables.ts` in the same change — brokers was their only consumer.
+
+**If a hierarchical variable resolver is wanted again, it is a new design against live tables — do not resurrect this one.**
 
 ---
 
 ## Entry points
-
-### Brokers (`features/brokers/`)
-
-- `services/` — broker resolution + mutation
-- `hooks/` — React hooks for read/write
-- `examples/` — patterns to copy when wiring a new broker
-- `types/` — `Broker`, scope level enums, resolution result types
 
 ### Agent context (`features/agent-context/`) — narrowed surface
 
@@ -135,7 +141,7 @@ Returned by `selectResolvedContext()` (client) and `resolve_local_context()` / `
 1. Agent declares a context slot `org_brand_voice`.
 2. Client builds the invocation payload. For each declared slot:
    - Look up the key in `ResolvedContext.values` (from `features/scopes`). Hit → use it.
-   - Miss → walk the broker chain: AI task → AI run → task → project → scope → org → user → global. First non-null wins.
+   - Miss → server-side `resolve_full_context` walks the hierarchy: AI task → AI run → task → project → scope → org → user → global. First non-null wins.
    - Still miss → leave the slot `undefined`. Don't block.
 3. Invocation proceeds.
 
@@ -152,7 +158,7 @@ Returned by `selectResolvedContext()` (client) and `resolve_local_context()` / `
 
 1. User picks a scope in `<ActiveScopePicker />` (in [`features/scopes`](../scopes/FEATURE.md)). `appContextSlice` updates.
 2. Next agent invocation carries the new scope chain. Server stamps the new scope on the conversation.
-3. Broker lookups for this conversation resolve from the new chain.
+3. Context lookups for this conversation resolve from the new chain.
 
 ### Flow 4 — Locally-triggered action (entity-bound)
 
@@ -163,7 +169,7 @@ Returned by `selectResolvedContext()` (client) and `resolve_local_context()` / `
 ### Flow 5 — Graceful missing slot
 
 1. Slot `user_profile_summary` declared by an agent.
-2. Caller has no profile loaded; no broker hit at any level; not in `ResolvedContext.values`.
+2. Caller has no profile loaded; no hit at any level; not in `ResolvedContext.values`.
 3. Slot resolves to `undefined`. Invocation proceeds.
 4. Agent works with what it has (or fetches via tool call if it really needs it).
 
@@ -172,14 +178,14 @@ Returned by `selectResolvedContext()` (client) and `resolve_local_context()` / `
 ## Invariants & gotchas
 
 - **Variables block; context slots don't.** Never gate invocation on a missing slot.
-- **Nearest scope wins** in broker resolution. Set a broker at the correct level — wrong-level declarations are silently misleading.
-- **Broker values are read, not mutated, during invocation.** Writes happen through dedicated RPC paths.
+- **Nearest scope wins** in resolution. Declare a value at the correct level — wrong-level declarations are silently misleading.
+- **Context values are read, not mutated, during invocation.** Writes happen through dedicated RPC paths.
 - **`appContext` is the top-level client truth.** Keep it narrow — it rides on every API call.
 - **Scope CRUD does not live here.** Pickers, taggers, slices, services for scope are in [`features/scopes/`](../scopes/FEATURE.md). The single most repeated bug in the old code was a "context picker" that secretly mutated `appContextSlice`; that's structurally impossible in the new module because Surface B never touches it.
-- **Durable cross-entity relationships do not live here either.** Any "this entity is linked to that entity" edge lives in the unified `platform.associations` table via [`features/scopes/`](../scopes/FEATURE.md) (`useAssociations` / `assoc_*` RPCs) — not in a broker, a slot, or `appContextSlice`. Resolution still consumes scope *data*; it does not own entity relationships.
+- **Durable cross-entity relationships do not live here either.** Any "this entity is linked to that entity" edge lives in the unified `platform.associations` table via [`features/scopes/`](../scopes/FEATURE.md) (`useAssociations` / `assoc_*` RPCs) — not in a slot or `appContextSlice`. Resolution still consumes scope *data*; it does not own entity relationships.
 - **Anything not declared as variable or slot** is reachable via tool call only, never injection.
 - **Server stamps scope on the conversation** at first-turn time. Subsequent turns inherit.
-- **Do not create per-feature scope state.** Use `appContextSlice` + broker resolution + `selectResolvedContext` — scattered scope state breaks the mental model.
+- **Do not create per-feature scope state.** Use `appContextSlice` + `resolve_full_context` + `selectResolvedContext` — scattered scope state breaks the mental model.
 - **ResolvedContext is the authoritative scope input.** When filling slots, prefer `ResolvedContext.values` over re-implementing your own scope walk. If a slot needs something `ResolvedContext` doesn't carry, that's a signal to extend the scope module, not bypass it.
 
 ### Personal organization
@@ -192,7 +198,7 @@ Personal context uses the user's real `organizations.is_personal = true` row. Th
 
 - **Owns the scope data this module consumes:** [`features/scopes/FEATURE.md`](../scopes/FEATURE.md). Read first.
 - **Foundational for:** [`features/agents/`](../agents/FEATURE.md) (every invocation uses this), [`features/agent-shortcuts/`](../agent-shortcuts/FEATURE.md) (scope mappings), [`features/agent-apps/`](../agent-apps/FEATURE.md).
-- **Cross-links:** [`features/brokers/INFO.md`](../brokers/INFO.md), [`features/agents/agent-system-mental-model.md`](../agents/agent-system-mental-model.md) §2.
+- **Cross-links:** [`features/agents/agent-system-mental-model.md`](../agents/agent-system-mental-model.md) §2.
 
 ---
 

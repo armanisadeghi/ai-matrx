@@ -189,6 +189,8 @@ export async function saveDraftCode(
 
 /** Mark the draft fully assembled. Failure here still leaves the code intact. */
 export async function finalizeDraft(handle: DraftHandle): Promise<void> {
+  // TEMP-VERIFY: forced failure, proving the draft survives with code intact.
+  if (true as boolean) throw new Error("TEMP-VERIFY forced finalize failure");
   const { metadata } = mergeMetadata(handle, { stage: "complete" });
 
   const { error } = await supabase
