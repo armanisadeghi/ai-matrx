@@ -228,7 +228,8 @@ export function NodePanel({
           `This page is already built (${reality.verdict.state}). Nothing to create.`,
         );
       }
-      await reality.create();
+      const failure = await reality.create();
+      if (failure) throw new Error(failure);
     },
     write_page_content: async () => {
       if (!cmsPage) {
@@ -236,7 +237,8 @@ export function NodePanel({
           "This page does not exist on the website yet — apply build_page first.",
         );
       }
-      await reality.write();
+      const failure = await reality.write();
+      if (failure) throw new Error(failure);
     },
     publish_page: async () => {
       if (!cmsPage) {
@@ -244,7 +246,8 @@ export function NodePanel({
           "This page does not exist on the website yet — apply build_page first.",
         );
       }
-      await reality.publish();
+      const failure = await reality.publish();
+      if (failure) throw new Error(failure);
     },
     node_label: (value) => stage({ label: expectString(value, "node_label") }),
     node_slug: (value) =>

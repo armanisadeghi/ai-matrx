@@ -110,10 +110,10 @@ export function NodeRealityCard({
                 setView("setup");
                 return;
             case "create-page":
-                reality.create();
+                void reality.create();
                 return;
             case "write-content":
-                reality.write();
+                void reality.write();
                 return;
             case "rewrite": {
                 const ok = await confirm({
@@ -122,7 +122,7 @@ export function NodeRealityCard({
                         "The AI writes a fresh version into the website's draft. The live page keeps serving the current version until you publish.",
                     confirmLabel: "Rewrite it",
                 });
-                if (ok) reality.write();
+                if (ok) void reality.write();
                 return;
             }
             case "publish": {
@@ -132,7 +132,7 @@ export function NodeRealityCard({
                     confirmLabel: "Publish it",
                     variant: "destructive",
                 });
-                if (ok) reality.publish();
+                if (ok) void reality.publish();
                 return;
             }
             default:
@@ -278,7 +278,7 @@ export function NodeRealityCard({
                             size="sm"
                             className="h-7 gap-1 text-xs"
                             disabled={busy !== null}
-                            onClick={() => reality.write()}
+                            onClick={() => void reality.write()}
                         >
                             <RefreshCw className="h-3 w-3" />
                             Rewrite

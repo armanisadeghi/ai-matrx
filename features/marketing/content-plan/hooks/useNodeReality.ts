@@ -158,12 +158,19 @@ export function useNodeReality(args: UseNodeRealityArgs) {
      * spinning forever with the failure invisible), and a one-shot imperative
      * call has no need of mutation-cache semantics in the first place. A plain
      * async function with try/catch/finally cannot lose an error.
+     *
+     * Resolves to `null` on success or the failure MESSAGE on refusal — the
+     * card renders it, and the agent write handlers re-throw it, so an agent
+     * cannot be told "done" when the website refused.
      */
     const run = useCallback(
-        async (action: "create" | "write" | "publish") => {
+        async (
+            action: "create" | "write" | "publish",
+        ): Promise<string | null> => {
             if (!args.cmsSiteId) {
-                toast.error("This plan has no website linked yet.");
-                return;
+                const message = "This plan has no website linked yet.";
+                toast.error(message);
+                return message;
             }
             setBusy(action);
             setFailure(null);
@@ -234,12 +241,15 @@ export function useNodeReality(args: UseNodeRealityArgs) {
                 }
                 await invalidate();
             } catch (error) {
-                setFailure(extractErrorMessage(error));
-                toast.error(extractErrorMessage(error));
+                const message = extractErrorMessage(error);
+                setFailure(message);
+                toast.error(message);
+                return message;
             } finally {
                 setBusy(null);
                 setStartedAt(null);
             }
+            return null;
         },
         [
             dispatch,
@@ -296,9 +306,12 @@ export function useNodeReality(args: UseNodeRealityArgs) {
         failure,
         busy,
         startedAt,
-        create: () => void run("create"),
-        write: () => void run("write"),
-        publish: () => void run("publish"),
+        // Return the PROMISE, not void: an agent applying a write target
+        // awaits these, and a void return would report success the instant the
+        // request was sent — before the page was built, written or published.
+        create: () => run("create"),
+        write: () => run("write"),
+        publish: () => run("publish"),
         refresh: invalidate,
     };
 }
