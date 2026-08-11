@@ -32,7 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
-import { useNodeReality, writeStageLabel } from "../hooks/useNodeReality";
+import { writeStageLabel, type NodeReality } from "../hooks/useNodeReality";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import {
     isWritePolicyBlocked,
@@ -77,26 +77,17 @@ function useElapsedSeconds(startedAt: number | null): number {
 
 export function NodeRealityCard({
     node,
-    siteId,
     cmsPage,
-    cmsPagesByNodeId,
     cmsSiteId,
+    reality,
 }: {
     node: PlanNodeRow;
-    siteId: string;
+    /** Owned by NodePanel so the same run also backs the agent write targets. */
+    reality: NodeReality;
     cmsPage: CmsPageMapEntry | null;
-    cmsPagesByNodeId: ReadonlyMap<string, CmsPageMapEntry>;
     cmsSiteId: string | null;
 }) {
     const { setView } = usePlanWorkspaceParams();
-    const reality = useNodeReality({
-        siteId,
-        nodeId: node.id,
-        nodeUpdatedAt: node.updated_at,
-        cmsSiteId,
-        cmsPage,
-        cmsPagesByNodeId,
-    });
     const { verdict, busy } = reality;
     const elapsed = useElapsedSeconds(reality.startedAt);
 

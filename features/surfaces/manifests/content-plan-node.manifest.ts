@@ -58,6 +58,13 @@ const groups: SurfaceValueGroup[] = [
     description: "The brief and the vertical attributes.",
   },
   {
+    key: "node_reality",
+    label: "The real page",
+    sortOrder: 450,
+    description:
+      "What this planned page has actually become on the real website, and the one step left.",
+  },
+  {
     key: "node_state",
     label: "Editor state",
     sortOrder: 500,
@@ -297,6 +304,93 @@ const surfaceSpecific: SurfaceValue[] = [
  * button and DB triggers stay the single persistence path). `save_node` is
  * the only entity-mode target.
  */
+// ── The real page (450-499) — derived live, never a stored column ──────
+const realityValues: SurfaceValue[] = [
+  {
+    name: "node_page_state",
+    label: "Page state",
+    description:
+      "What this planned page IS on the real website right now, derived on every read: no-cms-site (the plan has no website) | not-built | empty (page exists, nothing written) | unpublished | draft-pending (live page has newer edits) | stale (the plan changed after the page was written) | live.",
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 12,
+    sortOrder: 450,
+    group: "node_reality",
+  },
+  {
+    name: "node_page_next_step",
+    label: "Next step for this page",
+    description:
+      "The single next action this page needs: link-site | create-page | write-content | publish | rewrite | none. Maps 1:1 onto the build_page / write_page_content / publish_page write targets.",
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 12,
+    sortOrder: 460,
+    group: "node_reality",
+  },
+  {
+    name: "node_page_id",
+    label: "CMS page ID",
+    description:
+      "UUID of the CMS page realizing this node. Empty when the page has not been built yet.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 36,
+    sortOrder: 470,
+    group: "node_reality",
+  },
+  {
+    name: "node_page_live_url",
+    label: "Live page URL",
+    description:
+      "The public URL of this page. Empty until the page exists; present but unreachable until it is published.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 60,
+    sortOrder: 480,
+    group: "node_reality",
+  },
+];
+
+const buildTargets: SurfaceWriteTarget[] = [
+  {
+    name: "build_page",
+    label: "Create the page on the website",
+    description:
+      "Creates this planned page (and any parent pages it needs, which the website requires before a child can exist) as an EMPTY draft on the linked website. Refuses when the page already exists. Read node_page_state first — this applies only to `not-built`.",
+    valueType: "boolean",
+    updatesValue: "node_page_state",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "node_reality",
+    sortOrder: 450,
+  },
+  {
+    name: "write_page_content",
+    label: "Write the page content",
+    description:
+      "Authors the real content of this page from its brief and keyword targeting and saves it as a DRAFT on the website — it does not go live. Takes minutes. Requires the page to exist (apply build_page first).",
+    valueType: "boolean",
+    updatesValue: "node_page_state",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "node_reality",
+    sortOrder: 460,
+  },
+  {
+    name: "publish_page",
+    label: "Publish the page",
+    description:
+      "Makes this page visible to the public immediately and advances the plan node to `published`. The one target here that changes what real visitors see.",
+    valueType: "boolean",
+    updatesValue: "node_page_state",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "node_reality",
+    sortOrder: 470,
+  },
+];
+
 const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "node_label",
@@ -441,15 +535,16 @@ export const contentPlanNodeManifest: SurfaceManifest = {
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
 You are inside the editor panel for ONE planned page of the site's content plan. The values here are the node's PARTS as the user currently sees them — draft-overlaid: unsaved edits are included, and has_unsaved_edits tells you when the panel differs from the saved row.
-This surface can be WRITTEN TO. Its write targets mirror the editable fields: writes stage into the user's draft for review (never a silent save), except save_node, which persists the draft through the canonical write path. Prefer proposing staged field writes and let the user save.
+This surface can be WRITTEN TO. Its field write targets stage into the user's draft for review (never a silent save), except save_node, which persists the draft through the canonical write path. Prefer proposing staged field writes and let the user save.
+It also carries the three targets that turn this plan into a REAL page on the real website: build_page, write_page_content, publish_page. Read node_page_state and node_page_next_step first — they tell you exactly which one applies, and applying the wrong one is refused with the reason. These do real work: build and write are safe (the page stays a draft nobody can see), publish changes what real visitors see.
 Hard rules: node_route, node_depth, node_pillar_label, and node_cluster_label are computed by database triggers — read-only evidence. The primary keyword is a column (node_primary_keyword_id), secondary keywords are association edges on the parent surface's selected_node_edges. Slug shape, duplicate routes, and cross-site parents are rejected by the DB with exact messages — expect and relay them rather than pre-validating loosely.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
-    surfaceSpecific,
+    [...surfaceSpecific, ...realityValues],
   ),
-  writeTargets,
+  writeTargets: [...writeTargets, ...buildTargets],
   agentRoles: [
     {
       name: "brief_writer",
@@ -498,6 +593,11 @@ export function createContentPlanNodeScope(values: {
   node_brief?: string[];
   node_attributes?: Record<string, unknown>;
   node_updated_at?: string;
+  // The real page (always emitted — the verdict is derived, never absent)
+  node_page_state: string;
+  node_page_next_step: string;
+  node_page_id?: string;
+  node_page_live_url?: string;
   // Inherited optionals worth passing through when the host has them
   site_id?: string;
   site_domain?: string;

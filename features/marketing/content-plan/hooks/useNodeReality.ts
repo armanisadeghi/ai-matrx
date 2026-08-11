@@ -83,6 +83,8 @@ export interface UseNodeRealityArgs {
     cmsPagesByNodeId: ReadonlyMap<string, CmsPageMapEntry>;
 }
 
+export type NodeReality = ReturnType<typeof useNodeReality>;
+
 export function useNodeReality(args: UseNodeRealityArgs) {
     const dispatch = useAppDispatch();
     const queryClient = useQueryClient();

@@ -59,6 +59,7 @@ import {
 import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import { KeywordPicker } from "./KeywordPicker";
+import { useNodeReality } from "../hooks/useNodeReality";
 import { NodeRealityCard } from "./NodeRealityCard";
 
 /** Stable empty map — a fresh `new Map()` per render would churn the card. */
@@ -164,6 +165,16 @@ export function NodePanel({
   // writes STAGE into the draft — the user reviews and saves; save_node is
   // the one entity-mode target (the same canonical write path as Save).
   const { view } = usePlanWorkspaceParams();
+  // Owned HERE, not in the card, so the same three actions back both the
+  // buttons a human presses and the write targets an agent applies.
+  const reality = useNodeReality({
+    siteId,
+    nodeId: node.id,
+    nodeUpdatedAt: node.updated_at,
+    cmsSiteId: cmsSiteId ?? null,
+    cmsPage: cmsPage ?? null,
+    cmsPagesByNodeId: cmsPagesByNodeId ?? EMPTY_CMS_PAGES,
+  });
   const getScope = () =>
     createContentPlanNodeScope({
       view,
@@ -191,6 +202,12 @@ export function NodePanel({
           ? (current.attributes as Record<string, unknown>)
           : undefined,
       node_updated_at: node.updated_at ?? undefined,
+      // The evidence loop: an agent reads what became of this page before it
+      // decides whether to build, write or publish it.
+      node_page_state: reality.verdict.state,
+      node_page_next_step: reality.verdict.action ?? "none",
+      node_page_id: cmsPage?.pageId ?? undefined,
+      node_page_live_url: cmsPage?.liveUrl ?? undefined,
     });
 
   const stage = (patch: PlanNodeUpdate) =>
@@ -203,6 +220,32 @@ export function NodePanel({
   const briefDraft = readBriefDraft(node);
   const draftPending = isDraftPending(node, briefDraft);
   const getWriteHandlers = (): SurfaceWriteHandlers => ({
+    // The build actions. `entity` mode — these do real work on the real
+    // website, so they are offered (`ask`) and never applied unattended.
+    build_page: async () => {
+      if (reality.verdict.state !== "not-built") {
+        throw new Error(
+          `This page is already built (${reality.verdict.state}). Nothing to create.`,
+        );
+      }
+      await reality.create();
+    },
+    write_page_content: async () => {
+      if (!cmsPage) {
+        throw new Error(
+          "This page does not exist on the website yet — apply build_page first.",
+        );
+      }
+      await reality.write();
+    },
+    publish_page: async () => {
+      if (!cmsPage) {
+        throw new Error(
+          "This page does not exist on the website yet — apply build_page first.",
+        );
+      }
+      await reality.publish();
+    },
     node_label: (value) => stage({ label: expectString(value, "node_label") }),
     node_slug: (value) =>
       stage({ slug: expectStringOrNull(value, "node_slug") }),
@@ -535,10 +578,9 @@ export function NodePanel({
         <PanelSection title="The real page">
           <NodeRealityCard
             node={node}
-            siteId={siteId}
             cmsPage={cmsPage ?? null}
-            cmsPagesByNodeId={cmsPagesByNodeId ?? EMPTY_CMS_PAGES}
             cmsSiteId={cmsSiteId ?? null}
+            reality={reality}
           />
         </PanelSection>
 
