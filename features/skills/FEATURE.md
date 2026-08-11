@@ -279,6 +279,23 @@ Phases A–K of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.clau
 
 ## Change log
 
+- `2026-08-11` — claude: `SkillDetailEditor` is **agent-writable** on the
+  `matrx-user/connections-skills` surface — 5 ask-policy `mode:"draft"` targets
+  (`skill_label`, `skill_description`, `skill_type`, `skill_body`,
+  `skill_trigger_patterns`), registered with `useSurfaceWriteHandlers`. Every
+  handler stages through the same `set(key, value)` the inputs' `onChange`
+  calls, so an agent write is a keystroke: the field goes dirty, Save lights
+  up, and nothing reaches `skill.definition` until the USER saves. `skill_type`
+  validates against `KNOWN_SKILL_TYPES` (the list the Type `<select>` renders),
+  and each handler throws on a bad shape and when `readOnly` (system skill,
+  non-admin) rather than staging into a form the user cannot save. Two new
+  OPTIONAL props carry this: `surfaceName` and `onDraftSnapshot`. The
+  super-admin console mount (`/administration/agents/skills`) passes neither
+  and is behaviourally unchanged; `onDraftSnapshot` hands the live draft up so
+  the surface's `skill_draft_*` read twins report the staged buffer instead of
+  the saved row. `skill_id`, delete, and `is_system`/`is_public` are
+  deliberately NOT writable: identity, destruction, blast radius. Verified with
+  a live Badass Agent run — see `features/surfaces/FEATURE.md` (2026-08-11).
 - `2026-07-25` — claude: Agent-builder skills went **non-blocking + readable**.
   Deleted `AgentSkillsModal` (blocking Dialog/Drawer) in favour of the
   `agentSkillsWindow` floating `WindowPanel` + `AgentSkillsButton` trigger, so

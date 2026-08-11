@@ -19,6 +19,7 @@ import {
 import {
   CONNECTIONS_SKILLS_SURFACE_NAME,
   createConnectionsSkillsScope,
+  type ConnectionsSkillsDraftSnapshot,
   type ConnectionsSkillsListEntry,
 } from "@/features/surfaces/manifests/connections-skills.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -47,6 +48,18 @@ export function SkillsSection() {
   const [mode, setMode] = useState<Mode>("list");
   const modeRef = useRef(mode);
   modeRef.current = mode;
+
+  // The skill editor's staged form, handed up so the `skill_draft_*` read
+  // twins report what is ON SCREEN rather than the last saved row. A ref, not
+  // state — `getScope` reads it at Run time and the draft must not re-render
+  // this section on every keystroke. Null whenever the editor is unmounted.
+  const draftRef = useRef<ConnectionsSkillsDraftSnapshot | null>(null);
+  const onDraftSnapshot = React.useCallback(
+    (snapshot: ConnectionsSkillsDraftSnapshot | null) => {
+      draftRef.current = snapshot;
+    },
+    [],
+  );
 
   // External selection (e.g., toast deep-link) puts us into detail mode.
   React.useEffect(() => {
@@ -114,6 +127,7 @@ export function SkillsSection() {
             is_public: selected.isPublic,
           }
         : undefined,
+      ...(draftRef.current ?? {}),
     });
   };
 
@@ -121,13 +135,24 @@ export function SkillsSection() {
   if (mode === "detail" && selectedItemId) {
     body = (
       <div className="flex flex-col h-full min-h-0">
-        <SkillDetailEditor skillId={selectedItemId} onBack={goList} />
+        <SkillDetailEditor
+          skillId={selectedItemId}
+          onBack={goList}
+          surfaceName={CONNECTIONS_SKILLS_SURFACE_NAME}
+          onDraftSnapshot={onDraftSnapshot}
+        />
       </div>
     );
   } else if (mode === "create") {
     body = (
       <div className="flex flex-col h-full min-h-0">
-        <SkillDetailEditor skillId="" isNew onBack={goList} />
+        <SkillDetailEditor
+          skillId=""
+          isNew
+          onBack={goList}
+          surfaceName={CONNECTIONS_SKILLS_SURFACE_NAME}
+          onDraftSnapshot={onDraftSnapshot}
+        />
       </div>
     );
   } else if (mode === "ingest") {

@@ -24,6 +24,9 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { ConnectionsSkillsDraftSnapshot } from "@/features/surfaces/manifests/connections-skills.manifest";
+
 import { useSkill } from "../hooks/useSkill";
 import { selectAllSkills } from "../redux/skillsSelectors";
 import {
@@ -51,6 +54,19 @@ interface SkillDetailEditorProps {
    * the parent is previewable but not navigable. See `SkillsBrowser`.
    */
   skillHref?: (skillId: string) => string;
+  /**
+   * Surface this editor is mounted inside, when that surface declares
+   * agent-writable draft targets (`matrx-user/connections-skills`). Supplying
+   * it registers the write handlers below; omit it and the editor behaves
+   * exactly as before — the super-admin console mount declares no targets.
+   */
+  surfaceName?: string;
+  /**
+   * Hands the live draft up to the surface emitter so the `skill_draft_*`
+   * read twins reflect the staged form rather than the saved row. Called with
+   * null on unmount.
+   */
+  onDraftSnapshot?: (snapshot: ConnectionsSkillsDraftSnapshot | null) => void;
 }
 
 const KNOWN_SKILL_TYPES: SkillType[] = [
@@ -68,6 +84,8 @@ export function SkillDetailEditor({
   onBack,
   isNew = false,
   skillHref,
+  surfaceName,
+  onDraftSnapshot,
 }: SkillDetailEditorProps) {
   const dispatch = useAppDispatch();
   const isAdmin = useAppSelector(selectIsSuperAdmin);
@@ -160,6 +178,120 @@ export function SkillDetailEditor({
   };
 
   const dirty = isNew || changed.size > 0;
+
+  // ── Surface write targets (`matrx-user/connections-skills`) ─────────────
+  // The editor is a deep child of SkillsSection's provider, so it registers
+  // its own handlers and hands its draft up for the read twins. Every handler
+  // stages through the SAME `set()` the inputs' onChange calls — an applied
+  // write is a keystroke, not a parallel path, and the user still saves.
+  const formUnusable = !isNew && !skill;
+
+  useEffect(() => {
+    if (!onDraftSnapshot) return;
+    if (formUnusable) {
+      onDraftSnapshot(null);
+      return;
+    }
+    onDraftSnapshot({
+      skill_draft_label: draft.label,
+      skill_draft_description: draft.description,
+      skill_draft_type: draft.skillType,
+      skill_draft_body: draft.body,
+      skill_draft_trigger_patterns: draft.triggerPatterns,
+      skill_draft_unsaved_fields: isNew
+        ? Object.keys(draft)
+        : [...changed].map(String),
+      skill_draft_read_only: readOnly,
+    });
+  }, [draft, changed, isNew, readOnly, formUnusable, onDraftSnapshot]);
+
+  useEffect(
+    () => () => onDraftSnapshot?.(null),
+    [onDraftSnapshot],
+  );
+
+  /** Shared refusal for every target: no usable form, or a form the viewer
+   *  cannot save into. Throwing is the contract — the writeback seam turns it
+   *  into an error the agent reads. */
+  const assertWritable = (target: string) => {
+    if (formUnusable) {
+      throw new Error(
+        `Cannot apply ${target}: no skill is open in the editor. Open a skill from the list (or start a new one) first.`,
+      );
+    }
+    if (readOnly) {
+      throw new Error(
+        `Cannot apply ${target}: “${draft.label || draft.skillId}” is a system skill and you are not an admin, so the form is read-only. Nothing was staged.`,
+      );
+    }
+  };
+
+  const requireText = (
+    target: string,
+    value: unknown,
+    { allowEmpty = false }: { allowEmpty?: boolean } = {},
+  ): string => {
+    if (typeof value !== "string") {
+      throw new Error(
+        `${target} expects a plain string, received ${Array.isArray(value) ? "an array" : typeof value}. Send the text itself, not JSON.`,
+      );
+    }
+    if (!allowEmpty && !value.trim()) {
+      throw new Error(`${target} cannot be empty.`);
+    }
+    return value;
+  };
+
+  useSurfaceWriteHandlers(surfaceName ?? null, {
+    skill_label: (value) => {
+      assertWritable("skill_label");
+      const next = requireText("skill_label", value);
+      if (next !== next.trim()) {
+        throw new Error(
+          "skill_label must not have leading or trailing whitespace.",
+        );
+      }
+      set("label", next);
+    },
+    skill_description: (value) => {
+      assertWritable("skill_description");
+      set("description", requireText("skill_description", value).trim());
+    },
+    skill_type: (value) => {
+      assertWritable("skill_type");
+      const next = requireText("skill_type", value);
+      if (!KNOWN_SKILL_TYPES.includes(next)) {
+        throw new Error(
+          `skill_type must be one of ${KNOWN_SKILL_TYPES.join(", ")} — received “${next}”.`,
+        );
+      }
+      set("skillType", next);
+    },
+    skill_body: (value) => {
+      assertWritable("skill_body");
+      set("body", requireText("skill_body", value, { allowEmpty: true }));
+    },
+    skill_trigger_patterns: (value) => {
+      assertWritable("skill_trigger_patterns");
+      if (!Array.isArray(value)) {
+        throw new Error(
+          `skill_trigger_patterns expects an array of strings, received ${typeof value}. It replaces the full set — send [] to clear it.`,
+        );
+      }
+      const next = value.map((entry, i) => {
+        if (typeof entry !== "string" || !entry.trim()) {
+          throw new Error(
+            `skill_trigger_patterns[${i}] must be a non-empty string.`,
+          );
+        }
+        return entry.trim();
+      });
+      if (new Set(next).size !== next.length) {
+        throw new Error("skill_trigger_patterns must not contain duplicates.");
+      }
+      set("triggerPatterns", next);
+    },
+  });
 
   const save = async () => {
     setSaving(true);
