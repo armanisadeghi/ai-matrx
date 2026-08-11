@@ -20,6 +20,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import {
   startContinuousCapture,
@@ -116,6 +118,19 @@ export function SingleCardVoiceTest({
   const [skipped, setSkipped] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTranscript, setShowTranscript] = useState(false);
+  // The grade streams here instead of a spinner: set before the stream starts,
+  // cleared (and the instance destroyed) on go-again / close.
+  const [gradeConversationId, setGradeConversationId] = useState<string | null>(
+    null,
+  );
+
+  const gradeConversationRef = useRef<string | null>(null);
+  const releaseGradeRun = (): void => {
+    const conversationId = gradeConversationRef.current;
+    gradeConversationRef.current = null;
+    setGradeConversationId(null);
+    if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
+  };
 
   const capturingRef = useRef(false);
   const spokenFallbackRef = useRef<number | null>(null);
@@ -161,8 +176,13 @@ export function SingleCardVoiceTest({
         hardStopCapture();
         capturingRef.current = false;
       }
+      // `keepInstance: true` on the graded run means this component owns it.
+      if (gradeConversationRef.current) {
+        dispatch(destroyInstanceIfAllowed(gradeConversationRef.current));
+        gradeConversationRef.current = null;
+      }
     };
-  }, [cartesiaStop]);
+  }, [cartesiaStop, dispatch]);
 
   /** Start gesture — warms the mic inside the click (same as useFastFireLauncher). */
   const handleSetupStart = (spokenFrontId: string | null): void => {
@@ -228,6 +248,11 @@ export function SingleCardVoiceTest({
             secondsAllowed: answerSeconds,
             clip,
             surface: "card-voice-test",
+            // No spinner while AI works — the grade streams into the panel.
+            onConversationCreated: (conversationId) => {
+              gradeConversationRef.current = conversationId;
+              setGradeConversationId(conversationId);
+            },
             ...(record
               ? { itemType: "fc_card", itemId: card.id, method: "voice_test" }
               : {}),
@@ -310,6 +335,7 @@ export function SingleCardVoiceTest({
       setSkipped(false);
       setError(null);
       setShowTranscript(false);
+      releaseGradeRun();
       answerStartedRef.current = false;
       finishStartedRef.current = false;
 
@@ -331,6 +357,7 @@ export function SingleCardVoiceTest({
   };
 
   const done = (): void => {
+    releaseGradeRun();
     void cartesiaStop();
     if (capturingRef.current) {
       stopContinuousCapture();
@@ -429,9 +456,15 @@ export function SingleCardVoiceTest({
               <Pulser>
                 <Zap className="h-8 w-8 animate-pulse text-primary" />
               </Pulser>
-              <p className="text-base font-medium text-muted-foreground">
-                Grading your answer…
-              </p>
+              {/* The grade itself streams in — never a spinner while AI works.
+                  It sits BELOW the badge and the panel grows downward. */}
+              <LiveRunDisplay
+                conversationId={gradeConversationId}
+                pending
+                label="Listening back and grading your answer"
+                className="w-full text-left"
+                bodyClassName="max-h-56"
+              />
             </>
           )}
 

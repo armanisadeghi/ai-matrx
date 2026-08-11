@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Lightbulb, GitBranch, Loader2, Check, X, Sparkles } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
@@ -26,6 +26,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import type { Depth } from "@/features/education/assessment/data/types";
@@ -49,9 +51,21 @@ interface CardWork {
     | { mode: "deepen"; subCards: ExpandedSubCard[] }
     | null;
   saving: boolean;
+  /**
+   * The live run's conversation — set BEFORE the stream so `<LiveRunDisplay>`
+   * shows the layers/sub-cards arriving instead of a spinner. Kept after the
+   * run so the streamed output stays readable beside the preview; the instance
+   * is destroyed when the preview is cleared, re-run, or the dialog unmounts.
+   */
+  conversationId: string | null;
 }
 
-const EMPTY_WORK: CardWork = { running: null, preview: null, saving: false };
+const EMPTY_WORK: CardWork = {
+  running: null,
+  preview: null,
+  saving: false,
+  conversationId: null,
+};
 
 export function EnhanceSetDialog({
   open,
@@ -79,6 +93,25 @@ export function EnhanceSetDialog({
       [cardId]: { ...(prev[cardId] ?? EMPTY_WORK), ...patch },
     }));
 
+  // `keepInstance: true` on the live runs means THIS component owns the
+  // instances it opened — released on re-run, on discard/save, and on unmount.
+  const liveConversationsRef = useRef<Set<string>>(new Set());
+  const releaseRun = (cardId: string): void => {
+    const conversationId = work[cardId]?.conversationId;
+    if (!conversationId) return;
+    liveConversationsRef.current.delete(conversationId);
+    dispatch(destroyInstanceIfAllowed(conversationId));
+  };
+  useEffect(() => {
+    const live = liveConversationsRef.current;
+    return () => {
+      for (const conversationId of live) {
+        dispatch(destroyInstanceIfAllowed(conversationId));
+      }
+      live.clear();
+    };
+  }, [dispatch]);
+
   const run = async (card: CardWithDetails, mode: Mode): Promise<void> => {
     // Meter the card_enrichment capability: server-truth check BEFORE the agent
     // runs; a cap opens the respectful paywall and never starts the work.
@@ -86,9 +119,18 @@ export function EnhanceSetDialog({
   };
 
   const runAgent = async (card: CardWithDetails, mode: Mode): Promise<void> => {
-    patchWork(card.id, { running: mode, preview: null });
+    // A re-run replaces the previous live display for this card — release the
+    // instance it was holding open before the next one takes over.
+    releaseRun(card.id);
+    patchWork(card.id, { running: mode, preview: null, conversationId: null });
+    const onConversationCreated = (conversationId: string): void => {
+      liveConversationsRef.current.add(conversationId);
+      patchWork(card.id, { conversationId });
+    };
     if (mode === "enrich") {
-      const details = await dispatch(enrichCard({ card, depth }));
+      const details = await dispatch(
+        enrichCard({ card, depth, onConversationCreated }),
+      );
       if (!details) {
         toast.error("Couldn't enrich this card. Please try again.");
         patchWork(card.id, { running: null });
@@ -106,7 +148,9 @@ export function EnhanceSetDialog({
       // return first, so a failed generation never burns quota.
       await enrichGuard.commit();
     } else {
-      const subCards = await dispatch(expandCard({ card, depth }));
+      const subCards = await dispatch(
+        expandCard({ card, depth, onConversationCreated }),
+      );
       if (!subCards) {
         toast.error("Couldn't deepen this card. Please try again.");
         patchWork(card.id, { running: null });
@@ -171,7 +215,8 @@ export function EnhanceSetDialog({
           }`,
         );
       }
-      patchWork(card.id, { preview: null });
+      releaseRun(card.id);
+      patchWork(card.id, { preview: null, conversationId: null });
       onChanged();
     } finally {
       patchWork(card.id, { saving: false });
@@ -283,6 +328,22 @@ export function EnhanceSetDialog({
                       </div>
                     </div>
 
+                    {/* No spinner while AI works: the run streams right here,
+                        under the card it belongs to, growing downward. */}
+                    <LiveRunDisplay
+                      conversationId={w.conversationId}
+                      pending={w.running !== null}
+                      label={
+                        w.running === "deepen"
+                          ? "Splitting this card into sub-cards"
+                          : w.running === "enrich"
+                            ? "Writing new detail layers"
+                            : undefined
+                      }
+                      className="mt-3"
+                      bodyClassName="max-h-64"
+                    />
+
                     {/* Preview + confirm — nothing persists until Save. */}
                     {w.preview && (
                       <div className="mt-3 rounded-md border border-border bg-muted/40 p-2.5">
@@ -323,9 +384,13 @@ export function EnhanceSetDialog({
                             variant="ghost"
                             className="h-7 gap-1 px-2 text-xs"
                             disabled={w.saving}
-                            onClick={() =>
-                              patchWork(card.id, { preview: null })
-                            }
+                            onClick={() => {
+                              releaseRun(card.id);
+                              patchWork(card.id, {
+                                preview: null,
+                                conversationId: null,
+                              });
+                            }}
                           >
                             <X className="h-3.5 w-3.5" />
                             Discard

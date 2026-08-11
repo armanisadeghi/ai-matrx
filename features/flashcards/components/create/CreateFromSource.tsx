@@ -58,12 +58,15 @@ import {
 import type { LibraryDocSummary } from "@/features/rag/types/library";
 import type { ChunkRow } from "@/features/rag/types/documents";
 import { attachSourceRefs } from "@/features/education/trust/grounding";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { FC_AGENTS } from "../../data/agents";
 import { fcService } from "../../data/fcService";
 import type { NewCardInput } from "../../data/types";
 import { useGenerateCards } from "../../data/useGenerateCards";
+import { LiveGenerationPreview } from "./LiveGenerationPreview";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -88,7 +91,16 @@ type Step = "pick-doc" | "curate";
 
 export function CreateFromSource() {
   const router = useRouter();
-  const { generate, isGenerating } = useGenerateCards();
+  const { generate, isGenerating, activeRequestId } = useGenerateCards();
+
+  // No spinner while AI works: the SAME canonical envelope CreateFromTopic
+  // reads (the accumulator's own `metadata.__ir`, via Redux only — never a
+  // second parse session) drives a card-by-card live preview here too.
+  const envelope = useAppSelector((state) =>
+    activeRequestId
+      ? selectKindEnvelope(activeRequestId, "flashcard_set")(state)
+      : null,
+  );
   const cardGen = useEntitlementGuard("education.generate_cards");
   const [isNavigating, startNavigation] = useTransition();
 
@@ -295,20 +307,26 @@ export function CreateFromSource() {
         {/* Body */}
         <div className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-6">
           {isGenerating ? (
-            <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <LoadingSpinner size="sm" />
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Generating{" "}
-                  {Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10))} cards
-                  grounded in {selectedChunkIds.size}{" "}
-                  {selectedChunkIds.size === 1 ? "passage" : "passages"} of your
-                  material
-                </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Each card will cite the exact passage it came from.
-                </p>
+            <div className="flex flex-col gap-4 py-4">
+              <div className="flex items-center justify-center gap-3 text-center">
+                <LoadingSpinner size="sm" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Generating{" "}
+                    {Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10))}{" "}
+                    cards grounded in {selectedChunkIds.size}{" "}
+                    {selectedChunkIds.size === 1 ? "passage" : "passages"} of
+                    your material
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Cards appear below as they stream in, each citing the exact
+                    passage it came from.
+                  </p>
+                </div>
               </div>
+              {/* Live card-by-card preview — every card mounts the moment its
+                  front arrives (same component CreateFromTopic uses). */}
+              <LiveGenerationPreview envelope={envelope} />
             </div>
           ) : step === "pick-doc" ? (
             <DocPickerStep

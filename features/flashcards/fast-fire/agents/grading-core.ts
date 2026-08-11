@@ -172,6 +172,15 @@ export interface RunSpokenGraderArgs {
   surfaceKey: string;
   sourceFeature: SourceFeature;
   surfaceName?: string;
+  /**
+   * Fires when the run's conversation exists — BEFORE the stream. A surface
+   * where the learner WAITS for the grade binds `<LiveRunDisplay
+   * conversationId>` to it so the grade streams in instead of a spinner, and
+   * then OWNS destroying the instance (`destroyInstanceIfAllowed`). Omit it
+   * from fire-and-forget lanes (FastFire's drill grades in the background
+   * while the learner answers the next card).
+   */
+  onConversationCreated?: (conversationId: string) => void;
 }
 
 /**
@@ -207,6 +216,16 @@ export function runSpokenGrader(args: RunSpokenGraderArgs) {
         messageParts: [part],
         timeoutMs: 120_000,
         pollIntervalMs: 200,
+        // Live posture only when a caller asked to watch it — the request then
+        // survives the run for the caller's LiveRunDisplay, and the caller
+        // destroys the instance.
+        ...(args.onConversationCreated
+          ? {
+              displayMode: "direct" as const,
+              keepInstance: true,
+              onConversationCreated: args.onConversationCreated,
+            }
+          : {}),
       });
       return coerceSpokenGrade(result.data);
     } catch (err) {

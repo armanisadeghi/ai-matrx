@@ -37,6 +37,12 @@ export interface GradeSpokenAnswerArgs {
   /** Canonical `ui_surface.name` of the lane driving this grade (threads into
    *  the shared grader launch so surface bindings resolve). */
   surfaceName?: string;
+  /**
+   * Watch the grade stream instead of showing a spinner. See
+   * `runSpokenGrader` — the caller owns destroying the instance when it stops
+   * displaying the run.
+   */
+  onConversationCreated?: (conversationId: string) => void;
 }
 
 export interface GradeSpokenAnswerResult {
@@ -93,6 +99,9 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
           surfaceKey: `${surface}-grade`,
           sourceFeature: "education-fastfire",
           ...(args.surfaceName ? { surfaceName: args.surfaceName } : {}),
+          ...(args.onConversationCreated
+            ? { onConversationCreated: args.onConversationCreated }
+            : {}),
         }),
       );
 

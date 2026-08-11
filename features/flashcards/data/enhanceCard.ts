@@ -131,7 +131,17 @@ function coerceSubCards(raw: unknown): ExpandedSubCard[] {
  * generated details (empty array if the agent produced none), or null on
  * launch/timeout failure.
  */
-export function enrichCard(args: { card: CardWithDetails; depth: Depth }) {
+export function enrichCard(args: {
+  card: CardWithDetails;
+  depth: Depth;
+  /**
+   * Fires the moment the run's conversation exists — BEFORE the stream. The
+   * caller mounts `<LiveRunDisplay conversationId>` on it so the user watches
+   * the layers arrive instead of a spinner, and OWNS destroying the instance
+   * (`destroyInstanceIfAllowed`) once done with the display.
+   */
+  onConversationCreated?: (conversationId: string) => void;
+}) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
@@ -154,6 +164,14 @@ export function enrichCard(args: { card: CardWithDetails; depth: Depth }) {
         },
         timeoutMs: 60_000,
         pollIntervalMs: 150,
+        // Live posture (no spinner while AI works): the request survives the
+        // run so the caller's LiveRunDisplay can bind it. The caller destroys
+        // the instance when it is done showing the output.
+        displayMode: "direct",
+        keepInstance: true,
+        ...(args.onConversationCreated
+          ? { onConversationCreated: args.onConversationCreated }
+          : {}),
       });
       return coerceDetails(result.data);
     } catch (err) {
@@ -169,7 +187,12 @@ export function enrichCard(args: { card: CardWithDetails; depth: Depth }) {
  * launch/timeout failure. Persisting them (+ the `expands_into` link) is the
  * caller's job via `fcService.addSubCards`.
  */
-export function expandCard(args: { card: CardWithDetails; depth: Depth }) {
+export function expandCard(args: {
+  card: CardWithDetails;
+  depth: Depth;
+  /** See `enrichCard` — the live-render handle; the caller owns cleanup. */
+  onConversationCreated?: (conversationId: string) => void;
+}) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
@@ -189,6 +212,12 @@ export function expandCard(args: { card: CardWithDetails; depth: Depth }) {
         },
         timeoutMs: 60_000,
         pollIntervalMs: 150,
+        // Live posture — see enrichCard.
+        displayMode: "direct",
+        keepInstance: true,
+        ...(args.onConversationCreated
+          ? { onConversationCreated: args.onConversationCreated }
+          : {}),
       });
       return coerceSubCards(result.data);
     } catch (err) {
