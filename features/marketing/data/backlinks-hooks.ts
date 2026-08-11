@@ -3,7 +3,9 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import type { BacklinkLensKey } from "@/features/marketing/components/backlinks/lib/vocab";
+import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
 import {
+  getBacklink,
   getBacklinkTrend,
   getBacklinkWorkspace,
   listAllAnchors,
@@ -29,6 +31,8 @@ export const backlinkKeys = {
       lens ?? "all",
       state,
     ] as const,
+  record: (siteId: string, backlinkId: string) =>
+    [...marketingKeys.site(siteId), "backlinks", "record", backlinkId] as const,
   dimension: (
     siteId: string,
     kind: BacklinkDimensionKind,
@@ -53,6 +57,14 @@ export const backlinkKeys = {
       state,
     ] as const,
 };
+
+export function useBacklinkRecord(initial: BacklinkObservationRow) {
+  return useQuery({
+    queryKey: backlinkKeys.record(initial.site_id, initial.id),
+    queryFn: ({ signal }) => getBacklink(initial.id, signal),
+    initialData: initial,
+  });
+}
 
 export function useBacklinkWorkspace(siteId: string) {
   return useQuery({

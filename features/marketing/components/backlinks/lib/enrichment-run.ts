@@ -3,7 +3,8 @@ import type {
   SeoStreamEvent,
 } from "@/features/marketing/seo/dataforseo/types";
 
-export type BacklinkEnrichmentRunStatus = "running" | "completed" | "failed";
+export type BacklinkEnrichmentRunStatus =
+  "running" | "completed" | "partial" | "failed";
 
 export interface BacklinkEnrichmentRunState {
   status: BacklinkEnrichmentRunStatus;
@@ -88,6 +89,17 @@ export function applyBacklinkEnrichmentEvent(
     event.kind === "seo.backlink_enrichment_completed" && event.result
       ? event.result
       : current.result;
+  const terminalStatus: BacklinkEnrichmentRunStatus = result
+    ? result.failed > 0
+      ? result.completed > 0
+        ? "partial"
+        : "failed"
+      : "completed"
+    : event.kind === "seo.backlink_enriched"
+      ? "completed"
+      : event.kind === "seo.backlink_enrichment_failed"
+        ? "failed"
+        : current.status;
 
   return {
     ...current,
@@ -99,7 +111,10 @@ export function applyBacklinkEnrichmentEvent(
       event.kind === "seo.backlink_enrichment_started" &&
       typeof event.candidate_count === "number"
         ? event.candidate_count
-        : current.candidateCount,
+        : current.candidateCount === 0 &&
+            event.kind === "seo.backlink_capture_started"
+          ? 1
+          : current.candidateCount,
     claimedIds,
     settledIds,
     completed:
@@ -113,7 +128,7 @@ export function applyBacklinkEnrichmentEvent(
         ? current.failed + (settledIds === current.settledIds ? 0 : 1)
         : current.failed),
     skipped: result?.skipped ?? current.skipped,
-    status: result ? "completed" : current.status,
+    status: terminalStatus,
     message: message ?? current.message,
     events: message ? [...current.events, event].slice(-12) : current.events,
     result,
@@ -135,7 +150,7 @@ export function failBacklinkEnrichmentRun(
 export function backlinkEnrichmentProgress(
   run: BacklinkEnrichmentRunState,
 ): number {
-  if (run.status === "completed") return 100;
+  if (run.status !== "running") return 100;
   if (run.candidateCount === 0) return run.status === "running" ? 4 : 0;
   return Math.min(
     96,

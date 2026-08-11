@@ -169,3 +169,61 @@ export const BACKLINK_STATES = [
   { key: "new", label: "New" },
   { key: "lost", label: "Lost" },
 ] as const;
+
+export const BACKLINK_ENRICHMENT_STATUSES = [
+  { key: "pending", label: "Pending" },
+  { key: "capturing", label: "Capturing" },
+  { key: "analyzing", label: "Analyzing" },
+  { key: "completed", label: "Completed" },
+  { key: "failed", label: "Failed" },
+  { key: "dead_letter", label: "Dead letter" },
+] as const;
+
+export const BACKLINK_RELEVANCE_VERDICTS = [
+  { key: "strong", label: "Strong" },
+  { key: "moderate", label: "Moderate" },
+  { key: "weak", label: "Weak" },
+  { key: "irrelevant", label: "Irrelevant" },
+  { key: "unknown", label: "Unknown" },
+] as const;
+
+export const BACKLINK_PAGE_TYPES = [
+  "article",
+  "news",
+  "blog",
+  "press_release",
+  "directory",
+  "profile",
+  "resource",
+  "listicle",
+  "forum",
+  "social",
+  "ecommerce",
+  "government",
+  "academic",
+  "landing_page",
+  "other",
+  "unknown",
+] as const;
+
+export const BACKLINK_CONTROL_LEVELS = [
+  { key: "direct", label: "Direct" },
+  { key: "likely", label: "Likely" },
+  { key: "possible", label: "Possible" },
+  { key: "unlikely", label: "Unlikely" },
+  { key: "unknown", label: "Unknown" },
+] as const;
+
+export const BACKLINK_RECOMMENDED_ACTIONS = [
+  "protect",
+  "protect_and_monitor",
+  "monitor",
+  "improve_anchor",
+  "update_listing",
+  "request_edit",
+  "reclaim",
+  "fix_target",
+  "remove_request",
+  "disavow_review",
+  "investigate",
+] as const;

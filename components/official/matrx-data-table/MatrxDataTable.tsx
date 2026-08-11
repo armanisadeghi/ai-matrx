@@ -205,6 +205,7 @@ export function MatrxDataTable<T>({
   };
 
   const [windowRowId, setWindowRowId] = useState<string | null>(null);
+  const [windowRowSnapshot, setWindowRowSnapshot] = useState<T | null>(null);
   const [edits, setEdits] = useState<CellEditsMap>({});
   const [saving, setSaving] = useState(false);
 
@@ -313,8 +314,13 @@ export function MatrxDataTable<T>({
 
   const windowRow = useMemo(() => {
     if (!windowRowId) return null;
-    return data.find((r) => getRowId(r) === windowRowId) ?? null;
-  }, [data, windowRowId, getRowId]);
+    return (
+      data.find((r) => getRowId(r) === windowRowId) ??
+      (windowRowSnapshot && getRowId(windowRowSnapshot) === windowRowId
+        ? windowRowSnapshot
+        : null)
+    );
+  }, [data, windowRowId, windowRowSnapshot, getRowId]);
 
   const detailEnabled = detail?.enabled !== false;
   const windowEnabled =
@@ -364,6 +370,7 @@ export function MatrxDataTable<T>({
     } else {
       onRowOpen?.(row);
     }
+    setWindowRowSnapshot(row);
     setWindowRowId(getRowId(row));
   };
 
@@ -813,7 +820,10 @@ export function MatrxDataTable<T>({
                               agent={() => buildRowAgentInput(copy, displayRow)}
                             />
                           ) : null}
-                          {rowActions?.(row)}
+                          {rowActions?.(row, {
+                            closeDetail: () => setSelectedId(null),
+                            openWindow: () => openWindow(row),
+                          })}
                           {windowEnabled ? (
                             <Button
                               type="button"
@@ -914,7 +924,10 @@ export function MatrxDataTable<T>({
             </div>
           }
         >
-          {detail?.render?.(selectedRow) ?? (
+          {detail?.render?.(selectedRow, {
+            closeDetail: () => setSelectedId(null),
+            openWindow: () => openWindow(selectedRow),
+          }) ?? (
             <DataRowInspector
               row={selectedRow}
               recordKind={copy?.rowKind}
@@ -929,7 +942,10 @@ export function MatrxDataTable<T>({
       {windowRow ? (
         <DataRowWindow
           isOpen
-          onClose={() => setWindowRowId(null)}
+          onClose={() => {
+            setWindowRowId(null);
+            setWindowRowSnapshot(null);
+          }}
           title={
             windowConfig?.title?.(windowRow) ??
             defaultRowTitle(windowRow, visibleColumns)
@@ -969,7 +985,10 @@ export function MatrxDataTable<T>({
               ? undefined
               : windowConfig?.renderEdit
                 ? windowConfig.renderEdit(windowRow)
-                : detail?.render?.(windowRow)
+                : detail?.render?.(windowRow, {
+                    closeDetail: () => setSelectedId(null),
+                    openWindow: () => openWindow(windowRow),
+                  })
           }
         >
           {windowConfig?.render?.(windowRow)}

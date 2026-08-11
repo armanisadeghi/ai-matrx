@@ -301,7 +301,7 @@ export interface MatrxDataTableDetailConfig<T> {
   title?: (row: T) => ReactNode;
   description?: (row: T) => ReactNode | undefined;
   /** Override the default key/value inspector. */
-  render?: (row: T) => ReactNode;
+  render?: (row: T, controls: MatrxDataTableRecordControls) => ReactNode;
   /** Header actions inside the side panel. */
   headerActions?: (row: T) => ReactNode;
   defaultWidth?: number;
@@ -321,6 +321,14 @@ export interface MatrxDataTableDetailConfig<T> {
    * audit log, an exposure report) cannot answer from the column name alone.
    */
   tokenForField?: (key: string, row: T) => string | null;
+}
+
+/** Actions a record-owned control can use without reaching into table state. */
+export interface MatrxDataTableRecordControls {
+  /** Close the row's side-panel detail, if open. */
+  closeDetail: () => void;
+  /** Open the row in its canonical table-owned WindowPanel. */
+  openWindow: () => void;
 }
 
 export interface MatrxDataTableWindowConfig<T> {
@@ -405,7 +413,7 @@ export interface MatrxDataTableProps<T> {
   onSelectedIdChange?: (id: string | null) => void;
 
   /** Extra row actions rendered in a trailing Actions column. */
-  rowActions?: (row: T) => ReactNode;
+  rowActions?: (row: T, controls: MatrxDataTableRecordControls) => ReactNode;
   /**
    * Wrap the whole `<tr>`. Return `children` unchanged for no-op.
    *

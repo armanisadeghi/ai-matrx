@@ -90,6 +90,7 @@ describe("SEO backlink work commands", () => {
       requested: 2,
       completed: 2,
       queue: { completed: 2 },
+      items: [],
     };
     jest.mocked(globalThis.fetch).mockResolvedValue(
       ndjsonResponse({
@@ -116,6 +117,7 @@ describe("SEO backlink work commands", () => {
       failed: 0,
       skipped: 0,
       queue: { completed: 1 },
+      items: [],
     };
     const onEvent = jest.fn();
     const fetchMock = jest.mocked(globalThis.fetch).mockResolvedValue(

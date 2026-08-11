@@ -1,4 +1,9 @@
-import { parseBacklinkAssessment, providerExtras } from "./enrichment";
+import {
+  backlinkAnalysisActionState,
+  hasBacklinkAssessment,
+  parseBacklinkAssessment,
+  providerExtras,
+} from "./enrichment";
 
 describe("backlink enrichment narrowers", () => {
   it("projects the resolved assessment without trusting arbitrary JSON", () => {
@@ -38,8 +43,29 @@ describe("backlink enrichment narrowers", () => {
         extras: { semantic_location: "article", is_broken: false },
       }),
     ).toEqual({ semantic_location: "article", is_broken: false });
-    expect(providerExtras({ extras: "not-an-object" })).toBe(
-      "not-an-object",
+    expect(providerExtras({ extras: "not-an-object" })).toBe("not-an-object");
+  });
+
+  it("distinguishes an absent assessment from persisted evidence", () => {
+    expect(hasBacklinkAssessment({})).toBe(false);
+    expect(hasBacklinkAssessment(null)).toBe(false);
+    expect(hasBacklinkAssessment({ overall_score: 72 })).toBe(true);
+  });
+
+  it("uses one controlled single-link action contract everywhere", () => {
+    expect(backlinkAnalysisActionState("pending", false, false)).toMatchObject({
+      disabled: false,
+      label: "Analyze",
+    });
+    expect(
+      backlinkAnalysisActionState("completed", false, false),
+    ).toMatchObject({ disabled: false, label: "Re-analyze" });
+    expect(backlinkAnalysisActionState("capturing", true, false)).toMatchObject(
+      { disabled: true, inProgress: true, label: "Analyzing" },
     );
+    expect(backlinkAnalysisActionState("pending", true, false)).toMatchObject({
+      disabled: true,
+      label: "Analyzing",
+    });
   });
 });

@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import type { MatrxDataTableRecordControls } from "@/components/official/matrx-data-table/types";
 import {
   DateCell,
   headerWithTooltip,
@@ -32,13 +33,19 @@ import {
 } from "@/features/marketing/components/backlinks/lib/columns";
 import { parseObservationExtras } from "@/features/marketing/components/backlinks/lib/extras";
 import {
+  backlinkAnalysisActionState,
   humanizeAssessmentValue,
   parseBacklinkAssessment,
   providerExtras,
 } from "@/features/marketing/components/backlinks/lib/enrichment";
 import { BacklinkEnrichmentDetail } from "@/features/marketing/components/backlinks/BacklinkEnrichmentDetail";
 import {
+  BACKLINK_CONTROL_LEVELS,
+  BACKLINK_ENRICHMENT_STATUSES,
   BACKLINK_LENSES,
+  BACKLINK_PAGE_TYPES,
+  BACKLINK_RECOMMENDED_ACTIONS,
+  BACKLINK_RELEVANCE_VERDICTS,
   BACKLINK_STATES,
   DOMAIN_RANK_EXPLAINER,
   LINK_PLACEMENTS,
@@ -58,6 +65,7 @@ import {
 import { useLatestBacklinks } from "@/features/marketing/data/backlinks-hooks";
 import { LENS_DEFAULT_SORT } from "@/features/marketing/data/backlinks-queries";
 import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
+import type { BacklinkEnrichmentRunState } from "@/features/marketing/components/backlinks/lib/enrichment-run";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
@@ -81,13 +89,15 @@ export function BacklinkObservationTable({
   siteId,
   lens = null,
   onAnalyze,
-  runningBacklinkId = null,
+  analysisRuns = {},
+  onDismissAnalysisRun,
   analysisDisabled = false,
 }: {
   siteId: string;
   lens?: BacklinkLensKey | null;
   onAnalyze?: (row: BacklinkObservationRow) => void;
-  runningBacklinkId?: string | null;
+  analysisRuns?: Record<string, BacklinkEnrichmentRunState>;
+  onDismissAnalysisRun?: (backlinkId: string) => void;
   analysisDisabled?: boolean;
 }) {
   const { sitePath } = useMarketingSite();
@@ -107,6 +117,43 @@ export function BacklinkObservationTable({
   const lensLabel = lens
     ? BACKLINK_LENSES.find((entry) => entry.key === lens)?.label
     : null;
+
+  const backlinkDetail = (
+    row: BacklinkObservationRow,
+    onAnalyzeFromRecord?: () => void,
+  ) => (
+    <BacklinkEnrichmentDetail
+      key={row.id}
+      row={row}
+      sitePath={sitePath}
+      onSaved={() => void backlinks.refetch()}
+      onAnalyze={onAnalyzeFromRecord}
+      running={analysisRuns[row.id]?.status === "running"}
+      analysisDisabled={analysisDisabled}
+      analysisRun={analysisRuns[row.id]}
+      onDismissAnalysisRun={
+        onDismissAnalysisRun ? () => onDismissAnalysisRun(row.id) : undefined
+      }
+    />
+  );
+
+  const renderBacklinkDrawer = (
+    row: BacklinkObservationRow,
+    controls: MatrxDataTableRecordControls,
+  ) =>
+    backlinkDetail(
+      row,
+      onAnalyze
+        ? () => {
+            controls.openWindow();
+            controls.closeDetail();
+            onAnalyze(row);
+          }
+        : undefined,
+    );
+
+  const renderBacklinkWindow = (row: BacklinkObservationRow) =>
+    backlinkDetail(row, onAnalyze ? () => onAnalyze(row) : undefined);
 
   const columns: MatrxColumnDef<BacklinkObservationRow>[] = [
     {
@@ -287,7 +334,11 @@ export function BacklinkObservationTable({
       id: "enrichment_status",
       accessorKey: "enrichment_status",
       header: "Analysis",
-      filter: false,
+      filter: "select",
+      filterOptions: BACKLINK_ENRICHMENT_STATUSES.map((status) => ({
+        value: status.key,
+        label: status.label,
+      })),
       cell: (row) => {
         const error =
           row.last_error &&
@@ -313,8 +364,7 @@ export function BacklinkObservationTable({
     {
       id: "our_score",
       header: "Our score",
-      sortable: false,
-      filter: false,
+      filter: "number",
       align: "right",
       accessorFn: (row) =>
         parseBacklinkAssessment(row.resolved_assessment).overallScore ?? -1,
@@ -334,8 +384,11 @@ export function BacklinkObservationTable({
     {
       id: "relevance",
       header: "Relevance",
-      sortable: false,
-      filter: false,
+      filter: "select",
+      filterOptions: BACKLINK_RELEVANCE_VERDICTS.map((verdict) => ({
+        value: verdict.key,
+        label: verdict.label,
+      })),
       accessorFn: (row) =>
         parseBacklinkAssessment(row.resolved_assessment).relevanceVerdict ?? "",
       cell: (row) => {
@@ -351,8 +404,11 @@ export function BacklinkObservationTable({
     {
       id: "page_type",
       header: "Source type",
-      sortable: false,
-      filter: false,
+      filter: "select",
+      filterOptions: BACKLINK_PAGE_TYPES.map((pageType) => ({
+        value: pageType,
+        label: humanizeAssessmentValue(pageType),
+      })),
       accessorFn: (row) =>
         parseBacklinkAssessment(row.resolved_assessment).pageType ?? "",
       cell: (row) => (
@@ -366,8 +422,11 @@ export function BacklinkObservationTable({
     {
       id: "control",
       header: "Can change?",
-      sortable: false,
-      filter: false,
+      filter: "select",
+      filterOptions: BACKLINK_CONTROL_LEVELS.map((level) => ({
+        value: level.key,
+        label: level.label,
+      })),
       accessorFn: (row) =>
         parseBacklinkAssessment(row.resolved_assessment).controlLevel ?? "",
       cell: (row) => (
@@ -381,8 +440,11 @@ export function BacklinkObservationTable({
     {
       id: "action",
       header: "Recommended action",
-      sortable: false,
-      filter: false,
+      filter: "select",
+      filterOptions: BACKLINK_RECOMMENDED_ACTIONS.map((action) => ({
+        value: action,
+        label: humanizeAssessmentValue(action),
+      })),
       accessorFn: (row) =>
         parseBacklinkAssessment(row.resolved_assessment).action ?? "",
       cell: (row) => {
@@ -543,55 +605,50 @@ export function BacklinkObservationTable({
             }),
           }}
           detail={{
-            title: (row) => row.source_domain ?? row.source_url,
-            description: (row) => `${row.state} link to ${row.target_url}`,
-            render: (row) => (
-              <BacklinkEnrichmentDetail
-                row={row}
-                sitePath={sitePath}
-                onSaved={() => void backlinks.refetch()}
-              />
-            ),
+            title: (row) =>
+              `Backlink from ${row.source_domain ?? "an external page"}`,
+            description: () => "Complete source-page to target-page record",
+            render: renderBacklinkDrawer,
           }}
           rowActions={
             onAnalyze
-              ? (row) => {
-                  const running = runningBacklinkId === row.id;
-                  const inProgress =
-                    row.enrichment_status === "capturing" ||
-                    row.enrichment_status === "analyzing";
-                  const rerun =
-                    row.enrichment_status === "completed" ||
-                    row.enrichment_status === "dead_letter";
+              ? (row, controls) => {
+                  const running = analysisRuns[row.id]?.status === "running";
+                  const action = backlinkAnalysisActionState(
+                    row.enrichment_status,
+                    running,
+                    analysisDisabled,
+                  );
                   return (
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
                       className="h-7 gap-1 px-2 text-[11px]"
-                      disabled={analysisDisabled || inProgress}
-                      title={
-                        inProgress
-                          ? "This source page is already being analyzed"
-                          : rerun
-                            ? "Capture and analyze this source page again"
-                            : "Capture and analyze this source page now"
-                      }
-                      onClick={() => onAnalyze(row)}
+                      disabled={action.disabled}
+                      title={action.title}
+                      onClick={() => {
+                        controls.openWindow();
+                        onAnalyze(row);
+                      }}
                     >
-                      {running || inProgress ? (
+                      {running || action.inProgress ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
                         <BrainCircuit className="h-3 w-3" />
                       )}
-                      {rerun ? "Re-analyze" : "Analyze"}
+                      {action.label}
                     </Button>
                   );
                 }
               : undefined
           }
           window={{
-            title: (row) => row.source_domain ?? row.source_url,
+            title: (row) =>
+              `Backlink from ${row.source_domain ?? "an external page"}`,
+            renderView: renderBacklinkWindow,
+            renderEdit: false,
+            defaultTab: "view",
           }}
           pageSize={50}
           pageSizeOptions={[25, 50, 100, 250]}

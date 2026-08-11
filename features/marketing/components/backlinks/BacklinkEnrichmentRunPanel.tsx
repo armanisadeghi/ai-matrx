@@ -19,16 +19,21 @@ function shortSource(url: unknown): string {
 export function BacklinkEnrichmentRunPanel({
   run,
   onDismiss,
+  embedded = false,
 }: {
   run: BacklinkEnrichmentRunState;
   onDismiss: () => void;
+  embedded?: boolean;
 }) {
   const progress = backlinkEnrichmentProgress(run);
   const running = run.status === "running";
   const settled = run.completed + run.failed;
 
   return (
-    <div className="shrink-0 px-3 pt-2 sm:px-4" aria-live="polite">
+    <div
+      className={embedded ? "shrink-0" : "shrink-0 px-3 pt-2 sm:px-4"}
+      aria-live="polite"
+    >
       <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
         <div className="flex items-start gap-2">
           {running ? (
@@ -36,7 +41,13 @@ export function BacklinkEnrichmentRunPanel({
           ) : run.status === "completed" ? (
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
           ) : (
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <AlertCircle
+              className={
+                run.status === "partial"
+                  ? "mt-0.5 h-4 w-4 shrink-0 text-warning"
+                  : "mt-0.5 h-4 w-4 shrink-0 text-destructive"
+              }
+            />
           )}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

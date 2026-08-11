@@ -40965,6 +40965,14 @@ export type Database = {
           ai_assessment: Json
           analyzed_at: string | null
           anchor_text: string | null
+          assessment_action: string | null
+          assessment_control_level: string | null
+          assessment_page_type: string | null
+          assessment_priority: string | null
+          assessment_relevance_score: number | null
+          assessment_relevance_verdict: string | null
+          assessment_risk_verdict: string | null
+          assessment_score: number | null
           assessment_version: string | null
           captured_at: string | null
           claim_expires_at: string | null
@@ -41006,6 +41014,14 @@ export type Database = {
           ai_assessment?: Json
           analyzed_at?: string | null
           anchor_text?: string | null
+          assessment_action?: string | null
+          assessment_control_level?: string | null
+          assessment_page_type?: string | null
+          assessment_priority?: string | null
+          assessment_relevance_score?: number | null
+          assessment_relevance_verdict?: string | null
+          assessment_risk_verdict?: string | null
+          assessment_score?: number | null
           assessment_version?: string | null
           captured_at?: string | null
           claim_expires_at?: string | null
@@ -41047,6 +41063,14 @@ export type Database = {
           ai_assessment?: Json
           analyzed_at?: string | null
           anchor_text?: string | null
+          assessment_action?: string | null
+          assessment_control_level?: string | null
+          assessment_page_type?: string | null
+          assessment_priority?: string | null
+          assessment_relevance_score?: number | null
+          assessment_relevance_verdict?: string | null
+          assessment_risk_verdict?: string | null
+          assessment_score?: number | null
           assessment_version?: string | null
           captured_at?: string | null
           claim_expires_at?: string | null

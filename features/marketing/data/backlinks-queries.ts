@@ -181,7 +181,10 @@ export async function getBacklinkWorkspace(
     profilesResponse.error,
   );
   const total = assertCount(totalResponse.count, totalResponse.error);
-  const completed = assertCount(completedResponse.count, completedResponse.error);
+  const completed = assertCount(
+    completedResponse.count,
+    completedResponse.error,
+  );
   const awaiting = assertCount(awaitingResponse.count, awaitingResponse.error);
   const failed = assertCount(failedResponse.count, failedResponse.error);
   const highPriority = assertCount(
@@ -266,22 +269,45 @@ export async function getBacklinkTrend(
   });
 }
 
-const BACKLINK_SORT_COLUMNS = new Set([
-  "source_url",
-  "source_domain",
-  "target_url",
-  "anchor_text",
-  "state",
-  "is_dofollow",
-  "link_type",
-  "first_seen_at",
-  "last_seen_at",
-  "lost_at",
-  "source_rank",
-  "domain_rank",
-  "spam_score",
-  "created_at",
-]);
+const BACKLINK_SORT_COLUMNS: Readonly<
+  Record<string, keyof BacklinkObservationRow>
+> = {
+  source_url: "source_url",
+  source_domain: "source_domain",
+  target_url: "target_url",
+  anchor_text: "anchor_text",
+  state: "state",
+  is_dofollow: "is_dofollow",
+  link_type: "link_type",
+  enrichment_status: "enrichment_status",
+  our_score: "assessment_score",
+  relevance: "assessment_relevance_score",
+  page_type: "assessment_page_type",
+  control: "assessment_control_level",
+  action: "assessment_action",
+  first_seen_at: "first_seen_at",
+  last_seen_at: "last_seen_at",
+  lost_at: "lost_at",
+  source_rank: "source_rank",
+  domain_rank: "domain_rank",
+  spam_score: "spam_score",
+  created_at: "created_at",
+};
+
+export function resolveBacklinkSortColumn(
+  columnId: string | undefined,
+): keyof BacklinkObservationRow | null {
+  return columnId ? (BACKLINK_SORT_COLUMNS[columnId] ?? null) : null;
+}
+
+function selectedValues(
+  filter: MatrxDataTableQueryState["columnFilters"][string],
+): string[] {
+  if (!filter || filter.kind !== "select") return [];
+  return (filter.values?.length ? filter.values : [filter.value]).filter(
+    Boolean,
+  );
+}
 
 /**
  * Default sort when the user has not chosen one, per lens. Exported so the
@@ -350,30 +376,80 @@ export async function listLatestBacklinks(
       "likely",
     ]);
   }
-  const stateFilter = state.columnFilters.state;
-  if (stateFilter?.kind === "select" && stateFilter.value) {
-    query = query.eq("state", stateFilter.value);
+  const states = selectedValues(state.columnFilters.state);
+  if (states.length === 1) {
+    query = query.eq("state", states[0]);
+  } else if (states.length > 1) {
+    query = query.in("state", states);
   }
   const dofollow = state.columnFilters.is_dofollow;
   if (dofollow?.kind === "boolean") {
     query = query.eq("is_dofollow", dofollow.value);
   }
-  const linkType = state.columnFilters.link_type;
-  if (linkType?.kind === "select" && linkType.value) {
-    query = query.eq("link_type", linkType.value);
+  const linkTypes = selectedValues(state.columnFilters.link_type);
+  if (linkTypes.length === 1) {
+    query = query.eq("link_type", linkTypes[0]);
+  } else if (linkTypes.length > 1) {
+    query = query.in("link_type", linkTypes);
   }
-  const placement = state.columnFilters.placement;
-  if (placement?.kind === "select" && placement.value) {
+  const placements = selectedValues(state.columnFilters.placement);
+  if (placements.length === 1) {
     query = query.eq(
       "provider_evidence->extras->>semantic_location",
-      placement.value,
+      placements[0],
     );
+  } else if (placements.length > 1) {
+    query = query.in(
+      "provider_evidence->extras->>semantic_location",
+      placements,
+    );
+  }
+  const analysisStatuses = selectedValues(
+    state.columnFilters.enrichment_status,
+  );
+  if (analysisStatuses.length === 1) {
+    query = query.eq("enrichment_status", analysisStatuses[0]);
+  } else if (analysisStatuses.length > 1) {
+    query = query.in("enrichment_status", analysisStatuses);
+  }
+  const scoreFilter = state.columnFilters.our_score;
+  if (scoreFilter?.kind === "number") {
+    if (scoreFilter.min !== undefined) {
+      query = query.gte("assessment_score", scoreFilter.min);
+    }
+    if (scoreFilter.max !== undefined) {
+      query = query.lte("assessment_score", scoreFilter.max);
+    }
+  }
+  const relevanceVerdicts = selectedValues(state.columnFilters.relevance);
+  if (relevanceVerdicts.length === 1) {
+    query = query.eq("assessment_relevance_verdict", relevanceVerdicts[0]);
+  } else if (relevanceVerdicts.length > 1) {
+    query = query.in("assessment_relevance_verdict", relevanceVerdicts);
+  }
+  const pageTypes = selectedValues(state.columnFilters.page_type);
+  if (pageTypes.length === 1) {
+    query = query.eq("assessment_page_type", pageTypes[0]);
+  } else if (pageTypes.length > 1) {
+    query = query.in("assessment_page_type", pageTypes);
+  }
+  const controlLevels = selectedValues(state.columnFilters.control);
+  if (controlLevels.length === 1) {
+    query = query.eq("assessment_control_level", controlLevels[0]);
+  } else if (controlLevels.length > 1) {
+    query = query.in("assessment_control_level", controlLevels);
+  }
+  const actions = selectedValues(state.columnFilters.action);
+  if (actions.length === 1) {
+    query = query.eq("assessment_action", actions[0]);
+  } else if (actions.length > 1) {
+    query = query.in("assessment_action", actions);
   }
   const fallbackSort = lens ? LENS_DEFAULT_SORT[lens] : null;
   const sortColumn =
-    state.sort && BACKLINK_SORT_COLUMNS.has(state.sort.id)
-      ? state.sort.id
-      : (fallbackSort?.column ?? "domain_rank");
+    resolveBacklinkSortColumn(state.sort?.id) ??
+    resolveBacklinkSortColumn(fallbackSort?.column) ??
+    "domain_rank";
   const ascending = state.sort
     ? state.sort.direction === "asc"
     : (fallbackSort?.ascending ?? false);
@@ -386,6 +462,24 @@ export async function listLatestBacklinks(
     rows: assertData(response.data, response.error),
     total: response.count ?? 0,
   };
+}
+
+/** Exact durable row for a drawer/window that must outlive table re-sorting. */
+export async function getBacklink(
+  backlinkId: string,
+  signal?: AbortSignal,
+): Promise<BacklinkObservationRow> {
+  const response = await (
+    await seoDb()
+  )
+    .from("backlink")
+    .select("*")
+    .eq("id", backlinkId)
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
+  if (response.error) throw response.error;
+  if (!response.data) throw new Error("This backlink no longer exists.");
+  return response.data;
 }
 
 const DOMAIN_PROFILE_SORT_COLUMNS = new Set([

@@ -29,7 +29,8 @@ describe("backlink enrichment live progress", () => {
 
     expect(run.claimedIds).toEqual(["a"]);
     expect(run.completed).toBe(1);
-    expect(backlinkEnrichmentProgress(run)).toBe(50);
+    expect(run.status).toBe("completed");
+    expect(backlinkEnrichmentProgress(run)).toBe(100);
   });
 
   it("takes exact terminal counters and marks the run complete", () => {
@@ -46,12 +47,36 @@ describe("backlink enrichment live progress", () => {
           failed: 1,
           skipped: 0,
           queue: { failed: 1 },
+          items: [],
         },
       },
     );
 
-    expect(run.status).toBe("completed");
+    expect(run.status).toBe("failed");
     expect(run.failed).toBe(1);
+    expect(backlinkEnrichmentProgress(run)).toBe(100);
+  });
+
+  it("marks mixed terminal counters as partial", () => {
+    const run = applyBacklinkEnrichmentEvent(
+      startBacklinkEnrichmentRun("Analyze two"),
+      {
+        kind: "seo.backlink_enrichment_completed",
+        result: {
+          result_kind: "backlinks.enrich",
+          site_id: "site-1",
+          requested: 2,
+          claimed: 2,
+          completed: 1,
+          failed: 1,
+          skipped: 0,
+          queue: { completed: 1, failed: 1 },
+          items: [],
+        },
+      },
+    );
+
+    expect(run.status).toBe("partial");
     expect(backlinkEnrichmentProgress(run)).toBe(100);
   });
 });

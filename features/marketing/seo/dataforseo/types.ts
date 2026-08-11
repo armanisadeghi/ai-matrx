@@ -143,6 +143,17 @@ export interface BacklinkEnrichmentResult {
   failed: number;
   skipped: number;
   queue: Record<string, number>;
+  items: BacklinkEnrichmentItemResult[];
+}
+
+export interface BacklinkEnrichmentItemResult {
+  backlink_id: string;
+  source_url: string;
+  status: "completed" | "failed" | "skipped";
+  stage: string | null;
+  message: string | null;
+  overall_score: number | null;
+  recommended_action: string | null;
 }
 
 export interface SeoStreamEvent {

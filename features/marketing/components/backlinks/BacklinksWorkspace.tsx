@@ -74,7 +74,6 @@ import { marketingKeys } from "@/features/marketing/data/hooks";
 import { BacklinkKpiBand } from "@/features/marketing/components/backlinks/BacklinkKpiBand";
 import { BacklinkTrendChart } from "@/features/marketing/components/backlinks/BacklinkTrendChart";
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
-import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
 import { BacklinkDimensionTable } from "@/features/marketing/components/backlinks/BacklinkDimensionTable";
 import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/BacklinkInsightsTab";
 import { ReferringDomainIntelligenceTable } from "@/features/marketing/components/backlinks/ReferringDomainIntelligenceTable";
@@ -305,13 +304,11 @@ export function BacklinksWorkspace() {
 
   const [profile, setProfile] = useState<BacklinkRefreshProfile>("bootstrap");
   const [refreshing, setRefreshing] = useState(false);
-  const [enriching, setEnriching] = useState(false);
+  const [batchEnriching, setBatchEnriching] = useState(false);
   const [enrichmentBatchSize, setEnrichmentBatchSize] = useState(5);
-  const [runningBacklinkId, setRunningBacklinkId] = useState<string | null>(
-    null,
-  );
-  const [enrichmentRun, setEnrichmentRun] =
-    useState<BacklinkEnrichmentRunState | null>(null);
+  const [analysisRuns, setAnalysisRuns] = useState<
+    Record<string, BacklinkEnrichmentRunState>
+  >({});
   const [receipt, setReceipt] = useState<BacklinkRefreshReceipt | null>(null);
   // Remount key for the receipt card so each completed refresh re-opens it.
   const [receiptRun, setReceiptRun] = useState(0);
@@ -425,15 +422,6 @@ export function BacklinksWorkspace() {
       queryKey: [...marketingKeys.site(site.id), "backlinks"],
     });
 
-  const handleEnrichmentEvent = (event: SeoStreamEvent) => {
-    setEnrichmentRun((current) =>
-      current ? applyBacklinkEnrichmentEvent(current, event) : current,
-    );
-    if (event.kind.startsWith("seo.backlink_")) {
-      void refreshBacklinkReads();
-    }
-  };
-
   const enrich = async ({
     backlinkIds,
     label,
@@ -447,9 +435,52 @@ export function BacklinksWorkspace() {
       );
       return;
     }
-    setEnriching(true);
-    setRunningBacklinkId(backlinkIds?.[0] ?? null);
-    setEnrichmentRun(startBacklinkEnrichmentRun(label));
+    const targetedBacklinkId =
+      backlinkIds?.length === 1 ? backlinkIds[0] : null;
+    if (targetedBacklinkId) {
+      setAnalysisRuns((current) => ({
+        ...current,
+        [targetedBacklinkId]: startBacklinkEnrichmentRun(label),
+      }));
+    } else {
+      setBatchEnriching(true);
+    }
+
+    let commandRunId: string | null = null;
+    const handleEnrichmentEvent = (event: SeoStreamEvent) => {
+      if (event.kind === "seo.command_run" && event.run_id) {
+        commandRunId = event.run_id;
+      }
+      const runBacklinkIds = targetedBacklinkId
+        ? [targetedBacklinkId]
+        : event.backlink_id
+          ? [event.backlink_id]
+          : (event.backlink_ids ?? []);
+      if (runBacklinkIds.length > 0) {
+        setAnalysisRuns((current) => {
+          const next = { ...current };
+          runBacklinkIds.forEach((backlinkId, index) => {
+            const sourceUrl =
+              event.source_url ?? event.source_urls?.[index] ?? null;
+            const initialRun =
+              next[backlinkId] ??
+              startBacklinkEnrichmentRun(
+                sourceUrl ? `Analyze ${sourceUrl}` : "Analyze backlink",
+              );
+            const initial =
+              commandRunId && !initialRun.runId
+                ? { ...initialRun, runId: commandRunId }
+                : initialRun;
+            next[backlinkId] = applyBacklinkEnrichmentEvent(initial, event);
+          });
+          return next;
+        });
+      }
+      if (event.kind.startsWith("seo.backlink_")) {
+        void refreshBacklinkReads();
+      }
+    };
+
     try {
       const session = await supabase.auth.getSession();
       if (session.error) throw session.error;
@@ -470,21 +501,42 @@ export function BacklinksWorkspace() {
         handleEnrichmentEvent,
       );
       await refreshBacklinkReads();
-      toast.success(
-        result.completed > 0
-          ? `Analyzed ${result.completed} source page${result.completed === 1 ? "" : "s"}.`
-          : "No due source pages remained to analyze.",
-      );
+      if (result.failed > 0) {
+        toast.warning(
+          `Backlink analysis finished with ${result.completed} completed and ${result.failed} failed.`,
+        );
+      } else {
+        toast.success(
+          result.completed > 0
+            ? `Analyzed ${result.completed} source page${result.completed === 1 ? "" : "s"}.`
+            : "No due source pages remained to analyze.",
+        );
+      }
     } catch (error) {
       const message = errorMessage(error);
-      setEnrichmentRun((current) =>
-        current ? failBacklinkEnrichmentRun(current, message) : current,
-      );
+      if (targetedBacklinkId) {
+        setAnalysisRuns((current) => {
+          const run = current[targetedBacklinkId];
+          return run
+            ? {
+                ...current,
+                [targetedBacklinkId]: failBacklinkEnrichmentRun(run, message),
+              }
+            : current;
+        });
+      }
       toast.error(message);
     } finally {
-      setEnriching(false);
-      setRunningBacklinkId(null);
+      if (!targetedBacklinkId) setBatchEnriching(false);
     }
+  };
+
+  const dismissAnalysisRun = (backlinkId: string) => {
+    setAnalysisRuns((current) => {
+      const remaining = { ...current };
+      delete remaining[backlinkId];
+      return remaining;
+    });
   };
 
   const analyzeBacklink = (row: BacklinkObservationRow) =>
@@ -931,7 +983,7 @@ export function BacklinksWorkspace() {
             <Select
               value={String(enrichmentBatchSize)}
               onValueChange={(value) => setEnrichmentBatchSize(Number(value))}
-              disabled={enriching || refreshing}
+              disabled={batchEnriching || refreshing}
             >
               <SelectTrigger
                 size="sm"
@@ -952,12 +1004,12 @@ export function BacklinksWorkspace() {
               size="sm"
               variant="outline"
               className="gap-1.5"
-              disabled={enriching || refreshing}
+              disabled={batchEnriching || refreshing}
               onClick={() =>
                 void enrich({ label: `Analyze next ${enrichmentBatchSize}` })
               }
             >
-              {enriching ? (
+              {batchEnriching ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <BrainCircuit className="h-3.5 w-3.5" />
@@ -979,13 +1031,6 @@ export function BacklinksWorkspace() {
             </Button>
           </div>
         </div>
-
-        {enrichmentRun ? (
-          <BacklinkEnrichmentRunPanel
-            run={enrichmentRun}
-            onDismiss={() => setEnrichmentRun(null)}
-          />
-        ) : null}
 
         {settingsOpen ? (
           <div className="shrink-0 px-3 pt-2 sm:px-4">
@@ -1192,8 +1237,9 @@ export function BacklinksWorkspace() {
               <BacklinkObservationTable
                 siteId={site.id}
                 onAnalyze={(row) => void analyzeBacklink(row)}
-                runningBacklinkId={runningBacklinkId}
-                analysisDisabled={enriching || refreshing}
+                analysisRuns={analysisRuns}
+                onDismissAnalysisRun={dismissAnalysisRun}
+                analysisDisabled={refreshing}
               />
             </div>
           ) : tab === "insights" ? (
@@ -1201,8 +1247,9 @@ export function BacklinksWorkspace() {
               <BacklinkInsightsTab
                 siteId={site.id}
                 onAnalyze={(row) => void analyzeBacklink(row)}
-                runningBacklinkId={runningBacklinkId}
-                analysisDisabled={enriching || refreshing}
+                analysisRuns={analysisRuns}
+                onDismissAnalysisRun={dismissAnalysisRun}
+                analysisDisabled={refreshing}
               />
             </div>
           ) : tab === "domains" ? (

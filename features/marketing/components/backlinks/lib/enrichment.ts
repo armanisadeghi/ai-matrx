@@ -23,6 +23,45 @@ export function providerExtras(providerEvidence: Json | null): Json | null {
   return evidence.extras ?? null;
 }
 
+/** Whether a persisted evidence JSONB value contains an actual assessment. */
+export function hasBacklinkAssessment(value: Json | null): boolean {
+  return Object.keys(jsonRecord(value)).length > 0;
+}
+
+export interface BacklinkAnalysisActionState {
+  disabled: boolean;
+  inProgress: boolean;
+  label: "Analyze" | "Analyzing" | "Re-analyze";
+  title: string;
+}
+
+/**
+ * One action-state contract for every place that offers single-backlink
+ * capture and analysis (table row, drawer, and row window).
+ */
+export function backlinkAnalysisActionState(
+  enrichmentStatus: string,
+  running: boolean,
+  globallyDisabled: boolean,
+): BacklinkAnalysisActionState {
+  const inProgress =
+    enrichmentStatus === "capturing" || enrichmentStatus === "analyzing";
+  const rerun =
+    enrichmentStatus === "completed" || enrichmentStatus === "dead_letter";
+
+  return {
+    disabled: globallyDisabled || running || inProgress,
+    inProgress,
+    label:
+      running || inProgress ? "Analyzing" : rerun ? "Re-analyze" : "Analyze",
+    title: running || inProgress
+      ? "This source page is already being analyzed"
+      : rerun
+        ? "Capture and analyze this source page again"
+        : "Capture and analyze this source page now",
+  };
+}
+
 export interface BacklinkAssessmentView {
   overallScore: number | null;
   pageType: string | null;

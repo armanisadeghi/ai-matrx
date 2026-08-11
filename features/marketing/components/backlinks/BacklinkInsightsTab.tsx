@@ -36,6 +36,7 @@ import {
 import { BacklinkAnchorProfile } from "@/features/marketing/components/backlinks/BacklinkAnchorProfile";
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
 import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
+import type { BacklinkEnrichmentRunState } from "@/features/marketing/components/backlinks/lib/enrichment-run";
 
 const ANCHOR_PROFILE_KEY = "anchor-profile";
 
@@ -58,12 +59,14 @@ const LENS_ICONS: Record<BacklinkLensKey, LucideIcon> = {
 export function BacklinkInsightsTab({
   siteId,
   onAnalyze,
-  runningBacklinkId,
+  analysisRuns,
+  onDismissAnalysisRun,
   analysisDisabled,
 }: {
   siteId: string;
   onAnalyze?: (row: BacklinkObservationRow) => void;
-  runningBacklinkId?: string | null;
+  analysisRuns?: Record<string, BacklinkEnrichmentRunState>;
+  onDismissAnalysisRun?: (backlinkId: string) => void;
   analysisDisabled?: boolean;
 }) {
   const router = useRouter();
@@ -133,7 +136,8 @@ export function BacklinkInsightsTab({
             lens={active}
             key={active}
             onAnalyze={onAnalyze}
-            runningBacklinkId={runningBacklinkId}
+            analysisRuns={analysisRuns}
+            onDismissAnalysisRun={onDismissAnalysisRun}
             analysisDisabled={analysisDisabled}
           />
         )}

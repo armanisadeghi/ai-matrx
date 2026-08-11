@@ -32,7 +32,7 @@ tables (AI Models, relationships, …) can cut over to one contract.
   state, but must pass the immediate display state back to the table.
 - **Select filters are type-to-search and MULTI-select (OR semantics)** — toggling options builds a `values` set; single-`value` writers stay valid. Whenever a column has blank cells, the options automatically include **"(empty)" / "(not empty)"** sentinels (composable with real values: "A or (empty)"). An explicit `filter: "select"` lists ALL distinct values (auto-inference still caps at 24 before falling back to text). **Text filters have Contains / (empty) / (not empty) modes.** **Sorting always puts empty cells last**, both directions. Active filters show a clear **X**; toolbar has **Clear all**.
 - **Row click → `SidePanelSurface`** (desktop: `MatrxDynamicPanelHost`; mobile: Drawer). Never blocking `Sheet` / split-pane.
-- **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel.
+- **Panel icon → `WindowPanel`** with View / Edit sidebar tabs when an edit body exists (`renderEdit` or `detail.render`). `window.onOpen` hydrates edit state without opening the side panel. `detail.render` and `rowActions` receive record controls (`openWindow`, `closeDetail`) so a record-owned action can promote the same item into its canonical window. The table retains the opened row snapshot even when a controlled refetch or sort moves it off the current page.
 - **UUID cells** always: short prefix (8), full on hover, always-visible copy. FK columns use `cellKind: "fk"` + `fk.onOpen` → WindowPanel of the target (or `"forbidden"`).
 - **Copy** uses `CopyButtons` + `buildAgentPayload` (row + this view).
 - **Inline edits are deferred** — draft locally, persist only on floating Save pill.
@@ -48,7 +48,7 @@ horizontally; the **first column freezes** (`max-sm:sticky left-0`, opaque
 chevron affordance** renders while more columns sit off-screen (recomputed on
 scroll/resize, gone at scroll end). Desktop rendering is untouched.
 
-*Why scroll over cards:* every consumer keeps full parity for free — sort,
+_Why scroll over cards:_ every consumer keeps full parity for free — sort,
 per-column filters, inline edit, FK cells, row/window actions all keep working
 with zero per-consumer config. A card mode would fork rendering (its own edit,
 copy, FK, selection surfaces), demand a "primary column" convention ~20
@@ -161,6 +161,7 @@ Do not drop these when replacing `AiModelTable`:
 - `2026-07-19` — Sticky header uses `bg-muted/90` + backdrop blur so column labels contrast with `bg-card` body rows.
 - `2026-07-19` — Filter overhaul: multi-select (OR `values` set, back-compat with single `value`), automatic (empty)/(not empty) select sentinels, text filter Contains/(empty)/(not empty) modes, explicit-select options uncapped, empties sort last both directions.
 
+- `2026-08-11` — Added record controls to detail/row-action renderers and retained the opened row snapshot across controlled refetch/sort, enabling per-record long-running work inside the canonical WindowPanel.
 - `2026-07-11` — WindowPanel View/Edit tabs; `MatrxUuidCell` (short/hover/copy/FK open/forbidden); `cellKind` + auto UUID; `window.onOpen` / `renderEdit`; AiModelTable UuidCell → MatrxUuidCell.
 - `2026-07-11` — Searchable selects; clear-all; `anyOf`; Copy; deferred inline edit.
 - `2026-07-11` — Initial primitive. Relationships first consumer.
