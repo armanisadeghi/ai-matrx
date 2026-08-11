@@ -18,6 +18,8 @@ import {
   type CopyButtonsProps,
 } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
+import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
+import { RecordUnavailableNotice } from "@/features/marketing/components/shared/RecordUnavailableNotice";
 import { extractErrorMessage } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import { isJsonRecord } from "@/features/marketing/types";
@@ -110,14 +112,30 @@ export function statusBadgeVariant(
   return status ? "secondary" : "outline";
 }
 
-export function StatusBadge({ value }: { value: string | null }) {
-  const label = value || "unknown";
+/**
+ * `value` is always the machine status — it decides the tone, so tones can
+ * never drift when wording changes. Pass `label` when the raw status is not
+ * language a human should read (`dead_letter`, `capturing`): the badge then
+ * renders your words verbatim, un-title-cased.
+ */
+export function StatusBadge({
+  value,
+  label,
+}: {
+  value: string | null;
+  label?: string;
+}) {
+  const status = value || "unknown";
   return (
     <Badge
-      variant={statusBadgeVariant(label)}
-      className="whitespace-nowrap capitalize"
+      variant={statusBadgeVariant(status)}
+      className={
+        label
+          ? "whitespace-nowrap"
+          : "whitespace-nowrap capitalize"
+      }
     >
-      {label.replaceAll("_", " ")}
+      {label ?? status.replaceAll("_", " ")}
     </Badge>
   );
 }
@@ -129,6 +147,11 @@ export function QueryError({
   error: unknown;
   onRetry?: () => void;
 }) {
+  // A zero-row single-record read is not "could not load this data" — it has
+  // its own honest copy and its own doors.
+  if (isRecordUnavailableError(error)) {
+    return <RecordUnavailableNotice error={error} onRetry={onRetry} />;
+  }
   return (
     <div className="flex h-full min-h-40 items-center justify-center p-6">
       <div className="max-w-lg rounded-lg border border-destructive/30 bg-destructive/5 p-4">

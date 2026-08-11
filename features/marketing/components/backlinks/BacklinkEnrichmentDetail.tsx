@@ -594,7 +594,7 @@ export function BacklinkEnrichmentDetail({
               </div>
             ) : null}
           </div>,
-          "The three identities in this relationship are shown separately and in full.",
+          "Who links to you, from which page, and to which page of yours.",
           identityCopy,
         )}
 
@@ -637,7 +637,7 @@ export function BacklinkEnrichmentDetail({
             {fact("Lost at", formatDate(row.lost_at))}
             {fact("Provider previously saw it", formatDate(extras.prevSeen))}
           </div>,
-          "These are the stored provider observations—not AI guesses.",
+          "Facts collected from the web — not AI opinions.",
           providerCopy,
         )}
 
@@ -645,7 +645,7 @@ export function BacklinkEnrichmentDetail({
           ? section(
               "Redirect destination",
               externalUrl(extras.urlToRedirectTarget),
-              "The provider reports that the target redirects here.",
+              "Your page sends visitors on to this address.",
               redirectCopy,
             )
           : null}
@@ -773,7 +773,7 @@ export function BacklinkEnrichmentDetail({
                   </div>
                 ) : null}
               </>,
-              "First-party interpretation of the provider evidence and captured source page.",
+              "Our own read of the page and the link — not the data service's.",
               assessmentCopy,
             )}
 
@@ -795,7 +795,7 @@ export function BacklinkEnrichmentDetail({
                     "No action reasoning was stored with this assessment."}
                 </p>
               </div>,
-              "The practical decision—not just a score.",
+              "The practical decision — not just a score.",
               nextStepCopy,
             )}
           </>
@@ -932,7 +932,7 @@ export function BacklinkEnrichmentDetail({
                   </div>
                 ) : null}
               </div>,
-              "The captured page evidence used by the analysis, plus a human-review screenshot when browser capture succeeded.",
+              "This is the page content our review was based on, plus the screenshot when one was captured.",
               captureCopy,
             )
           : null}
@@ -976,7 +976,7 @@ export function BacklinkEnrichmentDetail({
                   Save ruling
                 </Button>
               </>,
-              "Human judgment is offered only after an assessment exists.",
+              "We only ask once we have something for you to react to.",
               rulingCopy,
             )
           : null}
@@ -996,7 +996,7 @@ export function BacklinkEnrichmentDetail({
             {fact("Record created", formatDate(row.created_at))}
             {fact("Record updated", formatDate(row.updated_at))}
           </div>,
-          "Durable state for this exact source-page → target-page relationship.",
+          "When we last looked at this exact link, and what happened.",
           lifecycleCopy,
         )}
 

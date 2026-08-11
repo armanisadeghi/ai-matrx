@@ -11,6 +11,14 @@ import type { MarketingTableStateOptions } from "@/features/marketing/types";
 
 const PAGE_SIZE_OPTIONS = new Set([10, 25, 50, 100, 250]);
 
+/**
+ * Separator for a multi-choice select filter in the URL (`select:a|b`).
+ * Without this the `values` OR-set was silently dropped on every URL write —
+ * so a multi-select filter never survived a reload, and no link could point
+ * at one (the "Awaiting" / "Needs retry" backlink counts need exactly that).
+ */
+const MULTI_SELECT_SEPARATOR = "|";
+
 function positiveInt(value: string | null, fallback: number): number {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
@@ -23,7 +31,14 @@ function decodeFilter(raw: string): ColumnFilterValue | undefined {
   const value = raw.slice(separator + 1);
 
   if (kind === "text") return { kind: "text", value };
-  if (kind === "select") return { kind: "select", value };
+  if (kind === "select") {
+    // Multi-choice OR sets travel as `select:a|b`; a lone value stays
+    // `select:a` (what every existing link and stored URL already carries).
+    const values = value.split(MULTI_SELECT_SEPARATOR).filter(Boolean);
+    return values.length > 1
+      ? { kind: "select", value: values[0], values }
+      : { kind: "select", value };
+  }
   if (kind === "boolean") return { kind: "boolean", value: value === "true" };
   if (kind === "number") {
     const [minRaw, maxRaw] = value.split(",", 2);
@@ -40,7 +55,11 @@ function decodeFilter(raw: string): ColumnFilterValue | undefined {
 
 function encodeFilter(filter: ColumnFilterValue): string {
   if (filter.kind === "text") return `text:${filter.value}`;
-  if (filter.kind === "select") return `select:${filter.value}`;
+  if (filter.kind === "select") {
+    return filter.values && filter.values.length > 1
+      ? `select:${filter.values.join(MULTI_SELECT_SEPARATOR)}`
+      : `select:${filter.values?.[0] ?? filter.value}`;
+  }
   if (filter.kind === "boolean") return `boolean:${filter.value}`;
   return `number:${filter.min ?? ""},${filter.max ?? ""}`;
 }

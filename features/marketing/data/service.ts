@@ -76,6 +76,7 @@ import {
   pagePathOf,
   pageUrlHash,
 } from "@/features/marketing/lib/page-url";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import {
@@ -162,17 +163,50 @@ export function assertData<T>(data: T | null, error: unknown): T {
  * `.maybeSingle()` — never `.single()`, whose 0-row PGRST116 leaks a red
  * "Cannot coerce the result…" error into the inspector instead of this
  * human-readable one.
+ *
+ * It does NOT claim deletion: a zero-row read is equally an access gap or a
+ * stale id (D133 — two reviews rejected as "site deleted" over a live site the
+ * reader's orgs didn't reach). Where the caller can cheaply re-ask without the
+ * `deleted_at` filter, use `assertFoundOrProbeDeleted` and get the truth.
  */
 export function assertFound<T>(
   data: T | null,
   error: unknown,
   entity: string,
+  recordId?: string,
 ): T {
   if (error) throw error;
   if (data === null) {
-    throw new Error(`This ${entity} was deleted or is no longer accessible.`);
+    throw recordUnavailable({ entity, recordId, reason: "unknown" });
   }
   return data;
+}
+
+/**
+ * `assertFound` for reads the caller can re-ask WITHOUT the `deleted_at`
+ * filter — the same RLS-filtered read, so no new access path is invented. A
+ * row that comes back carrying `deleted_at` PROVES deletion; anything else
+ * stays honestly ambiguous, because deleted / not-permitted / bad-id are
+ * indistinguishable from the client without a privileged existence probe.
+ */
+export async function assertFoundOrProbeDeleted<T>(
+  data: T | null,
+  error: unknown,
+  entity: string,
+  recordId: string,
+  probeDeleted: () => PromiseLike<{
+    data: { deleted_at: string | null } | null;
+    error: unknown;
+  }>,
+): Promise<T> {
+  if (error) throw error;
+  if (data !== null) return data;
+  const probe = await probeDeleted();
+  throw recordUnavailable({
+    entity,
+    recordId,
+    reason: !probe.error && probe.data?.deleted_at ? "deleted" : "unknown",
+  });
 }
 
 /**
@@ -495,16 +529,28 @@ export async function getSite(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<MarketingSite> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const response = await db
     .from("site")
     .select(SITE_COLUMNS)
     .eq("id", siteId)
     .is("deleted_at", null)
-    .abortSignal(signal ?? new AbortController().signal)
+    .abortSignal(abortSignal)
     .maybeSingle();
-  return assertFound(response.data, response.error, "site");
+  return assertFoundOrProbeDeleted(
+    response.data,
+    response.error,
+    "site",
+    siteId,
+    () =>
+      db
+        .from("site")
+        .select("deleted_at")
+        .eq("id", siteId)
+        .abortSignal(abortSignal)
+        .maybeSingle(),
+  );
 }
 
 export async function getSiteOverview(
@@ -1253,7 +1299,20 @@ export async function getPageWorkspace(
     .is("deleted_at", null)
     .abortSignal(abortSignal)
     .maybeSingle();
-  const page = assertFound(pageResponse.data, pageResponse.error, "page");
+  const page = await assertFoundOrProbeDeleted(
+    pageResponse.data,
+    pageResponse.error,
+    "page",
+    pageId,
+    () =>
+      db
+        .from("page")
+        .select("deleted_at")
+        .eq("site_id", siteId)
+        .eq("id", pageId)
+        .abortSignal(abortSignal)
+        .maybeSingle(),
+  );
 
   const [
     snapshotResponse,
@@ -1451,7 +1510,12 @@ export async function updatePageDesiredValues(
     .eq("id", input.pageId)
     .is("deleted_at", null)
     .maybeSingle();
-  const fresh = assertFound(freshResponse.data, freshResponse.error, "page");
+  const fresh = assertFound(
+    freshResponse.data,
+    freshResponse.error,
+    "page",
+    input.pageId,
+  );
   const current: PageDesiredValues = isJsonRecord(fresh.desired_values)
     ? (fresh.desired_values as PageDesiredValues)
     : {};
@@ -1624,7 +1688,7 @@ export async function getSnapshot(
     .eq("id", snapshotId)
     .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle();
-  return assertFound(response.data, response.error, "snapshot");
+  return assertFound(response.data, response.error, "snapshot", snapshotId);
 }
 
 export async function listCrawls(
@@ -1713,7 +1777,7 @@ export async function getCrawl(
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle();
-  return assertFound(response.data, response.error, "crawl session");
+  return assertFound(response.data, response.error, "crawl session", crawlId);
 }
 
 export async function listCrawlUrls(
@@ -2407,16 +2471,28 @@ export async function getBrand(
   brandId: string,
   signal?: AbortSignal,
 ): Promise<MarketingBrand> {
-  const response = await (
-    await authenticatedWebDb(supabase)
-  )
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const response = await db
     .from("brand")
     .select(BRAND_COLUMNS)
     .eq("id", brandId)
     .is("deleted_at", null)
-    .abortSignal(signal ?? new AbortController().signal)
+    .abortSignal(abortSignal)
     .maybeSingle();
-  return assertFound(response.data, response.error, "brand");
+  return assertFoundOrProbeDeleted(
+    response.data,
+    response.error,
+    "brand",
+    brandId,
+    () =>
+      db
+        .from("brand")
+        .select("deleted_at")
+        .eq("id", brandId)
+        .abortSignal(abortSignal)
+        .maybeSingle(),
+  );
 }
 
 export async function listBrandSites(
@@ -2536,7 +2612,7 @@ export async function getSitemap(
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle();
-  return assertFound(response.data, response.error, "sitemap");
+  return assertFound(response.data, response.error, "sitemap", sitemapId);
 }
 
 export type SitemapPagesFilter = "all" | "never_crawled";

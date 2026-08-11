@@ -16,7 +16,7 @@ const BacklinksWorkspace = dynamic(
     ).then((mod) => mod.BacklinksWorkspace),
   {
     ssr: false,
-    loading: () => <LoadingSurface label="Loading backlink intelligence…" />,
+    loading: () => <LoadingSurface label="Loading your backlinks…" />,
   },
 );
 

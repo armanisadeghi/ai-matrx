@@ -41,7 +41,7 @@ async function patchFinding(
     .is("deleted_at", null)
     .select(FINDING_COLUMNS)
     .maybeSingle();
-  return assertFound(response.data, response.error, "finding");
+  return assertFound(response.data, response.error, "finding", findingId);
 }
 
 /**
