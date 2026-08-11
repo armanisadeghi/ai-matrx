@@ -26,6 +26,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { formatGscDate } from "@/features/marketing/search-console/lib/format";
 import { humanTrend } from "@/features/marketing/components/backlinks/format";
+import { backlinkEmptyHint } from "@/features/marketing/components/backlinks/lib/vocab";
 import type { BacklinkTrendPoint } from "@/features/marketing/data/backlinks-types";
 
 const NEW_COLOR = "var(--color-success)";
@@ -108,7 +109,7 @@ function ChartTooltip({
   return (
     <div className="rounded-md border border-border bg-popover px-2.5 py-2 text-xs shadow-md">
       <p className="mb-1 font-medium text-foreground">
-        Period ending {formatGscDate(point.period)}
+        Up to {formatGscDate(point.period)}
       </p>
       <div className="space-y-0.5">
         {rows.map((row) => (
@@ -124,8 +125,8 @@ function ChartTooltip({
           </div>
         ))}
         <p className="pt-0.5 text-muted-foreground">
-          Net {point.new_links - lost >= 0 ? "+" : ""}
-          {(point.new_links - lost).toLocaleString()} this period
+          Overall {point.new_links - lost >= 0 ? "+" : ""}
+          {(point.new_links - lost).toLocaleString()} in this period
         </p>
       </div>
     </div>
@@ -149,8 +150,7 @@ export function BacklinkTrendChart({
         className="flex items-center justify-center px-4 text-center text-xs text-muted-foreground"
         style={{ height }}
       >
-        No backlink history stored yet — run a Weekly core or Full bootstrap
-        refresh to collect the provider timeseries.
+        {backlinkEmptyHint("any history of links gained and lost")}
       </div>
     );
   }
@@ -263,14 +263,14 @@ export function BacklinkTrendChart({
             className="h-2 w-2 rounded-sm"
             style={{ backgroundColor: NEW_COLOR }}
           />
-          Links gained in the period (bars above zero)
+          Links gained (bars above the line)
         </span>
         <span className="flex items-center gap-1.5">
           <span
             className="h-2 w-2 rounded-sm"
             style={{ backgroundColor: LOST_COLOR }}
           />
-          Links lost (bars below zero)
+          Links lost (bars below the line)
         </span>
         <span className="flex items-center gap-1.5">
           <span

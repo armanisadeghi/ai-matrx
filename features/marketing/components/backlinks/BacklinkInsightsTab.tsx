@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * Insights tab — the curated-view layer of the backlinks workspace, mirroring
+ * Insights tab — the ready-made views of the backlinks workspace, mirroring
  * the Search Console Insights "lens" pattern: a pill row of named views, a
  * one-line description of the active view, the view below.
  *
- * Views: the client-side Anchor profile analysis first, then the five
- * server-filtered lenses from `BACKLINK_LENSES` (each rendered by the
- * self-contained `BacklinkObservationTable`, which applies the lens in the
+ * Views: the client-side link-wording analysis first, then the
+ * server-filtered views from `BACKLINK_LENSES` (each rendered by the
+ * self-contained `BacklinkObservationTable`, which applies the filter in the
  * database). Active view lives in URL state (`?insight=`) so it survives
  * refresh and is shareable; every other param is preserved.
  */
@@ -41,7 +41,7 @@ import type { BacklinkEnrichmentRunState } from "@/features/marketing/components
 const ANCHOR_PROFILE_KEY = "anchor-profile";
 
 const ANCHOR_PROFILE_DESCRIPTION =
-  "How your anchor text distributes across branded, topical, URL, and generic classes — the over-optimization radar.";
+  "The words other sites use when they link to you — your own name, keywords, your web address, or filler — and whether any one phrase is over-used.";
 
 type InsightViewKey = typeof ANCHOR_PROFILE_KEY | BacklinkLensKey;
 
@@ -103,7 +103,7 @@ export function BacklinkInsightsTab({
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
           <ViewPill
-            label="Anchor profile"
+            label="Link wording"
             icon={Anchor}
             active={active === ANCHOR_PROFILE_KEY}
             onSelect={() => selectView(ANCHOR_PROFILE_KEY)}

@@ -47,7 +47,7 @@ export function startBacklinkEnrichmentRun(
     completed: 0,
     failed: 0,
     skipped: 0,
-    message: "Starting source-page analysis…",
+    message: "Starting to read the pages that link to you…",
     events: [],
     result: null,
     error: null,
@@ -61,22 +61,22 @@ function addUnique(values: string[], value: string | undefined): string[] {
 function eventMessage(event: SeoStreamEvent): string | null {
   switch (event.kind) {
     case "seo.command_run":
-      return "Run accepted by AI Dream.";
+      return "Request accepted.";
     case "seo.backlink_enrichment_started":
-      return `Found ${event.candidate_count ?? 0} source page${event.candidate_count === 1 ? "" : "s"} to analyze.`;
+      return `Found ${event.candidate_count ?? 0} page${event.candidate_count === 1 ? "" : "s"} to read.`;
     case "seo.backlink_capture_started":
-      return `Capturing ${event.source_url ?? "source page"}…`;
+      return `Reading ${event.source_url ?? "the linking page"}…`;
     case "seo.backlink_capture_completed":
-      return `Captured ${event.source_url ?? "source page"}; preparing its content.`;
+      return `Read ${event.source_url ?? "the linking page"} — preparing it for review.`;
     case "seo.backlink_analysis_started":
-      return `AI is assessing ${(event.backlink_ids ?? []).length || 1} captured page${(event.backlink_ids ?? []).length === 1 ? "" : "s"}.`;
+      return `Reviewing ${(event.backlink_ids ?? []).length || 1} page${(event.backlink_ids ?? []).length === 1 ? "" : "s"}.`;
     case "seo.backlink_enriched":
-      return `Analysis complete for ${event.source_url ?? "source page"}.`;
+      return `Finished ${event.source_url ?? "the linking page"}.`;
     case "seo.backlink_enrichment_failed":
-      return `${event.stage ?? "Analysis"} failed for ${event.source_url ?? "source page"}: ${event.message ?? "Unknown error"}`;
+      return `Could not finish ${event.source_url ?? "the linking page"}: ${event.message ?? "something went wrong"}`;
     case "seo.backlink_enrichment_finished":
     case "seo.backlink_enrichment_completed":
-      return "Source-page analysis finished.";
+      return "All done.";
     default:
       return null;
   }
@@ -180,7 +180,7 @@ export function failBacklinkEnrichmentRun(
   return {
     ...current,
     status: "failed",
-    message: "Source-page analysis stopped.",
+    message: "Stopped before finishing.",
     error,
   };
 }
