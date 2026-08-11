@@ -187,45 +187,11 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "cost_view",
     label: "Cost view",
     description:
-      "Which cost view is open on /marketing/cost: `runtime` (agent runtime cost rollups) or `seo_spend` (provider spend). Empty on other hub views.",
+      "Which cost view is open on /marketing/cost. Always `seo_spend` (provider spend) — the only cost view the page carries since the never-populated runtime rollup was retired (D149). Empty on other hub views.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 10,
     sortOrder: 600,
-    group: "cost",
-  },
-  {
-    name: "cost_rollup_mode",
-    label: "Cost rollup mode",
-    description:
-      "How the runtime cost table is grouped: `site` or `client` (client organization). Only meaningful while cost_view is `runtime`; empty on other hub views.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 8,
-    sortOrder: 610,
-    group: "cost",
-  },
-  {
-    name: "cost_rollups",
-    label: "Cost rollup rows",
-    description:
-      "The runtime cost rollup rows on the current table page: rollup mode, label, detail, site id, client organization id, and cost in USD. A bounded sample under the active sort and pagination. Empty on other hub views, while the provider-spend view is open, and during initial load. Bindable only — not auto-shipped.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 1500,
-    autoContext: false,
-    sortOrder: 620,
-    group: "cost",
-  },
-  {
-    name: "cost_rollups_total",
-    label: "Cost rollup total",
-    description:
-      "Exact number of runtime cost rollups matching the current mode and filters (the table total, not the visible rows). Zero when no runtime executions are linked to web batch items yet; empty on other hub views.",
-    valueType: "number",
-    alwaysAvailable: false,
-    typicalCharCount: 5,
-    sortOrder: 630,
     group: "cost",
   },
 
@@ -247,13 +213,13 @@ export const marketingManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing",
   readiness: "partial",
   readinessNote:
-    "The five hub views that own data (pillar map, brands, sites, connections, cost) are fully declared, grouped, and emitted. Every OTHER hub-level route that resolves here is a reserved Coming Soon placeholder rendering <MarketingComingSoon> with no data at all — /marketing/analytics, /marketing/campaigns, /marketing/competitors, /marketing/content-studio, /marketing/reports, /marketing/social, /marketing/email — so none of them warrants a surface until it grows real data (audited 2026-07-27). The three hub-level routes that DO own data have their own surfaces: /marketing/keyword-research (matrx-user/keyword-research), /marketing/batches (matrx-user/marketing-batches), and /marketing/ranks (matrx-user/marketing-ranks-hub, the cross-site rank hub shipped 2026-07-28). Site-scoped rank tracking has its own surface, matrx-user/marketing-ranks.",
+    "The five hub views that own data (pillar map, brands, sites, connections, cost) are fully declared, grouped, and emitted. Every OTHER hub-level route that resolves here is a reserved Coming Soon placeholder rendering <MarketingComingSoon> with no data at all — /marketing/analytics, /marketing/campaigns, /marketing/competitors, /marketing/content-studio, /marketing/reports, /marketing/social, /marketing/email — so none of them warrants a surface until it grows real data (audited 2026-07-27). The two hub-level routes that DO own data have their own surfaces: /marketing/keyword-research (matrx-user/keyword-research) and /marketing/ranks (matrx-user/marketing-ranks-hub, the cross-site rank hub shipped 2026-07-28). Site-scoped rank tracking has its own surface, matrx-user/marketing-ranks. /marketing/batches and matrx-user/marketing-batches were retired 2026-08-11 (D149): they read the never-populated web.batch_* spine, which no longer exists.",
   label: "Marketing Hub",
   urlPattern: "/marketing",
   intro: `<surface_intro>
 You are on the Marketing hub: the portfolio entry point where an agency-scale operator scans every brand (client company) and managed website they run, checks how the workspace is connected and what it costs, and decides where to go next. No single brand or site is in focus here — everything you see is an aggregate over the portfolio the user can access.
 Read hub_view first: it tells you which hub view is open (map, brands, sites, connections, cost) and therefore which values are populated. hub_pillars is the feature's own map — use it to route the user to the right surface by name and href instead of guessing URLs.
-Counts and rows reflect what is currently loaded in the UI under the active search, filters, sort, and page (see list_query) — they are a view, never the complete database. brand_count / sites_total are the true filtered totals; site_count is the unfiltered managed-site total; visible_brands / visible_sites / cost_rollups are bounded samples. All values populate only after the view loads: treat an empty value as "not loaded yet", never as "the portfolio is empty".
+Counts and rows reflect what is currently loaded in the UI under the active search, filters, sort, and page (see list_query) — they are a view, never the complete database. brand_count / sites_total are the true filtered totals; site_count is the unfiltered managed-site total; visible_brands / visible_sites are bounded samples. All values populate only after the view loads: treat an empty value as "not loaded yet", never as "the portfolio is empty".
 connection_status carries per-provider loading and unavailable flags — an unavailable inventory means the check failed, not that the account is disconnected. Never invent brands, sites, counts, connections, or costs that are not in the supplied values, and never act on a specific brand or site from here — the deeper brand, site, and page surfaces carry that context.
 </surface_intro>`,
   groups,
@@ -308,9 +274,6 @@ export function createMarketingScope(values: {
   visible_sites?: ReadonlyArray<Record<string, unknown>>;
   connection_status?: Record<string, unknown>;
   cost_view?: string;
-  cost_rollup_mode?: string;
-  cost_rollups?: ReadonlyArray<Record<string, unknown>>;
-  cost_rollups_total?: number;
   list_query?: Record<string, unknown>;
   selection?: string;
   context?: Record<string, unknown>;

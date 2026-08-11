@@ -11,7 +11,6 @@ import {
   Camera,
   CheckCircle2,
   CircleAlert,
-  CircleDollarSign,
   ClipboardCheck,
   ExternalLink,
   FileText,
@@ -1200,12 +1199,6 @@ function WorkspaceDirectory({
       detail: "Rank tracking portfolio",
       href: `${sitePath}/ranks`,
       icon: <TrendingUp className="h-4 w-4" />,
-    },
-    {
-      name: "Cost",
-      detail: "Spend by page, run, and provider",
-      href: `${sitePath}/cost`,
-      icon: <CircleDollarSign className="h-4 w-4" />,
     },
     {
       name: "Access",

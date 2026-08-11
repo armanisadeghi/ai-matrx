@@ -86,12 +86,12 @@ describe("surfaceFromPathname — marketing tree", () => {
     }
   });
 
-  it("resolves cross-site batches", () => {
+  // /marketing/batches was retired 2026-08-11 (D149) — it read the
+  // never-populated web.batch_* spine. An unknown /marketing/* tail folds into
+  // the hub surface, which is what a stale bookmark should get.
+  it("folds the retired batches route into the hub", () => {
     expect(surfaceFromPathname("/marketing/batches")).toBe(
-      "matrx-user/marketing-batches",
-    );
-    expect(surfaceFromPathname(`/marketing/batches/${P}`)).toBe(
-      "matrx-user/marketing-batches",
+      "matrx-user/marketing",
     );
   });
 

@@ -262,8 +262,6 @@ function resolveMarketingSurface(stripped: string): string | null {
   }
   const segments = stripped.split("/").filter(Boolean); // ["marketing", ...]
 
-  // /marketing/batches[...]
-  if (segments[1] === "batches") return "matrx-user/marketing-batches";
   if (segments[1] === "keyword-research") return "matrx-user/keyword-research";
   // /marketing/content-plan (list) vs /marketing/content-plan/[siteId]
   // (workspace). The workspace's ?view= refinements (setup/entities/node)

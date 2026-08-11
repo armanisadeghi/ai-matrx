@@ -4,8 +4,6 @@ import { getMarketingRouteMetadata } from "./route-metadata";
 const ROUTES = [
   ["/marketing", "Mk"],
   ["/marketing/admin", "Ad"],
-  ["/marketing/batches", "Bt"],
-  ["/marketing/batches/batch-1", "Ba"],
   ["/marketing/brands", "Br"],
   ["/marketing/brands/brand-1", "Bd"],
   ["/marketing/connections", "Cn"],
@@ -20,7 +18,6 @@ const ROUTES = [
   ["/marketing/brands/brand-1/sites/site-1", "So"],
   ["/marketing/brands/brand-1/sites/site-1/access", "Ac"],
   ["/marketing/brands/brand-1/sites/site-1/analysis", "An"],
-  ["/marketing/brands/brand-1/sites/site-1/cost", "Sc"],
   ["/marketing/brands/brand-1/sites/site-1/coverage", "Cv"],
   ["/marketing/brands/brand-1/sites/site-1/crawls", "Cr"],
   ["/marketing/brands/brand-1/sites/site-1/crawls/new", "Nc"],

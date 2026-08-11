@@ -1,160 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { CircleDollarSign } from "lucide-react";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
+/**
+ * `/marketing/cost` — what marketing execution actually costs.
+ *
+ * This page used to carry TWO views: a "Runtime cost" rollup table read from
+ * `web.v_cost_by_site` / `web.v_cost_by_client`, and "Provider spend" read from
+ * aidream `GET /seo/spend/summary`. The runtime half was retired on 2026-08-11
+ * (FOUND_DEFECTS D149): its whole projection hung off `web.batch_item`, a spine
+ * that never had a producer — 16,236 `web.analysis_result` rows carry ZERO
+ * `batch_id`, and `runtime.global_execution` has never recorded a single
+ * `web_batch_item` link — and the relations were dropped from the live database
+ * when execution moved to the canonical `batch.*` subsystem. Provider spend is
+ * the live, populated cost surface, so it is now the page.
+ *
+ * Platform batch execution state is monitored at
+ * `/administration/knowledge/kg-cost`, over the canonical `batch.*` tables.
+ */
+
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
-import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
-import { CostModeButtons } from "@/features/marketing/components/operations/CostModeButtons";
 import { SeoSpendPanel } from "@/features/marketing/components/operations/SeoSpendPanel";
-import {
-  QueryError,
-  StatusBadge,
-} from "@/features/marketing/components/shared/MarketingUi";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
-import { formatRuntimeCost } from "@/features/marketing/data/operations-format";
-import { useWorkspaceCosts } from "@/features/marketing/data/operations-hooks";
-import {
-  workspaceCostMode,
-  type WorkspaceCostRow,
-} from "@/features/marketing/data/operations-types";
-import { useMarketingTableState } from "@/features/marketing/data/query-state";
-import {
-  humanLines,
-  webLocation,
-} from "@/features/marketing/lib/copy-payloads";
-import { marketingRoutes } from "@/features/marketing/lib/routes";
-
-const WORKSPACE_COST_MODES = [
-  { value: "site", label: "By site" },
-  { value: "client", label: "By client" },
-] as const;
-
-const TOP_LEVEL_VIEWS = [
-  { value: "runtime", label: "Runtime cost" },
-  { value: "seo_spend", label: "Provider spend" },
-] as const;
 
 export function WorkspaceCostWorkspace() {
-  const [view, setView] = useState<(typeof TOP_LEVEL_VIEWS)[number]["value"]>(
-    "runtime",
-  );
-  const table = useMarketingTableState({
-    defaultSort: { id: "cost", direction: "desc" },
-    defaultPageSize: 50,
-  });
-  const displayMode = workspaceCostMode(table.state.anyOf);
-  const queryMode = workspaceCostMode(table.queryState.anyOf);
-  const costs = useWorkspaceCosts(queryMode, table.queryState);
-  const columns: MatrxColumnDef<WorkspaceCostRow>[] = [
-    {
-      id: "mode",
-      accessorKey: "mode",
-      header: "Rollup",
-      filter: false,
-      sortable: false,
-      cell: (row) => <StatusBadge value={row.mode} />,
-    },
-    {
-      id: "label",
-      accessorKey: "label",
-      header: "Site / client",
-      filter: false,
-      sortable: false,
-      cellKind: "text",
-      // THE DOOR LAW: a site rollup names a site that has a canonical route, so
-      // the WHOLE cell is the anchor. A client-org rollup names an org whose id
-      // the next column already opens through the registry.
-      href: (row) =>
-        row.site_id ? marketingRoutes.site(null, row.site_id) : undefined,
-      cell: (row) =>
-        row.site_id ? (
-          <div className="block min-w-64 max-w-2xl">
-            <span className="block truncate text-xs font-medium">
-              {row.label}
-            </span>
-            <span className="block truncate text-[10px] text-muted-foreground">
-              {row.detail ?? row.site_id}
-            </span>
-          </div>
-        ) : (
-          <span className="block min-w-64 max-w-2xl truncate font-mono text-xs">
-            {row.label}
-          </span>
-        ),
-    },
-    {
-      id: "client_org_id",
-      accessorKey: "client_org_id",
-      header: "Client organization",
-      filter: false,
-      sortable: false,
-      cellKind: "uuid",
-      // Never render an id you can't open: `organization` is a registered
-      // token, so this bare uuid becomes route + new tab + peek for free.
-      fk: { token: "organization" },
-    },
-    {
-      id: "site_id",
-      accessorKey: "site_id",
-      header: "Site ID",
-      filter: false,
-      sortable: false,
-      cellKind: "uuid",
-      fk: { href: (id) => marketingRoutes.site(null, id) },
-    },
-    {
-      id: "cost",
-      accessorKey: "cost",
-      header: "Cost (USD)",
-      filter: "number",
-      align: "right",
-      cell: (row) => (
-        <span className="font-mono text-sm font-semibold tabular-nums">
-          {formatRuntimeCost(row.cost)}
-        </span>
-      ),
-    },
-  ];
-
-  const changeMode = (value: string) => {
-    table.onStateChange({ ...table.state, page: 1, anyOf: value });
-  };
-
-  // Surface scope — assembled at trigger time from the loaded rollup query.
-  // The provider-spend view owns its own data, so cost rows are omitted while
-  // it is open rather than handing over a stale runtime table.
-  const costRows = costs.data?.rows ?? [];
+  // Surface scope — the panel owns its own data, so the hub scope reports only
+  // which view is open rather than restating rows it does not hold.
   const getHubScope = () =>
-    createMarketingScope({
-      hub_view: "cost",
-      cost_view: view,
-      list_query: marketingListQuery(table.state),
-      ...(view === "runtime"
-        ? {
-            cost_rollup_mode: displayMode,
-            ...(typeof costs.data?.total === "number"
-              ? { cost_rollups_total: costs.data.total }
-              : {}),
-            ...(costRows.length > 0
-              ? {
-                  cost_rollups: costRows.map((row) => ({
-                    mode: row.mode,
-                    label: row.label,
-                    detail: row.detail,
-                    site_id: row.site_id,
-                    client_org_id: row.client_org_id,
-                    cost_usd: row.cost,
-                  })),
-                }
-              : {}),
-          }
-        : {}),
-    });
+    createMarketingScope({ hub_view: "cost", cost_view: "seo_spend" });
 
   return (
     <SurfaceRuntimeProvider
@@ -168,100 +41,11 @@ export function WorkspaceCostWorkspace() {
           </h1>
         }
         center={<MarketingWorkspaceNav />}
-        right={
-          view === "runtime" ? (
-            <RefreshCwTapButton
-              ariaLabel="Refresh cost rollups"
-              onClick={() => void costs.refetch()}
-              disabled={costs.isFetching}
-              className={costs.isFetching ? "animate-spin" : undefined}
-            />
-          ) : null
-        }
       />
       <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured px-3 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-4">
-        <CostModeButtons value={view} options={TOP_LEVEL_VIEWS} onChange={(value) => setView(value as typeof view)} />
-        {view === "seo_spend" ? (
-          <div className="min-h-0 flex-1">
-            <SeoSpendPanel />
-          </div>
-        ) : costs.isError ? (
-          <QueryError
-            error={costs.error}
-            onRetry={() => void costs.refetch()}
-          />
-        ) : (
-          <MatrxDataTable<WorkspaceCostRow>
-            data={costs.data?.rows ?? []}
-            columns={columns}
-            getRowId={(row) => row.id}
-            isLoading={costs.isLoading}
-            isFetching={costs.isFetching}
-            query={{
-              mode: "controlled",
-              state: table.state,
-              totalItems: costs.data?.total ?? 0,
-              onStateChange: table.onStateChange,
-            }}
-            toolbar={{
-              search: false,
-              leading: (
-                <div className="flex items-center gap-2">
-                  <CostModeButtons
-                    value={displayMode}
-                    options={WORKSPACE_COST_MODES}
-                    onChange={changeMode}
-                  />
-                  <span className="whitespace-nowrap text-xs text-muted-foreground">
-                    {(costs.data?.total ?? 0).toLocaleString()} rollups
-                  </span>
-                </div>
-              ),
-            }}
-            copy={{
-              label: "Cost rollup",
-              listLabel: "All workspace cost rollups",
-              location: webLocation("Workspace cost"),
-              rowKind: "web-cost-rollup",
-              listKind: "web-workspace-cost-rollups",
-              rowDescription:
-                "One workspace runtime cost rollup row (by site or client organization).",
-              listDescription:
-                "The currently loaded workspace cost rollup rows (respecting the rollup mode, filters, sort, and pagination).",
-              humanRow: (row) =>
-                humanLines([
-                  ["Rollup", row.mode],
-                  ["Label", row.label],
-                  ["Detail", row.detail],
-                  ["Site", row.site_id],
-                  ["Client organization", row.client_org_id],
-                  ["Cost (USD)", formatRuntimeCost(row.cost)],
-                ]),
-              rowAttributes: (row) => ({
-                mode: row.mode,
-                site_id: row.site_id,
-                client_org_id: row.client_org_id,
-              }),
-              listAttributes: () => ({
-                rollup_mode: displayMode,
-                total_matching: costs.data?.total ?? 0,
-              }),
-            }}
-            detail={{
-              title: (row) => row.label,
-              description: (row) =>
-                `${row.mode} rollup · ${formatRuntimeCost(row.cost)}`,
-            }}
-            emptyState={{
-              icon: (
-                <CircleDollarSign className="h-8 w-8 text-muted-foreground" />
-              ),
-              title: "No workspace cost",
-              description:
-                "Cost rollups populate when runtime executions are linked to web batch items.",
-            }}
-          />
-        )}
+        <div className="min-h-0 flex-1">
+          <SeoSpendPanel />
+        </div>
       </main>
     </SurfaceRuntimeProvider>
   );

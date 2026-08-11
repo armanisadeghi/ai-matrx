@@ -571,7 +571,7 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
       "Cost attribution",
       "Cross-channel analytics",
       "Client-ready reports",
-      "Batch operations",
+      "Provider spend ceilings",
     ],
     entries: [
       {
@@ -595,7 +595,8 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
       {
         label: "Cost",
         href: marketingRoutes.cost(),
-        description: "Review marketing cost across sites and organizations.",
+        description:
+          "Provider spend this month and last, against the org's monthly ceilings.",
         iconName: "CircleDollarSign",
       },
     ],
@@ -629,7 +630,7 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     key: "operations",
     label: "Data & Operations",
     description:
-      "The plumbing — provider connections, batch runs, and automation.",
+      "The plumbing — provider connections and automation.",
     iconName: "Plug",
     landingItems: [
       "Google Search Console",
@@ -645,12 +646,6 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "Connect Google, Bing, and other providers, then bind them to sites.",
         iconName: "Plug",
-      },
-      {
-        label: "Batch Operations",
-        href: marketingRoutes.batches(),
-        description: "Monitor cross-site analysis and vision batches.",
-        iconName: "Boxes",
       },
       {
         label: "Automations",

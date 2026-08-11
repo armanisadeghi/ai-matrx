@@ -6,7 +6,6 @@ import {
   Activity,
   AlertTriangle,
   BadgeCheck,
-  CircleDollarSign,
   ClipboardCheck,
   Compass,
   ExternalLink,
@@ -98,7 +97,6 @@ const SITE_MODE_ICONS: Record<
   intake: Compass,
   ranks: TrendingUp,
   integrations: Plug,
-  cost: CircleDollarSign,
   access: ShieldCheck,
   settings: Settings,
 };

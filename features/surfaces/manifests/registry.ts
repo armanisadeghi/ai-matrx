@@ -85,7 +85,6 @@ import { marketingCoverageManifest } from "./marketing-coverage.manifest";
 import { marketingSitemapsManifest } from "./marketing-sitemaps.manifest";
 import { marketingDiscoveryManifest } from "./marketing-discovery.manifest";
 import { marketingIntegrationsManifest } from "./marketing-integrations.manifest";
-import { marketingBatchesManifest } from "./marketing-batches.manifest";
 import { contentPlanManifest } from "./content-plan.manifest";
 import { contentPlanEntitiesManifest } from "./content-plan-entities.manifest";
 import { contentPlanListManifest } from "./content-plan-list.manifest";
@@ -234,7 +233,6 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingSitemapsManifest,
   marketingDiscoveryManifest,
   marketingIntegrationsManifest,
-  marketingBatchesManifest,
   // Content planning (plan schema) — sibling of the marketing fleet.
   // One workspace, five surfaces: the ?view= param is a different page with
   // different agents (list front door, plan-editor base, setup, entities,

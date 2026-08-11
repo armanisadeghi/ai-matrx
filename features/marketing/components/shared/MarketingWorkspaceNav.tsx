@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Boxes,
   CircleDollarSign,
   Globe2,
   Landmark,
@@ -18,7 +17,6 @@ export const MARKETING_WORKSPACE_ROUTES = [
   { name: "Search", href: marketingRoutes.searchConsole(), icon: SearchCheck },
   { name: "Ranks", href: marketingRoutes.ranks(), icon: TrendingUp },
   { name: "Connections", href: marketingRoutes.connections(), icon: Plug },
-  { name: "Batches", href: marketingRoutes.batches(), icon: Boxes },
   { name: "Cost", href: marketingRoutes.cost(), icon: CircleDollarSign },
 ];
 

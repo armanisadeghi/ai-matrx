@@ -173,13 +173,6 @@ export const MARKETING_SITE_SECTIONS = [
     letter: "In",
   },
   {
-    slug: "cost",
-    name: "Cost",
-    titlePrefix: "Site Cost",
-    description: "Review cost attribution for this site.",
-    letter: "Sc",
-  },
-  {
     slug: "access",
     name: "Access",
     titlePrefix: "Access",

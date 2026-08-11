@@ -58,17 +58,39 @@ A No-Dead-Ends audit after the backlink-record rebuild found these verified gaps
 
 The audit found Coverage, crawl session/URL/log tables and reports, active Pages, page captures/findings/tasks/media, finding remedies, link-graph selected-node panels, URL-set sitemap detail, Site Keyword Performance/Keyword Intelligence, Content Plan node detail, and Search Console New Pages already following the complete-record/door contract.
 
-### D149 — Marketing batch/cost routes still query the retired `web.batch_*` spine (2026-08-11)
+### D149 — RESOLVED (retired, 2026-08-11) — Marketing batch/cost routes queried the retired `web.batch_*` spine
 
 The live DB dropped `web.batch_job`, `web.batch_item`, and `web.v_cost_by_*`, but
 `/marketing/batches`, `/marketing/batches/[batchId]`, and the site/workspace cost
-queries still read them through `features/marketing/data/operations-{types,queries}.ts`;
-generated DB types are correspondingly stale and a fresh `pnpm db-types` removes
-those relations. The canonical replacement is `batch.provider_batch` /
-`batch.work_item`, whose generic purpose/link model is not a field-for-field
-substitute for the site/catalog-specific UI. Arman decides: re-platform these
-surfaces onto `batch.*` with an explicit Marketing projection, or retire the two
-batch routes and item-level cost view; do not fabricate a direct mapping.
+queries still read them through `features/marketing/data/operations-{types,queries}.ts`.
+
+**Resolved by retiring them, on evidence that they were never a working feature.**
+Of 16,236 `web.analysis_result` rows, **zero** carry a `batch_id`;
+`runtime.global_execution` has **never** recorded a `web_batch_item` link — the
+sole input to `v_cost_by_item`, from which all five cost views derived, so every
+one of them projected $0 for its entire existence. No code in this repo or aidream
+ever wrote a `batch_job` / `batch_item` row. The relations were applied
+(`web_cost_view_and_index_hardening.sql`, 2026-07-19) and dropped when execution
+moved to the canonical `batch.*` subsystem (matrx-batch, 2026-08-10). Deleted the
+two batch routes, the per-site cost route, their four components, the three
+`operations-*` data modules, and the `matrx-user/marketing-batches` surface
+(manifest, registry, route resolver, `ui.ui_surface*` rows). `/marketing/cost`
+survives as its live half — provider spend from aidream `GET /seo/spend/summary`.
+Batch execution is monitored at `/administration/knowledge/kg-cost` over `batch.*`.
+**Deliberately NOT repointed:** `batch.provider_batch` / `batch.work_item` have no
+site, analysis-item, or subject dimension, so a Marketing projection over them is
+a product decision, not a repair — see the open item below.
+
+### D150 — Marketing has no per-site or per-client cost attribution (2026-08-11)
+
+Fallout of D149's retirement, stated plainly so it is not mistaken for a
+regression: nothing in the product now answers "what has this site cost me" or
+"what has this client cost me". Real per-site marketing cost DOES exist in the
+database — `runtime.global_execution` rows linked `web_crawl_session` carry cost,
+and `batch.cost_event` (280 rows) prices SEO page analysis — but attributing them
+to a site/brand/client and deciding which link kinds count as "marketing cost" is
+a product decision (Arman), not a repair. Until then `/marketing/cost` shows only
+org-level provider spend against monthly ceilings.
 
 ### D148 — `pnpm type-check` is red on main: 11 errors in `features/brokers/` (2026-08-10)
 

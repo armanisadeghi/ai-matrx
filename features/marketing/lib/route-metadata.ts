@@ -66,11 +66,6 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
     description: "Browse the Marketing feature resource map.",
     letter: "Ad",
   },
-  "/marketing/batches": {
-    titlePrefix: "Batches",
-    description: "Monitor cross-site marketing analysis and vision batches.",
-    letter: "Bt",
-  },
   "/marketing/brands": {
     titlePrefix: "Brands",
     description:
@@ -118,7 +113,8 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
   },
   "/marketing/cost": {
     titlePrefix: "Cost",
-    description: "Review marketing cost across sites and organizations.",
+    description:
+      "Provider spend this month and last, against the org's monthly ceilings.",
     letter: "Co",
   },
   "/marketing/sites": {
@@ -159,14 +155,6 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
       titlePrefix: "Opening Site",
       description: "Opening the canonical brand-first site workspace.",
       letter: "Ls",
-    });
-  }
-
-  if (segments[1] === "batches" && segments[2]) {
-    return createMarketingMetadata(normalizedPath, {
-      titlePrefix: "Batch Detail",
-      description: "Inspect a marketing batch and its execution items.",
-      letter: "Ba",
     });
   }
 
