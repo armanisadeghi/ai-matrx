@@ -1780,6 +1780,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/runtime/operations/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Operation Status
+         * @description Where is my operation? The `X-Request-ID` every streaming response returns
+         *     (also streamed as the `user_request` RECORD_RESERVED event) resolves to the
+         *     operation's root execution(s): status, cost/meters, error, the feature-record
+         *     pointer, the current event cursor, and the exact paths to follow.
+         */
+        get: operations["operation_status_runtime_operations__request_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runtime/operations/by-link/{link_kind}/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Operations By Link
+         * @description Operations for a feature record — e.g. `conversation/{id}`, `workflow/{run_id}`,
+         *     `agent_run/{run_id}`, `cld_file/{id}`. Newest first; unowned trees omitted.
+         */
+        get: operations["operations_by_link_runtime_operations_by_link__link_kind___link_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runtime/executions/{execution_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Operation Events
+         * @description Durable progress page for the whole TREE (pass any node id; it resolves to
+         *     the root). `next_after_seq` feeds the next page or the SSE `Last-Event-ID` —
+         *     polling and push share ONE cursor.
+         */
+        get: operations["operation_events_runtime_executions__execution_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runtime/executions/{execution_id}/events/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Operation Events Stream
+         * @description SSE replay-then-follow for one operation tree. ``id:`` = the per-tree seq;
+         *     reconnect with ``Last-Event-ID`` to resume exactly. Closes with an ``end``
+         *     frame when the root settles; a WAITING_INPUT park keeps it open (a resume
+         *     re-attaches to the same execution and continues here).
+         */
+        get: operations["operation_events_stream_runtime_executions__execution_id__events_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/audio/transcribe": {
         parameters: {
             query?: never;
@@ -2749,6 +2838,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coding-sessions/bridge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Coding Session Bridge */
+        post: operations["coding_session_bridge_coding_sessions_bridge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/claude/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Claude Managed Capabilities */
+        get: operations["claude_managed_capabilities_coding_sessions_claude_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/claude/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claude Managed Stream */
+        post: operations["claude_managed_stream_coding_sessions_claude_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/claude/runtimes/{runtime_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Claude Managed Runtime */
+        post: operations["cancel_claude_managed_runtime_coding_sessions_claude_runtimes__runtime_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/skills": {
         parameters: {
             query?: never;
@@ -2975,6 +3132,23 @@ export interface paths {
         put?: never;
         /** Anthropic Messages */
         post: operations["anthropic_messages_broker_gateway_anthropic_v1_messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/broker/gateway/anthropic/v1/messages/count_tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Anthropic Count Tokens */
+        post: operations["anthropic_count_tokens_broker_gateway_anthropic_v1_messages_count_tokens_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4033,6 +4207,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/backlinks/enrich": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enrich Site Backlinks
+         * @description Crawl referring pages and turn raw backlinks into actionable evidence.
+         */
+        post: operations["enrich_site_backlinks_seo_sites__site_id__backlinks_enrich_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/backlinks/refresh": {
         parameters: {
             query?: never;
@@ -4448,6 +4642,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/pages/analyze-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Pages Batch Route
+         * @description Enqueue MANY page analyses through the platform Batch system (~50%
+         *     provider price, results land hours later exactly where the live lane
+         *     lands them). Change-gated: unchanged pages (same markdown sha at the
+         *     current analyzer version) are skipped unless ``force``. The org daily
+         *     budget hard-caps the submission.
+         */
+        post: operations["analyze_pages_batch_route_seo_pages_analyze_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/pages/map-keywords": {
         parameters: {
             query?: never;
@@ -4648,6 +4866,50 @@ export interface paths {
         put?: never;
         /** Deepen */
         post: operations["deepen_content_plan_nodes__node_id__deepen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/nodes/{node_id}/draft-brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Brief
+         * @description Draft ONE page's brief against its neighbours.
+         *
+         *     The result is written to `plan.node.metadata.ai_brief_draft` the instant it
+         *     arrives — a disconnect, a refresh, or a user who never presses Save loses
+         *     nothing. Client CRUD still reads the node straight from Supabase.
+         */
+        post: operations["draft_brief_content_plan_nodes__node_id__draft_brief_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/nodes/{node_id}/accept-brief-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Brief
+         * @description Promote the node's persisted AI draft onto its live `brief`.
+         */
+        post: operations["accept_brief_content_plan_nodes__node_id__accept_brief_draft_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5022,6 +5284,31 @@ export interface paths {
         put?: never;
         /** Simulate Provider Retry Stream */
         post: operations["simulate_provider_retry_stream_utilities_block_processing_simulate_provider_retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scraper/page-capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Capture and parse one public page into the durable scrape cache
+         * @description The non-streaming server primitive for backlink/source enrichment.
+         *
+         *     Unlike ``/quick-scrape`` this endpoint returns one typed result and always
+         *     routes successful pages through the package's two-tier cache. It exposes
+         *     bounded analysis text and only the link records matching ``target_url``;
+         *     the complete parsed artifact remains in ``scraper.scrape_parsed_page``.
+         */
+        post: operations["page_capture_scraper_page_capture_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5906,24 +6193,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/agent-factory/pin-upgrades": {
+    "/hindsight/enrollments": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Plan Pin Upgrades */
-        get: operations["plan_pin_upgrades_agent_factory_pin_upgrades_get"];
+        /** List Enrollments */
+        get: operations["list_enrollments_hindsight_enrollments_get"];
         put?: never;
-        post?: never;
+        /** Enroll */
+        post: operations["enroll_hindsight_enrollments_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/agent-factory/pin-upgrades/apply": {
+    "/hindsight/enrollments/{enrollment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Enrollment */
+        get: operations["get_enrollment_hindsight_enrollments__enrollment_id__get"];
+        put?: never;
+        post?: never;
+        /** Archive Enrollment */
+        delete: operations["archive_enrollment_hindsight_enrollments__enrollment_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Enrollment */
+        patch: operations["patch_enrollment_hindsight_enrollments__enrollment_id__patch"];
+        trace?: never;
+    };
+    "/hindsight/enrollments/{enrollment_id}/review": {
         parameters: {
             query?: never;
             header?: never;
@@ -5932,8 +6239,170 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Apply Pin Upgrade Batch */
-        post: operations["apply_pin_upgrade_batch_agent_factory_pin_upgrades_apply_post"];
+        /**
+         * Trigger Review
+         * @description Manual review trigger — runs the full review inline (admin action).
+         */
+        post: operations["trigger_review_hindsight_enrollments__enrollment_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/reviews/{review_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Review */
+        get: operations["get_review_hindsight_reviews__review_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/findings/{finding_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Finding Route */
+        post: operations["apply_finding_route_hindsight_findings__finding_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/findings/{finding_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Finding Route */
+        post: operations["reject_finding_route_hindsight_findings__finding_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/enrollments/{enrollment_id}/replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger Replay */
+        post: operations["trigger_replay_hindsight_enrollments__enrollment_id__replay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/replays/{replay_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Replay */
+        get: operations["get_replay_hindsight_replays__replay_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/subjects/tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Tool Subjects
+         * @description Tools ranked by recent dispatch volume + failure ratio — the enroll picker.
+         */
+        get: operations["list_tool_subjects_hindsight_subjects_tools_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/drain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Drain
+         * @description Manual drain pass (the scheduled task does this every 15 min).
+         */
+        post: operations["trigger_drain_hindsight_drain_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/expertise-desks/compile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compile Desk */
+        post: operations["compile_desk_expertise_desks_compile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/expertise-desks/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ingest Pack Source */
+        post: operations["ingest_pack_source_expertise_desks_ingest_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6098,6 +6567,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9682,6 +10175,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent-slots/{slot_key}/exemplars/{exemplar_id}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote Exemplar Test Result */
+        post: operations["promote_exemplar_test_result_agent_slots__slot_key__exemplars__exemplar_id__promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-slots/{slot_key}/tests": {
         parameters: {
             query?: never;
@@ -9806,91 +10316,6 @@ export interface paths {
          *     through the admin connection but the gate above already restricts access.
          */
         get: operations["report_endpoint_agent_usage_report_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-cost/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Summary */
-        get: operations["summary_kg_cost_summary_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-cost/orgs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Orgs */
-        get: operations["list_orgs_kg_cost_orgs_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-cost/orgs/{org_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Org Detail */
-        get: operations["org_detail_kg_cost_orgs__org_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-cost/batches/pending": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Pending Batches */
-        get: operations["pending_batches_kg_cost_batches_pending_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-cost/batches/{batch_row_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Batch Detail */
-        get: operations["batch_detail_kg_cost_batches__batch_row_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10069,9 +10494,7 @@ export interface paths {
         };
         /**
          * List Workflow Kinds
-         * @description Full public kind catalog (kind_definition + kind_edge), resolved with
-         *     the engine's semantics (deleted_at-only liveness, is_active ignored,
-         *     public/system-org preference). ETag'd — clients revalidate cheaply.
+         * @description Caller-visible kind catalog, RLS-filtered when authenticated.
          */
         get: operations["list_workflow_kinds_workflow_kinds_get"];
         put?: never;
@@ -10091,7 +10514,7 @@ export interface paths {
         };
         /**
          * Get Workflow Kind
-         * @description One kind by slug — same resolution semantics as the catalog.
+         * @description One caller-visible kind by slug — RLS-filtered when authenticated.
          */
         get: operations["get_workflow_kind_workflow_kinds__slug__get"];
         put?: never;
@@ -10539,6 +10962,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/{definition_id}/unarchive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unarchive Workflow
+         * @description Undo an archive — the Door Law counterpart DELETE has always had.
+         */
+        post: operations["unarchive_workflow_workflows__definition_id__unarchive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflows/bulk-archive": {
         parameters: {
             query?: never;
@@ -10680,6 +11123,8 @@ export interface paths {
          *     scope='mine' (default) returns this user's runs; scope='organization'
          *     broadens to all runs in the caller's org. RLS keeps cross-tenant
          *     access locked even if this endpoint is reached without auth.
+         *     ``include_children=true`` also lists durable subgraph child runs
+         *     (hidden by default so fan-outs don't flood the list).
          */
         get: operations["list_runs_runs_get"];
         put?: never;
@@ -11321,6 +11766,242 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/{definition_id}/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Plans */
+        get: operations["list_plans_workflows__definition_id__plans_get"];
+        put?: never;
+        /** Create Plan */
+        post: operations["create_plan_workflows__definition_id__plans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/plan-blockers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plan Blockers
+         * @description The publish gate preview: every plan.step anchor, blockers vs
+         *     acknowledged stand-ins.
+         */
+        get: operations["plan_blockers_workflows__definition_id__plan_blockers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Plan */
+        get: operations["get_plan_plans__plan_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Plan */
+        patch: operations["update_plan_plans__plan_id__patch"];
+        trace?: never;
+    };
+    "/plans/{plan_id}/shape": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Shape */
+        put: operations["set_shape_plans__plan_id__shape_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}/sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Sample */
+        put: operations["set_sample_plans__plan_id__sample_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}/split": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Split Plan */
+        post: operations["split_plan_plans__plan_id__split_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge Plan */
+        post: operations["merge_plan_plans__plan_id__merge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}/internal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Internal Graph */
+        post: operations["set_internal_graph_plans__plan_id__internal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote Plan */
+        post: operations["promote_plan_plans__plan_id__promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve Plan */
+        post: operations["resolve_plan_plans__plan_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}/dissolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dissolve Plan */
+        post: operations["dissolve_plan_plans__plan_id__dissolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}/assist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Plan Assist
+         * @description Run one of the plan's attached agents (notes / input shape / output
+         *     shape / recommend type). Results apply server-side through the plan
+         *     service; the stream ends with ONE plan_assist_result event.
+         */
+        post: operations["plan_assist_plans__plan_id__assist_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{plan_id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Plan Anchor
+         * @description Force the denormalized anchor-config sync (e.g. right after the studio
+         *     saves a freshly dropped plan node).
+         */
+        post: operations["sync_plan_anchor_plans__plan_id__sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/recovery/handle": {
         parameters: {
             query?: never;
@@ -11491,7 +12172,11 @@ export interface paths {
         head?: never;
         /**
          * Set Workflow Visibility
-         * @description Flip a workflow's public read-only flag. Owner only.
+         * @description Set a workflow's canonical visibility. Editor-gated.
+         *
+         *     Until 2026-08-10 this wrote the DROPPED ``is_public`` column and
+         *     500'd on every call — the canonical ``visibility`` enum is the only
+         *     visibility truth.
          */
         patch: operations["set_workflow_visibility_workflows__definition_id__visibility_patch"];
         trace?: never;
@@ -11505,8 +12190,8 @@ export interface paths {
         };
         /**
          * Get Public Workflow
-         * @description Anonymous read of a workflow flagged is_public. NO auth — but the
-         *     row MUST have is_public=true or we 404 (never leak a private graph).
+         * @description Anonymous read of a workflow with visibility='public'. NO auth — any
+         *     other visibility (or archived / soft-deleted) is a 404, never a leak.
          */
         get: operations["get_public_workflow_public_workflows__definition_id__get"];
         put?: never;
@@ -16020,6 +16705,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AcceptBriefResult */
+        AcceptBriefResult: {
+            /** Node Id */
+            node_id: string;
+            /** Brief */
+            brief: string[];
+        };
         /** ActionApplyResult */
         ActionApplyResult: {
             /** Type */
@@ -16554,24 +17246,6 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * AgentContractSnapshot
-         * @description Declared input contract for one DB-backed agent version.
-         */
-        AgentContractSnapshot: {
-            /**
-             * Variable Required
-             * @default {}
-             */
-            variable_required?: {
-                [key: string]: boolean;
-            };
-            /**
-             * Context Names
-             * @default []
-             */
-            context_names?: string[];
-        };
-        /**
          * AgentDetail
          * @description Everything a caller needs to invoke an agent correctly.
          */
@@ -16611,6 +17285,13 @@ export interface components {
             version?: number;
             /** Model Id */
             model_id?: string | null;
+            /**
+             * Messages
+             * @description The canonical authored agent messages. Runtime-injected skill/tool preambles are not persisted here.
+             */
+            messages?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
             /** Variables */
             variables?: components["schemas"]["AgentVariableDetail"][];
             /** Variable Definitions */
@@ -16676,100 +17357,6 @@ export interface components {
             agents: components["schemas"]["AgentListItem"][];
             /** Count */
             count: number;
-        };
-        /** AgentPinUpgradeApplied */
-        AgentPinUpgradeApplied: {
-            /** Key */
-            key: string;
-            /** Label */
-            label: string;
-            /** Old Version Id */
-            old_version_id: string;
-            /** New Version Id */
-            new_version_id: string;
-            /** Files */
-            files: string[];
-        };
-        /** AgentPinUpgradeApplyResult */
-        AgentPinUpgradeApplyResult: {
-            /** Applied */
-            applied: components["schemas"]["AgentPinUpgradeApplied"][];
-            /** Skipped */
-            skipped: {
-                [key: string]: string[];
-            };
-        };
-        /**
-         * AgentPinUpgradeCandidate
-         * @description Safety report for advancing one pinned ``NamedAgent`` to latest.
-         */
-        AgentPinUpgradeCandidate: {
-            /**
-             * Key
-             * @default
-             */
-            key?: string;
-            /** Label */
-            label: string;
-            /** Class Name */
-            class_name: string;
-            /** Module */
-            module: string;
-            /** Source Kind */
-            source_kind: string;
-            /** Current Version Id */
-            current_version_id?: string | null;
-            /** Latest Version Id */
-            latest_version_id?: string | null;
-            /** Master Agent Id */
-            master_agent_id?: string | null;
-            /** Pinned Version */
-            pinned_version?: number | null;
-            /** Latest Version */
-            latest_version?: number | null;
-            pinned_contract?: components["schemas"]["AgentContractSnapshot"] | null;
-            latest_contract?: components["schemas"]["AgentContractSnapshot"] | null;
-            /**
-             * Variables Unchanged
-             * @default false
-             */
-            variables_unchanged?: boolean;
-            /**
-             * Contexts Unchanged
-             * @default false
-             */
-            contexts_unchanged?: boolean;
-            /**
-             * Latest Breaking Change
-             * @default false
-             */
-            latest_breaking_change?: boolean;
-            /**
-             * Auto Update Allowed
-             * @default false
-             */
-            auto_update_allowed?: boolean;
-            /**
-             * Blockers
-             * @default []
-             */
-            blockers?: string[];
-            /**
-             * Warnings
-             * @default []
-             */
-            warnings?: string[];
-        };
-        /** AgentPinUpgradePlan */
-        AgentPinUpgradePlan: {
-            /** Imported */
-            imported: string[];
-            /** Import Failures */
-            import_failures: {
-                [key: string]: string;
-            };
-            /** Candidates */
-            candidates: components["schemas"]["AgentPinUpgradeCandidate"][];
         };
         /** AgentStartRequest */
         AgentStartRequest: {
@@ -17972,6 +18559,16 @@ export interface components {
             /** Status */
             status?: string | null;
         };
+        /**
+         * AnthropicCountTokensResponse
+         * @description Typed success wire returned by Anthropic's count-tokens endpoint.
+         */
+        AnthropicCountTokensResponse: {
+            /** Input Tokens */
+            input_tokens: number;
+        } & {
+            [key: string]: unknown;
+        };
         /** AppConfigResponse */
         AppConfigResponse: {
             /** App */
@@ -18091,11 +18688,6 @@ export interface components {
             /** Text */
             text: string;
         };
-        /** ApplyPinUpgradesRequest */
-        ApplyPinUpgradesRequest: {
-            /** Selected Keys */
-            selected_keys?: string[];
-        };
         /**
          * ApplyTagsRequest
          * @description Create the user-picked cross-cutting tags from the stored suggestions and
@@ -18199,6 +18791,11 @@ export interface components {
         ArchiveWorkflowResponse: {
             /** Archived */
             archived: boolean;
+            /**
+             * Deleted
+             * @default false
+             */
+            deleted?: boolean;
         };
         /** Asset */
         Asset: {
@@ -18827,6 +19424,97 @@ export interface components {
              */
             max_calls?: number | null;
         };
+        /** BacklinkEnrichmentBody */
+        BacklinkEnrichmentBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Limit
+             * @default 25
+             */
+            limit?: number;
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+            /** Backlink Ids */
+            backlink_ids?: string[];
+        };
+        /**
+         * BacklinkEnrichmentItemResult
+         * @description Durable terminal receipt for one exact source-page backlink.
+         */
+        BacklinkEnrichmentItemResult: {
+            /** Backlink Id */
+            backlink_id: string;
+            /** Source Url */
+            source_url: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "completed" | "failed" | "skipped";
+            /** Stage */
+            stage?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Overall Score */
+            overall_score?: number | null;
+            /** Recommended Action */
+            recommended_action?: string | null;
+        };
+        /** BacklinkEnrichmentResult */
+        BacklinkEnrichmentResult: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            result_kind: "backlinks.enrich";
+            /** Site Id */
+            site_id: string;
+            /** Requested */
+            requested: number;
+            /**
+             * Claimed
+             * @default 0
+             */
+            claimed?: number;
+            /**
+             * Completed
+             * @default 0
+             */
+            completed?: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed?: number;
+            /**
+             * Skipped
+             * @default 0
+             */
+            skipped?: number;
+            /** Queue */
+            queue?: {
+                [key: string]: number;
+            };
+            /** Items */
+            items?: components["schemas"]["BacklinkEnrichmentItemResult"][];
+        };
         /** BacklinkRefreshBody */
         BacklinkRefreshBody: {
             /**
@@ -18863,6 +19551,11 @@ export interface components {
             request_id?: string | null;
             /** Source Crawl Session Id */
             source_crawl_session_id?: string | null;
+            /**
+             * Enrichment Limit
+             * @default 25
+             */
+            enrichment_limit?: number;
         };
         /** BatchDeleteRequest */
         BatchDeleteRequest: {
@@ -18904,132 +19597,6 @@ export interface components {
             /** Dry Run */
             dry_run: boolean;
         };
-        /**
-         * BatchDetailResponse
-         * @description Full row for one batch — drill-down view.
-         */
-        BatchDetailResponse: {
-            /** Id */
-            id: string;
-            /** Custom Id */
-            custom_id: string;
-            /**
-             * Provider
-             * @enum {string}
-             */
-            provider: "openai" | "anthropic";
-            /** Batch Id */
-            batch_id: string | null;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "chat" | "embedding";
-            /** User Id */
-            user_id: string;
-            /** Organization Id */
-            organization_id: string | null;
-            /** Organization Name */
-            organization_name: string | null;
-            /** Source Kind */
-            source_kind: string | null;
-            /** Source Id */
-            source_id: string | null;
-            /** Purpose */
-            purpose: string;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
-            /** Est Cost Usd */
-            est_cost_usd: number;
-            /** Cost Usd */
-            cost_usd: number | null;
-            /** Tokens In */
-            tokens_in: number | null;
-            /** Tokens Out */
-            tokens_out: number | null;
-            /** Poll Count */
-            poll_count: number;
-            /** Last Polled At */
-            last_polled_at: string | null;
-            /** Response Uri */
-            response_uri: string | null;
-            error: components["schemas"]["JsonValue"] | null;
-            metadata: components["schemas"]["JsonValue"] | null;
-            /**
-             * Submitted At
-             * Format: date-time
-             */
-            submitted_at: string;
-            /** Completed At */
-            completed_at: string | null;
-            /** Next Poll At */
-            next_poll_at: string | null;
-            /** Cost Recorded At */
-            cost_recorded_at: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /**
-         * BatchRow
-         * @description One row in the in-flight-batches table.
-         */
-        BatchRow: {
-            /** Id */
-            id: string;
-            /** Custom Id */
-            custom_id: string;
-            /**
-             * Provider
-             * @enum {string}
-             */
-            provider: "openai" | "anthropic";
-            /** Batch Id */
-            batch_id: string | null;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "chat" | "embedding";
-            /** User Id */
-            user_id: string;
-            /** Organization Id */
-            organization_id: string | null;
-            /** Organization Name */
-            organization_name: string | null;
-            /** Source Kind */
-            source_kind: string | null;
-            /** Source Id */
-            source_id: string | null;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
-            /** Est Cost Usd */
-            est_cost_usd: number;
-            /** Poll Count */
-            poll_count: number;
-            /**
-             * Submitted At
-             * Format: date-time
-             */
-            submitted_at: string;
-            /** Last Polled At */
-            last_polled_at: string | null;
-            /** Next Poll At */
-            next_poll_at: string | null;
-        };
         /** BatchScrapeRequest */
         BatchScrapeRequest: {
             /** Urls */
@@ -19055,18 +19622,6 @@ export interface components {
             results: {
                 [key: string]: unknown;
             }[];
-        };
-        /** BatchSummaryByStatus */
-        BatchSummaryByStatus: {
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
-            /** Count */
-            count: number;
-            /** Total Cost Usd */
-            total_cost_usd: number;
         };
         /** BboxInput */
         BboxInput: {
@@ -19485,6 +20040,32 @@ export interface components {
              */
             folder?: string;
         };
+        /**
+         * BridgeAction
+         * @enum {string}
+         */
+        BridgeAction: "observe_hook" | "append_native" | "load_native" | "list_native" | "delete" | "health";
+        /** BridgeCapabilities */
+        BridgeCapabilities: {
+            /** Native Resume */
+            native_resume: boolean;
+            /** Native Fork */
+            native_fork: boolean;
+            /** Exact Entries */
+            exact_entries: boolean;
+            /** Hook Event Mirror */
+            hook_event_mirror: boolean;
+            /**
+             * Stable Hook Ids
+             * @enum {string}
+             */
+            stable_hook_ids: "full" | "partial" | "none";
+            /**
+             * Tool Payload Fidelity
+             * @enum {string}
+             */
+            tool_payload_fidelity: "full" | "partial" | "none";
+        };
         /** BridgeChangesResponse */
         BridgeChangesResponse: {
             /** Files */
@@ -19496,6 +20077,61 @@ export interface components {
              * @default false
              */
             deletions_supported?: boolean;
+        };
+        /** BridgeCheckpoint */
+        BridgeCheckpoint: {
+            /** Stream Key */
+            stream_key: string;
+            /** Highest Contiguous */
+            highest_contiguous: number | null;
+            /** Highest Seen */
+            highest_seen: number | null;
+            /** Missing Ranges */
+            missing_ranges?: [
+                number,
+                number
+            ][];
+            /** Next Ingest Order */
+            next_ingest_order: number;
+            /** Complete */
+            complete: boolean;
+        };
+        /** BridgeConversation */
+        BridgeConversation: {
+            /**
+             * Conversation Id
+             * Format: uuid
+             */
+            conversation_id: string;
+            /** Is New */
+            is_new: boolean;
+            /**
+             * Store
+             * @default true
+             * @constant
+             */
+            store?: true;
+        };
+        /** BridgeEntry */
+        BridgeEntry: {
+            /** Entry Id */
+            entry_id: string;
+            /** Source Sequence */
+            source_sequence?: number | null;
+            /** Kind */
+            kind: string;
+            /** Occurred At */
+            occurred_at?: string | null;
+            /** Payload Sha256 */
+            payload_sha256?: string | null;
+            /** Payload */
+            payload: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Source Cursor */
+            source_cursor?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /**
          * BridgeFileEntry
@@ -19522,6 +20158,37 @@ export interface components {
             updated_at?: components["schemas"]["JsonValue"] | null;
             /** Checksum */
             checksum?: string | null;
+        };
+        /** BridgeHealth */
+        BridgeHealth: {
+            /**
+             * Schema Version
+             * @default 1
+             * @constant
+             */
+            schema_version?: 1;
+            /**
+             * Status
+             * @default ok
+             * @constant
+             */
+            status?: "ok";
+            provider: components["schemas"]["BridgeProvider"];
+            capabilities: components["schemas"]["BridgeCapabilities"];
+            checkpoint?: components["schemas"]["BridgeCheckpoint"] | null;
+        };
+        /** BridgeHookEvent */
+        BridgeHookEvent: {
+            /** Name */
+            name: string;
+            /** Stable Event Id */
+            stable_event_id?: string | null;
+            /** Payload */
+            payload: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Occurred At */
+            occurred_at?: string | null;
         };
         /** BridgeIntegrationAuth */
         BridgeIntegrationAuth: {
@@ -19573,6 +20240,30 @@ export interface components {
             /** Next Cursor */
             next_cursor?: string | null;
         };
+        /**
+         * BridgeOrigin
+         * @enum {string}
+         */
+        BridgeOrigin: "independent_hook" | "matrx_local" | "matrx_sandbox";
+        /** BridgeProjectionReceipt */
+        BridgeProjectionReceipt: {
+            /** Provider Entry Id */
+            provider_entry_id: string;
+            status: components["schemas"]["ProjectionStatus"];
+            /** Normalized Message Id */
+            normalized_message_id?: string | null;
+            /** Normalized Tool Call Id */
+            normalized_tool_call_id?: string | null;
+            /** Error Code */
+            error_code?: string | null;
+            /** Detail */
+            detail?: string | null;
+        };
+        /**
+         * BridgeProvider
+         * @enum {string}
+         */
+        BridgeProvider: "claude_code" | "codex" | "cursor" | "vscode";
         /** BridgePutResponse */
         BridgePutResponse: {
             /** Id */
@@ -19597,6 +20288,61 @@ export interface components {
             quota_bytes: number;
             /** Files Count */
             files_count: number;
+        };
+        /** BridgeResponse */
+        BridgeResponse: {
+            /**
+             * Schema Version
+             * @default 1
+             * @constant
+             */
+            schema_version?: 1;
+            action: components["schemas"]["BridgeAction"];
+            provider: components["schemas"]["BridgeProvider"];
+            /** Session Id */
+            session_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            fidelity?: components["schemas"]["EntryFidelity"] | null;
+            /**
+             * Accepted
+             * @default 0
+             */
+            accepted?: number;
+            /**
+             * Duplicates
+             * @default 0
+             */
+            duplicates?: number;
+            /**
+             * Conflicts
+             * @default 0
+             */
+            conflicts?: number;
+            /** Receipts */
+            receipts?: components["schemas"]["BridgeProjectionReceipt"][];
+            /** Entries */
+            entries?: components["schemas"]["BridgeEntry"][];
+            /** Sessions */
+            sessions?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /**
+             * Has More
+             * @default false
+             */
+            has_more?: boolean;
+            checkpoint?: components["schemas"]["BridgeCheckpoint"] | null;
+            health?: components["schemas"]["BridgeHealth"] | null;
+            /**
+             * Deleted
+             * @default false
+             */
+            deleted?: boolean;
+            /** Hookspecificoutput */
+            hookSpecificOutput?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /**
          * BrokeredCredential
@@ -21146,6 +21892,79 @@ export interface components {
             /** Local Path */
             local_path?: string | null;
         };
+        /**
+         * ClaudeManagedAction
+         * @enum {string}
+         */
+        ClaudeManagedAction: "start" | "resume" | "fork";
+        /** ClaudeManagedCancelResponse */
+        ClaudeManagedCancelResponse: {
+            /** Runtime Id */
+            runtime_id: string;
+            /** Cancelled */
+            cancelled: boolean;
+        };
+        /** ClaudeManagedCapabilitiesResponse */
+        ClaudeManagedCapabilitiesResponse: {
+            /** Available */
+            available: boolean;
+            /** Native Resume */
+            native_resume: boolean;
+            /** Native Fork */
+            native_fork: boolean;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * ClaudeManagedRestRequest
+         * @description HTTP carrier that accepts, but never trusts, frontend-injected scope.
+         */
+        ClaudeManagedRestRequest: {
+            /** @default start */
+            action?: components["schemas"]["ClaudeManagedAction"];
+            conversation: components["schemas"]["BridgeConversation"];
+            /** Prompt */
+            prompt: string;
+            /**
+             * Workspace Root
+             * @default /home/agent
+             */
+            workspace_root?: string;
+            /** Session Id */
+            session_id?: string | null;
+            /** Fork Up To Message Id */
+            fork_up_to_message_id?: string | null;
+            /** Model */
+            model?: string | null;
+            /**
+             * Max Turns
+             * @default 20
+             */
+            max_turns?: number;
+            /** Max Budget Usd */
+            max_budget_usd?: number | null;
+            /**
+             * Permission Mode
+             * @default acceptEdits
+             * @enum {string}
+             */
+            permission_mode?: "acceptEdits" | "plan";
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
         /** CleanRequest */
         CleanRequest: {
             /**
@@ -21894,6 +22713,60 @@ export interface components {
             /** @default {} */
             parameters?: components["schemas"]["JsonValue"];
         };
+        /** CodingSessionBridgeRestRequest */
+        CodingSessionBridgeRestRequest: {
+            /**
+             * Schema Version
+             * @default 1
+             * @constant
+             */
+            schema_version?: 1;
+            action: components["schemas"]["BridgeAction"];
+            provider: components["schemas"]["BridgeProvider"];
+            /** Provider Session Id */
+            provider_session_id?: string | null;
+            /** Provider Project Key */
+            provider_project_key?: string | null;
+            conversation?: components["schemas"]["BridgeConversation"] | null;
+            origin?: components["schemas"]["BridgeOrigin"] | null;
+            /**
+             * Stream Key
+             * @default main
+             */
+            stream_key?: string;
+            hook_event?: components["schemas"]["BridgeHookEvent"] | null;
+            /** Entries */
+            entries?: components["schemas"]["BridgeEntry"][];
+            /** Writer Runtime Id */
+            writer_runtime_id?: string | null;
+            /**
+             * Writer Lease Seconds
+             * @default 300
+             */
+            writer_lease_seconds?: number;
+            /** After Source Sequence */
+            after_source_sequence?: number | null;
+            /**
+             * Limit
+             * @default 250
+             */
+            limit?: number;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
         /** CollectionReceipt */
         CollectionReceipt: {
             /** Run Id */
@@ -22133,6 +23006,58 @@ export interface components {
             pd_adjustment_reason?: string | null;
             /** Life Pension Weekly */
             life_pension_weekly?: number | null;
+        };
+        /**
+         * CompileDeskRequest
+         * @description Compile one Expertise Pack into a working desk (agents + workflow).
+         *
+         *     The ONE button a non-technical expert presses on /expertise/[id]. The
+         *     compiler reuses the generic Pack Auditor for every section, authors the
+         *     desk-specific agents (persona from the pack's source.author), and creates
+         *     a workflow stamped with the pack id + version it was compiled from.
+         */
+        CompileDeskRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Pack Id
+             * @description platform.expertise_pack id
+             */
+            pack_id: string;
+            /**
+             * Desk Kind
+             * @description edit: audit + correct + persona ruling on a submitted text. generate: draft N variants, audit each, persona verdict.
+             * @enum {string}
+             */
+            desk_kind: "edit" | "generate";
+            /**
+             * Name
+             * @description Desk name; defaults to '<Pack name> Desk'.
+             */
+            name?: string | null;
+            /**
+             * Deliverable
+             * @description generate desks only: what the desk produces (e.g. 'advertising copy', 'a keyword research plan'). Defaults from the pack.
+             */
+            deliverable?: string | null;
+            /**
+             * Variant Count
+             * @default 5
+             */
+            variant_count?: number;
         };
         /** ComponentRead */
         ComponentRead: {
@@ -22971,6 +23896,38 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** CreatePlanRequest */
+        CreatePlanRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Node Id */
+            node_id: string;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
+            /**
+             * Intent
+             * @default
+             */
+            intent?: string;
+            /** Parent Plan Id */
+            parent_plan_id?: string | null;
+        };
         /** CreateRecipeResponse */
         CreateRecipeResponse: {
             /** Id */
@@ -23374,6 +24331,18 @@ export interface components {
             input_tokens: number;
             /** Output Tokens */
             output_tokens: number;
+        };
+        /** DailySpendPoint */
+        DailySpendPoint: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Effective Cost */
+            effective_cost: string;
+            /** Run Count */
+            run_count: number;
         };
         /** DataForSeoEndpointExampleOut */
         DataForSeoEndpointExampleOut: {
@@ -23796,9 +24765,9 @@ export interface components {
         };
         /**
          * DefinitionRecord
-         * @description ``wf_definition`` (or ``wf_definition_version``) row as returned by
-         *     the matrx-graph DefinitionStore. Open shape — Pydantic models in
-         *     ``matrx_graph.db.definition_store`` are the source of truth.
+         * @description ``workflow.definition`` (or ``workflow.definition_version``) row as
+         *     returned by the matrx-graph DefinitionStore. Open shape — Pydantic models
+         *     in ``matrx_graph.db.definition_store`` are the source of truth.
          */
         DefinitionRecord: {
             /** Id */
@@ -23817,14 +24786,14 @@ export interface components {
             is_active?: boolean | null;
             /** Is Archived */
             is_archived?: boolean | null;
-            /** Is Public */
-            is_public?: boolean | null;
+            /** Visibility */
+            visibility?: string | null;
             /** Tags */
             tags?: string[] | null;
             /** Category */
             category?: string | null;
-            /** User Id */
-            user_id?: string | null;
+            /** Created By */
+            created_by?: string | null;
             /** Organization Id */
             organization_id?: string | null;
             /** Project Id */
@@ -23833,6 +24802,8 @@ export interface components {
             task_id?: string | null;
             /** Updated At */
             updated_at?: string | null;
+            /** Shared */
+            shared?: boolean | null;
             validation?: components["schemas"]["ValidationResult"] | null;
         } & {
             [key: string]: unknown;
@@ -24083,6 +25054,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -24481,6 +25479,34 @@ export interface components {
             /** Items */
             items: components["schemas"]["DispositionItem"][];
         };
+        /** DissolvePlanRequest */
+        DissolvePlanRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Rationale
+             * @default
+             */
+            rationale?: string;
+            /**
+             * Remove Node
+             * @default true
+             */
+            remove_node?: boolean;
+        };
         /** DistinctValuesResponse */
         DistinctValuesResponse: {
             /** Field Name */
@@ -24663,6 +25689,25 @@ export interface components {
              * @default datacenter
              */
             proxy_type?: string;
+        };
+        /** DraftBriefBody */
+        DraftBriefBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Guidance
+             * @default
+             */
+            guidance?: string;
+            /**
+             * Accept
+             * @default false
+             */
+            accept?: boolean;
         };
         /** DrainRequest */
         DrainRequest: {
@@ -24954,6 +25999,87 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** EnrollRequest */
+        EnrollRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Subject Kind
+             * @enum {string}
+             */
+            subject_kind: "agent" | "workflow" | "tool" | "environment";
+            /** Subject Id */
+            subject_id?: string | null;
+            /** Subject Ref */
+            subject_ref?: string | null;
+            /** Subject Selector */
+            subject_selector?: {
+                [key: string]: string;
+            };
+            /** Display Name */
+            display_name?: string | null;
+            /**
+             * Review Every N
+             * @default 10
+             */
+            review_every_n?: number;
+            /**
+             * Max Examples Per Review
+             * @default 25
+             */
+            max_examples_per_review?: number;
+            /** Goal */
+            goal?: string | null;
+            /** Lens Config */
+            lens_config?: {
+                [key: string]: unknown;
+            };
+        };
+        /** EnrollmentUpdateRequest */
+        EnrollmentUpdateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Status */
+            status?: ("active" | "paused" | "archived") | null;
+            /** Review Every N */
+            review_every_n?: number | null;
+            /** Max Examples Per Review */
+            max_examples_per_review?: number | null;
+            /** Goal */
+            goal?: string | null;
+            /** Lens Config */
+            lens_config?: {
+                [key: string]: unknown;
+            } | null;
+            /** Display Name */
+            display_name?: string | null;
+        };
         /** EntitiesPage */
         EntitiesPage: {
             /** Items */
@@ -25042,6 +26168,11 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /**
+         * EntryFidelity
+         * @enum {string}
+         */
+        EntryFidelity: "event_mirror" | "native";
         /** EscrowRecoverBody */
         EscrowRecoverBody: {
             /** Session Id */
@@ -25177,6 +26308,12 @@ export interface components {
         /**
          * ExecutionEvent
          * @description One append-only lifecycle-log row.
+         *
+         *     `root_execution_id` + `seq` are the reconnect cursor: `seq` is a per-TREE
+         *     monotonic integer assigned at the storage layer under the tree's cursor row
+         *     lock, so commit order == seq order and a `seq > cursor` read can never miss a
+         *     row. A client resumes a tree's event feed from the last seq it saw. Both are
+         *     storage-assigned — writers leave them None.
          */
         ExecutionEvent: {
             /** Id */
@@ -25188,6 +26325,10 @@ export interface components {
             detail?: {
                 [key: string]: unknown;
             } | null;
+            /** Root Execution Id */
+            root_execution_id?: string | null;
+            /** Seq */
+            seq?: number | null;
             /** Created At */
             created_at?: string | null;
         };
@@ -27846,6 +28987,11 @@ export interface components {
              * @default true
              */
             is_visible_to_model?: boolean;
+            /**
+             * Source
+             * @default user
+             */
+            source?: string;
         };
         /** InboxMutationResponse */
         InboxMutationResponse: {
@@ -27912,6 +29058,52 @@ export interface components {
             }[];
             /** Roots */
             roots?: string[];
+        };
+        /**
+         * IngestSourceRequest
+         * @description Distill source material into DRAFT rules on an existing pack.
+         *
+         *     The "plop in a book / talk it out" flow: text (a chapter, a playbook, a
+         *     transcribed hour of the expert explaining their method) is chunked, each
+         *     chunk distilled by an extraction agent, candidate rules deduped and their
+         *     quotes verified verbatim, then appended to the pack as `draft: true`
+         *     principles the expert approves one by one. Human-first invariant: never
+         *     auto-activated, never non-draft.
+         */
+        IngestSourceRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Pack Id */
+            pack_id: string;
+            /**
+             * Text
+             * @description The source material, verbatim.
+             */
+            text: string;
+            /**
+             * Source Note
+             * @description Where this came from ('Chapter 3', 'recorded call, Aug 10').
+             */
+            source_note?: string | null;
+            /**
+             * Chunk Words
+             * @description Words per extraction chunk.
+             * @default 2500
+             */
+            chunk_words?: number;
         };
         /**
          * InitialIterationRequest
@@ -28121,6 +29313,28 @@ export interface components {
              * @default
              */
             reasoning?: string;
+        };
+        /** InternalGraphRequest */
+        InternalGraphRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Internal Definition */
+            internal_definition?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** IntersectingImageOut */
         IntersectingImageOut: {
@@ -28848,19 +30062,6 @@ export interface components {
             phrase: string;
             /** Reason */
             reason: string;
-        };
-        /** KgCostSummaryResponse */
-        KgCostSummaryResponse: {
-            /** Spend Today Usd */
-            spend_today_usd: number;
-            /** Spend 7D Usd */
-            spend_7d_usd: number;
-            /** Orgs Over 80Pct */
-            orgs_over_80pct: number;
-            /** Pending Batches */
-            pending_batches: number;
-            /** Ner Coverage Pct */
-            ner_coverage_pct: number;
         };
         /** KindCatalogResponse */
         KindCatalogResponse: {
@@ -30343,6 +31544,26 @@ export interface components {
              */
             filename?: string;
         };
+        /** MergePlanRequest */
+        MergePlanRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Absorbed Plan Id */
+            absorbed_plan_id: string;
+        };
         /**
          * MessageSelector
          * @description Reusable selection grammar for batch message operations.
@@ -31284,6 +32505,106 @@ export interface components {
             /** Sandbox Row Id */
             sandbox_row_id?: string | null;
         };
+        /**
+         * OperationEvent
+         * @description One durable spine event on the wire — seq is the reconnect cursor.
+         */
+        OperationEvent: {
+            /** Seq */
+            seq?: number | null;
+            /** Kind */
+            kind: string;
+            /** Execution Id */
+            execution_id: string;
+            /** Root Execution Id */
+            root_execution_id?: string | null;
+            /** Detail */
+            detail?: {
+                [key: string]: unknown;
+            } | null;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /** OperationEventsPage */
+        OperationEventsPage: {
+            /** Execution Id */
+            execution_id: string;
+            /** Root Execution Id */
+            root_execution_id: string;
+            /** Events */
+            events: components["schemas"]["OperationEvent"][];
+            /** Next After Seq */
+            next_after_seq: number;
+            /** Has More */
+            has_more: boolean;
+            root_status: components["schemas"]["ExecutionStatus"];
+            /** Root Is Terminal */
+            root_is_terminal: boolean;
+        };
+        /** OperationStatusResponse */
+        OperationStatusResponse: {
+            /** Request Id */
+            request_id: string;
+            /** Operation Count */
+            operation_count: number;
+            /** Operations */
+            operations: components["schemas"]["OperationView"][];
+        };
+        /**
+         * OperationView
+         * @description One root execution as a reconnecting client sees it: where the operation
+         *     stands, what it cost, where its feature record lives, and the exact cursor +
+         *     paths to follow it. `link_kind`/`link_id` point at the feature's own record —
+         *     the source of truth to re-query for final content.
+         */
+        OperationView: {
+            /** Execution Id */
+            execution_id: string;
+            /** Type */
+            type: string;
+            status: components["schemas"]["ExecutionStatus"];
+            /** Is Terminal */
+            is_terminal: boolean;
+            /** Waiting Input */
+            waiting_input: boolean;
+            /** Cost */
+            cost: string;
+            /** Meters */
+            meters: {
+                [key: string]: string;
+            };
+            /** Link Kind */
+            link_kind?: string | null;
+            /** Link Id */
+            link_id?: string | null;
+            /** Error */
+            error?: {
+                [key: string]: unknown;
+            } | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Ended At */
+            ended_at?: string | null;
+            /** Last Event Seq */
+            last_event_seq: number;
+            /** Events Path */
+            events_path: string;
+            /** Stream Path */
+            stream_path: string;
+        };
+        /** OperationsByLinkResponse */
+        OperationsByLinkResponse: {
+            /** Link Kind */
+            link_kind: string;
+            /** Link Id */
+            link_id: string;
+            /** Operation Count */
+            operation_count: number;
+            /** Operations */
+            operations: components["schemas"]["OperationView"][];
+        };
         /** OpsSummaryResponse */
         OpsSummaryResponse: {
             /** Total Issue Classes */
@@ -31302,52 +32623,6 @@ export interface components {
             events_24h: number;
             /** Unrecovered 24H */
             unrecovered_24h: number;
-        };
-        /** OrgCostDetailResponse */
-        OrgCostDetailResponse: {
-            /** Organization Id */
-            organization_id: string;
-            /** Organization Name */
-            organization_name: string | null;
-            /** Budget Usd */
-            budget_usd: number;
-            /** Used Today Usd */
-            used_today_usd: number;
-            /** Window Start */
-            window_start: string | null;
-            /** Daily Series */
-            daily_series: components["schemas"]["aidream__services__knowledge_graph__wire__DailySpendPoint"][];
-            /** Top Sources */
-            top_sources: components["schemas"]["TopSourceRow"][];
-            /** Batch Summary */
-            batch_summary: components["schemas"]["BatchSummaryByStatus"][];
-        };
-        /** OrgCostListResponse */
-        OrgCostListResponse: {
-            /** Items */
-            items: components["schemas"]["OrgCostRow"][];
-            /** Total */
-            total: number;
-        };
-        /**
-         * OrgCostRow
-         * @description One row in the org-leaderboard table on /administration/kg-cost.
-         */
-        OrgCostRow: {
-            /** Organization Id */
-            organization_id: string;
-            /** Organization Name */
-            organization_name: string | null;
-            /** Daily Auto Rag Budget Usd */
-            daily_auto_rag_budget_usd: number;
-            /** Daily Auto Rag Cost Used Usd */
-            daily_auto_rag_cost_used_usd: number;
-            /** Daily Auto Rag Window Start */
-            daily_auto_rag_window_start: string | null;
-            /** Percent Used */
-            percent_used: number;
-            /** Last Charge At */
-            last_charge_at: string | null;
         };
         /** OrganizationSecretContributeRequest */
         OrganizationSecretContributeRequest: {
@@ -31599,6 +32874,36 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** PageAnalyzeBatchBody */
+        PageAnalyzeBatchBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Site Id */
+            site_id: string;
+            /**
+             * Page Ids
+             * @description Empty = every page of the site (capped).
+             */
+            page_ids?: string[];
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+        };
         /** PageAnalyzeBody */
         PageAnalyzeBody: {
             /**
@@ -31679,6 +32984,76 @@ export interface components {
             audit?: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * PageCaptureRequest
+         * @description One cache-backed parsed page capture for server-side enrichment.
+         */
+        PageCaptureRequest: {
+            /** Url */
+            url: string;
+            /** Target Url */
+            target_url?: string | null;
+            /**
+             * Use Cache
+             * @default true
+             */
+            use_cache?: boolean;
+        };
+        /** PageCaptureResult */
+        PageCaptureResult: {
+            /** Success */
+            success: boolean;
+            /**
+             * Status Code
+             * @default 0
+             */
+            status_code?: number;
+            /** Final Url */
+            final_url: string;
+            /** Title */
+            title?: string | null;
+            /**
+             * Content Type
+             * @default
+             */
+            content_type?: string;
+            /** Scraped At */
+            scraped_at?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /** Modified At */
+            modified_at?: string | null;
+            /** Cms */
+            cms?: string | null;
+            /** Cache Key */
+            cache_key: string;
+            /**
+             * From Cache
+             * @default false
+             */
+            from_cache?: boolean;
+            /**
+             * Char Count
+             * @default 0
+             */
+            char_count?: number;
+            /**
+             * Content
+             * @default
+             */
+            content?: string;
+            /**
+             * Content Truncated
+             * @default false
+             */
+            content_truncated?: boolean;
+            /** Links To Target */
+            links_to_target?: {
+                [key: string]: unknown;
+            }[];
+            /** Failure Reason */
+            failure_reason?: string | null;
         };
         /** PageDetail */
         PageDetail: {
@@ -32326,13 +33701,6 @@ export interface components {
             /** Tags */
             tags?: string[];
         };
-        /** PendingBatchListResponse */
-        PendingBatchListResponse: {
-            /** Items */
-            items: components["schemas"]["BatchRow"][];
-            /** Total */
-            total: number;
-        };
         /** PendingCallSummary */
         PendingCallSummary: {
             /** Id */
@@ -32696,6 +34064,199 @@ export interface components {
              * @default 0
              */
             total_documents?: number;
+        };
+        /** PlanAssistRequest */
+        PlanAssistRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "notes" | "input_shape" | "output_shape" | "recommend_type";
+            /**
+             * Instruction
+             * @description The user's rough input for the agent (dictated braindump, shape description, or empty to work from what the plan already holds).
+             * @default
+             */
+            instruction?: string;
+        };
+        /** PlanBlockerEntry */
+        PlanBlockerEntry: {
+            /** Node Id */
+            node_id?: string | null;
+            /** Plan Id */
+            plan_id?: string | null;
+            /** Name */
+            name: string;
+            /** Acknowledged */
+            acknowledged: boolean;
+        };
+        /** PlanBlockersResponse */
+        PlanBlockersResponse: {
+            /** Entries */
+            entries: components["schemas"]["PlanBlockerEntry"][];
+            /** Blocking */
+            blocking: number;
+        };
+        /** PlanEventRecord */
+        PlanEventRecord: {
+            /** Id */
+            id: string;
+            /** Plan Id */
+            plan_id: string;
+            /** Kind */
+            kind: string;
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Actor
+             * @default user
+             */
+            actor?: string;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /** PlanFullResponse */
+        PlanFullResponse: {
+            plan: components["schemas"]["PlanRecord"];
+            /** Samples */
+            samples: components["schemas"]["PlanSampleRecord"][];
+            /** Events */
+            events: components["schemas"]["PlanEventRecord"][];
+        };
+        /** PlanListResponse */
+        PlanListResponse: {
+            /** Plans */
+            plans: components["schemas"]["PlanRecord"][];
+        };
+        /** PlanRecord */
+        PlanRecord: {
+            /** Id */
+            id: string;
+            /** Definition Id */
+            definition_id: string;
+            /** Node Id */
+            node_id?: string | null;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
+            /**
+             * Intent
+             * @default
+             */
+            intent?: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes?: string;
+            /**
+             * Phase
+             * @default sketch
+             */
+            phase?: string;
+            /** Input Shape */
+            input_shape?: {
+                [key: string]: unknown;
+            } | null;
+            /** Output Shape */
+            output_shape?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Has Internal Graph
+             * @default false
+             */
+            has_internal_graph?: boolean;
+            /** Promoted Definition Id */
+            promoted_definition_id?: string | null;
+            /** Parent Plan Id */
+            parent_plan_id?: string | null;
+            /** Merged Into Plan Id */
+            merged_into_plan_id?: string | null;
+            /**
+             * Origin
+             * @default human
+             */
+            origin?: string;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /**
+             * Allow Stand In In Production
+             * @default false
+             */
+            allow_stand_in_in_production?: boolean;
+            /** Alternatives */
+            alternatives?: {
+                [key: string]: unknown;
+            }[];
+            /** Resolution */
+            resolution?: {
+                [key: string]: unknown;
+            } | null;
+            /** Verification */
+            verification?: {
+                [key: string]: unknown;
+            } | null;
+            /** Resolved At */
+            resolved_at?: string | null;
+            /**
+             * Status
+             * @default active
+             */
+            status?: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version?: number;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** PlanSampleRecord */
+        PlanSampleRecord: {
+            /** Id */
+            id: string;
+            /** Plan Id */
+            plan_id: string;
+            /** Direction */
+            direction: string;
+            /** Scenario */
+            scenario: string;
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Source
+             * @default authored
+             */
+            source?: string;
+            /**
+             * Is Stand In
+             * @default false
+             */
+            is_stand_in?: boolean;
         };
         /**
          * PodcastAudioProvider
@@ -33260,6 +34821,16 @@ export interface components {
             count: number;
             /** Fields */
             fields: string[];
+        };
+        /**
+         * ProjectionStatus
+         * @enum {string}
+         */
+        ProjectionStatus: "pending" | "projected" | "skipped" | "error";
+        /** PromotePlanResponse */
+        PromotePlanResponse: {
+            /** Definition Id */
+            definition_id: string;
         };
         /** PromptStartRequest */
         PromptStartRequest: {
@@ -34734,6 +36305,37 @@ export interface components {
              */
             only_default_error_class?: boolean;
         };
+        /** ReplayRequest */
+        ReplayRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Source Conversation Id */
+            source_conversation_id: string;
+            /** Overrides */
+            overrides?: {
+                [key: string]: unknown;
+            };
+            /** Finding Id */
+            finding_id?: string | null;
+            /**
+             * Variant
+             * @default candidate
+             */
+            variant?: string;
+        };
         /**
          * ReplayResponse
          * @description Result of a single-row or batch replay.
@@ -34918,6 +36520,35 @@ export interface components {
         ResolvePathArgs: {
             /** Path */
             path: string;
+        };
+        /** ResolvePlanRequest */
+        ResolvePlanRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Target Spec Type */
+            target_spec_type: string;
+            /** Target Config */
+            target_config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Rationale
+             * @default
+             */
+            rationale?: string;
         };
         /** ResolveRequest */
         ResolveRequest: {
@@ -35706,6 +37337,10 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+            /** Created By */
+            created_by?: string | null;
+            /** Shared */
+            shared?: boolean | null;
         } & {
             [key: string]: unknown;
         };
@@ -36071,8 +37706,19 @@ export interface components {
             /** Template Id */
             template_id: string;
         };
-        /** SaveDraftRequest */
+        /**
+         * SaveDraftRequest
+         * @description Draft save body. Inherits the canonical ``expected_version``
+         *     compare-and-swap field (a lost race is a global 409 version_conflict);
+         *     ``expected_updated_at`` is the older timestamp guard, kept for callers
+         *     that only hold ``updated_at``. Omit both for last-write-wins.
+         */
         SaveDraftRequest: {
+            /**
+             * Expected Version
+             * @description Optimistic concurrency: the record `version` this write was based on. When set, the write only lands if the stored version still matches; otherwise the API returns 409 version_conflict with the current version. Omit for last-write-wins.
+             */
+            expected_version?: number | null;
             definition: components["schemas"]["Definition"];
             /** Name */
             name?: string | null;
@@ -36214,6 +37860,25 @@ export interface components {
             is_admin: boolean;
             /** Admin Bypass Acl */
             admin_bypass_acl: boolean;
+        };
+        /**
+         * ScopedBody
+         * @description Base for every body on this router.
+         *
+         *     The FE's `callApi` injects the ambient scope (organization_id / project_id /
+         *     task_id) into EVERY request body. A bare `extra="forbid"` model therefore
+         *     422s the moment the user has an active org selected — these fields must be
+         *     ACCEPTED and ignored (scope here comes from the path + the request's user
+         *     context, never the body). `extra="forbid"` stays, so real typos still fail
+         *     loudly.
+         */
+        ScopedBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
         };
         /**
          * ScoreSourcesRequest
@@ -36610,7 +38275,7 @@ export interface components {
             } | null;
             receipt?: components["schemas"]["CollectionReceipt"] | null;
             /** Result */
-            result?: (components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
+            result?: (components["schemas"]["BacklinkEnrichmentResult"] | components["schemas"]["KeywordResearchResult"] | components["schemas"]["KeywordVolumeRefreshResult"] | components["schemas"]["PageAnalysisResult"] | components["schemas"]["PageKeywordMapResult"] | components["schemas"]["PageAuditResult"] | components["schemas"]["RobotsCheckResult"] | components["schemas"]["StructuredDataValidateResult"]) | null;
         };
         /** SeoSpendSummaryResponse */
         SeoSpendSummaryResponse: {
@@ -36626,7 +38291,7 @@ export interface components {
             /** Last Month */
             last_month: components["schemas"]["ProviderSpendRow"][];
             /** Daily Series */
-            daily_series: components["schemas"]["aidream__services__seo__spend__DailySpendPoint"][];
+            daily_series: components["schemas"]["DailySpendPoint"][];
             /** Org Provider Monthly Ceiling Usd */
             org_provider_monthly_ceiling_usd: string;
             /** Global Provider Monthly Ceiling Usd */
@@ -36716,6 +38381,73 @@ export interface components {
             canonical_clean_id?: string | null;
             /** Reason */
             reason: string;
+        };
+        /** SetSampleRequest */
+        SetSampleRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "input" | "output";
+            /**
+             * Scenario
+             * @default happy
+             */
+            scenario?: string;
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Source
+             * @default authored
+             * @enum {string}
+             */
+            source?: "authored" | "captured" | "generated";
+            /** Is Stand In */
+            is_stand_in?: boolean | null;
+        };
+        /** SetShapeRequest */
+        SetShapeRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "input" | "output";
+            /** Shape */
+            shape?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * SetVariableOp
@@ -37496,6 +39228,48 @@ export interface components {
             /** Results */
             results: components["schemas"]["SlotTestResult"][];
         };
+        /** SlotResultPromoteRequest */
+        SlotResultPromoteRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Result Id */
+            result_id: string;
+        };
+        /**
+         * SlotResultPromotion
+         * @description Receipt for promoting a persisted bench result into the exemplar's
+         *     reference.
+         */
+        SlotResultPromotion: {
+            /** Slot Key */
+            slot_key: string;
+            /** Exemplar Id */
+            exemplar_id: string;
+            /** Result Id */
+            result_id: string;
+            /**
+             * Promoted To Reference At
+             * Format: date-time
+             */
+            promoted_to_reference_at: string;
+            /** Reference Output */
+            reference_output: string;
+            /** Has Reference Artifact */
+            has_reference_artifact: boolean;
+        };
         /** SlotTestBatchRequest */
         SlotTestBatchRequest: {
             /**
@@ -37614,7 +39388,7 @@ export interface components {
              * @default unresolved
              * @enum {string}
              */
-            provenance?: "system" | "org" | "user" | "slot-pinned" | "latest" | "agent" | "version" | "unresolved";
+            provenance?: "system" | "org" | "user" | "run" | "slot-pinned" | "latest" | "agent" | "version" | "unresolved";
             /** Applied Config Overrides */
             applied_config_overrides?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -37838,6 +39612,31 @@ export interface components {
             parts?: components["schemas"]["SplitPartRequest"][] | null;
             /** Max Pages Per Part */
             max_pages_per_part?: number | null;
+        };
+        /** SplitPlanRequest */
+        SplitPlanRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Names */
+            names: string[];
+        };
+        /** SplitPlanResponse */
+        SplitPlanResponse: {
+            /** Plans */
+            plans: components["schemas"]["PlanRecord"][];
         };
         /**
          * SpreadsheetSpec
@@ -39466,18 +41265,6 @@ export interface components {
             /** Processed Document Id */
             processed_document_id: string | null;
         };
-        /**
-         * TopSourceRow
-         * @description Aggregate of cost by source for one org over the last 30 days.
-         */
-        TopSourceRow: {
-            /** Source */
-            source: string;
-            /** Cost Usd */
-            cost_usd: number;
-            /** Count */
-            count: number;
-        };
         /** TopicAssignBody */
         TopicAssignBody: {
             /**
@@ -40291,6 +42078,11 @@ export interface components {
             /** Depth */
             depth: number;
         };
+        /** UnarchiveWorkflowResponse */
+        UnarchiveWorkflowResponse: {
+            /** Unarchived */
+            unarchived: boolean;
+        };
         /**
          * UpdateAgentInput
          * @description Partial update — only provided (non-None) fields are written. This is the
@@ -40376,6 +42168,38 @@ export interface components {
             data: {
                 [key: string]: unknown;
             };
+        };
+        /** UpdatePlanRequest */
+        UpdatePlanRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Intent */
+            intent?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Node Id */
+            node_id?: string | null;
+            /** Allow Stand In In Production */
+            allow_stand_in_in_production?: boolean | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Expected Version */
+            expected_version?: number | null;
         };
         /** UpdateRowResponse */
         UpdateRowResponse: {
@@ -41947,7 +43771,14 @@ export interface components {
             /** Change Summary */
             change_summary?: string | null;
         };
-        /** VisibilityRequest */
+        /**
+         * VisibilityRequest
+         * @description Set a workflow's canonical ``visibility``. ``visibility`` is the
+         *     platform enum (personal | internal | link | public); ``is_public`` is the
+         *     legacy boolean wire shape (true → public, false → personal), still
+         *     accepted so older clients keep working. Exactly one must be provided;
+         *     ``visibility`` wins when both are.
+         */
         VisibilityRequest: {
             /**
              * Organization Id
@@ -41964,13 +43795,17 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
+            /** Visibility */
+            visibility?: ("personal" | "internal" | "link" | "public") | null;
             /** Is Public */
-            is_public: boolean;
+            is_public?: boolean | null;
         };
         /** VisibilityResponse */
         VisibilityResponse: {
             /** Definition Id */
             definition_id: string;
+            /** Visibility */
+            visibility: string;
             /** Is Public */
             is_public: boolean;
             /** Public Url */
@@ -42948,13 +44783,6 @@ export interface components {
             /** Offset */
             offset: number;
         };
-        /** DailySpendPoint */
-        aidream__services__knowledge_graph__wire__DailySpendPoint: {
-            /** Date */
-            date: string;
-            /** Cost Usd */
-            cost_usd: number;
-        };
         /** IngestRequest */
         aidream__services__rag__library_streams__IngestRequest: {
             /**
@@ -42976,18 +44804,6 @@ export interface components {
              * @default false
              */
             run_enrich?: boolean;
-        };
-        /** DailySpendPoint */
-        aidream__services__seo__spend__DailySpendPoint: {
-            /**
-             * Date
-             * Format: date
-             */
-            date: string;
-            /** Effective Cost */
-            effective_cost: string;
-            /** Run Count */
-            run_count: number;
         };
         /** DeletedResponse */
         matrx_scheduler__api__schemas__DeletedResponse: {
@@ -45896,6 +47712,141 @@ export interface operations {
             };
         };
     };
+    operation_status_runtime_operations__request_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    operations_by_link_runtime_operations_by_link__link_kind___link_id__get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                link_kind: string;
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationsByLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    operation_events_runtime_executions__execution_id__events_get: {
+        parameters: {
+            query?: {
+                /** @description return events with seq > after_seq */
+                after_seq?: number;
+                limit?: number;
+                /** @description repeatable event-kind filter */
+                kind?: string[] | null;
+            };
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationEventsPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    operation_events_stream_runtime_executions__execution_id__events_stream_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Last-Event-ID"?: string | null;
+            };
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     transcribe_upload_audio_transcribe_post: {
         parameters: {
             query?: never;
@@ -47555,6 +49506,123 @@ export interface operations {
             };
         };
     };
+    coding_session_bridge_coding_sessions_bridge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodingSessionBridgeRestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BridgeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claude_managed_capabilities_coding_sessions_claude_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeManagedCapabilitiesResponse"];
+                };
+            };
+        };
+    };
+    claude_managed_stream_coding_sessions_claude_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaudeManagedRestRequest"];
+            };
+        };
+        responses: {
+            /** @description Claude Agent SDK event stream */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_claude_managed_runtime_coding_sessions_claude_runtimes__runtime_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runtime_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaudeManagedCancelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_skills_skills_get: {
         parameters: {
             query?: {
@@ -48107,8 +50175,26 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+        };
+    };
+    anthropic_count_tokens_broker_gateway_anthropic_v1_messages_count_tokens_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AnthropicCountTokensResponse"];
                 };
             };
         };
@@ -50234,6 +52320,41 @@ export interface operations {
             };
         };
     };
+    enrich_site_backlinks_seo_sites__site_id__backlinks_enrich_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BacklinkEnrichmentBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     refresh_site_backlinks_seo_sites__site_id__backlinks_refresh_post: {
         parameters: {
             query?: never;
@@ -50916,6 +53037,41 @@ export interface operations {
             };
         };
     };
+    analyze_pages_batch_route_seo_pages_analyze_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageAnalyzeBatchBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     map_page_keywords_route_seo_pages_map_keywords_post: {
         parameters: {
             query?: never;
@@ -51200,6 +53356,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    draft_brief_content_plan_nodes__node_id__draft_brief_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DraftBriefBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_brief_content_plan_nodes__node_id__accept_brief_draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ScopedBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptBriefResult"];
                 };
             };
             /** @description Validation Error */
@@ -51847,6 +54073,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    page_capture_scraper_page_capture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageCaptureRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageCaptureResult"];
                 };
             };
             /** @description Validation Error */
@@ -53460,7 +55719,413 @@ export interface operations {
             };
         };
     };
-    plan_pin_upgrades_agent_factory_pin_upgrades_get: {
+    list_enrollments_hindsight_enrollments_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enroll_hindsight_enrollments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnrollRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_enrollment_hindsight_enrollments__enrollment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_enrollment_hindsight_enrollments__enrollment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_enrollment_hindsight_enrollments__enrollment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnrollmentUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_review_hindsight_enrollments__enrollment_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_review_hindsight_reviews__review_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                review_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_finding_route_hindsight_findings__finding_id__apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_finding_route_hindsight_findings__finding_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_replay_hindsight_enrollments__enrollment_id__replay_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplayRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_replay_hindsight_replays__replay_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replay_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tool_subjects_hindsight_subjects_tools_get: {
+        parameters: {
+            query?: {
+                hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_drain_hindsight_drain_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -53475,12 +56140,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentPinUpgradePlan"];
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
     };
-    apply_pin_upgrade_batch_agent_factory_pin_upgrades_apply_post: {
+    compile_desk_expertise_desks_compile_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -53489,7 +56156,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ApplyPinUpgradesRequest"];
+                "application/json": components["schemas"]["CompileDeskRequest"];
             };
         };
         responses: {
@@ -53499,7 +56166,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AgentPinUpgradeApplyResult"];
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_pack_source_expertise_desks_ingest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestSourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -53794,6 +56494,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -60668,6 +63403,42 @@ export interface operations {
             };
         };
     };
+    promote_exemplar_test_result_agent_slots__slot_key__exemplars__exemplar_id__promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slot_key: string;
+                exemplar_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotResultPromoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlotResultPromotion"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     test_slot_all_exemplars_agent_slots__slot_key__tests_post: {
         parameters: {
             query?: never;
@@ -60884,152 +63655,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentUsageReportResponse"];
-                };
-            };
-        };
-    };
-    summary_kg_cost_summary_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["KgCostSummaryResponse"];
-                };
-            };
-        };
-    };
-    list_orgs_kg_cost_orgs_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrgCostListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    org_detail_kg_cost_orgs__org_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                org_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrgCostDetailResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    pending_batches_kg_cost_batches_pending_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PendingBatchListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    batch_detail_kg_cost_batches__batch_row_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                batch_row_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BatchDetailResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -61544,7 +64169,10 @@ export interface operations {
     };
     archive_workflow_workflows__definition_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description false (default): reversible archive (is_archived=true; undo via POST /workflows/{id}/unarchive). true: canonical SOFT delete (deleted_at set) — the workflow disappears from every read and its triggers are deactivated by the DB cascade; restore requires the platform entity_undelete path. */
+                permanent?: boolean;
+            };
             header?: never;
             path: {
                 definition_id: string;
@@ -62077,6 +64705,37 @@ export interface operations {
             };
         };
     };
+    unarchive_workflow_workflows__definition_id__unarchive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnarchiveWorkflowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     bulk_archive_workflows_workflows_bulk_archive_post: {
         parameters: {
             query?: never;
@@ -62323,6 +64982,7 @@ export interface operations {
                 limit?: number;
                 offset?: number;
                 scope?: "mine" | "organization";
+                include_children?: boolean;
             };
             header?: never;
             path?: never;
@@ -63219,6 +65879,511 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TriggerFireRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_plans_workflows__definition_id__plans_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_plan_workflows__definition_id__plans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plan_blockers_workflows__definition_id__plan_blockers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanBlockersResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plan_plans__plan_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanFullResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_plan_plans__plan_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_shape_plans__plan_id__shape_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetShapeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_sample_plans__plan_id__sample_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetSampleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanSampleRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    split_plan_plans__plan_id__split_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SplitPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SplitPlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_plan_plans__plan_id__merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_internal_graph_plans__plan_id__internal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InternalGraphRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_plan_plans__plan_id__promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotePlanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_plan_plans__plan_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolvePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dissolve_plan_plans__plan_id__dissolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DissolvePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plan_assist_plans__plan_id__assist_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanAssistRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_plan_anchor_plans__plan_id__sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanRecord"];
                 };
             };
             /** @description Validation Error */

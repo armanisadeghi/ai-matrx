@@ -401,6 +401,19 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "card",
   },
 
+  // ── Live AI run (the generic "watch this run" floating panel) ────────────
+  // Ephemeral by construction: a live stream cannot be restored on reload —
+  // the durable record is whatever the run's own feature persisted.
+  {
+    slug: "live-run-window",
+    overlayId: "liveRunWindow",
+    kind: "window",
+    label: "AI Run",
+    defaultData: {},
+    ephemeral: true,
+    mobilePresentation: "card",
+  },
+
   // ── Audio devices (mic / speaker picker + permission) ────────────────────
   {
     slug: "audio-devices-window",

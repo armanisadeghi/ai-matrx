@@ -4,6 +4,30 @@
 **Tier:** 1
 **Last updated:** 2026-07-25
 
+## Draft brief — SERVER-side, persisted on arrival
+
+The NodePanel's "Draft brief" button calls
+`POST /content-plan/nodes/{id}/draft-brief` (aidream
+`services/content_plan/brief_writer.py`). The server builds the neighbour +
+keyword + research context, runs the `content_plan.brief_writer` slot, and
+writes the COMPLETE result to `plan.node.metadata.ai_brief_draft` before it
+streams anything.
+
+🚨 **The panel READS that draft (`readBriefDraft`) — it never holds the only
+copy.** This replaced a browser-side slot run that staged into `useState`:
+`angle`, `must_not_cover`, `concerns` and `suggested_word_count` had no column
+and were discarded even when the user pressed Save, and a refresh or a node
+switch destroyed the whole paid run. Drafting PROPOSES; "Use this brief"
+(`accept-brief-draft`) promotes it onto the live `brief`. Deepen remains the
+research-and-commit sibling.
+
+**Live output renders in the floating `liveRunWindow`, never as a block at the
+top of the panel.** A block there shifts every field below it the instant a run
+starts and puts the model's output above the thing the user is editing. The
+window is generic (`features/window-panels/windows/agents/LiveRunWindow.tsx`) —
+use it for any live run rather than inserting one into a page.
+
+
 ## Purpose
 
 The client workspace for the `plan` schema — every URL a site *should* have,

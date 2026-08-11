@@ -456,7 +456,6 @@ export function ContentPlanWorkbench({
                   {selectedNode ? (
                     <NodePanel
                       key={selectedNode.id}
-                      allNodes={nodeRows}
                       node={selectedNode}
                       siteId={siteId}
                       entities={entities.data ?? []}
@@ -505,7 +504,6 @@ export function ContentPlanWorkbench({
               {selectedNode ? (
                 <NodePanel
                   key={selectedNode.id}
-                  allNodes={nodeRows}
                   node={selectedNode}
                   siteId={siteId}
                   entities={entities.data ?? []}

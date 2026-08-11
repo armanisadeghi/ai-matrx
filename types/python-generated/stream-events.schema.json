@@ -1036,7 +1036,7 @@
                 "type": "null"
               }
             ],
-            "default": 0,
+            "default": 0.0,
             "title": "Cost"
           }
         },
@@ -1226,7 +1226,7 @@
             "title": "Total Cost"
           },
           "known_cost_subtotal": {
-            "default": 0,
+            "default": 0.0,
             "title": "Known Cost Subtotal",
             "type": "number"
           },
@@ -1394,7 +1394,7 @@
             "type": "null"
           }
         ],
-        "default": 0,
+        "default": 0.0,
         "title": "Cost"
       }
     },
@@ -1584,7 +1584,7 @@
         "title": "Total Cost"
       },
       "known_cost_subtotal": {
-        "default": 0,
+        "default": 0.0,
         "title": "Known Cost Subtotal",
         "type": "number"
       },
@@ -1697,6 +1697,79 @@
       "status"
     ],
     "title": "AssignmentProgressData",
+    "type": "object"
+  },
+  "ClaudeManagedSdkMessageData": {
+    "$defs": {
+      "JsonValue": {}
+    },
+    "additionalProperties": false,
+    "description": "One opaque official Claude Agent SDK message on the managed-runtime wire.",
+    "properties": {
+      "type": {
+        "const": "claude_managed_sdk_message",
+        "default": "claude_managed_sdk_message",
+        "title": "Type",
+        "type": "string"
+      },
+      "runtime_id": {
+        "title": "Runtime Id",
+        "type": "string"
+      },
+      "session_id": {
+        "title": "Session Id",
+        "type": "string"
+      },
+      "sdk_message_type": {
+        "title": "Sdk Message Type",
+        "type": "string"
+      },
+      "message": {
+        "additionalProperties": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "title": "Message",
+        "type": "object"
+      }
+    },
+    "required": [
+      "runtime_id",
+      "session_id",
+      "sdk_message_type",
+      "message"
+    ],
+    "title": "ClaudeManagedSdkMessageData",
+    "type": "object"
+  },
+  "ClaudeManagedWarningData": {
+    "additionalProperties": false,
+    "description": "A recoverable managed-runtime warning with stable machine-readable identity.",
+    "properties": {
+      "type": {
+        "const": "claude_managed_warning",
+        "default": "claude_managed_warning",
+        "title": "Type",
+        "type": "string"
+      },
+      "code": {
+        "title": "Code",
+        "type": "string"
+      },
+      "runtime_id": {
+        "title": "Runtime Id",
+        "type": "string"
+      },
+      "session_id": {
+        "title": "Session Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "code",
+      "runtime_id",
+      "session_id"
+    ],
+    "title": "ClaudeManagedWarningData",
     "type": "object"
   },
   "ConversationIdData": {
@@ -1957,7 +2030,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0,
+        "default": 0.0,
         "title": "Progress",
         "type": "number"
       },
@@ -4277,7 +4350,7 @@
         "type": "string"
       },
       "elapsed_seconds": {
-        "default": 0,
+        "default": 0.0,
         "title": "Elapsed Seconds",
         "type": "number"
       },
@@ -5389,7 +5462,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -5449,7 +5522,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -6417,7 +6490,7 @@
         "title": "Bottom Left"
       },
       "confidence": {
-        "default": 0,
+        "default": 0.0,
         "title": "Confidence",
         "type": "number"
       },
@@ -6999,6 +7072,217 @@
       "level"
     ],
     "title": "DictionaryPublishCompleteData",
+    "type": "object"
+  },
+  "DeskCompileProgressData": {
+    "additionalProperties": false,
+    "description": "One step of compiling an Expertise Pack into a desk (agents + workflow).",
+    "properties": {
+      "type": {
+        "const": "desk_compile_progress",
+        "default": "desk_compile_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "agent_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Agent Id"
+      },
+      "agent_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Agent Name"
+      }
+    },
+    "required": [
+      "step",
+      "message"
+    ],
+    "title": "DeskCompileProgressData",
+    "type": "object"
+  },
+  "DeskCompileCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /expertise-desks/compile.",
+    "properties": {
+      "type": {
+        "const": "desk_compile_complete",
+        "default": "desk_compile_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "workflow_id": {
+        "title": "Workflow Id",
+        "type": "string"
+      },
+      "name": {
+        "title": "Name",
+        "type": "string"
+      },
+      "desk_kind": {
+        "title": "Desk Kind",
+        "type": "string"
+      },
+      "pack_id": {
+        "title": "Pack Id",
+        "type": "string"
+      },
+      "pack_slug": {
+        "title": "Pack Slug",
+        "type": "string"
+      },
+      "pack_version": {
+        "title": "Pack Version",
+        "type": "integer"
+      },
+      "agent_ids": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Agent Ids",
+        "type": "array"
+      }
+    },
+    "required": [
+      "workflow_id",
+      "name",
+      "desk_kind",
+      "pack_id",
+      "pack_slug",
+      "pack_version"
+    ],
+    "title": "DeskCompileCompleteData",
+    "type": "object"
+  },
+  "ExpertiseIngestProgressData": {
+    "additionalProperties": false,
+    "description": "One step of distilling a source into draft pack rules.",
+    "properties": {
+      "type": {
+        "const": "expertise_ingest_progress",
+        "default": "expertise_ingest_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "chunk_index": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Chunk Index"
+      },
+      "total_chunks": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Chunks"
+      },
+      "rules_found": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Rules Found"
+      }
+    },
+    "required": [
+      "step",
+      "message"
+    ],
+    "title": "ExpertiseIngestProgressData",
+    "type": "object"
+  },
+  "ExpertiseIngestCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /expertise-desks/ingest.",
+    "properties": {
+      "type": {
+        "const": "expertise_ingest_complete",
+        "default": "expertise_ingest_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "pack_id": {
+        "title": "Pack Id",
+        "type": "string"
+      },
+      "pack_version": {
+        "title": "Pack Version",
+        "type": "integer"
+      },
+      "added": {
+        "default": 0,
+        "title": "Added",
+        "type": "integer"
+      },
+      "duplicates_skipped": {
+        "default": 0,
+        "title": "Duplicates Skipped",
+        "type": "integer"
+      },
+      "quotes_verified": {
+        "default": 0,
+        "title": "Quotes Verified",
+        "type": "integer"
+      },
+      "quotes_unverified": {
+        "default": 0,
+        "title": "Quotes Unverified",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "pack_id",
+      "pack_version"
+    ],
+    "title": "ExpertiseIngestCompleteData",
     "type": "object"
   },
   "PdfExtractStartedData": {
@@ -8419,6 +8703,75 @@
       "failed"
     ],
     "title": "PlanGenAppliedData",
+    "type": "object"
+  },
+  "PlanBriefDraftData": {
+    "additionalProperties": false,
+    "description": "Terminal event of POST /content-plan/nodes/{id}/draft-brief.\n\nThe draft is ALREADY persisted on `plan.node.metadata.ai_brief_draft` when\nthis event is emitted — the client re-reads the node rather than treating\nthis payload as the only copy.",
+    "properties": {
+      "type": {
+        "const": "plan_brief_draft",
+        "default": "plan_brief_draft",
+        "title": "Type",
+        "type": "string"
+      },
+      "node_id": {
+        "title": "Node Id",
+        "type": "string"
+      },
+      "route": {
+        "default": "",
+        "title": "Route",
+        "type": "string"
+      },
+      "brief": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Brief",
+        "type": "array"
+      },
+      "angle": {
+        "default": "",
+        "title": "Angle",
+        "type": "string"
+      },
+      "must_not_cover": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Must Not Cover",
+        "type": "array"
+      },
+      "concerns": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Concerns",
+        "type": "array"
+      },
+      "suggested_word_count": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Suggested Word Count"
+      },
+      "accepted": {
+        "default": false,
+        "title": "Accepted",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "node_id"
+    ],
+    "title": "PlanBriefDraftData",
     "type": "object"
   },
   "PlanDeepenResultData": {

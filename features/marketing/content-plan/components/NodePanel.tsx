@@ -52,8 +52,12 @@ import {
   type TechnicalDepth,
 } from "../types";
 import { CategorySelect } from "@/features/scopes/components/CategorySelect";
-import { useBriefWriter } from "../hooks/useBriefWriter";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import {
+  isDraftPending,
+  readBriefDraft,
+  useBriefWriter,
+} from "../hooks/useBriefWriter";
+import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import { KeywordPicker } from "./KeywordPicker";
 import { NodeAssociations } from "./NodeAssociations";
@@ -66,14 +70,11 @@ export function NodePanel({
   profiles,
   onDeleted,
   deepen,
-  allNodes,
   cmsPage,
   cmsSiteId,
 }: {
   node: PlanNodeRow;
   siteId: string;
-  /** The whole plan — the brief writer reads this node's neighbours from it. */
-  allNodes: PlanNodeRow[];
   entities: PlanEntityRow[];
   profiles: PlanProfileRow[];
   onDeleted: () => void;
@@ -187,16 +188,12 @@ export function NodePanel({
   const stage = (patch: PlanNodeUpdate) =>
     setDraft((d) => ({ ...d, ...patch }));
 
-  // Neighbour-aware brief draft — stages into the SAME draft the user saves.
-  const briefWriter = useBriefWriter({
-    node,
-    siteId,
-    allNodes,
-    onStaged: (brief) => {
-      stage({ brief });
-      setBriefText(brief.join("\n"));
-    },
-  });
+  // Neighbour-aware brief draft. The run is SERVER-side and the result is
+  // persisted onto the node before it ever reaches this component — the panel
+  // reads `node.metadata.ai_brief_draft`, it never holds the only copy.
+  const briefWriter = useBriefWriter({ node, siteId });
+  const briefDraft = readBriefDraft(node);
+  const draftPending = isDraftPending(node, briefDraft);
   const getWriteHandlers = (): SurfaceWriteHandlers => ({
     node_label: (value) => stage({ label: expectString(value, "node_label") }),
     node_slug: (value) =>
@@ -300,10 +297,11 @@ export function NodePanel({
           className="h-7 gap-1.5 px-2 text-xs"
           disabled={briefWriter.busy || deepening}
           title={
-            briefWriter.disabledReason ??
-            "AI: draft this page's brief against its SIBLINGS — staged for you to review, not saved"
+            briefWriter.busy
+              ? "Drafting…"
+              : "AI: draft this page's brief against its SIBLINGS — saved to this page for you to review, then applied when you accept it"
           }
-          onClick={() => void briefWriter.run()}
+          onClick={() => void briefWriter.start()}
         >
           {briefWriter.busy ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -352,33 +350,36 @@ export function NodePanel({
         </Button>
       </div>
 
-      {/* Live AI output — the model's stream renders here while it works
-          (never a bare spinner). Draft brief is a client slot run; Deepen is
-          the server pipeline's adopted stream. */}
-      {briefWriter.live.hasLiveRun ? (
-        <div className="border-b border-border px-4 py-2">
-          <LiveRunDisplay
-            conversationId={briefWriter.live.conversationId}
-            label={briefWriter.live.label ?? "Drafting brief"}
-            pending={briefWriter.live.isRunning}
-            onDismiss={briefWriter.live.dismiss}
-          />
-        </div>
+      {/* Live AI output renders in a FLOATING window, never as a block bolted
+          onto the top of this panel. A block there shifts every field below it
+          the instant a run starts and puts the model's output above the thing
+          the user is editing. The window floats, so the panel never moves and
+          the user can keep editing while they watch — and because the window's
+          body is the canonical pipeline, a run whose output is a registered
+          content-IR kind renders as that kind's COMPONENT, token by token,
+          instead of a wall of raw JSON. */}
+      {briefWriter.run.status === "running" || briefWriter.run.requestId ? (
+        <LiveRunWindowController
+          instanceId={`brief:${node.id}`}
+          requestId={briefWriter.run.requestId ?? null}
+          label="Drafting brief"
+          pending={briefWriter.busy && !briefWriter.run.requestId}
+          subtitle={`${node.route ?? node.label} — saved to this page as it arrives`}
+        />
       ) : null}
       {deepen.nodeId === node.id &&
       (deepeningThisNode || deepen.run.requestId) ? (
-        <div className="border-b border-border px-4 py-2">
-          <LiveRunDisplay
-            requestId={deepen.run.requestId ?? null}
-            label={
-              deepen.run.stage
-                ? `Deepening — ${deepen.run.stage}`
-                : "Deepening — brief + sources"
-            }
-            pending={deepeningThisNode && !deepen.run.requestId}
-            onDismiss={deepen.reset}
-          />
-        </div>
+        <LiveRunWindowController
+          instanceId={`deepen:${node.id}`}
+          requestId={deepen.run.requestId ?? null}
+          label={
+            deepen.run.stage
+              ? `Deepening — ${deepen.run.stage}`
+              : "Deepening — brief + sources"
+          }
+          pending={deepeningThisNode && !deepen.run.requestId}
+          subtitle={node.route ?? node.label}
+        />
       ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -595,6 +596,66 @@ export function NodePanel({
         </PanelSection>
 
         <PanelSection title="Brief">
+          {/* The AI draft is PERSISTED on the node — it survives a refresh, a
+              closed panel, and a user who never presses anything. This is a
+              pending decision, not a copy of something living in memory. */}
+          {draftPending && briefDraft ? (
+            <div className="rounded-md border border-primary/40 bg-primary/5 p-3 space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground">
+                    AI draft ready — {briefDraft.brief.length} line
+                    {briefDraft.brief.length === 1 ? "" : "s"}
+                  </p>
+                  {briefDraft.angle ? (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Angle: {briefDraft.angle}
+                    </p>
+                  ) : null}
+                </div>
+                <Button
+                  size="sm"
+                  className="h-7 shrink-0"
+                  disabled={briefWriter.accepting}
+                  onClick={() => void briefWriter.accept()}
+                >
+                  {briefWriter.accepting ? "Applying…" : "Use this brief"}
+                </Button>
+              </div>
+              <ul className="list-disc space-y-0.5 pl-4 text-xs text-foreground">
+                {briefDraft.brief.map((line, index) => (
+                  <li key={`${index}-${line.slice(0, 24)}`}>{line}</li>
+                ))}
+              </ul>
+              {briefDraft.must_not_cover.length > 0 ? (
+                <div>
+                  <p className="text-xs font-medium text-foreground">
+                    Leave to sibling pages
+                  </p>
+                  <ul className="list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
+                    {briefDraft.must_not_cover.map((line, index) => (
+                      <li key={`${index}-${line.slice(0, 24)}`}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {briefDraft.concerns.length > 0 ? (
+                <div>
+                  <p className="text-xs font-medium text-foreground">Concerns</p>
+                  <ul className="list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
+                    {briefDraft.concerns.map((line, index) => (
+                      <li key={`${index}-${line.slice(0, 24)}`}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {briefDraft.suggested_word_count ? (
+                <p className="text-xs text-muted-foreground">
+                  Suggested length: ~{briefDraft.suggested_word_count} words
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div>
             <Label className="mb-1 block text-xs font-medium">
               One point per line

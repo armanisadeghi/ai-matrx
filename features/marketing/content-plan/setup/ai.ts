@@ -140,14 +140,6 @@ export interface KeywordStrategyResult {
  */
 export const ENTITY_ATTACHER_SLOT = "content_plan.entity_attacher";
 
-/**
- * Platform agent "Content Plan Brief Writer" — permanent latest-version
- * pointer (created 2026-07-30 via the AI Dream MCP). Variables: page,
- * keyword_assignment, neighbours, research_report, guidance. Neighbour-aware
- * by design: a brief written without the siblings duplicates them.
- */
-export const BRIEF_WRITER_SLOT = "content_plan.brief_writer";
-
 export interface EntityAttachment {
   route: string;
   entityLabel: string;
@@ -163,14 +155,6 @@ export interface EntityAttachPlan {
     whyNeeded: string;
   }>;
   notes: string;
-}
-
-export interface PageBriefResult {
-  angle: string;
-  brief: string[];
-  mustNotCover: string[];
-  suggestedWordCount: number | null;
-  concerns: string[];
 }
 
 export const REVIEW_SEVERITIES = [
@@ -344,32 +328,6 @@ export function coerceEntityAttachPlan(value: unknown): EntityAttachPlan {
     attachments,
     missingEntities: missing,
     notes: typeof root.notes === "string" ? root.notes : "",
-  };
-}
-
-export function coercePageBrief(value: unknown): PageBriefResult {
-  const root = asRecord(value, "Brief Writer output");
-  const lines = Array.isArray(root.brief)
-    ? root.brief.filter(
-        (line): line is string => typeof line === "string" && Boolean(line.trim()),
-      )
-    : [];
-  if (lines.length === 0) {
-    throw new Error("Brief Writer returned no brief lines");
-  }
-  return {
-    angle: typeof root.angle === "string" ? root.angle : "",
-    brief: lines.map((line) => line.trim()),
-    mustNotCover: Array.isArray(root.must_not_cover)
-      ? root.must_not_cover.filter((v): v is string => typeof v === "string")
-      : [],
-    suggestedWordCount:
-      typeof root.suggested_word_count === "number"
-        ? Math.max(0, Math.floor(root.suggested_word_count))
-        : null,
-    concerns: Array.isArray(root.concerns)
-      ? root.concerns.filter((v): v is string => typeof v === "string")
-      : [],
   };
 }
 
@@ -715,7 +673,6 @@ export function useSetupAgents(siteId: string | null) {
   const [reviewBusy, setReviewBusy] = useState(false);
   const [keywordsBusy, setKeywordsBusy] = useState(false);
   const [attachBusy, setAttachBusy] = useState(false);
-  const [briefBusy, setBriefBusy] = useState(false);
   const inFlight = useRef(false);
 
   async function run<T>(
@@ -826,26 +783,6 @@ export function useSetupAgents(siteId: string | null) {
     }
   }
 
-  /** ONE page's brief, written against its neighbours. Staged, never saved. */
-  async function writeBrief(
-    variables: Record<string, string>,
-  ): Promise<PageBriefResult> {
-    if (inFlight.current) throw new Error("An agent run is already in progress");
-    inFlight.current = true;
-    setBriefBusy(true);
-    try {
-      return await run(
-        BRIEF_WRITER_SLOT,
-        "Drafting brief",
-        variables,
-        coercePageBrief,
-      );
-    } finally {
-      inFlight.current = false;
-      setBriefBusy(false);
-    }
-  }
-
   async function reviewPlan(
     variables: Record<string, string>,
   ): Promise<PlanReviewResult> {
@@ -905,13 +842,11 @@ export function useSetupAgents(siteId: string | null) {
     reviewPlan,
     planKeywords,
     attachEntities,
-    writeBrief,
     shapeBusy,
     namingFamilyKey,
     entitiesBusy,
     reviewBusy,
     keywordsBusy,
     attachBusy,
-    briefBusy,
   };
 }

@@ -667,6 +667,10 @@ const DiffViewerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/DiffViewerWindow"),
   { ssr: false },
 );
+const LiveRunWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agents/LiveRunWindow"),
+  { ssr: false },
+);
 const FindReplaceOverlay = lazyOverlay(
   () => import("@/features/overlays/components/FindReplaceOverlay"),
   { ssr: false },
@@ -1719,6 +1723,9 @@ export default function OverlayController() {
     ),
     diffViewerWindow: useAppSelector((s) =>
       selectOpenInstances(s, "diffViewerWindow"),
+    ),
+    liveRunWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "liveRunWindow"),
     ),
     extractionCellEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "extractionCellEditorWindow"),
@@ -4431,6 +4438,36 @@ export default function OverlayController() {
             variables={
               data?.variables as Record<string, unknown> | null | undefined
             }
+          />
+        );
+      })}
+
+      {/* liveRunWindow — multi-instance */}
+      {instancesById.liveRunWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <LiveRunWindow
+            key={inst.instanceId}
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : inst.instanceId
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "liveRunWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string" ? data.conversationId : null
+            }
+            requestId={typeof data?.requestId === "string" ? data.requestId : null}
+            label={typeof data?.label === "string" ? data.label : null}
+            pending={data?.pending === true}
+            subtitle={typeof data?.subtitle === "string" ? data.subtitle : null}
           />
         );
       })}

@@ -320,8 +320,7 @@ export function SetupView() {
     agents.entitiesBusy ||
     agents.reviewBusy ||
     agents.keywordsBusy ||
-    agents.attachBusy ||
-    agents.briefBusy;
+    agents.attachBusy;
 
   // ── draft persistence — every step saves, nothing is lost on navigation ─
   // Seed ONCE per site from the FRESH row (never the siteOptions query cache

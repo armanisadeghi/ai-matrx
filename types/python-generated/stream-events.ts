@@ -432,6 +432,24 @@ export interface CategorizationResultData {
   metadata?: Record<string, unknown>;
 }
 
+export interface JsonValue {
+}
+
+export interface ClaudeManagedSdkMessageData {
+  type?: "claude_managed_sdk_message";
+  runtime_id: string;
+  session_id: string;
+  sdk_message_type: string;
+  message: Record<string, JsonValue>;
+}
+
+export interface ClaudeManagedWarningData {
+  type?: "claude_managed_warning";
+  code: string;
+  runtime_id: string;
+  session_id: string;
+}
+
 export interface ContextChangedData {
   type?: "context_changed";
   key: string;
@@ -501,6 +519,25 @@ export interface ConversationLabeledData {
   keywords?: string[];
 }
 
+export interface DeskCompileCompleteData {
+  type?: "desk_compile_complete";
+  workflow_id: string;
+  name: string;
+  desk_kind: string;
+  pack_id: string;
+  pack_slug: string;
+  pack_version: number;
+  agent_ids?: string[];
+}
+
+export interface DeskCompileProgressData {
+  type?: "desk_compile_progress";
+  step: string;
+  message: string;
+  agent_id?: string | null;
+  agent_name?: string | null;
+}
+
 export interface DictionaryPublishCompleteData {
   type?: "dictionary_publish_complete";
   status: string;
@@ -528,6 +565,25 @@ export interface QuestionnaireDisplayData {
   type?: "display_questionnaire";
   introduction: string;
   questions?: QuestionnaireQuestion[];
+}
+
+export interface ExpertiseIngestCompleteData {
+  type?: "expertise_ingest_complete";
+  pack_id: string;
+  pack_version: number;
+  added?: number;
+  duplicates_skipped?: number;
+  quotes_verified?: number;
+  quotes_unverified?: number;
+}
+
+export interface ExpertiseIngestProgressData {
+  type?: "expertise_ingest_progress";
+  step: string;
+  message: string;
+  chunk_index?: number | null;
+  total_chunks?: number | null;
+  rules_found?: number | null;
 }
 
 export interface ExtractionIndexCompleteData {
@@ -865,9 +921,6 @@ export interface ImageBlock {
   vision_class?: string | null;
 }
 
-export interface JsonValue {
-}
-
 export interface VideoBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
@@ -1170,6 +1223,18 @@ export interface PdfTablesStartedData {
   total_pages: number;
 }
 
+export interface PlanBriefDraftData {
+  type?: "plan_brief_draft";
+  node_id: string;
+  route?: string;
+  brief?: string[];
+  angle?: string;
+  must_not_cover?: string[];
+  concerns?: string[];
+  suggested_word_count?: number | null;
+  accepted?: boolean;
+}
+
 export interface PlanCmsFillPreviewData {
   type?: "plan_cms_fill_preview";
   node_id: string;
@@ -1435,6 +1500,8 @@ export type TypedDataPayload =
   | AudioStreamChunkData
   | AudioStreamEndData
   | CategorizationResultData
+  | ClaudeManagedSdkMessageData
+  | ClaudeManagedWarningData
   | ContextChangedData
   | ContextConflictData
   | ContextDeltaData
@@ -1442,7 +1509,11 @@ export type TypedDataPayload =
   | ContextPersistedData
   | ConversationIdData
   | ConversationLabeledData
+  | DeskCompileCompleteData
+  | DeskCompileProgressData
   | DictionaryPublishCompleteData
+  | ExpertiseIngestCompleteData
+  | ExpertiseIngestProgressData
   | ExtractionIndexCompleteData
   | ExtractionIndexProgressData
   | FetchResultsData
@@ -1487,6 +1558,7 @@ export type TypedDataPayload =
   | PdfTablesCompleteData
   | PdfTablesPageData
   | PdfTablesStartedData
+  | PlanBriefDraftData
   | PlanCmsFillPreviewData
   | PlanDeepenResultData
   | PlanGenAppliedData

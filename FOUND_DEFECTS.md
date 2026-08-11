@@ -13,6 +13,31 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D151 — Paid AI results die in component state across education, flashcards and content-plan (2026-08-11)
+
+Found by an audit run while moving the content-plan brief writer server-side (that one is FIXED —
+the run is now server-orchestrated and persisted on arrival; see
+`features/marketing/content-plan/hooks/useBriefWriter.ts`). Chips were fired for the app-builder,
+entity curation, the Setup view's three staged runs, and assessment grading reasoning. **These are
+the remainder — nothing tracks them.**
+
+Structural cause: `features/agents/redux/execution-system/thunks/run-headless-agent-json.ts:142`
+delivers its result ONLY through the returned promise and takes no `AbortSignal`. An unmount
+mid-run does not cancel the run — the money is spent — and the resolved payload is written into a
+dead component. Persistence is entirely at the mercy of each call site.
+
+| Site | What is lost |
+|---|---|
+| `features/flashcards/components/study/StudyDeck.tsx:417-419` | per-card coaching tip → `toast.info` with an 8-second lifetime, and nothing else. Fires on EVERY graded card |
+| `features/education/memory/components/MemoryAidButton.tsx:59-60` | `MemoryHintPayload` wiped by the `useEffect` on `[front, back]` (`:47-52`) when the learner advances. `fc_detail` has the right slot and the sibling `EnhanceSetDialog` already persists that way |
+| `features/education/study/analytics/components/StudyAnalyticsDashboard.tsx:36-54` | a full narrated progress report, AUTO-fired on mount (per-mount guard), so every visit to the page is a new paid 120s narration that dies on navigate |
+| `features/education/trust/useVerifyAgainstSource.ts:85` | `VerifyResult.suggestedFix` (a corrected card back) with no apply affordance, and no persisted verification status — the same card gets re-verified forever |
+| `features/flashcards/data/useQuizStudy.ts:171-186` | `question`, `correct` and `explanation` dropped at the coercion boundary; only `distractors` reach in-memory state, and nothing is written, so every future quiz over the same deck re-pays |
+| `features/flashcards/fast-fire/components/FastFireLiveCard.tsx:97-105` and `StudyDeck.tsx:278-293` | `HelpLiveResult` — the most expensive single-card lane, built from a DB round-trip for due-count + attempt history — cleared on card change with no attempt/journal row |
+| `features/podcasts/generator/components/TopicIdeaHelper.tsx:73-97` | 4 of 5 generated topic ideas, plus every field of the chosen one except `title`/`hook` (flattened to a string by `topicFromIdea`) |
+| `features/flashcards/components/set-detail/EnhanceSetDialog.tsx:91-125` | un-saved enrich/expand previews on refresh — and the quota is committed at generation (`:105`, `:124`), so a discarded preview is billed |
+
+
 ### D150 — Marketing item surfaces hide stored identities, evidence, and doors (2026-08-11)
 
 A No-Dead-Ends audit after the backlink-record rebuild found these verified gaps; fix each by extending/reusing the canonical item detail rather than adding another partial drawer:

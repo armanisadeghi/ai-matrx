@@ -40,6 +40,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  liveRunWindow: {
+    label: "AI Run",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   audioDevices: {
     label: "Audio Devices",
     instanceMode: "singleton",

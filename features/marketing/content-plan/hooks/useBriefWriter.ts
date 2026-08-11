@@ -2,145 +2,274 @@
 
 /**
  * The node panel's "Draft brief" action — ONE page's brief, written against
- * its NEIGHBOURS and staged into the panel draft for review.
+ * its NEIGHBOURS.
  *
- * Two things make this different from the Deepen button beside it:
- *  - Deepen writes the brief + cited sources SERVER-side and saves
- *    immediately. This stages into the draft; the user saves.
- *  - This agent is given the page's parent, siblings and children plus its
- *    keyword assignment, so the brief can avoid what a sibling owns and place
- *    the planned internal links. A brief written from one page alone
- *    duplicates its siblings — which is exactly the cannibalization the
- *    top-down keyword pass exists to prevent.
+ * 🚨 THIS RUNS SERVER-SIDE AND IS PERSISTED ON ARRIVAL. It used to run the
+ * `content_plan.brief_writer` slot from the browser and stage the result into
+ * React state: the angle, must-not-cover list, concerns and suggested word
+ * count had no column and were discarded even on a successful Save, and a
+ * refresh, a node switch, or a closed panel destroyed the whole paid run.
+ *
+ * `POST /content-plan/nodes/{id}/draft-brief` now builds the neighbour context
+ * on the server and writes the COMPLETE draft to
+ * `plan.node.metadata.ai_brief_draft` the instant the model answers. Drafting
+ * still PROPOSES — the user accepts, and `deepen` remains the
+ * commit-immediately sibling — but the proposal itself is durable, so nothing
+ * the user does (or fails to do) can lose it.
+ *
+ * The stream is ADOPTED into the canonical execution slice
+ * (`adoptForeignStream`), so the model's own tokens render live through the ONE
+ * pipeline — never a bespoke renderer, never a bare spinner.
  */
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { toast } from "@/lib/toast";
-import { extractErrorMessage } from "@/utils/errors";
-
-import { useSetupAgents } from "../setup/ai";
+import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { callApi } from "@/lib/api/call-api";
 import {
-  fetchFreshSite,
-  readSiteResearchTopicId,
-} from "../setup/draft";
-import { readNodeKeywordStrategy } from "../setup/keyword-strategy";
-import { getLatestSuccessfulDocument } from "@/features/research/service";
+  describeBackendFailure,
+  parseCallApiError,
+  parseStreamError,
+} from "@/lib/api/errors";
+import type { TypedStreamEvent } from "@/lib/api/types";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { toast } from "@/lib/toast";
+
+import { planKeys } from "../data/hooks";
 import type { PlanNodeRow } from "../types";
 
-/** Parent + siblings + children — the context that prevents duplicate coverage. */
-export function buildNeighbourLines(
-  node: PlanNodeRow,
-  allNodes: PlanNodeRow[],
-): string {
-  const related = allNodes.filter(
-    (candidate) =>
-      candidate.id !== node.id &&
-      (candidate.id === node.parent_id ||
-        candidate.parent_id === node.parent_id ||
-        candidate.parent_id === node.id),
-  );
-  if (related.length === 0) return "(no neighbouring pages)";
-  return related
-    .slice()
-    .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
-    .map((item) => {
-      const strategy = readNodeKeywordStrategy(item);
-      return [
-        item.route ?? "(no route)",
-        item.label,
-        strategy?.page_role ?? "unassigned",
-        (item.brief ?? []).length > 0 ? "has brief" : "no brief",
-      ].join(" | ");
-    })
-    .join("\n");
+/** The persisted proposal, exactly as the server writes it. */
+export interface BriefDraft {
+  brief: string[];
+  angle: string;
+  must_not_cover: string[];
+  concerns: string[];
+  suggested_word_count: number | null;
+  slot_key: string;
+  agent_id: string | null;
+  model_id: string | null;
+  generated_at: string;
+  /** Set once the user promotes it onto the live brief. */
+  accepted_at: string | null;
 }
 
-/** The node's keyword assignment as the agent's variable expects it. */
-export function buildKeywordAssignmentLine(node: PlanNodeRow): string {
-  const strategy = readNodeKeywordStrategy(node);
-  if (!strategy) return "not assigned";
-  const parts = [`role=${strategy.page_role}`];
-  if (strategy.secondary_keywords.length > 0) {
-    parts.push(`secondary='${strategy.secondary_keywords.join("', '")}'`);
-  }
-  if (strategy.supports_routes.length > 0) {
-    parts.push(`supports=${strategy.supports_routes.join(",")}`);
-  }
-  if (strategy.internal_links.length > 0) {
-    parts.push(
-      `links: ${strategy.internal_links
-        .map((link) => `'${link.anchor_text}'→${link.to_route}`)
-        .join(", ")}`,
-    );
-  }
-  return parts.join(" | ");
-}
+/** Where the server keeps it — one key, named once on each side. */
+const BRIEF_DRAFT_KEY = "ai_brief_draft";
 
-export function useBriefWriter(args: {
-  node: PlanNodeRow;
-  siteId: string;
-  allNodes: PlanNodeRow[];
-  /** Stage the result into the panel draft — the USER saves. */
-  onStaged: (brief: string[]) => void;
-}) {
-  const agents = useSetupAgents(args.siteId);
-  const [lastResult, setLastResult] = useState<{
-    angle: string;
-    mustNotCover: string[];
-    concerns: string[];
-  } | null>(null);
-
-  const run = async () => {
-    try {
-      const fresh = await fetchFreshSite(args.siteId);
-      const topicId = readSiteResearchTopicId(fresh.settings);
-      if (!topicId) {
-        toast.error(
-          "No research topic is linked to this site — pick one in Setup's AI grounding bar first.",
-        );
-        return;
-      }
-      const document = await getLatestSuccessfulDocument(topicId);
-      const report = (document?.content ?? "").trim();
-      if (!report) {
-        toast.error(
-          "The linked research topic has no successful final report — run Document assembly in Research first.",
-        );
-        return;
-      }
-      const outcome = await agents.writeBrief({
-        page: [
-          args.node.route ?? "(no route)",
-          args.node.label,
-          args.node.node_type,
-          args.node.page_type_id ? "typed" : "no page type",
-          (args.node.brief ?? []).join(" / ") || "no brief yet",
-        ].join(" | "),
-        keyword_assignment: buildKeywordAssignmentLine(args.node),
-        neighbours: buildNeighbourLines(args.node, args.allNodes),
-        research_report: report,
-        guidance: "",
-      });
-      args.onStaged(outcome.brief);
-      setLastResult({
-        angle: outcome.angle,
-        mustNotCover: outcome.mustNotCover,
-        concerns: outcome.concerns,
-      });
-      toast.success(
-        `Drafted ${outcome.brief.length} brief line(s) — staged, press Save to keep them.`,
-      );
-    } catch (error) {
-      toast.error(`Brief draft failed: ${extractErrorMessage(error)}`);
-    }
+/**
+ * Read the node's persisted draft. This is the source of truth the panel
+ * renders — NOT a copy held in component state, which is precisely the bug
+ * this replaced.
+ */
+export function readBriefDraft(node: PlanNodeRow): BriefDraft | null {
+  const metadata = node.metadata;
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+  const raw = (metadata as Record<string, unknown>)[BRIEF_DRAFT_KEY];
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const row = raw as Record<string, unknown>;
+  const brief = Array.isArray(row.brief)
+    ? row.brief.filter((line): line is string => typeof line === "string")
+    : [];
+  if (brief.length === 0) return null;
+  const strings = (value: unknown): string[] =>
+    Array.isArray(value)
+      ? value.filter((item): item is string => typeof item === "string")
+      : [];
+  return {
+    brief,
+    angle: typeof row.angle === "string" ? row.angle : "",
+    must_not_cover: strings(row.must_not_cover),
+    concerns: strings(row.concerns),
+    suggested_word_count:
+      typeof row.suggested_word_count === "number" ? row.suggested_word_count : null,
+    slot_key: typeof row.slot_key === "string" ? row.slot_key : "",
+    agent_id: typeof row.agent_id === "string" ? row.agent_id : null,
+    model_id: typeof row.model_id === "string" ? row.model_id : null,
+    generated_at: typeof row.generated_at === "string" ? row.generated_at : "",
+    accepted_at: typeof row.accepted_at === "string" ? row.accepted_at : null,
   };
+}
+
+/**
+ * A draft is worth showing when it exists and the user hasn't already taken
+ * it — a consumed draft whose lines still match the live brief is history,
+ * not a pending decision.
+ */
+export function isDraftPending(node: PlanNodeRow, draft: BriefDraft | null): boolean {
+  if (!draft) return false;
+  const live = node.brief ?? [];
+  const same =
+    live.length === draft.brief.length &&
+    live.every((line, index) => line === draft.brief[index]);
+  return !same;
+}
+
+export interface BriefWriterRunState {
+  status: "idle" | "running" | "done" | "error";
+  stage?: string;
+  error?: string;
+  /** Canonical live-render handle — `<LiveRunDisplay requestId=…>`. */
+  requestId?: string;
+}
+
+const IDLE: BriefWriterRunState = { status: "idle" };
+
+function readPhaseMessage(event: TypedStreamEvent): string | null {
+  if (event.event === "phase") {
+    return event.data.phase === "connected" ? null : event.data.phase;
+  }
+  if (event.event === "info") {
+    return event.data.user_message ?? event.data.system_message ?? null;
+  }
+  return null;
+}
+
+export function useBriefWriter(args: { node: PlanNodeRow; siteId: string }) {
+  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
+  const [run, setRun] = useState<BriefWriterRunState>(IDLE);
+  const [accepting, setAccepting] = useState(false);
+  const inFlight = useRef(false);
+  // Adopted rows have no owning instance — nothing else reaps them.
+  const adoptedRequestIdRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
+
+  useEffect(
+    () => () => {
+      cancelledRef.current = true;
+      abortRef.current?.abort();
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+    },
+    [dispatch],
+  );
+
+  const nodeId = args.node.id;
+  const siteId = args.siteId;
+
+  const start = useCallback(
+    async (guidance = "") => {
+      if (inFlight.current) return;
+      inFlight.current = true;
+      cancelledRef.current = false;
+      setRun({ status: "running", stage: "Reading neighbours + research…" });
+      let streamFailure: string | null = null;
+
+      if (adoptedRequestIdRef.current) {
+        dispatch(removeRequest(adoptedRequestIdRef.current));
+        adoptedRequestIdRef.current = null;
+      }
+      const streamAbort = new AbortController();
+      abortRef.current = streamAbort;
+      const consumeStream = dispatch(
+        adoptForeignStream({
+          onAdopted: ({ requestId }) => {
+            adoptedRequestIdRef.current = requestId;
+            setRun((current) => ({ ...current, requestId }));
+          },
+          abortController: streamAbort,
+          onEvent: (event) => {
+            const stage = readPhaseMessage(event);
+            if (stage) setRun((current) => ({ ...current, stage }));
+            if (event.event === "error") {
+              streamFailure = describeBackendFailure(
+                parseStreamError(event.data),
+              ).headline;
+            }
+          },
+        }),
+      );
+
+      const result = await dispatch(
+        callApi({
+          path: "/content-plan/nodes/{node_id}/draft-brief",
+          method: "POST",
+          pathParams: { node_id: nodeId },
+          body: { guidance, accept: false },
+          stream: true,
+          consumeStream,
+          signal: streamAbort.signal,
+        }),
+      );
+
+      inFlight.current = false;
+      abortRef.current = null;
+      // The server persists the draft before it streams anything — refetch
+      // regardless of how the stream ended. A user who closed the tab mid-run
+      // finds the draft waiting when they come back.
+      void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+
+      if (cancelledRef.current) {
+        cancelledRef.current = false;
+        setRun(IDLE);
+        return;
+      }
+      if (result.error) {
+        const explanation = describeBackendFailure(parseCallApiError(result.error));
+        setRun({ status: "error", error: explanation.headline });
+        toast.error(`Brief draft failed: ${explanation.headline}`);
+        return;
+      }
+      if (streamFailure) {
+        setRun({ status: "error", error: streamFailure });
+        toast.error(`Brief draft failed: ${streamFailure}`);
+        return;
+      }
+      setRun((current) => ({ ...current, status: "done" }));
+      toast.success("Brief drafted and saved to this page — review it below.");
+    },
+    [dispatch, nodeId, queryClient, siteId],
+  );
+
+  /** Promote the persisted draft onto the node's live brief. */
+  const accept = useCallback(async () => {
+    if (accepting) return;
+    setAccepting(true);
+    const result = await dispatch(
+      callApi({
+        path: "/content-plan/nodes/{node_id}/accept-brief-draft",
+        method: "POST",
+        pathParams: { node_id: nodeId },
+        body: {},
+      }),
+    );
+    setAccepting(false);
+    void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+    if (result.error) {
+      toast.error(
+        `Could not apply the draft: ${describeBackendFailure(parseCallApiError(result.error)).headline}`,
+      );
+      return;
+    }
+    toast.success("Brief applied to this page.");
+  }, [accepting, dispatch, nodeId, queryClient, siteId]);
+
+  const reset = useCallback(() => {
+    if (inFlight.current) {
+      cancelledRef.current = true;
+      abortRef.current?.abort();
+    }
+    if (adoptedRequestIdRef.current) {
+      dispatch(removeRequest(adoptedRequestIdRef.current));
+      adoptedRequestIdRef.current = null;
+    }
+    setRun(IDLE);
+  }, [dispatch]);
 
   return {
     run,
-    busy: agents.briefBusy,
-    lastResult,
-    disabledReason: agents.briefBusy ? "Drafting…" : null,
-    /** Live-render handle — mount `<LiveRunDisplay …/>` while drafting. */
-    live: agents.live,
+    start,
+    accept,
+    accepting,
+    reset,
+    busy: run.status === "running",
   };
 }
+
+export type BriefWriterController = ReturnType<typeof useBriefWriter>;
