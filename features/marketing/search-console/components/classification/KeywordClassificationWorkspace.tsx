@@ -26,7 +26,7 @@
  * panel (`urlState={false}`). One write path: `gsc_set_keyword_class`.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   keepPreviousData,
   useMutation,
@@ -258,7 +258,7 @@ export function KeywordClassificationWorkspace({
   const openKeywordWindow = useOpenKeywordWindow();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const queryClient = useQueryClient();
-  const range = useMemo(reviewRange, []);
+  const [range] = useState(reviewRange);
   const urlTable = useMarketingTableState({
     defaultSort: { id: "impressions", direction: "desc" },
     defaultPageSize: 50,
@@ -269,6 +269,7 @@ export function KeywordClassificationWorkspace({
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
   const [preview, setPreview] = useState<RulePreview | null>(null);
+  const [brandAliasFilter, setBrandAliasFilter] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [dialog, setDialog] = useState<{
@@ -279,7 +280,6 @@ export function KeywordClassificationWorkspace({
   const [notes, setNotes] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [applyBusy, setApplyBusy] = useState(false);
-  const userIdRef = useRef<string | null>(null);
 
   const state = table.queryState;
   const classFilter = state.columnFilters.traffic_class;
@@ -318,6 +318,7 @@ export function KeywordClassificationWorkspace({
     sortDir: state.sort?.direction === "asc" ? "asc" : "desc",
     pattern: preview?.pattern ?? null,
     matchKind: preview?.matchKind ?? null,
+    brandAlias: brandAliasFilter,
     filters: reviewFilters,
     confirmed:
       confirmedFilter?.kind === "boolean" ? confirmedFilter.value : null,
@@ -334,6 +335,7 @@ export function KeywordClassificationWorkspace({
       state,
       preview?.pattern ?? "",
       preview?.matchKind ?? "",
+      brandAliasFilter ?? "",
     ],
     queryFn: ({ signal }) =>
       getGscClassReview(
@@ -353,13 +355,12 @@ export function KeywordClassificationWorkspace({
   });
 
   // Resolve current user once (for rules panel ownership partition).
-  useQuery({
+  const classRulesUser = useQuery({
     queryKey: ["marketing", "gsc", "class-rules-user"],
     queryFn: async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      userIdRef.current = user?.id ?? null;
       return user?.id ?? "";
     },
     staleTime: Infinity,
@@ -455,6 +456,7 @@ export function KeywordClassificationWorkspace({
     });
     setExcluded(new Set());
     setSelected(new Set());
+    setBrandAliasFilter(null);
     table.onStateChange({ ...table.state, page: 1 });
     setRulesOpen(false);
   };
@@ -556,7 +558,6 @@ export function KeywordClassificationWorkspace({
         invalidate();
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one pass per site per session by design
   }, [rulesReady, siteId]);
 
   // ── AI batch ─────────────────────────────────────────────────────────────
@@ -818,7 +819,8 @@ export function KeywordClassificationWorkspace({
             ? (selectValues(classFilter)?.[0] as GscTrafficClass)
             : null) ?? null
         }
-        onSelectClass={(cls) =>
+        onSelectClass={(cls) => {
+          setBrandAliasFilter(null);
           table.onStateChange({
             ...table.state,
             page: 1,
@@ -826,10 +828,11 @@ export function KeywordClassificationWorkspace({
               ...table.state.columnFilters,
               traffic_class: cls ? { kind: "select", value: cls } : undefined,
             },
-          })
-        }
+          });
+        }}
         unconfirmedShown={unconfirmedShown}
-        onToggleUnconfirmed={() =>
+        onToggleUnconfirmed={() => {
+          setBrandAliasFilter(null);
           table.onStateChange({
             ...table.state,
             page: 1,
@@ -839,9 +842,30 @@ export function KeywordClassificationWorkspace({
                 ? undefined
                 : { kind: "boolean", value: false },
             },
-          })
-        }
+          });
+        }}
       />
+
+      {brandAliasFilter && !preview ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary bg-accent/60 px-3 py-2">
+          <Fingerprint className="h-3.5 w-3.5 text-primary" />
+          <span className="text-xs">
+            Showing <span className="font-semibold">{formatCount(total)}</span>{" "}
+            active match{total === 1 ? "" : "es"} for brand alias{" "}
+            <span className="font-semibold">“{brandAliasFilter}”</span> in this
+            28-day window.
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="ml-auto h-7 gap-1 px-2 text-xs text-muted-foreground"
+            onClick={() => setBrandAliasFilter(null)}
+          >
+            <X className="h-3 w-3" /> Clear alias filter
+          </Button>
+        </div>
+      ) : null}
 
       {preview ? (
         <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary bg-accent/60 px-3 py-2">
@@ -1012,7 +1036,7 @@ export function KeywordClassificationWorkspace({
         </div>
         {review.isError ? (
           <InlineQueryError
-            what="keyword review"
+            what="Keyword review"
             error={review.error}
             onRetry={() => void review.refetch()}
           />
@@ -1077,12 +1101,16 @@ export function KeywordClassificationWorkspace({
           pageSize={50}
           emptyState={{
             icon: <Scale className="h-8 w-8 text-muted-foreground" />,
-            title: preview
-              ? "No keywords match this pattern"
-              : "No GSC-active keywords in this window",
-            description: preview
-              ? "Try a looser match kind or a shorter pattern."
-              : "Connect Google Search Console and run a sync, or loosen the class/source filters.",
+            title: brandAliasFilter
+              ? "No active matches in this 28-day window"
+              : preview
+                ? "No keywords match this pattern"
+                : "No GSC-active keywords in this window",
+            description: brandAliasFilter
+              ? "The alias has corpus matches, but none appeared in this site's current review window."
+              : preview
+                ? "Try a looser match kind or a shorter pattern."
+                : "Connect Google Search Console and run a sync, or loosen the class/source filters.",
           }}
           className="min-h-0 flex-1"
         />
@@ -1101,9 +1129,21 @@ export function KeywordClassificationWorkspace({
               siteId={siteId}
               range={range}
               onChanged={invalidate}
-              onInspectAlias={(alias) =>
-                table.onStateChange({ ...table.state, page: 1, search: alias })
-              }
+              onInspectAlias={(alias) => {
+                setPreview(null);
+                setSelected(new Set());
+                setExcluded(new Set());
+                setBrandAliasFilter(alias);
+                table.onStateChange({
+                  ...table.state,
+                  page: 1,
+                  search: "",
+                  anyOf: "",
+                  layeredFilters: [],
+                  columnFilters: {},
+                });
+                setBrandOpen(false);
+              }}
             />
           </div>
         </SidePanelSurface>
@@ -1121,7 +1161,7 @@ export function KeywordClassificationWorkspace({
             <ClassRulesPanel
               rules={rules.data ?? []}
               loading={rules.isLoading}
-              currentUserId={userIdRef.current}
+              currentUserId={classRulesUser.data || null}
               previewRuleId={preview?.rule?.id ?? null}
               previewMatchCount={preview ? total : null}
               selectionPruned={excluded.size > 0}

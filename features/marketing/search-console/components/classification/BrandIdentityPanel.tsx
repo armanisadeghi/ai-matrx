@@ -9,25 +9,26 @@
  * `web.brand.profile.brand_aliases` via `seo.gsc_set_brand_aliases` — the
  * intake wizard's accepted proposals land on the SAME array.
  *
- * The add-alias input is a live typeahead: a debounced server-side corpus
- * probe (`gsc_keyword_class_review` with pattern/contains — the SAME
- * matcher the rules preview uses) shows how many keywords the draft would
- * broad-match plus the top matches with the hit highlighted; clicking a
- * suggestion autofills the input. Every alias row's match count is a door
- * (`onInspectAlias`) — it filters the keyword table behind this panel.
+ * The add-alias input is a live server preview through the SAME canonical
+ * brand matcher used by classification. It reports only current-window
+ * keywords not already covered by the site's existing identity. Every alias
+ * row's match count is a door (`onInspectAlias`) — it filters the keyword
+ * table behind this panel with that exact saved-alias matcher.
  *
  * Never re-derives aliases or match logic client-side — the resolver in
  * `migrations/seo_gsc_class_rpcs.sql` is the single source.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { Fingerprint, Loader2, Plus, Search, ShieldAlert, X } from "lucide-react";
+  Fingerprint,
+  Loader2,
+  Plus,
+  Search,
+  ShieldAlert,
+  X,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,14 +36,12 @@ import { cn } from "@/styles/themes/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
+  getGscBrandAliasPreview,
   getGscBrandIdentity,
-  getGscClassReview,
   setGscBrandAliases,
   type GscBrandIdentityRow,
 } from "@/features/marketing/search-console/data-classification";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
 import type { GscDateRange } from "@/features/marketing/search-console/types";
 import { formatCount } from "@/features/marketing/search-console/types";
 
@@ -52,21 +51,6 @@ const SOURCE_LABELS: Record<string, string> = {
   brand_name: "Brand name",
   custom: "Custom",
 };
-
-/** Render a keyword with the matched alias substring highlighted. */
-function HighlightedMatch({ text, needle }: { text: string; needle: string }) {
-  const idx = text.toLowerCase().indexOf(needle.toLowerCase());
-  if (idx < 0 || !needle) return <>{text}</>;
-  return (
-    <>
-      {text.slice(0, idx)}
-      <mark className="rounded-sm bg-primary/20 px-0 text-foreground">
-        {text.slice(idx, idx + needle.length)}
-      </mark>
-      {text.slice(idx + needle.length)}
-    </>
-  );
-}
 
 export function BrandIdentityPanel({
   siteId,
@@ -85,8 +69,6 @@ export function BrandIdentityPanel({
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebounced(draft.trim()), 250);
@@ -105,37 +87,27 @@ export function BrandIdentityPanel({
   );
   const allAliases = useMemo(() => rows.map((r) => r.alias), [rows]);
 
-  // Live broad-match preview: the server-side contains matcher over the
-  // corpus — the same code path the pattern-rule preview pipes through.
+  // Live preview through the canonical brand matcher. The server removes
+  // keywords already covered by the site's current identity.
   const previewEnabled = debounced.length >= 2;
   const matchPreview = useQuery({
-    queryKey: ["gsc-brand-alias-preview", siteId, debounced],
+    queryKey: [
+      "gsc-brand-alias-preview",
+      siteId,
+      range.start,
+      range.end,
+      debounced,
+    ],
     enabled: previewEnabled,
     queryFn: ({ signal }) =>
-      getGscClassReview(
-        siteId,
-        range,
-        {
-          trafficClasses: null,
-          sources: null,
-          search: "",
-          sort: "impressions",
-          sortDir: "desc",
-          page: 1,
-          pageSize: 8,
-          pattern: debounced,
-          matchKind: "contains",
-          confirmed: null,
-        },
-        signal,
-      ),
+      getGscBrandAliasPreview(siteId, debounced, range, signal),
     staleTime: 60_000,
-    placeholderData: keepPreviousData,
   });
-  const suggestions = previewEnabled ? (matchPreview.data?.rows ?? []) : [];
-  const previewTotal = matchPreview.data?.total ?? 0;
-
-  useEffect(() => setActiveIndex(-1), [debounced]);
+  const aliasPreview = matchPreview.data;
+  const suggestions = previewEnabled ? (aliasPreview?.matches ?? []) : [];
+  const aliasAlreadyCovered =
+    allAliases.includes(draft.trim().toLowerCase()) ||
+    aliasPreview?.alias_exists === true;
 
   const save = useMutation({
     mutationFn: (aliases: string[]) => setGscBrandAliases(siteId, aliases),
@@ -173,8 +145,9 @@ export function BrandIdentityPanel({
         <span className="font-medium text-foreground">brand</span> — branded
         traffic is not real SEO and is pulled out of money and educational
         numbers. Domain, site name, and brand name are derived automatically;
-        add the rest here: key people, legal names, DBAs, common
-        misspellings.
+        add the rest here: key people, legal names, DBAs, common misspellings.
+        An alias is not exact-only: it covers queries containing its joined name
+        or all of its words.
       </p>
 
       {identity.isError ? (
@@ -191,7 +164,10 @@ export function BrandIdentityPanel({
             <tr>
               <th className="px-2 py-1.5 font-medium">Alias</th>
               <th className="px-2 py-1.5 font-medium">Source</th>
-              <th className="px-2 py-1.5 text-right font-medium" title="Corpus keywords this alias matches — click a count to see those keywords in the table">
+              <th
+                className="px-2 py-1.5 text-right font-medium"
+                title="Corpus keywords this alias matches — click a count to see those keywords in the table"
+              >
                 Matches
               </th>
               <th className="w-8 px-1 py-1.5" />
@@ -206,9 +182,12 @@ export function BrandIdentityPanel({
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-2 py-3 text-center text-muted-foreground">
-                  No brand identity — the site needs a domain, name, or
-                  linked brand.
+                <td
+                  colSpan={4}
+                  className="px-2 py-3 text-center text-muted-foreground"
+                >
+                  No brand identity — the site needs a domain, name, or linked
+                  brand.
                 </td>
               </tr>
             ) : (
@@ -234,26 +213,14 @@ export function BrandIdentityPanel({
           className="flex items-center gap-1.5"
           onSubmit={(event) => {
             event.preventDefault();
-            if (activeIndex >= 0 && suggestions[activeIndex]) {
-              addAlias(suggestions[activeIndex].query);
-            } else {
-              addAlias();
-            }
+            addAlias();
           }}
         >
           <Input
-            ref={inputRef}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
-              } else if (event.key === "ArrowUp") {
-                event.preventDefault();
-                setActiveIndex((i) => Math.max(i - 1, -1));
-              } else if (event.key === "Escape") {
-                setActiveIndex(-1);
+              if (event.key === "Escape") {
                 setDraft("");
               }
             }}
@@ -268,7 +235,7 @@ export function BrandIdentityPanel({
             size="sm"
             variant="outline"
             className="h-8 gap-1 px-2 text-xs"
-            disabled={save.isPending || !draft.trim()}
+            disabled={save.isPending || !draft.trim() || aliasAlreadyCovered}
           >
             {save.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -289,47 +256,61 @@ export function BrandIdentityPanel({
               )}
               {matchPreview.isError ? (
                 <span className="text-destructive">
-                  Match preview failed — {extractErrorMessage(matchPreview.error)}
+                  Match preview failed —{" "}
+                  {extractErrorMessage(matchPreview.error)}
+                </span>
+              ) : matchPreview.isFetching && !aliasPreview ? (
+                <span>Checking the real brand matcher…</span>
+              ) : aliasPreview && !aliasPreview.eligible ? (
+                <span>
+                  Use at least five letters or numbers after punctuation and
+                  generic company words are removed.
+                </span>
+              ) : aliasPreview?.alias_exists ? (
+                <span>
+                  <span className="font-medium text-foreground">
+                    Already covered.
+                  </span>{" "}
+                  {formatCount(aliasPreview.active_matches)} active keyword
+                  {aliasPreview.active_matches === 1 ? "" : "s"} already match
+                  this alias; there are no new matches to add.
+                </span>
+              ) : aliasPreview ? (
+                <span>
+                  <span className="font-medium tabular-nums text-foreground">
+                    {formatCount(aliasPreview.new_matches)} new
+                  </span>{" "}
+                  active keyword{aliasPreview.new_matches === 1 ? "" : "s"}{" "}
+                  would classify as brand.{" "}
+                  {aliasPreview.active_matches - aliasPreview.new_matches > 0
+                    ? [
+                        formatCount(
+                          aliasPreview.active_matches -
+                            aliasPreview.new_matches,
+                        ),
+                        " already covered · ",
+                      ].join("")
+                    : ""}
+                  {formatCount(aliasPreview.corpus_matches)} total corpus match
+                  {aliasPreview.corpus_matches === 1 ? "" : "es"}.
                 </span>
               ) : (
-                <>
-                  <span className="font-medium tabular-nums text-foreground">
-                    {formatCount(previewTotal)}
-                  </span>
-                  keyword{previewTotal === 1 ? "" : "s"} contain{previewTotal === 1 ? "s" : ""}{" "}
-                  <span className="font-medium text-foreground">“{debounced}”</span>
-                  {previewTotal > 0
-                    ? " — pick one to complete, or add your text as-is"
-                    : " — it will only catch future queries"}
-                </>
+                <span>Checking matches…</span>
               )}
             </p>
             {suggestions.length > 0 ? (
               <ul className="max-h-48 overflow-y-auto">
-                {suggestions.map((s, i) => (
+                {suggestions.map((s) => (
                   <li key={s.keyword_id}>
-                    <button
-                      type="button"
-                      className={cn(
-                        "flex w-full items-center gap-2 px-2 py-1 text-left text-xs transition-colors hover:bg-accent",
-                        i === activeIndex && "bg-accent",
-                      )}
-                      onMouseEnter={() => setActiveIndex(i)}
-                      onClick={() => {
-                        setDraft(s.query);
-                        inputRef.current?.focus();
-                      }}
-                    >
-                      <span className="min-w-0 flex-1 truncate">
-                        <HighlightedMatch text={s.query} needle={debounced} />
-                      </span>
+                    <div className="flex items-center gap-2 px-2 py-1 text-xs">
+                      <span className="min-w-0 flex-1 truncate">{s.query}</span>
                       <span
                         className="shrink-0 tabular-nums text-[10px] text-muted-foreground"
                         title={`${formatCount(s.impressions)} impressions in the review window`}
                       >
                         {formatCount(s.impressions)}
                       </span>
-                    </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -345,8 +326,8 @@ export function BrandIdentityPanel({
         term, not just a name (e.g. “data destruction”). It then only counts
         exact forms — the domain typed as one word or the exact name plus
         inc/llc — so the brand rung cannot swallow the site&apos;s money
-        vocabulary. Rule individual keywords in the table behind this panel;
-        an explicit ruling always beats the brand match.
+        vocabulary. Rule individual keywords in the table behind this panel; an
+        explicit ruling always beats the brand match.
       </p>
     </div>
   );
