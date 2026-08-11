@@ -358,6 +358,32 @@ internal platform use — never a washed-down user variant beside a private one:
   emitted from the SAVED record — a staged panel edit does not echo back
   through them, and both the manifest and the intro say so out loud rather
   than letting an agent read a stale value as confirmation).
+  `matrx-user/war-room-thread` (4 ask-policy targets on ONE thread's agent
+  panel — `thread_note_content` / `append_to_thread_note` as DRAFTS (the
+  `agent-builder` replace/append pair applied to the note anchored to the
+  thread, landing through the same `updateNoteContent` dispatch that
+  `ThreadNotesTab`'s editor `onChange` fires) plus `thread_task_title` /
+  `thread_task_status` as ENTITY writes through `updateTaskFieldThunk`, the
+  thunk `ThreadTaskTab` already dispatches; the status enum validates against
+  the canonical `TASK_STATUSES` the description interpolates, so the offered
+  and accepted vocabularies cannot drift. Handlers in
+  [`features/war-room/components/thread/useWarRoomThreadWriteHandlers.ts`](../war-room/components/thread/useWarRoomThreadWriteHandlers.ts),
+  registered on the SAME provider inside `ThreadAgentPanel` that emits the
+  read twins — which is the point: `ThreadTabContent` is a `switch`, so only
+  one tab body is mounted at a time, and handlers registered from
+  `ThreadNotesTab` / `ThreadTaskTab` would have been unregistered exactly when
+  the agent tab was on screen, which is the only time an agent runs here. THE
+  reference for **a lazily-loaded read twin**: a thread whose Notes tab was
+  never opened has no record in the notes slice at all, so both note handlers
+  hydrate through `fetchNoteContent` BEFORE writing and then read the buffer
+  back and throw if it did not take — "not loaded" is never the same answer as
+  "empty", and a draft target that silently no-ops is worse than one that
+  refuses. Deliberately undeclared: RECORDING (it captures a live human
+  conversation — the `podcast-studio` / `image-generate` line), the transcripts
+  and the conversation (evidence, the `markdown-editor` `processed_data`/`ast`
+  rule), and the thread TITLE — already writable one level up as
+  `active_thread_title` on `matrx-user/war-room`, and a second declaration
+  would be the second write path into one row the doctrine forbids).
   `matrx-user/content-plan-entities` (3 ask-policy targets on the E-E-A-T
   roster, all registered by `EntityManager.tsx` via `useSurfaceWriteHandlers`
   against a parent-owned `draftRef` — `entity_draft` (`draft`, stages

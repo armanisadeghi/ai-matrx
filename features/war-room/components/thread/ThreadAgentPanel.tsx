@@ -86,6 +86,7 @@ import {
 } from "@/features/agents/war-room-tools/thread-target-registry";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { buildWarRoomThreadScope } from "@/features/war-room/lib/war-room-scope";
+import { useWarRoomThreadWriteHandlers } from "./useWarRoomThreadWriteHandlers";
 
 console.log(
   "[Track War Room] 8c, ThreadAgentPanel.tsx — module evaluated (chunk loaded)",
@@ -411,10 +412,17 @@ export default function ThreadAgentPanel({
     [store, threadId, activeAgentId],
   );
 
+  // Write half — the thread's note body and anchored task are authorable here.
+  // Registered on the SAME provider that emits the read twins, so an agent only
+  // ever gets the targets for the thread it is actually sitting in.
+  const getThreadWriteHandlers = useWarRoomThreadWriteHandlers(threadId);
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/war-room-thread"
       getScope={getThreadScope}
+      isEditable
+      getWriteHandlers={getThreadWriteHandlers}
     >
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Agent picker + co-edited working document — shared header, exactly as
