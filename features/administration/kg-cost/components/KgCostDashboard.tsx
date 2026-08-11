@@ -188,7 +188,7 @@ function KpiTiles({
         : "Live coverage not yet reported by the backend.";
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
       <KpiTile
         label="Spend today (all orgs)"
         value={summary ? fmtUsdShort(summary.spend_today_usd) : null}
@@ -213,6 +213,15 @@ function KpiTiles({
         value={summary ? `${summary.pending_batches}` : null}
         icon={<Clock className="h-3.5 w-3.5" />}
         loading={loading}
+      />
+      <KpiTile
+        label="Batch savings (7d)"
+        value={
+          summary ? fmtUsdShort(summary.batch_savings_7d_usd ?? 0) : null
+        }
+        icon={<Receipt className="h-3.5 w-3.5" />}
+        loading={loading}
+        hint="Estimated live-price cost minus actual batch cost across completed provider batches."
       />
       <KpiTile
         label="Live NER coverage"

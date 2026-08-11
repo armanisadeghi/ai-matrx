@@ -27759,141 +27759,6 @@ export type Database = {
           },
         ]
       }
-      auto_ingest_batch: {
-        Row: {
-          batch_id: string | null
-          completed_at: string | null
-          cost_recorded_at: string | null
-          cost_usd: number | null
-          created_at: string
-          created_by: string | null
-          custom_id: string
-          deleted_at: string | null
-          error: Json | null
-          est_cost_usd: number
-          id: string
-          kind: string
-          last_polled_at: string | null
-          metadata: Json
-          next_poll_at: string
-          organization_id: string
-          poll_count: number
-          provider: string
-          purpose: string
-          response_uri: string | null
-          source_id: string | null
-          source_kind: string | null
-          status: string
-          submitted_at: string
-          tokens_in: number | null
-          tokens_out: number | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          batch_id?: string | null
-          completed_at?: string | null
-          cost_recorded_at?: string | null
-          cost_usd?: number | null
-          created_at?: string
-          created_by?: string | null
-          custom_id: string
-          deleted_at?: string | null
-          error?: Json | null
-          est_cost_usd?: number
-          id?: string
-          kind: string
-          last_polled_at?: string | null
-          metadata?: Json
-          next_poll_at?: string
-          organization_id: string
-          poll_count?: number
-          provider: string
-          purpose?: string
-          response_uri?: string | null
-          source_id?: string | null
-          source_kind?: string | null
-          status?: string
-          submitted_at?: string
-          tokens_in?: number | null
-          tokens_out?: number | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          batch_id?: string | null
-          completed_at?: string | null
-          cost_recorded_at?: string | null
-          cost_usd?: number | null
-          created_at?: string
-          created_by?: string | null
-          custom_id?: string
-          deleted_at?: string | null
-          error?: Json | null
-          est_cost_usd?: number
-          id?: string
-          kind?: string
-          last_polled_at?: string | null
-          metadata?: Json
-          next_poll_at?: string
-          organization_id?: string
-          poll_count?: number
-          provider?: string
-          purpose?: string
-          response_uri?: string | null
-          source_id?: string | null
-          source_kind?: string | null
-          status?: string
-          submitted_at?: string
-          tokens_in?: number | null
-          tokens_out?: number | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: []
-      }
-      auto_ingest_cost_event: {
-        Row: {
-          cost_usd: number
-          created_at: string
-          created_by: string | null
-          idempotency_key: string
-          metadata: Json
-          organization_id: string
-          source: string | null
-          updated_by: string | null
-          user_id: string
-        }
-        Insert: {
-          cost_usd: number
-          created_at?: string
-          created_by?: string | null
-          idempotency_key: string
-          metadata?: Json
-          organization_id: string
-          source?: string | null
-          updated_by?: string | null
-          user_id: string
-        }
-        Update: {
-          cost_usd?: number
-          created_at?: string
-          created_by?: string | null
-          idempotency_key?: string
-          metadata?: Json
-          organization_id?: string
-          source?: string | null
-          updated_by?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       catalog_entries: {
         Row: {
           app: string
@@ -29888,6 +29753,7 @@ export type Database = {
           is_active: boolean
           message: string
           min_display_seconds: number | null
+          target_user_id: string | null
           title: string
           updated_at: string
         }
@@ -29899,6 +29765,7 @@ export type Database = {
           is_active?: boolean
           message: string
           min_display_seconds?: number | null
+          target_user_id?: string | null
           title: string
           updated_at?: string
         }
@@ -29910,6 +29777,7 @@ export type Database = {
           is_active?: boolean
           message?: string
           min_display_seconds?: number | null
+          target_user_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -32459,24 +32327,6 @@ export type Database = {
         Args: { org_id: string; user_id: string }
         Returns: boolean
       }
-      bulk_upsert_broker_values: {
-        Args: {
-          p_ai_runs_id?: string
-          p_ai_tasks_id?: string
-          p_broker_value_pairs: Json
-          p_created_by?: string
-          p_is_global?: boolean
-          p_organization_id?: string
-          p_project_id?: string
-          p_task_id?: string
-          p_user_id?: string
-        }
-        Returns: {
-          broker_id: string
-          broker_value_id: string
-          success: boolean
-        }[]
-      }
       bump_version: { Args: { p_file_id: string }; Returns: number }
       calculate_trending_score: {
         Args: {
@@ -33936,38 +33786,6 @@ export type Database = {
           source: string
         }[]
       }
-      get_broker_values_for_context:
-        | {
-            Args: {
-              p_broker_ids: string[]
-              p_organization_id?: string
-              p_project_id?: string
-              p_task_id?: string
-            }
-            Returns: {
-              broker_id: string
-              scope_id: string
-              scope_level: string
-              value: Json
-            }[]
-          }
-        | {
-            Args: {
-              p_ai_runs_id?: string
-              p_ai_tasks_id?: string
-              p_broker_ids: string[]
-              p_organization_id?: string
-              p_project_id?: string
-              p_task_id?: string
-              p_user_id?: string
-            }
-            Returns: {
-              broker_id: string
-              scope_id: string
-              scope_level: string
-              value: Json
-            }[]
-          }
       get_canvas_leaderboard: {
         Args: { p_canvas_id: string; p_limit?: number }
         Returns: {
@@ -33979,48 +33797,6 @@ export type Database = {
           username: string
         }[]
       }
-      get_complete_broker_data_for_context:
-        | {
-            Args: {
-              p_broker_ids: string[]
-              p_organization_id?: string
-              p_project_id?: string
-              p_task_id?: string
-            }
-            Returns: {
-              broker_id: string
-              broker_name: string
-              data_type: string
-              default_value: string
-              description: string
-              has_value: boolean
-              scope_id: string
-              scope_level: string
-              value: Json
-            }[]
-          }
-        | {
-            Args: {
-              p_ai_runs_id?: string
-              p_ai_tasks_id?: string
-              p_broker_ids: string[]
-              p_organization_id?: string
-              p_project_id?: string
-              p_task_id?: string
-              p_user_id?: string
-            }
-            Returns: {
-              broker_id: string
-              broker_name: string
-              data_type: string
-              default_value: string
-              description: string
-              has_value: boolean
-              scope_id: string
-              scope_level: string
-              value: Json
-            }[]
-          }
       get_conversation_for_display: {
         Args: { p_conversation_id: string }
         Returns: {
@@ -34285,28 +34061,6 @@ export type Database = {
           website_url: string
         }[]
       }
-      get_missing_broker_ids:
-        | {
-            Args: {
-              p_broker_ids: string[]
-              p_organization_id?: string
-              p_project_id?: string
-              p_task_id?: string
-            }
-            Returns: string[]
-          }
-        | {
-            Args: {
-              p_ai_runs_id?: string
-              p_ai_tasks_id?: string
-              p_broker_ids: string[]
-              p_organization_id?: string
-              p_project_id?: string
-              p_task_id?: string
-              p_user_id?: string
-            }
-            Returns: string[]
-          }
       get_note_version: {
         Args: { p_id: string }
         Returns: {
@@ -36542,33 +36296,6 @@ export type Database = {
         Args: { p_enabled: boolean; p_order?: Json; p_table_id: string }
         Returns: Json
       }
-      upsert_broker_value:
-        | {
-            Args: {
-              p_ai_runs_id?: string
-              p_ai_tasks_id?: string
-              p_broker_id: string
-              p_created_by?: string
-              p_is_global?: boolean
-              p_organization_id?: string
-              p_project_id?: string
-              p_task_id?: string
-              p_user_id?: string
-              p_value: Json
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_broker_id: string
-              p_created_by?: string
-              p_organization_id?: string
-              p_project_id?: string
-              p_task_id?: string
-              p_value: Json
-            }
-            Returns: string
-          }
       upsert_display_option: {
         Args: {
           p_additional_params?: Json
@@ -48253,13 +47980,6 @@ export type Database = {
             referencedRelation: "v_site_kpis"
             referencedColumns: ["site_id"]
           },
-          {
-            foreignKeyName: "result_batch_fk"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "batch_job"
-            referencedColumns: ["id"]
-          },
         ]
       }
       batch_item: {
@@ -50931,13 +50651,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_site_kpis"
             referencedColumns: ["site_id"]
-          },
-          {
-            foreignKeyName: "result_batch_fk"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "batch_job"
-            referencedColumns: ["id"]
           },
         ]
       }

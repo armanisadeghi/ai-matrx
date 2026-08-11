@@ -1009,11 +1009,23 @@ export async function getActiveAnnouncements(): Promise<{
   try {
     const supabase = await createClient();
 
-    const { data, error } = await supabase
+    // Targeted announcements: target_user_id NULL = global; a user_id means
+    // only that user sees the popup (e.g. Batch-system spend alarms aimed at
+    // the platform operator).
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    let query = supabase
       .from("system_announcements")
       .select("*")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false });
+      .eq("is_active", true);
+    query = user
+      ? query.or(`target_user_id.is.null,target_user_id.eq.${user.id}`)
+      : query.is("target_user_id", null);
+    const { data, error } = await query.order("created_at", {
+      ascending: false,
+    });
 
     if (error) {
       console.error("Error fetching announcements:", error);

@@ -23,6 +23,8 @@ export interface KgCostSummaryResponse {
   orgs_over_80pct: number;
   pending_batches: number;
   ner_coverage_pct: number;
+  /** Batch system: est. live cost minus actual batch cost, completed batches, 7d. */
+  batch_savings_7d_usd?: number;
 }
 
 export interface OrgCostRow {
