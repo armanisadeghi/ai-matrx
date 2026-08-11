@@ -289,6 +289,8 @@ System (canonical, cross-repo): `/Users/armanisadeghi/code/common-docs/systems/p
 
 Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur. Task system files: `FOUND_DEFECTS.md` (unapproved discoveries), `CURRENT_ERRORS.md` (error-dump inbox), `.matrx/AGENT_TASKS.md` (the only approved worklist), `.matrx/ARMAN_TASKS.md` (Arman-only asks), `.matrx/PATROL_SIGHTINGS.md` (registered-pattern sightings — see Pattern Patrols above).
 
+**A failing lint gate on your branch is almost certainly NOT yours.** The tree carries a repo-wide ESLint backlog (~2,400 errors, overwhelmingly React Compiler correctness lint). `pnpm check:lint-debt` inventories it **classified** — bug / correctness / doctrine / style — so it can be worked worst-first; scoreboard `/administration/reporting/lint-debt`, contract [`scripts/lint-debt/FEATURE.md`](./scripts/lint-debt/FEATURE.md), campaign [`docs/handoffs/eslint-debt-campaign.md`](./docs/handoffs/eslint-debt-campaign.md). Loud, **never blocking** — deliberately NOT in `run-release-gates.sh`. **Never clear a finding with `eslint-disable`**: that converts a visible backlog into an invisible one. A rule genuinely wrong for this codebase gets changed ONCE in `eslint.config.mjs`, with a comment saying why.
+
 ## 🚨 An env var is a VALUE, never a TOGGLE — a flag in env fails silently and invisibly
 
 > **This rule exists because it was broken.** `NEXT_PUBLIC_FILES_BROWSER_CUTOVER` was added as a
