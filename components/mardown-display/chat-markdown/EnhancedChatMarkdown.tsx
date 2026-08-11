@@ -819,8 +819,14 @@ export const EnhancedChatMarkdownInternal: React.FC<
     ],
   );
 
+  // `overflow-x-clip`, NOT `overflow-x-hidden`. Both stop wide content blowing
+  // out the column, but `overflow-x: hidden` alongside a `visible` y-axis is
+  // illegal CSS: the browser silently computes overflow-y to `auto`, making
+  // this a scroll container. That trapped the code block's `position: sticky`
+  // toolbar so it could never reach the real chat scroller (D153). `clip`
+  // creates no scroll container, so the clipping is identical and sticky works.
   const containerStyles = cn(
-    "pt-1 pb-0 px-0 space-y-4 font-sans text-md antialiased leading-relaxed tracking-wide overflow-x-hidden min-w-0 break-words",
+    "pt-1 pb-0 px-0 space-y-4 font-sans text-md antialiased leading-relaxed tracking-wide overflow-x-clip min-w-0 break-words",
     "block w-full bg-inherit",
     className,
   );
@@ -849,7 +855,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
   if (isWaitingForContent && !hasPreTextSegments) {
     try {
       return (
-        <div className="mb-1 w-full min-w-0 text-left overflow-x-hidden">
+        <div className="mb-1 w-full min-w-0 text-left overflow-x-clip">
           <div className={containerStyles}>
             <div className="flex items-center justify-start py-1">
               <ShimmerText
@@ -1079,7 +1085,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
 
   try {
     return (
-      <div className="mb-1 w-full min-w-0 text-left overflow-x-hidden">
+      <div className="mb-1 w-full min-w-0 text-left overflow-x-clip">
         <div className={containerStyles}>
           {hasUnifiedSpecial && requestId
             ? workGroupedSlots.map((slot, i) =>
