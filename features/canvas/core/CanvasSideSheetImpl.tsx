@@ -78,10 +78,13 @@ export function CanvasSideSheetImpl() {
   // `getScope` runs at Run time, not on render, so it reads the canvas slice
   // straight off the store rather than closing over rendered state — the user
   // can switch or close an item between mount and launch. `isMobile` is React
-  // state (not Redux), so it rides a ref advanced on every render.
+  // state (not Redux), so an effect keeps its latest committed value in a ref.
   const store = useAppStore();
   const isMobileRef = useRef(isMobile);
-  isMobileRef.current = isMobile;
+
+  useEffect(() => {
+    isMobileRef.current = isMobile;
+  }, [isMobile]);
 
   const getCanvasScope = useCallback(() => {
     const state = store.getState();
