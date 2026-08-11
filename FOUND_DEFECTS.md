@@ -13,6 +13,18 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D149 — Marketing batch/cost routes still query the retired `web.batch_*` spine (2026-08-11)
+
+The live DB dropped `web.batch_job`, `web.batch_item`, and `web.v_cost_by_*`, but
+`/marketing/batches`, `/marketing/batches/[batchId]`, and the site/workspace cost
+queries still read them through `features/marketing/data/operations-{types,queries}.ts`;
+generated DB types are correspondingly stale and a fresh `pnpm db-types` removes
+those relations. The canonical replacement is `batch.provider_batch` /
+`batch.work_item`, whose generic purpose/link model is not a field-for-field
+substitute for the site/catalog-specific UI. Arman decides: re-platform these
+surfaces onto `batch.*` with an explicit Marketing projection, or retire the two
+batch routes and item-level cost view; do not fabricate a direct mapping.
+
 ### D148 — `pnpm type-check` is red on main: 11 errors in `features/brokers/` (2026-08-10)
 
 On a clean `main` checkout (v0.4.380), `pnpm type-check` fails with 11 errors confined to `features/brokers/services/core-broker-crud.ts` (7), `features/brokers/types.ts` (3), and `features/brokers/services/resolution-service.ts` (1) — the code calls RPCs (`upsert_broker_value`, …) that no longer exist in the generated `types/database.types.ts` RPC union, i.e. the brokers feature drifted from a DB-types regeneration. Since the build ignores type errors (`ignoreBuildErrors: true`), this ships silently AND masks the gate for every other task (a red gate can't prove a change clean; per-file filtering is the only workaround). Fix: reconcile the brokers service with the live RPC surface (restore/rename the RPCs in the DB, or update the code to the current ones), then confirm `pnpm type-check` is green repo-wide.
