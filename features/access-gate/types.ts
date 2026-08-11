@@ -94,6 +94,8 @@ export interface AccessRequestSummary {
   status: AccessRequestStatus;
   level: RequestedLevel;
   createdAt: string | null;
+  /** Why they declined, when they said. Shown to the requester. */
+  decisionNote: string | null;
 }
 
 /** The parsed shape of `public.access_denied_context`. */

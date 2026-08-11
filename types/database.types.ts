@@ -25845,6 +25845,7 @@ export type Database = {
         Row: {
           agent_writable: boolean
           agent_write_notes: string | null
+          allow_preview: boolean
           base_tier: number
           category: string | null
           content_role: string | null
@@ -25853,7 +25854,6 @@ export type Database = {
           default_needs_approval: boolean
           default_scopeable: boolean
           default_visibility: Database["platform"]["Enums"]["visibility"] | null
-          deny_preview: boolean
           has_soft_delete: boolean
           is_active: boolean
           is_component: boolean
@@ -25874,6 +25874,7 @@ export type Database = {
         Insert: {
           agent_writable?: boolean
           agent_write_notes?: string | null
+          allow_preview?: boolean
           base_tier?: number
           category?: string | null
           content_role?: string | null
@@ -25884,7 +25885,6 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
-          deny_preview?: boolean
           has_soft_delete?: boolean
           is_active?: boolean
           is_component?: boolean
@@ -25905,6 +25905,7 @@ export type Database = {
         Update: {
           agent_writable?: boolean
           agent_write_notes?: string | null
+          allow_preview?: boolean
           base_tier?: number
           category?: string | null
           content_role?: string | null
@@ -25915,7 +25916,6 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
-          deny_preview?: boolean
           has_soft_delete?: boolean
           is_active?: boolean
           is_component?: boolean
@@ -31336,6 +31336,10 @@ export type Database = {
       admin_set_entity_type_agent_writable: {
         Args: { p_agent_writable: boolean; p_token: string }
         Returns: undefined
+      }
+      admin_set_entity_type_preview: {
+        Args: { p_allow: boolean; p_token: string }
+        Returns: boolean
       }
       admin_set_scope_type_system: {
         Args: { p_is_system: boolean; p_scope_type_id: string }
@@ -50858,6 +50862,57 @@ export type Database = {
           },
         ]
       }
+      endpoint_family_sweep_state: {
+        Row: {
+          created_at: string
+          families_proposed_total: number
+          last_sweep_at: string | null
+          metadata: Json
+          next_eligible_at: string | null
+          page_watermark: string | null
+          site_id: string
+          sweeps_total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          families_proposed_total?: number
+          last_sweep_at?: string | null
+          metadata?: Json
+          next_eligible_at?: string | null
+          page_watermark?: string | null
+          site_id: string
+          sweeps_total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          families_proposed_total?: number
+          last_sweep_at?: string | null
+          metadata?: Json
+          next_eligible_at?: string | null
+          page_watermark?: string | null
+          site_id?: string
+          sweeps_total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "endpoint_family_sweep_state_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "endpoint_family_sweep_state_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: true
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
+        ]
+      }
       finding: {
         Row: {
           category: string
@@ -51938,6 +51993,87 @@ export type Database = {
           },
         ]
       }
+      site_endpoint_rule: {
+        Row: {
+          assist_id: string | null
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          detector: string | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          organization_id: string
+          pages_matched_at_apply: number | null
+          path_prefix: string
+          query_param: string | null
+          reason: string
+          site_id: string
+          source: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          assist_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detector?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          organization_id: string
+          pages_matched_at_apply?: number | null
+          path_prefix: string
+          query_param?: string | null
+          reason: string
+          site_id: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          assist_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detector?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          organization_id?: string
+          pages_matched_at_apply?: number | null
+          path_prefix?: string
+          query_param?: string | null
+          reason?: string
+          site_id?: string
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_endpoint_rule_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "site"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_endpoint_rule_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "v_site_kpis"
+            referencedColumns: ["site_id"]
+          },
+        ]
+      }
       site_item_config: {
         Row: {
           cadence: Json
@@ -52602,6 +52738,14 @@ export type Database = {
         }
       }
       is_machine_resource_url: { Args: { page_url: string }; Returns: boolean }
+      is_resource_content_type: {
+        Args: { content_type_last: string }
+        Returns: boolean
+      }
+      matches_endpoint_rule: {
+        Args: { page_url: string; path_prefix: string; query_param: string }
+        Returns: boolean
+      }
       move_site_brand: {
         Args: { p_brand_id: string; p_site_id: string }
         Returns: {

@@ -90,6 +90,7 @@ function parseRequest(raw: unknown): AccessRequestSummary | null {
       : "pending",
     level: row?.level === "editor" ? "editor" : "viewer",
     createdAt: str(row?.created_at),
+    decisionNote: str(row?.decision_note),
   };
 }
 
