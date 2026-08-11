@@ -25,7 +25,11 @@ import {
   urlPath,
 } from "@/features/marketing/components/backlinks/lib/columns";
 import { parseDimensionExtras } from "@/features/marketing/components/backlinks/lib/extras";
-import { DOMAIN_RANK_EXPLAINER } from "@/features/marketing/components/backlinks/lib/vocab";
+import {
+  backlinkEmptyHint,
+  DOMAIN_RANK_EXPLAINER,
+  SPAM_SCORE_EXPLAINER,
+} from "@/features/marketing/components/backlinks/lib/vocab";
 import {
   formatCount,
   humanDimensionRow,
@@ -40,7 +44,7 @@ import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 
 const INTERSECTIONS_EXPLAINER =
-  "Referring domains you share with this competitor — a ready-made outreach prospect list.";
+  "Websites that link to both you and this competitor. They already know your space, so they are the easiest places to ask for a link.";
 
 const KIND_CONFIG: Record<
   BacklinkDimensionKind,
@@ -50,7 +54,7 @@ const KIND_CONFIG: Record<
     noun: string;
     searchPlaceholder: string;
     rowKind: string;
-    /** Honest empty state naming the refresh profile that collects the data. */
+    /** Honest empty state; the "what to do" half is the one shared sentence. */
     emptyTitle: string;
     emptyDescription: string;
   }
@@ -61,9 +65,8 @@ const KIND_CONFIG: Record<
     noun: "referring domain",
     searchPlaceholder: "Search domains…",
     rowKind: "web-backlink-referring-domain",
-    emptyTitle: "No referring domains stored",
-    emptyDescription:
-      "No referring-domain rows stored yet — run a Monthly detail or Full bootstrap refresh to collect them.",
+    emptyTitle: "No referring domains yet",
+    emptyDescription: backlinkEmptyHint("the websites that link to you"),
   },
   anchor: {
     surface: "Anchors",
@@ -71,9 +74,10 @@ const KIND_CONFIG: Record<
     noun: "anchor",
     searchPlaceholder: "Search anchor text…",
     rowKind: "web-backlink-anchor",
-    emptyTitle: "No anchors stored",
-    emptyDescription:
-      "No anchor rows stored yet — run a Monthly detail or Full bootstrap refresh to collect the anchor distribution.",
+    emptyTitle: "No anchor text yet",
+    emptyDescription: backlinkEmptyHint(
+      "the words other sites use when they link to you",
+    ),
   },
   target_page: {
     surface: "Top pages",
@@ -81,9 +85,8 @@ const KIND_CONFIG: Record<
     noun: "target page",
     searchPlaceholder: "Search pages…",
     rowKind: "web-backlink-target-page",
-    emptyTitle: "No linked pages stored",
-    emptyDescription:
-      "No target-page rows stored yet — run a Monthly detail or Full bootstrap refresh to see which pages earn links.",
+    emptyTitle: "No linked pages yet",
+    emptyDescription: backlinkEmptyHint("which of your pages earn links"),
   },
   competitor_domain: {
     surface: "Competitors",
@@ -91,9 +94,10 @@ const KIND_CONFIG: Record<
     noun: "competitor domain",
     searchPlaceholder: "Search competitors…",
     rowKind: "web-backlink-competitor",
-    emptyTitle: "No competitor overlap stored",
-    emptyDescription:
-      "No competitor rows stored yet — run a Monthly detail or Full bootstrap refresh to find domains with overlapping link profiles.",
+    emptyTitle: "No competitors yet",
+    emptyDescription: backlinkEmptyHint(
+      "the sites that share link sources with you",
+    ),
   },
 };
 
@@ -274,11 +278,11 @@ function DimensionDetail({
         />
         <Fact label="Referring pages" value={formatCount(extras.referringPages)} />
         <Fact
-          label="Nofollow referring pages"
+          label="Pages linking without credit"
           value={formatCount(extras.referringPagesNofollow)}
         />
         <Fact
-          label="Broken backlinks"
+          label="Broken links"
           value={
             extras.brokenBacklinks && extras.brokenBacklinks > 0 && isDomain ? (
               <Link
@@ -292,26 +296,29 @@ function DimensionDetail({
             )
           }
         />
-        <Fact label="Rank" value={row.rank_score} />
-        <Fact label="Spam score" value={row.spam_score} />
-        <Fact label="Shared referring domains" value={extras.intersections} />
-        <Fact label="Target HTTP status" value={extras.statusCode} />
+        <Fact label="Site authority" value={row.rank_score} />
+        <Fact label="Spam signals" value={row.spam_score} />
+        <Fact label="Shared link sources" value={extras.intersections} />
+        <Fact label="Page response when checked" value={extras.statusCode} />
         <Fact label="Page title" value={extras.metaTitle} />
-        <Fact label="Provider" value={row.provider} />
+        <Fact label="Where this came from" value={row.provider} />
         <Fact label="First seen" value={formatGscDate(row.first_seen_at)} />
         <Fact label="Last seen" value={formatGscDate(row.last_seen_at)} />
       </div>
       <div className="mt-2 grid gap-2">
-        <Fact label="Platform types" value={histogramLine(extras.platformTypes)} />
-        <Fact label="Countries" value={histogramLine(extras.countries)} />
-        <Fact label="TLDs" value={histogramLine(extras.tlds)} />
-        <Fact label="Link types" value={histogramLine(extras.linkTypes)} />
         <Fact
-          label="Rel attributes"
+          label="Kinds of site"
+          value={histogramLine(extras.platformTypes)}
+        />
+        <Fact label="Countries" value={histogramLine(extras.countries)} />
+        <Fact label="Domain endings" value={histogramLine(extras.tlds)} />
+        <Fact label="Kinds of link" value={histogramLine(extras.linkTypes)} />
+        <Fact
+          label="Extra link labels"
           value={histogramLine(extras.linkAttributes)}
         />
         <Fact
-          label="Placements"
+          label="Where on the page"
           value={histogramLine(extras.semanticLocations)}
         />
       </div>
@@ -363,7 +370,7 @@ export function BacklinkDimensionTable({
           {
             id: "referring_domains",
             accessorKey: "referring_domains",
-            header: "Ref domains",
+            header: "Referring domains",
             filter: false,
             align: "right",
             cell: (row) => (
@@ -425,7 +432,7 @@ export function BacklinkDimensionTable({
           } satisfies MatrxColumnDef<BacklinkDimensionRow>,
           {
             id: "broken",
-            header: "Broken",
+            header: "Broken links",
             sortable: false,
             filter: false,
             align: "right",
@@ -455,7 +462,10 @@ export function BacklinkDimensionTable({
       ? [
           {
             id: "intersections",
-            header: headerWithTooltip("Intersections", INTERSECTIONS_EXPLAINER),
+            header: headerWithTooltip(
+              "Shared link sources",
+              INTERSECTIONS_EXPLAINER,
+            ),
             sortable: false,
             filter: false,
             align: "right",
@@ -501,7 +511,7 @@ export function BacklinkDimensionTable({
     {
       id: "rank_score",
       accessorKey: "rank_score",
-      header: headerWithTooltip("Rank", DOMAIN_RANK_EXPLAINER),
+      header: headerWithTooltip("Site authority", DOMAIN_RANK_EXPLAINER),
       filter: false,
       align: "right",
       cell: (row) => <RankCell value={row.rank_score} />,
@@ -509,7 +519,7 @@ export function BacklinkDimensionTable({
     {
       id: "spam_score",
       accessorKey: "spam_score",
-      header: "Spam",
+      header: headerWithTooltip("Spam signals", SPAM_SCORE_EXPLAINER),
       filter: false,
       align: "right",
       cell: (row) => <SpamCell score={row.spam_score} />,
@@ -558,8 +568,8 @@ export function BacklinkDimensionTable({
             location: webLocation(`Backlinks — ${config.surface}`),
             rowKind: config.rowKind,
             listKind: `${config.rowKind}-table`,
-            rowDescription: `One ${config.noun} aggregate from the latest backlink snapshot.`,
-            listDescription: `The currently visible ${config.noun} rows (respecting search, sort, and pagination).`,
+            rowDescription: `One ${config.noun}, totalled up as of our last check.`,
+            listDescription: `The ${config.noun} rows currently on screen (respecting the search, sort, and page you are on).`,
             humanRow: humanDimensionRow,
             agentRow: projectDimensionRow,
             rowAttributes: (row) => ({
@@ -581,7 +591,7 @@ export function BacklinkDimensionTable({
           detail={{
             title: (row) => row.label ?? row.dimension_key,
             description: (row) =>
-              `${formatCount(row.backlinks)} backlinks in the latest snapshot`,
+              `${formatCount(row.backlinks)} backlinks as of our last check`,
             render: (row) => (
               <DimensionDetail kind={kind} row={row} sitePath={sitePath} />
             ),
@@ -594,7 +604,7 @@ export function BacklinkDimensionTable({
             title: config.emptyTitle,
             description:
               dimension.isSuccess && table.queryState.search
-                ? `No ${config.noun}s match "${table.queryState.search}" in the latest snapshot.`
+                ? `No ${config.noun}s match "${table.queryState.search}".`
                 : config.emptyDescription,
           }}
           className="min-h-0 flex-1"
