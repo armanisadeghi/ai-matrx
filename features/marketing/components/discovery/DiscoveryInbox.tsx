@@ -77,24 +77,28 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import {
-  BRAND_ASSET_KINDS,
-  BRAND_ASSET_KIND_LABELS,
-  BUSINESS_FACT_KINDS,
-  BUSINESS_FACT_KIND_LABELS,
-  PROPERTY_KINDS,
-  PROPERTY_KIND_LABELS,
   isPropertyKind,
   isJsonRecord,
   type DiscoveredItem,
   type DiscoveredItemStatus,
   type PropertyKind,
 } from "@/features/marketing/types";
+// The classification vocabulary is canonical and shared — the manifest's
+// write-target prose, the write handler's validation, and these Selects all
+// read the same lists. Never re-type a kind literal here.
+import {
+  defaultKind,
+  isKindInPool,
+  isMediaCategory,
+  isSocialCategory,
+  kindEnumText,
+  kindOptionsFor,
+  kindPoolOf,
+  LABEL_REQUIRED_KIND,
+} from "@/features/marketing/discovery-classification";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
-import {
-  describeDiscoveredSocialProfile,
-  inferDiscoveredPropertyType,
-} from "@/features/marketing/lib/discovery-promotion";
+import { describeDiscoveredSocialProfile } from "@/features/marketing/lib/discovery-promotion";
 
 const STATUS_TABS: Array<{ value: DiscoveredItemStatus; label: string }> = [
   { value: "pending", label: "Pending" },
@@ -117,20 +121,6 @@ const CATEGORY_META: Record<
   other: { label: "Other", icon: FileQuestion },
 };
 
-const ASSET_KINDS = BRAND_ASSET_KINDS.map((value) => ({
-  value,
-  label: BRAND_ASSET_KIND_LABELS[value],
-}));
-
-const FACT_KINDS = BUSINESS_FACT_KINDS.map((value) => ({
-  value,
-  label: BUSINESS_FACT_KIND_LABELS[value],
-}));
-
-const PROPERTY_TYPE_OPTIONS = PROPERTY_KINDS.filter(
-  (value) => value !== "website",
-).map((value) => ({ value, label: PROPERTY_KIND_LABELS[value] }));
-
 const SOCIAL_ICONS: Partial<Record<PropertyKind, LucideIcon>> = {
   instagram: Instagram,
   facebook: Facebook,
@@ -142,39 +132,6 @@ const SOCIAL_ICONS: Partial<Record<PropertyKind, LucideIcon>> = {
   google_business_profile: MapPinned,
   other: Globe2,
 };
-
-function isMediaCategory(category: string): boolean {
-  return category === "media";
-}
-
-function isSocialCategory(category: string): boolean {
-  return category === "social";
-}
-
-/** Which type pool a category's rows choose from (drives bulk type-assign). */
-type KindPool = "asset" | "property" | "fact";
-
-function kindPoolOf(category: string): KindPool {
-  if (isMediaCategory(category)) return "asset";
-  if (isSocialCategory(category)) return "property";
-  return "fact";
-}
-
-function kindOptionsFor(pool: KindPool) {
-  return pool === "asset"
-    ? ASSET_KINDS
-    : pool === "property"
-      ? PROPERTY_TYPE_OPTIONS
-      : FACT_KINDS;
-}
-
-function defaultKind(item: DiscoveredItem): string {
-  if (isSocialCategory(item.category)) return inferDiscoveredPropertyType(item);
-  const guess = item.guessed_kind ?? "";
-  const pool = kindOptionsFor(kindPoolOf(item.category));
-  if (pool.some((option) => option.value === guess)) return guess;
-  return pool[pool.length - 1].value;
-}
 
 function itemDisplayValue(item: DiscoveredItem): string {
   if (item.url) return item.url;
@@ -205,6 +162,13 @@ export function DiscoveryInbox() {
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [kindOverrides, setKindOverrides] = useState<Record<string, string>>(
+    {},
+  );
+  // Labels live BESIDE the kinds in the parent (they used to be per-row local
+  // state) for two reasons: the bulk Confirm must be able to send the label
+  // the user typed, and the `item_classifications` write target stages kind
+  // and label together through these very setters — never a parallel path.
+  const [labelOverrides, setLabelOverrides] = useState<Record<string, string>>(
     {},
   );
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
@@ -251,6 +215,7 @@ export function DiscoveryInbox() {
 
   const effectiveKind = (item: DiscoveredItem) =>
     kindOverrides[item.id] ?? defaultKind(item);
+  const effectiveLabel = (item: DiscoveredItem) => labelOverrides[item.id] ?? "";
 
   // Selection is only meaningful against the rows actually on screen —
   // refetches can move ids out from under a stale selection.
@@ -300,13 +265,19 @@ export function DiscoveryInbox() {
   };
 
   const runBulkConfirm = async () => {
+    // An "Other" row is confirmable in bulk exactly when it carries a label —
+    // the same rule the per-row Confirm button enforces. Now that labels are
+    // parent state, a label the user typed (or an agent staged) travels with
+    // the bulk write instead of being silently dropped.
     const ready = selectedItems.filter(
-      (item) => effectiveKind(item) !== "other",
+      (item) =>
+        effectiveKind(item) !== LABEL_REQUIRED_KIND ||
+        effectiveLabel(item).trim().length > 0,
     );
     const needLabel = selectedItems.length - ready.length;
     if (ready.length === 0) {
       toast.error(
-        "Every selected item is typed Other — Other needs a per-item label, so confirm those individually.",
+        "Every selected item is typed Other with no label — Other needs a per-item label, so label them or confirm those individually.",
       );
       return;
     }
@@ -315,7 +286,7 @@ export function DiscoveryInbox() {
         ready.map((item) => ({
           item,
           kind: effectiveKind(item),
-          label: null,
+          label: effectiveLabel(item).trim() || null,
         })),
       );
       setSelected(new Set());
@@ -477,9 +448,108 @@ export function DiscoveryInbox() {
   const rangeStart = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const rangeEnd = (currentPage - 1) * pageSize + rows.length;
 
+  // Agent write handlers for the manifest's declared writeTargets. Fresh
+  // closures per call (the getWriteHandlers contract), so `rows` and `status`
+  // read below are always live, never a stale snapshot.
+  const getSurfaceWriteHandlers = () => ({
+    item_classifications: (value: unknown) => {
+      // The Confirmed/Dismissed tabs render no type or label control at all —
+      // staging into them would put a value somewhere the user cannot see or
+      // correct. Refuse loudly instead.
+      if (status !== "pending")
+        throw new Error(
+          `item_classifications applies only to the Pending tab, but the "${status}" tab is active and its rows render no classification controls. Nothing was staged.`,
+        );
+      if (!Array.isArray(value) || value.length === 0)
+        throw new Error(
+          "item_classifications expects a NON-EMPTY array of objects: [{ item_id, kind, label? }].",
+        );
+
+      const byId = new Map(rows.map((item) => [item.id, item]));
+      const loadedIdsHint =
+        rows.length === 0
+          ? "no rows are loaded right now"
+          : `loaded ids are: ${rows
+              .slice(0, 10)
+              .map((row) => row.id)
+              .join(", ")}${rows.length > 10 ? ` (+${rows.length - 10} more)` : ""}`;
+
+      // Validate EVERY entry BEFORE any state moves, so a rejected entry can
+      // never leave a half-applied triage staged on the page.
+      const resolved: Array<{ id: string; kind: string; label: string }> = [];
+      const seen = new Set<string>();
+      value.forEach((entry, index) => {
+        const at = `item_classifications[${index}]`;
+        if (typeof entry !== "object" || entry === null || Array.isArray(entry))
+          throw new Error(`${at} expects an object: { item_id, kind, label? }.`);
+        const patch = entry as Record<string, unknown>;
+        const accepted = ["item_id", "kind", "label"];
+        const unsupported = Object.keys(patch).filter(
+          (key) => !accepted.includes(key),
+        );
+        if (unsupported.length > 0)
+          throw new Error(
+            `${at} got unsupported key(s): ${unsupported.join(", ")}. Accepted keys: ${accepted.join(" | ")}.`,
+          );
+
+        const rawId = patch.item_id;
+        if (typeof rawId !== "string" || !rawId.trim())
+          throw new Error(`${at}.item_id expects a non-empty string.`);
+        const itemId = rawId.trim();
+        const item = byId.get(itemId);
+        if (!item)
+          throw new Error(
+            `${at}.item_id "${itemId}" is not a discovered item loaded on this page — ${loadedIdsHint}. Read ids from discovered_items; you may only classify rows the user can see.`,
+          );
+        if (seen.has(itemId))
+          throw new Error(
+            `${at}.item_id "${itemId}" appears more than once — send exactly one classification per item.`,
+          );
+        seen.add(itemId);
+
+        // The allowed vocabulary is chosen by the ITEM's category, never by
+        // the caller: each category promotes into a different table.
+        const pool = kindPoolOf(item.category);
+        const rawKind = patch.kind;
+        if (!isKindInPool(pool, rawKind))
+          throw new Error(
+            `${at}.kind ${JSON.stringify(rawKind)} is not valid for item "${itemId}" (category "${item.category}"). Expected one of: ${kindEnumText(pool)}.`,
+          );
+
+        let label = "";
+        if (patch.label !== undefined && patch.label !== null) {
+          if (typeof patch.label !== "string")
+            throw new Error(`${at}.label expects a string when present.`);
+          label = patch.label.trim();
+        }
+        if (rawKind === LABEL_REQUIRED_KIND && !label)
+          throw new Error(
+            `${at}.label is required and must be non-empty when kind is "${LABEL_REQUIRED_KIND}" — the user cannot confirm an "${LABEL_REQUIRED_KIND}" item without a label, so staging one would be a dead end.`,
+          );
+
+        resolved.push({ id: itemId, kind: rawKind, label });
+      });
+
+      // Everything validated — stage through the SAME setters the reviewer's
+      // own dropdown and label input drive. Merge by item id: rows the caller
+      // did not name keep whatever is staged for them.
+      setKindOverrides((current) => {
+        const draft = { ...current };
+        for (const row of resolved) draft[row.id] = row.kind;
+        return draft;
+      });
+      setLabelOverrides((current) => {
+        const draft = { ...current };
+        for (const row of resolved) draft[row.id] = row.label;
+        return draft;
+      });
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-discovery"
+      getWriteHandlers={getSurfaceWriteHandlers}
       getScope={() => {
         // pending_count comes from the dedicated brand-scoped count query —
         // never the loaded rows' length, which caps at the list query's
@@ -519,6 +589,17 @@ export function DiscoveryInbox() {
               }))
             : undefined,
           discovered_items: loadedItems,
+          // The read twin of the item_classifications write target. Only the
+          // Pending tab has classification controls, so only it has staged
+          // state to report — same 30-row cap as the item lists.
+          staged_classifications: pendingLoaded
+            ? rows.slice(0, 30).map((item) => ({
+                item_id: item.id,
+                kind: effectiveKind(item),
+                label: effectiveLabel(item) || null,
+                is_default: kindOverrides[item.id] === undefined,
+              }))
+            : undefined,
         });
       }}
     >
@@ -772,6 +853,13 @@ export function DiscoveryInbox() {
                           [item.id]: kind,
                         }))
                       }
+                      label={effectiveLabel(item)}
+                      onLabelChange={(label) =>
+                        setLabelOverrides((current) => ({
+                          ...current,
+                          [item.id]: label,
+                        }))
+                      }
                       selectable={selectable}
                       selected={selected.has(item.id)}
                       onSelectedChange={(next) =>
@@ -857,6 +945,8 @@ function DiscoveryRow({
   readOnly,
   kind,
   onKindChange,
+  label,
+  onLabelChange,
   selectable,
   selected,
   onSelectedChange,
@@ -865,6 +955,9 @@ function DiscoveryRow({
   readOnly: boolean;
   kind: string;
   onKindChange: (kind: string) => void;
+  /** Lifted to the parent — the bulk confirm and the agent write both need it. */
+  label: string;
+  onLabelChange: (label: string) => void;
   selectable: boolean;
   selected: boolean;
   onSelectedChange: (selected: boolean) => void;
@@ -876,7 +969,6 @@ function DiscoveryRow({
   const undismiss = useUndismissDiscoveredItem();
   const deleteMutation = useDeleteDiscoveredItem();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [customLabel, setCustomLabel] = useState("");
   const media = isMediaCategory(item.category);
   const social = isSocialCategory(item.category);
   const socialPreview = social ? describeDiscoveredSocialProfile(item) : null;
@@ -884,7 +976,7 @@ function DiscoveryRow({
     ? (SOCIAL_ICONS[socialPreview.kind] ?? AtSign)
     : AtSign;
   const kindOptions = kindOptionsFor(kindPoolOf(item.category));
-  const customLabelRequired = kind === "other";
+  const customLabelRequired = kind === LABEL_REQUIRED_KIND;
   const busy =
     confirmAsset.isPending ||
     confirmFact.isPending ||
@@ -922,7 +1014,7 @@ function DiscoveryRow({
       : null;
 
   const confirm = async () => {
-    const trimmedLabel = customLabel.trim();
+    const trimmedLabel = label.trim();
     if (customLabelRequired && !trimmedLabel) {
       toast.error("Add a custom label for an Other item.");
       return;
@@ -1150,8 +1242,8 @@ function DiscoveryRow({
             </SelectContent>
           </Select>
           <Input
-            value={customLabel}
-            onChange={(event) => setCustomLabel(event.target.value)}
+            value={label}
+            onChange={(event) => onLabelChange(event.target.value)}
             className="h-8 w-40 text-xs"
             placeholder={customLabelRequired ? "Custom label (required)" : "Label (optional)"}
             aria-label={
@@ -1161,7 +1253,7 @@ function DiscoveryRow({
           <Button
             size="sm"
             className="h-8 gap-1"
-            disabled={busy || (customLabelRequired && !customLabel.trim())}
+            disabled={busy || (customLabelRequired && !label.trim())}
             onClick={() => void confirm()}
           >
             <Check className="h-3.5 w-3.5" />
