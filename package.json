@@ -120,6 +120,7 @@
     "check:content-ir:twin": "tsx scripts/shape/check-content-ir-twin.ts",
     "check:content-ir:strict": "tsx scripts/shape/generate-content-vocab-crosswalk.ts --check && tsx scripts/shape/check-content-ir-twin.ts && tsx scripts/shape/check-shapes.ts --strict",
     "shape:revalidate": "tsx scripts/shape/revalidate-stranded-examples.ts",
+    "shape:reemit-discriminator": "tsx scripts/shape/regenerate-kind-block-schemas.ts",
     "shape:sample": "tsx scripts/shape/set-sample.ts",
     "shape:activate": "tsx scripts/shape/activate-kinds.ts",
     "core-check": "pnpm check:ui-primitives && pnpm check:dead-relations",
