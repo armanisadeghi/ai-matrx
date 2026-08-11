@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-11T16:33:28.802Z",
-  "commit": "48fd0c27347fee9abfd7ad8752c9ffbcc0081307",
+  "generatedAt": "2026-08-11T16:59:10.226Z",
+  "commit": "e28090dab1f69482e479320b4c42572951081c13",
   "totals": {
-    "errors": 2483,
-    "filesWithFindings": 1185,
-    "filesScanned": 11523,
+    "errors": 2358,
+    "filesWithFindings": 1155,
+    "filesScanned": 11549,
     "byClass": {
-      "bug": 146,
-      "correctness": 2236,
+      "bug": 27,
+      "correctness": 2230,
       "doctrine": 97,
       "style": 4
     }
@@ -15,22 +15,7 @@
   "byRule": [
     {
       "rule": "react-hooks/rules-of-hooks",
-      "count": 132,
-      "klass": "bug"
-    },
-    {
-      "rule": "react/jsx-key",
-      "count": 6,
-      "klass": "bug"
-    },
-    {
-      "rule": "@next/next/no-html-link-for-pages",
-      "count": 5,
-      "klass": "bug"
-    },
-    {
-      "rule": "@next/next/no-assign-module-variable",
-      "count": 3,
+      "count": 27,
       "klass": "bug"
     },
     {
@@ -40,7 +25,7 @@
     },
     {
       "rule": "react-hooks/refs",
-      "count": 594,
+      "count": 589,
       "klass": "correctness"
     },
     {
@@ -55,7 +40,7 @@
     },
     {
       "rule": "react-hooks/purity",
-      "count": 98,
+      "count": 97,
       "klass": "correctness"
     },
     {
@@ -106,11 +91,6 @@
   ],
   "worstFiles": [
     {
-      "key": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "count": 36,
-      "real": 36
-    },
-    {
       "key": "features/agents/components/previews/DataRefHoverPreview.tsx",
       "count": 34,
       "real": 34
@@ -139,11 +119,6 @@
       "key": "features/agents/components/tools-management/AgentToolsModal.tsx",
       "count": 18,
       "real": 18
-    },
-    {
-      "key": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "count": 17,
-      "real": 17
     },
     {
       "key": "features/applet/home/applet-card/Default.tsx",
@@ -189,11 +164,6 @@
       "key": "features/scopes/components/management/ScopesManager.tsx",
       "count": 12,
       "real": 12
-    },
-    {
-      "key": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "count": 11,
-      "real": 11
     },
     {
       "key": "features/applet/builder/modules/container-builder/container-comparison/ContainerComparisonDetails.tsx",
@@ -266,17 +236,17 @@
       "real": 8
     },
     {
+      "key": "components/mardown-display/blocks/links/LinkComponent.tsx",
+      "count": 8,
+      "real": 8
+    },
+    {
       "key": "components/mardown-display/tables/MarkdownTable.tsx",
       "count": 8,
       "real": 8
     },
     {
       "key": "components/official-candidate/json-truncator/JsonTruncator.tsx",
-      "count": 8,
-      "real": 8
-    },
-    {
-      "key": "components/official/HelpIcon.tsx",
       "count": 8,
       "real": 8
     },
@@ -304,18 +274,33 @@
       "key": "components/official/ImageCropUploader.tsx",
       "count": 8,
       "real": 7
+    },
+    {
+      "key": "components/modals/FindReplaceModal.tsx",
+      "count": 7,
+      "real": 7
+    },
+    {
+      "key": "components/official/json-explorer/RawJsonExplorer.tsx",
+      "count": 7,
+      "real": 7
+    },
+    {
+      "key": "components/ui/JsonComponents/JsonEditor.tsx",
+      "count": 7,
+      "real": 7
     }
   ],
   "worstFeatures": [
     {
-      "key": "components/mardown-display",
-      "count": 171,
-      "real": 169
-    },
-    {
       "key": "features/agents",
       "count": 172,
       "real": 161
+    },
+    {
+      "key": "components/mardown-display",
+      "count": 143,
+      "real": 141
     },
     {
       "key": "features/applet",
@@ -323,19 +308,9 @@
       "real": 135
     },
     {
-      "key": "app/(admin)",
-      "count": 121,
-      "real": 118
-    },
-    {
       "key": "app/(dev)",
-      "count": 109,
-      "real": 106
-    },
-    {
-      "key": "components/official",
-      "count": 82,
-      "real": 78
+      "count": 108,
+      "real": 105
     },
     {
       "key": "components/animated",
@@ -343,14 +318,24 @@
       "real": 73
     },
     {
+      "key": "components/official",
+      "count": 74,
+      "real": 70
+    },
+    {
       "key": "features/files",
       "count": 65,
       "real": 65
     },
     {
+      "key": "app/(admin)",
+      "count": 64,
+      "real": 61
+    },
+    {
       "key": "features/rag",
-      "count": 62,
-      "real": 54
+      "count": 61,
+      "real": 53
     },
     {
       "key": "features/organizations",
@@ -428,24 +413,14 @@
       "real": 30
     },
     {
-      "key": "features/agent-apps",
-      "count": 28,
-      "real": 28
-    },
-    {
-      "key": "components/matrx",
-      "count": 27,
-      "real": 27
-    },
-    {
-      "key": "app/(core)",
-      "count": 28,
-      "real": 26
-    },
-    {
       "key": "features/code",
       "count": 25,
       "real": 25
+    },
+    {
+      "key": "app/(core)",
+      "count": 26,
+      "real": 24
     },
     {
       "key": "features/research",
@@ -493,6 +468,11 @@
       "real": 20
     },
     {
+      "key": "features/agent-apps",
+      "count": 19,
+      "real": 19
+    },
+    {
       "key": "features/transcript-studio",
       "count": 19,
       "real": 19
@@ -503,9 +483,14 @@
       "real": 18
     },
     {
-      "key": "components/admin",
+      "key": "components/matrx",
       "count": 18,
       "real": 18
+    },
+    {
+      "key": "components/admin",
+      "count": 17,
+      "real": 17
     }
   ],
   "findings": [
@@ -807,60 +792,6 @@
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
     },
     {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/action-feedback-button.tsx",
-      "line": 17,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/advanced-collapsible.tsx",
-      "line": 16,
-      "column": 33,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/advanced-collapsible.tsx",
-      "line": 17,
-      "column": 43,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/advanced-menu.tsx",
-      "line": 18,
-      "column": 16,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useAdvancedMenu\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/applet-list-table.tsx",
-      "line": 213,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/applet-list-table.tsx",
-      "line": 242,
-      "column": 14,
-      "rule": "react-hooks/static-components",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
-    },
-    {
       "file": "app/(admin)/administration/ui/official-components/component-displays/applet-list-table.tsx",
       "line": 246,
       "column": 14,
@@ -888,319 +819,13 @@
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
     },
     {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/category-notes-modal.tsx",
-      "line": 20,
-      "column": 31,
-      "rule": "react-hooks/rules-of-hooks",
+      "file": "app/(admin)/administration/ui/official-components/component-displays/applet-list-table.tsx",
+      "line": 258,
+      "column": 14,
+      "rule": "react-hooks/static-components",
       "feature": "app/(admin)",
       "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 48,
-      "column": 33,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 51,
-      "column": 45,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 56,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 57,
-      "column": 41,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 58,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 61,
-      "column": 27,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 98,
-      "column": 43,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 99,
-      "column": 41,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 105,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 142,
-      "column": 49,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 146,
-      "column": 51,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 151,
-      "column": 41,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 229,
-      "column": 43,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 232,
-      "column": 41,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 336,
-      "column": 45,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 337,
-      "column": 51,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
-      "line": 341,
-      "column": 53,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/file-upload-with-storage.tsx",
-      "line": 17,
-      "column": 45,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/file-upload-with-storage.tsx",
-      "line": 18,
-      "column": 41,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/floating-dock.tsx",
-      "line": 25,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/floating-dock.tsx",
-      "line": 28,
-      "column": 43,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/floating-dock.tsx",
-      "line": 29,
-      "column": 45,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/floating-sheet.tsx",
-      "line": 19,
-      "column": 39,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/floating-sheet.tsx",
-      "line": 20,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/floating-sheet.tsx",
-      "line": 21,
-      "column": 35,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/floating-sheet.tsx",
-      "line": 22,
-      "column": 41,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/floating-sheet.tsx",
-      "line": 23,
-      "column": 41,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/floating-sheet.tsx",
-      "line": 24,
-      "column": 41,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/floating-sheet.tsx",
-      "line": 25,
-      "column": 41,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/full-screen-overlay.tsx",
-      "line": 17,
-      "column": 31,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/icon-input-with-validation.tsx",
-      "line": 20,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/icon-input-with-validation.tsx",
-      "line": 21,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/icon-input-with-validation.tsx",
-      "line": 22,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/icon-input-with-validation.tsx",
-      "line": 23,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
+      "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
     },
     {
       "file": "app/(admin)/administration/ui/official-components/component-displays/icon-resolver.tsx",
@@ -1230,15 +855,6 @@
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
     },
     {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/icon-select.tsx",
-      "line": 16,
-      "column": 45,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
       "file": "app/(admin)/administration/ui/official-components/component-displays/image-asset-uploader.tsx",
       "line": 11,
       "column": 1,
@@ -1248,24 +864,6 @@
       "message": "'@/features/window-panels/windows/image/useOpenImageUploaderWindow' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.ts…"
     },
     {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/image-upload-field.tsx",
-      "line": 15,
-      "column": 35,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/image-upload-field.tsx",
-      "line": 16,
-      "column": 47,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
       "file": "app/(admin)/administration/ui/official-components/component-displays/inline-copy-button.tsx",
       "line": 522,
       "column": 14,
@@ -1273,132 +871,6 @@
       "feature": "app/(admin)",
       "route": null,
       "message": "Error: Cannot create components during render Components created during render will reset their state each time they are created. Declare components outside of render. /Users/armanisadeghi/code/matrx-frontend/app/(admin)/administration/ui/…"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/mini-file-upload.tsx",
-      "line": 15,
-      "column": 45,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/multi-file-upload.tsx",
-      "line": 15,
-      "column": 45,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/paste-image-handler.tsx",
-      "line": 24,
-      "column": 43,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/paste-image-handler.tsx",
-      "line": 27,
-      "column": 43,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/responsive-icon-button-group.tsx",
-      "line": 209,
-      "column": 9,
-      "rule": "react/jsx-key",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Missing \"key\" prop for element in array"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/responsive-icon-button-group.tsx",
-      "line": 219,
-      "column": 9,
-      "rule": "react/jsx-key",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Missing \"key\" prop for element in array"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/responsive-icon-button-group.tsx",
-      "line": 233,
-      "column": 9,
-      "rule": "react/jsx-key",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Missing \"key\" prop for element in array"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/responsive-icon-button-group.tsx",
-      "line": 247,
-      "column": 9,
-      "rule": "react/jsx-key",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Missing \"key\" prop for element in array"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/responsive-icon-button-group.tsx",
-      "line": 267,
-      "column": 9,
-      "rule": "react/jsx-key",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Missing \"key\" prop for element in array"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/responsive-icon-button-group.tsx",
-      "line": 281,
-      "column": 9,
-      "rule": "react/jsx-key",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "Missing \"key\" prop for element in array"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/text-array-input.tsx",
-      "line": 18,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/text-array-input.tsx",
-      "line": 19,
-      "column": 33,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/component-displays/text-array-input.tsx",
-      "line": 20,
-      "column": 49,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "app/(admin)/administration/ui/official-components/parts/tabbed-demo-wrapper.tsx",
-      "line": 33,
-      "column": 39,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "app/(admin)",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
     },
     {
       "file": "app/(admin)/administration/ui/official-components/to-be-added/toggle-menu-demo/toggle-with-categories/page.tsx",
@@ -1698,15 +1170,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "app/(core)/documents/[id]/page.tsx",
-      "line": 126,
-      "column": 13,
-      "rule": "@next/next/no-html-link-for-pages",
-      "feature": "app/(core)",
-      "route": "/documents/[id]",
-      "message": "Do not use an `<a>` element to navigate to `/documents/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages"
-    },
-    {
       "file": "app/(core)/documents/page.tsx",
       "line": 92,
       "column": 10,
@@ -1831,15 +1294,6 @@
       "feature": "app/(core)",
       "route": "/scraper/quick",
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(core)/workbooks/[id]/page.tsx",
-      "line": 175,
-      "column": 13,
-      "rule": "@next/next/no-html-link-for-pages",
-      "feature": "app/(core)",
-      "route": "/workbooks/[id]",
-      "message": "Do not use an `<a>` element to navigate to `/workbooks/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages"
     },
     {
       "file": "app/(core)/workbooks/page.tsx",
@@ -2074,15 +1528,6 @@
       "feature": "app/(dev)",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "app/(dev)/demos/lists-junk/v1/[id]/page.dev.tsx",
-      "line": 61,
-      "column": 9,
-      "rule": "@next/next/no-html-link-for-pages",
-      "feature": "app/(dev)",
-      "route": "/demos/lists-junk/v1/[id]",
-      "message": "Do not use an `<a>` element to navigate to `/lists/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages"
     },
     {
       "file": "app/(dev)/demos/local-tools/_lib/InstanceSelectorModal.tsx",
@@ -3469,15 +2914,6 @@
       "feature": "components/admin",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "components/admin/debug/DebugModulePanel.tsx",
-      "line": 49,
-      "column": 3,
-      "rule": "@next/next/no-assign-module-variable",
-      "feature": "components/admin",
-      "route": null,
-      "message": "Do not assign to the variable `module`. See: https://nextjs.org/docs/messages/no-assign-module-variable"
     },
     {
       "file": "components/admin/debug/TokenStatusDebug.tsx",
@@ -4894,187 +4330,7 @@
     },
     {
       "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 110,
-      "column": 26,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 111,
-      "column": 8,
-      "rule": "react-hooks/refs",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 112,
-      "column": 44,
-      "rule": "react-hooks/purity",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "Error: Cannot call impure function during render `Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/r…"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 114,
-      "column": 23,
-      "rule": "react-hooks/refs",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 114,
-      "column": 23,
-      "rule": "react-hooks/refs",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 114,
-      "column": 23,
-      "rule": "react-hooks/refs",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 116,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 117,
-      "column": 31,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 118,
-      "column": 43,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 119,
-      "column": 24,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 120,
-      "column": 19,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 121,
-      "column": 19,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 122,
-      "column": 28,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 123,
-      "column": 24,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 130,
-      "column": 7,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useGlobalPopupState\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 132,
-      "column": 26,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 140,
-      "column": 3,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useEffect\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 153,
-      "column": 27,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 194,
-      "column": 3,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useEffect\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 210,
-      "column": 3,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useEffect\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 212,
+      "line": 230,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/mardown-display",
@@ -5083,79 +4339,7 @@
     },
     {
       "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 217,
-      "column": 28,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 234,
-      "column": 28,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 240,
-      "column": 26,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 257,
-      "column": 30,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 269,
-      "column": 32,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 274,
-      "column": 28,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 280,
-      "column": 24,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 314,
-      "column": 23,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/mardown-display",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 325,
+      "line": 343,
       "column": 51,
       "rule": "react-hooks/refs",
       "feature": "components/mardown-display",
@@ -5164,7 +4348,7 @@
     },
     {
       "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 325,
+      "line": 343,
       "column": 51,
       "rule": "react-hooks/refs",
       "feature": "components/mardown-display",
@@ -5173,7 +4357,7 @@
     },
     {
       "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 325,
+      "line": 343,
       "column": 51,
       "rule": "react-hooks/refs",
       "feature": "components/mardown-display",
@@ -5182,7 +4366,7 @@
     },
     {
       "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 325,
+      "line": 343,
       "column": 51,
       "rule": "react-hooks/refs",
       "feature": "components/mardown-display",
@@ -5191,7 +4375,7 @@
     },
     {
       "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 325,
+      "line": 343,
       "column": 51,
       "rule": "react-hooks/refs",
       "feature": "components/mardown-display",
@@ -5200,7 +4384,7 @@
     },
     {
       "file": "components/mardown-display/blocks/links/LinkComponent.tsx",
-      "line": 329,
+      "line": 347,
       "column": 14,
       "rule": "react-hooks/refs",
       "feature": "components/mardown-display",
@@ -6432,87 +5616,6 @@
       "message": "Error: Cannot access variable before it is declared `exitFullscreen` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time. /Users/armanisadeghi/code/matrx-frontend/components/…"
     },
     {
-      "file": "components/matrx/matrx-record-list/basic-auto-table.tsx",
-      "line": 48,
-      "column": 22,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "React Hook \"React.useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/matrx/matrx-record-list/basic-auto-table.tsx",
-      "line": 53,
-      "column": 25,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "React Hook \"React.useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/matrx/matrx-record-list/basic-auto-table.tsx",
-      "line": 65,
-      "column": 21,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "React Hook \"React.useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/matrx/matrx-record-list/basic-record-edit-list.tsx",
-      "line": 58,
-      "column": 23,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "React Hook \"React.useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/matrx/matrx-record-list/basic-record-list.tsx",
-      "line": 55,
-      "column": 20,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "React Hook \"React.useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/matrx/matrx-record-list/basic-record-list.tsx",
-      "line": 63,
-      "column": 23,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "React Hook \"React.useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/matrx/matrx-record-list/basic-record-list.tsx",
-      "line": 75,
-      "column": 23,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "React Hook \"React.useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/matrx/matrx-record-list/unified-record-list.tsx",
-      "line": 58,
-      "column": 23,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "React Hook \"React.useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "components/matrx/matrx-record-list/unified-record-list.tsx",
-      "line": 70,
-      "column": 23,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/matrx",
-      "route": null,
-      "message": "React Hook \"React.useMemo\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
       "file": "components/matrx/resizable/dev/ResizableLeftPanel.tsx",
       "line": 59,
       "column": 7,
@@ -7033,78 +6136,6 @@
       "feature": "components/official",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "components/official/HelpIcon.tsx",
-      "line": 24,
-      "column": 31,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/official/HelpIcon.tsx",
-      "line": 25,
-      "column": 37,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/official/HelpIcon.tsx",
-      "line": 26,
-      "column": 35,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useState\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/official/HelpIcon.tsx",
-      "line": 27,
-      "column": 19,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/official/HelpIcon.tsx",
-      "line": 28,
-      "column": 22,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/official/HelpIcon.tsx",
-      "line": 29,
-      "column": 26,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/official/HelpIcon.tsx",
-      "line": 30,
-      "column": 26,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "components/official/HelpIcon.tsx",
-      "line": 105,
-      "column": 3,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "components/official",
-      "route": null,
-      "message": "React Hook \"useEffect\" is called conditionally. React Hooks must be called in the exact same order in every component render."
     },
     {
       "file": "components/official/icons/IconInputWithValidation.tsx",
@@ -8224,7 +7255,7 @@
     },
     {
       "file": "components/user-generated-table-data/UserTableViewer.tsx",
-      "line": 645,
+      "line": 671,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/user-generated-table-data",
@@ -8233,7 +7264,7 @@
     },
     {
       "file": "components/user-generated-table-data/UserTableViewer.tsx",
-      "line": 713,
+      "line": 739,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/user-generated-table-data",
@@ -8242,7 +7273,7 @@
     },
     {
       "file": "components/user-generated-table-data/UserTableViewer.tsx",
-      "line": 713,
+      "line": 739,
       "column": 29,
       "rule": "react-hooks/immutability",
       "feature": "components/user-generated-table-data",
@@ -8251,7 +7282,7 @@
     },
     {
       "file": "components/user-generated-table-data/UserTableViewer.tsx",
-      "line": 722,
+      "line": 748,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "components/user-generated-table-data",
@@ -8701,52 +7732,7 @@
     },
     {
       "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 146,
-      "column": 7,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/agent-apps",
-      "route": null,
-      "message": "React Hook \"useAutoCreateApp\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 172,
-      "column": 24,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/agent-apps",
-      "route": null,
-      "message": "React Hook \"useAppSelector\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 175,
-      "column": 28,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/agent-apps",
-      "route": null,
-      "message": "React Hook \"useAppSelector\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 178,
-      "column": 29,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/agent-apps",
-      "route": null,
-      "message": "React Hook \"useAppSelector\" is called conditionally. React Hooks must be called in the exact same order in every component render."
-    },
-    {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 198,
-      "column": 3,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/agent-apps",
-      "route": null,
-      "message": "React Hook \"useEffect\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 203,
+      "line": 215,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/agent-apps",
@@ -8755,16 +7741,7 @@
     },
     {
       "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 209,
-      "column": 3,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/agent-apps",
-      "route": null,
-      "message": "React Hook \"useEffect\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 211,
+      "line": 223,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/agent-apps",
@@ -8773,25 +7750,7 @@
     },
     {
       "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 224,
-      "column": 23,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/agent-apps",
-      "route": null,
-      "message": "React Hook \"React.useRef\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 225,
-      "column": 3,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/agent-apps",
-      "route": null,
-      "message": "React Hook \"useEffect\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/agent-apps/components/AutoCreateAgentAppForm.tsx",
-      "line": 230,
+      "line": 242,
       "column": 10,
       "rule": "react-hooks/immutability",
       "feature": "features/agent-apps",
@@ -8932,15 +7891,6 @@
       "feature": "features/agent-apps",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/agent-apps/utils/allowed-imports.ts",
-      "line": 438,
-      "column": 7,
-      "rule": "@next/next/no-assign-module-variable",
-      "feature": "features/agent-apps",
-      "route": null,
-      "message": "Do not assign to the variable `module`. See: https://nextjs.org/docs/messages/no-assign-module-variable"
     },
     {
       "file": "features/agent-comparison/components/BattleColumnHeader.tsx",
@@ -9088,7 +8038,7 @@
     },
     {
       "file": "features/agent-connections/components/sections/SkillsSection.tsx",
-      "line": 49,
+      "line": 50,
       "column": 3,
       "rule": "react-hooks/refs",
       "feature": "features/agent-connections",
@@ -9097,7 +8047,7 @@
     },
     {
       "file": "features/agent-connections/components/sections/SkillsSection.tsx",
-      "line": 54,
+      "line": 67,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/agent-connections",
@@ -13012,7 +11962,7 @@
     },
     {
       "file": "features/code-editor/agent-code-editor/components/SmartCodeEditor.tsx",
-      "line": 43,
+      "line": 52,
       "column": 1,
       "rule": "no-restricted-imports",
       "feature": "features/code-editor",
@@ -13147,7 +12097,7 @@
     },
     {
       "file": "features/code-editor/components/code-block/SmallCodeEditorImpl.tsx",
-      "line": 113,
+      "line": 122,
       "column": 27,
       "rule": "react-hooks/purity",
       "feature": "features/code-editor",
@@ -13156,7 +12106,7 @@
     },
     {
       "file": "features/code-editor/components/code-block/SmallCodeEditorImpl.tsx",
-      "line": 113,
+      "line": 122,
       "column": 41,
       "rule": "react-hooks/purity",
       "feature": "features/code-editor",
@@ -13165,7 +12115,7 @@
     },
     {
       "file": "features/code-editor/components/code-block/SmallCodeEditorImpl.tsx",
-      "line": 115,
+      "line": 124,
       "column": 21,
       "rule": "react-hooks/refs",
       "feature": "features/code-editor",
@@ -15711,15 +14661,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/marketing/content-plan/components/EntityManager.tsx",
-      "line": 176,
-      "column": 3,
-      "rule": "react-hooks/refs",
-      "feature": "features/marketing",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
       "file": "features/marketing/search-console/components/classification/BrandIdentityPanel.tsx",
       "line": 138,
       "column": 19,
@@ -17970,60 +16911,6 @@
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/public-chat/components/GuidedVariableInputs.tsx",
-      "line": 578,
-      "column": 18,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/public-chat",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/public-chat/components/GuidedVariableInputs.tsx",
-      "line": 584,
-      "column": 18,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/public-chat",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/public-chat/components/GuidedVariableInputs.tsx",
-      "line": 590,
-      "column": 25,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/public-chat",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/public-chat/components/GuidedVariableInputs.tsx",
-      "line": 595,
-      "column": 32,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/public-chat",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/public-chat/components/GuidedVariableInputs.tsx",
-      "line": 599,
-      "column": 24,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/public-chat",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
-      "file": "features/public-chat/components/GuidedVariableInputs.tsx",
-      "line": 606,
-      "column": 25,
-      "rule": "react-hooks/rules-of-hooks",
-      "feature": "features/public-chat",
-      "route": null,
-      "message": "React Hook \"useCallback\" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?"
-    },
-    {
       "file": "features/quick-actions/components/QuickDataSheet.tsx",
       "line": 62,
       "column": 5,
@@ -18394,21 +17281,12 @@
     },
     {
       "file": "features/rag/components/RepositoriesPage.tsx",
-      "line": 80,
+      "line": 81,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/rag",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/rag/components/RepositoriesPage.tsx",
-      "line": 290,
-      "column": 9,
-      "rule": "@next/next/no-html-link-for-pages",
-      "feature": "features/rag",
-      "route": null,
-      "message": "Do not use an `<a>` element to navigate to `/sandbox/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages"
     },
     {
       "file": "features/rag/components/search/SelectedPdfPages.tsx",
@@ -19743,15 +18621,6 @@
       "message": "'@/features/window-panels/windows/image/openImageViewer' import is restricted from being used by a pattern. Import window components only via the overlay controller's per-overlay dynamic() (features/overlays/OverlayController.tsx). Direct …"
     },
     {
-      "file": "features/server-logs/log-rules.ts",
-      "line": 472,
-      "column": 5,
-      "rule": "@next/next/no-assign-module-variable",
-      "feature": "features/server-logs",
-      "route": null,
-      "message": "Do not assign to the variable `module`. See: https://nextjs.org/docs/messages/no-assign-module-variable"
-    },
-    {
       "file": "features/settings/pages/FeedbackSettingsPage.tsx",
       "line": 308,
       "column": 13,
@@ -20005,7 +18874,7 @@
     },
     {
       "file": "features/skills/components/SkillDetailEditor.tsx",
-      "line": 89,
+      "line": 107,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/skills",
@@ -20806,7 +19675,7 @@
     },
     {
       "file": "features/tool-registry/lookups/components/LookupsAdminPage.tsx",
-      "line": 194,
+      "line": 195,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/tool-registry",
@@ -20815,7 +19684,7 @@
     },
     {
       "file": "features/tool-registry/lookups/components/LookupsAdminPage.tsx",
-      "line": 427,
+      "line": 428,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/tool-registry",
@@ -20824,16 +19693,7 @@
     },
     {
       "file": "features/tool-registry/lookups/components/LookupsAdminPage.tsx",
-      "line": 449,
-      "column": 13,
-      "rule": "@next/next/no-html-link-for-pages",
-      "feature": "features/tool-registry",
-      "route": null,
-      "message": "Do not use an `<a>` element to navigate to `/administration/ui/surfaces/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages"
-    },
-    {
-      "file": "features/tool-registry/lookups/components/LookupsAdminPage.tsx",
-      "line": 713,
+      "line": 714,
       "column": 10,
       "rule": "react-hooks/set-state-in-effect",
       "feature": "features/tool-registry",

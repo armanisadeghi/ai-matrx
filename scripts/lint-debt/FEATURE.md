@@ -3,7 +3,7 @@
 **Status:** Live (2026-08-11) · **Scoreboard:** `/administration/reporting/lint-debt`
 **Campaign handoff:** [`docs/handoffs/eslint-debt-campaign.md`](../../docs/handoffs/eslint-debt-campaign.md)
 
-`npx eslint . --quiet` reports **2,483 errors** in this repo. That number was
+`npx eslint . --quiet` reports **2,358 errors** in this repo (2,483 at first inventory). That number was
 doing active harm as a single number:
 
 - Feature branches "failed their lint gate" for debt that predated them by
@@ -48,8 +48,8 @@ that ships inside every repair brief:
 
 | Class | Meaning | Baseline (2026-08-11) |
 |---|---|---|
-| `bug` | Wrong at runtime today. Fix on sight. | 146 |
-| `correctness` | A real hazard class (crashes, cascading renders, torn refs, remounted subtrees) that is usually but not always live. | 2,236 |
+| `bug` | Wrong at runtime today. Fix on sight. | 27 |
+| `correctness` | A real hazard class (crashes, cascading renders, torn refs, remounted subtrees) that is usually but not always live. | 2,230 |
 | `doctrine` | This repo's own architectural bans. Never silenced — the import or the shape changes. | 97 |
 | `style` | True idiom. Lowest priority; never worth a risky edit. | 4 |
 
@@ -62,15 +62,12 @@ Baseline by rule:
 
 | Rule | Class | Count |
 |---|---|---|
-| `react-hooks/rules-of-hooks` | bug | 132 |
-| `react/jsx-key` | bug | 6 |
-| `@next/next/no-html-link-for-pages` | bug | 5 |
-| `@next/next/no-assign-module-variable` | bug | 3 |
+| `react-hooks/rules-of-hooks` | bug | 27 |
 | `react-hooks/set-state-in-effect` | correctness | 1,105 |
-| `react-hooks/refs` | correctness | 594 |
+| `react-hooks/refs` | correctness | 589 |
 | `react-hooks/static-components` | correctness | 209 |
 | `react-hooks/immutability` | correctness | 122 |
-| `react-hooks/purity` | correctness | 98 |
+| `react-hooks/purity` | correctness | 97 |
 | `react-hooks/error-boundaries` | correctness | 42 |
 | `react-hooks/preserve-manual-memoization` | correctness | 38 |
 | `react-hooks/use-memo` | correctness | 25 |
@@ -80,6 +77,11 @@ Baseline by rule:
 | `no-restricted-syntax` | doctrine | 15 |
 | `react/display-name` | style | 2 |
 | `react/jsx-no-comment-textnodes` | style | 2 |
+
+`react/jsx-key`, `@next/next/no-assign-module-variable` and
+`@next/next/no-html-link-for-pages` were cleared to zero on 2026-08-11 and no
+longer appear. They stay in `RULE_CLASS` — a rule at zero is one regression away
+from being back, and an unclassified rule is a rule at the bottom of the list.
 
 ## The two bans every repair brief carries
 
@@ -162,3 +164,6 @@ doing it.
   2,236 correctness, 97 doctrine, 4 style. Scoreboard + snapshot + classification
   shipped; `features/admin/reporting/source-links.ts` promoted out of
   `features/admin/dead-ends/` so both scoreboards share one door primitive.
+- **2026-08-11** — First sweep: 2,483 → 2,358, real bugs 146 → 27. `jsx-key`,
+  `no-assign-module-variable` and `no-html-link-for-pages` cleared entirely;
+  `rules-of-hooks` 132 → 27. No `eslint-disable` added, no rule config changed.
