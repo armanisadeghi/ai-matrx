@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { COLUMN_IDS } from "../../constants";
+import { selectLatestRunForColumn } from "../../redux/selectors";
 import { runModulePassThunk } from "../../redux/runModulePass.thunk";
 import {
   deleteModuleSegmentThunk,
@@ -18,6 +19,7 @@ import { useStudioSettings } from "../../hooks/useStudioSettings";
 import { useScrollSyncOptional } from "../scroll-sync/ScrollSyncProvider";
 import { ColumnEmptyState } from "./ColumnEmptyState";
 import { ColumnHeader } from "./ColumnHeader";
+import { WatchRunButton } from "./WatchRunButton";
 import { EditableTextSegmentRow } from "./EditableTextSegmentRow";
 import { SegmentWrapper } from "./SegmentWrapper";
 
@@ -58,20 +60,9 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
   const moduleDef = useMemo(() => getModule(moduleId), [moduleId]);
 
   // Run audit, used for the dot + status string.
-  const runIds = useAppSelector(
-    (state) => state.transcriptStudio.runIdsBySession[sessionId],
+  const latestRun = useAppSelector(
+    selectLatestRunForColumn(sessionId, 4),
   );
-  const runsById = useAppSelector(
-    (state) => state.transcriptStudio.runsById[sessionId],
-  );
-  const latestRun = useMemo(() => {
-    if (!runIds || !runsById) return null;
-    for (let i = runIds.length - 1; i >= 0; i--) {
-      const r = runsById[runIds[i]!];
-      if (r?.columnIdx === 4) return r;
-    }
-    return null;
-  }, [runIds, runsById]);
 
   const isRunning = latestRun?.status === "running";
   const dotState =
@@ -121,7 +112,7 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
           : "text-muted-foreground hover:bg-accent/40 hover:text-foreground",
       )}
     >
-      <RefreshCw className={cn("h-3 w-3", isRunning && "animate-spin")} />
+      <RefreshCw className="h-3 w-3" />
     </button>
   );
 
@@ -143,6 +134,11 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
   const headerActions = (
     <>
       {manualButton}
+      <WatchRunButton
+        sessionId={sessionId}
+        columnIdx={4}
+        label={`Building ${(moduleDef?.label ?? moduleId).toLowerCase()}`}
+      />
       {segments.length > 0 && (
         <ContentActionBar
           content={exportMarkdown}

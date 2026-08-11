@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlignLeft, Loader2, RefreshCw } from "lucide-react";
+import { AlignLeft, Radio, RefreshCw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
@@ -17,6 +17,7 @@ import {
   selectSessionRawTimestamped,
 } from "../../redux/selectors";
 import { cleanRecordingThunk } from "../../redux/thunks";
+import { WatchRunButton } from "../columns/WatchRunButton";
 
 export type SessionTranscriptMode = "raw" | "clean";
 
@@ -60,12 +61,18 @@ export function SessionTranscriptViewer({
     try {
       const recordings = selectRecordingSegments(sessionId)(store.getState());
       let failed = 0;
-      for (const rec of recordings) {
+      for (const [i, rec] of recordings.entries()) {
         const res = await dispatch(
           cleanRecordingThunk({
             sessionId,
             recordingSegmentId: rec.id,
             triggerCause: "manual",
+            // Real narrated steps, not a spinner: the ONE floating window
+            // re-binds per recording and says which one it is on.
+            watchLabel:
+              recordings.length > 1
+                ? `Cleaning recording ${i + 1} of ${recordings.length}`
+                : "Cleaning recording",
           }),
         ).unwrap();
         if (res.status === "failed") failed += 1;
@@ -100,6 +107,14 @@ export function SessionTranscriptViewer({
                 metadata={{ session_id: sessionId, kind: mode }}
               />
             )}
+            {/* The run streams in its own floating window; this reopens it. */}
+            {isClean && allowRefresh && (
+              <WatchRunButton
+                sessionId={sessionId}
+                columnIdx={2}
+                label="Cleaning recording"
+              />
+            )}
             {isClean && allowRefresh && (
               <button
                 type="button"
@@ -108,11 +123,7 @@ export function SessionTranscriptViewer({
                 aria-label="Re-clean all recordings"
                 className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
               >
-                {refreshing ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
+                <RefreshCw className="h-3.5 w-3.5" />
                 Refresh
               </button>
             )}
@@ -121,9 +132,11 @@ export function SessionTranscriptViewer({
 
         <div className="flex-1 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {refreshing && !text ? (
+            // No spinner while AI works — the pass streams in its own
+            // floating window, and this line says so instead of stalling.
             <p className="flex items-center gap-2 text-base text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Cleaning…
+              <Radio className="h-4 w-4 animate-pulse text-primary" />
+              Cleaning — the live output is in the run window.
             </p>
           ) : (
             <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground">

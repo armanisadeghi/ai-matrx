@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { COLUMN_IDS } from "../../constants";
+import { selectLatestRunForColumn } from "../../redux/selectors";
 import { runCleaningPassThunk } from "../../redux/runCleaningPass.thunk";
 import {
   deleteCleanedSegmentThunk,
@@ -21,6 +22,7 @@ import { ColumnEmptyState } from "./ColumnEmptyState";
 import { ColumnHeader } from "./ColumnHeader";
 import { EditableTextSegmentRow } from "./EditableTextSegmentRow";
 import { SegmentWrapper } from "./SegmentWrapper";
+import { WatchRunButton } from "./WatchRunButton";
 
 interface CleanedTranscriptColumnProps {
   sessionId: string;
@@ -52,20 +54,9 @@ export function CleanedTranscriptColumn({
   // Show "running" while a Column 2 run is in flight (cleanup is racing the
   // user's speaking). Reads from the runs registry rather than wiring a
   // separate slice flag so the source of truth stays auditable.
-  const runIds = useAppSelector(
-    (state) => state.transcriptStudio.runIdsBySession[sessionId],
+  const latestColumnRun = useAppSelector(
+    selectLatestRunForColumn(sessionId, 2),
   );
-  const runsById = useAppSelector(
-    (state) => state.transcriptStudio.runsById[sessionId],
-  );
-  const latestColumnRun = useMemo(() => {
-    if (!runIds || !runsById) return null;
-    for (let i = runIds.length - 1; i >= 0; i--) {
-      const r = runsById[runIds[i]!];
-      if (r?.columnIdx === 2) return r;
-    }
-    return null;
-  }, [runIds, runsById]);
 
   const status = useMemo(() => {
     if (segments.length === 0) return latestColumnRun?.status === "running"
@@ -123,9 +114,7 @@ export function CleanedTranscriptColumn({
           : "text-muted-foreground hover:bg-accent/40 hover:text-foreground",
       )}
     >
-      <RefreshCw
-        className={cn("h-3 w-3", isRunning && "animate-spin")}
-      />
+      <RefreshCw className="h-3 w-3" />
     </button>
   );
 
@@ -143,6 +132,7 @@ export function CleanedTranscriptColumn({
   const headerActions = (
     <>
       {manualButton}
+      <WatchRunButton sessionId={sessionId} columnIdx={2} label="Cleaning transcript" />
       {segments.length > 0 && (
         <ContentActionBar
           content={exportText}

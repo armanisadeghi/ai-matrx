@@ -7,6 +7,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type {
+  AgentRun,
   AssistantConversationRef,
   CleanedSegment,
   RawSegment,
@@ -105,6 +106,26 @@ export function selectRawSegments(sessionId: string | null) {
     return result;
   };
 }
+
+/**
+ * The most recent agent run for one column (2 = cleanup, 3 = concepts,
+ * 4 = module). Every column header reads it for its status line, and
+ * `WatchRunButton` reads its `conversationId` to open the live window — the
+ * ONE place that "which run is this column showing?" is answered.
+ */
+export const selectLatestRunForColumn =
+  (sessionId: string | null, columnIdx: number) =>
+  (state: RootState): AgentRun | null => {
+    if (!sessionId) return null;
+    const ids = state.transcriptStudio.runIdsBySession[sessionId];
+    const byId = state.transcriptStudio.runsById[sessionId];
+    if (!ids || !byId) return null;
+    for (let i = ids.length - 1; i >= 0; i--) {
+      const run = byId[ids[i]!];
+      if (run?.columnIdx === columnIdx) return run;
+    }
+    return null;
+  };
 
 export const selectRawSegmentCount =
   (sessionId: string | null) =>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlignLeft, Loader2, RefreshCw } from "lucide-react";
+import { AlignLeft, Radio, RefreshCw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -18,6 +18,7 @@ import {
 } from "../../redux/selectors";
 import { cleanRecordingThunk } from "../../redux/thunks";
 import { buildTimestampedTranscript } from "../../utils/timecode";
+import { WatchRunButton } from "../columns/WatchRunButton";
 
 export type TranscriptSection = "raw" | "clean";
 
@@ -143,19 +144,26 @@ export function FullTranscriptDrawer({
                   }
                   className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
                 >
-                  {cleaning ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  )}
+                  <RefreshCw className="h-3.5 w-3.5" />
                   {cleanText ? "Redo" : "Clean"}
                 </button>
+                {/* The door back to the run's own floating window — a
+                    re-clean opens it automatically, this reopens it after
+                    the user dismisses it. */}
+                <WatchRunButton
+                  sessionId={sessionId}
+                  columnIdx={2}
+                  label="Cleaning recording"
+                />
               </div>
             </div>
             {cleaning && !cleanText ? (
+              // No spinner while AI works: the run streams in its own floating
+              // window (opened by `cleanRecordingThunk`), and this line points
+              // at it rather than pretending nothing is happening.
               <p className="flex items-center gap-2 text-base text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Cleaning this recording…
+                <Radio className="h-4 w-4 animate-pulse text-primary" />
+                Cleaning this recording — the live output is in the run window.
               </p>
             ) : (
               <p className="whitespace-pre-wrap text-base leading-relaxed text-foreground">
