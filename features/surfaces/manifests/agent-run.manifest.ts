@@ -526,6 +526,7 @@ against what it actually produced, and cite specific turns.
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 export function createAgentRunScope(values: {
