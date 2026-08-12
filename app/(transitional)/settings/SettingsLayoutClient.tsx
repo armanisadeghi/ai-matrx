@@ -28,6 +28,7 @@ import {
   Database,
   KeyRound,
   Server,
+  UserCheck,
   type LucideIcon,
 } from "lucide-react";
 import { Chrome } from "@/components/icons/brand-icons";
@@ -145,6 +146,14 @@ const settingsNavItems: SettingsNavItem[] = [
     href: "/settings/integrations",
     icon: <Plug className="h-3.5 w-3.5" />,
     IconComp: Plug,
+  },
+  {
+    // Lives in (core) — the settings nav is the door to it, so a request that
+    // never reached anyone's DM is still reachable from where people look.
+    title: "Access requests",
+    href: "/settings/access-requests",
+    icon: <UserCheck className="h-3.5 w-3.5" />,
+    IconComp: UserCheck,
   },
   {
     title: "Secrets",
