@@ -11,7 +11,7 @@
  * (Fragmentation Law).
  */
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -99,9 +99,14 @@ import type {
 } from "@/features/marketing/data/backlinks-types";
 import {
   buildSiteIntegrations,
+  dataForSeoCadences,
+  DATAFORSEO_DETAIL_LIMIT_MAX,
+  DATAFORSEO_DETAIL_LIMIT_MIN,
+  isValidDataForSeoDetailLimit,
   parseSiteIntegrations,
   validateSiteIntegrations,
   type DataForSeoCadence,
+  type DataForSeoIntegrationDraft,
 } from "@/features/marketing/data/integrations-schema";
 import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
 import { refreshSiteBacklinks } from "@/features/marketing/seo/dataforseo/client";
@@ -328,6 +333,77 @@ function TopTenCard({
   );
 }
 
+/** The wire shape of the `backlink_refresh_schedule` write target. Every key
+ *  is optional — omitted keys keep the SAVED value, so "check weekly" does
+ *  not force an agent to restate a row limit it has no opinion about. */
+export interface BacklinkRefreshScheduleWrite {
+  enabled?: boolean;
+  cadence?: DataForSeoCadence;
+  detail_limit?: number;
+}
+
+const SCHEDULE_WRITE_KEYS = ["enabled", "cadence", "detail_limit"] as const;
+
+/**
+ * Validate an agent-supplied schedule patch and merge it over the SAVED
+ * schedule. Throws on every bad shape — the writeback seam turns a throw into
+ * the error envelope the agent reads, and coercing instead would hide the
+ * agent's mistake behind a value nobody asked for. Validate-then-apply:
+ * this runs to completion before anything persists.
+ */
+export function parseBacklinkScheduleWrite(
+  value: unknown,
+  saved: DataForSeoIntegrationDraft,
+): DataForSeoIntegrationDraft {
+  const target = "backlink_refresh_schedule";
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(
+      `${target} expects an object like { enabled, cadence, detail_limit } — got ${Array.isArray(value) ? "an array" : typeof value}.`,
+    );
+  }
+  const obj = value as Record<string, unknown>;
+  const unknown = Object.keys(obj).filter(
+    (key) => !(SCHEDULE_WRITE_KEYS as readonly string[]).includes(key),
+  );
+  if (unknown.length) {
+    throw new Error(
+      `${target}: unknown field(s) ${unknown.join(", ")}. Only ${SCHEDULE_WRITE_KEYS.join(", ")} can be set here.`,
+    );
+  }
+  const next = { ...saved };
+  if (obj.enabled !== undefined) {
+    if (typeof obj.enabled !== "boolean") {
+      throw new Error(`${target}: enabled must be true or false.`);
+    }
+    next.enabled = obj.enabled;
+  }
+  if (obj.cadence !== undefined) {
+    if (
+      typeof obj.cadence !== "string" ||
+      !(dataForSeoCadences as readonly string[]).includes(obj.cadence)
+    ) {
+      throw new Error(
+        `${target}: cadence must be one of ${dataForSeoCadences.join(" | ")}.`,
+      );
+    }
+    next.cadence = obj.cadence as DataForSeoCadence;
+  }
+  if (obj.detail_limit !== undefined) {
+    if (!isValidDataForSeoDetailLimit(obj.detail_limit)) {
+      throw new Error(
+        `${target}: detail_limit must be a whole number from ${DATAFORSEO_DETAIL_LIMIT_MIN} to ${DATAFORSEO_DETAIL_LIMIT_MAX} — the provider will not return more than ${DATAFORSEO_DETAIL_LIMIT_MAX} rows in one pull.`,
+      );
+    }
+    next.detailLimit = obj.detail_limit;
+  }
+  if (SCHEDULE_WRITE_KEYS.every((key) => obj[key] === undefined)) {
+    throw new Error(
+      `${target}: provide at least one of ${SCHEDULE_WRITE_KEYS.join(", ")}.`,
+    );
+  }
+  return next;
+}
+
 export function BacklinksWorkspace() {
   const { site, sitePath } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
@@ -366,10 +442,18 @@ export function BacklinksWorkspace() {
   const [savingSchedule, setSavingSchedule] = useState(false);
   const scheduleDirty =
     JSON.stringify(schedule) !== JSON.stringify(savedSchedule);
-  const detailLimitValid =
-    Number.isInteger(schedule.detailLimit) &&
-    schedule.detailLimit >= 1 &&
-    schedule.detailLimit <= 1000;
+  const detailLimitValid = isValidDataForSeoDetailLimit(schedule.detailLimit);
+
+  // Freshest known site row for the optimistic-lock `version` (see
+  // `persistSchedule`). `platform._touch_row` bumps it on every UPDATE, so
+  // the prop is one save stale between a write landing and the refetch.
+  const siteRef = useRef(site);
+  useEffect(() => {
+    if (site.version >= siteRef.current.version) siteRef.current = site;
+  }, [site]);
+  const noteFreshRow = (updated: typeof site) => {
+    if (updated.version >= siteRef.current.version) siteRef.current = updated;
+  };
 
   const tabParam = searchParams.get("tab");
   const tab: BacklinkTabKey = isBacklinkTabKey(tabParam)
@@ -415,23 +499,39 @@ export function BacklinksWorkspace() {
     });
   };
 
-  const saveSchedule = async () => {
-    const draft = parseSiteIntegrations(site.integrations);
-    draft.dataForSeo = schedule;
+  /**
+   * THE one write path for the refresh schedule — the user's Save click and
+   * the `backlink_refresh_schedule` write target both land here, so an agent
+   * apply can never diverge from what the button does. Throws on a validation
+   * failure or a version conflict; each caller decides how to surface that
+   * (the click toasts, the write handler lets the seam turn it into the
+   * agent-readable error envelope).
+   */
+  const persistSchedule = async (next: typeof schedule) => {
+    // The freshest row we KNOW, not the prop: `setQueryData` below only
+    // reaches `site` on the next render, so two consecutive applies in one
+    // agent message would send a stale `version` and trip the optimistic
+    // lock as a spurious "changed while you were editing".
+    const current = siteRef.current;
+    const draft = parseSiteIntegrations(current.integrations);
+    draft.dataForSeo = next;
     const issues = validateSiteIntegrations(draft);
-    if (issues.length) {
-      toast.error(issues[0].message);
-      return;
-    }
+    if (issues.length) throw new Error(issues[0].message);
+    const updated = await updateSiteIntegrations({
+      siteId: current.id,
+      expectedVersion: current.version,
+      integrations: buildSiteIntegrations(current.integrations, draft),
+    });
+    noteFreshRow(updated);
+    queryClient.setQueryData(marketingKeys.site(current.id), updated);
+    void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
+    return updated;
+  };
+
+  const saveSchedule = async () => {
     setSavingSchedule(true);
     try {
-      const updated = await updateSiteIntegrations({
-        siteId: site.id,
-        expectedVersion: site.version,
-        integrations: buildSiteIntegrations(site.integrations, draft),
-      });
-      queryClient.setQueryData(marketingKeys.site(site.id), updated);
-      void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
+      await persistSchedule(schedule);
       toast.success(
         schedule.enabled
           ? `We will now check for new links ${schedule.cadence}.`
@@ -884,6 +984,33 @@ export function BacklinksWorkspace() {
             : undefined,
         })
       }
+      getWriteHandlers={() => ({
+        backlink_refresh_schedule: async (value: unknown) => {
+          const current = siteRef.current;
+          if (!current?.id) {
+            throw new Error(
+              "backlink_refresh_schedule: no site is loaded, so there is nothing to schedule. Open a site's Backlinks workspace first.",
+            );
+          }
+          // Merge over the SAVED row, never the local editor buffer: the
+          // schedule card may be collapsed and carrying an abandoned edit,
+          // and the agent was shown `refresh_schedule` (the saved row).
+          const next = parseBacklinkScheduleWrite(
+            value,
+            parseSiteIntegrations(current.integrations).dataForSeo,
+          );
+          await persistSchedule(next);
+          // Keep the visible editor in step with what landed, or the card
+          // reopens dirty with the pre-write values and a live Save button.
+          setSchedule(next);
+          setSettingsOpen(true);
+          toast.success(
+            next.enabled
+              ? `We will now check for new links ${next.cadence}.`
+              : "Automatic link checks turned off.",
+          );
+        },
+      })}
     >
       <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured">
         {/* One slim top row: tab pills left, toolbar right. */}
@@ -1109,15 +1236,15 @@ export function BacklinksWorkspace() {
                   <Label
                     htmlFor="backlink-detail-limit"
                     className="text-xs text-foreground"
-                    title="How many individual links to pull in each time (1–1000)."
+                    title={`How many individual links to pull in each time (${DATAFORSEO_DETAIL_LIMIT_MIN}–${DATAFORSEO_DETAIL_LIMIT_MAX}).`}
                   >
                     Links per check
                   </Label>
                   <Input
                     id="backlink-detail-limit"
                     type="number"
-                    min={1}
-                    max={1000}
+                    min={DATAFORSEO_DETAIL_LIMIT_MIN}
+                    max={DATAFORSEO_DETAIL_LIMIT_MAX}
                     value={schedule.detailLimit}
                     className="h-8 w-28"
                     onChange={(event) =>
