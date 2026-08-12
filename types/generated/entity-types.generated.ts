@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 359 active entity tokens. A token here is FK-valid for
+// 355 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -68,7 +68,6 @@ export type EntityTypeToken =
   | "ai_offering"
   | "ai_provider"
   | "ai_setting"
-  | "analysis_recipes"
   | "app"
   | "app_definition_version"
   | "app_error"
@@ -141,7 +140,6 @@ export type EntityTypeToken =
   | "cx_tool_trace"
   | "cx_user_request"
   | "cx_user_todo"
-  | "dashboard_saved_view"
   | "data_store"
   | "dataset"
   | "derive_run"
@@ -199,7 +197,6 @@ export type EntityTypeToken =
   | "membership"
   | "message"
   | "message_template"
-  | "microservice_project"
   | "ner_shadow"
   | "note"
   | "note_folder"
@@ -386,7 +383,6 @@ export type EntityTypeToken =
   | "web_sitemap"
   | "web_snapshot"
   | "wf_node_data_slot"
-  | "window_session"
   | "work_item"
   | "workbook"
   | "workflow"
@@ -416,7 +412,6 @@ export type ReferencePickableEntityToken =
   | "ai_model"
   | "ai_provider"
   | "ai_setting"
-  | "analysis_recipes"
   | "app"
   | "applet"
   | "assessment"
@@ -437,7 +432,6 @@ export type ReferencePickableEntityToken =
   | "custom_app_config"
   | "custom_applet_config"
   | "cx_agent_memory"
-  | "dashboard_saved_view"
   | "data_store"
   | "dataset"
   | "expertise_pack"
@@ -495,7 +489,6 @@ export type ReferencePickableEntityToken =
   | "web_brand"
   | "web_provider"
   | "web_site"
-  | "window_session"
   | "workbook"
   | "workflow"
   | "workflow_template"
@@ -688,7 +681,6 @@ export type ScopeableEntityToken =
   | "ai_offering"
   | "ai_provider"
   | "ai_setting"
-  | "analysis_recipes"
   | "app"
   | "app_definition_version"
   | "app_error"
@@ -745,7 +737,6 @@ export type ScopeableEntityToken =
   | "crm_party_merge"
   | "custom_app_config"
   | "custom_applet_config"
-  | "dashboard_saved_view"
   | "data_store"
   | "dataset"
   | "derive_run"
@@ -802,7 +793,6 @@ export type ScopeableEntityToken =
   | "membership"
   | "message"
   | "message_template"
-  | "microservice_project"
   | "ner_shadow"
   | "note"
   | "note_folder"
@@ -988,7 +978,6 @@ export type ScopeableEntityToken =
   | "web_sitemap"
   | "web_snapshot"
   | "wf_node_data_slot"
-  | "window_session"
   | "work_item"
   | "workbook"
   | "workflow"
@@ -1068,7 +1057,6 @@ export const ENTITY_TYPE_METADATA = {
   "ai_offering": { token: "ai_offering", schema: "ai", table: "offering", label: "AI Offering", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "ai_provider": { token: "ai_provider", schema: "ai", table: "provider", label: "AI Provider", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "ai_setting": { token: "ai_setting", schema: "ai", table: "setting", label: "AI Setting", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "key", contentRole: null, referenceCategory: null },
-  "analysis_recipes": { token: "analysis_recipes", schema: "public", table: "analysis_recipes", label: "Analysis Recipe", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "app": { token: "app", schema: "app", table: "definition", label: "App", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Apps", referencePickable: true, titleColumn: "name", contentRole: "utility", referenceCategory: null },
   "app_definition_version": { token: "app_definition_version", schema: "app", table: "definition_version", label: "App Definition Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Apps", referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "app_error": { token: "app_error", schema: "app", table: "error", label: "App Error", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Apps", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1141,7 +1129,6 @@ export const ENTITY_TYPE_METADATA = {
   "cx_tool_trace": { token: "cx_tool_trace", schema: "chat", table: "tool_trace", label: "Tool Trace", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "cx_user_request": { token: "cx_user_request", schema: "chat", table: "user_request", label: "User Request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "cx_user_todo": { token: "cx_user_todo", schema: "chat", table: "user_todo", label: "User Todo", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations", referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
-  "dashboard_saved_view": { token: "dashboard_saved_view", schema: "public", table: "dashboard_saved_views", label: "Dashboard Saved View", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "data_store": { token: "data_store", schema: "rag", table: "data_stores", label: "Data Store", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "dataset": { token: "dataset", schema: "workbench", table: "udt_datasets", label: "Dataset", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "description", contentRole: "hybrid", referenceCategory: null },
   "derive_run": { token: "derive_run", schema: "docproc", table: "derive_runs", label: "Derive Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1199,7 +1186,6 @@ export const ENTITY_TYPE_METADATA = {
   "membership": { token: "membership", schema: "iam", table: "memberships", label: "Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "message": { token: "message", schema: "chat", table: "message", label: "Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "message_template": { token: "message_template", schema: "public", table: "message_template", label: "Message Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: "utility", referenceCategory: null },
-  "microservice_project": { token: "microservice_project", schema: "public", table: "microservice_project", label: "Microservice Project", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "ner_shadow": { token: "ner_shadow", schema: "rag", table: "ner_canonicalizer_shadow", label: "NER Shadow", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "note": { token: "note", schema: "workbench", table: "notes", label: "Note", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Sources & Outputs", referencePickable: true, titleColumn: "label", contentRole: "hybrid", referenceCategory: null },
   "note_folder": { token: "note_folder", schema: "workbench", table: "note_folders", label: "Note Folder", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -1386,7 +1372,6 @@ export const ENTITY_TYPE_METADATA = {
   "web_sitemap": { token: "web_sitemap", schema: "web", table: "sitemap", label: "Sitemap", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "url", contentRole: null, referenceCategory: null },
   "web_snapshot": { token: "web_snapshot", schema: "web", table: "snapshot", label: "Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "wf_node_data_slot": { token: "wf_node_data_slot", schema: "workflow", table: "node_data_slot", label: "Workflow Node Data Slot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "window_session": { token: "window_session", schema: "public", table: "window_sessions", label: "Window Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "work_item": { token: "work_item", schema: "runtime", table: "work_item", label: "Runtime Work Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "workbook": { token: "workbook", schema: "workbench", table: "udt_workbooks", label: "Workbook", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "description", contentRole: "hybrid", referenceCategory: null },
   "workflow": { token: "workflow", schema: "workflow", table: "definition", label: "Workflow", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "utility", referenceCategory: null },
@@ -1431,7 +1416,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "ai_offering",
   "ai_provider",
   "ai_setting",
-  "analysis_recipes",
   "app",
   "app_definition_version",
   "app_error",
@@ -1504,7 +1488,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "cx_tool_trace",
   "cx_user_request",
   "cx_user_todo",
-  "dashboard_saved_view",
   "data_store",
   "dataset",
   "derive_run",
@@ -1562,7 +1545,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "membership",
   "message",
   "message_template",
-  "microservice_project",
   "ner_shadow",
   "note",
   "note_folder",
@@ -1749,7 +1731,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_sitemap",
   "web_snapshot",
   "wf_node_data_slot",
-  "window_session",
   "work_item",
   "workbook",
   "workflow",
