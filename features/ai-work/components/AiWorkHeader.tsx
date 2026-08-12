@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, MessagesSquare } from "lucide-react";
+import { LayoutDashboard, MessagesSquare, Plug } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 
@@ -15,6 +15,11 @@ const AI_WORK_NAV_ITEMS = [
     name: "Conversations",
     href: "/work/conversations",
     icon: MessagesSquare,
+  },
+  {
+    name: "Connections",
+    href: "/work/connections",
+    icon: Plug,
   },
 ];
 

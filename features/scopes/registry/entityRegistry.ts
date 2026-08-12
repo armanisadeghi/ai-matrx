@@ -65,6 +65,7 @@ import {
   Tag,
   Webhook,
   Workflow,
+  UsersRound,
   Zap,
 } from "lucide-react";
 import {
@@ -380,6 +381,11 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: ListTodo,
     labelPlural: "Tasks",
     hrefFor: (id) => `/tasks/${id}`,
+  },
+  war_room: {
+    Icon: UsersRound,
+    labelPlural: "War Rooms",
+    hrefFor: (id) => `/war-room/${id}`,
   },
 
   // ─── CRM (crm.party — the ONE record for an external person/company) ──────

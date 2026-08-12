@@ -23,9 +23,9 @@ export interface WorkDoor {
 
 const CONTINUE_DOORS: WorkDoor[] = [
   {
-    title: "Provider conversations",
+    title: "All conversations",
     description:
-      "Browse coding sessions captured from Claude Code, Codex, Cursor, and VS Code.",
+      "Browse AI Matrx chats and provider mirrors in one organized inbox.",
     href: "/work/conversations",
     icon: MessagesSquare,
   },
@@ -72,8 +72,8 @@ const CONFIGURE_DOORS: WorkDoor[] = [
   {
     title: "Coding connections",
     description:
-      "Check captured provider sessions, fidelity, and adapter diagnostics.",
-    href: "/agent-connections/plugins",
+      "See exact delivery and runtime state, and sync capability when it is live.",
+    href: "/work/connections",
     icon: Plug,
   },
   {
