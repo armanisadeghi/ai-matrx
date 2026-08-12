@@ -67,7 +67,10 @@ import {
   selectRequest,
   deriveAnswerText,
 } from "../active-requests/active-requests.selectors";
-import { setInstanceStatus } from "../conversations/conversations.slice";
+import {
+  setInstanceStatus,
+  setInstanceInitiation,
+} from "../conversations/conversations.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
 import {
@@ -343,6 +346,7 @@ export const launchAgentExecution = createAsyncThunk<
     surfaceKey,
     organizationId,
     contextAnchor,
+    initiation,
   } = options;
 
   // ── Slot-first identity — resolve BOTH halves of the binding ──────────────
@@ -967,6 +971,15 @@ export const launchAgentExecution = createAsyncThunk<
   // there as the source of truth so a shortcut that sets showPreExecutionGate
   // doesn't get ignored just because the caller didn't re-specify it.
   // =========================================================================
+
+  // ── Provenance attestation ────────────────────────────────────────────────
+  // Stamp the launch's `initiation` onto the conversation record so every send
+  // this conversation makes carries it (assembleRequest reads it). Default
+  // "user": launchAgentExecution is the interactive launch path; programmatic
+  // schedulers / auto-triggers must declare `initiation: "auto"` themselves.
+  dispatch(
+    setInstanceInitiation({ conversationId, initiation: initiation ?? "user" }),
+  );
 
   const seededUiState = (getState() as RootState).instanceUIState
     .byConversationId[conversationId];

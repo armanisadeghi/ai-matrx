@@ -830,6 +830,13 @@ export type AssembledAgentStartRequest = Partial<
   target_instance_id?: string;
   /** Request-scoped overrides for media-variable file-family policy. */
   variable_resource_context?: Record<string, VariableResourceContextConfig>;
+  /**
+   * Provenance attestation ("user" | "auto") — additive aidream field on all
+   * ScopedRequest-based AI endpoints; the server derives `origin_class` from
+   * it. Omitted ⇒ the server classes the request `api` (unattested). Typed
+   * here until the generated OpenAPI schema carries it.
+   */
+  initiation?: "user" | "auto";
 };
 
 /**
@@ -844,6 +851,8 @@ export type AssembledConversationRequest = Partial<
    * Omitted for Auto/default routing.
    */
   target_instance_id?: string;
+  /** Provenance attestation — see `AssembledAgentStartRequest.initiation`. */
+  initiation?: "user" | "auto";
 };
 
 /** One structured item accepted by every generated agent user-input route. */

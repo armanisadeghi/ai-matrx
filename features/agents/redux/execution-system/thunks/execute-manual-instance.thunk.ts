@@ -82,6 +82,7 @@ import type {
 } from "@/features/agents/types/agent-api-types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { UserInputPart } from "@/features/agents/types/request.types";
+import type { RequestInitiation } from "@/features/agents/types/instance.types";
 import type { MessageRecord } from "../messages/messages.slice";
 import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
 import { selectMessageCount } from "../messages/messages.selectors";
@@ -221,6 +222,14 @@ function extractSystemText(content: unknown): string {
 export async function assembleManualRequest(
   state: RootState,
   conversationId: string,
+  opts?: {
+    /**
+     * Per-send provenance attestation override — wins over the instance-level
+     * launch default. Absent everywhere ⇒ "user" (the manual path is the
+     * Builder's test runner + ephemeral chat turns, both user sends).
+     */
+    initiation?: RequestInitiation;
+  },
 ): Promise<Partial<ChatRequestPayload> | null> {
   const instance = state.conversations.byConversationId[conversationId];
   if (!instance) return null;
@@ -442,6 +451,9 @@ export async function assembleManualRequest(
   }
   if (sourceApp) request.source_app = sourceApp;
   if (sourceFeature) request.source_feature = sourceFeature;
+  // Provenance attestation — always sent (omitted = server classes the
+  // request as unattested `api`). Same resolution rule as assembleRequest.
+  request.initiation = opts?.initiation ?? instance.initiation ?? "user";
 
   attachSkillConfigFromState(
     state,
@@ -534,6 +546,8 @@ export async function assembleManualRequest(
 interface ExecuteManualInstanceArgs {
   conversationId: string;
   debug?: boolean;
+  /** Per-send provenance attestation — see ExecuteInstanceArgs.initiation. */
+  initiation?: RequestInitiation;
 }
 
 interface ExecuteManualInstanceResult {
@@ -547,7 +561,7 @@ export const executeManualInstance = createAsyncThunk<
 >(
   "instances/executeManual",
   async (
-    { conversationId, debug = false },
+    { conversationId, debug = false, initiation },
     { getState, dispatch, rejectWithValue },
   ) => {
     const requestId = generateRequestId();
@@ -634,7 +648,9 @@ export const executeManualInstance = createAsyncThunk<
       dispatch(setInstanceStatus({ conversationId, status: "running" }));
       dispatch(setRequestStatus({ requestId, status: "connecting" }));
 
-      const payload = await assembleManualRequest(state, conversationId);
+      const payload = await assembleManualRequest(state, conversationId, {
+        initiation,
+      });
       if (!payload) {
         throw new Error(
           `Failed to assemble manual request for ${conversationId}. ` +

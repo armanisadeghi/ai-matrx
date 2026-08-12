@@ -208,10 +208,20 @@ export const smartExecute = createAsyncThunk<
     // sends the live agent definition in the request body; the server reads
     // nothing from the agent record. Any non-manual surface keeps the
     // existing agent-mode path.
+    // initiation:"user" — every send smartExecute routes originates from a
+    // person hitting send/submit (chat inputs, builder run, agent apps). This
+    // per-send override beats an "auto" launch default: a user typing into an
+    // auto-launched conversation is still a user-initiated request.
     const executePromise =
       apiEndpointMode === "manual"
-        ? dispatch(executeManualInstance({ conversationId }))
-        : dispatch(executeInstance({ conversationId, scopeIdsOverride }));
+        ? dispatch(executeManualInstance({ conversationId, initiation: "user" }))
+        : dispatch(
+            executeInstance({
+              conversationId,
+              scopeIdsOverride,
+              initiation: "user",
+            }),
+          );
 
     // The split (auto-clear "iterate") mints a NEW, historyless conversation and
     // repoints the input focus at it. That is ONLY valid for a conversation

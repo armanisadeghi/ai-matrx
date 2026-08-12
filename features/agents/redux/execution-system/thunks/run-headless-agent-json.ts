@@ -31,6 +31,7 @@ import type { MessagePart } from "@/types/python-generated/stream-events";
 import type {
   ContextAnchor,
   SourceFeature,
+  RequestInitiation,
 } from "@/features/agents/types/instance.types";
 import { extractFirstJson } from "@/utils/json/extract-json";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
@@ -61,6 +62,13 @@ export interface HeadlessAgentJsonOptions {
   surfaceKey: string;
   /** UI feature that triggered the run. */
   sourceFeature: SourceFeature;
+  /**
+   * Provenance attestation for this run. Pass "user" when the run maps 1:1 to
+   * a button the person just pressed; pass "auto" when client code fired it
+   * (mount effect, timer, post-event pipeline). Default is the launcher's
+   * interactive default ("user") — declare "auto" honestly at auto call sites.
+   */
+  initiation?: RequestInitiation;
   /** Variable values keyed by the agent's variable NAME. */
   variables?: Record<string, unknown>;
   /** Canonical surface identity carried into execution context. */
@@ -225,6 +233,9 @@ export async function runHeadlessAgentJson(
         ...executionIdentity,
         surfaceKey: opts.surfaceKey,
         sourceFeature: opts.sourceFeature,
+        ...(opts.initiation !== undefined
+          ? { initiation: opts.initiation }
+          : {}),
         isEphemeral: opts.isEphemeral ?? false,
         ...(opts.organizationId !== undefined
           ? { organizationId: opts.organizationId }
