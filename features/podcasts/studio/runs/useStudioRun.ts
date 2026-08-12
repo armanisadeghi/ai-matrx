@@ -57,6 +57,7 @@ import { deriveRecoveryState, type RecoveryState } from "./recovery";
 import { trueLiveness } from "./run-truth";
 import {
   hasDeliverableEpisode,
+  isEpisodeSettled,
   mergeAncillarySlots,
   reconcileRun,
   type ReconcileResult,
@@ -555,13 +556,24 @@ export function useStudioRun(runId: string): UseStudioRun {
             if (cancelled) return;
             if (rec) {
               applyReconcile(rec);
-              if (rec.outcome === "completed" || rec.outcome === "failed") {
+              // "completed" with the episode row still being written is a real,
+              // correct state (see isEpisodeSettled) — the episode is created
+              // under a CAS lease and another caller may hold it for a beat.
+              // Stopping here would leave the page without an episode id, and
+              // every post-run tool keys off that. Keep observing until it
+              // lands, at the server's cadence.
+              const settled = rec.outcome !== "completed" || isEpisodeSettled(rec);
+              if (settled && (rec.outcome === "completed" || rec.outcome === "failed")) {
                 completedRef.current = true;
                 setBackgroundWorking(false);
                 return;
               }
-              // running | resumed — the server is working; keep observing at
-              // ITS cadence, not a number we invented.
+              // Still moving — running, resumed, or completed with the episode
+              // row not yet written. Keep observing at the SERVER's cadence,
+              // not a number we invented. A terminal outcome carries no
+              // poll_after_seconds, so the unsettled-episode case waits out the
+              // CAS lease at a deliberately unhurried 15s rather than hammering
+              // a race we know resolves itself.
               bgPollTimer = setTimeout(
                 poll,
                 Math.max(rec.poll_after_seconds ?? 15, 5) * 1000,
@@ -1001,7 +1013,13 @@ export function useStudioRun(runId: string): UseStudioRun {
         if (cancelled) return;
         if (rec) {
           applyReconcile(rec);
-          if (rec.outcome === "running" || rec.outcome === "resumed") {
+          if (
+            rec.outcome === "running" ||
+            rec.outcome === "resumed" ||
+            !isEpisodeSettled(rec)
+          ) {
+            // Keep watching while the server still owes us something — work in
+            // flight, or the episode row still under its creation lease.
             void watchInBackground();
           }
         } else {

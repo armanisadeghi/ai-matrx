@@ -28,6 +28,7 @@ import {
   type PlanReviewResult,
 } from "./ai";
 import { SITE_SETTINGS_KEY } from "./archetypes";
+import { assertFound } from "@/features/marketing/data/service";
 
 export const SETUP_DRAFT_KEY = "setup_draft";
 
@@ -328,13 +329,23 @@ export async function fetchFreshSite(siteId: string): Promise<FreshSiteRow> {
     .select("settings, version, domain, name")
     .eq("id", siteId)
     .is("deleted_at", null)
-    .single();
-  if (response.error) throw response.error;
+    // `.maybeSingle()` — `.single()`'s 0-row PGRST116 ("Cannot coerce the
+    // result to a single JSON object") reached users as a toast on any site
+    // their session could not read. `assertFound` carries the token, so the
+    // surface asks the platform instead.
+    .maybeSingle();
+  const row = assertFound(
+    response.data,
+    response.error,
+    "site",
+    siteId,
+    "web_site",
+  );
   return {
-    settings: response.data.settings,
-    version: response.data.version,
-    domain: response.data.domain,
-    name: response.data.name,
+    settings: row.settings,
+    version: row.version,
+    domain: row.domain,
+    name: row.name,
   };
 }
 

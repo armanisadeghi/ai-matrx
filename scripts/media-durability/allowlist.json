@@ -292,36 +292,29 @@
       "reason": "Workflow node I/O carrying our own expiring URLs for generated office documents. Rendered through the file handler, which re-mints from the recoverable file_id.",
       "consumer": "features/workflows node I/O rendering via the file handler.",
       "open": true
-    }
-  ],
-  "mismatch_open": [
+    },
     {
       "target": "workbench.notes.content",
-      "reason": "THE ONE REAL MISMATCH. A note is anon-shareable: platform.shareable_resource_registry exposes `content` in note.public_columns, and app/(public)/s/[token]/SharedResourceView.tsx:238 renders it through MarkdownRenderer with no session, so an anonymous recipient cannot re-mint. VERIFIED 2026-08-11: these URLs are not merely going-to-expire, they are ALREADY DEAD \u2014 all 4 distinct own-signed URLs return HTTP 403 today (the visibility-flip criterion above). The OWNER still sees the images because ImageBlock -> useRemintableSrc re-mints on load failure; an anonymous share recipient would see broken images IMMEDIATELY, not eventually. Zero of the 9 notes are currently shared, so nothing is broken for anyone right now. NOT auto-healed: 2 of the 3 recoverable file_ids resolve to live files.files rows with visibility='internal' \u2014 access-controlled \u2014 and publishing them to make a scan pass is a data-exposure incident. Needs Arman's decision: publish those specific assets, or add token-scoped minting to the share lane.",
+      "reason": "HEALED 2026-08-11, on Arman's decision (the two images were test data he placed himself). The two recoverable files were flipped to public via the canonical primitive (aidream flip_file_to_public, the same one the heal drain uses) and 20 dead signed URLs across 7 Draft notes were rewritten to their durable cdn.matrxserver.com URLs \u2014 non-URL text byte-identical, verified by diff before applying. Both CDN URLs fetch 200 anonymously. The anon-share mismatch is CLOSED: nothing an anonymous share recipient could be shown is expiring any more. RESIDUAL, and it is not fixable: (a) one reference to file_id da5868b9-0925-47af-b6e5-f150628b8bf6, which has NO files.files row \u2014 the file is gone, so there is no identity to re-mint from and no decision can heal it; (b) verbatim third-party signed URLs pasted into note bodies, which are data, not our media. The column therefore still reports hits and always will. That is accurate, not a to-do.",
       "consumer": "app/(public)/s/[token]/SharedResourceView.tsx:41 (MarkdownRenderer) / :238",
-      "rows_affected": 15,
-      "rows_ours": 9,
-      "currently_shared": 0,
-      "open": true,
-      "distinct_own_signed_urls": 4,
-      "all_already_403": true,
+      "healed_2026_08_11": {
+        "urls_rewritten": 20,
+        "notes_touched": 7,
+        "files_published": [
+          "69f5ae74-560d-4bf5-b42e-47593076396f",
+          "54582f60-d21d-4b5a-8b5e-3621ad969e84"
+        ],
+        "scan_rows_before": 15,
+        "scan_rows_after": 8
+      },
       "unhealable": [
         {
           "file_id": "da5868b9-0925-47af-b6e5-f150628b8bf6",
-          "url_shape": "\u2026/{user_id}/ai-media/{file_id}.jpg",
-          "reason": "no row in files.files \u2014 the underlying file is gone, so there is no identity to re-mint from. Listed explicitly rather than silently skipped; no decision can heal it."
+          "reason": "no files.files row \u2014 the underlying file no longer exists. Listed, never rounded away."
         }
       ],
-      "healable_pending_decision": [
-        "69f5ae74-560d-4bf5-b42e-47593076396f (files.files, visibility=internal)",
-        "54582f60-d21d-4b5a-8b5e-3621ad969e84 (files.files, visibility=internal)"
-      ],
-      "resolution_options": [
-        "PREFERRED (proposed by the podcast/aidream session): mint the durable URL AT SHARE TIME \u2014 on publish, flip only the images that note actually references. The default stays private, nothing becomes public until the user chooses to share, and the anonymous viewer is still fixed. Put this in front of Arman first.",
-        "Publish those specific assets outright \u2014 simplest, but makes currently-internal images world-readable forever, including after the share is revoked.",
-        "Add token-scoped media minting to the share lane \u2014 most correct, most work: the share token authorizes a short-lived mint for the images that note references, so nothing is ever permanently public."
-      ],
-      "decision_owner": "Arman \u2014 a product decision about a user's private content, not a cleanup an agent may perform."
+      "open": true
     }
-  ]
+  ],
+  "mismatch_open": []
 }

@@ -6,11 +6,13 @@ import type {
   ReputationCaseStatus,
   ReputationWorkspaceData,
 } from "./reputation-types";
+import { operationFailed } from "@/utils/errors";
 
 const REPUTATION_KIND = "digital_pr_reputation_brief_v1";
 
-function throwIfError(error: { message: string } | null): void {
-  if (error) throw new Error(error.message);
+function throwIfError(error: unknown, action?: string): void {
+  if (error)
+    throw operationFailed(action ?? "reach this site's reputation workspace", error);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -163,7 +165,7 @@ export async function updateReputationCase(input: {
     p_status: input.status,
     p_human_ruling: input.ruling ?? {},
   });
-  throwIfError(response.error);
+  throwIfError(response.error, "save that reputation case");
   if (!response.data) throw new Error("The case action returned no updated record.");
   return response.data as ReputationCaseRow;
 }

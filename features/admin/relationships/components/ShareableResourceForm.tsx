@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { EntityTypeDisabledMap } from "@/components/entity-types/EntityTypeCombobox";
+import { SharePolicyColumnEditor } from "./SharePolicyColumnEditor";
 
 export interface ShareableEditorState {
   mode: "create" | "edit";
@@ -30,8 +31,10 @@ export interface ShareableEditorState {
   contentRole: string;
   isScopeable: boolean;
   isLinkShareable: boolean;
-  /** Comma-separated for editing; split/trim on save. */
-  publicColumns: string;
+  /** Physical table columns available for the anonymous-share allowlist. */
+  allColumns: string[];
+  /** Columns exposed on the generic no-login share page. */
+  publicColumns: string[];
   notes: string;
 }
 
@@ -91,67 +94,81 @@ export function ShareableResourceForm({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 rounded-md border border-border p-3">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium">Schema</span>
-          <Input
-            value={editor.schemaName}
-            onChange={(e) =>
-              onChange({ ...editor, schemaName: e.target.value })
-            }
-            placeholder="e.g. workspace"
-            className="h-8 font-mono"
-            style={{ fontSize: "16px" }}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium">Table</span>
-          <Input
-            value={editor.tableName}
-            onChange={(e) => onChange({ ...editor, tableName: e.target.value })}
-            placeholder="e.g. projects"
-            className="h-8 font-mono"
-            style={{ fontSize: "16px" }}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium">ID column</span>
-          <Input
-            value={editor.idColumn}
-            onChange={(e) => onChange({ ...editor, idColumn: e.target.value })}
-            className="h-8 font-mono"
-            style={{ fontSize: "16px" }}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium">Owner column</span>
-          <Input
-            value={editor.ownerColumn}
-            onChange={(e) =>
-              onChange({ ...editor, ownerColumn: e.target.value })
-            }
-            className="h-8 font-mono"
-            style={{ fontSize: "16px" }}
-          />
-        </div>
-        <div className="col-span-2 flex flex-col gap-1.5">
-          <span className="text-xs font-medium">
-            Public/visibility column{" "}
-            <span className="font-normal text-muted-foreground">
-              (optional — blank if none)
-            </span>
+      <details className="rounded-md border border-border">
+        <summary className="cursor-pointer px-3 py-2 text-xs font-medium">
+          Advanced database mapping
+          <span className="ml-2 font-normal text-muted-foreground">
+            {editor.schemaName && editor.tableName
+              ? `${editor.schemaName}.${editor.tableName}`
+              : "filled automatically"}
           </span>
-          <Input
-            value={editor.isPublicColumn}
-            onChange={(e) =>
-              onChange({ ...editor, isPublicColumn: e.target.value })
-            }
-            placeholder="e.g. visibility"
-            className="h-8 font-mono"
-            style={{ fontSize: "16px" }}
-          />
+        </summary>
+        <div className="grid grid-cols-2 gap-3 border-t border-border p-3">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium">Schema</span>
+            <Input
+              value={editor.schemaName}
+              onChange={(e) =>
+                onChange({ ...editor, schemaName: e.target.value })
+              }
+              placeholder="e.g. workspace"
+              className="h-8 font-mono"
+              style={{ fontSize: "16px" }}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium">Table</span>
+            <Input
+              value={editor.tableName}
+              onChange={(e) =>
+                onChange({ ...editor, tableName: e.target.value })
+              }
+              placeholder="e.g. projects"
+              className="h-8 font-mono"
+              style={{ fontSize: "16px" }}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium">ID column</span>
+            <Input
+              value={editor.idColumn}
+              onChange={(e) =>
+                onChange({ ...editor, idColumn: e.target.value })
+              }
+              className="h-8 font-mono"
+              style={{ fontSize: "16px" }}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium">Owner column</span>
+            <Input
+              value={editor.ownerColumn}
+              onChange={(e) =>
+                onChange({ ...editor, ownerColumn: e.target.value })
+              }
+              className="h-8 font-mono"
+              style={{ fontSize: "16px" }}
+            />
+          </div>
+          <div className="col-span-2 flex flex-col gap-1.5">
+            <span className="text-xs font-medium">
+              Visibility column{" "}
+              <span className="font-normal text-muted-foreground">
+                (optional — blank if none)
+              </span>
+            </span>
+            <Input
+              value={editor.isPublicColumn}
+              onChange={(e) =>
+                onChange({ ...editor, isPublicColumn: e.target.value })
+              }
+              placeholder="e.g. visibility"
+              className="h-8 font-mono"
+              style={{ fontSize: "16px" }}
+            />
+          </div>
         </div>
-      </div>
+      </details>
 
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-medium">Display label</span>
@@ -167,7 +184,10 @@ export function ShareableResourceForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium">URL path template</span>
+        <span className="text-xs font-medium">
+          Open-in-app destination{" "}
+          <span className="font-normal text-muted-foreground">(optional)</span>
+        </span>
         <Input
           value={editor.urlPathTemplate}
           onChange={(e) =>
@@ -180,12 +200,14 @@ export function ShareableResourceForm({
         {urlMissingId ? (
           <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
             <TriangleAlert className="h-3 w-3" />
-            Should contain <span className="font-mono">{"{id}"}</span> so
-            ShareModal can build a real link.
+            Include <span className="font-mono">{"{id}"}</span> where the record
+            ID belongs.
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Where a share link or reachability inspector row should route to.
+            Where signed-in users should open this record. Leave blank when no
+            dedicated page exists. No-login links still open on the
+            platform&apos;s generic share page.
           </p>
         )}
       </div>
@@ -254,8 +276,8 @@ export function ShareableResourceForm({
           <span className="flex flex-col">
             <span className="text-xs font-medium">No-login link sharing</span>
             <span className="text-[10px] text-muted-foreground">
-              Offers &quot;Anyone with the link&quot;. Same lever as the
-              per-row Link policy editor.
+              Offers &quot;Anyone with the link&quot;. Same lever as the per-row
+              Link policy editor.
             </span>
           </span>
           <Switch
@@ -266,26 +288,31 @@ export function ShareableResourceForm({
       </div>
 
       {editor.isLinkShareable ? (
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium">
-            Public columns{" "}
-            <span className="font-normal text-muted-foreground">
-              (comma-separated allowlist for anonymous viewers)
-            </span>
-          </span>
-          <Input
-            value={editor.publicColumns}
-            onChange={(e) =>
-              onChange({ ...editor, publicColumns: e.target.value })
+        <div className="flex flex-col gap-2">
+          <div>
+            <span className="text-xs font-medium">Shared page content</span>
+            <p className="text-xs text-muted-foreground">
+              Choose exactly which fields appear for anyone who opens a no-login
+              share link. Unchecked fields stay private.
+            </p>
+          </div>
+          <SharePolicyColumnEditor
+            allColumns={editor.allColumns}
+            savedColumns={[]}
+            draft={new Set(editor.publicColumns)}
+            busy={saving}
+            showActions={false}
+            onToggleColumn={(column) =>
+              onChange({
+                ...editor,
+                publicColumns: editor.publicColumns.includes(column)
+                  ? editor.publicColumns.filter((item) => item !== column)
+                  : [...editor.publicColumns, column],
+              })
             }
-            placeholder="id, title, description, created_at"
-            className="h-8 font-mono"
-            style={{ fontSize: "16px" }}
+            onSave={onSave}
+            onCancel={onCancel}
           />
-          <p className="text-xs text-muted-foreground">
-            Default-deny — unknown/typo'd columns are dropped silently on save,
-            never exposed by accident.
-          </p>
         </div>
       ) : null}
 

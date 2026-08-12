@@ -26,17 +26,26 @@ export class RecordUnavailableError extends Error {
   readonly entity: string;
   readonly reason: RecordUnavailableReason;
   readonly recordId?: string;
+  /**
+   * Canonical entity token, when the read site knows it. With a token AND a
+   * recordId the renderer stops describing the ambiguity and ASKS the platform
+   * instead — `<AccessGate token id/>` resolves which of the four it really is.
+   * Without one, honest ambiguity is still the best available answer.
+   */
+  readonly token?: string;
 
   constructor(input: {
     entity: string;
     reason: RecordUnavailableReason;
     recordId?: string;
+    token?: string;
   }) {
     super(recordUnavailableMessage(input.entity, input.reason));
     this.name = "RecordUnavailableError";
     this.entity = input.entity;
     this.reason = input.reason;
     this.recordId = input.recordId;
+    this.token = input.token;
   }
 }
 
@@ -64,6 +73,8 @@ export function recordUnavailable(input: {
   entity: string;
   reason: RecordUnavailableReason;
   recordId?: string;
+  /** Canonical entity token, so the surface can ask instead of describing. */
+  token?: string;
   /** Table/view the zero-row read hit, for the inspector row. */
   relation?: string;
 }): RecordUnavailableError {
@@ -80,6 +91,7 @@ export function recordUnavailable(input: {
         entity: input.entity,
         reason: input.reason,
         recordId: input.recordId,
+        token: input.token,
       },
     });
   } catch {

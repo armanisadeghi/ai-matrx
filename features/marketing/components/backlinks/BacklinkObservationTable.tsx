@@ -96,6 +96,7 @@ const LENS_EMPTY_LINE: Record<BacklinkLensKey, string> = {
   toxic: "Nothing we have read gave us pause. Nothing here needs a second look.",
   actionable: "Nothing needs doing right now.",
   relevant: "None of the pages we have read so far are a close topic match.",
+  // access-errors: ok — a fact about SOMEONE ELSE'S website (no editable link was observed), not a guess about a read of ours.
   controllable: "We have not found a link you can edit yourself yet.",
 };
 

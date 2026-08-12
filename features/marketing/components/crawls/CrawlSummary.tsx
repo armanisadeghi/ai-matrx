@@ -30,9 +30,9 @@ import {
   jsonNumberPath,
   LoadingSurface,
   MetricCell,
-  QueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export function CrawlSummary({ crawlId }: { crawlId: string }) {
   const { site, sitePath } = useMarketingSite();
@@ -63,9 +63,13 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
   if (crawl.isLoading) return <LoadingSurface label="Loading crawl…" />;
   if (crawl.isError || !crawl.data) {
     return (
-      <QueryError
-        error={crawl.error ?? new Error("Crawl not found")}
+      <AccessGate
+        token="web_crawl_session"
+        id={crawlId}
+        error={crawl.error}
         onRetry={() => void crawl.refetch()}
+        fallbackHref={`${sitePath}/crawls`}
+        fallbackLabel="All crawls"
       />
     );
   }

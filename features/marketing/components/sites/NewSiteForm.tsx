@@ -159,6 +159,7 @@ export function NewSiteForm() {
             <p className="mt-1 text-xs text-muted-foreground">
               {purpose === "existing"
                 ? "Add a website you manage. We’ll capture its homepage and then you can crawl it, connect search data, and track improvements."
+                // access-errors: ok — describes the site the user is about to CREATE, not one we failed to read.
                 : "Register a site that doesn’t exist yet. You’ll land in Content Plan Setup to design its structure — crawl and search data can come later, once it’s live."}
             </p>
           </div>
@@ -176,6 +177,7 @@ export function NewSiteForm() {
                     value: "planned" as const,
                     icon: ListTree,
                     title: "Planned website",
+                    // access-errors: ok — same create-flow copy: the website is not built yet, which is the whole reason this form exists.
                     body: "It doesn’t exist yet — start from a content plan.",
                   },
                 ] as const

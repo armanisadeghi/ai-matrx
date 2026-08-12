@@ -28134,15 +28134,21 @@ export type Database = {
           created_by: string | null
           decided_at: string | null
           decided_by: string | null
+          decision_note: string | null
           dedupe_key: string | null
           deleted_at: string | null
           entity_id: string | null
           entity_type: string | null
+          evidence: Json | null
           expires_at: string | null
+          first_seen_at: string | null
           id: string
+          is_starred: boolean
+          occurrences: number
           organization_id: string | null
           priority: number
           reasoning: string | null
+          resolved_at: string | null
           result: Json | null
           source_key: string
           source_kind: string
@@ -28154,6 +28160,7 @@ export type Database = {
           updated_by: string | null
           user_id: string
           version: number
+          viewed_at: string | null
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
@@ -28164,15 +28171,21 @@ export type Database = {
           created_by?: string | null
           decided_at?: string | null
           decided_by?: string | null
+          decision_note?: string | null
           dedupe_key?: string | null
           deleted_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
+          evidence?: Json | null
           expires_at?: string | null
+          first_seen_at?: string | null
           id?: string
+          is_starred?: boolean
+          occurrences?: number
           organization_id?: string | null
           priority?: number
           reasoning?: string | null
+          resolved_at?: string | null
           result?: Json | null
           source_key: string
           source_kind?: string
@@ -28184,6 +28197,7 @@ export type Database = {
           updated_by?: string | null
           user_id: string
           version?: number
+          viewed_at?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
@@ -28194,15 +28208,21 @@ export type Database = {
           created_by?: string | null
           decided_at?: string | null
           decided_by?: string | null
+          decision_note?: string | null
           dedupe_key?: string | null
           deleted_at?: string | null
           entity_id?: string | null
           entity_type?: string | null
+          evidence?: Json | null
           expires_at?: string | null
+          first_seen_at?: string | null
           id?: string
+          is_starred?: boolean
+          occurrences?: number
           organization_id?: string | null
           priority?: number
           reasoning?: string | null
+          resolved_at?: string | null
           result?: Json | null
           source_key?: string
           source_kind?: string
@@ -28214,6 +28234,7 @@ export type Database = {
           updated_by?: string | null
           user_id?: string
           version?: number
+          viewed_at?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
@@ -34087,6 +34108,7 @@ export type Database = {
       admin_shareable_registry_defaults: {
         Args: { p_token: string }
         Returns: {
+          all_columns: string[]
           already_registered: boolean
           display_label: string
           resource_type: string

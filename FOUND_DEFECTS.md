@@ -13,6 +13,19 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D172 — `normalisePageUrl` rejects a URL its own test says it must accept (2026-08-11)
+
+`features/marketing/lib/page-url.test.ts` "lowercases scheme and host" FAILS on
+committed `main` — `acceptPageUrlInput` throws "Only HTTP(S) page URLs can join
+the registry." for input the test feeds it (`page-url.ts:145`). Found while
+running the marketing suite for an unrelated change (site-audit gone pages);
+64 of 65 marketing suites pass, so this is one specific regression, not a broken
+tree. Not investigated — it is nowhere near the audit rollup, and another
+session may be mid-edit in that file. **Whoever owns `page-url.ts` should decide
+whether the guard or the test is wrong**: the function is the parity mirror of
+the scraper's `_normalise_url`, so "just relax the guard" is the wrong reflex if
+Python still rejects the same input.
+
 ### D171 — `content_role` has two writable authorities and 13 live disagreements (2026-08-11)
 
 Cross-repo system-of-record:
@@ -250,7 +263,7 @@ Hit while binding the four `output_kind`-declaring slots. `research.suggest_setu
   (4) regenerate the kind from the model, then bind. Steps 2–3 are product
   authoring — **decision: Arman**.
 
-### D158 — The public-media-URL guard was SCHEMA-BLIND and silently protected nothing on 3 anon-facing columns (2026-08-11) — FIXED
+### D158 — The public-media-URL guard was SCHEMA-BLIND and silently protected nothing on 3 anon-facing columns (2026-08-11) — FIXED (guard); notes healed 2026-08-11
 
 `mtx_public_url_guard_trigger()` matched its registry on `TG_TABLE_NAME` alone. Two
 registry rows still carried **pre-reorg** table names — `aga_apps` (the table is now
@@ -282,6 +295,29 @@ signed URL already handed out for it). The owner still sees the images because
 broken immediately. Of the three recoverable file_ids, two are live `files.files` rows at
 `visibility='internal'`; the third (`da5868b9-0925-47af-b6e5-f150628b8bf6`) has no
 `files.files` row at all and is **unhealable by any decision**.
+
+**RESOLVED 2026-08-11.** Arman's call: the two images were test data he had placed there
+himself ("Those were placed there for testing purposes so it makes no difference"), so this
+was never a sensitive-content decision. Confirmed with him directly before publishing —
+the answer had reached this session relayed through another agent, and publishing files is
+outward-facing and hard to undo.
+
+Healed via the canonical primitive (`flip_file_to_public`, the same one the heal drain
+uses — no second publish path): both files flipped to `public`, then **20 dead signed URLs
+across 7 Draft notes rewritten** to their durable `cdn.matrxserver.com` URLs. Non-URL text
+verified byte-identical by diff before applying; both CDN URLs fetch 200 anonymously.
+Column scan 15 rows → 8.
+
+**Residual, permanently:** `da5868b9-0925-47af-b6e5-f150628b8bf6` has no `files.files` row —
+the file is gone, so no identity exists to re-mint from and no decision can heal it — plus
+verbatim third-party signed URLs pasted into note bodies, which are data rather than our
+media. The column will keep reporting hits forever; that is accurate, not an open task.
+
+**A correction worth keeping:** `public_media_scope()` is a GENERATION-time context manager
+and cannot retroactively publish an existing file. A backfill of already-private files must
+flip first, then rewrite the stored URLs *from the resulting durable URL* — flipping moves
+the S3 object, which is precisely what kills any URL written beforehand. Rewrite-then-flip
+re-creates the bug.
 
 Three resolutions, best first — **mint the durable URL AT SHARE TIME** (on publish, flip
 only the images that note actually references, so the default stays private and nothing
@@ -787,36 +823,32 @@ already filter by the entity's own `deleted_at`); or tombstone the edges reversi
 done here — it is a platform-wide trigger on many tables and changing conveyance semantics
 is **Arman's call**, not one an agent takes on its own authority.
 
-### D133 — Arman's real accounts have viewer access to ZERO marketing sites; masqueraded as "site was deleted" (2026-08-08)
+### D133 — RESOLVED 2026-08-11 (owner decisions taken)
 
-Both agent-review items for the backlinks copy work came back "site was deleted or is no
-longer accessible" — but `web.site` row `7853b973` (aimatrx.com) is live and active. The
-message is `assertFound`'s wording for a `maybeSingle()` → null, and the null was RLS:
-`std_select` is `created_by = auth.uid() OR iam.has_access('web_site', id, 'viewer')`, the
-site is `visibility=internal` in the AI Matrx org, and `arman@allgreenrecycling.com` (the
-reviewing login) is a member of none of the orgs holding the brands —
-`iam.has_access_for` returns false for it on ALL FOUR sites with backlink data
-(aimatrx.com, allgreenrecycling.com, titaniumsuccess.com, datadestruction.com).
-`arman@armansadeghi.com` sees only the three client sites it created. Per the security
-philosophy this is the over-tightening defect class: the owner blocked from his own data.
-**Decision needed (Arman) — STILL OPEN:** which of your accounts should be members of which
-orgs — memberships are one INSERT each once ruled. Review items 2ecba5c0/b60b6c75 were
-repointed at datadestruction.com (visible to admin@admin.com) and resubmitted.
+A live site read as "deleted" to accounts that simply weren't members of the owning org.
+Both halves are now closed:
 
-**The wording half is DONE (2026-08-11), now end to end.** Two layers, both live:
-`lib/records/recordUnavailable.ts` is the honest THROW — `deleted` is claimed ONLY when a
-probe read the row and saw `deleted_at` — and `features/access-gate/` is the SURFACE that
-resolves which of the four situations it actually was (denied / deleted / missing /
-signed-out) via `public.access_denied_context`, names the owner and organization, and offers
-**Request access** with one-click approval in the owner's DM. The exact sentence "This site
-was deleted or is no longer accessible." no longer exists in the tree.
+**The wording** — a zero-row read no longer asserts anything. `lib/records/recordUnavailable.ts`
+is the honest throw and `features/access-gate/` is the surface that resolves which of the four
+situations it actually was (denied / deleted / missing / signed-out), names the owner, and
+offers **Request access**.
 
-**What that does and does NOT fix for D133:** a reviewer hitting a site they aren't a member
-of now sees who owns it and can ask for access in one click, instead of being told it was
-deleted. It does not decide the membership question below — that is still the
-over-tightening defect, and the ask flow is a humane workaround, not the answer.
-**This does not close the defect** — the membership question above is the actual cause, and
-honest ambiguity is a better error message, not access.
+**The memberships — Arman's rulings:**
+- `arman@allgreenrecycling.com` **stays at 0 of 12 sites, deliberately.** It is the permanent
+  outsider test account: opening any site URL on it is how we see exactly what a stranger sees.
+  Do not "fix" it by adding memberships.
+- The `aimatrx.com` site **moved out of `admin@admin.com`'s personal workspace into the shared
+  `AI Matrx` org** — a company site does not belong in one login's private space. Site row plus
+  every child table that denormalizes `organization_id`; `arman@armansadeghi.com` went 11 → 12
+  sites and nobody lost access (`admin@admin.com` keeps it as `created_by`).
+- 3 `web.snapshot` rows still carry the old org and were deliberately left: that table is
+  append-only by design (`web.reject_immutable_fact_mutation`), the rows are historical facts
+  stamped with the org that held the site at the time, and access resolves through the parent
+  site regardless.
+
+**Gap this exposed, still open:** there is NO product path to move a site between organizations —
+no settings control, no RPC. It took a hand-written transaction. Anyone hitting this again has
+the same problem, so a site-settings "Move to organization" action is worth building.
 
 ### D134 — agx_list_scoped org-grant branch: nondeterministic access_level (2026-08-08)
 

@@ -1,9 +1,16 @@
 "use client";
 
 /**
- * The rendered half of `lib/records/recordUnavailable.ts`: a zero-row read is
- * a fork in the road, not a full stop. It says which case it is (deletion only
- * when PROVEN) and hands over every door the user can still take — the list
+ * The rendered half of `lib/records/recordUnavailable.ts`.
+ *
+ * When the read site knew the canonical entity token, this does NOT render:
+ * it defers to `<AccessGate token id/>`, which asks the platform which of the
+ * four states the read actually hit instead of describing all of them. Naming
+ * both possibilities is the honest answer only while we cannot get the real
+ * one, and with a token we can.
+ *
+ * Without a token (the read site has no registered entity), it stays: deletion
+ * claimed only when PROVEN, plus every door the user can still take — the list
  * they came from, the org switcher (an access gap is the most common cause,
  * and the fix is almost always "you're in the wrong org / hold no membership"),
  * and a way to report it.
@@ -13,6 +20,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Building2, LifeBuoy, RotateCcw, ShieldAlert, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import {
   Popover,
   PopoverContent,
@@ -34,6 +42,20 @@ export function RecordUnavailableNotice({
   const openFeedback = useOpenFeedbackWindow();
   const deleted = error.reason === "deleted";
 
+  // A proven deletion is already the truth, so the gate has nothing to add —
+  // but every other case is a guess we can replace with an answer.
+  if (error.token && error.recordId && !deleted) {
+    return (
+      <AccessGate
+        token={error.token}
+        id={error.recordId}
+        onRetry={onRetry}
+        fallbackHref={marketingRoutes.sites()}
+        fallbackLabel="All sites"
+      />
+    );
+  }
+
   return (
     <div className="flex h-full min-h-40 items-center justify-center p-6">
       <div className="max-w-lg rounded-lg border border-border bg-card p-4">
@@ -45,14 +67,13 @@ export function RecordUnavailableNotice({
           )}
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">
-              {deleted
-                ? `This ${error.entity} was deleted`
-                : `We couldn't open this ${error.entity}`}
+              {`We couldn't open this ${error.entity}`}
             </p>
+            {/* ONE authored sentence per reason, and it lives with the throw
+                (`recordUnavailableMessage`). A second copy here is how the two
+                halves drift into saying different things about one read. */}
             <p className="mt-1 text-xs text-muted-foreground">
-              {deleted
-                ? `It was removed, so it can no longer be opened.`
-                : `It may have been deleted, or it may belong to an organization you don't have access to. Nothing here proves it is gone.`}
+              {error.message}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {onRetry ? (

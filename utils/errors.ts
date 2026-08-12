@@ -28,6 +28,36 @@ export function operationFailed(action: string, cause?: unknown): Error {
 }
 
 /**
+ * The asserter a data module uses to unwrap every PostgREST response it makes.
+ *
+ * Every `features/**\/data*.ts` in this repo had grown its own private
+ * `assertData(data, error)` whose failure branch was `throw new
+ * Error(error.message)` — ten identical copies handing RLS codes and PostgREST
+ * prose to a person. This is the ONE of them: bind the module's action once,
+ * override it at a call site whose sentence differs (a write inside a module of
+ * reads), and the raw response still travels as `cause` for the inspector.
+ *
+ *   const assertData = makeAssertData("reach your Search Console data");
+ *   const rows = assertData(response.data, response.error);
+ *   assertData(saved.data, saved.error, "save that rule");
+ *
+ * A zero-row SINGLE-record read is not this — that is
+ * `lib/records/recordUnavailable.ts` plus `<AccessGate token id/>`, which asks
+ * the platform which of the four things actually happened.
+ */
+export function makeAssertData(action: string) {
+  return function assertData<T>(
+    data: T | null,
+    error: unknown,
+    override?: string,
+  ): T {
+    if (error) throw operationFailed(override ?? action, error);
+    if (data === null) throw operationFailed(override ?? action);
+    return data;
+  };
+}
+
+/**
  * Safe string extraction for caught values (Supabase PostgrestError, axios, etc.).
  * Avoids `String(err)` on plain objects, which yields "[object Object]".
  *

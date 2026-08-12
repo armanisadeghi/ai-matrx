@@ -11,17 +11,14 @@ import type {
   ClassRuleDraft,
   KeywordClassRuleRow,
 } from "@/features/marketing/search-console/lib/class-rules";
+import { makeAssertData } from "@/utils/errors";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
   return supabase.schema("seo");
 }
 
-function assertData<T>(data: T | null, error: { message: string } | null): T {
-  if (error) throw new Error(error.message);
-  if (data === null) throw new Error("Supabase returned no data");
-  return data;
-}
+const assertData = makeAssertData("reach your keyword classification rules");
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -79,7 +76,7 @@ export async function createClassRule(
     })
     .select("*")
     .single();
-  return assertData(response.data, response.error);
+  return assertData(response.data, response.error, "save that classification rule");
 }
 
 export async function updateClassRule(
@@ -94,7 +91,7 @@ export async function updateClassRule(
     .eq("id", ruleId)
     .select("*")
     .single();
-  return assertData(response.data, response.error);
+  return assertData(response.data, response.error, "update that classification rule");
 }
 
 export async function deleteClassRule(ruleId: string): Promise<void> {
@@ -133,5 +130,5 @@ export async function adoptClassTemplate(
     })
     .select("*")
     .single();
-  return assertData(response.data, response.error);
+  return assertData(response.data, response.error, "adopt that rule template");
 }

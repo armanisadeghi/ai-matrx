@@ -361,6 +361,7 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
                           matchedUrl={target.matchedUrl}
                           pageUrl={page.url}
                           siteDomain={siteDomain}
+                          // access-errors: ok — the site was absent from a rank-check RESULT SET we fetched successfully; a measurement, not an access state.
                           notFoundLabel="Site not found in the checked results."
                         />
                       ) : null}

@@ -66,7 +66,6 @@ import {
 } from "@/features/marketing/data/hooks";
 import {
   LoadingSurface,
-  QueryError,
   SectionCard,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
@@ -99,6 +98,7 @@ import type {
   MarketingSite,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 /** Compact icon-button used by every cockpit row's edit/delete actions. */
 function RowActionButton({
@@ -397,9 +397,13 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             />
           }
         />
-        <QueryError
-          error={brand.error ?? new Error("Brand not found")}
+        <AccessGate
+          token="web_brand"
+          id={brandId}
+          error={brand.error}
           onRetry={() => void brand.refetch()}
+          fallbackHref={marketingRoutes.brands()}
+          fallbackLabel="All brands"
         />
       </>
     );

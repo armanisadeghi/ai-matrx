@@ -80,7 +80,7 @@ Verified evidence, from `web.crawl_session` (`scope->>'mode'='analysis'`):
 | 08-11 06:20 | prpinjectionmd | 4m39s | failed (real crash; retried) |
 | 08-11 06:34 | prpinjectionmd (~150 pages) | **11m34s** | complete, 8,443 results |
 | 08-11 10:57 / 18:10 / 23:17 | datadestruction (387 snapshots, 178k crawl_urls, 253k link edges) | 30–40 min each | **failed, 0 results, no error stored** |
-| 08-12 02:30 | cosmeticinjectables (680 snapshots, 136k crawl_urls, 160k edges) | running at time of writing | see addendum below |
+| 08-12 02:30 | cosmeticinjectables (680 snapshots, 136k crawl_urls, 160k edges) | **35m08s** | **failed, 0 results, empty stats — same reaper-kill signature, third site confirmed** |
 
 1. **~100× performance regression between 08-09 and 08-11.** 120 pages took
    6 seconds under the original 15-check worker; ~150 pages took 11.5 MINUTES

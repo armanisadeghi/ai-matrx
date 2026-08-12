@@ -39,6 +39,10 @@ no `AccessDenied` component at all, and no way for a blocked user to ask.
 
 They compose. Do not add a third marker error.
 
+**Pass the `token` when you throw.** `recordUnavailable({ entity, recordId, token })` carries the canonical entity token, and any renderer holding one should defer to `<AccessGate token id/>` rather than reciting both possibilities — describing the ambiguity is the best answer only while we cannot get the real one (live example: `features/marketing/components/shared/RecordUnavailableNotice.tsx`). A **proven** deletion is already the truth and needs no gate.
+
+**A failed WRITE is not this.** No record to resolve, no request to offer — raise `operationFailed(action, cause)` from [`utils/errors.ts`](../../utils/errors.ts), or bind a data module's whole set of responses once with `makeAssertData(action)` (override per call for a write). **`throw new Error(error.message)` is the defect this counts**; a private per-file `assertData` copy is how ten of them appeared in marketing alone.
+
 ## Using it
 
 ```tsx
@@ -79,6 +83,8 @@ is the same class of lie this feature exists to kill.
 | `../../app/forbidden.tsx` · `../../app/(core)/forbidden.tsx` | The boundaries. Root is bare; `(core)`'s renders inside the AppShell. |
 | `../../utils/permissions/requireAccess.ts` | Server-side `requireAccess(type, id, level, { forbid: true })` → real 403 + the boundary. |
 | `components/AccessDenied.tsx` | The screen (+ `AccessDeniedView` for variants). |
+| `components/AccessRequestsSurface.tsx` | The INBOX — both directions, at `/settings/access-requests`. Answers with the same service calls the DM chip uses; never its own copy. |
+| `../../app/(core)/settings/access-requests/page.tsx` | The route. Signed-out → `ModuleSignInGate`. Reached from the settings nav (`Access requests`). |
 | `components/RequestAccessPanel.tsx` | Ask → pending → answered, in place. |
 | `hooks/useAccessGate.ts` | `(token, id) → status + context`. |
 | `service/accessDeniedContext.ts` | Client half of `access_denied_context`. |
@@ -120,36 +126,52 @@ is the same class of lie this feature exists to kill.
   verification caught it. Do not reintroduce it.)*
 - **One open request per person per record** — enforced by a partial unique
   index, so a second click is a no-op and never a second DM.
-- **Delivery never fails the ask.** The row is the durable fact; the DM is how it
-  gets noticed — and today the DM is the ONLY surface, so a delivery that lands
-  nowhere leaves a row nobody can see. That is why zero-delivery is surfaced to
-  the requester instead of hidden, and why the inbox page below is the next
-  thing to build, not a nice-to-have.
+- **Delivery never fails the ask, and delivery is never the only surface.** The
+  row is the durable fact; the DM is how it gets NOTICED. A request whose DM
+  lands nowhere is still answerable at `/settings/access-requests`, which reads
+  the ledger itself — that is the whole reason the page exists. Zero-delivery is
+  still surfaced to the requester rather than hidden: "we couldn't message them"
+  is true and useful, it just no longer means the ask is lost.
 - Writes go through the RPC family only. Never insert `iam.permissions` or
   `iam.access_requests` from the client.
 
-## The owner's side
+## The owner's side — two surfaces, ONE decision path
 
-The DM **is** the approval surface — `access_request` in
+The DM is the **primary** approval surface — `access_request` in
 [`messageActionRegistry`](../messaging/actions/messageActionRegistry.tsx) renders
-**Let them view · Let them edit · Decline · Report** inside the bubble. Granting
-writes `iam.permissions` and sends the canonical `resource_shared` card back, so
-the loop closes in the surface the requester already reads.
+**Let them view · Let them edit · Decline · Report** inside the bubble, because a
+request answered where the owner already is beats a queue they have to remember.
+Granting writes `iam.permissions` and sends the canonical `resource_shared` card
+back, so the loop closes in the surface the requester already reads.
+
+`/settings/access-requests` is the **durable** one — the ledger itself, in both
+directions: *To me* (`listAccessRequests("inbox")`, pending asks I am entitled to
+answer) and *I sent* (every ask I made, with its status, the decider's note, and
+Withdraw while pending). It exists because the DM can fail to land.
+
+**Both call the same functions.** `decideAccessRequest` / `reportAccessRequest`
+live in `service/accessRequests.ts` and are imported by both surfaces — a second
+copy of "grant then notify" is the drift this rule forbids. Adding a third
+surface means importing them too, never reimplementing the RPC call.
 
 ## Open
 
 - **The sweep.** `pnpm check:access-errors` (advisory, in the release gates)
-  measures it: **410 human-facing surfaces** still guess (was 543 on
-  2026-08-11) — 97 hand over raw PostgREST text, 282 assert a deletion they
-  cannot know, 31 assert a permission.
-  Ranked worst-feature-first; `--write` refreshes `scripts/access-errors/report.json`.
-  Marketing's record surfaces and `app/(core)` are converted; education /
-  files+rag were converted alongside. What remains is concentrated in `lib`,
-  `features/agents`, and `features/scope-system`.
-- **No `/settings/access-requests` inbox page yet, and `listAccessRequests` has
-  zero consumers.** The DM is therefore not the primary surface, it is the only
-  one — a request whose DM fails, or one created without a signed-in sender, is
-  a durable row with no way to see it. Build the page.
+  measures it. **543 → 353** as the conversion waves landed: education, files,
+  rag, `features/marketing` and every `app/(core)` route are at ZERO. The
+  biggest single bucket left is `lib` (59, of which ~45 are
+  `lib/redux/app-builder/**`, the gated applets subsystem — developer-facing
+  thunk errors with interpolated ids, NOT user-facing access copy; triage
+  before converting, and consider excluding the subsystem outright if it stays
+  gated). Then `features/agents` (34) and a long tail of 6–16 per feature.
+  **A line the regexes genuinely cannot judge** — a keyword absent from page
+  text, an HTTP 404 our crawler observed on someone else's site — takes
+  `// access-errors: ok — <reason>`; the reason is required, and the summary
+  prints how many are marked, so a suppression is a sentence someone defends.
+- **The inbox has no live-count door outside its own header.** The page badges
+  both boxes, but nothing in the shell tells an owner a request is waiting the
+  way the message icon does for unread DMs — today the DM carries that signal.
+  When a request can arrive without a DM at all, that becomes a real gap.
 - **`requireAccess(..., { forbid: true })` has no production callsite yet.**
   Built and verified in the browser (real 403 + the boundary inside the shell),
   but every gated route still redirects — and for the seven `[id]/edit` routes
@@ -182,6 +204,40 @@ the loop closes in the surface the requester already reads.
 
 ## Change Log
 
+- **2026-08-11** — **`features/marketing` converted (41 → 0); the client sweep's
+  last feature bucket of real record surfaces is closed.** Fourteen surfaces
+  swapped `new Error("Crawl not found")` for the gate on `web_brand` /
+  `web_page` / `web_snapshot` / `web_sitemap` / `web_crawl_session` /
+  `web_site`. Two primitives came out of it, both beside the code they fix:
+  `makeAssertData(action)` in `utils/errors.ts` collapsed **ten** private
+  `assertData(data, error)` copies whose failure branch handed PostgREST prose
+  to a person, and `RecordUnavailableError` gained `token`, so a renderer that
+  has one defers to the gate instead of naming both possibilities.
+  `assertMutated` stopped leading with a permission verdict on a zero-row
+  UPDATE. Browser verification as a user WITHOUT access found one live leak the
+  regexes could never see: `fetchFreshSite` used `.single()`, so Content Plan
+  Setup toasted "Cannot coerce the result to a single JSON object · PGRST116"
+  on top of the gate. Two checker changes: JSX comments (`{/*`) are skipped
+  like the other comment forms, and `// access-errors: ok — <reason>` marks the
+  ten genuine false positives with a required, printed reason.
+
+- **2026-08-11** — **The inbox shipped: `/settings/access-requests`.** The last
+  unbuilt half. `listAccessRequests` went from zero consumers to the page's
+  reason for existing; the DM is now the primary surface rather than the only
+  one. Two boxes with true counts on both tabs (both are fetched on load — a
+  badge that only becomes true after you click the tab is the same class of
+  small lie), the four DM decisions calling the SAME service functions, and
+  Withdraw on the sent side. Entities render through `EntityRef`, which means a
+  door where the registry resolves one and plain text where it does not — no
+  invented route, and no bare uuid when a record has no title. Deliberately not
+  on `lib/entity-list`: that shell wants a scoped/faceted server RPC over the
+  five-scope vocabulary, and this is a two-box authorization-derived inbox.
+  Answering a request in the browser also exposed a defect in the DM's own
+  path: `rpcError` passed through "permissions.resource_type=organization is
+  not registered (canonical token or table_name). See features/sharing/
+  FEATURE.md" — our own sentence, but written for a developer, complete with a
+  repo path and two schema names, from the feature whose LAW forbids exactly
+  that. The heuristic now rejects internal markers as well as Postgres prose.
 - **2026-08-11** — **`features/education` converted (38 → 0).** Six single-record
   surfaces render the gate: assessment detail / edit / results (the results page
   resolves the ASSESSMENT or the RESULT depending on which read came back empty,

@@ -46,7 +46,13 @@ export async function getHomepageScreenshot(
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle();
-  return assertFound(response.data, response.error, "screenshot", screenshotId);
+  return assertFound(
+    response.data,
+    response.error,
+    "screenshot",
+    screenshotId,
+    "web_screenshot",
+  );
 }
 
 /** Read every screenshot variant attached to one immutable snapshot. */

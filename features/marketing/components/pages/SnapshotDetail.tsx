@@ -13,10 +13,10 @@ import {
   JsonPreview,
   LoadingSurface,
   MetricCell,
-  QueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { SnapshotArtifacts } from "@/features/marketing/components/pages/SnapshotArtifacts";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export function SnapshotDetail({
   pageId,
@@ -30,9 +30,13 @@ export function SnapshotDetail({
   if (snapshot.isLoading) return <LoadingSurface label="Loading snapshot…" />;
   if (snapshot.isError || !snapshot.data) {
     return (
-      <QueryError
-        error={snapshot.error ?? new Error("Snapshot not found")}
+      <AccessGate
+        token="web_snapshot"
+        id={snapshotId}
+        error={snapshot.error}
         onRetry={() => void snapshot.refetch()}
+        fallbackHref={`${sitePath}/pages/${pageId}`}
+        fallbackLabel="Back to the page"
       />
     );
   }

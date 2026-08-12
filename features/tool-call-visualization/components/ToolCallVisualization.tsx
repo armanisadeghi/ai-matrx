@@ -130,7 +130,7 @@ const ToolCallVisualizationInner: React.FC<{
   // Resolves async on first sight, then re-renders — so a fully DB-authored tool
   // controls its collapsed line, not just its expanded body.
   const dbMeta = useDbToolMeta(headerTool?.toolName ?? null);
-  const toolMode = getToolDisplayMode(headerTool?.toolName ?? null);
+  const toolMode = getToolDisplayMode(headerTool?.toolName ?? null, headerTool);
   const effectiveMode: "auto" | "stay-open" | "never-open" =
     userPref === "verbose"
       ? "stay-open"

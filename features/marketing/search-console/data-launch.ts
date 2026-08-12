@@ -20,6 +20,8 @@ import {
   parseLaunchTracking,
   type LaunchTracking,
 } from "@/features/marketing/search-console/lib/launch-tracking";
+import { assertMutated } from "@/features/marketing/data/service";
+import { makeAssertData } from "@/utils/errors";
 
 export interface TrackedPageRow {
   id: string;
@@ -28,11 +30,7 @@ export interface TrackedPageRow {
   tracking: LaunchTracking;
 }
 
-function assertData<T>(data: T | null, error: { message: string } | null): T {
-  if (error) throw new Error(error.message);
-  if (data === null) throw new Error("Supabase returned no data");
-  return data;
-}
+const assertData = makeAssertData("reach your launch tracking");
 
 /** Every tracked (launch_tracking not null) live page of the site. */
 export async function listTrackedPages(
@@ -91,10 +89,13 @@ async function writeTracking(
     .eq("id", pageId)
     .is("deleted_at", null)
     .select("id");
-  const rows = assertData(response.data, response.error);
-  if (rows.length === 0) {
-    throw new Error("Page not found or not editable (RLS).");
-  }
+  // A zero-row UPDATE is the canonical loud-mutation case — denial, deletion,
+  // and stale id all land here, so one shared assertion names all three.
+  assertMutated(
+    assertData(response.data, response.error, "save that page's launch tracking"),
+    null,
+    "save that page's launch tracking",
+  );
 }
 
 /**

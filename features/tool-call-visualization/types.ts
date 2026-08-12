@@ -210,6 +210,19 @@ export interface ToolRenderer {
    */
   displayMode?: "auto" | "stay-open" | "never-open";
 
+  /**
+   * Per-ENTRY override, for a polymorphic tool whose display mode depends on
+   * what it actually did (mirrors `getPhaseLabels`). Return null to fall
+   * through to `displayMode` / the DB mode / the result-is-purpose set.
+   *
+   * `agent_call` needs this: a collaboration call is a work log that should
+   * fold away, but an image call's result IS the picture — collapsed, a
+   * reloaded conversation shows no image at all.
+   */
+  getDisplayMode?: (
+    entry: ToolLifecycleEntry,
+  ) => "auto" | "stay-open" | "never-open" | null;
+
   /** The inline (stream) component. Required. */
   InlineComponent: React.ComponentType<ToolRendererProps>;
 

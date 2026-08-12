@@ -19,7 +19,9 @@
  * jest-tested definition of the counting semantics the SQL must reproduce:
  * URL-quality issues counted for every page, SERP title/description issues
  * always warnings, social/headings/indexability issues by their own severity,
- * machine resources excluded by the shared classification rule.
+ * machine resources excluded by the shared classification rule, GONE pages
+ * (`status = 'missing'`) excluded from every HTML-quality finding and reported
+ * as their own GSC-ranked finding instead.
  * CHANGE ONE, CHANGE BOTH — and re-prove parity against real sites before
  * shipping (the check that gated the cutover diffed both implementations over
  * 5 live sites and all 10,437 distinct registry URLs).
@@ -53,6 +55,21 @@ export interface AuditSourceRow {
    * and matrx-scraper `analysis.py` (`pages_skipped_alias`).
    */
   canonicalPageId?: string | null;
+  /**
+   * `web.page.status`. `'missing'` means the crawler no longer finds this URL —
+   * the page is GONE. Its last-known HTML metrics describe a document that no
+   * longer resolves, so scoring it as a live page is worse than useless: the
+   * user edits an og:title on a 404. Gone pages are set aside from every
+   * HTML-quality finding and reported as their own finding instead. Null/absent
+   * is treated as live (historical rows, and the TS callers that pre-date this).
+   */
+  status?: string | null;
+  /** Google Search Console clicks over the last 28 days (`v_page_list`). */
+  gscClicks28d?: number | null;
+  /** Google Search Console impressions over the last 28 days (`v_page_list`). */
+  gscImpressions28d?: number | null;
+  /** When the crawler last saw this URL — how long it has been gone. */
+  lastSeen?: string | null;
   seo_metrics: unknown;
   audit_metrics: unknown;
 }
@@ -79,11 +96,34 @@ export interface AuditPageRollup {
   indexabilityVerdict: "indexable" | "check" | "blocked" | null;
 }
 
+/**
+ * A page the crawler used to find and no longer does — the finding, not a
+ * footnote. Ranked by the traffic it was earning, because that is what a gone
+ * page actually costs: one with recent impressions is lost money, one with none
+ * is housekeeping.
+ */
+export interface GonePageRollup {
+  pageId: string;
+  path: string;
+  url: string;
+  /** GSC clicks in the last 28 days. Null when the page is not in GSC at all. */
+  gscClicks28d: number | null;
+  /** GSC impressions in the last 28 days. Null when not in GSC at all. */
+  gscImpressions28d: number | null;
+  /** ISO timestamp of the last crawl that still found this URL. */
+  lastSeen: string | null;
+}
+
 export interface SiteAuditRollup {
   /** Canonical URLs eligible for page auditing (HTML or not fetched yet). */
   totalPages: number;
   /** Known non-HTML resources excluded from HTML-only page findings. */
   nonHtmlResources: number;
+  /**
+   * Pages the crawler no longer finds (`status = 'missing'`), set aside from
+   * every HTML-quality finding. Their own finding — see `gonePageDetails`.
+   */
+  gonePages: number;
   /** Pages whose latest snapshot carries stored metrics. */
   auditedPages: number;
   /** Pages with no computed metrics yet (never crawled or pre-stamping). */
@@ -102,9 +142,27 @@ export interface SiteAuditRollup {
    * warnings). Complete by design — truncation happens at render only.
    */
   worstPages: AuditPageRollup[];
+  /**
+   * EVERY gone page, costliest first (GSC clicks, then impressions, then how
+   * recently it was last seen). Complete by design — truncation happens at
+   * render only.
+   */
+  gonePageDetails: GonePageRollup[];
 }
 
 const SAMPLE_LIMIT = 3;
+
+/**
+ * Text ordering that MATCHES POSTGRES, which is what every ORDER BY in
+ * `web.site_audit_rollup` actually uses. The database collates `C.UTF-8` —
+ * plain byte order — so `/Hard-Drive-Shredding` sorts before `/akron` there.
+ * `localeCompare` does the opposite, and the two implementations then disagree
+ * about the order of pages tied on severity for no reason anyone can see.
+ * Code-point comparison is the byte order.
+ */
+function byText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
 
 // ---------------------------------------------------------------------------
 // Narrowing for the server-side aggregates. The RPCs return `jsonb`, which the
@@ -150,6 +208,16 @@ function list(value: unknown, what: string): unknown[] {
   return value;
 }
 
+function intOrNull(value: unknown, what: string): number | null {
+  if (value === null || value === undefined) return null;
+  return int(value, what);
+}
+
+function strOrNull(value: unknown, what: string): string | null {
+  if (value === null || value === undefined) return null;
+  return str(value, what);
+}
+
 export function parseSiteAuditRollup(value: unknown): SiteAuditRollup {
   const root = record(value, "rollup");
   const verdicts = record(root.verdicts, "rollup.verdicts");
@@ -157,6 +225,7 @@ export function parseSiteAuditRollup(value: unknown): SiteAuditRollup {
   return {
     totalPages: int(root.totalPages, "rollup.totalPages"),
     nonHtmlResources: int(root.nonHtmlResources, "rollup.nonHtmlResources"),
+    gonePages: int(root.gonePages, "rollup.gonePages"),
     auditedPages: int(root.auditedPages, "rollup.auditedPages"),
     uncomputedPages: int(root.uncomputedPages, "rollup.uncomputedPages"),
     verdicts: {
@@ -214,6 +283,28 @@ export function parseSiteAuditRollup(value: unknown): SiteAuditRollup {
         indexabilityVerdict: verdict as AuditPageRollup["indexabilityVerdict"],
       };
     }),
+    gonePageDetails: list(root.gonePageDetails, "rollup.gonePageDetails").map(
+      (entry) => {
+        const page = record(entry, "rollup.gonePageDetails[]");
+        return {
+          pageId: str(page.pageId, "rollup.gonePageDetails[].pageId"),
+          path: str(page.path, "rollup.gonePageDetails[].path"),
+          url: str(page.url, "rollup.gonePageDetails[].url"),
+          gscClicks28d: intOrNull(
+            page.gscClicks28d,
+            "rollup.gonePageDetails[].gscClicks28d",
+          ),
+          gscImpressions28d: intOrNull(
+            page.gscImpressions28d,
+            "rollup.gonePageDetails[].gscImpressions28d",
+          ),
+          lastSeen: strOrNull(
+            page.lastSeen,
+            "rollup.gonePageDetails[].lastSeen",
+          ),
+        };
+      },
+    ),
   };
 }
 
@@ -223,6 +314,7 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
   let auditedPages = 0;
   let nonHtmlResources = 0;
   let aliasRows = 0;
+  const gonePageDetails: GonePageRollup[] = [];
   const verdicts = { indexable: 0, check: 0, blocked: 0 };
   const passes = { serp: 0, social: 0, headings: 0, url: 0 };
 
@@ -257,6 +349,24 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
     }
     if (isResourceContentType(row.contentTypeLast, row.url)) {
       nonHtmlResources += 1;
+      continue;
+    }
+    // GONE BEFORE HTML QUALITY. Every check below scores a document — the
+    // og:title it carries, the headings it uses, whether Google may index it.
+    // On a URL that no longer resolves those verdicts are about a corpse, and
+    // acting on them means editing a page that does not exist. So a gone page
+    // contributes no issue, no pass, and no verdict; it becomes its own
+    // finding. Resources are classified first on purpose: a /wp-json endpoint
+    // disappearing is not lost traffic, it is a crawler detail.
+    if (row.status === "missing") {
+      gonePageDetails.push({
+        pageId: row.id,
+        path: row.path || row.url,
+        url: row.url,
+        gscClicks28d: row.gscClicks28d ?? null,
+        gscImpressions28d: row.gscImpressions28d ?? null,
+        lastSeen: row.lastSeen ?? null,
+      });
       continue;
     }
     const path = row.path || row.url;
@@ -321,7 +431,7 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
     .sort((a, b) => {
       if (a.severity !== b.severity) return a.severity === "error" ? -1 : 1;
       if (b.count !== a.count) return b.count - a.count;
-      return a.message.localeCompare(b.message);
+      return byText(a.message, b.message);
     });
 
   const worstPages = pages
@@ -330,18 +440,43 @@ export function buildSiteAuditRollup(rows: AuditSourceRow[]): SiteAuditRollup {
       if (b.errorCount !== a.errorCount) return b.errorCount - a.errorCount;
       if (b.warningCount !== a.warningCount)
         return b.warningCount - a.warningCount;
-      return a.path.localeCompare(b.path);
+      if (a.path !== b.path) return byText(a.path, b.path);
+      // Two pages CAN share a path (same path, different query string), and
+      // then every key above ties. Without a unique final key the order is
+      // arbitrary on both sides and the two implementations disagree for no
+      // reason — the unstable-ORDER-BY class. pageId settles it.
+      return byText(a.pageId, b.pageId);
     });
 
+  // Costliest first: the clicks a gone page was earning, then the impressions,
+  // then how recently it was last seen. A page with no GSC row at all sorts as
+  // zero — real housekeeping, ranked below anything Google still showed.
+  const gonePages = gonePageDetails.sort((a, b) => {
+    const clicks = (b.gscClicks28d ?? 0) - (a.gscClicks28d ?? 0);
+    if (clicks !== 0) return clicks;
+    const impressions =
+      (b.gscImpressions28d ?? 0) - (a.gscImpressions28d ?? 0);
+    if (impressions !== 0) return impressions;
+    if (a.lastSeen !== b.lastSeen)
+      return byText(b.lastSeen ?? "", a.lastSeen ?? "");
+    if (a.path !== b.path) return byText(a.path, b.path);
+    return byText(a.pageId, b.pageId);
+  });
+
+  const livePages =
+    rows.length - nonHtmlResources - aliasRows - gonePages.length;
+
   return {
-    totalPages: rows.length - nonHtmlResources - aliasRows,
+    totalPages: livePages,
     nonHtmlResources,
+    gonePages: gonePages.length,
     auditedPages,
-    uncomputedPages: rows.length - nonHtmlResources - aliasRows - auditedPages,
+    uncomputedPages: livePages - auditedPages,
     verdicts,
     passes,
     topIssues,
     worstPages,
+    gonePageDetails: gonePages,
   };
 }
 
@@ -379,6 +514,13 @@ export function buildSiteAuditTrend(
   const points: AuditTrendPoint[] = [];
   for (const [day, dayRows] of byDay) {
     const rollup = buildSiteAuditRollup(dayRows);
+    // A day whose every snapshot was excluded (all machine resources, all
+    // aliases, or all on pages that are now GONE) contributed no eligible page,
+    // so it is not a day this site has a score for. The SQL twin drops the row
+    // before it ever groups; emitting a 0-page, null-score point here would put
+    // a hole in the chart that means nothing. iopbm.com has three such days —
+    // every page captured then is gone today.
+    if (rollup.totalPages === 0) continue;
     const sectionsTotal = 4 * rollup.auditedPages;
     const sectionsPassed =
       rollup.passes.serp +

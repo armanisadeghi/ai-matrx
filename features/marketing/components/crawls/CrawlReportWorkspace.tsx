@@ -45,6 +45,7 @@ import {
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 const OUTCOME_OPTIONS = [
   "discovered",
@@ -910,9 +911,13 @@ export function CrawlReportWorkspace({
     return <LoadingSurface label={`Loading ${report.label.toLowerCase()}…`} />;
   if (crawl.isError || !crawl.data) {
     return (
-      <QueryError
-        error={crawl.error ?? new Error("Crawl not found")}
+      <AccessGate
+        token="web_crawl_session"
+        id={crawlId}
+        error={crawl.error}
         onRetry={() => void crawl.refetch()}
+        fallbackHref={`${sitePath}/crawls`}
+        fallbackLabel="All crawls"
       />
     );
   }

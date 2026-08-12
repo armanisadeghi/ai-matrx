@@ -83,6 +83,27 @@ export function hasDeliverableEpisode(r: ReconcileResult): boolean {
 }
 
 /**
+ * Has the episode row actually been written yet?
+ *
+ * `outcome: "completed"` can legitimately arrive with `episode_id: null`.
+ * Episode creation is gated on a version-CAS lease (aidream 06fafce88) because
+ * several callers race to create it — the live pipeline stamping when audio
+ * lands, the cron sweep, and this client's own polling. Without the lease they
+ * each read "no episode yet" and each created one: on one verification run two
+ * published episodes appeared for the same audio 26 MILLISECONDS apart. The
+ * lease means one writer wins and the others report
+ * `essential.episode: "pending"` for a moment.
+ *
+ * So a completed run with no episode id is CORRECT and self-resolving, not a
+ * failure — but it is also not finished from the page's point of view, because
+ * the post-run tools (companion content, publishing) key off the episode id.
+ * Keep observing until it lands; never treat it as an error, and never hammer.
+ */
+export function isEpisodeSettled(r: ReconcileResult): boolean {
+  return r.essential.episode === "completed" || Boolean(r.episode_id);
+}
+
+/**
  * Fold the server's ancillary report into a slot list, preserving anything that
  * already rendered.
  *

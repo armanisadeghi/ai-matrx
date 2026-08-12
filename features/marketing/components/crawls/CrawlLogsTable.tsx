@@ -19,6 +19,7 @@ import {
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 const LEVEL_OPTIONS = [
   { value: "debug", label: "Debug" },
@@ -28,7 +29,7 @@ const LEVEL_OPTIONS = [
 ];
 
 export function CrawlLogsTable({ crawlId }: { crawlId: string }) {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const table = useMarketingTableState({
     defaultSort: { id: "sequence", direction: "asc" },
     defaultPageSize: 50,
@@ -104,9 +105,13 @@ export function CrawlLogsTable({ crawlId }: { crawlId: string }) {
   if (crawl.isLoading) return <LoadingSurface label="Loading crawl…" />;
   if (crawl.isError || !crawl.data)
     return (
-      <QueryError
-        error={crawl.error ?? new Error("Crawl not found")}
+      <AccessGate
+        token="web_crawl_session"
+        id={crawlId}
+        error={crawl.error}
         onRetry={() => void crawl.refetch()}
+        fallbackHref={`${sitePath}/crawls`}
+        fallbackLabel="All crawls"
       />
     );
   return (

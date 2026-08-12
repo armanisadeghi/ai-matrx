@@ -328,7 +328,7 @@ export const STAGES: LoopStage[] = [
         pipes: {
             code: {
                 state: "partial",
-                note: "One renderer + custom-domain routing + 301 ledger are live, but the site emits NO sitemap.xml and NO robots.txt, and collections render client-side only (invisible to any crawler).",
+                note: "One renderer + custom-domain routing + 301 ledger are live, and collections now server-render into the HTML a crawler receives: <template data-matrx-collection> expanded in loadSitePageProps, order from settings.default_order / ?order= instead of a hardcoded created_at DESC (G-COLLECTIONS closed 2026-08-11). Still partial: the site emits NO sitemap.xml and NO robots.txt.",
                 ref: "my-matrx/lib/render/clientSiteRenderer.js",
             },
             human: { state: "n/a", note: "Serving is infrastructure; there is no human step." },
@@ -756,12 +756,13 @@ export const GAPS: LoopGap[] = [
         id: "G-COLLECTIONS",
         title: "Collections render client-side only — invisible to crawlers",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "serve",
         breaks: ["code"],
         detail:
-            "BUILT BUT UNSHIPPED. my-matrx clientSiteRenderer.js now expands collection bindings server-side (findCollectionBindings / loadBoundCollections / expandCollectionBindings) with lib/collections/* helpers and a 205-line render test. The renderer edit is uncommitted and the helper files are untracked; production still renders collections in the browser.",
+            "CLOSED 2026-08-11. my-matrx expands <template data-matrx-collection> bindings server-side in loadSitePageProps (collectionBindings.js scan+expand, ssrBindings.js fetch) through the same public_read / public_read_fields gate as the HTTP route, with renderer-owned escaping. Ordering is configurable — ?order= / data-order -> site_collections.settings.default_order -> created_at:desc (the old default, unchanged) — DB-side with a stable id tiebreak, sort fields restricted to readable ones. PROOF: curl of /c/dev-website/events-and-booking with no JS returns 'Open house (Sep 3)' above 'Herbal workshop (Sep 17)' with internal_notes absent; 19 live iopbm + prp-injection-md pages render byte-identically before/after; 207 render-layer tests pass. Remaining (separate, W2C-render-binding): data-filter, MatrxData.render(), and aidream + matrx-frontend still hardcoding -created_at.",
         lane: "L1",
+        evidence: "my-matrx/lib/render/collectionBindings.js",
     },
     {
         id: "G-FINDING-ASSIST",

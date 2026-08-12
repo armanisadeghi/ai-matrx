@@ -17,17 +17,14 @@ import type {
 } from "@/features/marketing/search-console/types";
 import type { GscDigRuleContent } from "@/features/marketing/search-console/lib/dig-rules";
 import { serializeDigConditions } from "@/features/marketing/search-console/lib/dig-rules";
+import { makeAssertData } from "@/utils/errors";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
   return supabase.schema("seo");
 }
 
-function assertData<T>(data: T | null, error: { message: string } | null): T {
-  if (error) throw new Error(error.message);
-  if (data === null) throw new Error("Supabase returned no data");
-  return data;
-}
+const assertData = makeAssertData("reach your Search Console dig rules");
 
 function cleanFilters(filters: GscFilters): Json {
   const out: Record<string, string> = {};
@@ -103,7 +100,7 @@ export async function createDigRule(
     })
     .select("*")
     .single();
-  return assertData(response.data, response.error);
+  return assertData(response.data, response.error, "save that dig rule");
 }
 
 export async function updateDigRule(
@@ -118,7 +115,7 @@ export async function updateDigRule(
     .eq("id", ruleId)
     .select("*")
     .single();
-  return assertData(response.data, response.error);
+  return assertData(response.data, response.error, "update that dig rule");
 }
 
 /** Soft delete (RLS: owner only; templates are not deletable). */
@@ -157,7 +154,7 @@ export async function adoptDigTemplate(
     })
     .select("*")
     .single();
-  return assertData(response.data, response.error);
+  return assertData(response.data, response.error, "adopt that dig template");
 }
 
 export interface GscDigResult {
@@ -194,6 +191,6 @@ export async function runGscDig(
         : {}),
     })
     .abortSignal(signal ?? new AbortController().signal);
-  const rows = assertData(response.data, response.error);
+  const rows = assertData(response.data, response.error, "run that dig");
   return { rows, total: rows[0]?.total_count ?? 0 };
 }

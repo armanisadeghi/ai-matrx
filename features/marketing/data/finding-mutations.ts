@@ -89,7 +89,13 @@ async function patchFinding(
     .select(FINDING_COLUMNS)
     .maybeSingle();
   if (response.error) throw translateFindingWriteError(response.error);
-  return assertFound(response.data, response.error, "finding", findingId);
+  return assertFound(
+    response.data,
+    response.error,
+    "finding",
+    findingId,
+    "web_finding",
+  );
 }
 
 /**

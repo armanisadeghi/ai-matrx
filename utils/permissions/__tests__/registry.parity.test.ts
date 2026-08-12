@@ -129,16 +129,11 @@ describe("shareable_resource_registry: TS ↔ DB parity", () => {
     },
   );
 
-  it("every entry has a non-empty url_path_template", () => {
-    for (const entry of Object.values(SHAREABLE_RESOURCE_REGISTRY)) {
-      expect(entry.urlPathTemplate.length).toBeGreaterThan(0);
-    }
-  });
-
   it("every per-instance entry's url_path_template contains {id}", () => {
     // Most registry entries deep-link to a specific record and MUST carry the
     // {id} placeholder. A few DB rows are list/settings surfaces with no
-    // per-record route (scraper_preset → /scraper?tab=presets,
+    // per-record route (an empty string means no signed-in destination;
+    // generic no-login shares still use /s/[token]; scraper_preset → /scraper?tab=presets,
     // scraper_schedule → /scraper?tab=schedules,
     // user_analysis_preferences → /settings/analysis). Those legitimately have
     // no {id} in the DB registry (the source of truth). We derive the
