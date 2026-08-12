@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -34,6 +34,10 @@ import {
   addAuthorityRecommendationToPlan,
   dismissAuthorityRecommendation,
 } from "./actions";
+import {
+  AUTHORITY_GUIDANCE_MAX_CHARS,
+  validateAuthorityGuidance,
+} from "./authority-write-targets";
 import { AuthorityFlowMap } from "./AuthorityFlowMap";
 import type { AuthorityRecommendation, AuthorityRouterResult } from "./types";
 import { useAuthorityRouter } from "./useAuthorityRouter";
@@ -100,6 +104,26 @@ export function AuthorityRouterWorkspace() {
     }
   };
 
+  // Live run status for the write handler. `applySurfaceWrite` resolves a
+  // handler BEFORE it shows the confirm dialog, so a guard closing over
+  // rendered state can act on a status that went stale while the dialog sat
+  // open (the `image-studio` trap, recorded on the `chat-voice` adopter). This
+  // ref is advanced every render and read at CALL time, which is immune to
+  // that by construction.
+  const runningRef = useRef(false);
+  runningRef.current = authority.run.status === "running";
+
+  const buildWriteHandlers = () => ({
+    authority_guidance: (value: unknown) => {
+      if (runningRef.current) {
+        throw new Error(
+          "authority_guidance is refused while the authority analysis is running — the note is only read when a run starts, so changing it mid-run would silently do nothing.",
+        );
+      }
+      setGuidance(validateAuthorityGuidance(value));
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-authority"
@@ -122,8 +146,10 @@ export function AuthorityRouterWorkspace() {
             Array<Record<string, unknown>> | undefined,
           authority_recommendations: result?.recommendations as
             Array<Record<string, unknown>> | undefined,
+          authority_guidance: guidance || undefined,
         })
       }
+      getWriteHandlers={buildWriteHandlers}
     >
       <div className="mx-auto w-full max-w-[1600px] space-y-4 p-3 sm:p-5">
         <section className="overflow-hidden rounded-2xl border bg-gradient-to-br from-card via-card to-emerald-500/5 shadow-sm">
@@ -155,7 +181,7 @@ export function AuthorityRouterWorkspace() {
                 id="authority-guidance"
                 value={guidance}
                 onChange={(event) => setGuidance(event.target.value)}
-                maxLength={4000}
+                maxLength={AUTHORITY_GUIDANCE_MAX_CHARS}
                 placeholder="Example: prioritize the California service pages and avoid changing the pricing guide."
                 className="mt-2 min-h-20 resize-none text-xs"
               />
