@@ -13,6 +13,19 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D172 — `normalisePageUrl` rejects a URL its own test says it must accept (2026-08-11)
+
+`features/marketing/lib/page-url.test.ts` "lowercases scheme and host" FAILS on
+committed `main` — `acceptPageUrlInput` throws "Only HTTP(S) page URLs can join
+the registry." for input the test feeds it (`page-url.ts:145`). Found while
+running the marketing suite for an unrelated change (site-audit gone pages);
+64 of 65 marketing suites pass, so this is one specific regression, not a broken
+tree. Not investigated — it is nowhere near the audit rollup, and another
+session may be mid-edit in that file. **Whoever owns `page-url.ts` should decide
+whether the guard or the test is wrong**: the function is the parity mirror of
+the scraper's `_normalise_url`, so "just relax the guard" is the wrong reflex if
+Python still rejects the same input.
+
 ### D171 — `content_role` has two writable authorities and 13 live disagreements (2026-08-11)
 
 Cross-repo system-of-record:
