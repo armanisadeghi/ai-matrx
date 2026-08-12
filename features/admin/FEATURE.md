@@ -160,6 +160,41 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-08-12` — Claude: made the Feedback & Announcements console
+  (`/administration/users/feedback`) agent-writable through the surfaces seam.
+  `matrx-admin/feedback` declares TWO `mode:"draft"` / `applyPolicy:"ask"`
+  targets: `announcement_draft`, a partial
+  `{title?, message?, announcement_type?}` staged through the announcement
+  dialogs' own setters, and `category_draft`, a partial `{name?, description?}`
+  staged through `CategoriesTab`'s own `setEditing`. Validation lives in the
+  pure `features/admin/feedback/announcement-draft.ts` and `category-draft.ts`,
+  which the manifest interpolates into the model-facing descriptions so the
+  advertised contract is the enforced one; `ANNOUNCEMENT_TYPES` was added to
+  `types/feedback.types.ts` (with `AnnouncementType` derived from it, the
+  existing `FEEDBACK_TYPES` pattern) so the enum check reads the same array the
+  `<Select>` renders. `FeedbackManagementContainer` also mounts the surface's
+  FIRST `SurfaceRuntimeProvider` — the manifest previously had no emitter, so
+  it published nothing and could service nothing (`readiness` `stub` →
+  `partial`). **Two structural notes worth reusing on other admin consoles.**
+  (a) The editors are Radix MODALS, which set `pointer-events: none` on the
+  body, so an admin cannot open one and then type to an agent — verified. A
+  target that only writes into an already-open dialog is dead code, so
+  `announcement_draft` opens the create dialog itself, both dialogs got
+  `onInteractOutside={(e) => e.preventDefault()}` (the surface-write confirm
+  renders outside them and would otherwise close them mid-stage), and
+  `category_draft` reveals the Manage Categories view. (b) TWO components own
+  "the announcement editor", so handlers could not be registered per-component
+  without a last-one-wins collision; the dialogs and the categories tab publish
+  handles into a page-scoped ref registry (`FeedbackConsoleEditorStore.tsx`)
+  and the container owns one handler per target that resolves the live editor,
+  prefers the open Edit dialog, and refuses when both are open. Guards are read
+  off that ref at call time because `applySurfaceWrite` resolves handlers
+  before the confirm is answered. Publishing (`is_active`, create/save),
+  `min_display_seconds`, every feedback triage/routing field, ids and delete
+  stay human-only; the authored fields inside `FeedbackDetailDialog` are
+  omitted on reachability — see the manifest docblock. Live-verified with real
+  agent runs (stage-only, nothing published); zero `surface-writeback` captures
+  on a clean load.
 - `2026-08-10` — Claude: made the Email Users compose tool
   (`/administration/users/email`) agent-writable through the surfaces seam.
   `matrx-admin/email` declares ONE `mode:"draft"` / `applyPolicy:"ask"` write

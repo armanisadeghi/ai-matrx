@@ -14,6 +14,7 @@ import { toast } from "@/lib/toast";
 import { Eye, EyeOff, AlertCircle, AlertTriangle, Info, Megaphone, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { renderAnnouncementMessage } from '@/utils/render-announcement-message';
+import { useRegisterAnnouncementEditor } from './FeedbackConsoleEditorStore';
 
 interface EditAnnouncementDialogProps {
     announcement: SystemAnnouncement | null;
@@ -62,9 +63,38 @@ export default function EditAnnouncementDialog({ announcement, open, onOpenChang
         }
     }, [announcement]);
 
+    /**
+     * Write half — the `edit` handle for `announcement_draft` (see the manifest
+     * and `FeedbackConsoleEditorStore`). Registered ABOVE the `!announcement`
+     * early return so the hook order is stable, and reporting `isOpen` only
+     * when there is genuinely an announcement on screen: that flag is what
+     * makes this handle WIN the mode gate over the create form, so it must
+     * never claim an editor the admin cannot see.
+     *
+     * `open` is a no-op here on purpose. Opening the create form when nothing
+     * is open is reversible and creates nothing; picking WHICH existing
+     * announcement to open would be the handler choosing a record on the
+     * admin's behalf, which this surface does not do.
+     */
+    useRegisterAnnouncementEditor({
+        mode: 'edit',
+        isOpen: open && announcement !== null,
+        announcementId: announcement?.id ?? null,
+        title,
+        message,
+        announcementType,
+        isSubmitting,
+        open: () => {},
+        applyDraft: (patch) => {
+            if (patch.title !== undefined) setTitle(patch.title);
+            if (patch.message !== undefined) setMessage(patch.message);
+            if (patch.announcement_type !== undefined) setAnnouncementType(patch.announcement_type);
+        },
+    });
+
     const handleSubmit = async () => {
         if (!announcement) return;
-        
+
         if (!title.trim() || !message.trim()) {
             toast.error('Please fill in all required fields');
             return;
@@ -101,7 +131,13 @@ export default function EditAnnouncementDialog({ announcement, open, onOpenChang
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
+            {/* See CreateAnnouncementDialog: a surface-write confirm renders
+                outside this dialog, and letting that count as an outside
+                interaction would close the dialog and discard the staged copy. */}
+            <DialogContent
+                className="max-w-2xl max-h-[90dvh] overflow-y-auto"
+                onInteractOutside={(e) => e.preventDefault()}
+            >
                 <DialogHeader>
                     <DialogTitle>Edit Announcement</DialogTitle>
                     <DialogDescription>
