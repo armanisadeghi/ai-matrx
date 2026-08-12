@@ -72,11 +72,12 @@ function fromAlign(result: BridgeAlignResult): RepairOutcome {
 
 export function usePlanDrift(
   siteId: string | null,
+  cmsSite: string | null,
   nodes: readonly PlanNodeRow[],
 ) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
-  const cmsPages = useCmsPageMap(siteId);
+  const cmsPages = useCmsPageMap(siteId, cmsSite);
   const reality = usePlanReality(siteId);
   const [busyRepairId, setBusyRepairId] = useState<string | null>(null);
 
@@ -244,8 +245,10 @@ export function usePlanDrift(
 
   return {
     model,
-    /** True only on FIRST load — a background refresh never blanks the badges. */
-    isLoading: cmsPages.isLoading || reality.isLoading,
+    /** True only on FIRST load — a background refresh never blanks the badges.
+     * usePlanReality is manual-run (enabled:false), so its first load is "a run
+     * is in flight and no report exists yet". */
+    isLoading: cmsPages.isLoading || (reality.isRunning && reality.report === null),
     /** A background re-check is in flight (badges stay on screen). */
     isRefreshing: reality.isRunning,
     isPaired: cmsPages.map !== null,
@@ -256,6 +259,6 @@ export function usePlanDrift(
     preview,
     apply,
     /** Explicit write-run: persists the `realizes` alignment edges. */
-    syncAlignment: reality.sync,
+    syncAlignment: reality.run,
   };
 }

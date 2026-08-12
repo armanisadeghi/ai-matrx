@@ -7,10 +7,11 @@
 // InteractiveDiagramBlock renders. See ./FEATURE.md for why.
 
 import type { DiagramData } from "@/components/mardown-display/blocks/diagram/parseDiagramJSON";
+import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
 import type { ListScopeKind } from "@/lib/list-scope/types";
 
 /** The canvas_items.type value that makes a row a map. */
-export const MAP_CANVAS_TYPE = "diagram";
+export const MAP_CANVAS_TYPE = "diagram" as const satisfies CanvasContentType;
 
 /**
  * canvas_items is a per-user table with no org/share RPC surface, so the only

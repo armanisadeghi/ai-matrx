@@ -862,7 +862,7 @@ export const GAPS: LoopGap[] = [
         at: "analyze->plan",
         breaks: ["code", "human", "ai"],
         detail:
-            "Improved and shipped: reality badges now reach the pillar map and both plan trees. A fuller replacement (usePlanDrift.ts, 261 lines) is untracked AND does not compile — it calls a two-argument function with one argument and reads isLoading/sync off a hook that returns neither. Still true on origin: usePlanReality is manual-run only (enabled:false), PlanNodesTable has no reality reference, and the server reconciler has no scheduled task.",
+            "Improved and shipped: reality badges now reach the pillar map and both plan trees. The fuller drift surface (usePlanDrift + PlanDriftBar/PlanDriftSheet + bridgeAdopt/bridgeResolveConflict over the existing cms-align adopt/map actions) now compiles and is committed — but NOTHING MOUNTS IT yet, so it reaches no user. Still true: usePlanReality is manual-run only (enabled:false), PlanNodesTable has no reality reference, and the server reconciler has no scheduled task.",
         lane: "L4",
     },
     {

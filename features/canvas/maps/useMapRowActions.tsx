@@ -94,7 +94,7 @@ export function useMapRowActions(
               id: "delete",
               label: "Delete",
               icon: Trash2,
-              tone: "danger",
+              tone: "destructive",
               onSelect: () => setPendingDelete(row),
             },
           ],
