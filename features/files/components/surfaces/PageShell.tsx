@@ -127,6 +127,7 @@ import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3
 import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { useFileShortcuts } from "./useFileShortcuts";
+import { useFilesSurfaceWriteHandlers } from "./useFilesSurfaceWriteHandlers";
 import { RenameHost } from "@/features/files/components/core/RenameDialog/RenameHost";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 import { CloudFileEditorHost } from "@/features/files/components/core/FileEditor/CloudFileEditorHost";
@@ -671,6 +672,17 @@ function PageShellDesktop({
     visibleColumns,
     uploads: trackedUploads,
   });
+  // Write half of the same surface. The handlers drive the SAME slice actions,
+  // activation callbacks and rename thunks the user's own controls drive —
+  // see useFilesSurfaceWriteHandlers for the per-target mapping. This is the
+  // ONLY `SurfaceRuntimeProvider` mount for `matrx-user/files` (the row context
+  // menus pass `surfaceName` to the v3 menu, which is the read/scope seam, not
+  // a runtime mount), so registering here covers every route in the family.
+  const getFilesSurfaceWriteHandlers = useFilesSurfaceWriteHandlers({
+    selectFolder: handleSelectFolder,
+    selectFile: handleSelectFile,
+  });
+
   const getFilesApplicationScope = () => {
     // Read-only region: capture any text the user highlighted in the preview
     // (e.g. a passage in a document tab) so a "help with this" agent can act on
@@ -774,6 +786,7 @@ function PageShellDesktop({
     <SurfaceRuntimeProvider
       surfaceName={FILES_CONTEXT_MENU_PROPS.surfaceName}
       getScope={getFilesApplicationScope}
+      getWriteHandlers={getFilesSurfaceWriteHandlers}
       isEditable={false}
     >
       {/* Share the page-level scope with the row context menus so every

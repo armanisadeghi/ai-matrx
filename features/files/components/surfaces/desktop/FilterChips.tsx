@@ -33,6 +33,17 @@ const CHIPS: { key: FilterChipKey; label: string; icon: LucideIcon }[] = [
   { key: "starred", label: "Starred", icon: Star },
 ];
 
+/**
+ * The chip keys actually RENDERED above the file table — derived from `CHIPS`
+ * so it can never drift from what the user can click. Exported because the
+ * `matrx-user/files` write target `chip_filter` validates against this exact
+ * list: an agent may only set a chip the user can un-set with the matching
+ * on-screen pill.
+ */
+export const CHIP_FILTER_KEYS: ReadonlyArray<FilterChipKey> = CHIPS.map(
+  (c) => c.key,
+);
+
 export function FilterChips({ active, onToggle, className }: FilterChipsProps) {
   return (
     <div className={cn("flex items-center gap-2", className)}>

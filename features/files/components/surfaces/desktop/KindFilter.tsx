@@ -31,6 +31,16 @@ const OPTIONS: ReadonlyArray<{
   { value: "files", label: "Files", icon: File, tip: "Show files only" },
 ];
 
+/**
+ * The kind-filter values actually RENDERED in the segmented control — derived
+ * from `OPTIONS` so it can never drift from what the user can click. Exported
+ * because the `matrx-user/files` write target `kind_filter` validates against
+ * this exact list.
+ */
+export const KIND_FILTER_VALUES: ReadonlyArray<KindFilter> = OPTIONS.map(
+  (o) => o.value,
+);
+
 export function KindFilter({ value, onChange, className }: KindFilterProps) {
   return (
     <div
