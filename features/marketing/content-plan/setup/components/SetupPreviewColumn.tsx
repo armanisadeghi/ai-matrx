@@ -53,6 +53,7 @@ export function SetupPreviewColumn({
   progress,
   result,
   onCommit,
+  stickyCommit = false,
 }: {
   expanded: ExpandedArchetype;
   preview: PreviewSummary;
@@ -62,6 +63,13 @@ export function SetupPreviewColumn({
   progress: { done: number; total: number } | null;
   result: CommitResult | null;
   onCommit: () => void;
+  /**
+   * Mobile (the stepped shell): this column is a whole step inside the view's
+   * one scroll area, so the commit bar pins to the bottom of that scrollport
+   * instead of sitting after up to 400 route rows. On desktop the column owns
+   * its own scroll and the bar is already pinned by the flex layout.
+   */
+  stickyCommit?: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -151,7 +159,7 @@ export function SetupPreviewColumn({
             </p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               {rows.length === 0
-                ? "Pick a site shape on the left to see the routes it would create."
+                ? "Pick a site shape to see the routes it would create."
                 : "Every page this shape describes is already in the plan. Raise a count to add more."}
             </p>
           </div>
@@ -207,7 +215,12 @@ export function SetupPreviewColumn({
 
       {result ? <CommitReport result={result} /> : null}
 
-      <div className="border-t border-border bg-card p-3">
+      <div
+        className={cn(
+          "border-t border-border bg-card p-3",
+          stickyCommit && "sticky bottom-0 z-10 pb-safe",
+        )}
+      >
         {disabledReason ? (
           <p className="mb-2 flex items-start gap-1.5 text-xs leading-relaxed text-destructive">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />

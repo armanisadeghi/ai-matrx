@@ -287,7 +287,9 @@ export function SetupWorkOrderColumn({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 w-7 p-0"
+                        /* Phones get a real tap target; desktop keeps the
+                           dense 28px control. */
+                        className="h-9 w-9 p-0 md:h-7 md:w-7"
                         aria-label={`One fewer ${family.label}`}
                         disabled={family.count <= 0}
                         onClick={() =>
@@ -315,12 +317,12 @@ export function SetupWorkOrderColumn({
                           );
                         }}
                         /* 16px on mobile: anything smaller makes iOS zoom on focus. */
-                        className="h-7 w-16 px-1.5 text-center text-base tabular-nums sm:text-sm"
+                        className="h-9 w-16 px-1.5 text-center text-base tabular-nums md:h-7 md:text-sm"
                       />
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-7 w-7 p-0"
+                        className="h-9 w-9 p-0 md:h-7 md:w-7"
                         aria-label={`One more ${family.label}`}
                         disabled={family.count >= MAX_COUNT}
                         onClick={() => onCountChange(family.key, family.count + 1)}

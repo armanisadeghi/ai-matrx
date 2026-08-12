@@ -29,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
 import { useLatestSuccessfulResearchDocument } from "@/features/research/hooks/useResearchState";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { createContentPlanSetupScope } from "@/features/surfaces/manifests/content-plan-setup.manifest";
@@ -104,6 +105,7 @@ import { SetupAiBar, type SetupAiRunSummary } from "./SetupAiBar";
 import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
 import { SetupShapeColumn } from "./SetupShapeColumn";
+import { SetupStepper, type SetupStep } from "./SetupStepper";
 import { SetupWorkOrderColumn } from "./SetupWorkOrderColumn";
 
 /** The status every generated node starts in (same default aidream uses). */
@@ -187,6 +189,11 @@ function namesFromPlan(
 export function SetupView() {
   const { siteId } = usePlanWorkspaceParams();
   const queryClient = useQueryClient();
+  // Below `md` the three columns cannot sit side by side — the same content is
+  // recomposed as an explicit step sequence (SetupStepper). One breakpoint,
+  // read from the shared hook, never a second definition of "mobile".
+  const isMobile = useIsMobile();
+  const [mobileStep, setMobileStep] = useState(0);
 
   const { sites, orgSites } = useContentPlanSites();
   // Resolve against EVERYTHING visible, not just the org-scoped picker list — a
@@ -1474,6 +1481,164 @@ export function SetupView() {
 
   const loading = library.isLoading || nodes.isLoading;
 
+  // ── the five pieces of Setup, composed twice ───────────────────────────
+  // Desktop lays them out as three columns (checks + rungs nested under the
+  // work order, exactly as before); mobile walks them as five steps. Same
+  // elements, same props, same state — only the arrangement differs.
+  const shapePanel = loading ? (
+    <ColumnSkeleton rows={4} />
+  ) : (
+    <SetupShapeColumn
+      archetypes={archetypes}
+      baseline={baseline}
+      loading={false}
+      selectedKey={selectedKey}
+      committedKey={committed?.key ?? null}
+      shadowed={library.data?.shadowed ?? []}
+      onSelect={(key) => {
+        setPickedKey(key);
+        setResult(null);
+      }}
+    />
+  );
+
+  const checksPanel = (
+    <>
+      <PlanLintSection nodes={nodes.data ?? []} />
+      <KeywordBindSection
+        nodes={nodeRows}
+        poolSize={(keywordPool.data ?? []).length}
+        poolLoading={keywordPool.isLoading}
+        poolError={
+          keywordPool.isError ? extractErrorMessage(keywordPool.error) : null
+        }
+        assignments={keywordPlan?.assignments ?? null}
+        notes={keywordPlan?.notes ?? ""}
+        busy={agents.keywordsBusy}
+        anyBusy={anyAgentBusy}
+        aiReady={Boolean(researchReport)}
+        applying={applyingKeywords}
+        error={keywordError}
+        onRun={() => void handleBindKeywords()}
+        onApply={() => void handleApplyKeywords()}
+        onDismiss={() => setKeywordPlan(null)}
+        onDismissError={() => setKeywordError(null)}
+      />
+      <PlanReviewSection
+        nodes={nodeRows}
+        review={review}
+        busy={agents.reviewBusy}
+        anyBusy={anyAgentBusy}
+        aiReady={Boolean(researchReport)}
+        error={reviewError}
+        onDismissError={() => setReviewError(null)}
+        onRun={() => void handleReviewPlan()}
+        onAddPage={(finding) => void handleAddSuggestedPage(finding)}
+        addingRoute={addingRoute}
+        addedRoutes={addedRoutes}
+      />
+    </>
+  );
+
+  const bridgePanel = site ? (
+    <SetupBridgeSection site={site} cms={cms.data ?? null} />
+  ) : null;
+
+  /** `nested` = desktop, where the checks and the rungs hang off this column. */
+  const renderWorkOrderPanel = (nested: boolean) =>
+    loading ? (
+      <ColumnSkeleton rows={6} />
+    ) : expansion.error ? (
+      <div className="p-4 text-sm text-destructive">
+        This site shape is malformed and cannot be expanded: {expansion.error}
+      </div>
+    ) : expanded && readiness && preview ? (
+      <SetupWorkOrderColumn
+        expanded={expanded}
+        readiness={readiness}
+        counts={counts}
+        names={names}
+        userNamedKeys={new Set(Object.keys(userNames))}
+        dirtyKeys={dirtyKeys}
+        catalog={catalog}
+        conceptNames={conceptNames}
+        onCountChange={setCount}
+        onNamesChange={setNames}
+        onConceptNameChange={setConceptName}
+        onReset={resetOverrides}
+        aiReady={Boolean(researchReport)}
+        aiNamingKey={agents.namingFamilyKey}
+        aiBusy={anyAgentBusy}
+        onAiNames={(familyKey) => void handleNameFamily(familyKey)}
+        topics={topics}
+        onAiTopics={(familyKey) => void handleTopicsForFamily(familyKey)}
+        onClearTopics={(familyKey) => setTopics(familyKey, [])}
+        onApplyTopics={(familyKey) => void handleApplyTopics(familyKey)}
+        onPromoteTopics={(familyKey) => void handlePromoteTopics(familyKey)}
+        applyingTopicsKey={applyingTopicsKey}
+        plannedRoutes={plannedRoutes}
+        newCount={preview.counts.new}
+        pageTypeName={(slug) =>
+          slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
+        }
+        lintSlot={nested ? checksPanel : undefined}
+        bridgeSlot={nested ? bridgePanel : undefined}
+      />
+    ) : (
+      <EmptyState
+        title="No shape selected"
+        body="Pick a site shape to see its work order."
+      />
+    );
+
+  const renderPagesPanel = (stickyCommit: boolean) =>
+    loading ? (
+      <ColumnSkeleton rows={8} />
+    ) : expanded && preview ? (
+      <SetupPreviewColumn
+        expanded={expanded}
+        preview={preview}
+        disabledReason={disabledReason}
+        committing={committing}
+        progress={progress}
+        result={result}
+        onCommit={() => void handleCommit()}
+        stickyCommit={stickyCommit}
+      />
+    ) : (
+      <EmptyState
+        title="Nothing to preview"
+        body="The routes this shape creates appear here before anything is written."
+      />
+    );
+
+  const mobileSteps: SetupStep[] = [
+    { id: "shape", label: "Shape", content: shapePanel },
+    {
+      id: "work-order",
+      label: "Work order",
+      content: renderWorkOrderPanel(false),
+    },
+    {
+      id: "checks",
+      label: "Checks",
+      content: <div className="flex flex-col gap-5 p-4">{checksPanel}</div>,
+    },
+    { id: "pages", label: "Pages", content: renderPagesPanel(true) },
+    {
+      id: "make-it-real",
+      label: "Make it real",
+      content: bridgePanel ? (
+        <div className="flex flex-col gap-5 p-4">{bridgePanel}</div>
+      ) : (
+        <EmptyState
+          title="No site loaded"
+          body="Pick a site in the header — the CMS rungs act on that site."
+        />
+      ),
+    },
+  ];
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/content-plan-setup"
@@ -1515,145 +1680,40 @@ export function SetupView() {
         onDismissError={() => setAiError(null)}
       />
 
-      {/* Mobile: ONE page scroll, panels stacked at natural height. md+: a
-        fixed grid where each column owns its own scroll. */}
-      <div
-        className={
-          "flex min-h-0 flex-1 flex-col gap-px overflow-y-auto bg-border " +
-          "md:grid md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-[minmax(0,auto)_minmax(0,1fr)] md:overflow-hidden " +
-          "xl:grid-cols-[17rem_minmax(0,1fr)_25rem] xl:grid-rows-1"
-        }
-      >
-        <div className="bg-card md:row-span-2 md:min-h-0 xl:row-span-1">
-          {loading ? (
-            <ColumnSkeleton rows={4} />
-          ) : (
-            <SetupShapeColumn
-              archetypes={archetypes}
-              baseline={baseline}
-              loading={false}
-              selectedKey={selectedKey}
-              committedKey={committed?.key ?? null}
-              shadowed={library.data?.shadowed ?? []}
-              onSelect={(key) => {
-                setPickedKey(key);
-                setResult(null);
-              }}
-            />
-          )}
-        </div>
-
-        <div className="bg-card md:min-h-0">
-          {loading ? (
-            <ColumnSkeleton rows={6} />
-          ) : expansion.error ? (
-            <div className="p-4 text-sm text-destructive">
-              This site shape is malformed and cannot be expanded:{" "}
-              {expansion.error}
+      {isMobile ? (
+        <SetupStepper
+          title="Site setup"
+          steps={mobileSteps}
+          activeIndex={mobileStep}
+          onSelect={setMobileStep}
+        />
+      ) : (
+        <>
+          <h1 className="sr-only">Site setup</h1>
+          {/* md+: a fixed grid where each column owns its own scroll. The
+            responsive classes still matter: `useIsMobile` is false until the
+            client mounts, so this branch paints ONCE at phone width before the
+            stepper takes over — it must degrade to a stack, not to three
+            crushed columns. */}
+          <div
+            className={
+              "flex min-h-0 flex-1 flex-col gap-px overflow-y-auto bg-border " +
+              "md:grid md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-[minmax(0,auto)_minmax(0,1fr)] md:overflow-hidden " +
+              "xl:grid-cols-[17rem_minmax(0,1fr)_25rem] xl:grid-rows-1"
+            }
+          >
+            <div className="bg-card md:row-span-2 md:min-h-0 xl:row-span-1">
+              {shapePanel}
             </div>
-          ) : expanded && readiness && preview ? (
-            <SetupWorkOrderColumn
-              expanded={expanded}
-              readiness={readiness}
-              counts={counts}
-              names={names}
-              userNamedKeys={new Set(Object.keys(userNames))}
-              dirtyKeys={dirtyKeys}
-              catalog={catalog}
-              conceptNames={conceptNames}
-              onCountChange={setCount}
-              onNamesChange={setNames}
-              onConceptNameChange={setConceptName}
-              onReset={resetOverrides}
-              aiReady={Boolean(researchReport)}
-              aiNamingKey={agents.namingFamilyKey}
-              aiBusy={anyAgentBusy}
-              onAiNames={(familyKey) => void handleNameFamily(familyKey)}
-              topics={topics}
-              onAiTopics={(familyKey) => void handleTopicsForFamily(familyKey)}
-              onClearTopics={(familyKey) => setTopics(familyKey, [])}
-              onApplyTopics={(familyKey) => void handleApplyTopics(familyKey)}
-              onPromoteTopics={(familyKey) => void handlePromoteTopics(familyKey)}
-              applyingTopicsKey={applyingTopicsKey}
-              plannedRoutes={plannedRoutes}
-              newCount={preview.counts.new}
-              pageTypeName={(slug) =>
-                slug ? (pageTypeNameBySlug.get(slug) ?? slug) : "No page type"
-              }
-              lintSlot={
-                <>
-                  <PlanLintSection nodes={nodes.data ?? []} />
-                  <KeywordBindSection
-                    nodes={nodeRows}
-                    poolSize={(keywordPool.data ?? []).length}
-                    poolLoading={keywordPool.isLoading}
-                    poolError={
-                      keywordPool.isError
-                        ? extractErrorMessage(keywordPool.error)
-                        : null
-                    }
-                    assignments={keywordPlan?.assignments ?? null}
-                    notes={keywordPlan?.notes ?? ""}
-                    busy={agents.keywordsBusy}
-                    anyBusy={anyAgentBusy}
-                    aiReady={Boolean(researchReport)}
-                    applying={applyingKeywords}
-                    error={keywordError}
-                    onRun={() => void handleBindKeywords()}
-                    onApply={() => void handleApplyKeywords()}
-                    onDismiss={() => setKeywordPlan(null)}
-                    onDismissError={() => setKeywordError(null)}
-                  />
-                  <PlanReviewSection
-                    nodes={nodeRows}
-                    review={review}
-                    busy={agents.reviewBusy}
-                    anyBusy={anyAgentBusy}
-                    aiReady={Boolean(researchReport)}
-                    error={reviewError}
-                    onDismissError={() => setReviewError(null)}
-                    onRun={() => void handleReviewPlan()}
-                    onAddPage={(finding) => void handleAddSuggestedPage(finding)}
-                    addingRoute={addingRoute}
-                    addedRoutes={addedRoutes}
-                  />
-                </>
-              }
-              bridgeSlot={
-                site ? (
-                  <SetupBridgeSection site={site} cms={cms.data ?? null} />
-                ) : null
-              }
-            />
-          ) : (
-            <EmptyState
-              title="No shape selected"
-              body="Pick a site shape on the left to see its work order."
-            />
-          )}
-        </div>
 
-        <div className="bg-card md:col-start-2 md:min-h-0 xl:col-start-3 xl:row-start-1">
-          {loading ? (
-            <ColumnSkeleton rows={8} />
-          ) : expanded && preview ? (
-            <SetupPreviewColumn
-              expanded={expanded}
-              preview={preview}
-              disabledReason={disabledReason}
-              committing={committing}
-              progress={progress}
-              result={result}
-              onCommit={() => void handleCommit()}
-            />
-          ) : (
-            <EmptyState
-              title="Nothing to preview"
-              body="The routes this shape creates appear here before anything is written."
-            />
-          )}
-        </div>
-      </div>
+            <div className="bg-card md:min-h-0">{renderWorkOrderPanel(true)}</div>
+
+            <div className="bg-card md:col-start-2 md:min-h-0 xl:col-start-3 xl:row-start-1">
+              {renderPagesPanel(false)}
+            </div>
+          </div>
+        </>
+      )}
     </div>
     </SurfaceRuntimeProvider>
   );

@@ -66,14 +66,17 @@ export function SetupAiBar({
           value={selectedTopicId}
           onChange={onSelectTopic}
           ariaLabel="Research topic grounding the AI steps"
+          /* Full width + 16px on phones (a sub-16px control invites iOS zoom
+             and a 224px trigger crowds a 390px row). */
+          triggerClassName="h-9 w-full basis-full text-base md:h-7 md:w-56 md:basis-auto md:text-xs"
         />
-        <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+        <span className="min-w-0 flex-1 basis-full text-[11px] leading-relaxed text-muted-foreground md:basis-auto md:truncate">
           {reportStatus}
         </span>
         <Button
           size="sm"
           variant="outline"
-          className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
+          className="h-9 w-full shrink-0 gap-1.5 px-2.5 text-xs md:h-7 md:w-auto"
           disabled={!reportReady || anyAgentBusy}
           title={
             reportReady

@@ -313,6 +313,26 @@ plan CRUD through it.
   labels (`namesFromPlan` in `setup/components/SetupView.tsx`, adopting only
   children whose label round-trips to their slug), which is what makes
   re-opening Setup idempotent without a second source of truth.
+- **The three columns are a DESKTOP layout — mobile walks them as five
+  explicit steps.** Below `md` (`useIsMobile()`, the one shared hook) the
+  workbench recomposes into `setup/components/SetupStepper.tsx`: **1 Shape ·
+  2 Work order · 3 Checks · 4 Pages · 5 Make it real**, one step on screen at
+  a time, with a numbered rail that names the whole workflow and jumps to any
+  step. Stacking the three columns into one scroll (what shipped first) buried
+  the work order, the page list, the lint/keyword/review checks and the CMS
+  rungs under screens of shape cards — present in the DOM, unreachable in
+  practice. Rules: **steps, never Tabs** (`ios-mobile-first`); the stepper owns
+  the view's ONE scroll area (`pb-safe`); ALL Setup state lives in `SetupView`,
+  so moving between steps is pure navigation — nothing is remounted that holds
+  a draft, and the autosave is untouched; the checks and the "Make it real"
+  rungs, which nest inside the work-order column on desktop (`lintSlot` /
+  `bridgeSlot`), become steps 3 and 5 instead of being duplicated; the commit
+  bar pins to the bottom of the step (`SetupPreviewColumn stickyCommit`) so it
+  never sits behind up to 400 route rows. The desktop branch keeps its
+  responsive classes on purpose — `useIsMobile()` is false until the client
+  mounts, so it paints once at phone width and must degrade to a stack.
+  `SetupStepper` renders the view's semantic `<h1>`; desktop carries the same
+  title as `sr-only`.
 
 ### General
 
@@ -356,6 +376,19 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-08-12 — Claude: **Site Setup is usable on a phone** (review-queue
+  `2ca8190e-…`, changes requested). The three-column workbench recomposes below
+  `md` into an explicit five-step sequence (`setup/components/SetupStepper.tsx`
+  — Shape · Work order · Checks · Pages · Make it real) instead of one endless
+  scroll whose first screens were entirely the shape chooser; the view gained a
+  real `<h1>` ("Site setup", visible in the step header on mobile, `sr-only` on
+  desktop); the commit bar pins to the bottom of the Pages step
+  (`SetupPreviewColumn stickyCommit`); the AI grounding bar's topic select and
+  Recommend button go full-width at 16px on phones; count steppers/inputs get
+  44px tap targets; two empty states stopped saying "on the left"; the lint
+  card's raw `text-emerald-600` became `text-success`. Composition only — no
+  Setup logic, persistence, agent wiring, or commit path was touched, and the
+  desktop layout is byte-equivalent.
 - 2026-08-12 — Claude (round 9): **the last unwired agent shipped, plus the
   completeness sweep.** The **Content Plan Entity Attacher** (`a1a7784c-…`,
   Arman's third agent) now runs from the entity manager's "Attach to pages"
