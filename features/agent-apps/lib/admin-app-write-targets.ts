@@ -53,7 +53,6 @@ export interface AgentAppMetadataPatch {
   tagline?: string | null;
   description?: string | null;
 }
-
 function asRecord(value: unknown, target: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`${target} expects an object value.`);
@@ -144,4 +143,3 @@ export function validateAgentAppCategoryWrite(
   // this is a stated normalization, not a silent coercion of a wrong value.
   return match;
 }
-
