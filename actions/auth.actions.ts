@@ -8,7 +8,12 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { promoteGuestToUser } from "@/lib/services/guest-promotion";
 import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transfer";
-import { safeRelativePath } from "@/utils/auth/safe-redirect";
+import {
+  authDestinationOr,
+  normalizeAuthDestination,
+  readAuthDestination,
+  withAuthDestination,
+} from "@/utils/auth/auth-destination";
 
 export async function signUpAction(
   formData: FormData,
@@ -20,10 +25,7 @@ export async function signUpAction(
   const supabase = await createClient();
 
   const origin = (await headers()).get("origin");
-  const safeRedirectTo = safeRelativePath(
-    formData.get("redirectTo")?.toString(),
-    "/dashboard",
-  );
+  const safeRedirectTo = authDestinationOr(formData);
 
   if (process.env.NODE_ENV === "development") {
     console.log("SignUpAction - RedirectTo:", safeRedirectTo);
@@ -36,12 +38,18 @@ export async function signUpAction(
       "error",
       "/sign-up",
       "Email, password, and password confirmation are required",
+      formData,
     );
   }
 
   if (password !== confirmPassword) {
     console.error("SignUpAction - Password mismatch");
-    return encodedRedirect("error", "/sign-up", "Passwords do not match");
+    return encodedRedirect(
+      "error",
+      "/sign-up",
+      "Passwords do not match",
+      formData,
+    );
   }
 
   if (password.length < 6) {
@@ -50,6 +58,7 @@ export async function signUpAction(
       "error",
       "/sign-up",
       "Password must be at least 6 characters long",
+      formData,
     );
   }
 
@@ -83,6 +92,7 @@ export async function signUpAction(
           "success",
           "/login",
           "Your account is ready. Please sign in to continue.",
+          formData,
         );
       }
       if (process.env.NODE_ENV === "development") {
@@ -98,6 +108,7 @@ export async function signUpAction(
         "error",
         "/sign-up",
         "That email already has an account. Please sign in instead.",
+        formData,
       );
     }
     // no_guest / already_converted / not_anonymous / error → fall through to
@@ -123,6 +134,7 @@ export async function signUpAction(
       "error",
       "/sign-up",
       "Unable to connect to authentication service. Please try again later.",
+      formData,
     );
   }
 
@@ -146,12 +158,14 @@ export async function signUpAction(
           "success",
           "/sign-up",
           "Account created! Please check your email for a verification link. If you don't receive it in a few minutes, try signing up again.",
+          formData,
         );
       }
       return encodedRedirect(
         "error",
         "/sign-up",
         "Email service is currently slow. Your account may have been created - please check your email or try again in a few minutes.",
+        formData,
       );
     }
 
@@ -160,6 +174,7 @@ export async function signUpAction(
         "error",
         "/sign-up",
         error.message || "Authentication error occurred",
+        formData,
       );
     }
 
@@ -168,6 +183,7 @@ export async function signUpAction(
       "error",
       "/sign-up",
       "An unexpected error occurred. Please try again.",
+      formData,
     );
   }
 
@@ -178,6 +194,7 @@ export async function signUpAction(
       "success",
       "/sign-up",
       "Thanks for signing up! Please check your email for a verification link.",
+      formData,
     );
   }
 
@@ -195,16 +212,14 @@ export async function signUpAction(
     "error",
     "/sign-up",
     "Signup failed. Please try again.",
+    formData,
   );
 }
 
 export async function signInAction(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const safeRedirectTo = safeRelativePath(
-    formData.get("redirectTo")?.toString(),
-    "/dashboard",
-  );
+  const safeRedirectTo = authDestinationOr(formData);
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -213,7 +228,7 @@ export async function signInAction(formData: FormData) {
   });
 
   if (error) {
-    return encodedRedirect("error", "/login", error.message);
+    return encodedRedirect("error", "/login", error.message, formData);
   }
 
   // Full-document landing (see HardRedirectForm).
@@ -228,7 +243,7 @@ export async function signInWithGoogleAction(formData: FormData) {
   // trusted /auth/callback route, which re-validates it via safeRelativePath
   // before redirecting. Do NOT wrap callbackUrl in safeRelativePath (it is an
   // absolute provider-callback URL and that would break the OAuth flow).
-  const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
+  const redirectTo = authDestinationOr(formData);
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
@@ -247,7 +262,7 @@ export async function signInWithGoogleAction(formData: FormData) {
 
   if (error) {
     console.error("signInWithGoogleAction OAuth error:", error.message);
-    return encodedRedirect("error", "/login", error.message);
+    return encodedRedirect("error", "/login", error.message, formData);
   }
 
   if (data?.url) {
@@ -258,13 +273,14 @@ export async function signInWithGoogleAction(formData: FormData) {
     "error",
     "/login",
     "Failed to initiate Google sign-in",
+    formData,
   );
 }
 
 export async function signInWithGithubAction(formData: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin") ?? undefined;
-  const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
+  const redirectTo = authDestinationOr(formData);
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
@@ -282,7 +298,7 @@ export async function signInWithGithubAction(formData: FormData) {
   });
 
   if (error) {
-    return encodedRedirect("error", "/login", error.message);
+    return encodedRedirect("error", "/login", error.message, formData);
   }
 
   if (data?.url) {
@@ -293,6 +309,7 @@ export async function signInWithGithubAction(formData: FormData) {
     "error",
     "/login",
     "Failed to initiate GitHub sign-in",
+    formData,
   );
 }
 
@@ -303,15 +320,29 @@ export async function forgotPasswordAction(formData: FormData) {
   const formCallbackUrl = formData.get("callbackUrl")?.toString();
 
   if (!email) {
-    return encodedRedirect("error", "/forgot-password", "Email is required");
+    return encodedRedirect(
+      "error",
+      "/forgot-password",
+      "Email is required",
+      formData,
+    );
   }
 
   const siteOrigin =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? origin ?? undefined;
   const resetCallbackUrl = new URL("/auth/callback", siteOrigin);
+  // THE LONGEST HOP IN THE FLOW. The user leaves the browser entirely, opens an
+  // email, and comes back through /auth/callback. Their destination has to ride
+  // inside the emailed link or it is gone forever — which is exactly what used
+  // to happen: this was hardcoded to a bare "/reset-password". We nest the
+  // destination onto the reset page, so the chain is:
+  //   /auth/callback?redirectTo=/reset-password?redirectTo=/tasks
+  // → /reset-password?redirectTo=/tasks → (password set) → /tasks
   resetCallbackUrl.searchParams.set(
     "redirectTo",
-    encodeURIComponent("/reset-password"),
+    encodeURIComponent(
+      withAuthDestination("/reset-password", readAuthDestination(formData)),
+    ),
   );
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -324,13 +355,14 @@ export async function forgotPasswordAction(formData: FormData) {
       "error",
       "/forgot-password",
       "Could not reset password",
+      formData,
     );
   }
 
   // Only follow same-site relative paths — never an attacker-controlled
   // absolute URL from the form (open-redirect / phishing vector).
   const safeCallback = formCallbackUrl
-    ? safeRelativePath(formCallbackUrl, "")
+    ? (normalizeAuthDestination(formCallbackUrl) ?? "")
     : "";
   if (safeCallback) {
     return redirect(safeCallback);
@@ -340,6 +372,7 @@ export async function forgotPasswordAction(formData: FormData) {
     "success",
     "/forgot-password",
     "Check your email for a password reset link.",
+    formData,
   );
 }
 
@@ -354,6 +387,7 @@ export async function resetPasswordAction(formData: FormData) {
       "error",
       "/reset-password",
       "Password and confirm password are required",
+      formData,
     );
   }
 
@@ -362,6 +396,7 @@ export async function resetPasswordAction(formData: FormData) {
       "error",
       "/reset-password",
       "Passwords do not match",
+      formData,
     );
   }
 
@@ -374,10 +409,18 @@ export async function resetPasswordAction(formData: FormData) {
       "error",
       "/reset-password",
       "Password update failed",
+      formData,
     );
   }
 
-  return encodedRedirect("success", "/reset-password", "Password updated");
+  // The password is set and the recovery session is live — this user IS signed
+  // in. Land them on what they originally asked for. Previously this returned
+  // them to /reset-password with a success banner: a dead end at the exact
+  // moment they had finally earned their destination.
+  const destination = authDestinationOr(formData);
+  return redirect(
+    `${destination}${destination.includes("?") ? "&" : "?"}success=${encodeURIComponent("Password updated")}`,
+  );
 }
 
 export async function signOutAction() {
@@ -389,7 +432,7 @@ export async function signOutAction() {
 export async function signUpWithGoogleAction(formData: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin") ?? undefined;
-  const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
+  const redirectTo = authDestinationOr(formData);
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
@@ -407,7 +450,7 @@ export async function signUpWithGoogleAction(formData: FormData) {
   });
 
   if (error) {
-    return encodedRedirect("error", "/sign-up", error.message);
+    return encodedRedirect("error", "/sign-up", error.message, formData);
   }
 
   if (data?.url) {
@@ -418,13 +461,14 @@ export async function signUpWithGoogleAction(formData: FormData) {
     "error",
     "/sign-up",
     "Failed to initiate Google sign-up",
+    formData,
   );
 }
 
 export const signUpWithGithubAction = async (formData: FormData) => {
   const supabase = await createClient();
   const origin = (await headers()).get("origin") ?? undefined;
-  const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
+  const redirectTo = authDestinationOr(formData);
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
@@ -442,7 +486,7 @@ export const signUpWithGithubAction = async (formData: FormData) => {
   });
 
   if (error) {
-    return encodedRedirect("error", "/sign-up", error.message);
+    return encodedRedirect("error", "/sign-up", error.message, formData);
   }
 
   if (data?.url) {
@@ -453,13 +497,14 @@ export const signUpWithGithubAction = async (formData: FormData) => {
     "error",
     "/sign-up",
     "Failed to initiate GitHub sign-up",
+    formData,
   );
 };
 
 export async function signInWithAppleAction(formData: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin") ?? undefined;
-  const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
+  const redirectTo = authDestinationOr(formData);
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
@@ -477,20 +522,25 @@ export async function signInWithAppleAction(formData: FormData) {
   });
 
   if (error) {
-    return encodedRedirect("error", "/login", error.message);
+    return encodedRedirect("error", "/login", error.message, formData);
   }
 
   if (data?.url) {
     return redirect(data.url);
   }
 
-  return encodedRedirect("error", "/login", "Failed to initiate Apple sign-in");
+  return encodedRedirect(
+    "error",
+    "/login",
+    "Failed to initiate Apple sign-in",
+    formData,
+  );
 }
 
 export const signUpWithAppleAction = async (formData: FormData) => {
   const supabase = await createClient();
   const origin = (await headers()).get("origin") ?? undefined;
-  const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
+  const redirectTo = authDestinationOr(formData);
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
@@ -508,7 +558,7 @@ export const signUpWithAppleAction = async (formData: FormData) => {
   });
 
   if (error) {
-    return encodedRedirect("error", "/sign-up", error.message);
+    return encodedRedirect("error", "/sign-up", error.message, formData);
   }
 
   if (data?.url) {
@@ -519,5 +569,6 @@ export const signUpWithAppleAction = async (formData: FormData) => {
     "error",
     "/sign-up",
     "Failed to initiate Apple sign-up",
+    formData,
   );
 };

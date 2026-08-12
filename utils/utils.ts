@@ -1,18 +1,37 @@
 import { redirect } from "next/navigation";
+import {
+  preserveAuthDestination,
+  type AuthDestinationSource,
+} from "@/utils/auth/auth-destination";
 
 /**
  * Redirects to a specified path with an encoded message as a query parameter.
- * @param {('error' | 'success')} type - The type of message, either 'error' or 'success'.
- * @param {string} path - The path to redirect to.
- * @param {string} message - The message to be encoded and added as a query parameter.
- * @returns {never} This function doesn't return as it triggers a redirect.
+ *
+ * 🚨 **Always pass `destinationSource` on an auth surface.** This helper used to
+ * rebuild the URL as `${path}?${type}=…` and nothing else — which silently threw
+ * away the user's `redirectTo` on EVERY validation error. One typo'd password,
+ * one mismatched confirm field, and the page they were trying to reach was gone
+ * for the rest of the flow. Pass the `FormData` (or search params) the action
+ * received and the destination rides through untouched.
+ *
+ * @param type - The type of message, either 'error' or 'success'.
+ * @param path - The path to redirect to.
+ * @param message - The message to be encoded and added as a query parameter.
+ * @param destinationSource - Anything carrying the auth destination (the
+ *   action's `FormData`, a `URLSearchParams`, a raw URL). Omit ONLY for
+ *   redirects that are not part of an auth flow.
+ * @returns This function doesn't return as it triggers a redirect.
  */
 export function encodedRedirect(
   type: "error" | "success",
   path: string,
   message: string,
+  destinationSource?: AuthDestinationSource,
 ) {
-  return redirect(`${path}?${type}=${encodeURIComponent(message)}`);
+  const target = preserveAuthDestination(path, destinationSource, {
+    [type]: message,
+  });
+  return redirect(target);
 }
 
 export const truncateText = (text: string, maxLength: number = 100) => {

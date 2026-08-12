@@ -21,10 +21,12 @@ import { CanvasCard } from '@/features/canvas/discovery/CanvasCard';
 import { cn } from '@/lib/utils';
 import type { SharedCanvasItem, CanvasType } from '@/types/canvas-social';
 import Link from 'next/link';
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 type SortOption = 'trending' | 'recent' | 'popular' | 'top-scored';
 
 export function CanvasDiscovery() {
+  const loginHref = useLoginHref();
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<SortOption>('trending');
     const [filterType, setFilterType] = useState<CanvasType | 'all'>('all');
@@ -101,7 +103,7 @@ export function CanvasDiscovery() {
                                 Explore interactive content created by our community
                             </p>
                         </div>
-                        <Link href="/login">
+                        <Link href={loginHref}>
                             <Button 
                                 size="sm"
                                 className="gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white hidden sm:flex"

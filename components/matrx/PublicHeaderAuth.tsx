@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { selectUser, selectDisplayName, selectProfilePhoto, selectIsSuperAdmin } from '@/lib/redux/slices/userSlice';
 import { cn } from '@/lib/utils';
 import { useIsMounted } from '@/hooks/use-is-mounted';
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 // Lazy load AdminMenu - only loads when user is admin
 const AdminMenu = lazy(() => import('./AdminMenu'));
@@ -25,6 +26,7 @@ const AdminMenu = lazy(() => import('./AdminMenu'));
  * - AdminMenu dropdown for admin users (lazy loaded)
  */
 export function PublicHeaderAuth() {
+  const loginHref = useLoginHref();
   const user = useSelector(selectUser);
   const displayName = useSelector(selectDisplayName);
   const profilePhoto = useSelector(selectProfilePhoto);
@@ -94,7 +96,7 @@ export function PublicHeaderAuth() {
   // Not authenticated - show sign in button
   return (
     <Button
-      onClick={() => router.push('/login')}
+      onClick={() => router.push(loginHref)}
       size="sm"
       aria-label="Sign in"
       className={cn(

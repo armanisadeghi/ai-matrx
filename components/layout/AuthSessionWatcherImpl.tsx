@@ -19,6 +19,7 @@
 import { useRouter } from "next/navigation";
 import { LogIn, AlertTriangle, RefreshCw, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 interface AuthSessionWatcherImplProps {
   variant: "expired" | "identity-changed";
@@ -37,6 +38,7 @@ export default function AuthSessionWatcherImpl({
   newEmail,
   rescuedDraftCount = 0,
 }: AuthSessionWatcherImplProps) {
+  const loginHref = useLoginHref();
   const router = useRouter();
 
   if (variant === "identity-changed") {
@@ -103,7 +105,7 @@ export default function AuthSessionWatcherImpl({
         </div>
 
         <Button
-          onClick={() => router.push("/login")}
+          onClick={() => router.push(loginHref)}
           className="w-full gap-2"
           size="lg"
         >

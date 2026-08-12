@@ -4,8 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { AlertTriangle } from 'lucide-react';
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 export default function ErrorPage() {
+  const loginHref = useLoginHref();
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4">
       <div className="max-w-md w-full p-8 bg-textured rounded-lg shadow-lg text-center">
@@ -38,7 +40,7 @@ export default function ErrorPage() {
           </Link>
         </div>
         
-        <Link href="/login">
+        <Link href={loginHref}>
           <span className="inline-block text-blue-600 dark:text-blue-400 hover:underline">
             Already have an account? Log in
           </span>
