@@ -279,6 +279,8 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
   - `features/organizations/` — target source for org-level shares
   - Reference integration: `features/prompts/` — list page, shared cards, edit-page banner, save-warning modal
   - Cross-repo system-of-record for the full access model (ownership, `iam.permissions`, `iam.memberships`, `platform.associations` conveyance, admin level): [`common-docs/systems/access-architecture/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/access-architecture/FEATURE.md)
+  - Cross-repo system-of-record for the sharing-hierarchy MODEL (share at any level, everything contained conveys level-matched): /Users/armanisadeghi/code/common-docs/systems/access-architecture/SHARING_MODEL.md — read it before touching sharing/access in ANY repo.
+  - Cross-repo VISION for the sharing EXPERIENCE (default path, presentation shares, collaboration shares): /Users/armanisadeghi/code/common-docs/systems/sharing-experience/VISION.md
 
 ---
 

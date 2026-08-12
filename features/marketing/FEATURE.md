@@ -403,6 +403,7 @@ Grants: `migrations/web_marketing_crud_grants.sql` added the missing authenticat
 - The Marketing command-only transport lives in `features/marketing/crawler`; persisted Marketing reads never depend on it.
 - CMS and later marketing workspaces build on the same `web.site` / `web.page` identities.
 - Architecture: `docs/MARKETING_SITE_PLATFORM_PLAN.md` and `docs/MARKETING_SITE_ROUTE_ARCHITECTURE.md`.
+- Cross-repo VISION making web/marketing the proving ground for the platform sharing experience (presentation shares, collaboration shares, share-as-growth-engine): /Users/armanisadeghi/code/common-docs/systems/sharing-experience/VISION.md — read it before building any marketing share surface. Data-layer model: /Users/armanisadeghi/code/common-docs/systems/access-architecture/SHARING_MODEL.md.
 - Cross-repo Google OAuth verification inventory, scope decisions, cleanup register, and submission gates: `../common-docs/projects/google-oauth-verification/PLAN.md`. Read it before changing Google scopes, clients, consent-screen configuration, or reviewer-facing flows.
 
 ## Doctrine compliance
