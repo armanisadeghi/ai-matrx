@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -48,6 +48,16 @@ import {
   updateCompetitorTracking,
   updateOpportunityStatus,
 } from "./data";
+import {
+  AUTOPSY_RUN_BOUND_CHOICES,
+  parseAutopsyRunPlan,
+  parseCompetitorDomainsField,
+  parseCompetitorTrackingWrite,
+  parseOpportunityStatusWrite,
+  serializeCompetitorDomains,
+  type CompetitorTrackingStatus,
+  type OpportunityStatus,
+} from "./autopsy-controls";
 import { useCompetitorAutopsy } from "./useCompetitorAutopsy";
 
 type Artifact = {
@@ -143,21 +153,44 @@ export default function CompetitorAutopsyWorkspace() {
   const completedRun = data?.runs.find((item) => item.status === "completed");
   const latestArtifact = artifactFromRun(completedRun);
   const openActions = data?.opportunities.filter((item) => item.status === "open").length ?? 0;
-  const tracked = data?.competitors.filter((item) => item.tracking_status === "tracking").length ?? 0;
+  const tracked = data?.competitors.filter((item) => item.tracking_status === "tracked").length ?? 0;
 
   const refresh = async () => {
     if (!resolvedSiteId) return;
     await queryClient.invalidateQueries({ queryKey: ["marketing", "competitors", resolvedSiteId] });
   };
 
-  const mutateTracking = async (
-    id: string,
-    status: "candidate" | "tracking" | "ignored",
-  ) => {
-    try {
+  // ── The ONE write path per entity ────────────────────────────────────────
+  // Both the user's row-action click and the surface write target go through
+  // these. They deliberately do NOT catch: the row-action wrappers below turn a
+  // failure into a toast, while the write handlers let it propagate so the
+  // writeback seam converts it into the error envelope the agent reads. A
+  // shared `try/catch` here would have swallowed the agent's only feedback.
+  const applyTracking = useCallback(
+    async (id: string, status: CompetitorTrackingStatus) => {
       await updateCompetitorTracking(id, status);
       await refresh();
-      toast.success(status === "tracking" ? "Competitor is now tracked" : "Tracking updated");
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [resolvedSiteId, queryClient],
+  );
+
+  const applyOpportunityStatus = useCallback(
+    async (id: string, status: OpportunityStatus) => {
+      await updateOpportunityStatus(id, status);
+      await refresh();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [resolvedSiteId, queryClient],
+  );
+
+  const mutateTracking = async (
+    id: string,
+    status: CompetitorTrackingStatus,
+  ) => {
+    try {
+      await applyTracking(id, status);
+      toast.success(status === "tracked" ? "Competitor is now tracked" : "Tracking updated");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update competitor");
     }
@@ -165,16 +198,96 @@ export default function CompetitorAutopsyWorkspace() {
 
   const mutateOpportunity = async (
     id: string,
-    status: "accepted" | "in_progress" | "completed" | "dismissed",
+    status: OpportunityStatus,
   ) => {
     try {
-      await updateOpportunityStatus(id, status);
-      await refresh();
+      await applyOpportunityStatus(id, status);
       toast.success(status === "completed" ? "Action completed" : "Action status updated");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update action");
     }
   };
+
+  // ── Write half of the marketing-competitors surface ──────────────────────
+  // An agent may STAGE the next autopsy (who to look at, how much to buy) and
+  // TRIAGE what the last one produced. It may never press Run — that spends
+  // provider credits and crawls someone else's pages — and it may never touch
+  // a provider fact, a crawl observation, or an AI judgment. See the
+  // writeTargets docblock in `marketing-competitors.manifest.ts`.
+  //
+  // WHY A REF AND NOT THE RENDER CLOSURE: when an agent stages several targets
+  // in one turn, the writeback seam resolves EVERY handler closure BEFORE the
+  // user confirms the first dialog. A handler that decided which row to write
+  // from its render closure could therefore act on a stale snapshot — writing a
+  // status onto a row the user is no longer looking at. Both selection-scoped
+  // handlers resolve the visible rows (and the run state) through this ref at
+  // APPLY time instead, and refuse the whole write on one unknown id.
+  const liveRef = useRef<{
+    competitors: Array<{ id: string; label: string }>;
+    opportunities: Array<{ id: string; label: string }>;
+    runStatus: typeof run.status;
+  }>({ competitors: [], opportunities: [], runStatus: "idle" });
+
+  useEffect(() => {
+    liveRef.current = {
+      competitors: (data?.competitors ?? []).map((row) => ({
+        id: row.id,
+        label: row.display_domain ?? row.normalized_domain ?? row.id,
+      })),
+      opportunities: (data?.opportunities ?? []).map((row) => ({
+        id: row.id,
+        label: row.title ?? row.id,
+      })),
+      runStatus: run.status,
+    };
+  }, [data, run.status]);
+
+  /** A run in flight replaces exactly the rows these targets write to, and
+   *  disables the button the staged plan exists to feed. Refuse rather than
+   *  land a value onto state that is about to be thrown away. */
+  const assertNoRunInFlight = (target: string) => {
+    if (liveRef.current.runStatus === "running") {
+      throw new Error(
+        `${target} is unavailable while a competitor autopsy is running — the run is about to replace these rows. Wait for it to finish, then try again.`,
+      );
+    }
+  };
+
+  const getSurfaceWriteHandlers = () => ({
+    autopsy_run_plan: (value: unknown) => {
+      assertNoRunInFlight("autopsy_run_plan");
+      // Validated in a PURE module, OUTSIDE the state updaters, so the throw is
+      // synchronous and lands in the writeback seam's catch. A throw raised
+      // inside a setState callback fires during React's commit instead, and the
+      // agent would read a success envelope for a value that never landed.
+      const patch = parseAutopsyRunPlan(value);
+      if (patch.domains !== undefined) {
+        setDomains(serializeCompetitorDomains(patch.domains));
+      }
+      if (patch.maxCompetitors !== undefined) {
+        setMaxCompetitors(patch.maxCompetitors);
+      }
+      if (patch.pagesPerCompetitor !== undefined) {
+        setPagesPerCompetitor(patch.pagesPerCompetitor);
+      }
+    },
+    competitor_tracking: async (value: unknown) => {
+      assertNoRunInFlight("competitor_tracking");
+      const write = parseCompetitorTrackingWrite(
+        value,
+        liveRef.current.competitors,
+      );
+      await applyTracking(write.competitorId, write.trackingStatus);
+    },
+    opportunity_status: async (value: unknown) => {
+      assertNoRunInFlight("opportunity_status");
+      const write = parseOpportunityStatusWrite(
+        value,
+        liveRef.current.opportunities,
+      );
+      await applyOpportunityStatus(write.opportunityId, write.status);
+    },
+  });
 
   const competitorColumns = useMemo<MatrxColumnDef<CompetitorRow>[]>(
     () => [
@@ -259,9 +372,16 @@ export default function CompetitorAutopsyWorkspace() {
           opportunities: data?.opportunities as Array<Record<string, unknown>> | undefined,
           latest_autopsy: latestArtifact as Record<string, unknown> | undefined,
           active_run: run as unknown as Record<string, unknown>,
+          // The staged run plan — the read twins of `autopsy_run_plan`, so the
+          // agent can see what is already in the card before it patches it.
+          autopsy_competitor_domains: parseCompetitorDomainsField(domains),
+          autopsy_max_competitors: maxCompetitors,
+          autopsy_pages_per_competitor: pagesPerCompetitor,
+          autopsy_force_refresh: forceRefresh,
           selection: resolvedSiteId ?? undefined,
         })
       }
+      getWriteHandlers={getSurfaceWriteHandlers}
     >
     <main className="mx-auto flex w-full max-w-[1800px] flex-col gap-5 p-4 md:p-6">
       <AssistStrip surfaceName="matrx-user/marketing-competitors" />
@@ -303,11 +423,14 @@ export default function CompetitorAutopsyWorkspace() {
                 <Textarea id="competitor-domains" value={domains} onChange={(event) => setDomains(event.target.value)} placeholder="One domain per line. Leave blank for automatic discovery." className="min-h-20 resize-none" />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5"><Label>Competitors</Label><Select value={String(maxCompetitors)} onValueChange={(value) => setMaxCompetitors(Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4,5].map((value) => <SelectItem key={value} value={String(value)}>{value}</SelectItem>)}</SelectContent></Select></div>
-                <div className="space-y-1.5"><Label>Pages each</Label><Select value={String(pagesPerCompetitor)} onValueChange={(value) => setPagesPerCompetitor(Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[1,2,3,4,5].map((value) => <SelectItem key={value} value={String(value)}>{value}</SelectItem>)}</SelectContent></Select></div>
+                {/* Both selects render from the SAME constant the manifest's
+                    contract prose is interpolated from and the write handler
+                    validates against, so the three cannot drift. */}
+                <div className="space-y-1.5"><Label>Competitors</Label><Select value={String(maxCompetitors)} onValueChange={(value) => setMaxCompetitors(Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{AUTOPSY_RUN_BOUND_CHOICES.map((value) => <SelectItem key={value} value={String(value)}>{value}</SelectItem>)}</SelectContent></Select></div>
+                <div className="space-y-1.5"><Label>Pages each</Label><Select value={String(pagesPerCompetitor)} onValueChange={(value) => setPagesPerCompetitor(Number(value))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{AUTOPSY_RUN_BOUND_CHOICES.map((value) => <SelectItem key={value} value={String(value)}>{value}</SelectItem>)}</SelectContent></Select></div>
               </div>
               <div className="flex items-center gap-2"><Checkbox id="force-refresh" checked={forceRefresh} onCheckedChange={(value) => setForceRefresh(value === true)} /><Label htmlFor="force-refresh" className="font-normal">Ignore today&apos;s cached provider evidence</Label></div>
-              <Button className="w-full gap-2" disabled={!resolvedSiteId || run.status === "running"} onClick={() => void start({ competitorDomains: domains.split(/\n|,/).map((value) => value.trim()).filter(Boolean), maxCompetitors, pagesPerCompetitor, forceRefresh })}>
+              <Button className="w-full gap-2" disabled={!resolvedSiteId || run.status === "running"} onClick={() => void start({ competitorDomains: parseCompetitorDomainsField(domains), maxCompetitors, pagesPerCompetitor, forceRefresh })}>
                 {run.status === "running" ? <Loader2 className="size-4 animate-spin" /> : <ScanSearch className="size-4" />}
                 {run.status === "running" ? "Building the autopsy" : "Run competitor autopsy"}
               </Button>
@@ -375,10 +498,13 @@ export default function CompetitorAutopsyWorkspace() {
             detail={{ title: (row) => row.display_domain }}
             window={{ title: (row) => row.display_domain, enabled: true }}
             rowActions={(row) => (
-              row.tracking_status === "tracking" ? (
+              // "tracked" is the server's vocabulary (see autopsy-controls);
+              // this row action sent "tracking" until 2026-08-12, which the
+              // canonical RPC rejects outright.
+              row.tracking_status === "tracked" ? (
                 <Button size="sm" variant="ghost" onClick={() => void mutateTracking(row.id, "ignored")}>Stop tracking</Button>
               ) : (
-                <Button size="sm" variant="outline" onClick={() => void mutateTracking(row.id, "tracking")}>Track</Button>
+                <Button size="sm" variant="outline" onClick={() => void mutateTracking(row.id, "tracked")}>Track</Button>
               )
             )}
             emptyState={{ icon: <Swords className="size-8" />, title: "No competitors identified", description: "Automatic discovery measures real keyword overlap before adding a rival." }}

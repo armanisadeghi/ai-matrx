@@ -19,6 +19,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { TASK_LABELS, type TaskLabel } from "@/features/tasks/constants/labels";
 import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -201,6 +202,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 560,
     group: "selected_task",
   },
+  {
+    name: "selected_task_draft",
+    label: "Selected task live draft",
+    description:
+      "What the details panel's inputs hold RIGHT NOW, including edits nobody has saved yet: { task_id, title, description, due_date, priority, labels, is_dirty }. This is the read twin of the panel_task_* write targets — the other selected_task_* values report the SAVED record, so this is the one that echoes a stage back to you. `is_dirty` is true when the panel's Save button is showing (staged edits are pending). `due_date` is \"\" or YYYY-MM-DD; `priority` is null when none is set. Absent when no task is open in the details panel.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 700,
+    sortOrder: 570,
+    group: "selected_task",
+  },
 
   // ── Quick add ─────────────────────────────────────────────────────────
   {
@@ -295,7 +307,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     label: "Task title",
     description: [
       "Stages a new title into the task open in the Quick Tasks details panel.",
-      "Value: a non-empty plain string, REPLACING the current title (read selected_task_title first if you mean to build on it).",
+      "Value: a non-empty plain string, REPLACING the current title (read selected_task_draft first if you mean to build on it — that is the value that reflects an edit already staged).",
       "Staged only — the panel's Save button appears and the user saves.",
     ].join(" "),
     valueType: "string",
@@ -310,7 +322,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     label: "Task description",
     description: [
       "Stages a full replacement body into the task open in the Quick Tasks details panel (markdown-friendly plain text).",
-      "Value: a string; empty string clears it. It REPLACES the whole description — to append, read selected_task_description first and send the combined text.",
+      "Value: a string; empty string clears it. It REPLACES the whole description — to append, read selected_task_draft first (that is the value that reflects an edit already staged) and send the combined text.",
       "Staged only — the panel's Save button appears and the user saves.",
     ].join(" "),
     valueType: "string",
@@ -355,8 +367,8 @@ const writeTargets: SurfaceWriteTarget[] = [
     label: "Task labels",
     description: [
       "Stages the FULL label set onto the task open in the Quick Tasks details panel.",
-      "Value: an array of label strings drawn from bug | feature | improvement | docs | design | research | question | blocked. Send [] to clear every label.",
-      "It REPLACES the set rather than appending — read selected_task_labels and include the ones you want kept.",
+      `Value: an array of label strings drawn from ${TASK_LABELS.join(" | ")}. Send [] to clear every label.`,
+      "It REPLACES the set rather than appending — read selected_task_draft and include the ones you want kept.",
       "Staged only — the panel's Save button appears and the user saves.",
     ].join(" "),
     valueType: "array",
@@ -386,7 +398,7 @@ export const quickTasksManifest: SurfaceManifest = {
   surfaceName: QUICK_TASKS_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Window-level Redux state and the selected task's saved fields are emitted, and all eight write targets are live-verified; TaskDetailsPanel's UNSAVED field drafts are still not emitted, so a staged value is visible on screen but not readable back through the selected_task_* values",
+    "Window-level Redux state, the selected task's saved fields, and (via selected_task_draft) the details panel's UNSAVED field drafts are all emitted, and all eight write targets are live-verified; the org/project/scope PICK LISTS the hierarchy cascade renders are still not emitted, which is why none of them is agent-writable",
   overlayId: "quickTasksWindow",
   label: "Quick Tasks",
   intro: `<surface_intro>
@@ -394,7 +406,7 @@ You are in the Quick Tasks floating window — a cross-app task cockpit the user
 Window selection tells you what slice of the user's tasks is in view; Task list is exactly what the sidebar shows after filtering; Selected task identifies the task in the details panel (absent when none is open); Quick add carries any unsent draft title. All values reflect the live window and only exist while it is open.
 
 You can write here, and which targets are offered depends on what the window is showing. With no task selected you get the quick-add pane: quick_add_title stages a title into the input for the user to submit, and quick_create_task turns a loose ask into one well-formed task (title, description, priority, due date) and opens it. With a task open you also get the panel_* targets for its title, description, priority, due date and labels — those are staged into the panel and the USER presses Save — plus panel_add_subtasks, which creates subtasks on apply.
-The selected_task_* values report the task as SAVED. They do not echo a staged edit back to you, so do not read them to confirm a stage landed; the apply result already told you.
+The individual selected_task_* values report the task as SAVED — they do not move when you merely stage an edit. selected_task_draft is the one that does: it is what the panel's inputs hold right now, so read THAT to confirm a stage landed or to build on an edit already staged, and read the saved values to see what the user would lose.
 Which organization, scope, project or task is selected is the user's navigation, not yours, and neither deleting a task nor marking one complete is available to you. Ask for those instead of trying to write them.
 </surface_intro>`,
   groups,
@@ -426,6 +438,25 @@ export interface QuickTasksSelectedTaskSummary
 }
 
 /**
+ * The details panel's LIVE edit state, exactly as `selected_task_draft`
+ * reports it. `TaskDetailsPanel` publishes this shape into a ref the window's
+ * `getScope` reads; the panel nulls it on unmount, so it is only ever present
+ * for the task actually on screen.
+ */
+export interface QuickTasksTaskDraft {
+  task_id: string;
+  title: string;
+  description: string;
+  /** `""` when no due date is set, otherwise `YYYY-MM-DD`. */
+  due_date: string;
+  /** `null` when no priority is set (the panel's "None"). */
+  priority: (typeof TASK_PRIORITIES)[number] | null;
+  labels: TaskLabel[];
+  /** True when the panel has unsaved edits — its Save button is showing. */
+  is_dirty: boolean;
+}
+
+/**
  * Type-safe payload helper — required keys mirror every `alwaysAvailable:
  * true` value above; optional keys mirror the rest.
  */
@@ -444,6 +475,7 @@ export function createQuickTasksScope(values: {
   selected_task_priority?: string;
   selected_task_due_date?: string;
   selected_task_labels?: string[];
+  selected_task_draft?: QuickTasksTaskDraft;
   context?: Record<string, unknown>;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;

@@ -36,6 +36,17 @@
  * never offered to a single agent — the `surface-write-targets` skill's
  * "no mounted runtime looks exactly like a broken target" trap.
  *
+ * Nor can that be "fixed" by mounting a provider on the studio route, so
+ * do not reach for that either. `getSurfaceRuntime()` resolves
+ * deepest-first while `surfaceFromPathname()` maps `/tools/pdf-extractor`
+ * to the PARENT, so a nested provider for this surface would become the
+ * live runtime under a route that still names the parent. The Agents
+ * panel's `hasLiveScope` check (`runtime.surfaceName === surfaceName`)
+ * would then fail, and every agent run launched from the header would drop
+ * the studio's live scope and fall back to "Running without live page
+ * context" — trading a read-only surface's write targets for a REGRESSION
+ * of the parent's working ones.
+ *
  * The Job-builder FORM that campaign chips keep pointing at
  * (`ChunkingConfigForm`, the template editor at
  * `/tools/pdf-extractor/[documentId]`) renders inside `PdfStudioShell`'s

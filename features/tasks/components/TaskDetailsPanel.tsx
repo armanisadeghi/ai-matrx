@@ -60,6 +60,7 @@ import { TaskContextPicker } from "./TaskContextSection";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
+import type { QuickTasksTaskDraft } from "@/features/surfaces/manifests/quick-tasks.manifest";
 import type { TaskWithProject } from "@/features/tasks/types";
 import { buildTaskTitleLabel } from "@/features/tasks/utils/taskTitleLabel";
 import { cn } from "@/lib/utils";
@@ -84,6 +85,15 @@ interface TaskDetailsPanelProps {
    * `TaskEditorBody`'s own Redux-backed targets instead.
    */
   writeSurfaceName?: string;
+  /**
+   * Ref to publish this panel's LIVE (unsaved) edit state into, so the mount
+   * that owns the surface can emit it as a read value. The panel owns the
+   * state; the host only reads the ref at scope time. Passed only by the
+   * Quick Tasks window, which emits it as `selected_task_draft` — the read
+   * twin its `panel_task_*` targets otherwise lack, because every other
+   * `selected_task_*` value reports the SAVED record.
+   */
+  surfaceDraftRef?: React.MutableRefObject<QuickTasksTaskDraft | null>;
 }
 
 export default function TaskDetailsPanel({
@@ -91,6 +101,7 @@ export default function TaskDetailsPanel({
   onClose,
   titleLayout = "default",
   writeSurfaceName,
+  surfaceDraftRef,
 }: TaskDetailsPanelProps) {
   const dispatch = useAppDispatch();
   const refresh = () => dispatch(invalidateAndRefetchFullContext());
@@ -307,6 +318,31 @@ export default function TaskDetailsPanel({
       setIsAddingComment(false);
     }
   };
+
+  // Publish the panel's LIVE edit state for the host surface to emit as
+  // `selected_task_draft`. From an EFFECT, never during render: `getScope`
+  // runs at agent-trigger time and from the live sampler, so the ref must
+  // hold committed state. Nulled on unmount because this panel comes and goes
+  // while its window stays open — a stale draft left behind would be emitted
+  // as the live edits of a task nobody has open.
+  useEffect(() => {
+    if (!surfaceDraftRef) return;
+    surfaceDraftRef.current = {
+      task_id: task.id,
+      title,
+      description,
+      due_date: dueDate,
+      priority,
+      labels,
+      is_dirty: isDirty,
+    };
+  });
+  useEffect(() => {
+    if (!surfaceDraftRef) return;
+    return () => {
+      surfaceDraftRef.current = null;
+    };
+  }, [surfaceDraftRef]);
 
   // Write half of the Quick Tasks details panel (`panel_*` targets on
   // `matrx-user/quick-tasks`). Registered by NAME rather than through a

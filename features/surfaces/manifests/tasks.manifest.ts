@@ -20,6 +20,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { TASK_LABELS } from "@/features/tasks/constants/labels";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -404,8 +405,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "task_labels",
     label: "Task labels",
-    description:
-      "Stages the FULL label set into the draft (replaces, not appends — include existing labels you want kept, from active_task_labels). Array of: bug | feature | improvement | docs | design | research | question | blocked.",
+    description: `Stages the FULL label set into the draft (replaces, not appends — include existing labels you want kept, from active_task_labels). Array of: ${TASK_LABELS.join(" | ")}.`,
     valueType: "array",
     updatesValue: "active_task_labels",
     mode: "draft",

@@ -39,6 +39,7 @@ import {
   restoreKeywords,
 } from "../data/queries";
 import KeywordResearchLauncher from "./KeywordResearchLauncher";
+import { parseLibrarySearchWrite } from "../keyword-research-write";
 import {
   KEYWORD_CLUSTER_WRITE_MODES,
   isKeywordClusterWriteMode,
@@ -258,6 +259,18 @@ export default function KeywordResearchWorkbench() {
   // state: getScope reads it at trigger time, so the agent still sees the live
   // value while a keystroke in the launcher never re-renders the table below.
   const stagedKeywordRef = useRef("");
+  // The live cluster, for `cluster_scope`'s append branch. Refs for the same
+  // reason the emitter uses one, plus a sharper one: the writeback seam
+  // resolves every handler closure BEFORE the user confirms the first ask
+  // dialog, so an append that read the cluster off its render closure could
+  // extend a LIST THAT IS NO LONGER ON SCREEN — scoping the explorer to
+  // phrases the user never saw. Deciding WHERE a value lands must read live.
+  const clusterPhrasesRef = useRef(clusterPhrases);
+  const clusterPrimaryKeywordRef = useRef(clusterPrimaryKeyword);
+  useEffect(() => {
+    clusterPhrasesRef.current = clusterPhrases;
+    clusterPrimaryKeywordRef.current = clusterPrimaryKeyword;
+  }, [clusterPhrases, clusterPrimaryKeyword]);
   // Provenance: keyword ids with at least one live ai_research edge —
   // research-discovered vs hand-added. Null until the batched read lands.
   const [researchIds, setResearchIds] = useState<ReadonlySet<string> | null>(
@@ -426,17 +439,7 @@ export default function KeywordResearchWorkbench() {
    */
   const getWriteHandlers = () => ({
     library_search: (value: unknown) => {
-      if (typeof value !== "string") {
-        throw new Error(
-          `library_search expects a string (empty string clears the filter), got ${Array.isArray(value) ? "array" : typeof value}.`,
-        );
-      }
-      if (/[\r\n]/.test(value)) {
-        throw new Error(
-          "library_search is a single-line filter box — newlines are not accepted.",
-        );
-      }
-      setSearch(value);
+      setSearch(parseLibrarySearchWrite(value));
     },
     cluster_scope: (value: unknown) => {
       if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -483,8 +486,10 @@ export default function KeywordResearchWorkbench() {
       const label = (patch.primary_keyword as string | undefined)?.trim();
       // Appending onto an existing cluster inherits its name; every other
       // case is naming a NEW cluster, so the label is required.
-      const appendTo = patch.mode === "append" ? clusterPhrases : null;
-      const nextLabel = label ?? (appendTo ? clusterPrimaryKeyword : null);
+      const appendTo =
+        patch.mode === "append" ? clusterPhrasesRef.current : null;
+      const nextLabel =
+        label ?? (appendTo ? clusterPrimaryKeywordRef.current : null);
       if (!nextLabel) {
         throw new Error(
           "cluster_scope: primary_keyword is required — there is no cluster on screen to append to, so this write names a new one.",

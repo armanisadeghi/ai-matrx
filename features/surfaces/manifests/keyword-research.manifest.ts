@@ -31,6 +31,7 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { KEYWORD_CLUSTER_WRITE_MODES } from "@/features/marketing/seo/keyword-research/types";
+import { MAX_STAGED_KEYWORD_LENGTH } from "@/features/marketing/seo/keyword-research/keyword-research-write";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -307,7 +308,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "research_input_keyword",
     label: "Staged research keyword",
     description: [
-      "Types a primary keyword into the research launcher's input — the same box the user types in. Value is a string: ONE keyword phrase, non-empty, single-line, at most 200 characters. A list of keywords is rejected; the pipeline researches one primary keyword per run.",
+      `Types a primary keyword into the research launcher's input — the same box the user types in. Value is ONE keyword phrase as plain text, not JSON and not JSON-encoded (send  botox cost  — never  "botox cost"  or  {"phrase":"botox cost"}), non-empty, single-line, at most ${MAX_STAGED_KEYWORD_LENGTH} characters. A list of keywords is rejected rather than truncated to its first line; the pipeline researches one primary keyword per run and discovers the cluster around it.`,
       "STAGED ONLY. This does NOT start research and spends nothing; the user still presses Research, which is what launches the paid pipeline (an LSI agent plus a DataForSEO request).",
       "Rejected while a run is in flight — the input is locked then, exactly as it is for the user.",
       "This is how a research recommendation becomes one click instead of a phrase to retype. Propose the keyword you would actually spend the run on, and say why in your reply.",
