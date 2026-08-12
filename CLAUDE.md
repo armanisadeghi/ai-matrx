@@ -395,6 +395,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Agent shortcuts | `features/agent-shortcuts/FEATURE.md` |
 | Agent apps | `features/agent-apps/FEATURE.md` |
 | Agent connections | `features/agent-connections/FEATURE.md` |
+| AI Work Hub | `features/ai-work/FEATURE.md` |
 | Scopes | `features/scopes/FEATURE.md` |
 | Agent context + Brokers | `features/agent-context/FEATURE.md` (narrowed: broker resolution + slot fill; scope CRUD lives in `features/scopes/`) |
 | Tool call visualization | `features/tool-call-visualization/FEATURE.md` |

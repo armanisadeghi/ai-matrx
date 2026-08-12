@@ -235,6 +235,45 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "sky",
   },
   {
+    label: "AI Work",
+    href: "/work",
+    iconName: "Workflow",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description:
+      "Conversations and connected work across AI Matrx and coding platforms",
+    color: "violet",
+    children: [
+      {
+        label: "Overview",
+        href: "/work",
+        iconName: "LayoutDashboard",
+        exact: true,
+      },
+      {
+        label: "Provider Conversations",
+        href: "/work/conversations",
+        iconName: "MessageSquare",
+      },
+      {
+        label: "Start AI Matrx Chat",
+        href: "/chat/new",
+        iconName: "MessageCircle",
+      },
+      {
+        label: "Skills",
+        href: "/agent-connections/skills",
+        iconName: "Brain",
+      },
+      {
+        label: "Coding Connections",
+        href: "/agent-connections/plugins",
+        iconName: "Plug",
+      },
+    ],
+  },
+  {
     // Sidebar points at the workspace (`/chat/new`) for authed users; for
     // guests, the marketing landing (`/chat`) so they land somewhere
     // meaningful instead of a composer they can't yet send from.
