@@ -103,7 +103,11 @@ import { RunsPopover } from "./RunsPopover";
 import { ExtractionCellDisplay } from "./ExtractionCellDisplay";
 import { deleteResultRows, duplicateJob } from "./data";
 import { cellToString } from "./export";
-import { EXTRACTION_ENTITY_TYPE, EXTRACTIONS_ROUTE } from "./constants";
+import {
+  EXTRACTION_ENTITY_TYPE,
+  EXTRACTION_JOB_NAME_MAX_LENGTH,
+  EXTRACTIONS_ROUTE,
+} from "./constants";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createKnowledgeScope } from "@/features/surfaces/manifests/knowledge.manifest";
 import {
@@ -507,9 +511,9 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
             "extraction_dataset_name expects a non-empty string — the dataset's new name.",
           );
         const next = value.trim();
-        if (next.length > 120)
+        if (next.length > EXTRACTION_JOB_NAME_MAX_LENGTH)
           throw new Error(
-            `extraction_dataset_name expects at most 120 characters (got ${next.length}).`,
+            `extraction_dataset_name expects at most ${EXTRACTION_JOB_NAME_MAX_LENGTH} characters (got ${next.length}).`,
           );
         if (!job)
           throw new Error(
