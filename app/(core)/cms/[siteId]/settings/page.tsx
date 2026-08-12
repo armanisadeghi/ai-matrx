@@ -159,10 +159,11 @@ export default function SiteSettingsPage() {
   });
 
   /**
-   * Agent write targets owned by THIS component — `site_global_css` only,
-   * because the Global CSS textarea's buffer lives here. The theme,
-   * navigation, and footer targets are registered by the sections that own
-   * their own drafts (`SiteAdvancedSettings`, via `useSurfaceWriteHandlers`);
+   * Agent write targets owned by THIS component — `site_global_css` and
+   * `site_name`, because the Global CSS textarea's buffer and the Site Name
+   * input's buffer both live here. The theme, navigation, and footer targets
+   * are registered by the sections that own their own drafts
+   * (`SiteAdvancedSettings`, via `useSurfaceWriteHandlers`);
    * `applySurfaceWrite` merges both sources.
    *
    * The value lands in the SAME `globalCss` state the user's typing drives, so
@@ -171,6 +172,14 @@ export default function SiteSettingsPage() {
    * honest under `agent_write_policy`.
    */
   const buildWriteHandlers = (): SurfaceWriteHandlers => ({
+    site_name: (value) => {
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error(
+          "site_name expects a non-empty plain text string, NOT JSON and NOT JSON-encoded — send the name itself (e.g. Northwind Coffee), not a quoted, braced, or escaped version of it.",
+        );
+      }
+      setName(value.trim());
+    },
     site_global_css: (value) => {
       if (!value || typeof value !== "object" || Array.isArray(value)) {
         throw new Error(
