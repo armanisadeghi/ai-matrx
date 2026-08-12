@@ -28,10 +28,15 @@ export function progressDataRenderBlock(
   return {
     blockId: `progress_content_ir_${eventIndex}`,
     blockIndex,
-    type: kind,
+    // Enter through the same raw JSON-region type as the accumulator. The
+    // canonical kind router then projects the envelope into the registered
+    // component's real serverData. Stamping `type: kind` here would make a
+    // legacy renderer treat the JSON source as its old text syntax and show
+    // the raw payload beneath an empty card.
+    type: "code",
     status: "complete",
     content: source,
-    data: null,
+    data: { language: "json" },
     metadata: {
       [IR_ENVELOPE_KEY]: envelopeFromCompleteValue(value, kind),
     },

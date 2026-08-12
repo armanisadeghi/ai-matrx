@@ -1,4 +1,5 @@
 import { readEnvelope } from "../core/envelope-read";
+import { applyIrKindRoute } from "../react/kind-route";
 import { progressDataRenderBlock } from "../redux/progress-data-block";
 
 describe("progressDataRenderBlock", () => {
@@ -27,8 +28,9 @@ describe("progressDataRenderBlock", () => {
     expect(block).toMatchObject({
       blockId: "progress_content_ir_12",
       blockIndex: 3,
-      type: "structured_info",
+      type: "code",
       status: "complete",
+      data: { language: "json" },
     });
     expect(readEnvelope(block?.metadata)?.root).toMatchObject({
       kind: "structured_info",
@@ -39,6 +41,15 @@ describe("progressDataRenderBlock", () => {
         title: "Gemini answered",
       },
     });
+
+    const routed = applyIrKindRoute({
+      type: block?.type ?? "",
+      serverData: block?.data ?? undefined,
+      metadata: block?.metadata,
+    });
+    expect(routed.type).toBe("structured_info");
+    expect(routed.serverData?.content).toContain("**Gemini answered**");
+    expect(routed.serverData?.content).toContain("* **Citations:** 7");
   });
 
   it("leaves ordinary data events on their existing path", () => {
