@@ -79,20 +79,30 @@ export const PLAN_REVIEWER_AGENT_ID = "2a7f0dc8-5525-437a-8f2e-35f12a45cb27";
  * per missing page. Any operator guidance is appended AFTER this block.
  */
 /**
- * Platform agent "Content Plan Keyword Binder" — permanent latest-version
- * pointer (created 2026-07-30 via the AI Dream MCP). Variables: pages,
- * keyword_pool, research_report, site_domain, guidance. Structured output:
- * {assignments: [{route, keyword_phrase, reason}], notes}. Every phrase comes
- * VERBATIM from the pool — the client resolves phrase → keyword_id and drops
- * anything that does not match, so an invented phrase can never be written.
+ * Platform agent "Content Plan Keyword Strategist" — permanent latest-version
+ * pointer. Variables: site_domain, research_report, current_plan,
+ * available_keywords, guidance. Structured output: {strategy_summary,
+ * assignments[], warnings[]}.
+ *
+ * Whole-plan, top-down: it classifies each page money / supporting /
+ * navigational, gives it a primary keyword plus a secondary cluster, names the
+ * money routes a supporting page feeds, and specifies the internal links that
+ * pass authority — then warns about cannibalization. The client resolves
+ * primary_keyword → keyword_id against the site pool; `primary_is_new` marks a
+ * phrase the pool does not have, which CANNOT be bound (no `seo.keyword` row)
+ * and is surfaced for the user to add rather than silently dropped.
  */
-export const KEYWORD_BINDER_AGENT_ID = "8ffb091c-dccf-4550-a14f-95807fd96b95";
+export const KEYWORD_BINDER_AGENT_ID = "e063ded1-38b2-4721-a526-aad01d26e2ef";
 
 /**
  * Platform agent "Content Plan Brief Writer" — permanent latest-version
- * pointer (created 2026-07-30 via the AI Dream MCP). Variables:
- * research_report, site_domain, page, page_context, existing_brief, guidance.
- * Structured output: {brief: string[], notes}.
+ * pointer. Variables: page, keyword_assignment, neighbours, research_report,
+ * guidance. Structured output: {__kind:"page_brief", angle, brief[],
+ * must_not_cover[], concerns[], suggested_word_count}.
+ *
+ * NEIGHBOUR-AWARE: it reads the page's parent, siblings and children so a
+ * sibling's subject is listed in `must_not_cover` instead of being written
+ * twice (keyword cannibalization).
  *
  * Distinct from Deepen, which is NOT a duplicate: Deepen is aidream's server
  * pipeline that writes the brief AND attaches cited sources immediately. This
@@ -100,7 +110,7 @@ export const KEYWORD_BINDER_AGENT_ID = "8ffb091c-dccf-4550-a14f-95807fd96b95";
  * save — the behaviour the `brief_writer` surface role's `node_brief` draft
  * write target was declared for.
  */
-export const BRIEF_WRITER_AGENT_ID = "f9789816-91b9-4e64-a38d-aa4d2a8127be";
+export const BRIEF_WRITER_AGENT_ID = "711d29b5-0afc-494c-a665-6011e529efce";
 
 export const REVIEWER_OUTPUT_CONTRACT =
   "BINDING OUTPUT CONTRACT: summary and findings must agree. Every problem you " +
@@ -125,20 +135,33 @@ export interface FamilyNamesResult {
   notes: string;
 }
 
+export type PageRole = "money" | "supporting" | "navigational";
+
 export interface KeywordAssignment {
   route: string;
-  keywordPhrase: string;
+  pageRole: PageRole;
+  /** null for navigational pages with no keyword target. */
+  primaryKeyword: string | null;
+  /** true when the phrase is NOT in the site's pool — cannot be bound as a FK. */
+  primaryIsNew: boolean;
+  secondaryKeywords: string[];
+  supportsRoutes: string[];
+  internalLinks: Array<{ toRoute: string; anchorText: string }>;
   reason: string;
 }
 
 export interface KeywordBindResult {
+  strategySummary: string;
   assignments: KeywordAssignment[];
-  notes: string;
+  warnings: string[];
 }
 
 export interface BriefDraftResult {
+  angle: string;
   brief: string[];
-  notes: string;
+  mustNotCover: string[];
+  concerns: string[];
+  suggestedWordCount: number | null;
 }
 
 export const REVIEW_SEVERITIES = [
@@ -310,29 +333,59 @@ export function coercePlanReview(value: unknown): PlanReviewResult {
   };
 }
 
+const PAGE_ROLES: readonly PageRole[] = ["money", "supporting", "navigational"];
+
 export function coerceKeywordBind(value: unknown): KeywordBindResult {
-  const root = asRecord(value, "Keyword Binder output");
+  const root = asRecord(value, "Keyword Strategist output");
   if (!Array.isArray(root.assignments)) {
-    throw new Error("Keyword Binder output has no assignments array");
+    throw new Error("Keyword Strategist output has no assignments array");
   }
+  const strings = (raw: unknown): string[] =>
+    Array.isArray(raw)
+      ? raw.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+      : [];
   const assignments: KeywordAssignment[] = [];
   for (const item of root.assignments) {
     const row = asRecord(item, "assignments item");
     if (typeof row.route !== "string" || !row.route.trim()) {
-      throw new Error("Keyword Binder returned an assignment with no route");
+      throw new Error("Keyword Strategist returned an assignment with no route");
     }
-    if (typeof row.keyword_phrase !== "string" || !row.keyword_phrase.trim()) {
-      throw new Error("Keyword Binder returned an assignment with no keyword");
+    const pageRole = PAGE_ROLES.find((role) => role === row.page_role) ?? "supporting";
+    const links: KeywordAssignment["internalLinks"] = [];
+    if (Array.isArray(row.internal_links)) {
+      for (const link of row.internal_links) {
+        const linkRow = asRecord(link, "internal_links item");
+        if (
+          typeof linkRow.to_route === "string" &&
+          typeof linkRow.anchor_text === "string" &&
+          linkRow.to_route.trim()
+        ) {
+          links.push({
+            toRoute: linkRow.to_route.trim(),
+            anchorText: linkRow.anchor_text,
+          });
+        }
+      }
     }
     assignments.push({
       route: row.route.trim(),
-      keywordPhrase: row.keyword_phrase.trim(),
+      pageRole,
+      primaryKeyword:
+        typeof row.primary_keyword === "string" && row.primary_keyword.trim()
+          ? row.primary_keyword.trim()
+          : null,
+      primaryIsNew: row.primary_is_new === true,
+      secondaryKeywords: strings(row.secondary_keywords),
+      supportsRoutes: strings(row.supports_routes),
+      internalLinks: links,
       reason: typeof row.reason === "string" ? row.reason : "",
     });
   }
   return {
+    strategySummary:
+      typeof root.strategy_summary === "string" ? root.strategy_summary : "",
     assignments,
-    notes: typeof root.notes === "string" ? root.notes : "",
+    warnings: strings(root.warnings),
   };
 }
 
@@ -341,19 +394,37 @@ export function coerceBriefDraft(value: unknown): BriefDraftResult {
   if (!Array.isArray(root.brief)) {
     throw new Error("Brief Writer output has no brief array");
   }
-  const brief = root.brief
-    .filter((line): line is string => typeof line === "string")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const lines = (raw: unknown): string[] =>
+    Array.isArray(raw)
+      ? raw
+          .filter((line): line is string => typeof line === "string")
+          .map((line) => line.trim())
+          .filter(Boolean)
+      : [];
+  const brief = lines(root.brief);
   if (brief.length === 0) throw new Error("Brief Writer returned an empty brief");
-  return { brief, notes: typeof root.notes === "string" ? root.notes : "" };
+  return {
+    angle: typeof root.angle === "string" ? root.angle : "",
+    brief,
+    mustNotCover: lines(root.must_not_cover),
+    concerns: lines(root.concerns),
+    suggestedWordCount:
+      typeof root.suggested_word_count === "number"
+        ? root.suggested_word_count
+        : null,
+  };
 }
 
-/** Pages as the Keyword Binder's `pages` variable expects them. */
+/**
+ * The plan as the Keyword Strategist's `current_plan` expects it:
+ * `route | label | node_type | status | current_keyword`.
+ */
 export function buildKeywordPageLines(
   nodes: PlanNodeRow[],
   keywordPhraseById: Map<string, string>,
+  statusSlugById?: Map<string, string>,
 ): string {
+  if (nodes.length === 0) return "empty plan";
   return nodes
     .slice()
     .sort((a, b) => (a.route ?? "").localeCompare(b.route ?? ""))
@@ -361,9 +432,15 @@ export function buildKeywordPageLines(
       const current = node.primary_keyword_id
         ? (keywordPhraseById.get(node.primary_keyword_id) ?? "-")
         : "-";
-      return [node.route ?? "(no route)", node.label, node.node_type, current].join(
-        " | ",
-      );
+      const status =
+        (node.status_id ? statusSlugById?.get(node.status_id) : null) ?? "unknown";
+      return [
+        node.route ?? "(no route)",
+        node.label,
+        node.node_type,
+        status,
+        current,
+      ].join(" | ");
     })
     .join("\n");
 }

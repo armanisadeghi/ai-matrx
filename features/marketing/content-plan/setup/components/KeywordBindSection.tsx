@@ -28,6 +28,8 @@ export interface StagedKeywordAssignment {
   keywordId: string;
   keywordPhrase: string;
   reason: string;
+  /** money / supporting / navigational — the strategist's classification. */
+  pageRole: string;
   /** The phrase this page already targets, when it had one. */
   previousPhrase: string | null;
 }
@@ -149,6 +151,11 @@ export function KeywordBindSection({
                     {item.route}
                   </span>
                 </div>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  <span className="rounded bg-muted px-1 py-0.5 font-medium">
+                    {item.pageRole}
+                  </span>
+                </p>
                 <p className="mt-0.5 text-[11px] text-primary">
                   {item.keywordPhrase}
                   {item.previousPhrase ? (

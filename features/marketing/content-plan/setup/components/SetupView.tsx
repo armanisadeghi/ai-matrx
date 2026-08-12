@@ -871,8 +871,10 @@ export function SetupView() {
         ...currentLabels.map((row) => [row.id, row.phrase] as const),
       ]);
       const outcome = await agents.bindKeywords({
-        pages: buildKeywordPageLines(nodeRows, phraseById),
-        keyword_pool: pool
+        site_domain: site.domain ?? site.name ?? "",
+        research_report: researchReport ?? "",
+        current_plan: buildKeywordPageLines(nodeRows, phraseById, statusSlugById),
+        available_keywords: pool
           .map((row) =>
             [
               row.phrase,
@@ -882,14 +884,13 @@ export function SetupView() {
             ].join(" | "),
           )
           .join("\n"),
-        research_report: researchReport ?? "",
-        site_domain: site.domain ?? site.name ?? "",
         guidance: "",
       });
 
-      // Resolve phrase → keyword_id against the POOL. Anything the agent
-      // invented or reworded simply has no id and is dropped, loudly in the
-      // notes — an invented phrase can never reach the database.
+      // Resolve primary_keyword → keyword_id against the POOL. A phrase the
+      // strategist proposes that the pool does not have (`primaryIsNew`)
+      // CANNOT be bound — `primary_keyword_id` is a FK to `seo.keyword` — so
+      // it is surfaced for the user to add rather than silently dropped.
       const idByPhrase = new Map(
         pool.map((row) => [row.phrase.trim().toLowerCase(), row.keywordId]),
       );
@@ -899,26 +900,24 @@ export function SetupView() {
           .map((node) => [node.route as string, node]),
       );
       const staged: StagedKeywordAssignment[] = [];
+      const newPhrases: string[] = [];
       const unmatched: string[] = [];
-      // One keyword per page AND per plan — two pages on one query is the
-      // cannibalization this step exists to prevent. SEEDED with every
-      // keyword the plan already uses: a phrase held by a page the agent did
-      // not mention is just as taken as one it did.
+      // One keyword per page AND per plan. SEEDED with every keyword the plan
+      // already uses so a phrase held by a page the strategist did not change
+      // is just as taken as one it did.
       const usedKeywordIds = new Set<string>(currentIds);
       const stagedNodeIds = new Set<string>();
       for (const item of outcome.assignments) {
         const node = nodeByRoute.get(item.route);
-        const keywordId = idByPhrase.get(item.keywordPhrase.trim().toLowerCase());
-        if (!node || !keywordId) {
-          unmatched.push(item.keywordPhrase);
+        if (!node || !item.primaryKeyword) continue;
+        const keywordId = idByPhrase.get(item.primaryKeyword.trim().toLowerCase());
+        if (!keywordId) {
+          // Either the strategist flagged it new, or it drifted from the pool.
+          newPhrases.push(item.primaryKeyword);
           continue;
         }
-        // Already on this page — nothing to stage, and the id stays reserved
-        // (it is seeded above, so no later item can claim it).
         if (node.primary_keyword_id === keywordId) continue;
         if (usedKeywordIds.has(keywordId)) continue;
-        // One row per node: two assignments for one route would render with a
-        // duplicate React key and fire two writes at the same page.
         if (stagedNodeIds.has(node.id)) continue;
         usedKeywordIds.add(keywordId);
         stagedNodeIds.add(node.id);
@@ -927,18 +926,21 @@ export function SetupView() {
           nodeId: node.id,
           label: node.label,
           keywordId,
-          keywordPhrase: item.keywordPhrase,
+          keywordPhrase: item.primaryKeyword,
           reason: item.reason,
+          pageRole: item.pageRole,
           previousPhrase: node.primary_keyword_id
             ? (phraseById.get(node.primary_keyword_id) ?? null)
             : null,
         });
       }
       const notes = [
-        outcome.notes,
-        unmatched.length > 0
-          ? `${unmatched.length} suggestion(s) were dropped — not in this site's keyword pool: ${unmatched.slice(0, 3).join(", ")}.`
+        outcome.strategySummary,
+        outcome.warnings.length > 0 ? `Warnings: ${outcome.warnings.join(" · ")}` : "",
+        newPhrases.length > 0
+          ? `${newPhrases.length} proposed keyword(s) are not in this site's pool and cannot be assigned until you add them in Search & Keywords: ${newPhrases.slice(0, 5).join(", ")}.`
           : "",
+        unmatched.length > 0 ? `${unmatched.length} unmatched.` : "",
       ]
         .filter(Boolean)
         .join(" ");

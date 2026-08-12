@@ -147,43 +147,53 @@ export function NodePanel({
       const parent = node.parent_id
         ? (rows.find((row) => row.id === node.parent_id) ?? null)
         : null;
-      const siblings = rows
-        .filter((row) => row.parent_id === node.parent_id && row.id !== node.id)
-        .map((row) => row.route)
-        .filter(Boolean)
-        .slice(0, 20)
-        .join(", ");
+      // Parent · siblings · children — this is what lets the agent list a
+      // sibling's subject under `must_not_cover` instead of writing it twice.
+      const describe = (row: PlanNodeRow, relation: string) =>
+        [row.route ?? "(no route)", row.label, relation, row.node_type].join(" | ");
+      const neighbours = [
+        parent ? describe(parent, "parent") : "no parent (top level)",
+        ...rows
+          .filter((row) => row.parent_id === node.parent_id && row.id !== node.id)
+          .slice(0, 30)
+          .map((row) => describe(row, "sibling")),
+        ...rows
+          .filter((row) => row.parent_id === node.id)
+          .slice(0, 30)
+          .map((row) => describe(row, "child")),
+      ].join("\n");
       const outcome = await agents.writeBrief({
-        research_report: report,
-        site_domain: fresh.domain ?? fresh.name ?? "",
         page: [
           node.route ?? "(no route)",
           node.label,
           node.node_type,
-          node.technical_depth ? `depth: ${node.technical_depth}` : "-",
+          node.technical_depth ?? "-",
+          (draft.brief ?? node.brief ?? []).join(" / ") || "no brief yet",
         ].join(" | "),
-        page_context: [
-          parent
-            ? `parent: ${parent.route} (${parent.label})`
-            : "parent: none (top level)",
-          siblings ? `siblings: ${siblings}` : "siblings: none",
-          node.pillar_label ? `pillar: ${node.pillar_label}` : "",
-          node.cluster_label ? `cluster: ${node.cluster_label}` : "",
-        ]
-          .filter(Boolean)
-          .join("; "),
-        // The LIVE brief (draft over row), not the saved row — the agent is
-        // told to improve what is on screen, and the user's unsaved edits are
-        // extended rather than contradicted.
-        existing_brief: (draft.brief ?? node.brief ?? []).join("\n"),
+        keyword_assignment: node.primary_keyword_id
+          ? `primary keyword id ${node.primary_keyword_id} (see the plan's keyword strategy)`
+          : "not assigned",
+        neighbours,
+        research_report: report,
         guidance: "",
       });
       if (!stillCurrent()) return;
       // STAGED into the draft — the user reads it and presses Save.
       setDraft((currentDraft) => ({ ...currentDraft, brief: outcome.brief }));
       setBriefText(outcome.brief.join("\n"));
+      const extras = [
+        outcome.angle ? `Angle: ${outcome.angle}` : "",
+        outcome.mustNotCover.length > 0
+          ? `Leave to siblings: ${outcome.mustNotCover.join("; ")}`
+          : "",
+        outcome.concerns.length > 0
+          ? `Concerns: ${outcome.concerns.join("; ")}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" — ");
       toast.success(
-        `Drafted ${outcome.brief.length} brief line(s) — review, then Save.${outcome.notes ? ` ${outcome.notes}` : ""}`,
+        `Drafted ${outcome.brief.length} brief line(s) — review, then Save.${extras ? ` ${extras}` : ""}`,
       );
     } catch (error) {
       if (!stillCurrent()) return;

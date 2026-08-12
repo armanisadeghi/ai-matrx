@@ -340,6 +340,24 @@ plan CRUD through it.
 
 ## Change log
 
+- 2026-07-30 — Claude (round 8): **adopted Arman's superseding agents; deleted
+  my duplicates from the wiring.** Three agents built outside this session are
+  strictly better than what I had, so the FE now points at THEM (a second
+  implementation of a job we already own is a defect, even when it works):
+  **Content Plan Keyword Strategist** (`e063ded1-…`) replaces my per-page
+  binder — whole-plan, top-down: it classifies every page money / supporting /
+  navigational, gives a primary + secondary cluster, names the money routes a
+  supporting page feeds, specifies the authority-passing internal links, and
+  emits cannibalization `warnings`. A `primary_is_new` phrase (not in the site
+  pool) CANNOT be bound — `primary_keyword_id` is a FK — so it is surfaced as
+  "add it in Search & Keywords", never silently dropped. **Content Plan Brief
+  Writer** (`711d29b5-…`) replaces mine — NEIGHBOUR-aware (parent / siblings /
+  children), so a sibling's subject lands in `must_not_cover` instead of being
+  written twice; it also emits `__kind: "page_brief"`, `angle`, `concerns` and
+  a suggested word count, which the panel surfaces on stage. The two agents I
+  had created for these jobs are now unreferenced. Remaining gap this closes
+  in the handoff: keyword strategy is no longer per-page-blind.
+
 - 2026-07-30 — Claude (round 7): **adversarial-review fixes on the keyword
   binder / brief writer / promotion** (17-agent find+refute; 10 confirmed).
   **The load-bearing one:** `primary_keyword_id` FKs to `seo.keyword`
