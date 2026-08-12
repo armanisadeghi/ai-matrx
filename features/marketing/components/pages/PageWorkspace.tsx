@@ -21,6 +21,7 @@ import { FetchPageButton } from "@/features/marketing/components/pages/FetchPage
 import { PageTaskButton } from "@/features/marketing/components/pages/PageTaskButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import {
   Collapsible,
   CollapsibleContent,
@@ -1180,6 +1181,13 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-1.5">
               <WorkspaceViewToggle mode={viewMode} onChange={setViewMode} />
+              <ShareButton
+                resourceType="web_page"
+                resourceId={page.id}
+                resourceName={page.url}
+                size="sm"
+                showStatus={false}
+              />
               <PageTaskButton
                 page={page}
                 ariaLabel="Create a task for this page"

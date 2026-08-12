@@ -98,7 +98,13 @@ Reads:
 
 ### RLS enforcement
 
-Every shareable resource table has a SELECT policy of the form `user_id = auth.uid() OR is_public = true OR has_permission(<resource_type>, id, 'viewer')`. UPDATE / DELETE policies bump the required level to `'editor'` / `'admin'`. Child tables (e.g. `cx_message`) check the parent resource, not themselves.
+Canonical entity tables resolve through `iam.has_access(token, id, level)`.
+Canonical component tables use a once-per-statement membrane:
+`id IN (SELECT unnest(iam.accessible_entity_ids('<child_token>', level)))`.
+That set includes the child's direct lanes and every registered composition
+parent recursively. A child may therefore be a granular direct share point
+when it is in the shareable registry, while ordinary components inherit only.
+Sharing never flows upward to a parent or sideways to a sibling.
 
 ### Key types (`utils/permissions/types.ts` → re-exported from `utils/permissions/registry.ts`)
 
@@ -111,7 +117,7 @@ Every shareable resource table has a SELECT policy of the form `user_id = auth.u
 
 ### Single source of truth: `shareable_resource_registry`
 
-The DB table `public.shareable_resource_registry` is the **only** place where shareable resources are declared. Every component, RPC, and TypeScript type derives from this table:
+The DB table `platform.shareable_resource_registry` is the **only** place where direct share targets are declared. Every component, RPC, and TypeScript type derives from this table. Structural inheritance is declared separately in `platform.entity_relationships`:
 
 - **DB-side resolver** — `public.resolve_shareable_resource(text)` maps an alias or canonical name to a registry row. All sharing RPCs (`share_resource_with_user`, `is_resource_owner`, `make_resource_public`, etc.) call this resolver — no more `CASE WHEN` ladders inside RPCs.
 - **DB-side validation** — a `BEFORE INSERT/UPDATE` trigger on `permissions.resource_type` rejects any value that isn't a canonical `table_name` in the registry. Loud failure, not silent drift.
@@ -162,23 +168,26 @@ Two supported patterns (see README for full snippets):
 
 ### 6. Adding a new shareable resource type (the pattern)
 
-The whole integration is now **two rows + one component**. RPCs, validation, label rendering, share URLs, and ownership checks are all driven by the registry — you do not touch any of them.
+The integration is registry-driven: entity identity, every structural parent,
+and (only when directly shareable) one shareable-registry row plus its TS mirror.
+RPCs, validation, label rendering, share URLs, and ownership checks remain generic.
 
-1. **Database schema** — make sure the table has `id` (uuid), `user_id` (uuid → `auth.users`), and `is_public` (bool, optional). Add RLS policies that include `has_permission(<canonical_table>, id, <level>)` so direct grants are actually enforced. (See "RLS rollout" follow-up below for tables that ship without `has_permission` initially.)
-2. **DB registry** — one INSERT into `public.shareable_resource_registry`:
+1. **Database schema** — make sure the table has a UUID resource identity and is registered in `platform.entity_types`. Use the canonical `created_by` / `organization_id` / `visibility` columns where the row owns those attributes; an inheriting component may omit them.
+2. **Structural parentage** — register every composition FK in `platform.entity_relationships`. A table with multiple legitimate parents gets multiple edges; never select an arbitrary "first" parent.
+3. **DB registry** — for a node users may share directly, insert one row into `platform.shareable_resource_registry`:
    ```sql
-   INSERT INTO public.shareable_resource_registry
+   INSERT INTO platform.shareable_resource_registry
      (resource_type, table_name, id_column, owner_column, is_public_column,
       display_label, url_path_template, rls_uses_has_permission, is_active, notes)
    VALUES
      ('<alias>', '<table>', 'id', 'user_id', 'is_public',
       '<Label>', '/<path>/{id}', true, true, NULL);
    ```
-3. **TS registry** — mirror the same row in `utils/permissions/registry.ts` under `SHAREABLE_RESOURCE_REGISTRY`.
-4. **Refresh the snapshot + verify no live drift** — `pnpm tsx scripts/regen-shareable-registry-snapshot.ts` rewrites `utils/permissions/__tests__/registry.db-snapshot.json` so the parity test passes, then `pnpm check:shareable-registry` (the `--check` drift guard) confirms the committed snapshot equals the LIVE registry. **Both are mandatory on any registry migration.** The parity test alone only diffs the TS mirror against the _committed_ snapshot — a live-DB row nobody snapshotted is invisible to it (that gap shipped the `assessment` enum bug); `check:shareable-registry` is the loud screamer that closes it.
-5. **Drop in the UI** — `<ShareButton resourceType="<alias>" resourceId={id} resourceName={...} isOwner={...} />`. ShareModal auto-builds the share URL from the registry's `url_path_template`. Done.
-6. **List pages (optional)** — create a `get_<resources>_shared_with_me()` RPC for efficient list rendering, or fall back to `useSharedWithMe(resourceType)`. Same pattern as `features/prompts/components/layouts/PromptsGrid.tsx`.
-7. **Detail-page gating (optional)** — create a `get_<resource>_access_level(id)` RPC if you need rich UX (banner showing owner email, "save as my copy" warning). Reference: `features/prompts/components/builder/SharedPromptWarningModal.tsx`.
+4. **TS registry** — mirror the same row in `utils/permissions/registry.ts` under `SHAREABLE_RESOURCE_REGISTRY`.
+5. **Refresh the snapshot + verify no live drift** — `pnpm tsx scripts/regen-shareable-registry-snapshot.ts` rewrites `utils/permissions/__tests__/registry.db-snapshot.json` so the parity test passes, then `pnpm check:shareable-registry` (the `--check` drift guard) confirms the committed snapshot equals the LIVE registry. **Both are mandatory on any registry migration.** The parity test alone only diffs the TS mirror against the _committed_ snapshot — a live-DB row nobody snapshotted is invisible to it (that gap shipped the `assessment` enum bug); `check:shareable-registry` is the loud screamer that closes it.
+6. **Drop in the UI** — `<ShareButton resourceType="<alias>" resourceId={id} resourceName={...} />`. ShareModal auto-builds the share URL from the registry's `url_path_template`. The path must resolve for a grantee who can open only this node, not its parent.
+7. **List pages (optional)** — create a `get_<resources>_shared_with_me()` RPC for efficient direct-grant list rendering, or fall back to `useSharedWithMe(resourceType)`. These lists show grants, not the full inherited tree.
+8. **Detail-page gating (optional)** — use the generic access gate; do not create a resource-specific access resolver.
 
 If you find yourself editing `service.ts`, the share RPCs, `ShareModal.getShareUrl()`, or any "resource-type → table-name" map: stop. That work has already been generalized into the registry and you are recreating it.
 
@@ -232,11 +241,11 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
 - **`useSharingStatus()` is intentionally lightweight.** It does NOT call `get_resource_permissions` — safe to mount on every grid card. Full permission details are only loaded when `ShareModal` opens.
 - **Permission changes are immediate; no cache invalidation needed.** RLS evaluates per-query. There is no Redux cache of permissions to invalidate. The only client state is the modal's in-memory list, refreshed by `useSharing.refresh()`.
 - **Exactly one target per permission row.** `grantedToUserId`, `grantedToOrganizationId`, and `isPublic` are mutually exclusive — `validatePermission()` enforces this.
-- **Child resources inherit via parent checks.** E.g., `cx_message` RLS calls `has_permission('cx_conversation', conversation_id, 'viewer')`, not `has_permission('cx_message', ...)`. Don't register child tables as separate resource types.
+- **Every addressable child has a registered identity and every composition FK is explicit.** Component RLS asks `accessible_entity_ids('<child_token>')` once; that helper unions direct lanes with every parent. Register the child in the shareable registry only when users may grant that exact row directly.
 - **Owner can always delegate.** Non-owners with `admin` cannot currently re-share — only the resource `user_id` passes the RPC's ownership check. If delegation becomes a requirement, change the RPCs, not the client.
 - **Shared users editing an original surface a "Save as My Copy" warning** before writes land. Feature-level concern — see `features/prompts/components/builder/SharedPromptWarningModal.tsx` for the canonical pattern.
 - **Unknown resource types fail loudly at three layers.** TypeScript rejects them at compile time (the `ResourceType` union is derived from the registry). The TS resolver `resolveTableName()` throws. The DB-side `resolve_shareable_resource()` raises an exception. The trigger on `permissions.resource_type` rejects the row. There is no path by which an unregistered string reaches a shipped feature.
-- **Sharing propagates to children via association conveyance — configure it in `platform.association_types`, never hand-wire.** A container→content pair (`source_type`, `target_type`, `container_side`, `conveys_max`) declares that access to the container conveys to its contents, capped at `conveys_max`; `platform.reachability` is the flattened cache and `iam.has_access` reads it. Both a container's **explicit grants/membership/ownership** AND its **own visibility** convey: making a flashcard set `public` makes its cards readable by a non-owner (read only — `public`/`link`/`internal` convey `viewer`, never write; grants convey up to `conveys_max`). Add a row to `platform.association_types` to make a new parent→child pair propagate — do NOT propagate visibility onto child rows or add per-feature checks. (fc_card→fc_set conveyance + `iam.has_access` container-visibility branch: 2026-07-07.)
+- **Sharing propagates through two canonical graphs, never hand-wired checks.** FK-owned structure belongs in `platform.entity_relationships` and is uncapped downward inheritance. User-authored attachments belong in `platform.association_types` / `platform.reachability`, with `container_side` and `conveys_max` declaring the cap. The reachability container is itself resolved through full inherited access, so the two graphs compose. Do not copy visibility onto children or add per-feature ladders.
 - **`rls_uses_has_permission = false` is a known broken state, not a temporary glitch.** A table with this flag has RLS that ignores the grant path — sharing rows insert but RLS won't grant the grantee access. As of the 2026 canonical-RLS rollout, every table on `iam.apply_rls` resolves grants via `iam.has_access(token,…)` (token-agnostic `has_permission`), so canonicalized types (`note`, `agent`, `conversation`, `task`, …) are `true` and grants really grant (verified live for `note` 2026-07-07). The flag still marks the genuinely-legacy `rls_uses_has_permission=false` rows (e.g. `analysis_recipes`, `auto_ingest_batch`, `file_*` satellites, `scraper_*`) whose own RLS models don't call the grant path.
 
 ---
@@ -265,6 +274,8 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 ---
 
 ## Change log
+
+- 2026-08-12 — **Complete downward access trees.** Direct grants now remain valid on explicitly shareable components; `iam.accessible_entity_ids` unions the child with every composition parent once per statement; FK structure and association conveyance compose because reachability resolves full container access. A shared node includes all descendants, never parents or siblings. Marketing is the first complete inventory: brand → sites/properties → pages → snapshots/screenshots → every registered artifact, with stored files and screenshot-attached notes proven end to end. Every new granular share point also has a canonical ID-only destination that works without parent access.
 
 - `2026-08-08` — **Access truth consumed beyond files + the vocabulary gets a guard.** `<AccessSummaryPanel>` mounted on four more surfaces: agent detail (`features/agents/route/AgentViewContent.tsx`, deleting two false "Private" badges), agent Share tab (`AgentSharePanel`), note info (`NoteInfoPanel`, "Private" chip demoted to a public-only chip), data-store detail (`DataStoresPage`, replacing a raw org-uuid chip). New advisory gate `pnpm check:visibility-vocab` (`scripts/check-visibility-vocab.ts` + allowlist) blocks retired visibility spellings, `internal`-omitting unions, and bare "Only you" claims; 23-finding baseline allowlisted with justifications tied to D105/D106b. `features/image-studio/api/python.ts#EditOutput.visibility` fixed to the canonical union.
 - `2026-07-26` — **"Only you" eliminated: access is now explained, not guessed — and the files visibility dialect is dead.** Two bugs, one root cause (a UI inferring access from a single column). (1) New `public.entity_access_summary(type,id)` + `public.entity_titles(type,ids[])` + `platform.entity_title()` (`migrations/entity_access_summary.sql`) report every reason an entity is reachable, including reachability containers; consumed by `features/sharing/service/accessSummary.ts` / `useAccessSummary` / `<AccessSummaryPanel>`, now rendered in the file Info tab's Sharing section. Backfilled the missing `title_column` on `entity_types` for `scope` and `data_store` (both had names but no declared title column, so nothing could name them). (2) The files domain spoke `public|personal|shared` and translated at the boundary — it folded `internal` into `personal` (34 of ~50 rows on one page of `/files` were mislabelled "Only you" while the whole org could read them) and treated `shared` as a synonym for `link`, when `shared` was retired from the enum 2026-07-21 and the server maps it to `personal` — so writing it back silently downgraded the file. `Visibility` and `MediaVisibility` are now the canonical enum end to end; Organization was added to the file/folder menus, bulk actions, Share tab and the Access column filter. The list Access column reuses the row-scope data already fetched for the Context column to say "Via N scopes" — zero extra queries — and says "Personal" (a setting) rather than "Only you" (a claim) when it does not know. Also: `AssociationCard` on scope pages swallowed its own click, so "2 attached" had no drill-in; the card body now opens `<AttachedItemsSheet>` with live-resolved titles, per-row links and detach.

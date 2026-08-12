@@ -24,4 +24,15 @@ describe("entityRegistry content-role resolution", () => {
     expect(consoleError).not.toHaveBeenCalled();
     consoleError.mockRestore();
   });
+
+  it.each([
+    ["web_brand", "/marketing/brands/resource-id"],
+    ["web_site", "/marketing/sites/resource-id"],
+    ["web_page", "/marketing/pages/resource-id"],
+    ["web_property", "/marketing/properties/resource-id"],
+    ["web_snapshot", "/marketing/snapshots/resource-id"],
+    ["web_screenshot", "/marketing/screenshots/resource-id"],
+  ] as const)("gives the %s access-tree node a real ID-only door", (token, href) => {
+    expect(getEntityInfo(token).hrefFor?.("resource-id")).toBe(href);
+  });
 });

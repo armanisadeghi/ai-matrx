@@ -145,10 +145,16 @@ export default function SandboxDetailPage() {
     setExecuting(true);
 
     try {
+      // Send the cwd the prompt is DISPLAYING, so the prompt is authoritative
+      // rather than a lagging mirror of the orchestrator's session cwd. Under
+      // normal typing this is a no-op (we always set `cwd` from `result.cwd`),
+      // but it is what makes the `working_directory` write target honest: the
+      // directory the user sees above the box is the one their next command
+      // actually runs in.
       const resp = await fetch(`/api/sandbox/${id}/exec`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ command: cmd, timeout: 60 }),
+        body: JSON.stringify({ command: cmd, timeout: 60, cwd }),
       });
 
       if (!resp.ok) {
@@ -409,6 +415,7 @@ export default function SandboxDetailPage() {
       sandbox_config: instance.config ?? undefined,
       sandbox_instance: instance,
       current_working_directory: cwd,
+      staged_command: commandInput || undefined,
       command_history: commandHistory,
       terminal_output: terminalHistory.length
         ? terminalHistory
@@ -423,10 +430,75 @@ export default function SandboxDetailPage() {
         : undefined,
     });
 
+  // Surface write handlers — see the `writeTargets` block in
+  // sandboxes.manifest.ts for why STAGING is the only thing offered here.
+  // Both handlers drive the SAME state the user's own typing drives
+  // (`setCommandInput` / `setCwd`); neither may touch `handleExec`, and there
+  // is no target that could. Fresh closures per call (getWriteHandlers
+  // contract) so the sandbox's live status is re-read at apply time.
+  const getSandboxWriteHandlers = () => ({
+    command_input: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "command_input expects a plain text string — the shell command itself, NOT JSON and NOT JSON-encoded. Send the command exactly as it would be typed (e.g. ls -la /home/agent); do not wrap it in an object, an array, or quotes, and do not escape it.",
+        );
+      const cmd = value.trim();
+      if (!cmd)
+        throw new Error(
+          "command_input expects a non-empty command. Pass the plain text command string, not an empty string.",
+        );
+      if (/[\r\n]/.test(cmd))
+        throw new Error(
+          "command_input expects a SINGLE-LINE plain text command — the terminal input is one line. Newlines are not accepted (and an escaped \\n in a JSON-encoded string is the usual cause of this: send raw text, not JSON). Join the steps with && or ; instead.",
+        );
+      if (cmd.length > 10000)
+        throw new Error(
+          `command_input expects at most 10000 characters (the exec API's limit); got ${cmd.length}.`,
+        );
+      if (!isActive)
+        throw new Error(
+          `This sandbox is ${effectiveStatus}, so the terminal input is disabled and a command cannot be staged. Start a running sandbox first.`,
+        );
+      setCommandInput(cmd);
+      setHistoryIndex(-1);
+      // Deliberately NOT focusing the input. This prompt is `autoFocus` and the
+      // terminal body re-focuses it on any click, and Enter RUNS — so focusing
+      // it here would leave the caret sitting in a live shell one reflexive
+      // keystroke from executing whatever the agent just wrote. Staging must
+      // cost the user a deliberate click to reach the gate.
+    },
+    working_directory: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          "working_directory expects a plain text absolute path string (e.g. /home/agent/project), NOT JSON and NOT JSON-encoded. Do not wrap it in an object or escape it.",
+        );
+      const next = value.trim();
+      if (!next.startsWith("/"))
+        throw new Error(
+          `working_directory expects an ABSOLUTE path beginning with "/" — plain text, not JSON. Got: ${JSON.stringify(next)}. Relative paths and ~ are not expanded here.`,
+        );
+      if (/[\r\n]/.test(next))
+        throw new Error(
+          "working_directory expects a single-line plain text path; newlines are not accepted (an escaped \\n means the value was JSON-encoded — send raw text).",
+        );
+      if (next.length > 4096)
+        throw new Error(
+          `working_directory expects at most 4096 characters; got ${next.length}.`,
+        );
+      if (!isActive)
+        throw new Error(
+          `This sandbox is ${effectiveStatus}, so the terminal is read-only and the working directory cannot be changed.`,
+        );
+      setCwd(next);
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/sandboxes"
       getScope={getSandboxScope}
+      isEditable
+      getWriteHandlers={getSandboxWriteHandlers}
     >
       <EntityModeHeader
         backHref="/sandbox"

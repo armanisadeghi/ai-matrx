@@ -1,8 +1,8 @@
-import { PluginsSection } from "@/features/agent-connections/components/sections/PluginsSection";
+import { AiWorkConversationsInbox } from "@/features/ai-work/components/AiWorkConversationsInbox";
 import { AiWorkHeader } from "@/features/ai-work/components/AiWorkHeader";
 
 export function generateMetadata() {
-  return { title: "Provider conversations" };
+  return { title: "Conversations" };
 }
 
 export default function WorkConversationsPage() {
@@ -10,7 +10,7 @@ export default function WorkConversationsPage() {
     <>
       <AiWorkHeader />
       <div className="flex h-full min-h-0 flex-col overflow-hidden pt-[var(--shell-header-h)]">
-        <PluginsSection showTaskAssociation />
+        <AiWorkConversationsInbox />
       </div>
     </>
   );

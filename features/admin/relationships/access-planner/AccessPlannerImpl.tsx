@@ -310,7 +310,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
   const [onlyProblems, setOnlyProblems] = useState(false);
   const [showPlumbing, setShowPlumbing] = useState(false);
   const [showPhysicalFks, setShowPhysicalFks] = useState(false);
-  const [showAssociations, setShowAssociations] = useState(true);
+  const [showAssociations, setShowAssociations] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
