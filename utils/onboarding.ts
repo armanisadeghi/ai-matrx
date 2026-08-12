@@ -8,12 +8,33 @@
 // future trigger) flip `onboarding_completed` to `true`. Absence of the key
 // therefore means "new" — which makes every existing and brand-new user a
 // new user with zero backfill required.
+//
+// 🚨 THE FUNNEL MAY ONLY FIRE ON `/dashboard` — Arman's ruling, 2026-08-12.
+// `/welcome` is the DEFAULT landing for someone arriving with no page in mind,
+// NOT an override of a real destination. A new user is the MOST important
+// person to deliver to what they asked for: they came to make meta titles or
+// try agent creation, and that intent is exactly what earned us the signup.
+// Dropping them on /welcome instead is the worst thing we can do.
+//
+//   no destination / the generic hub (`/dashboard`)  ->  /welcome
+//   any specific destination (`/agents/all`, `/tasks`, …)  ->  that page
+//
+// So: this funnel lives in EXACTLY ONE place — `app/(core)/dashboard/layout.tsx`
+// — because /dashboard is the generic hub and "send me to the hub" means "I have
+// no particular intent". **Never add a second call site**, never put it in the
+// root layout, the middleware, or an auth action: each of those sees users who
+// DO have a destination, and would silently eat it. The destination system
+// (`utils/auth/auth-destination.ts`) never routes through here at all.
 
 import type { User } from "@supabase/supabase-js";
 
 export const ONBOARDING_METADATA_KEY = "onboarding_completed" as const;
 
-/** Onboarding destination for new users (replaces /dashboard on first login). */
+/**
+ * Where a NEW user lands when they arrive with no particular destination.
+ * Reached only via the `/dashboard` funnel above — never by overriding a
+ * destination the user actually asked for.
+ */
 export const WELCOME_ROUTE = "/welcome";
 
 type MetadataCarrier =
