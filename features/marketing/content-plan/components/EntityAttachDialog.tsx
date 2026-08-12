@@ -29,7 +29,10 @@ import {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { attachNodeEntity } from "../data/associations";
+import { planKeys } from "../data/hooks";
 import { listPlanNodes } from "../data/service";
 import {
   ENTITY_ATTACHER_FIELD_NOTE,
@@ -53,23 +56,39 @@ interface StagedAttachment {
 export function EntityAttachDialog({
   siteId,
   entities,
+  rosterLoading = false,
+  rosterError = null,
   researchReport,
   statusSlugById,
   agents,
 }: {
   siteId: string;
   entities: PlanEntityRow[];
+  /** The roster read is still in flight — NOT the same as "there are none". */
+  rosterLoading?: boolean;
+  /** The roster read failed — NOT the same as "there are none". */
+  rosterError?: string | null;
   /** The site's linked research report, already resolved by the caller. */
   researchReport: () => Promise<string>;
   statusSlugById: Map<string, string>;
   agents: ReturnType<typeof useSetupAgents>;
 }) {
+  const queryClient = useQueryClient();
   const [staged, setStaged] = useState<StagedAttachment[] | null>(null);
   const [result, setResult] = useState<EntityAttachResult | null>(null);
   const [dropped, setDropped] = useState<string[]>([]);
   const [applying, setApplying] = useState(false);
+  /**
+   * Covers the THREE Supabase round-trips before the agent starts, during
+   * which `agents.attachBusy` is still false and the button looked idle — a
+   * second click there reaches the runner's in-flight guard and reports a
+   * failure to a user whose first run is quietly still going.
+   */
+  const [preparing, setPreparing] = useState(false);
+  const busy = preparing || agents.attachBusy;
 
   const run = async () => {
+    setPreparing(true);
     try {
       const report = await researchReport();
       if (!report) return;
@@ -118,10 +137,12 @@ export function EntityAttachDialog({
         });
       }
       setResult(outcome);
-      setDropped(misses);
+      setDropped([...misses, ...outcome.unusable]);
       setStaged(rows);
     } catch (error) {
       toast.error(`Entity attachment failed: ${extractErrorMessage(error)}`);
+    } finally {
+      setPreparing(false);
     }
   };
 
@@ -142,6 +163,15 @@ export function EntityAttachDialog({
         failures.push(`${row.route} → ${row.entityLabel}: ${extractErrorMessage(error)}`);
       }
     }
+    // The node panel reads edges from its own cache with a stale time — an
+    // applied attachment that is not invalidated shows up as "no author" on
+    // a page the write actually succeeded for.
+    const touched = new Set(staged.map((row) => row.nodeId));
+    await Promise.all(
+      Array.from(touched, (nodeId) =>
+        queryClient.invalidateQueries({ queryKey: planKeys.nodeEdges(nodeId) }),
+      ),
+    );
     setApplying(false);
     if (failures.length > 0) {
       toast.error(`Attached ${applied}; ${failures.length} failed — ${failures[0]}`);
@@ -155,21 +185,29 @@ export function EntityAttachDialog({
     setDropped([]);
   };
 
+  // "Still loading" and "the read failed" are not "you have no entities" —
+  // telling a user to add entities they already have is a lie about their data.
+  const disabledReason = (() => {
+    if (rosterLoading) return "Loading this site's entity roster…";
+    if (rosterError) return `Could not load the entity roster: ${rosterError}`;
+    if (entities.length === 0) return "Add entities to the roster first.";
+    return null;
+  })();
+
   return (
     <>
       <Button
         size="sm"
         variant="outline"
         className="h-7 text-xs"
-        disabled={agents.attachBusy || entities.length === 0}
+        disabled={busy || disabledReason !== null}
         title={
-          entities.length === 0
-            ? "Add entities to the roster first."
-            : "Assign these authors, reviewers, and sources to the pages they belong on."
+          disabledReason ??
+          "Assign these authors, reviewers, and sources to the pages they belong on."
         }
         onClick={() => void run()}
       >
-        {agents.attachBusy ? (
+        {busy ? (
           <Loader2 className="mr-1 h-3 w-3 animate-spin" />
         ) : (
           <Link2 className="mr-1 h-3 w-3" />

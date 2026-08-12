@@ -682,10 +682,15 @@ export function SetupView() {
   // the database. The draft is an edit buffer, never the record.
   const topics: Record<string, string[]> = (() => {
     const staged = (selected ? topicsByArchetype[selected.key] : undefined) ?? {};
-    if (!expanded) return staged;
+    // ONLY the committed shape may inherit from the plan. A different
+    // archetype whose family route happens to collide with a live hub would
+    // otherwise import that hub's topics as if the user had staged them.
+    if (!expanded || !selected || committed?.key !== selected.key) return staged;
     const merged: Record<string, string[]> = { ...staged };
     for (const family of expanded.families) {
-      if (merged[family.key]) continue;
+      // hasOwnProperty, not truthiness: a staged EMPTY array is the user
+      // deliberately clearing the list, and it must beat the recorded copy.
+      if (Object.hasOwn(merged, family.key)) continue;
       const hub = nodeRows.find((node) => node.route === family.route);
       if (!hub) continue;
       const recorded = readPlannedTopics(hub);
@@ -694,6 +699,12 @@ export function SetupView() {
     return merged;
   })();
 
+  /**
+   * `[]` means "cleared" and is a real staged value; `null` means "forget I
+   * staged anything", which lets the hub's recorded copy show through again.
+   * The clear button passes `[]` — passing `null` there made the button a
+   * silent no-op for any family already recorded on its hub.
+   */
   const setTopics = (familyKey: string, next: string[] | null) => {
     if (!selected) return;
     setTopicsByArchetype((current) => {
@@ -715,7 +726,12 @@ export function SetupView() {
     if (!siteId || !expanded) return;
     const family = expanded.families.find((item) => item.key === familyKey);
     const staged = topics[familyKey] ?? [];
-    if (!family || staged.length === 0) return;
+    if (!family) return;
+    // Empty staged list + a hub that HAS recorded topics = a deliberate
+    // erase, and it must reach the database. Empty on both sides is a no-op.
+    const hub = nodeRows.find((node) => node.route === family.route);
+    const recorded = hub ? readPlannedTopics(hub) : [];
+    if (staged.length === 0 && recorded.length === 0) return;
     setApplyingTopicsKey(familyKey);
     try {
       const result = await applyFamilyTopics({
@@ -736,7 +752,11 @@ export function SetupView() {
       } else if (result.failures.length > 0) {
         toast.error(`${family.label}: ${result.failures[0]}`);
       } else {
-        toast.success(`Recorded ${staged.length} topic(s) on ${family.route}.`);
+        toast.success(
+          staged.length === 0
+            ? `Cleared the recorded topics on ${family.route}.`
+            : `Recorded ${staged.length} topic(s) on ${family.route}.`,
+        );
         await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
       }
     } catch (error) {
@@ -931,10 +951,11 @@ export function SetupView() {
           continue;
         }
         if (!item.primaryKeyword) {
-          // Navigational pages legitimately target nothing; anything else
-          // coming back keyword-less is a real gap the user should see.
+          // Navigational pages legitimately target nothing. An UNCLASSIFIED
+          // page is reported — silently treating it as navigational would
+          // hide a real gap behind a value the strategist never sent.
           if (item.pageRole !== "navigational") {
-            unmatched.push(`${item.route} got no keyword`);
+            unmatched.push(`${item.route}: no keyword proposed`);
           }
           continue;
         }
@@ -947,8 +968,11 @@ export function SetupView() {
         // Already bound to exactly this keyword — a no-op, not a loss.
         if (node.primary_keyword_id === keywordId) continue;
         if (usedKeywordIds.has(keywordId)) {
+          // "Taken" includes keywords already bound on pages this run did not
+          // touch, so a legitimate swap can land here depending on order. Say
+          // what happened, not why — asserting a conflict would be guessing.
           unmatched.push(
-            `${item.route}: "${item.primaryKeyword}" is already targeted by another page`,
+            `${item.route}: "${item.primaryKeyword}" is already assigned elsewhere in this plan, so it was left alone`,
           );
           continue;
         }
@@ -965,7 +989,7 @@ export function SetupView() {
           keywordId,
           keywordPhrase: item.primaryKeyword,
           reason: item.reason,
-          pageRole: item.pageRole,
+          pageRole: item.pageRole ?? "unclassified",
           previousPhrase: node.primary_keyword_id
             ? (phraseById.get(node.primary_keyword_id) ?? null)
             : null,
@@ -1547,7 +1571,7 @@ export function SetupView() {
               onAiNames={(familyKey) => void handleNameFamily(familyKey)}
               topics={topics}
               onAiTopics={(familyKey) => void handleTopicsForFamily(familyKey)}
-              onClearTopics={(familyKey) => setTopics(familyKey, null)}
+              onClearTopics={(familyKey) => setTopics(familyKey, [])}
               onApplyTopics={(familyKey) => void handleApplyTopics(familyKey)}
               onPromoteTopics={(familyKey) => void handlePromoteTopics(familyKey)}
               applyingTopicsKey={applyingTopicsKey}

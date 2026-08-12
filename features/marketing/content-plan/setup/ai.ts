@@ -168,7 +168,13 @@ export type PageRole = "money" | "supporting" | "navigational";
 
 export interface KeywordAssignment {
   route: string;
-  pageRole: PageRole;
+  /**
+   * null when the strategist did not classify the page. NOT defaulted — a
+   * default is indistinguishable from a real answer, and the keyword step
+   * reports "this page got no keyword" only for pages it knows are not
+   * navigational.
+   */
+  pageRole: PageRole | null;
   /** null for navigational pages with no keyword target. */
   primaryKeyword: string | null;
   /** true when the phrase is NOT in the site's pool — cannot be bound as a FK. */
@@ -229,6 +235,8 @@ export interface EntityAttachResult {
     entityType: CuratedEntityType;
     whyNeeded: string;
   }>;
+  /** Rows that could not be read as an attachment — reported, never thrown. */
+  unusable: string[];
   notes: string;
 }
 
@@ -343,24 +351,42 @@ export function coerceEntityAttach(value: unknown): EntityAttachResult {
   if (!Array.isArray(root.attachments)) {
     throw new Error("Entity Attacher output has no attachments array");
   }
+  // ONE malformed item must not discard a paid run over the other thirty. The
+  // agent's own prompt tells it to emit a row for EVERY page "even if all
+  // roles are null" — under this flat schema the only legal way to obey that
+  // is an empty entity_label, so an unusable row is expected traffic, not a
+  // protocol violation. Unusable rows are counted and reported, never thrown.
   const attachments: EntityAttachment[] = [];
+  const unusable: string[] = [];
   for (const item of root.attachments) {
-    const row = asRecord(item, "attachments item");
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      unusable.push("an attachment was not an object");
+      continue;
+    }
+    const row = item as Record<string, unknown>;
     const role = PLAN_NODE_ENTITY_ROLES.find((candidate) => candidate === row.role);
+    const route = typeof row.route === "string" ? row.route.trim() : "";
+    const entityLabel =
+      typeof row.entity_label === "string" ? row.entity_label.trim() : "";
     if (!role) {
-      throw new Error(
-        `Entity Attacher returned unknown role ${JSON.stringify(row.role)}`,
+      unusable.push(
+        `${route || "an attachment"} — unusable role ${JSON.stringify(row.role)}`,
       );
+      continue;
     }
-    if (typeof row.route !== "string" || !row.route.trim()) {
-      throw new Error("Entity Attacher returned an attachment with no route");
+    if (!route) {
+      unusable.push(`${entityLabel || "an attachment"} — no route`);
+      continue;
     }
-    if (typeof row.entity_label !== "string" || !row.entity_label.trim()) {
-      throw new Error("Entity Attacher returned an attachment with no entity_label");
+    if (!entityLabel) {
+      // Almost always the "every page must appear" row for a page the agent
+      // decided needs nothing — informational, not a failure.
+      unusable.push(`${route} — no entity proposed`);
+      continue;
     }
     attachments.push({
-      route: row.route.trim(),
-      entityLabel: row.entity_label.trim(),
+      route,
+      entityLabel,
       role,
       reason: typeof row.reason === "string" ? row.reason : "",
     });
@@ -383,6 +409,7 @@ export function coerceEntityAttach(value: unknown): EntityAttachResult {
   return {
     attachments,
     missing,
+    unusable,
     notes: typeof root.notes === "string" ? root.notes : "",
   };
 }
@@ -468,7 +495,7 @@ export function coerceKeywordBind(value: unknown): KeywordBindResult {
     if (typeof row.route !== "string" || !row.route.trim()) {
       throw new Error("Keyword Strategist returned an assignment with no route");
     }
-    const pageRole = PAGE_ROLES.find((role) => role === row.page_role) ?? "supporting";
+    const pageRole = PAGE_ROLES.find((role) => role === row.page_role) ?? null;
     const links: KeywordAssignment["internalLinks"] = [];
     if (Array.isArray(row.internal_links)) {
       for (const link of row.internal_links) {

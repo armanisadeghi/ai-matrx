@@ -226,6 +226,10 @@ export function EntityManager({
             <EntityAttachDialog
               siteId={siteId}
               entities={rows}
+              rosterLoading={entities.isLoading}
+              rosterError={
+                entities.isError ? extractErrorMessage(entities.error) : null
+              }
               statusSlugById={statusSlugById}
               agents={agents}
               researchReport={async () => (await resolveResearchReport()).report}
