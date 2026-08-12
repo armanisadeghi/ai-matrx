@@ -28,10 +28,11 @@ describe("progressDataRenderBlock", () => {
     expect(block).toMatchObject({
       blockId: "progress_content_ir_12",
       blockIndex: 3,
-      type: "code",
+      type: "structured_info",
       status: "complete",
-      data: { language: "json" },
     });
+    expect(block?.data?.content).toContain("**Gemini answered**");
+    expect(block?.data?.content).toContain("* **Citations:** 7");
     expect(readEnvelope(block?.metadata)?.root).toMatchObject({
       kind: "structured_info",
       kindState: "resolved",
