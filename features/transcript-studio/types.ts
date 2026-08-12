@@ -35,12 +35,21 @@ export type SessionSource = "studio" | "cleanup" | (string & {});
 
 export type RawSegmentSource = "chunk" | "fallback" | "imported" | "manual";
 
-export type ConceptKind =
-  | "theme"
-  | "key_idea"
-  | "entity"
-  | "question"
-  | "other";
+/**
+ * The concept vocabulary Column 3 extracts. Single source of truth: the
+ * concept-pass parser validates against it, the per-row editor renders its
+ * options from it, and the surface manifest interpolates it into the
+ * `concept_item` write-target contract — so the enum is never re-typed.
+ */
+export const CONCEPT_KINDS = [
+  "theme",
+  "key_idea",
+  "entity",
+  "question",
+  "other",
+] as const;
+
+export type ConceptKind = (typeof CONCEPT_KINDS)[number];
 
 // ── DB row shapes (camelCase domain types) ────────────────────────────
 
