@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-11
+updated: 2026-08-12
 repos: [matrx-frontend]
 vision: [features/window-panels/FEATURE.md]
 ---
@@ -321,8 +321,10 @@ streaming while the user works elsewhere.
 
 **Verified compliant, do not touch:** `CompetitorAutopsyWorkspace.tsx:322`
 (gated to `status === "running"`, sits below the launcher card and above only
-historical output) and `AiVisibilityWorkspace.tsx:599` (inside the run section,
-with a real empty-state). `KeywordResearchTab.tsx:267` renders at the bottom.
+historical output) and `KeywordResearchTab.tsx:267` (renders at the bottom).
+AI Visibility was reclassified after live use exposed its page-shifting block and two
+stacked spinners: `useAiVisibility` now opens one stable `LiveRunWindow` before launch,
+and `AiVisibilityWorkspace` has no inline run block or loading icon.
 
 **Still open here, found while verifying:** `useKeywordResearch`'s unmount
 effect calls `removeRequest(adoptedRequestId)`, so a HOST REMOUNT (not just
