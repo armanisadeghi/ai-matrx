@@ -10,6 +10,8 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Open
 
+- [ ] P3 | see `.matrx/patrol-reports/mobile-friendly-ui.md` | first/full skill-level scan found 61 code-bearing `vh` unit lines across 52 runtime source files; the narrow `h-screen|100vh` registry grep misses them, and arbitrary height semantics remain Tier R until each surface is reviewed and the registry names an exact mechanical transformation | 2026-08-12
+- [ ] P3 | `components/ui/drawer.tsx:87` | canonical `DrawerContent` is fixed to the mobile viewport bottom without default `pb-safe`; 105 call sites rely on this primitive and only 28 spell safe-area padding locally; mechanical one-file fix is blocked until the required local mobile+desktop visual certifier can run | 2026-08-12
 - [ ] P6 | see `.matrx/patrol-reports/no-emojis-in-ui.md` | first/full Tier R inventory verified 226 user-visible emoji/symbol lines in 94 files (53 production/shared, 41 admin/demo/sample); 0 fixed until a P6 skill defines the approved Lucide/delete transformation | 2026-08-12
 - [ ] P5 | see `.matrx/patrol-reports/copy-everywhere.md` | first/full Tier R inventory verified 101 missing-adoption surfaces: 28 `MatrxDataTable` instances, 10 raw-JSON displays, and 63 native-table instances; 0 fixed until a patrol-specific detector/fix recipe exists | 2026-08-12
 - [ ] P10 | `features/tasks/hooks/useTaskManager.ts:150` | current uncommitted `TEMP-RT-DEBUG` block adds an unguarded `window as unknown as { __rtTaskTest?: unknown }` cast; remove through an honest debug-harness type or keep as open debt, never suppress | 2026-08-11
