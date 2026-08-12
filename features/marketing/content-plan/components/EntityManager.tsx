@@ -45,6 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
+import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { createContentPlanEntitiesScope } from "@/features/surfaces/manifests/content-plan-entities.manifest";
 import {
   SurfaceRuntimeProvider,
@@ -73,6 +74,10 @@ import {
   type PlanEntityType,
 } from "../types";
 import { CategorySelect } from "@/features/scopes/components/CategorySelect";
+import {
+  parseOpenEntityEditorWrite,
+  parseSourceTypeIdWrite,
+} from "../lib/entity-write-targets";
 
 const SURFACE_NAME = "matrx-user/content-plan-entities";
 
@@ -152,6 +157,13 @@ export function EntityManager({
   const update = useUpdatePlanEntity(siteId);
   const queryClient = useQueryClient();
   const agents = useSetupAgents(siteId);
+  // The SAME dimension the editor's CategorySelect renders from, read here so
+  // the surface can publish the picker's vocabulary (`source_type_options`)
+  // and the draft handler can refuse an id it does not offer. The hook is
+  // idempotent per dimension — this is the cached read, not a second fetch.
+  const sourceTypes = useCategories({
+    dimension: CATEGORY_DIMENSIONS.planSourceType,
+  });
 
   /** The open editor's staged draft; `null` means no editor is open. */
   const [draft, setDraft] = useState<EntityDraft | null>(null);
@@ -378,6 +390,13 @@ export function EntityManager({
           : undefined,
       entity_counts_by_type:
         entities.data !== undefined ? countsByType : undefined,
+      source_type_options:
+        sourceTypes.categories.length > 0
+          ? sourceTypes.categories.map((category) => ({
+              id: category.id,
+              name: category.name,
+            }))
+          : undefined,
       entity_editor_draft: draft
         ? {
             mode: draft.entityId ? "edit" : "new",
@@ -394,6 +413,18 @@ export function EntityManager({
   // provider prop) so the handlers below always close over THIS render's
   // draft and roster — see useSurfaceWriteHandlers' ref indirection.
   useSurfaceWriteHandlers(SURFACE_NAME, {
+    // `entity_draft` needs an editor open, and until now only the user could
+    // open one — an agent that spotted a bad label had nowhere to put the fix.
+    // Opening is pure UI (it seeds the staging buffer from the row; nothing is
+    // written), which is why it is the one `auto` target here.
+    open_entity_editor: (value: unknown) => {
+      const id = parseOpenEntityEditorWrite(
+        value,
+        rows.map((entity) => entity.id),
+      );
+      openEditor(id ? (rows.find((entity) => entity.id === id) ?? null) : null);
+    },
+
     entity_draft: (value: unknown) => {
       const obj = asRecord(value, "entity_draft");
       // The entities view can be mounted with no editor open — and an agent
@@ -411,9 +442,16 @@ export function EntityManager({
       if (obj.entity_type !== undefined) {
         patch.entityType = requireEntityType(obj.entity_type, "entity_draft");
       }
+      if (obj.source_type_id !== undefined) {
+        patch.sourceTypeId = parseSourceTypeIdWrite(
+          obj.source_type_id,
+          "entity_draft",
+          sourceTypes.categories.map((category) => category.id),
+        );
+      }
       if (Object.keys(patch).length === 0) {
         throw new Error(
-          "entity_draft: provide label and/or entity_type — source type and identity fields are not agent-writable.",
+          "entity_draft: provide at least one of label, entity_type, source_type_id — identity fields are not agent-writable.",
         );
       }
       patchDraft(patch);
@@ -870,7 +908,29 @@ function EntityEditorDialog({
         if (!next) onClose();
       }}
     >
-      <DialogContent className="max-w-sm">
+      <DialogContent
+        className="max-w-sm"
+        onInteractOutside={(event) => {
+          // A confirm layered ABOVE this dialog is not an "outside click".
+          // The surface-write ask (`ConfirmDialogHost`) portals its
+          // alertdialog as a sibling of this one, so without this guard
+          // pressing Apply dismissed the editor — which runs `onClose()` and
+          // DISCARDS the staged draft — while the agent was told `ok: true`.
+          // Any surface staging a draft into a modal dialog hits this.
+          const originalEvent = (
+            event as unknown as { detail?: { originalEvent?: Event } }
+          ).detail?.originalEvent;
+          const node = (originalEvent?.target ?? event.target) as
+            | HTMLElement
+            | null;
+          if (
+            typeof node?.closest === "function" &&
+            node.closest('[role="alertdialog"]')
+          ) {
+            event.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>
             {draft.entityId ? "Edit entity" : "New entity"}
