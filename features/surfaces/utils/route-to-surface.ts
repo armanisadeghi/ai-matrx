@@ -409,6 +409,15 @@ export function surfaceFromPathname(
     return "matrx-user/analysis-studio";
   }
 
+  // The flashcard set EDITOR is `/education/flashcards/[setId]/edit` — a
+  // dynamic segment mid-path, so the `/education/flashcards` prefix below
+  // cannot tell it apart from the library list. It is its own surface (ONE set
+  // and its cards, and agent-WRITABLE), so it must not fall through to the
+  // list surface, whose vocabulary this page shares nothing with.
+  if (/^\/education\/flashcards\/[^/]+\/edit(?:\/|$)/.test(stripped)) {
+    return "matrx-user/education-flashcard-editor";
+  }
+
   const marketing = resolveMarketingSurface(stripped);
   if (marketing) return marketing;
 
