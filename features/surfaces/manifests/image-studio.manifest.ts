@@ -32,6 +32,7 @@ import {
   OUTPUT_FORMATS,
   OUTPUT_QUALITY_BOUNDS,
 } from "@/features/image-studio/constants/conversion-options";
+import { FILENAME_BASE_MAX_CHARS } from "@/features/image-studio/utils/slugify-filename";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -350,14 +351,28 @@ const surfaceSpecific: SurfaceValue[] = [
  *    An agent writing those would be fabricating results the backend never
  *    produced.
  *  - `is_processing` / `is_saving` / `is_describing` — status the page owns.
- *  - **Per-file names and AI metadata**, though they are genuinely authored
- *    content an agent drafts well. Two things block them TODAY, and both are
- *    fixable later: this surface already has a dedicated path for them (the
- *    `image-studio-describe-01` shortcut writes `updateImageMetadata`), and
- *    there is no read twin to close the evidence loop — `source_files` carries
- *    only `metadata_status`, and files are addressable solely by a
- *    browser-local name. A target that cannot be verified from a read value,
- *    on rows with no durable id, is not one worth declaring yet.
+ *  - **Per-file AI metadata** (alt text, caption, SEO keywords), though it is
+ *    genuinely authored content an agent drafts well: this surface already has
+ *    a dedicated path for it (the `image-studio-describe-01` shortcut writes
+ *    `updateImageMetadata`), and `source_files` reports only
+ *    `metadata_status`, so there is no read twin to close the evidence loop.
+ *
+ * REVISED 2026-08-12 — per-file NAMES are now writable (`filename_base`).
+ * The 2026-08-11 pass grouped names with the AI metadata above and blocked
+ * both on "no read twin … addressable solely by a browser-local name". That
+ * held for the metadata but not for the name: `source_files` already carries
+ * BOTH `name` (the original upload filename) and `filename_base` per entry, so
+ * the evidence loop closes exactly the way every other target's does. The
+ * browser-local-id problem is real but is a HANDLER problem, and is solved
+ * there rather than by declining the target: the handler resolves whichever
+ * coordinate the agent actually saw — 1-based position, `name`, or current
+ * `filename_base` — back to the internal file id, and refuses a key that
+ * matches no image or more than one instead of guessing. Nor is it a duplicate
+ * of the describe shortcut: that is a PAID model call the user presses which
+ * writes name + alt + caption together, while this renames only, for free,
+ * under an ask dialog. It earns its place because the base becomes the folder
+ * AND every variant's slug, and the shell already nags the user about
+ * auto-derived names with a dedicated banner before it will Generate.
  *
  * Vocabulary and bounds are interpolated from
  * `features/image-studio/constants/conversion-options.ts` — the same module
@@ -405,6 +420,26 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "studio_settings",
     sortOrder: 365,
   },
+  {
+    name: "filename_base",
+    label: "Source filename base",
+    description: [
+      'Renames the filename base of one or more source images — the same inline rename field on each file card. The base is the slug every variant that image produces is named after ("hero-banner" → "hero-banner-og-image.webp") AND the per-image subfolder its variants are saved into, so it is worth getting right before Generate.',
+      'Value: an object keyed by WHICH image to rename, with the new base as the value, e.g. { "1": "autumn-market-stall", "IMG_4821.png": "rooftop-solar-array" }.',
+      'Read source_files first — a key may be the image\'s 1-based POSITION in that array ("1" for the first), its "name" (the original upload filename), or its current "filename_base". Whichever you use must match exactly one image; an ambiguous or unknown key is rejected by name.',
+      "PARTIAL map: images you leave out keep their current base. It can never add or remove an image.",
+      `Each new base is lower-cased and hyphenated on the way in (spaces and punctuation become "-"), must contain at least one letter or digit, must be ${FILENAME_BASE_MAX_CHARS} characters or fewer once hyphenated, and must NOT include a file extension or any "." — each variant gets its extension from the output format.`,
+      "Two images may not end up sharing a base, because their variants would overwrite each other on save. If ANY entry is invalid, ambiguous or collides, the whole map is refused and NOTHING is renamed.",
+      "Refused while a conversion or a save is already running — the base is baked into the variants and the folder in flight.",
+      "Staged only: the new names are used by the next Generate and by Save to library, both of which the user still presses.",
+    ].join(" "),
+    valueType: "object",
+    updatesValue: "source_files",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "studio_sources",
+    sortOrder: 305,
+  },
 ];
 
 export const IMAGE_STUDIO_SURFACE_NAME = "matrx-user/image-studio";
@@ -438,9 +473,13 @@ where they landed. Never invent file ids for unsaved studio files.
 
 You can also SET UP the conversion for the user: selected_presets for WHICH
 outputs get made (a full-list replace — read selected_preset_ids for what is
-ticked and available_presets for the ids that exist), and conversion_settings
-for HOW they are encoded (format, quality, transparent fill, fit, crop anchor).
-Both only stage the form. The user presses Generate, because Generate discards
+ticked and available_presets for the ids that exist), conversion_settings
+for HOW they are encoded (format, quality, transparent fill, fit, crop anchor),
+and filename_base for what the outputs are CALLED (a partial map keyed by an
+image's position, name or current base — the base becomes the subfolder and
+every variant's slug, so a batch still carrying auto-derived names like
+"img-4821" is the single most useful thing you can fix here).
+All three only stage the form. The user presses Generate, because Generate discards
 whatever variants are already in the session and the page deliberately asks
 them to name their files first. Saving to their library and downloading stay
 theirs too.
