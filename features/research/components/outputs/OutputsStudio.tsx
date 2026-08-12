@@ -1271,10 +1271,15 @@ function SlidesOutputCard({
 // asset replays through the SAME path (`KindInstanceRender`), so a reload shows
 // the identical component the live run did.
 //
-// KNOWN GAP (FOUND_DEFECTS D165): the execution system carries no
-// `context_anchor`, so the research-topic anchor the old one-shot `useSlotRunner`
-// call passed is not sent on this path. The report itself still travels in
-// `userInput`, so the agent sees the same material.
+// The research-topic anchor and the org survive the move: `HeadlessAgentJsonOptions`
+// carries `contextAnchor` / `organizationId` straight into the launcher (D165,
+// filed and closed 2026-08-11), so the server still reloads the topic's saved
+// scope exactly as the one-shot runner made it do.
+//
+// SAVING is broken platform-wide right now — FOUND_DEFECTS D167: every Outputs
+// Studio generator persists through `rs_topic_append_output`, whose `FOR UPDATE`
+// is denied by the RLS update policy, so the run completes and the save 400s.
+// Not this card's bug; this card just refuses to hide it.
 
 function SeoOutputCard({
   topicId,

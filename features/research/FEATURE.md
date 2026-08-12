@@ -334,11 +334,10 @@ find yourself writing code to add an output, something above is wrong.
   `SeoView` / `SeoField` / `SlugCopyButton` and the local `SeoPackage` interface
   are deleted. Agent instructions rewritten via `agent_author` (v3, `__kind` first,
   `title` second); the slot declares `output_kind="seo_package"` in aidream's
-  `client_slots.py`. **Cost of the migration, filed as D165:** the Redux execution
-  system carries no `context_anchor`, so the `research_topic` anchor the one-shot
-  runner passed is not sent on the live path — the report still travels in
-  `userInput`. Every remaining class-A migration in
-  `docs/handoffs/live-run-streaming-sweep.md` pays the same price until D165 lands.
+  `client_slots.py`. The `research_topic` anchor and the org survive the move:
+  `HeadlessAgentJsonOptions` carries `contextAnchor` / `organizationId` into the
+  launcher (D165, filed and closed the same day), so the server still reloads the
+  topic's saved scope.
 
 - 2026-08-10 — Per-topic agents page (W3) became a thin consumer of the canonical
   agent-slots primitives (`features/agents/slots/`): `compareContracts` /

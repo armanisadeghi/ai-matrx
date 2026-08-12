@@ -13,6 +13,40 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D167 — no research output can be SAVED: `rs_topic_append_output` is blocked by the RLS update policy (2026-08-11)
+
+**Every Outputs Studio generator is affected** — blog, slides, podcast, SEO —
+because they all persist through `public.rs_topic_append_output`. The generation
+itself works; only the save fails, so the user watches a full run complete and
+then loses it.
+
+Measured live 2026-08-11 as `admin@admin.com`
+(`87a6e699-3622-4869-8843-d0867456c0dd`) on two different topics
+(`ff609832-…`, `32a6aee9-…`, the latter already holding a saved asset from
+2026-06-19):
+
+- `select` on `research.rs_topic` returns the row (RLS SELECT allows it).
+- A direct `update` on the same row affects **0 rows, no error** — the RLS
+  UPDATE policy denies it.
+- The RPC (`migrations/research_canon_05_move_to_research_schema.sql:108`) is
+  plain `plpgsql`, NOT `security definer`, and starts with
+  `select … from research.rs_topic where id = p_topic_id for update`. `FOR
+  UPDATE` needs the UPDATE policy, so the row is invisible to it and the
+  function raises `rs_topic % not found` → PostgREST 400, code `P0001`.
+
+The topics are `visibility='internal'` in org `3e790542-fdaf-40b2-8bf3-658bf94fe67f`;
+the SELECT policy honours that and the UPDATE policy apparently does not, so read
+and write disagree about the same row.
+
+**Two things to decide, both Arman's** (access semantics, never an agent's call):
+whether an org-internal research topic should be writable by an org reader, and
+whether this RPC should become `security definer` with an explicit
+`iam.has_access` check instead of leaning on `FOR UPDATE`.
+
+Also: `rs_topic % not found` is an ACCESS error rendered raw to the user — a
+`<AccessGate>` case (`features/access-gate/FEATURE.md`). "Not found" is the one
+answer that is definitely wrong: the row exists and the user can see it.
+
 ### D170 — A live run whose payload is JSON or an XML wrapper shows an EMPTY window until it finishes (2026-08-11)
 
 Migrating a surface to the live posture only removes the spinner when the payload is
