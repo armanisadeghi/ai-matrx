@@ -451,51 +451,18 @@ export async function deleteTaskAttachment(
 }
 
 // ─── Labels (stored in settings JSONB) ───────────────────────────────────────
-
-export const TASK_LABEL_OPTIONS = [
-  {
-    value: "bug",
-    label: "Bug",
-    color: "bg-destructive/10 text-destructive",
-  },
-  {
-    value: "feature",
-    label: "Feature",
-    color: "bg-primary/10 text-primary",
-  },
-  {
-    value: "improvement",
-    label: "Improvement",
-    color: "bg-secondary/10 text-secondary",
-  },
-  {
-    value: "docs",
-    label: "Docs",
-    color: "bg-info/10 text-info",
-  },
-  {
-    value: "design",
-    label: "Design",
-    color: "bg-accent-2/10 text-accent-2",
-  },
-  {
-    value: "research",
-    label: "Research",
-    color: "bg-warning/10 text-warning",
-  },
-  {
-    value: "question",
-    label: "Question",
-    color: "bg-accent-3/10 text-accent-3",
-  },
-  {
-    value: "blocked",
-    label: "Blocked",
-    color: "bg-destructive/15 text-destructive",
-  },
-] as const;
-
-export type TaskLabel = (typeof TASK_LABEL_OPTIONS)[number]["value"];
+//
+// The vocabulary itself moved to `../constants/labels` — a module free of this
+// one's supabase / files-handler / comments graph — so surface manifests can
+// name it instead of re-typing the eight literals into agent-facing prose.
+// Re-exported from here because the label picker, the task editor and the
+// Quick Tasks panel's write handlers already import it from this path.
+export {
+  TASK_LABEL_OPTIONS,
+  TASK_LABELS,
+  type TaskLabel,
+} from "../constants/labels";
+import type { TaskLabel } from "../constants/labels";
 
 export async function updateTaskLabels(
   taskId: string,

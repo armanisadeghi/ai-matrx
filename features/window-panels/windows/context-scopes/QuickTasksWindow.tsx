@@ -13,6 +13,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import {
   QUICK_TASKS_SURFACE_NAME,
   createQuickTasksScope,
+  type QuickTasksTaskDraft,
   type QuickTasksVisibleTaskEntry,
 } from "@/features/surfaces/manifests/quick-tasks.manifest";
 import { useAppStore } from "@/lib/redux/hooks";
@@ -46,6 +47,9 @@ export default function QuickTasksWindow({
   // while the window is open, its scope out-depths (and therefore wins over)
   // the page's surface (deepest wins, by design).
   const store = useAppStore();
+  // Filled by TaskDetailsPanel while it is mounted; emitted as
+  // `selected_task_draft`.
+  const draftRef = React.useRef<QuickTasksTaskDraft | null>(null);
   const getScope = useCallback(() => {
     const s = store.getState();
     const selectedOrgId = selectQuickTasksSelectedOrgId(s);
@@ -103,15 +107,24 @@ export default function QuickTasksWindow({
             project_name: selected.projectName,
           }
         : undefined,
-      // Flat read twins for the panel_* write targets (the evidence loop).
-      // These report the task as SAVED — TaskDetailsPanel holds its unsaved
-      // field edits in local React state, which the store cannot see, so a
-      // staged value does NOT echo back here. The manifest says so.
+      // Flat read twins for the panel_* write targets. These report the task
+      // as SAVED — TaskDetailsPanel holds its unsaved field edits in local
+      // React state, which the store cannot see, so a staged value does NOT
+      // echo back here. `selected_task_draft` below is the one that does, and
+      // it is what closes the evidence loop for the panel_* targets.
       selected_task_title: selected ? selected.title : undefined,
       selected_task_description: selected ? selected.description : undefined,
       selected_task_priority: selected ? (selected.priority ?? "") : undefined,
       selected_task_due_date: selected ? selected.dueDate : undefined,
       selected_task_labels: selected ? selectedLabels : undefined,
+      // The panel's LIVE (unsaved) edit state, published by TaskDetailsPanel
+      // — it owns that state; this window only reads the ref. The id guard
+      // covers the frame between a selection change and the panel's next
+      // publish, and the panel nulls the ref when it unmounts.
+      selected_task_draft:
+        draftRef.current && draftRef.current.task_id === selectedTaskId
+          ? draftRef.current
+          : undefined,
     });
   }, [store]);
 
@@ -135,7 +148,7 @@ export default function QuickTasksWindow({
           onClose={onClose}
           overlayId="quickTasksWindow"
         >
-          <QuickTasksMain />
+          <QuickTasksMain surfaceDraftRef={draftRef} />
         </WindowPanel>
       </SurfaceRuntimeProvider>
     </QuickTasksWorkspaceProvider>
