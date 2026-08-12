@@ -93,6 +93,33 @@ plan CRUD through it.
   `components/PlanAiRunsView.tsx` + `hooks/usePlanAiRuns.ts`) lists every
   recorded run for the site — page briefs and deepens included — and opens any
   one in full. A per-page run opens the page it ran for.
+- **Step agents (`setup/ai.ts` — ONE runner, seven agents)** — every step of
+  building a plan has a real AI, all grounded in the RESEARCH system's final
+  report (the "Document", `research.rs_document.content`, picked by topic in
+  the `SetupAiBar` strip and recorded on the site as
+  `settings.content_plan.research_topic_id`):
+
+  | Step | Agent | Where it runs |
+  |---|---|---|
+  | Shape | Shape Planner `b600975c-…` | Setup — archetype + family counts + concept names |
+  | Names | Family Namer `7a16db8c-…` | Setup — the real pages of ONE family |
+  | Topics | Family Namer (same agent) | Setup — titles for a count-only family (blog/guides) |
+  | Keywords | Keyword Strategist `e063ded1-…` | Setup — whole-plan money/supporting/navigational + primary keyword |
+  | Audit | Plan Reviewer `2a7f0dc8-…` | Setup — semantic gap findings, each addable as a page |
+  | Roster | Entity Curator `c43e4497-…` | Entity manager — "Suggest from research" |
+  | Attachment | Entity Attacher `a1a7784c-…` | Entity manager — "Attach to pages" (bulk node→entity edges) |
+  | Brief | Brief Writer `711d29b5-…` | Node panel — "Draft brief", neighbour-aware |
+
+  All are platform agents (agx, via the AI Dream MCP) with json_schema output,
+  run HEADLESS through `launchAgentExecution` + JSON extraction (the
+  useGenerateQuiz pattern), one in-flight run at a time. **Every one of them
+  STAGES — the user commits.** A proposal that does not resolve to a real row
+  (a keyword outside the site's pool, an entity outside the roster, a route
+  outside the plan) is dropped and COUNTED in the UI, never applied and never
+  silently swallowed. Surface roles `site_shaper`, `entity_curator`,
+  `entity_attacher`, `brief_writer`, `plan_architect`, `eeat_curator` are
+  bound in both the manifests and `ui.ui_surface_agent_role` (12 live rows =
+  6 own manifest roles + inherited).
 - Plan↔CMS bridge (`setup/bridge.ts`, consumed by
   `setup/components/SetupBridgeSection.tsx`) — the OTHER sanctioned aidream
   calls: `POST /content-plan/sites/{id}/cms-reconcile | cms-align |
@@ -430,6 +457,26 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
   labels (`namesFromPlan` in `setup/components/SetupView.tsx`, adopting only
   children whose label round-trips to their slug), which is what makes
   re-opening Setup idempotent without a second source of truth.
+- **The three columns are a DESKTOP layout — mobile walks them as five
+  explicit steps.** Below `md` (`useIsMobile()`, the one shared hook) the
+  workbench recomposes into `setup/components/SetupStepper.tsx`: **1 Shape ·
+  2 Work order · 3 Checks · 4 Pages · 5 Make it real**, one step on screen at
+  a time, with a numbered rail that names the whole workflow and jumps to any
+  step. Stacking the three columns into one scroll (what shipped first) buried
+  the work order, the page list, the lint/keyword/review checks and the CMS
+  rungs under screens of shape cards — present in the DOM, unreachable in
+  practice. Rules: **steps, never Tabs** (`ios-mobile-first`); the stepper owns
+  the view's ONE scroll area (`pb-safe`); ALL Setup state lives in `SetupView`,
+  so moving between steps is pure navigation — nothing is remounted that holds
+  a draft, and the autosave is untouched; the checks and the "Make it real"
+  rungs, which nest inside the work-order column on desktop (`lintSlot` /
+  `bridgeSlot`), become steps 3 and 5 instead of being duplicated; the commit
+  bar pins to the bottom of the step (`SetupPreviewColumn stickyCommit`) so it
+  never sits behind up to 400 route rows. The desktop branch keeps its
+  responsive classes on purpose — `useIsMobile()` is false until the client
+  mounts, so it paints once at phone width and must degrade to a stack.
+  `SetupStepper` renders the view's semantic `<h1>`; desktop carries the same
+  title as `sr-only`.
 
 ### General
 
@@ -560,6 +607,84 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   them, so a two-line row cannot collapse to one when a run starts. Progress
   display only: dry-run gates, verbatim server errors, and the restart-agnostic
   fill-job hydration are untouched. Live-verified against datadestruction.com.
+- 2026-08-12 — Claude: **Site Setup is usable on a phone** (review-queue
+  `2ca8190e-…`, changes requested). The three-column workbench recomposes below
+  `md` into an explicit five-step sequence (`setup/components/SetupStepper.tsx`
+  — Shape · Work order · Checks · Pages · Make it real) instead of one endless
+  scroll whose first screens were entirely the shape chooser; the view gained a
+  real `<h1>` ("Site setup", visible in the step header on mobile, `sr-only` on
+  desktop); the commit bar pins to the bottom of the Pages step
+  (`SetupPreviewColumn stickyCommit`); the AI grounding bar's topic select and
+  Recommend button go full-width at 16px on phones; count steppers/inputs get
+  44px tap targets; two empty states stopped saying "on the left"; the lint
+  card's raw `text-emerald-600` became `text-success`. Composition only — no
+  Setup logic, persistence, agent wiring, or commit path was touched, and the
+  desktop layout is byte-equivalent.
+- 2026-08-12 — Claude (round 9): **the last unwired agent shipped, plus the
+  completeness sweep.** The **Content Plan Entity Attacher** (`a1a7784c-…`,
+  Arman's third agent) now runs from the entity manager's "Attach to pages"
+  button (`components/EntityAttachDialog.tsx`): it reads the plan, the roster,
+  and the research report, and stages node→entity edges (authored_by /
+  reviewed_by / cites / about) applied through the canonical
+  `attachNodeEntity` chokepoint. It may never invent an entity — a label that
+  does not resolve to a real `plan.entity` row and a route that does not
+  resolve to a real node are both DROPPED and counted, and the agent's
+  `missing_entities` render as roster gaps for the curator to fill. That
+  closes "entity attachment is still manual"; entity ATTACHMENT and entity
+  CREATION are now the same two-agent loop grounded in one report (resolved
+  once, in `resolveResearchReport`, so they cannot disagree about it).
+  Also fixed from an independent completeness sweep: `readPlannedTopics` was
+  write-only — Setup now re-derives a family's topics from the hub node's
+  `attributes.planned_topics` when the draft has none, so clearing the draft
+  (which a commit does) no longer makes recorded topics vanish from the UI;
+  the brief writer was handed a raw keyword UUID and now gets the PHRASE; the
+  keyword step's "dropped proposals" note had been silently lost in a rewrite
+  and now reports every reason a proposal was skipped; and three stale
+  manifest/doc claims ("no default agents bound yet", a superseded
+  `brief_writer` agent id, and the Setup-agents entry point listing two of
+  eight agents) were corrected against the live `ui.ui_surface_agent_role`
+  rows (12 now, with `entity_attacher` added in both manifest and DB).
+
+- 2026-07-30 — Claude (round 8): **adopted Arman's superseding agents; deleted
+  my duplicates from the wiring.** Three agents built outside this session are
+  strictly better than what I had, so the FE now points at THEM (a second
+  implementation of a job we already own is a defect, even when it works):
+  **Content Plan Keyword Strategist** (`e063ded1-…`) replaces my per-page
+  binder — whole-plan, top-down: it classifies every page money / supporting /
+  navigational, gives a primary + secondary cluster, names the money routes a
+  supporting page feeds, specifies the authority-passing internal links, and
+  emits cannibalization `warnings`. A `primary_is_new` phrase (not in the site
+  pool) CANNOT be bound — `primary_keyword_id` is a FK — so it is surfaced as
+  "add it in Search & Keywords", never silently dropped. **Content Plan Brief
+  Writer** (`711d29b5-…`) replaces mine — NEIGHBOUR-aware (parent / siblings /
+  children), so a sibling's subject lands in `must_not_cover` instead of being
+  written twice; it also emits `__kind: "page_brief"`, `angle`, `concerns` and
+  a suggested word count, which the panel surfaces on stage. The two agents I
+  had created for these jobs are now unreferenced. Remaining gap this closes
+  in the handoff: keyword strategy is no longer per-page-blind.
+
+- 2026-07-30 — Claude (round 7): **adversarial-review fixes on the keyword
+  binder / brief writer / promotion** (17-agent find+refute; 10 confirmed).
+  **The load-bearing one:** `primary_keyword_id` FKs to `seo.keyword`
+  GLOBALLY while the pool is this site's `site_keyword_value` subset, and the
+  hand picker searches the global plane — so resolving current keywords from
+  the pool alone rendered a deliberately-bound page to the agent as `-`
+  (unbound) and dropped the "(replaces …)" warning. Verified live: **100% of
+  bound `plan.node` rows hold a keyword outside their own site's pool**, so
+  every hand-picked keyword was in line to be silently overwritten. Current
+  phrases now resolve via `listKeywordLabels` (global) as well as the pool.
+  Also: `usedKeywordIds` is SEEDED from every keyword the plan already uses
+  and reserved before the no-op skip (two pages could otherwise land on one
+  query — the exact cannibalization the step prevents); one staged row per
+  node; pool loading/error states no longer render as "this site has no
+  keywords". Brief writer: an unmount guard (the panel is keyed by node id,
+  so switching nodes discarded the draft while still toasting success), the
+  busy flag now covers the two pre-agent fetches, `existing_brief` sends the
+  LIVE draft instead of the saved row, and Deepen is disabled while a draft
+  is in flight. Promotion: refuses loudly without a `planned` status (as the
+  commit path does), and slug-collapsed titles are reported as skipped
+  instead of counted as "already existed" (`slugify` never returns empty, so
+  that branch was dead).
 
 - 2026-08-11 — Claude: **a planned page can become a real page from the node
   panel.** New `lib/page-reality.ts` (pure verdict + ancestor chain + policy

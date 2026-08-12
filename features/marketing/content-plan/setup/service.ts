@@ -517,7 +517,11 @@ export async function applyFamilyTopics(args: {
   siteId: string;
   orders: FamilyTopicOrder[];
 }): Promise<TopicApplyResult> {
-  const orders = args.orders.filter((order) => order.topics.length > 0);
+  // An EMPTY topic list is a legitimate order: it erases the hub's recorded
+  // work order (`composeTopicAttributes` drops the key, `composeTopicBrief`
+  // removes the marker block). Filtering empties out here is what made
+  // "clear these topics" impossible to carry through to the database.
+  const orders = args.orders;
   if (orders.length === 0) return { applied: 0, missing: [], failures: [] };
 
   const liveNodes = await listPlanNodes(args.siteId);
