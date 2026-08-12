@@ -268,6 +268,13 @@ export function buildRagLibraryContextData(
     library_search_query: isLibrary ? searchQuery.trim() || undefined : undefined,
     library_status_filter:
       isLibrary && statusFilter !== "all" ? statusFilter : undefined,
+    // Read twin of the `library_filters` write target. Always emitted in the
+    // library view, including when nothing is filtered — an agent about to
+    // narrow the table needs to see the CURRENT framing, and an absent value
+    // reads as "unknown" rather than "unfiltered".
+    library_filters: isLibrary
+      ? { search_query: searchQuery.trim(), status_filter: statusFilter }
+      : undefined,
     library_total_matches: isLibrary ? totalMatches : undefined,
     library_visible_count: isLibrary ? documents.length : undefined,
     library_list_status: isLibrary ? listStatus : undefined,
@@ -296,6 +303,11 @@ export function buildRagLibraryContextData(
     catalog_visible_count: isLibrary ? undefined : shownCatalog.length,
     catalog_search_query: isLibrary ? undefined : catalogQuery.trim() || undefined,
     catalog_entitled_only: isLibrary ? undefined : catalogEntitledOnly || undefined,
+    // Read twin of the `catalog_filters` write target — same reasoning as
+    // `library_filters` above.
+    catalog_filters: isLibrary
+      ? undefined
+      : { search_query: catalogQuery.trim(), entitled_only: catalogEntitledOnly },
     catalog_entitled_count: isLibrary
       ? undefined
       : catalogItems.filter((c) => c.entitledVia != null).length,
