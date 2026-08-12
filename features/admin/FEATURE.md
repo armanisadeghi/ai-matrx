@@ -160,6 +160,21 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-08-12` — Claude: corrected the Email Users surface's `readinessNote`,
+  which claimed `writeTargets` had no DB mirror. It has had one since
+  2026-08-11: `ui.ui_surface_write_target` carries `email_draft` with every
+  column matching the manifest, including a byte-exact 1547-character
+  description, so aidream can advertise the target server-side. The two real
+  gaps (no `data-surface-value` anchors, read values un-audited) are kept. No
+  code changed — the target itself was re-verified a third time, on a newer
+  `main`, with four live Badass Agent runs: one ask dialog covers subject and
+  body together and renders the description verbatim, Apply preserves real
+  newlines, a recipients request is refused with no dialog raised, "Keep as is"
+  declines cleanly, and a forced two-line subject returns the handler's throw
+  verbatim with nothing staged. No email was sent at any point. A pending-work
+  claim inherited from an earlier entry is a claim, not a fact — this one cost
+  one query to disprove. See `features/surfaces/FEATURE.md` for the full entry.
+
 - `2026-08-12` — Claude: independently re-verified the Email Users
   `email_draft` write target and closed the docs gap it shipped with. No code
   changed — the 2026-08-10 design below was found already on `main` and kept
