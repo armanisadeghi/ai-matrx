@@ -36,6 +36,9 @@
 
 ## Change log
 
+- 2026-08-12 — Fixed the internal share action’s generic status probe: a
+  link-only `seo.collection_run` has no public-state column, so it now skips the
+  row query and relies on the canonical link-sharing capability.
 - 2026-08-12 — Added the public analyzer, canonical shared report renderer,
   social card, internal share action, alias-aware position display, and native
   share hook integration.

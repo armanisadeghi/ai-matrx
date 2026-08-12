@@ -12,6 +12,8 @@ import type {
 import { PublicBadge } from "../PermissionBadge";
 import { useToast } from "@/components/ui/use-toast";
 import { ShareLinkPanel } from "../ShareLinkPanel";
+import { Skeleton } from "@/components/ui/skeleton";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   getShareCapabilities,
   type ShareCapabilities,
@@ -49,16 +51,30 @@ export function PublicAccessTab({
 }: PublicAccessTabProps) {
   const [loading, setLoading] = useState(false);
   const [caps, setCaps] = useState<ShareCapabilities>({
-    supportsPublic: true,
+    supportsPublic: false,
     isLinkShareable: false,
+    publicState: null,
   });
+  const [capabilitiesLoading, setCapabilitiesLoading] = useState(true);
+  const [capabilitiesError, setCapabilitiesError] = useState<string | null>(
+    null,
+  );
   const { toast } = useToast();
 
   useEffect(() => {
     let active = true;
-    getShareCapabilities(resourceType).then((c) => {
-      if (active) setCaps(c);
-    });
+    setCapabilitiesLoading(true);
+    setCapabilitiesError(null);
+    getShareCapabilities(resourceType)
+      .then((c) => {
+        if (active) setCaps(c);
+      })
+      .catch((error: unknown) => {
+        if (active) setCapabilitiesError(extractErrorMessage(error));
+      })
+      .finally(() => {
+        if (active) setCapabilitiesLoading(false);
+      });
     return () => {
       active = false;
     };
@@ -96,82 +112,93 @@ export function PublicAccessTab({
 
   return (
     <div className="space-y-3">
-      {/* Anyone with the link — no-login token sharing (canonical) */}
-      <ShareLinkPanel
-        resourceType={resourceType}
-        resourceId={resourceId}
-        isOwner={isOwner}
-        enabled={caps.isLinkShareable}
-      />
-
-      {!caps.supportsPublic ? (
-        <div className="p-3 bg-muted/30 rounded-lg border flex items-center gap-2">
-          <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-          <p className="text-xs text-muted-foreground">
-            Public visibility isn&rsquo;t available for this item type. Use a
-            share link or invite specific people.
-          </p>
-        </div>
+      {capabilitiesLoading ? (
+        <Skeleton className="h-20 w-full" />
+      ) : capabilitiesError ? (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{capabilitiesError}</AlertDescription>
+        </Alert>
       ) : (
         <>
-          <div className="flex items-start justify-between gap-3 p-3 bg-muted/30 rounded-lg border">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                {isPublic ? (
-                  <>
-                    <Globe className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
-                    <h3 className="text-sm font-medium">Public — Anyone</h3>
-                    <PublicBadge variant="compact" />
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <h3 className="text-sm font-medium">Public Access</h3>
-                  </>
-                )}
-              </div>
+          {/* Anyone with the link — no-login token sharing (canonical) */}
+          <ShareLinkPanel
+            resourceType={resourceType}
+            resourceId={resourceId}
+            isOwner={isOwner}
+            enabled={caps.isLinkShareable}
+          />
+
+          {!caps.supportsPublic ? (
+            <div className="p-3 bg-muted/30 rounded-lg border flex items-center gap-2">
+              <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
               <p className="text-xs text-muted-foreground">
-                {isPublic
-                  ? "Anyone with the link can access this — no sign-in required"
-                  : "Enable to let anyone with the link access this resource"}
+                Public visibility isn&rsquo;t available for this item type. Use
+                a share link or invite specific people.
               </p>
             </div>
+          ) : (
+            <>
+              <div className="flex items-start justify-between gap-3 p-3 bg-muted/30 rounded-lg border">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    {isPublic ? (
+                      <>
+                        <Globe className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                        <h3 className="text-sm font-medium">Public — Anyone</h3>
+                        <PublicBadge variant="compact" />
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <h3 className="text-sm font-medium">Public Access</h3>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {isPublic
+                      ? "Anyone with the link can access this — no sign-in required"
+                      : "Enable to let anyone with the link access this resource"}
+                  </p>
+                </div>
 
-            {isOwner ? (
-              <Switch
-                checked={isPublic}
-                onCheckedChange={handleToggle}
-                disabled={loading}
-                className="flex-shrink-0"
-              />
-            ) : isPublic ? (
-              <PublicBadge variant="compact" />
-            ) : null}
-          </div>
-
-          {isPublic && (
-            <Alert className="border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 py-2">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              <AlertDescription className="text-amber-800 dark:text-amber-200 text-xs">
-                <strong>Public:</strong> Anyone with the link can access this{" "}
-                {resourceType}. No sign-in required.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {!isPublic && (
-            <div className="p-4 text-center space-y-2 bg-muted/30 rounded-lg border">
-              <Lock className="w-10 h-10 mx-auto text-muted-foreground opacity-20" />
-              <div>
-                <h4 className="text-sm font-medium mb-0.5">
-                  Resource is Private
-                </h4>
-                <p className="text-xs text-muted-foreground">
-                  Share with specific users or organizations, or make it public
-                  for open access
-                </p>
+                {isOwner ? (
+                  <Switch
+                    checked={isPublic}
+                    onCheckedChange={handleToggle}
+                    disabled={loading}
+                    className="flex-shrink-0"
+                  />
+                ) : isPublic ? (
+                  <PublicBadge variant="compact" />
+                ) : null}
               </div>
-            </div>
+
+              {isPublic && (
+                <Alert className="border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 py-2">
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  <AlertDescription className="text-amber-800 dark:text-amber-200 text-xs">
+                    <strong>Public:</strong> Anyone with the link can access
+                    this {resourceType}. No sign-in required.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {!isPublic && (
+                <div className="p-4 text-center space-y-2 bg-muted/30 rounded-lg border">
+                  <Lock className="w-10 h-10 mx-auto text-muted-foreground opacity-20" />
+                  <div>
+                    <h4 className="text-sm font-medium mb-0.5">
+                      Resource is Private
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Share with specific users or organizations, or make it
+                      public for open access
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </>
       )}

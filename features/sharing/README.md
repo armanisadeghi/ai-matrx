@@ -12,6 +12,7 @@ Database Layer (RLS)                    Service Layer                       UI L
 permissions table                       utils/permissions/service.ts        features/sharing/components/
 has_permission(type, id, level)         utils/permissions/hooks.ts          ShareButton, ShareModal
 is_resource_owner(type, id)             utils/permissions/types.ts          PermissionBadge, PermissionsList
+get_share_capabilities(type)                                                PublicAccessTab
 share_resource_with_user()                                                  PublicAccessTab, etc.
 get_resource_permissions()
 ```
@@ -30,14 +31,17 @@ Drop a `ShareButton` or `ShareModal` anywhere the resource owner can manage shar
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 
 <ShareButton
-  resourceType="canvas_items"   // Must match a ResourceType
+  resourceType="canvas_items" // Must match a ResourceType
   resourceId={canvas.id}
   resourceName={canvas.title}
   isOwner={isCurrentUserOwner}
-/>
+/>;
 ```
 
-This renders a button showing sharing status (Private/Shared/Public) that opens the full `ShareModal` with tabs for Users, Organizations, and Public access.
+This opens the full `ShareModal` with tabs for Users, Organizations, and Public
+access. `showStatus={false}` skips the eager public-state read. When status is
+shown, the capability RPC names the verified enum/boolean column; a link-only
+type performs no row query.
 
 For more control, use `ShareModal` directly:
 
@@ -51,7 +55,7 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
   resourceId={table.id}
   resourceName={table.name}
   isOwner={isOwner}
-/>
+/>;
 ```
 
 ### Step 2 -- Show Shared Items in List Pages
@@ -94,17 +98,17 @@ Then fetch in your server component:
 ```tsx
 // page.tsx (Server Component)
 const [ownedResult, sharedResult] = await Promise.all([
-  supabase.from('canvas_items').select('*').eq('user_id', user.id),
-  supabase.rpc('get_canvases_shared_with_me'),
+  supabase.from("canvas_items").select("*").eq("user_id", user.id),
+  supabase.rpc("get_canvases_shared_with_me"),
 ]);
 ```
 
 #### Pattern B: Client-side hook (simpler, fewer items)
 
 ```tsx
-import { useSharedWithMe } from '@/utils/permissions/hooks';
+import { useSharedWithMe } from "@/utils/permissions/hooks";
 
-const { permissions, loading } = useSharedWithMe('canvas_items');
+const { permissions, loading } = useSharedWithMe("canvas_items");
 // permissions[].resourceId gives you the IDs to fetch
 ```
 
@@ -113,23 +117,37 @@ const { permissions, loading } = useSharedWithMe('canvas_items');
 Follow the established pattern -- a collapsible section below the user's own items:
 
 ```tsx
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import { Users, ChevronDown, ChevronRight } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
+import { Users, ChevronDown, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
-{sharedItems.length > 0 && (
-  <Collapsible open={isSharedOpen} onOpenChange={setIsSharedOpen} className="mt-8">
-    <CollapsibleTrigger className="flex items-center gap-2 w-full group mb-4">
-      {isSharedOpen ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
-      <Users className="w-5 h-5 text-secondary" />
-      <h2 className="text-lg font-semibold">Shared with Me</h2>
-      <Badge variant="secondary">{sharedItems.length}</Badge>
-    </CollapsibleTrigger>
-    <CollapsibleContent>
-      {/* Render shared items with SharedItemCard or similar */}
-    </CollapsibleContent>
-  </Collapsible>
-)}
+{
+  sharedItems.length > 0 && (
+    <Collapsible
+      open={isSharedOpen}
+      onOpenChange={setIsSharedOpen}
+      className="mt-8"
+    >
+      <CollapsibleTrigger className="flex items-center gap-2 w-full group mb-4">
+        {isSharedOpen ? (
+          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        )}
+        <Users className="w-5 h-5 text-secondary" />
+        <h2 className="text-lg font-semibold">Shared with Me</h2>
+        <Badge variant="secondary">{sharedItems.length}</Badge>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        {/* Render shared items with SharedItemCard or similar */}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
 ```
 
 ### Step 3 -- Handle Access on Detail/Edit Pages
@@ -173,10 +191,10 @@ $$;
 #### Option B: Client-side hooks
 
 ```tsx
-import { useIsOwner, useCanEdit, useCanAdmin } from '@/utils/permissions/hooks';
+import { useIsOwner, useCanEdit, useCanAdmin } from "@/utils/permissions/hooks";
 
-const { isOwner, loading: ownerLoading } = useIsOwner('canvas_items', canvasId);
-const { canEdit, loading: editLoading } = useCanEdit('canvas_items', canvasId);
+const { isOwner, loading: ownerLoading } = useIsOwner("canvas_items", canvasId);
+const { canEdit, loading: editLoading } = useCanEdit("canvas_items", canvasId);
 ```
 
 #### Adapt the UI based on access
@@ -185,7 +203,7 @@ const { canEdit, loading: editLoading } = useCanEdit('canvas_items', canvasId);
 // Define an AccessInfo type for your feature
 interface AccessInfo {
   isOwner: boolean;
-  permissionLevel: 'viewer' | 'editor' | 'admin' | null;
+  permissionLevel: "viewer" | "editor" | "admin" | null;
   ownerEmail: string | null;
   canEdit: boolean;
   canDelete: boolean;
@@ -195,17 +213,22 @@ interface AccessInfo {
 const isShared = !accessInfo.isOwner && accessInfo.permissionLevel !== null;
 
 // Show a banner for shared resources
-{isShared && (
-  <SharedBanner ownerEmail={accessInfo.ownerEmail} permissionLevel={accessInfo.permissionLevel} />
-)}
+{
+  isShared && (
+    <SharedBanner
+      ownerEmail={accessInfo.ownerEmail}
+      permissionLevel={accessInfo.permissionLevel}
+    />
+  );
+}
 
 // Disable editing for viewers
-<Editor readOnly={!accessInfo.canEdit} />
+<Editor readOnly={!accessInfo.canEdit} />;
 
 // On save: warn shared users, offer "Save as Copy"
 const handleSave = () => {
   if (isShared && !hasAcknowledged) {
-    setShowWarningModal(true);  // "Edit Original" vs "Save as My Copy"
+    setShowWarningModal(true); // "Edit Original" vs "Save as My Copy"
     return;
   }
   // ...proceed with save
@@ -257,22 +280,22 @@ The list below is **derived from the registry** — do not edit it by hand. Run
 `pnpm tsx scripts/regen-shareable-registry-snapshot.ts` and copy the snapshot
 into the table when the set changes.
 
-| ResourceType | Table | Label | Use Case |
-|---|---|---|---|
-| `agent` | agx_agent | Agent | AI agents |
-| `prompt` | prompts | Prompt | AI prompt templates |
-| `note` | notes | Note | User notes |
-| `task` | ctx_tasks | Task | Project tasks |
-| `cx_conversation` | cx_conversation | Conversation | AI chat conversations |
-| `canvas_items` | canvas_items | Canvas | Creative canvases |
-| `user_tables` | user_tables | Table | Custom data tables |
-| `user_lists` | user_lists | List | Custom lists |
-| `transcripts` | transcripts | Transcript | Audio/video transcripts |
-| `quiz_sessions` | quiz_sessions | Quiz | Quiz sessions |
-| `sandbox_instances` | sandbox_instances | Sandbox | Code sandboxes |
-| `user_files` | user_files | File | Uploaded files |
-| `prompt_actions` | prompt_actions | Action | Prompt actions |
-| `flashcard_data` | flashcard_data | Flashcard | Individual flashcards |
+| ResourceType        | Table             | Label        | Use Case                |
+| ------------------- | ----------------- | ------------ | ----------------------- |
+| `agent`             | agx_agent         | Agent        | AI agents               |
+| `prompt`            | prompts           | Prompt       | AI prompt templates     |
+| `note`              | notes             | Note         | User notes              |
+| `task`              | ctx_tasks         | Task         | Project tasks           |
+| `cx_conversation`   | cx_conversation   | Conversation | AI chat conversations   |
+| `canvas_items`      | canvas_items      | Canvas       | Creative canvases       |
+| `user_tables`       | user_tables       | Table        | Custom data tables      |
+| `user_lists`        | user_lists        | List         | Custom lists            |
+| `transcripts`       | transcripts       | Transcript   | Audio/video transcripts |
+| `quiz_sessions`     | quiz_sessions     | Quiz         | Quiz sessions           |
+| `sandbox_instances` | sandbox_instances | Sandbox      | Code sandboxes          |
+| `user_files`        | user_files        | File         | Uploaded files          |
+| `prompt_actions`    | prompt_actions    | Action       | Prompt actions          |
+| `flashcard_data`    | flashcard_data    | Flashcard    | Individual flashcards   |
 
 ### To add a new resource type
 
@@ -299,65 +322,80 @@ That's it. No RPC edits, no `getTableName()`, no `ShareModal.getShareUrl()`, no 
 
 ### ShareButton Props
 
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `resourceType` | `ResourceType` | required | The resource type identifier |
-| `resourceId` | `string` | required | UUID of the resource |
-| `resourceName` | `string` | required | Display name (shown in modal header) |
-| `isOwner` | `boolean` | required | Whether current user owns the resource |
-| `variant` | `'default' \| 'outline' \| 'ghost'` | `'outline'` | Button style variant |
-| `size` | `'default' \| 'sm' \| 'lg' \| 'icon'` | `'default'` | Button size |
-| `showStatus` | `boolean` | `true` | Show Private/Shared/Public label |
+| Prop           | Type                                  | Default     | Description                                                                        |
+| -------------- | ------------------------------------- | ----------- | ---------------------------------------------------------------------------------- |
+| `resourceType` | `ResourceType`                        | required    | The resource type identifier                                                       |
+| `resourceId`   | `string`                              | required    | UUID of the resource                                                               |
+| `resourceName` | `string`                              | required    | Display name (shown in modal header)                                               |
+| `isOwner`      | `boolean`                             | omitted     | Authoritative ownership override; normally omit it so the modal resolves ownership |
+| `variant`      | `'default' \| 'outline' \| 'ghost'`   | `'outline'` | Button style variant                                                               |
+| `size`         | `'default' \| 'sm' \| 'lg' \| 'icon'` | `'default'` | Button size                                                                        |
+| `showStatus`   | `boolean`                             | `true`      | Show the public-state label; false performs no eager status query                  |
 
 ### ShareModal Props
 
-| Prop | Type | Description |
-|---|---|---|
-| `isOpen` | `boolean` | Controls modal visibility |
-| `onClose` | `() => void` | Called when modal should close |
-| `resourceType` | `ResourceType` | The resource type identifier |
-| `resourceId` | `string` | UUID of the resource |
-| `resourceName` | `string` | Display name (shown in modal header) |
-| `isOwner` | `boolean` | Whether current user owns the resource |
+| Prop           | Type           | Description                            |
+| -------------- | -------------- | -------------------------------------- |
+| `isOpen`       | `boolean`      | Controls modal visibility              |
+| `onClose`      | `() => void`   | Called when modal should close         |
+| `resourceType` | `ResourceType` | The resource type identifier           |
+| `resourceId`   | `string`       | UUID of the resource                   |
+| `resourceName` | `string`       | Display name (shown in modal header)   |
+| `isOwner`      | `boolean`      | Whether current user owns the resource |
 
 ### Available Hooks
 
 ```tsx
 // Full sharing CRUD (used inside ShareModal)
-const { permissions, shareWithUser, shareWithOrg, makePublic, revokeAccess, updateLevel, refresh } = useSharing('canvas_items', id);
+const {
+  permissions,
+  shareWithUser,
+  shareWithOrg,
+  makePublic,
+  revokeAccess,
+  updateLevel,
+  refresh,
+} = useSharing("canvas_items", id);
 
 // Quick status check (used by ShareButton)
-const { isShared, isPublic, userCount, orgCount } = useSharingStatus('canvas_items', id);
+const { isPublic, loading, error, refresh } = useSharingStatus(
+  "canvas_item",
+  id,
+);
 
 // Ownership check
-const { isOwner, loading } = useIsOwner('canvas_items', id);
+const { isOwner, loading } = useIsOwner("canvas_items", id);
 
 // Access level checks
-const { canEdit, loading } = useCanEdit('canvas_items', id);
-const { canAdmin, loading } = useCanAdmin('canvas_items', id);
+const { canEdit, loading } = useCanEdit("canvas_items", id);
+const { canAdmin, loading } = useCanAdmin("canvas_items", id);
 
 // Full permission check with details
-const { hasAccess, level, isOwner } = usePermissionCheck({ resourceType: 'canvas_items', resourceId: id, requiredLevel: 'editor' });
+const { hasAccess, level, isOwner } = usePermissionCheck({
+  resourceType: "canvas_items",
+  resourceId: id,
+  requiredLevel: "editor",
+});
 
 // Get all resources shared with current user
-const { permissions, loading } = useSharedWithMe('canvas_items');
+const { permissions, loading } = useSharedWithMe("canvas_items");
 ```
 
 ---
 
 ## Key Files
 
-| File | Purpose |
-|---|---|
-| `utils/permissions/types.ts` | `ResourceType`, `PermissionLevel`, type definitions, helper functions |
-| `utils/permissions/service.ts` | Supabase CRUD operations against `permissions` table |
-| `utils/permissions/hooks.ts` | React hooks for reactive permission state |
-| `features/sharing/components/ShareModal.tsx` | Main sharing dialog (3 tabs) |
-| `features/sharing/components/ShareButton.tsx` | Self-contained button + modal |
-| `features/sharing/components/PermissionsList.tsx` | Displays/manages current permissions |
-| `features/sharing/components/PermissionBadge.tsx` | Visual permission level badges |
-| `features/sharing/components/tabs/` | Individual tab content (User, Org, Public) |
-| `features/sharing/emailService.ts` | Email notification service |
+| File                                              | Purpose                                                               |
+| ------------------------------------------------- | --------------------------------------------------------------------- |
+| `utils/permissions/types.ts`                      | `ResourceType`, `PermissionLevel`, type definitions, helper functions |
+| `utils/permissions/service.ts`                    | Supabase CRUD operations against `permissions` table                  |
+| `utils/permissions/hooks.ts`                      | React hooks for reactive permission state                             |
+| `features/sharing/components/ShareModal.tsx`      | Main sharing dialog (3 tabs)                                          |
+| `features/sharing/components/ShareButton.tsx`     | Self-contained button + modal                                         |
+| `features/sharing/components/PermissionsList.tsx` | Displays/manages current permissions                                  |
+| `features/sharing/components/PermissionBadge.tsx` | Visual permission level badges                                        |
+| `features/sharing/components/tabs/`               | Individual tab content (User, Org, Public)                            |
+| `features/sharing/emailService.ts`                | Email notification service                                            |
 
 ---
 

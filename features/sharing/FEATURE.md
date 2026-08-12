@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1` — foundation for every collaborative surface
-**Last updated:** `2026-07-19`
+**Last updated:** `2026-08-12`
 
 > Single source of truth for the sharing and permissions system. For hands-on usage patterns (copy-paste snippets for wiring sharing into a new feature), see [`README.md`](./README.md). This doc covers the architecture, invariants, and agent-relevant internals.
 
@@ -18,7 +18,7 @@ One RLS-backed permissions system that makes any resource type shareable with us
 
 **Components** (`features/sharing/components/`)
 
-- `ShareButton.tsx` — self-contained button that opens `ShareModal`; shows Private/Shared/Public status
+- `ShareButton.tsx` — self-contained button that opens `ShareModal`; shows public status only when requested
 - `ShareModal.tsx` — three-tab dialog (Users / Organizations / Public), the only UI surface owners need
 - `ShareLinkPanel.tsx` — "Anyone with the link" no-login token links (mint / copy / revoke / view-count), rendered in the Public tab
 - `DuplicateToEditButton.tsx` — canonical **"Make a copy & use it"** for a view-only sharee / public / anon viewer; forks the resource into the caller's account (signed-out → sign-up → finish). Shared by `/s/[token]`, `/p/e`, and in-app view surfaces
@@ -101,6 +101,10 @@ Reads:
 - `is_resource_owner(p_resource_type, p_resource_id)` — universal ownership check
 - `check_resource_access(...)` — single RLS engine; evaluates owner, assignee, direct grant, project / workspace / org hierarchy in one query
 - `has_permission(resource_type, resource_id, level)` — the function every RLS policy calls
+- `get_share_capabilities(resource_type)` — verifies the physical public-state
+  column and returns its storage kind (`enum` / `boolean`) plus link-sharing
+  support. A null state means public visibility is unsupported; clients never
+  infer a `visibility` column from registry nullability.
 
 ### RLS enforcement
 
@@ -149,8 +153,12 @@ Aliases live in the registry's `resource_type` column. Canonical table names liv
 ### 2. Making a resource public (or private)
 
 1. Owner toggles in `PublicAccessTab`.
-2. `makePublic()` / `makePrivate()` call `make_resource_public` / `make_resource_private` RPCs — both update `is_public` on the **resource row**, never the permissions table.
-3. `useSharingStatus` re-reads `is_public` from the resource row on next mount (no cache busting needed).
+2. `get_share_capabilities()` returns the verified state column and storage
+   kind. No column means the toggle is unavailable; enum state writes the exact
+   `visibility` / `card_visibility` column, while a legacy boolean uses the
+   `make_resource_public` / `make_resource_private` RPCs.
+3. `useSharingStatus` re-reads that same capability-reported column. A failed
+   capability or row read is an explicit error, never laundered into “Private.”
 
 ### 3. Permission check at read time
 
@@ -242,7 +250,11 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
 - **Ownership has THREE states, not two: resolving / owner / not-owner — plus "couldn't determine".** `useIsOwner` returns `{ isOwner, loading, error }`; gating on `!isOwner` alone renders the non-owner UI during the async check and after any failure. `resolveResourceOwnership()` is the underlying resolver and returns `{ isOwner, error }` — `isOwner: false` with a non-null `error` means **unknown**, never a denial, and must never be shown to the user as one.
 - **A share surface that can't act must say why.** Empty space where controls belong reads as a broken dialog. Non-owner gets "Only the owner can change sharing"; unresolvable ownership gets a loud error with the underlying message; an unregistered resource type or missing id refuses to render controls at all and logs.
 - **RLS is the security boundary.** `useIsOwner` / `useCanEdit` / etc. are UX only. A bypassed client check must not be a privilege escalation.
-- **`is_public` lives on the resource row, not `permissions`.** Read via `getResourceVisibility()` / `useSharingStatus()`. Writing `is_public = true` rows into the permissions table is legacy and must not be done in new code.
+- **Public state lives on the resource row, not `permissions`.**
+  `get_share_capabilities()` names the verified enum or boolean column;
+  `getResourceVisibility()` / `useSharingStatus()` consume that answer. A null
+  `is_public_column` does **not** prove `visibility` exists. Writing
+  `is_public = true` rows into the permissions table is legacy.
 - **Never write directly to the `permissions` table from the client.** Every mutation must go through a `SECURITY DEFINER` RPC. Direct writes bypass ownership validation.
 - **`useSharingStatus()` is intentionally lightweight.** It does NOT call `get_resource_permissions` — safe to mount on every grid card. Full permission details are only loaded when `ShareModal` opens.
 - **Permission changes are immediate; no cache invalidation needed.** RLS evaluates per-query. There is no Redux cache of permissions to invalidate. The only client state is the modal's in-memory list, refreshed by `useSharing.refresh()`.
@@ -281,6 +293,14 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 
 ## Change log
 
+- 2026-08-12 — **Public-state capability is explicit.** Rendering
+  `ShareButton` for link-only `seo_collection_run` exposed the generic
+  `isPublicColumn=null ⇒ select visibility` guess; Postgres correctly rejected
+  the nonexistent column and the client then hid the error as “Private.”
+  `get_share_capabilities` now returns the verified physical state column and
+  kind; reads/writes use that answer, unsupported types perform no row query,
+  `card_visibility` works, capability failures stay visible, and buttons with
+  `showStatus=false` issue no eager status request.
 - 2026-08-12 — **Complete downward access trees.** Direct grants now remain valid on explicitly shareable components; `iam.accessible_entity_ids` unions the child with every composition parent once per statement; FK structure and association conveyance compose because reachability resolves full container access. A shared node includes all descendants, never parents or siblings. Marketing is the first complete inventory: brand → sites/properties → pages → snapshots/screenshots → every registered artifact, with stored files and screenshot-attached notes proven end to end. Every new granular share point also has a canonical ID-only destination that works without parent access.
 
 - `2026-08-08` — **Access truth consumed beyond files + the vocabulary gets a guard.** `<AccessSummaryPanel>` mounted on four more surfaces: agent detail (`features/agents/route/AgentViewContent.tsx`, deleting two false "Private" badges), agent Share tab (`AgentSharePanel`), note info (`NoteInfoPanel`, "Private" chip demoted to a public-only chip), data-store detail (`DataStoresPage`, replacing a raw org-uuid chip). New advisory gate `pnpm check:visibility-vocab` (`scripts/check-visibility-vocab.ts` + allowlist) blocks retired visibility spellings, `internal`-omitting unions, and bare "Only you" claims; 23-finding baseline allowlisted with justifications tied to D105/D106b. `features/image-studio/api/python.ts#EditOutput.visibility` fixed to the canonical union.

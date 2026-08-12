@@ -52,8 +52,9 @@ export interface ShareableResourceEntry {
 
   /**
    * Column holding the public-visibility boolean, when the table has one.
-   * Null for canonical tables (visibility is the `platform.visibility` enum,
-   * driven via make_resource_public/private — never a boolean here).
+   * Null means only “no legacy boolean is declared”; canonical enum tables and
+   * types with no public-state column both use null. Call
+   * `getShareCapabilities()` to resolve the verified physical state column.
    */
   isPublicColumn: string | null;
 

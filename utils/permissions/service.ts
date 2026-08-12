@@ -15,12 +15,10 @@
  *   get_resource_permissions()    — list all grants with user/org details (owner-only)
  *   is_resource_owner()           — check ownership for any table
  *
- * Canonical-visibility resources (any registry row with `isPublicColumn = null`,
- * detected by `usesVisibilityEnum()`): the row carries the `platform.visibility`
- * enum (`personal < internal < link < public`) read by RLS via `iam.has_access`,
- * and the legacy `is_public` column is deprecated/ignored. For these, public
- * toggle read/write goes DIRECTLY to the `visibility` column (owner-only via the
- * owner-UPDATE RLS policy), NOT the `make_resource_*` RPCs.
+ * Public-state storage is resolved by `get_share_capabilities`: it verifies the
+ * physical column and classifies it as enum or boolean. Registry
+ * `isPublicColumn = null` is deliberately ambiguous — it covers canonical enum
+ * tables and types that do not support public visibility at all.
  *
  * Visibility model (two tiers only):
  *   - Personal: accessible only to owner + explicit user/org grants + hierarchy members
@@ -50,6 +48,8 @@ import {
   satisfiesPermissionLevel,
 } from "./types";
 import { getShareableResource, getResourceTypeLabel } from "./registry";
+import { getShareCapabilities } from "./shareLinks";
+import { operationFailed } from "@/utils/errors";
 
 /**
  * Minimal query surface used by the dynamic-table helpers below. The registry
@@ -76,16 +76,22 @@ interface DynamicTableClient {
         column: string,
         value: string,
       ) => {
-        select: (columns: string) => Promise<{ data: unknown[] | null; error: unknown }>;
+        select: (
+          columns: string,
+        ) => Promise<{ data: unknown[] | null; error: unknown }>;
       };
     };
   };
 }
 
 /** Resolve a client scoped to a dynamically-named schema (or the default public client). */
-function resolveDynamicClient(schemaName: string | undefined): DynamicTableClient {
+function resolveDynamicClient(
+  schemaName: string | undefined,
+): DynamicTableClient {
   const base = supabase as unknown as { schema: (s: string) => unknown };
-  return (schemaName ? base.schema(schemaName) : supabase) as unknown as DynamicTableClient;
+  return (schemaName
+    ? base.schema(schemaName)
+    : supabase) as unknown as DynamicTableClient;
 }
 
 type RpcPermissionRow =
@@ -135,28 +141,14 @@ export interface ResourceVisibility {
 }
 
 /**
- * True when a resource's public state is driven by the canonical
- * `platform.visibility` enum (`personal < internal < link < public`) rather than
- * a legacy boolean column. Derived from the registry — a canonical table has
- * `isPublicColumn = null` (no boolean flag; RLS reads `visibility` via
- * `iam.has_access`). The owner-UPDATE RLS policy lets the owner write
- * `visibility` directly, so for these we read/write the column via
- * `setVisibilityColumn` instead of the `make_resource_*` RPCs. Registry-derived
- * so it covers EVERY canonical token automatically — never a hand-kept list
- * (that list drifted the moment a new table canonicalized).
- */
-function usesVisibilityEnum(resourceType: ResourceType): boolean {
-  return getShareableResource(resourceType)?.isPublicColumn == null;
-}
-
-/**
- * Direct read/write of a `visibility`-enum resource's row. Owner-only writes are
- * enforced by RLS (`cx_conv_update`: `created_by = auth.uid()`), so a non-owner
- * UPDATE silently affects zero rows — surfaced as an error by the callers below.
+ * Direct write of a verified enum-visibility resource row. Owner-only writes
+ * are enforced by RLS, so a non-owner UPDATE silently affects zero rows —
+ * surfaced as an error by the callers below.
  */
 async function setVisibilityColumn(
   resourceType: ResourceType,
   resourceId: string,
+  column: "visibility" | "card_visibility",
   visibility: "personal" | "internal" | "link" | "public",
 ): Promise<ShareActionResult> {
   const entry = getShareableResource(resourceType);
@@ -165,7 +157,7 @@ async function setVisibilityColumn(
   const scoped = resolveDynamicClient(entry?.schemaName);
   const { data, error } = await scoped
     .from(tableName)
-    .update({ visibility })
+    .update({ [column]: visibility })
     .eq(idColumn, resourceId)
     .select("id");
   if (error) {
@@ -181,49 +173,40 @@ async function setVisibilityColumn(
 }
 
 /**
- * Fetch is_public directly from the resource row.
+ * Fetch the verified public-state column directly from the resource row.
  * Single cheap query — safe to call from list-item components like ShareButton.
  *
- * Uses the shareable_resource_registry to find the canonical table name AND
- * the actual is_public column name (some tables use `public` instead of
- * `is_public`). Returns `{ isPublic: false }` when the resource type either
- * isn't registered or has no public-visibility column.
+ * The capability RPC names the actual physical enum/boolean column. Returns
+ * `{ isPublic: false }` without a row query when the type does not support
+ * public visibility; real capability/query failures remain errors.
  */
 export async function getResourceVisibility(
   resourceType: ResourceType,
   resourceId: string,
 ): Promise<ResourceVisibility> {
-  try {
-    const entry = getShareableResource(resourceType);
-    // Canonical `visibility`-enum resources: "public" ⇒ isPublic. The legacy
-    // `is_public` column is no longer read by RLS, so reading it would lie.
-    if (usesVisibilityEnum(resourceType)) {
-      const tableName = entry?.tableName ?? resourceType;
-      const idColumn = entry?.idColumn ?? "id";
-      const visClient = resolveDynamicClient(entry?.schemaName);
-      const { data, error } = await visClient
-        .from(tableName)
-        .select("visibility")
-        .eq(idColumn, resourceId)
-        .maybeSingle<Record<string, string | null>>();
-      if (error || !data) return { isPublic: false };
-      return { isPublic: data["visibility"] === "public" };
-    }
-    if (!entry || !entry.isPublicColumn) {
-      return { isPublic: false };
-    }
-    const client = resolveDynamicClient(entry.schemaName);
-    const { data, error } = await client
-      .from(entry.tableName)
-      .select(entry.isPublicColumn)
-      .eq(entry.idColumn, resourceId)
-      .maybeSingle<Record<string, boolean | null>>();
-
-    if (error || !data) return { isPublic: false };
-    return { isPublic: data[entry.isPublicColumn] ?? false };
-  } catch {
+  const entry = getShareableResource(resourceType);
+  const capabilities = await getShareCapabilities(resourceType);
+  if (!entry || !capabilities.publicState) {
     return { isPublic: false };
   }
+
+  const client = resolveDynamicClient(entry.schemaName);
+  const { data, error } = await client
+    .from(entry.tableName)
+    .select(capabilities.publicState.column)
+    .eq(entry.idColumn, resourceId)
+    .maybeSingle<Record<string, boolean | string | null>>();
+
+  if (error || !data) {
+    throw operationFailed("check this item's public visibility", error);
+  }
+  const value = data[capabilities.publicState.column];
+  return {
+    isPublic:
+      capabilities.publicState.kind === "enum"
+        ? value === "public"
+        : value === true,
+  };
 }
 
 // ============================================================================
@@ -386,12 +369,24 @@ export async function makePublic(
 ): Promise<ShareActionResult> {
   try {
     const { resourceType, resourceId } = options;
+    const capabilities = await getShareCapabilities(resourceType);
 
-    // Canonical `visibility`-enum resources write `visibility = 'public'`
-    // directly (owner-only via RLS). The `make_resource_public` RPC only sets
-    // the deprecated `is_public`, which RLS no longer reads.
-    if (usesVisibilityEnum(resourceType)) {
-      const res = await setVisibilityColumn(resourceType, resourceId, "public");
+    if (!capabilities.publicState) {
+      return {
+        success: false,
+        error: "Public visibility is not available for this item type.",
+      };
+    }
+
+    // Enum resources write the exact capability-reported column directly.
+    // The boolean RPC only handles a verified legacy boolean public flag.
+    if (capabilities.publicState.kind === "enum") {
+      const res = await setVisibilityColumn(
+        resourceType,
+        resourceId,
+        capabilities.publicState.column,
+        "public",
+      );
       if (!res.success) {
         return { success: false, error: res.error || "Failed to make public" };
       }
@@ -427,12 +422,26 @@ export async function makePrivate(
   resourceId: string,
 ): Promise<ShareActionResult> {
   try {
-    // Canonical `visibility`-enum resources write `visibility = 'personal'`
-    // directly (owner-only via RLS); the RPC only touches deprecated `is_public`.
-    if (usesVisibilityEnum(resourceType)) {
-      const res = await setVisibilityColumn(resourceType, resourceId, "personal");
+    const capabilities = await getShareCapabilities(resourceType);
+    if (!capabilities.publicState) {
+      return {
+        success: false,
+        error: "Public visibility is not available for this item type.",
+      };
+    }
+
+    if (capabilities.publicState.kind === "enum") {
+      const res = await setVisibilityColumn(
+        resourceType,
+        resourceId,
+        capabilities.publicState.column,
+        "personal",
+      );
       if (!res.success) {
-        return { success: false, error: res.error || "Failed to make personal" };
+        return {
+          success: false,
+          error: res.error || "Failed to make personal",
+        };
       }
       return { success: true, message: "Resource is now personal" };
     }
@@ -726,11 +735,17 @@ export async function resolveResourceOwnership(
         `[permissions] Ownership read failed for ${resourceType}:${resourceId} ` +
           `(${entry.schemaName ?? "public"}.${tableName}.${ownerColumn}): ${message}`,
       );
-      return { isOwner: false, error: `Could not read ${entry.displayLabel}: ${message}` };
+      return {
+        isOwner: false,
+        error: `Could not read ${entry.displayLabel}: ${message}`,
+      };
     }
 
     if (userError || !user) {
-      return { isOwner: false, error: "No signed-in user — cannot resolve ownership." };
+      return {
+        isOwner: false,
+        error: "No signed-in user — cannot resolve ownership.",
+      };
     }
 
     if (!row) {
@@ -780,7 +795,8 @@ export async function getSharedWithMe(
     if (userError || !user) return [];
 
     let query = supabase
-      .schema("iam").from("permissions")
+      .schema("iam")
+      .from("permissions")
       .select("*")
       .eq("granted_to_user_id", user.id);
 
