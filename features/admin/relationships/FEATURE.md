@@ -171,6 +171,10 @@ used by the per-row **Link policy** side panel).
 - **Direction doctrine — little points to big.** Source = content, target =
   container; `container_side='target'` is the norm. `'source'` (big→little) is a
   documented exception, tinted amber. The DB rejects wrong-direction writes.
+- **Direction does not imply conveyance.** `note → web_screenshot` and
+  `file → web_screenshot` are semantic “about/attached to” links with
+  `container_side='none'`. The screenshot image is `web.screenshot.file_id`, and
+  screenshot access derives from its `web_site` composition parent.
 - **Container tint = the container side** in every row/chip — the primary-tinted
   entity is the one that conveys.
 - **Cache is disposable.** Never write `platform.reachability` from the UI; the
@@ -233,6 +237,9 @@ used by the per-row **Link policy** side panel).
 
 ## Change log
 
+- **2026-08-12** — Kept `note → web_screenshot` and `file → web_screenshot` in
+  little-to-big direction but made both semantic-only. Screenshots are site-owned
+  components; their image uses the direct `file_id` FK, not an association edge.
 - **2026-08-12** — Made shareable-resource registration usable without fake
   values: the in-app destination is optional and auto-prefilled from the entity
   registry, advanced database mapping is collapsed, and no-login share fields
