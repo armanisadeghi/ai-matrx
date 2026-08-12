@@ -462,7 +462,9 @@ export function LibraryPage() {
   //     changes underneath an open dialog. It is read through a ref, at call
   //     time, after the user presses Apply.
   const visibleDocsRef = useRef<LibraryDocSummary[]>(finalDocs);
-  visibleDocsRef.current = finalDocs;
+  useEffect(() => {
+    visibleDocsRef.current = finalDocs;
+  }, [finalDocs]);
 
   const buildWriteHandlers = () => ({
     library_filters: (value: unknown) => {
