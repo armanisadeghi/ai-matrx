@@ -483,7 +483,17 @@ internal platform use — never a washed-down user variant beside a private one:
   `document_source` / `document_original_file_id` (provenance — where a
   document CAME from is a fact the import flow recorded), timestamps,
   permissions and `is_public`, and the document BODY, which Univer owns and
-  which nothing lifts to the route — it is not even a declared READ value)
+  which nothing lifts to the route — it is not even a declared READ value.
+  Follow-on 2026-08-12: the header rename FIELD now carries
+  `maxLength={DOCUMENT_NAME_MAX_LENGTH}` from that same module, so the bound is
+  enforced on the human path too. **Worth generalizing when you put an
+  `entity` target beside an existing input:** the handler and the manifest
+  agreeing is only two of the three legs. Here the field accepted a pasted
+  300-character title, Postgres rejected it against `varchar(255)`, and
+  `commitRename` — which swallows failures on purpose, because a blur handler
+  must not throw — reverted the title with nothing on screen to explain why.
+  Bounding the target without bounding the control leaves the agent better
+  validated than the user.)
 - **UI-state reads** — `runtime/surface-ui-state.ts`: the page PUBLISHES
   interaction-state projections (`publishSurfaceUiState`), rendered blocks
   read by key (`useCurrentSurfaceUiState` — stack-walking, same resolution as

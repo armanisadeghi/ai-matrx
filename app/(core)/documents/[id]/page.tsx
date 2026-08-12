@@ -27,6 +27,7 @@ import {
 } from "@/features/data-tables/agent-context/buildDocumentsContextData";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
+  DOCUMENT_NAME_MAX_LENGTH,
   validateDocumentDescription,
   validateDocumentName,
 } from "@/features/data-tables/agent-context/documentWriteValidation";
@@ -252,6 +253,13 @@ export default function DocumentPage({
               }}
               className="h-7 min-w-0 max-w-[45vw] sm:max-w-xs text-sm font-medium border-0 bg-transparent shadow-none focus-visible:ring-1 px-1.5"
               disabled={!doc || !canEdit}
+              // Same bound the write handler enforces and the manifest quotes,
+              // from the same module — the agent path and the human path
+              // cannot disagree about how long a title may be. Without it the
+              // field happily takes a pasted 300-character title, the blur
+              // commit gets a 400 from `varchar(255)`, and `commitRename`
+              // swallows it: the title reverts with nothing explaining why.
+              maxLength={DOCUMENT_NAME_MAX_LENGTH}
               placeholder="Document name"
             />
             {renameSaving && (

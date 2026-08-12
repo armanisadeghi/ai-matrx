@@ -465,6 +465,19 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-12 — claude: **The document rename FIELD now enforces the same bound
+  the write target does (`maxLength={DOCUMENT_NAME_MAX_LENGTH}`).** Additive
+  follow-on to the bounds module below, closing the third leg of its own
+  contract: the constant was already enforced in the handler and interpolated
+  into the manifest prose, but the human's control applied no limit at all.
+  Reproduced on `/documents/[id]` before the fix: pasting a 300-character title
+  into the header and tabbing away sent it straight to Postgres, came back a
+  **400** against `varchar(255)`, and — because `commitRename` deliberately
+  swallows service failures so a blur cannot throw — the title silently
+  reverted with nothing on screen to say why. With `maxLength` the field clamps
+  at 255, the commit succeeds, and the value survives a reload. Verified live
+  both ways (before: silent revert; after: clamped and persisted). The agent
+  path was already correct — this only closes the human one.
 - 2026-08-11 — claude: **Document write-target bounds moved into a pure module;
   the name limit was wrong (200 → 255).** New
   `agent-context/documentWriteValidation.ts` owns `DOCUMENT_NAME_MAX_LENGTH`

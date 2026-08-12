@@ -9,8 +9,13 @@
  * value landed. Validate here, synchronously, before touching any state.
  *
  * `DOCUMENT_NAME_MAX_LENGTH` is the single source of truth for the limit: it is
- * enforced here AND interpolated into the manifest target description, so the
- * contract the agent reads cannot drift from the rule the handler enforces.
+ * enforced here, interpolated into the manifest target description, AND set as
+ * the `maxLength` of the header rename field on `/documents/[id]` — so the
+ * contract the agent reads, the rule the handler enforces, and the limit the
+ * human's own control applies cannot drift apart. The last of those matters
+ * for a non-obvious reason: the blur commit swallows service failures, so
+ * before the field was bounded a pasted 300-character title came back as a
+ * `varchar(255)` 400 and reverted with nothing on screen to explain it.
  */
 
 /**
