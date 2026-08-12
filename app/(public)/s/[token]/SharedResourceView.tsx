@@ -13,6 +13,7 @@ import {
   ExternalLink,
   FileIcon,
   FolderClosed,
+  ScanSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicHeaderActionsPortal } from "@/components/matrx/PublicHeaderActionsPortal";
@@ -292,7 +293,21 @@ function AiVisibilityRenderer({
   token: string;
 }) {
   const report = parsePublicVisibilityResult(result.resource?.["result"]);
-  if (!report) return <GenericRenderer result={result} />;
+  if (!report) {
+    return (
+      <div className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+        <ScanSearch className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+        <h1 className="text-2xl font-semibold text-foreground">
+          This report isn&apos;t available
+        </h1>
+        <p className="mx-auto mt-3 max-w-lg text-sm text-muted-foreground">
+          No answer engine returned a completed response, so AI Matrx did not
+          publish empty or failed results as a report. Run the analysis again
+          to create a new shareable report.
+        </p>
+      </div>
+    );
+  }
   return (
     <AiVisibilityReport result={report} shareUrl={`/s/${token}`} acquisition />
   );

@@ -24,6 +24,9 @@
   implementation narration. Internal agent output still uses Content IR.
 - **The durable run is the report.** `seo.collection_run.result` is the only
   report payload. Do not add a public report table or a second token system.
+- **Empty failures are not reports.** The public parser requires at least one
+  completed provider with a nonblank answer. A legacy or malformed all-failed
+  payload renders an unavailable state with no report metrics or share action.
 - **Aliases are identity data.** Mention and recommendation position come from
   brand/site names plus `web.brand.profile.brand_aliases`, never a frontend text
   match.
@@ -37,6 +40,8 @@
 
 ## Change log
 
+- 2026-08-12 — Made public rendering fail closed for empty/all-failed provider
+  payloads so authorization failures cannot appear as zero-result reports.
 - 2026-08-12 — Replaced the public run's append-only Content IR status transcript
   with four stable, actively updating engine rows in `LiveRunWindow`.
 - 2026-08-12 — Fixed the internal share action’s generic status probe: a

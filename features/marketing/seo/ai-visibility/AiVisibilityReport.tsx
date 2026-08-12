@@ -89,6 +89,11 @@ export function parsePublicVisibilityResult(
       });
     }
   }
+  const hasCompletedAnswer = providers.some(
+    (provider) =>
+      provider.status === "completed" && provider.answer_text.trim().length > 0,
+  );
+  if (!hasCompletedAnswer) return null;
   return {
     result_kind: "ai_visibility.analyze",
     site_id: siteId,

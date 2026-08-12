@@ -37,6 +37,18 @@ function aiVisibilityMeta(resource: Record<string, unknown> | undefined): {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const report = value as Record<string, unknown>;
   if (report.result_kind !== "ai_visibility.analyze") return null;
+  const providers = Array.isArray(report.providers) ? report.providers : [];
+  const hasCompletedAnswer = providers.some((provider) => {
+    if (!provider || typeof provider !== "object" || Array.isArray(provider))
+      return false;
+    const item = provider as Record<string, unknown>;
+    return (
+      item.status === "completed" &&
+      typeof item.answer_text === "string" &&
+      item.answer_text.trim().length > 0
+    );
+  });
+  if (!hasCompletedAnswer) return null;
   const brand =
     typeof report.brand_name === "string" ? report.brand_name : "this brand";
   const query =
