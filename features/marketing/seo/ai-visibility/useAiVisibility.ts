@@ -28,6 +28,12 @@ import type {
 
 const ACTIVE_RUN_STORAGE_KEY = "seo.aiVisibility.activeRun";
 
+// When the run is leased by another server worker the stream closes with
+// `run_in_progress`; we re-poll by rejoin. The server lease is 300s, so
+// 60 × 5s covers a full lease cycle before giving up.
+const BUSY_REJOIN_DELAY_MS = 5_000;
+const BUSY_REJOIN_MAX_ATTEMPTS = 60;
+
 interface StoredRun {
   runId: string;
   siteId: string;
@@ -199,10 +205,13 @@ export function useAiVisibility(siteId: string, organizationId: string) {
     request:
       | { kind: "new"; body: AiVisibilityAnalyzeBody }
       | { kind: "rejoin"; runId: string },
+    busyAttempt = 0,
   ) => {
     let finalResult: AiVisibilityResult | null = null;
     let streamFailure: string | null = null;
     let serverBusy = false;
+    let observedRunId: string | null =
+      request.kind === "rejoin" ? request.runId : null;
     if (adoptedRequestId.current) {
       dispatch(removeRequest(adoptedRequestId.current));
       adoptedRequestId.current = null;
@@ -242,6 +251,7 @@ export function useAiVisibility(siteId: string, organizationId: string) {
           if (!data || !kind) return;
           const commandRunId = stringValue(data.run_id);
           if (kind === "seo.command_run" && commandRunId) {
+            observedRunId = commandRunId;
             storeRun({ runId: commandRunId, siteId, query });
             setRun((current) => ({ ...current, runId: commandRunId }));
           }
@@ -381,7 +391,34 @@ export function useAiVisibility(siteId: string, organizationId: string) {
       return;
     }
     if (!finalResult) {
-      if (serverBusy) return;
+      if (serverBusy) {
+        // The run is executing under another worker's lease; the server closed
+        // this stream after `run_in_progress`. Poll the durable run by rejoin
+        // until it lands — leaving status "running" with no retry was the
+        // forever-spinner (data appeared only after a manual refresh).
+        if (observedRunId && busyAttempt < BUSY_REJOIN_MAX_ATTEMPTS) {
+          setRun((current) => ({
+            ...current,
+            status: "running",
+            stage: "Running on the server — checking for the result",
+          }));
+          await new Promise((resolve) =>
+            setTimeout(resolve, BUSY_REJOIN_DELAY_MS),
+          );
+          return consume(query, { kind: "rejoin", runId: observedRunId },
+            busyAttempt + 1,
+          );
+        }
+        storeRun(null);
+        setRun((current) => ({
+          ...current,
+          status: "error",
+          error:
+            "This run is still executing on the server and did not finish within the wait window. Refresh in a minute to see the saved result.",
+        }));
+        await queryClient.invalidateQueries({ queryKey: evidenceKey });
+        return;
+      }
       storeRun(null);
       setRun((current) => ({
         ...current,
