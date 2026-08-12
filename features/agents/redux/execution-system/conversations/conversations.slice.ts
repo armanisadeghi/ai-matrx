@@ -21,6 +21,7 @@ import type {
   InstanceStatus,
   InstanceOrigin,
   SourceFeature,
+  RequestInitiation,
   ConversationLifecycle,
   ContextAnchor,
 } from "@/features/agents/types/instance.types";
@@ -79,6 +80,8 @@ interface CreateInstanceArgs {
   shortcutId?: string;
   status?: InstanceStatus;
   sourceFeature?: SourceFeature;
+  /** Provenance attestation default for this conversation's sends. */
+  initiation?: RequestInitiation;
   // New ConversationInvocation / cx_conversation fields (all optional)
   surfaceKey?: string;
   initialAgentId?: string | null;
@@ -114,6 +117,7 @@ function applyCreateInstance(
     shortcutId = null,
     status = "draft",
     sourceFeature = "agent-runner",
+    initiation,
     surfaceKey,
     initialAgentId,
     initialAgentVersionId,
@@ -145,6 +149,7 @@ function applyCreateInstance(
     status,
     sourceApp: SOURCE_APP,
     sourceFeature,
+    ...(initiation !== undefined ? { initiation } : {}),
     cacheOnly: true,
     createdAt: now,
     updatedAt: now,
@@ -199,6 +204,25 @@ const conversationsSlice = createSlice({
       if (instance) {
         instance.status = status;
         instance.updatedAt = new Date().toISOString();
+      }
+    },
+
+    /**
+     * Stamp the conversation-level provenance attestation default. Used by
+     * `launchAgentExecution` so a launch that declared `initiation` (or the
+     * interactive default "user") carries it onto every send that doesn't
+     * override per-turn.
+     */
+    setInstanceInitiation(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        initiation: RequestInitiation;
+      }>,
+    ) {
+      const instance = state.byConversationId[action.payload.conversationId];
+      if (instance) {
+        instance.initiation = action.payload.initiation;
       }
     },
 
@@ -387,6 +411,7 @@ const conversationsSlice = createSlice({
 export const {
   createInstance,
   setInstanceStatus,
+  setInstanceInitiation,
   confirmServerSync,
   setConversationLabel,
   patchConversation,

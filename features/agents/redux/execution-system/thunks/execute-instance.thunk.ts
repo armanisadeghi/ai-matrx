@@ -27,6 +27,7 @@ import type {
   UserInputPart,
   UserOverrides,
 } from "@/features/agents/types/request.types";
+import type { RequestInitiation } from "@/features/agents/types/instance.types";
 import { toast } from "@/lib/toast";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
@@ -161,6 +162,13 @@ export function assembleRequest(
      * with the conversation's durable tags.
      */
     scopeIdsOverride?: string[];
+    /**
+     * Per-send provenance attestation override. Wins over the instance-level
+     * default (a user typing into an auto-launched conversation is a "user"
+     * send). Absent everywhere ⇒ "user" — this assembler serves the
+     * interactive send paths; clearly-automatic callers must declare "auto".
+     */
+    initiation?: RequestInitiation;
   },
 ): AssembledAgentStartRequest | null {
   const instance = state.conversations.byConversationId[conversationId];
@@ -317,6 +325,11 @@ export function assembleRequest(
   if (instance.contextAnchor) request.context_anchor = instance.contextAnchor;
   if (sourceApp) request.source_app = sourceApp;
   if (sourceFeature) request.source_feature = sourceFeature;
+  // Provenance attestation — always sent (an omitted field means the server
+  // classes real UI traffic as unattested `api`). Per-send override → the
+  // instance-level launch default → "user" (this assembler's callers are the
+  // interactive send paths; automatic callers declare themselves).
+  request.initiation = opts?.initiation ?? instance.initiation ?? "user";
   if (block_mode) request.block_mode = true;
   if (snapshot) request.snapshot = true;
   if (memoryToggleRequested) {
@@ -384,6 +397,13 @@ interface ExecuteInstanceArgs {
    * a union would re-add scopes the user just chose to drop.
    */
   scopeIdsOverride?: string[];
+  /**
+   * Per-send provenance attestation. smartExecute passes "user" (every send it
+   * routes is a person hitting send); clearly-automatic direct callers (agent
+   * tools, background pipelines) pass "auto". Absent ⇒ the instance-level
+   * launch default, then "user".
+   */
+  initiation?: RequestInitiation;
 }
 
 interface ExecuteInstanceResult {
@@ -398,7 +418,7 @@ export const executeInstance = createAsyncThunk<
 >(
   "instances/execute",
   async (
-    { conversationId, debug = false, retry = false, scopeIdsOverride },
+    { conversationId, debug = false, retry = false, scopeIdsOverride, initiation },
     { getState, dispatch, rejectWithValue },
   ) => {
     const requestId = generateRequestId();
@@ -499,6 +519,7 @@ export const executeInstance = createAsyncThunk<
       // Assemble the request (sync — pure selector logic).
       const payload = assembleRequest(state, conversationId, {
         scopeIdsOverride,
+        initiation,
       });
       if (!payload) {
         throw new Error(`Failed to assemble request for ${conversationId}`);
@@ -815,6 +836,8 @@ export const executeInstance = createAsyncThunk<
           ...(payload.source_feature && {
             source_feature: payload.source_feature,
           }),
+          // Provenance attestation — every turn, same rule as source_*.
+          ...(payload.initiation && { initiation: payload.initiation }),
           // Latest active scope selections — re-sent every turn so a
           // mid-conversation scope switch applies immediately.
           ...(payload.scope_ids?.length && { scope_ids: payload.scope_ids }),

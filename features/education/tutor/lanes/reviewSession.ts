@@ -58,6 +58,8 @@ export function reviewSession(args: ReviewSessionArgs) {
         agentId,
         surfaceKey: "flashcards-review-session",
         sourceFeature: "education-flashcards",
+        // Fires automatically at end-of-session — not a user gesture.
+        initiation: "auto",
         ...livePosture(args.onConversationCreated),
         variables: {
           transcript: args.attempts
