@@ -47,7 +47,7 @@ export const CRON_TESTER_TIMEZONES = [
   "Australia/Sydney",
 ] as const;
 
-/** Live tester state, read fresh at apply time (never off a mount closure). */
+/** Committed tester state, read fresh at apply time (never off a mount closure). */
 export interface CronTesterState {
   expression: string;
   tz: string;

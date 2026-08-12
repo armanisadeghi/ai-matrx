@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import cronstrue from "cronstrue";
 import { Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -56,16 +56,18 @@ export default function CronTesterPage() {
     ? []
     : tryNextFires(expression, tz, Math.max(1, Math.min(n, 50)));
 
-  // The surface's FIRST runtime mount. Published through a ref reassigned on
-  // every render so a handler resolved while the confirm dialog is open still
-  // validates against what the tester shows NOW, not what it showed then.
+  // The surface's FIRST runtime mount. Keep a committed-state snapshot so a
+  // handler resolved while the confirm dialog is open validates against what
+  // the tester shows NOW, not what it showed when the dialog opened.
   const liveRef = useRef<CronTesterState>({
     expression,
     tz,
     validationError,
     fires,
   });
-  liveRef.current = { expression, tz, validationError, fires };
+  useEffect(() => {
+    liveRef.current = { expression, tz, validationError, fires };
+  }, [expression, tz, validationError, fires]);
 
   const getSurfaceScope = () => buildCronTesterScope(liveRef.current);
   const getSurfaceWriteHandlers = () =>
