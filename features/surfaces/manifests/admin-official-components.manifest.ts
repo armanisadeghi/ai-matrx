@@ -30,6 +30,52 @@
  * `parts/component-list.tsx` (`ComponentEntry`, `componentList`,
  * `searchComponents`, `categoryNames`, `categoryGroups`) and the two page
  * components themselves.
+ *
+ * ── WRITE TARGETS: NONE, and this is a RULING, not an omission (2026-08-12) ──
+ *
+ * Assigned as a write-target campaign chip on the theory that
+ * `current_component_description` / `_categories` / `_tags` are authored
+ * catalogue metadata — the skill's YES class. They are not, because THIS
+ * REGISTRY IS NOT EDITABLE ANYWHERE. The prerequisite question ("is it
+ * editable, and where does an edit persist?") answers NO, so no amount of
+ * emitter wiring would earn a target. Evidence, all re-verified against
+ * this commit:
+ *
+ *   - `componentList` is a hardcoded literal — `export const componentList:
+ *     ComponentEntry[] = [...]` at `parts/component-list.tsx:151`. Every one
+ *     of its ~18 repo-wide references is a READ (`.find`, `.filter`,
+ *     `.forEach`, `.some`, `.slice`, `.length`); nothing mutates it, and
+ *     nothing outside this route directory even imports it.
+ *   - `[componentId]/page.tsx` renders name/categories/tags/description/path
+ *     straight off the found entry. No `useState`, no form, no `onSubmit`,
+ *     no service call — the "Source" button does not even have an
+ *     `onClick`. The list page's only local state is `expandedGroups` (the
+ *     sidebar collapse), plus `?q=`/`?category=` in the URL.
+ *   - No database behind it: `types/database.types.ts` has no
+ *     `official_component*` table. `app/api/admin/tool-ui-components` is the
+ *     tool-call-visualization renderer registry (`WEB_TOOL_UI_SURFACE`) and
+ *     is unrelated. Nothing in `scripts/` or `package.json` generates
+ *     `component-list.tsx`, so it is not a codegen artifact either.
+ *
+ * So editing a description or a tag here means editing a `.tsx` source
+ * literal — a code change that lands through git, not a UI write path. There
+ * is no canonical thunk/service to wire a handler to, and the skill is
+ * explicit that a target whose handler cannot reach a canonical write path
+ * must not be declared (a declared-but-unwired target is a loud runtime
+ * defect by design). Staging such an edit into throwaway local state for the
+ * admin to copy-paste into source would be inventing a write path, which is
+ * the same prohibition.
+ *
+ * The rest of the surface fails the bar independently, so there is no
+ * smaller target set hiding here either: `current_component_id` / `_name` /
+ * `_path` are IDENTITY (a component's name and import path are what other
+ * code depends on — renaming is a refactor, not a copy edit);
+ * `search_query`, `selected_category` and `page_section` are view state and
+ * the three counts are derived values, both squarely the skill's NO list.
+ *
+ * This surface is a READ-ONLY REPORT. If the library ever gains a real
+ * backing store or an admin edit form, description/categories/tags become a
+ * strong single composite target at that point — and only then.
  */
 
 import type {
@@ -202,7 +248,7 @@ export const adminOfficialComponentsManifest: SurfaceManifest = {
   surfaceName: ADMIN_OFFICIAL_COMPONENTS_SURFACE_NAME,
   readiness: "stub",
   readinessNote:
-    "Manifest-only — no SurfaceRuntimeProvider is mounted on either page yet. Values reflect real page/component state (component-list.tsx + the two page components) but nothing is emitted at runtime today.",
+    "Manifest-only — no SurfaceRuntimeProvider is mounted on either page yet. Values reflect real page/component state (component-list.tsx + the two page components) but nothing is emitted at runtime today. Write targets are ruled out permanently while the catalogue stays a hardcoded const array: the registry has no backing table, no edit form and no mutation path, so it is a read-only report — see the WRITE TARGETS section of this file's docblock before re-assigning it.",
   label: "Official Components",
   urlPattern: "/administration/ui/official-components",
   intro: `<surface_intro>
