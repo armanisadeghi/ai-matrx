@@ -21,6 +21,7 @@ import { Layers, RefreshCw, Search } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { createClient } from "@/utils/supabase/client";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { EntityTypeChip } from "@/components/entity-types/EntityTypeChip";
 import { EntityTypeCombobox } from "@/components/entity-types/EntityTypeCombobox";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
@@ -42,6 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ConveyPill } from "./shared";
+import { RELATIONSHIPS_LOCATION } from "../utils";
 import type { ReachabilityContainer, ReachabilityContent } from "../types";
 
 export type ReachabilityMode = "contents" | "containers";
@@ -69,6 +71,13 @@ export function ReachabilityInspectorClient({
   const [containers, setContainers] = useState<ReachabilityContainer[] | null>(
     null,
   );
+  /** The lookup that produced the current results — the form fields may have
+   *  been edited since, so copy payloads read this, never the live inputs. */
+  const [lastLookup, setLastLookup] = useState<{
+    mode: ReachabilityMode;
+    entityType: string;
+    entityId: string;
+  } | null>(null);
 
   // Only the LATEST lookup may write results. Two can overlap — the deep-link
   // effect plus a manual "Look up", or a second ?mode=&type=&id= navigation
@@ -107,6 +116,7 @@ export function ReachabilityInspectorClient({
         if (error) throw error;
         if (isStale()) return;
         setContents(data ?? []);
+        setLastLookup({ mode: lookupMode, entityType: lookupType, entityId: id });
       } else {
         const { data, error } = await supabase.rpc(
           "admin_reachability_containers",
@@ -115,6 +125,7 @@ export function ReachabilityInspectorClient({
         if (error) throw error;
         if (isStale()) return;
         setContainers(data ?? []);
+        setLastLookup({ mode: lookupMode, entityType: lookupType, entityId: id });
       }
     } catch (e) {
       if (isStale()) return;
@@ -193,6 +204,48 @@ export function ReachabilityInspectorClient({
           )}
           Look up
         </Button>
+        {rows !== null && rows.length > 0 && lastLookup !== null && (
+          <CopyButtons
+            size="sm"
+            label={
+              lastLookup.mode === "contents"
+                ? "Reachable contents"
+                : "Conveying containers"
+            }
+            human={() =>
+              [
+                lastLookup.mode === "contents"
+                  ? `Everything reachable from ${lastLookup.entityType} ${lastLookup.entityId} (${rows.length} rows):`
+                  : `Containers conveying access to ${lastLookup.entityType} ${lastLookup.entityId} (${rows.length} rows):`,
+                ...rows.map((row) => {
+                  const type =
+                    "item_type" in row ? row.item_type : row.container_type;
+                  const id = "item_id" in row ? row.item_id : row.container_id;
+                  return `${type} ${id} — depth=${row.depth} max_level=${row.max_level}`;
+                }),
+              ].join("\n")
+            }
+            json={() => rows}
+            agent={() => ({
+              kind:
+                lastLookup.mode === "contents"
+                  ? "reachability-contents"
+                  : "reachability-containers",
+              location: RELATIONSHIPS_LOCATION,
+              description:
+                lastLookup.mode === "contents"
+                  ? "Reachability inspector result: every record this container conveys access to, with depth and max access level."
+                  : "Reachability inspector result: every container that conveys access to this record, with depth and max access level.",
+              data: rows,
+              attributes: {
+                mode: lastLookup.mode,
+                entity_type: lastLookup.entityType,
+                entity_id: lastLookup.entityId,
+                rows: rows.length,
+              },
+            })}
+          />
+        )}
       </div>
 
       {rows !== null ? (

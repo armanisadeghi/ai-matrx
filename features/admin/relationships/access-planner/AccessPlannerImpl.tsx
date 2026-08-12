@@ -40,6 +40,7 @@ import {
   Wrench,
 } from "lucide-react";
 
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,14 @@ import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Json } from "@/types/database.types";
 import type { AccessPlannerProps } from "./AccessPlanner";
+import {
+  plannerSnapshotAgentPayload,
+  plannerSnapshotData,
+  plannerSnapshotHuman,
+  plannerTableAgentPayload,
+  plannerTableDetailData,
+  plannerTableHuman,
+} from "./copy";
 import {
   parseAccessPlannerSnapshot,
   plannerTableId,
@@ -691,6 +700,13 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <CopyButtons
+              size="sm"
+              label={`Schema ${snapshot.schema} access map`}
+              human={() => plannerSnapshotHuman(snapshot)}
+              json={() => plannerSnapshotData(snapshot)}
+              agent={() => plannerSnapshotAgentPayload(snapshot)}
+            />
             <Select
               value={snapshot.schema}
               onValueChange={(value) => void refresh(value)}
@@ -937,15 +953,30 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                         {selectedTable.schema_name}.{selectedTable.table_name}
                       </p>
                     </div>
-                    <Badge
-                      variant={
-                        selectedTable.issue_codes.length > 0
-                          ? "destructive"
-                          : "outline"
-                      }
-                    >
-                      {DISPOSITION_COPY[selectedTable.disposition].label}
-                    </Badge>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <CopyButtons
+                        size="icon"
+                        label={`${selectedTable.schema_name}.${selectedTable.table_name}`}
+                        human={() =>
+                          plannerTableHuman(snapshot, selectedTable)
+                        }
+                        json={() =>
+                          plannerTableDetailData(snapshot, selectedTable)
+                        }
+                        agent={() =>
+                          plannerTableAgentPayload(snapshot, selectedTable)
+                        }
+                      />
+                      <Badge
+                        variant={
+                          selectedTable.issue_codes.length > 0
+                            ? "destructive"
+                            : "outline"
+                        }
+                      >
+                        {DISPOSITION_COPY[selectedTable.disposition].label}
+                      </Badge>
+                    </div>
                   </div>
                   <p className="mt-2 text-xs leading-5 text-muted-foreground">
                     {DISPOSITION_COPY[selectedTable.disposition].description}

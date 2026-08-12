@@ -234,8 +234,14 @@ used by the per-row **Link policy** side panel).
   stored as an empty `url_path_template`; public links still resolve through
   `/s/[token]`. Share-field choices come from `information_schema.columns`
   through `admin_shareable_registry_defaults` / `admin_list_share_policies`.
-- Drift panel + each problem row use `<CopyButtons>` (same Copy / Copy-for-AI
-  primitive as the registry tables).
+- **Every data surface here carries the `components/agent-copy` pair** (Copy /
+  JSON / Copy-for-AI): registry tables via `MatrxDataTable copy`, drift panel +
+  problem rows, the Overview status header, Reachability lookup results (payload
+  reads the last-RUN lookup, never the live form fields), the explorer
+  `[token]` header (orbit graph), and the Access Planner — whole-snapshot pair
+  in its header + selected-table detail pair in its right pane. Planner payload
+  builders are pure functions in `access-planner/copy.ts`; never hand-roll a
+  clipboard handler or envelope.
 - **THE DOOR LAW** (`common-docs/policies/no-dead-ends.md`) — this hub names
   real records constantly, so it never prints a bare id or an unlinked name:
   a record name → `EntityRef`, a raw FK column → `MatrxUuidCell` with the
@@ -281,6 +287,10 @@ used by the per-row **Link policy** side panel).
 
 ## Change log
 
+- **2026-08-12** — Copy / Copy-for-AI coverage completed across the hub: Access
+  Planner (schema snapshot + selected-table detail, builders in
+  `access-planner/copy.ts`), Overview status header, Reachability results, and
+  the explorer `[token]` orbit header now carry the shared `agent-copy` pair.
 - **2026-08-12** — Corrected screenshot conveyance after the platform-wide
   access-tree audit: `note/file → web_screenshot` keep little-to-big direction
   and now use the screenshot target as a viewer-capped container. A page share
