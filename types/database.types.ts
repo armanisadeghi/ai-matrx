@@ -13375,6 +13375,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
@@ -13405,6 +13406,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -13435,6 +13437,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -54769,7 +54772,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           page_id: string
           site_id: string
           updated_at: string
@@ -54783,7 +54786,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           page_id: string
           site_id: string
           updated_at?: string
@@ -54797,7 +54800,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           page_id?: string
           site_id?: string
           updated_at?: string

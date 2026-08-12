@@ -6,6 +6,21 @@
  * completed dictations accumulate as entries; the combined text can be
  * edited as a draft and sent onward via the content action bar. State
  * lives in `voicePadSlice` keyed by (overlayId, instanceId).
+ *
+ * NO WRITE TARGETS, and that is a RULING rather than a gap (2026-08-12) — do
+ * not re-scout it. The mount owns exactly ONE genuinely authored field,
+ * `draft_text`: the combined transcript the user edits, which an agent could
+ * plausibly clean up. Nothing else qualifies. `live_transcript` is
+ * transcription OUTPUT. `transcript_entries` are a timestamped LOG of what the
+ * user actually SAID — appending to them fabricates provenance rather than
+ * drafting content, the same record-vs-draft line `matrx-user/chat` draws
+ * around its message history. Clear-all and remove-entry are destructive, and
+ * the font-size control is a mechanical toggle. There is no pad title and no
+ * per-entry edit, and `VoicePad.tsx` is this surface's ONLY
+ * `SurfaceRuntimeProvider`, so no sibling mount adds a second field. One YES
+ * field is below the `surface-write-targets` skill's ~2 floor, and a composite
+ * cannot rescue it — a composite aggregates fields that are individually YES.
+ * A saved-note title or per-entry editing would reopen this.
  */
 
 import type {
