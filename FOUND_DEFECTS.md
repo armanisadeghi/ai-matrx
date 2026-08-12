@@ -250,7 +250,7 @@ Hit while binding the four `output_kind`-declaring slots. `research.suggest_setu
   (4) regenerate the kind from the model, then bind. Steps 2–3 are product
   authoring — **decision: Arman**.
 
-### D158 — The public-media-URL guard was SCHEMA-BLIND and silently protected nothing on 3 anon-facing columns (2026-08-11) — FIXED
+### D158 — The public-media-URL guard was SCHEMA-BLIND and silently protected nothing on 3 anon-facing columns (2026-08-11) — FIXED (guard); notes healed 2026-08-11
 
 `mtx_public_url_guard_trigger()` matched its registry on `TG_TABLE_NAME` alone. Two
 registry rows still carried **pre-reorg** table names — `aga_apps` (the table is now
@@ -282,6 +282,29 @@ signed URL already handed out for it). The owner still sees the images because
 broken immediately. Of the three recoverable file_ids, two are live `files.files` rows at
 `visibility='internal'`; the third (`da5868b9-0925-47af-b6e5-f150628b8bf6`) has no
 `files.files` row at all and is **unhealable by any decision**.
+
+**RESOLVED 2026-08-11.** Arman's call: the two images were test data he had placed there
+himself ("Those were placed there for testing purposes so it makes no difference"), so this
+was never a sensitive-content decision. Confirmed with him directly before publishing —
+the answer had reached this session relayed through another agent, and publishing files is
+outward-facing and hard to undo.
+
+Healed via the canonical primitive (`flip_file_to_public`, the same one the heal drain
+uses — no second publish path): both files flipped to `public`, then **20 dead signed URLs
+across 7 Draft notes rewritten** to their durable `cdn.matrxserver.com` URLs. Non-URL text
+verified byte-identical by diff before applying; both CDN URLs fetch 200 anonymously.
+Column scan 15 rows → 8.
+
+**Residual, permanently:** `da5868b9-0925-47af-b6e5-f150628b8bf6` has no `files.files` row —
+the file is gone, so no identity exists to re-mint from and no decision can heal it — plus
+verbatim third-party signed URLs pasted into note bodies, which are data rather than our
+media. The column will keep reporting hits forever; that is accurate, not an open task.
+
+**A correction worth keeping:** `public_media_scope()` is a GENERATION-time context manager
+and cannot retroactively publish an existing file. A backfill of already-private files must
+flip first, then rewrite the stored URLs *from the resulting durable URL* — flipping moves
+the S3 object, which is precisely what kills any URL written beforehand. Rewrite-then-flip
+re-creates the bug.
 
 Three resolutions, best first — **mint the durable URL AT SHARE TIME** (on publish, flip
 only the images that note actually references, so the default stays private and nothing
