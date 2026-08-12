@@ -11,20 +11,11 @@ import {
 import ScraperDataUtils from "@/features/scraper/utils/data-utils";
 import PageContent from "@/features/scraper/parts/core/PageContent";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
-
-function normalizeUrl(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  const withProtocol = /^https?:\/\//i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
-  try {
-    new URL(withProtocol);
-    return withProtocol;
-  } catch {
-    return null;
-  }
-}
+import { ScraperSurfaceMount } from "@/features/scraper/agent-context/ScraperSurfaceMount";
+// THE scrape-target URL rule — the same helper the floating workspace and the
+// `scrape_command` write handler use, so an agent can never stage a URL this
+// page's own Scrape buttons would reject.
+import { normalizeUrl } from "@/features/scraper/utils/scraper-floating-helpers";
 
 const MODES = [
   {
@@ -68,6 +59,10 @@ export default function Page() {
   const [result, setResult] = useState<ReturnType<
     typeof ScraperDataUtils.processFullData
   > | null>(null);
+  // The raw hook result behind `result`. `processFullData` is a display
+  // projection that drops fields the surface scope reads (links, metadata,
+  // execution time), so the surface reads the original envelope.
+  const [rawResult, setRawResult] = useState<ScraperResult | null>(null);
   const [activeTab, setActiveTab] = useState("pretty");
 
   const validate = (raw: string) => {
@@ -96,11 +91,13 @@ export default function Page() {
     if (!normalized) return;
     setUrl(normalized);
     setResult(null);
+    setRawResult(null);
     resetScraper();
     setIsFullScraping(true);
     try {
       const scraperResult = await fullScrape(normalized);
       if (scraperResult) {
+        setRawResult(scraperResult);
         setResult(
           ScraperDataUtils.processFullData({
             response_type: "fetch_results",
@@ -139,9 +136,33 @@ export default function Page() {
     if (e.key === "Enter") handleQuickScrape();
   };
 
+  // `matrx-user/scraper` — the hub landing mount. It owns the single-URL box
+  // and nothing else, so `scrape_command` (URL only) is the one target here.
+  const withSurface = (body: React.ReactNode) => (
+    <ScraperSurfaceMount
+      context={{
+        mode: "url",
+        selected: rawResult,
+        activeTab: activeTab as never,
+        failureReason: error || hookScrapeError,
+        targetUrl: url,
+        results: rawResult ? [rawResult] : [],
+        selectedIndex: 0,
+        isScraping: isFullScraping,
+      }}
+      write={{
+        setUrl,
+        notHereHint:
+          "This is the scraper home route, which scrapes one URL. Open /scraper/search or /scraper/search-and-scrape for keyword modes, or the floating Web Scraper workspace, which owns every mode at once.",
+      }}
+    >
+      {body}
+    </ScraperSurfaceMount>
+  );
+
   // ── Results view ──────────────────────────────────────────────────────────
   if (result) {
-    return (
+    return withSurface(
       <div
         className="h-full flex flex-col overflow-hidden bg-textured"
         style={{ paddingTop: "var(--shell-header-h)" }}
@@ -165,6 +186,7 @@ export default function Page() {
             <Button
               onClick={() => {
                 setResult(null);
+                setRawResult(null);
                 setUrl("");
                 setError(null);
               }}
@@ -214,12 +236,12 @@ export default function Page() {
             dataUtils={ScraperDataUtils}
           />
         </div>
-      </div>
+      </div>,
     );
   }
 
   // ── Landing view ──────────────────────────────────────────────────────────
-  return (
+  return withSurface(
     <div
       className="h-full overflow-y-auto flex flex-col items-center justify-start pb-safe bg-textured px-4"
       style={{ paddingTop: "calc(var(--shell-header-h) + 12dvh)" }}
@@ -316,6 +338,6 @@ export default function Page() {
           structured data, images, links & metadata.
         </p>
       </div>
-    </div>
+    </div>,
   );
 }

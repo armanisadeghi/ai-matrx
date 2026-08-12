@@ -14,10 +14,16 @@ import {
 import ScraperDataUtils from "@/features/scraper/utils/data-utils";
 import PageContent from "@/features/scraper/parts/core/PageContent";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
+import { ScraperSurfaceMount } from "@/features/scraper/agent-context/ScraperSurfaceMount";
+import {
+  PAGE_LIMIT_DEFAULT,
+  PAGE_LIMIT_MAX,
+  PAGE_LIMIT_MIN,
+} from "@/features/scraper/scrape-command";
 
 export default function ScraperSearchAndScrapePage() {
   const [keyword, setKeyword] = useState("");
-  const [maxPages, setMaxPages] = useState("5");
+  const [maxPages, setMaxPages] = useState(String(PAGE_LIMIT_DEFAULT));
   const [useCache, setUseCache] = useState(false);
   const {
     searchAndScrapeLimited,
@@ -67,7 +73,7 @@ export default function ScraperSearchAndScrapePage() {
     setSelectedIndex(0);
     const results = await searchAndScrapeLimited({
       keyword: keyword.trim(),
-      max_page_read: parseInt(maxPages) || 5,
+      max_page_read: parseInt(maxPages) || PAGE_LIMIT_DEFAULT,
       get_text_data: true,
       get_overview: true,
       get_links: true,
@@ -96,6 +102,35 @@ export default function ScraperSearchAndScrapePage() {
   };
 
   return (
+    // `matrx-user/scraper` — the deep (search + scrape) mount. It owns the
+    // keyword, the page budget and the scraped-pages sidebar, so those are the
+    // targets offered here; the mode is the route and there is no single-URL
+    // input on this view.
+    <ScraperSurfaceMount
+      context={{
+        mode: "batch",
+        selected: selectedResult,
+        activeTab: activeTab as never,
+        failureReason: hasError ? error : null,
+        searchKeyword: keyword,
+        maxPages: parseInt(maxPages, 10) || PAGE_LIMIT_DEFAULT,
+        results: allResults,
+        selectedIndex,
+        isScraping: isLoading,
+      }}
+      write={{
+        setKeyword,
+        setMaxPages: (value) => setMaxPages(String(value)),
+        selectResultPage: (index) => {
+          // The exact pair the sidebar's own onClick fires.
+          setSelectedIndex(index);
+          setActiveTab("pretty");
+        },
+        resultCount: allResults.length,
+        notHereHint:
+          "This is the Search & Scrape route. Open /scraper/quick for a single URL, /scraper/search for search-only, or the floating Web Scraper workspace, which owns every mode at once.",
+      }}
+    >
     <div
       className="h-full flex flex-col overflow-hidden bg-textured"
       style={{ paddingTop: "var(--shell-header-h)" }}
@@ -132,8 +167,8 @@ export default function ScraperSearchAndScrapePage() {
               <Input
                 id="maxPages"
                 type="number"
-                min="1"
-                max="20"
+                min={PAGE_LIMIT_MIN}
+                max={PAGE_LIMIT_MAX}
                 value={maxPages}
                 onChange={(e) => setMaxPages(e.target.value)}
                 disabled={isLoading}
@@ -271,5 +306,6 @@ export default function ScraperSearchAndScrapePage() {
         </div>
       </div>
     </div>
+    </ScraperSurfaceMount>
   );
 }

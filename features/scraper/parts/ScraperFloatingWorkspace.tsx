@@ -38,6 +38,7 @@ import {
   buildScraperContextData,
   SCRAPER_CONTEXT_MENU_PROPS,
 } from "@/features/scraper/agent-context/buildScraperContextData";
+import { buildScraperWriteHandlers } from "@/features/scraper/agent-context/scraperWriteHandlers";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createScraperExtraSections } from "@/features/scraper/agent-context/scraperExtraSections";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
@@ -367,161 +368,35 @@ export function ScraperFloatingWorkspace({
   }, [dispatch, selectedScraped]);
 
   // ── Write half of the scraper surface (manifest `writeTargets`) ─────────
-  // An agent may STAGE the next scrape command; it may never run one — that
-  // spends real time on someone else's server and stays the user's click.
-  // Every handler validates against the SAME `scrape-command` constants the
-  // manifest's contract prose is interpolated from, and THROWS on a bad shape
-  // (the writeback seam turns a throw into a safe error envelope the agent
-  // reads). Fresh closures per call (the getWriteHandlers contract), so `mode`
-  // read below is always the live mode, never a stale snapshot.
-  const getSurfaceWriteHandlers = () => ({
-    scrape_command: (value: unknown) => {
-      // A run in flight DISABLES these inputs for the user; staging into them
-      // would land a value the user cannot see or correct, against a request
-      // whose parameters are already captured. Refuse loudly instead.
-      if (isAnyLoading)
-        throw new Error(
-          "scrape_command is unavailable while a scrape or search is in flight (is_scraping is true). Wait for the run to finish.",
-        );
-      if (typeof value !== "object" || value === null || Array.isArray(value))
-        throw new Error(
-          "scrape_command expects an object: { mode?, url?, keyword? }.",
-        );
-      const patch = value as Record<string, unknown>;
-      const accepted = ["mode", "url", "keyword"];
-      const unsupported = Object.keys(patch).filter(
-        (key) => !accepted.includes(key),
-      );
-      if (unsupported.length > 0)
-        throw new Error(
-          `scrape_command got unsupported key(s): ${unsupported.join(", ")}. Accepted keys: ${accepted.join(" | ")}.`,
-        );
-      if (!accepted.some((key) => key in patch))
-        throw new Error(
-          `scrape_command needs at least one of: ${accepted.join(" | ")}.`,
-        );
-
-      // Resolve the mode this command runs in FIRST: it decides which config
-      // input the workspace renders, so a field belonging to another mode is
-      // refused rather than staged where the user cannot see it.
-      const nextMode = "mode" in patch ? patch.mode : toScrapeMode(mode);
-      if (!isScrapeMode(nextMode))
-        throw new Error(
-          `scrape_command.mode expects one of: ${SCRAPE_MODE_ENUM_TEXT}.`,
-        );
-      const spec = SCRAPE_MODE_BY_VALUE[nextMode];
-
-      let nextUrl: string | undefined;
-      if ("url" in patch) {
-        if (typeof patch.url !== "string" || !patch.url.trim())
-          throw new Error("scrape_command.url expects a non-empty string.");
-        if (spec.input !== "url")
-          throw new Error(
-            `scrape_command.url does not apply in "${spec.value}" mode (${spec.summary}). Send { mode, url } together to switch mode and stage the URL in one call.`,
-          );
-        const normalized = normalizeUrl(patch.url);
-        if (!normalized)
-          throw new Error(
-            `scrape_command.url is not a usable URL: "${patch.url}".`,
-          );
-        nextUrl = normalized;
-      }
-
-      let nextKeyword: string | undefined;
-      if ("keyword" in patch) {
-        if (typeof patch.keyword !== "string" || !patch.keyword.trim())
-          throw new Error("scrape_command.keyword expects a non-empty string.");
-        if (spec.input !== "keyword")
-          throw new Error(
-            `scrape_command.keyword does not apply in "${spec.value}" mode (${spec.summary}). Send { mode, keyword } together to switch mode and stage the keyword in one call.`,
-          );
-        nextKeyword = patch.keyword.trim();
-      }
-
-      // Everything is validated before ANY state moves — a rejected key must
-      // never leave a half-applied command staged in the form.
-      if ("mode" in patch) setMode(spec.workspaceMode);
-      if (nextUrl !== undefined) setUrl(nextUrl);
-      if (nextKeyword !== undefined) {
-        // Which store holds the keyword depends on the mode — deep mode keeps
-        // its own, web search uses the keyword form's. Resolved from the mode
-        // THIS call staged, which is the whole reason mode and keyword share
-        // one target instead of racing as two.
-        if (spec.workspaceMode === "web") keywordForm.setKeywords(nextKeyword);
-        else setKeyword(nextKeyword);
-      }
-    },
-    scrape_page_limit: (value: unknown) => {
-      if (isAnyLoading)
-        throw new Error(
-          "scrape_page_limit is unavailable while a scrape or search is in flight (is_scraping is true). Wait for the run to finish.",
-        );
-      if (!isValidPageLimit(value))
-        throw new Error(
-          `scrape_page_limit expects an integer from ${PAGE_LIMIT_MIN} to ${PAGE_LIMIT_MAX}.`,
-        );
-      setMaxPages(String(value));
-    },
-    scrape_result_limit: (value: unknown) => {
-      if (isAnyLoading)
-        throw new Error(
-          "scrape_result_limit is unavailable while a scrape or search is in flight (is_scraping is true). Wait for the run to finish.",
-        );
-      if (!isValidResultLimit(value))
-        throw new Error(
-          `scrape_result_limit expects an integer from ${RESULT_LIMIT_MIN} to ${RESULT_LIMIT_MAX}.`,
-        );
-      keywordForm.setMaxResults(String(value));
-    },
-
-    // ── Selection targets (mode: "ui") ──────────────────────────────────
-    // Neither fetches anything: they move the user's view onto something this
-    // session ALREADY has. Each one refuses in the modes that do not render
-    // its list, because a selection the user cannot see is not a selection.
-    selected_result_page: (value: unknown) => {
-      const spec = SCRAPE_MODE_BY_WORKSPACE_MODE[mode];
-      if (mode === "web")
-        throw new Error(
-          `selected_result_page does not apply in "${spec.value}" mode (${spec.summary}) — the scraped-pages sidebar and results pane are not rendered. Switch with scrape_command { mode: "quick" } or { mode: "full" } first.`,
-        );
-      if (typeof value !== "number" || !Number.isInteger(value))
-        throw new Error(
-          `selected_result_page expects a zero-based integer index into results_overview, got ${typeof value}.`,
-        );
-      if (scrapedResults.length === 0)
-        throw new Error(
-          "selected_result_page: no pages have been scraped in this session yet (result_count is 0).",
-        );
-      if (value < 0 || value >= scrapedResults.length)
-        throw new Error(
-          `selected_result_page: index ${value} is out of range — this session has ${scrapedResults.length} scraped page(s), so valid indexes are 0-${scrapedResults.length - 1}.`,
-        );
-      // The exact pair the sidebar's own onSelect fires.
-      setSelectedScrapedIndex(value);
-      setActiveTab("pretty");
-    },
-    selected_search_hit: (value: unknown) => {
-      const spec = SCRAPE_MODE_BY_WORKSPACE_MODE[mode];
-      if (mode !== "web")
-        throw new Error(
-          `selected_search_hit does not apply in "${spec.value}" mode (${spec.summary}) — the web-search hit list is only rendered in search mode. Switch with scrape_command { mode: "search" } first.`,
-        );
-      if (typeof value !== "number" || !Number.isInteger(value))
-        throw new Error(
-          `selected_search_hit expects a zero-based integer index into search_hits, got ${typeof value}.`,
-        );
-      const hits = keywordForm.flatResults.length;
-      if (hits === 0)
-        throw new Error(
-          "selected_search_hit: no web-search hits are loaded (search_hit_count is 0). The user has to run a search first.",
-        );
-      if (value < 0 || value >= hits)
-        throw new Error(
-          `selected_search_hit: index ${value} is out of range — there ${hits === 1 ? "is" : "are"} ${hits} hit(s), so valid indexes are 0-${hits - 1}.`,
-        );
-      keywordForm.setSelectedHitIndex(value);
-    },
-  });
+  // This mount owns EVERY input the surface declares, so it passes every
+  // setter and gets every target. The validation itself lives in
+  // `agent-context/scraperWriteHandlers.ts` — the `/scraper/*` routes own the
+  // same inputs and must enforce the same contract, so there is one
+  // implementation rather than two that can drift. Fresh closures per call
+  // (the getWriteHandlers contract), so `mode` is always the live mode.
+  const getSurfaceWriteHandlers = () =>
+    buildScraperWriteHandlers({
+      mode,
+      isScraping: isAnyLoading,
+      setMode,
+      setUrl,
+      setKeyword: (keyword, forMode) => {
+        // Which store holds the keyword depends on the mode the command
+        // staged — deep mode keeps its own, web search uses the form's.
+        if (forMode === "web") keywordForm.setKeywords(keyword);
+        else setKeyword(keyword);
+      },
+      setMaxPages: (value) => setMaxPages(String(value)),
+      setMaxResults: (value) => keywordForm.setMaxResults(String(value)),
+      selectResultPage: (index) => {
+        // The exact pair the sidebar's own onSelect fires.
+        setSelectedScrapedIndex(index);
+        setActiveTab("pretty");
+      },
+      resultCount: scrapedResults.length,
+      selectSearchHit: (index) => keywordForm.setSelectedHitIndex(index),
+      hitCount: keywordForm.flatResults.length,
+    });
 
   const showScrapeMain = mode === "url" || mode === "batch";
   const showWebMain = mode === "web";
