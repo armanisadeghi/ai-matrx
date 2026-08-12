@@ -298,6 +298,12 @@ export const toolRendererRegistry: ToolRegistry = {
       }
       return agent ?? "reviewing a conversation";
     },
+    // An image call's result IS the picture, so its card must not mount folded
+    // on a reloaded conversation — that reads as "where is my image?", which is
+    // the exact complaint this whole path exists to answer. A collaboration or
+    // plain agent_call stays "auto" and folds away like any other work log.
+    getDisplayMode: (entry) =>
+      isImageGenerationAgentCall(entry) ? "stay-open" : null,
     resultsLabel: "Agent Result",
     InlineComponent: AgentCallInline,
     keepExpandedOnStream: true,
@@ -1599,8 +1605,14 @@ const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
  */
 export function getToolDisplayMode(
   toolName: string | null,
+  entry?: ToolLifecycleEntry | null,
 ): "auto" | "stay-open" | "never-open" {
   if (!toolName) return "auto";
+  // Per-entry first: a polymorphic tool decides from what it actually did.
+  if (entry) {
+    const perEntry = toolRendererRegistry[toolName]?.getDisplayMode?.(entry);
+    if (perEntry) return perEntry;
+  }
   const registered = toolRendererRegistry[toolName]?.displayMode;
   if (registered) return registered;
   const dbMode = getCachedToolMeta(toolName)?.displayMode;
