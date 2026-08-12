@@ -9,18 +9,49 @@
  *
  * EMITTERS (two, both live — the `readiness: "stub"` / "no runtime emitter"
  * note this file used to carry was stale):
- *   - THREAD  `app/(core)/messages/[conversationId]/page.tsx` — emits 8 of the
- *     9 surface-specific values.
+ *   - THREAD  `app/(core)/messages/[conversationId]/page.tsx` — emits all 9
+ *     surface-specific values.
  *   - LIST    `app/(core)/messages/MessagesPageClient.tsx` — emits only
  *     `total_unread_count` + `all_conversations` (there is no open
  *     conversation on the list route).
- * `current_conversation_message_count` is declared but emitted by NEITHER
- * mount; it is the surface's one real remaining read gap.
+ *
+ * `current_conversation_message_count` WAS the surface's one read gap and is
+ * now emitted (2026-08-12) — but it had to be REDEFINED to be emittable at
+ * all, which is the durable note here. It was declared as "number of messages
+ * in the open conversation"; no such number exists on the client. `useMessages`
+ * pages 50 at a time behind `hasMore`/`loadMoreMessages`, and neither
+ * `MessagingService` nor the `conversations` row exposes a total, so the only
+ * honest number is the size of the LOADED window. The value now says that in
+ * the words the agent reads. Emitting `messages.length` under the original
+ * description would have replaced a missing value with a WRONG one — a read
+ * gap is visible, a plausible-but-false count is not.
+ *
+ * The messages live in `ChatThread`'s `useChat` subscription, one level below
+ * the provider, so the count rides up through an `onLoadedMessageCountChange`
+ * callback into a ref the route's `getScope` reads. A ref, not state: the
+ * scope is sampled when the user presses Run, and a second `useChat` in the
+ * route would have opened a duplicate realtime subscription.
  *
  * ---------------------------------------------------------------------------
  * WRITE TARGETS: evaluated 2026-08-11 and DELIBERATELY NOT DECLARED.
+ * RE-EVALUATED 2026-08-12 by a second, independently-scouted assignment; the
+ * judgment below was re-derived from the live components and STANDS unchanged.
  * Do not re-assign this surface for `surface-write-targets` — the judgment
  * below is the result, not an omission.
+ *
+ * The 2026-08-12 pass swept every piece of editable state in
+ * `features/messaging/` rather than re-reading this docblock, and found the
+ * same single candidate: `MessageInput`'s `content`, plus `attachments` (ids
+ * an agent can only guess), `NewConversationDialog`'s people-search and
+ * create-conversation state (identity, outward-facing), and
+ * `ConversationList`'s `searchQuery` / `selectedConversationId` /
+ * `showNewConversation` (mechanical filter, navigation, a UI toggle). It also
+ * re-checked the two load-bearing claims below and both hold: `matrx-user/chat`
+ * really does ship `input_draft` as ONE `mode:"draft"` / `applyPolicy:"ask"`
+ * target taking `{text, mode?}` (`ChatInputDraftWrite`), and there is still no
+ * conversation write path anywhere — `MessagingService` exposes exactly
+ * `sendMessage`, `sendBridgeMessage`, `markConversationAsRead`, and no file in
+ * the repo writes the `conversations` table.
  *
  * This surface has exactly ONE field that clears the judgment bar, which is
  * under the ~2-target floor the skill sets for earning the work:
@@ -97,9 +128,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "current_conversation_message_count",
-    label: "Message count",
+    label: "Loaded message count",
     description:
-      "Number of messages in the open conversation. Zero when none or no conversation is open.",
+      "How many messages of the open conversation are currently LOADED in the thread view — NOT the conversation's total. The thread pages 50 at a time and loads older messages on demand, so this grows as the user scrolls back; treat it as the size of what you can see, and never report it as how many messages the conversation has. Zero when no conversation is open or none have loaded yet.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 5,
@@ -171,7 +202,7 @@ export const messagesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/messages",
   readiness: "partial",
   readinessNote:
-    "Audited against the live page 2026-08-11. TWO emitters: the thread route emits 8 of 9 surface-specific values, the list route only total_unread_count + all_conversations. current_conversation_message_count is declared but emitted by neither. Write targets evaluated and deliberately not declared — see the docblock.",
+    "Audited against the live page 2026-08-11; read gap closed and write targets re-evaluated 2026-08-12. TWO emitters: the thread route emits all 9 surface-specific values, the list route only total_unread_count + all_conversations (there is no open conversation there). current_conversation_message_count is the LOADED window size, not a conversation total — the thread paginates and no total exists on the client. Still `partial` rather than `verified` because the list mount is a deliberate 2-of-9. Write targets evaluated twice and deliberately not declared — see the docblock.",
   label: "Messages",
   urlPattern: "/messages",
   values: mergeBaselineValues(
