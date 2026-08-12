@@ -51,6 +51,59 @@ _(none)_
 
 - **TASK-BL-7** — "This site was deleted or is no longer accessible" is shown for sites that are ALIVE (2026-08-11, `ready`, **platform-wide, not backlinks-only**). `assertFound` (`features/marketing/data/service.ts:171`) throws that exact sentence on ANY zero-row read, so an access/organization-resolution miss is reported to the user as a deletion. This is not theoretical: two agent-review items for marketing pages were rejected as "site deleted or inaccessible" while the brand and site were both live and un-deleted in the database (Data Destruction, 444 stored links). It is also a dead end — the message offers no door and no next step. Fix: distinguish not-found from no-access (a second bounded existence check, or a `SECURITY DEFINER` helper that answers "exists but you lack access" without leaking contents), give each case honest copy, and give the no-access case an actual door (request access / switch organization / go to the sites list). Loud-recovery doctrine applies: whichever branch fires should be visible in the Error Inspector, not silently swallowed.
 
+> **Surface write-target chips (TASK-SWT-*)** — the avalanche campaign's next
+> assignments, scouted 2026-08-12 against latest main. Each one makes ONE
+> surface agent-writable. **Invoke the `surface-write-targets` skill first**
+> (`.claude/skills/surface-write-targets/SKILL.md`) and follow it exactly —
+> judgment bar, manifest + handler recipe, and the MANDATORY live-agent run.
+> These were filed as tasks rather than spawned as sessions because the
+> originating session hit the session-lineage depth limit; they are otherwise
+> ordinary chips and each ends by firing 3-5 chips of its own.
+>
+> **Shared traps, all learned the hard way on `matrx-user/marketing-findings`
+> (landed 2026-08-12) — read its exemplar `FindingWriteTargets.tsx` first:**
+> (1) Confirm the write LANDED — re-read the returned row or the store and
+> THROW when the stored value differs; a canonical service that swallows
+> failures into a toast will otherwise have you report success for a write the
+> server refused. (2) **Write EVERY member of an enum target live.** Findings
+> shipped `acknowledged | open` where `open` routed to the wrong canonical verb
+> (`reopenFinding`, which writes `reopened`) — it stored the wrong status AND
+> then failed its own landing check, reporting failure for a write that had
+> already mutated the row. The original verification covered every value except
+> that one. (3) **Every value an agent can write needs a USER TWIN** — a
+> control the user can see land and reverse in place. Findings' header offered
+> only "I'm on it", so three statuses had no correction affordance; completing
+> the twin is in scope, not scope creep. (4) The inline-tool layer PARSES a
+> JSON-looking argument before your handler sees it, so a string-typed target
+> cannot take raw JSON — accept the OBJECT and serialize it yourself.
+> (5) The seam resolves handler closures BEFORE the user confirms, so read
+> state from the store/a ref at call time, or make interdependent fields ONE
+> object target. (6) Never re-type an enum into a description — interpolate the
+> real constant. (7) **Collisions land MID-FLIGHT**: findings was assigned to
+> two agents and a competing design was pushed to the SAME branch name while
+> the second agent was verifying. Re-check `git fetch origin main` + `git
+> ls-remote origin <branch>` immediately before committing; if someone landed
+> first, KEEP their work, add only what is additive, and merge `origin/main` in
+> rather than rebasing their commit so their SHA survives and your push is a
+> fast-forward — never force-push over another agent's branch. (8) Reconcile
+> `features/surfaces/FEATURE.md` conflicts BY HAND (both sides), and if you run
+> a blanket find/replace over a FEATURE.md, check it did not rewrite an OLDER
+> historical entry that legitimately mentioned the same symbol — that exact
+> mistake happened on findings. (9) Before assigning any onward chip, intersect
+> "no `writeTargets`" against ACTUAL provider mounts — and note that
+> `grep -rhno 'surfaceName="[^"]*"'` MISSES mounts passing a const
+> (`surfaceName={SURFACE}`), so also grep `SurfaceRuntimeProvider` in the
+> feature dir. A `stub`-readiness manifest may be FICTION describing a
+> different app (this happened to `canvas`) — `surface-authoring` comes first.
+
+- **TASK-SWT-COMPETITORS** — Make `matrx-user/marketing-competitors` agent-writable (2026-08-12, `ready`). Manifest `features/surfaces/manifests/marketing-competitors.manifest.ts` (route `/marketing/competitors`, readiness `verified`, no `writeTargets`); mount is `features/marketing/competitors/CompetitorAutopsyWorkspace.tsx`. **The strongest remaining candidate:** `features/marketing/competitors/data.ts` already exposes TWO canonical human-decision writes — `updateCompetitorTracking(...)` and `updateOpportunityStatus(...)` — and the manifest's declared reads are their exact twins (`competitors` carries "tracking" and "latest resolved judgment"; `opportunities` carries "human status"). The surface also declares a `competitor_strategist` role whose stated job is "prioritizes the minimum action set", so it already expects agents to do this. Read the real tracking/status vocabulary from the constant or TS union and interpolate it. **The NOs:** relevance / threat / overlap / visibility and the opportunity scores are pipeline OUTPUT, and `latest_autopsy` / `active_run` are run artifacts — writing any of them forges the analysis record; competitor domain/id is identity; list filters are view state. Honest check: confirm both fields are genuinely user-editable in the workspace UI before declaring them.
+
+- **TASK-SWT-REPUTATION** — Make `matrx-user/marketing-reputation` agent-writable (2026-08-12, `ready`). Manifest `features/surfaces/manifests/marketing-reputation.manifest.ts` (route `/marketing/brands/[brandId]/sites/[siteId]/reputation`, readiness `verified`, no `writeTargets`); the provider IS mounted in `features/marketing/components/reputation/ReputationWorkspace.tsx` (~line 465, via `surfaceName={SURFACE}` — which is why a literal-string grep misses it). **The candidate:** `updateReputationCase({caseId, status, ruling})` in `features/marketing/data/reputation-queries.ts` writes a case status AND a **human ruling** object through the `seo.update_reputation_case` RPC — an authored adjudication, which is squarely the YES class; the surface's own `reputation_adjudicator` role names the work. Status + ruling are interdependent, so strongly consider ONE object target (the findings `finding_suppression` shape) rather than two racing ones. **The NOs:** `reputation_narratives` / `reputation_brief` / `evidence_inventory` / `publication_opportunities` are generated artifacts and evidence, and `reputation_run_state` is run state. Read the real `ReputationCaseStatus` union rather than re-typing it.
+
+- **TASK-SWT-SETTINGS** — Assess and (if it earns it) make `matrx-user/settings` agent-writable (2026-08-12, `ready`). Manifest `features/surfaces/manifests/settings.manifest.ts` (route `/user-settings`, readiness `verified`, no `writeTargets`); mount `features/settings/route-shell/SettingsTabContentImpl.tsx`. **Read this chip's caveat before starting:** every value the surface declares TODAY is view state (`active_tab_id`, `active_tab_label`, `active_tab_path`, `is_saving`, `settings_sections`, `is_admin_view`) and view state does NOT earn a target on its own — so the first job is to find whether the actual PREFERENCE fields underneath (persisted via `features/settings/hooks/useSetting.ts` / `useSettingPersistence`) are worth declaring, which likely means adding their READ twins first. A preference an agent can genuinely reason about from context is a YES; a mechanical toggle nobody would ask an agent to flip is a NO, and the honest outcome may be "this surface does not earn it" — which the skill explicitly says to report rather than pad. If so, say so and spend the effort on the chips.
+
+- **TASK-SWT-MESSAGES** — Assess `matrx-user/messages`, `surface-authoring` FIRST (2026-08-12, `ready`). Manifest `features/surfaces/manifests/messages.manifest.ts` (route `/messages`, **readiness `stub`**, no `writeTargets`); mounts in `app/(core)/messages/MessagesPageClient.tsx` and `app/(core)/messages/[conversationId]/page.tsx`. **Prerequisite:** the readiness is `stub`, meaning the vocabulary was never audited against the page — the `canvas` chip found a stub manifest that described a DIFFERENT application, so verify every declared value against the live page and run `surface-authoring` before any write work. **If the surface is real,** the candidate is the composer DRAFT, following the shipped `matrx-user/chat` precedent exactly: `input_draft` is a legitimate draft target because it holds the message the user has NOT sent yet and is fully reversible, while the transcript (`last_message_text`, `all_conversations`, message counts) gets NO target — rewriting it fabricates history rather than editing a draft. SENDING stays human, as it does on `chat`, `podcast-studio` and `image-generate`. `current_conversation_title` may be a second target if a canonical rename service exists — check before declaring.
+
 - **TASK-SLR** — Picklists → Structured Lists full cross-repo rename (2026-07-14, `in-progress`). Eliminate the `picklist` identifier everywhere (data object + dropdown projection: tool, `cc.picklist`, wire tokens, component/route names) → `structured_list`. Layer-by-layer with 100%-verification gates + persisted-data migration (agent.definition JSON, tool bindings, window_sessions). **Full plan + live status = the cross-repo playbook `/Users/armanisadeghi/code/common-docs/projects/structured-lists-rename/FEATURE.md`** (the resumable source of truth — update it, not this line, as layers complete). Layer 0 (data object) done + verified (FE `dee8c4ede`, aidream `d8fbfa7b0`). Next: Layer 1 (RPC rename).
 
 ---
