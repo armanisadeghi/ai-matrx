@@ -1107,6 +1107,10 @@ function SlidesOutputCard({
         },
         // A 10-14 slide deck on a long report runs well past the 120s default.
         timeoutMs: 300_000,
+        // LOUD, and DIFFERENT from the noJson message below: "the run produced
+        // nothing" and "the run produced the wrong shape" are different bugs
+        // and must never share a sentence, or the next person debugging this
+        // cannot tell which one they are looking at.
         coerce: (value) => {
           const candidate = value as PresentationDeck | null;
           if (
@@ -1114,15 +1118,19 @@ function SlidesOutputCard({
             !Array.isArray(candidate.slides) ||
             candidate.slides.length === 0
           ) {
+            const shape =
+              candidate && typeof candidate === "object"
+                ? `keys: ${Object.keys(candidate).join(", ") || "(none)"}`
+                : `type: ${typeof candidate}`;
             throw new Error(
-              "The slides generator didn't return a valid deck. Try again.",
+              `The slides generator returned something that isn't a deck (${shape}). Try again.`,
             );
           }
           return candidate;
         },
         failureMessages: {
           noJson:
-            "The slides generator didn't return a valid deck. Try again.",
+            "The slides generator finished but produced no deck at all. Try again.",
         },
       });
       const asset: OutputAsset = {
@@ -1301,6 +1309,11 @@ function SeoOutputCard({
         slotKey: SEO_SLOT,
         surfaceKey: "research-outputs-seo",
         sourceFeature: "research",
+        organizationId,
+        contextAnchor: {
+          resource_type: "research_topic",
+          resource_id: topicId,
+        },
         userInput: buildGeneratorInput(reportMarkdown, toneProfile),
         coerce: (value) => {
           if (
@@ -1366,23 +1379,27 @@ function SeoOutputCard({
           and the user can keep working underneath. This strip only says where
           to look; it is never the only thing on screen while the AI works. */}
       {seoRun.hasLiveRun && (
-        <>
-          <LiveRunWindowController
-            instanceId={`seo:${topicId}`}
-            conversationId={seoRun.conversationId}
-            pending={seoRun.conversationId === null}
-            label="Optimizing for search"
-          />
-          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-2.5">
-            <SearchIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
-            <span className="text-xs font-medium text-primary">
-              Writing the package — it is streaming in the run window.
-            </span>
-          </div>
-        </>
+        <LiveRunWindowController
+          instanceId={`seo:${topicId}`}
+          conversationId={seoRun.conversationId}
+          pending={seoRun.conversationId === null}
+          label="Optimizing for search"
+        />
+      )}
+      {/* Gated on isRunning, NOT hasLiveRun: the window deliberately stays open
+          after a run settles so the user can keep reading it, but this line must
+          stop claiming a stream the moment there is no longer one — a failed run
+          left it saying "streaming" forever. */}
+      {seoRun.isRunning && (
+        <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-2.5">
+          <SearchIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <span className="text-xs font-medium text-primary">
+            Writing the package — it is streaming in the run window.
+          </span>
+        </div>
       )}
 
-      {!seoRun.hasLiveRun && viewing && seo && (
+      {!seoRun.isRunning && viewing && seo && (
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
