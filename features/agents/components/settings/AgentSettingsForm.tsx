@@ -2,7 +2,9 @@
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  selectAgentAccessResolved,
   selectAgentById,
+  selectAgentIsReadOnly,
   selectAllAgentsArray,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { AGENT_PUBLIC_TAB_LABEL } from "@/features/agents/constants/agent-list-labels";
@@ -27,15 +29,52 @@ import {
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { parseAgentCatalogProfile } from "@/features/agents/surface-catalog-profile";
+import { SETTINGS_CATALOG_PROFILE_TARGET } from "@/features/agents/constants/agent-settings-surface";
+import {
+  clearAgentSettingsDraft,
+  publishAgentSettingsDraft,
+} from "./agentSettingsDraftRegistry";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { selectModelNameById } from "@/features/ai-models/redux/modelRegistrySlice";
 
 interface AgentSettingsFormProps {
   agentId: string;
+  /**
+   * Surface to serve as the agent-writable host for: this form registers the
+   * surface's `settings_catalog_profile` handler and publishes its live draft
+   * for the surface's read twins.
+   *
+   * OPT-IN, and it must stay opt-in. `AgentContentWindow` renders this same
+   * form on the Agent Advanced Editor's Overview tab, inside a DIFFERENT
+   * surface's provider and usually on a different agent. If both instances
+   * registered, `getRegisteredWriteHandlers` would merge them and the last one
+   * mounted would win — staging a rewrite into a form the user who pressed
+   * Apply is not looking at. Only `AgentSettingsWindow` passes this. Same gate,
+   * for the same reason, as `matrx-user/lists`' `asRoute`.
+   */
+  writeSurfaceName?: string | null;
 }
 
-export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
+/**
+ * The ownership label the read-only info block renders.
+ *
+ * Exported because `useAgentSettingsSurface` emits it as the
+ * `agent_ownership` surface value, and a surface value that says something
+ * different from the box it claims to describe is a lie the Surface Context
+ * panel would repeat. One definition, two readers.
+ */
+export function agentOwnershipLabel(agent: AgentDefinition): string {
+  if (agent.agentType === "builtin") return AGENT_PUBLIC_TAB_LABEL;
+  return agent.isOwner ? "Mine" : "Shared";
+}
+
+export function AgentSettingsForm({
+  agentId,
+  writeSurfaceName,
+}: AgentSettingsFormProps) {
   const dispatch = useAppDispatch();
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const modelId = agent?.modelId || "";
@@ -77,6 +116,124 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
 
     return false;
   }, [agent, draft, tagsInput]);
+
+  // ── Surface write half ────────────────────────────────────────────────────
+  // Everything below runs BEFORE the `if (!agent)` bail-out because hooks must:
+  // an agent can arrive at this window while the record is still loading, and
+  // the handler answers that case with an error the model can act on rather
+  // than by not existing.
+
+  const isSurfaceHost = Boolean(writeSurfaceName);
+  const accessResolved = useAppSelector((state) =>
+    selectAgentAccessResolved(state, agentId),
+  );
+  const isReadOnly = useAppSelector((state) =>
+    selectAgentIsReadOnly(state, agentId),
+  );
+
+  // A write can be resolved, then sit behind an open confirm dialog for as long
+  // as the user leaves it open. If they switch tabs in the meantime this
+  // instance is gone and its `setDraft` is a no-op, so the value would vanish
+  // silently. Refuse loudly instead.
+  const mountedRef = useRef(true);
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+    },
+    [],
+  );
+
+  // Publish what is IN THE BOXES so the window's `getScope` can emit the read
+  // twins as staged-including-unsaved rather than as the stored record.
+  const draftTags = useMemo(
+    () =>
+      tagsInput
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+    [tagsInput],
+  );
+  useEffect(() => {
+    if (!isSurfaceHost) return;
+    publishAgentSettingsDraft({
+      agentId,
+      name: draft.name ?? "",
+      description: draft.description ?? "",
+      category: draft.category ?? "",
+      tags: draftTags,
+      isDirty,
+    });
+    return () => clearAgentSettingsDraft(agentId);
+  }, [
+    isSurfaceHost,
+    agentId,
+    draft.name,
+    draft.description,
+    draft.category,
+    draftTags,
+    isDirty,
+  ]);
+
+  useSurfaceWriteHandlers(writeSurfaceName ?? null, {
+    /**
+     * Stage a `{description?, category?, tags?}` patch into the SAME state the
+     * user's own typing writes — `setDraft` for the two text fields (the
+     * functional form, so the base is whatever is in the box at APPLY time, not
+     * at render time) and `setTagsInput` for the comma-separated tag box. The
+     * top Save button arms itself off `isDirty` exactly as it does for a human
+     * edit, and nothing reaches the database until the user presses it.
+     *
+     * `useSurfaceWriteHandlers` re-points its registration at the latest
+     * committed closure on every render, so `agent` and `isReadOnly` read here
+     * are current when the seam finally calls this — never the render that
+     * happened to be live when the tool call arrived.
+     */
+    [SETTINGS_CATALOG_PROFILE_TARGET]: (value: unknown) => {
+      // Validate the WHOLE object first: one bad key must not leave a new
+      // description already staged. Validate-then-apply, all or nothing.
+      const patch = parseAgentCatalogProfile(
+        value,
+        SETTINGS_CATALOG_PROFILE_TARGET,
+      );
+
+      if (!mountedRef.current) {
+        throw new Error(
+          `The Agent Settings form for this agent is no longer open — the user switched tabs or closed the window before approving. Nothing was staged; re-read the surface values and try again.`,
+        );
+      }
+      if (!agent) {
+        throw new Error(
+          "The agent's settings have not finished loading in the Agent Settings window — try again in a moment.",
+        );
+      }
+      if (agent.isVersion) {
+        throw new Error(
+          "This is a published version snapshot, which is read-only. Open the live agent to change it.",
+        );
+      }
+      if (accessResolved && isReadOnly) {
+        throw new Error(
+          "This agent is shared with you as view-only, so changes cannot be saved here.",
+        );
+      }
+
+      if (patch.description !== undefined || patch.category !== undefined) {
+        setDraft((prev) => ({
+          ...prev,
+          ...(patch.description !== undefined
+            ? { description: patch.description }
+            : {}),
+          ...(patch.category !== undefined ? { category: patch.category } : {}),
+        }));
+      }
+      if (patch.tags !== undefined) {
+        // The tag editor is ONE comma-separated input; joining the way
+        // `handleSave` splits it keeps the agent path and the human path on the
+        // same notion of "the same tag".
+        setTagsInput(patch.tags.join(", "));
+      }
+    },
+  });
 
   if (!agent) {
     return (
@@ -121,15 +278,7 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
     setTagsInput(agent.tags ? agent.tags.join(", ") : "");
   };
 
-  // Ownership string
-  let ownership = "Unknown";
-  if (agent.agentType === "builtin") {
-    ownership = AGENT_PUBLIC_TAB_LABEL;
-  } else if (agent.isOwner) {
-    ownership = "Mine";
-  } else {
-    ownership = "Shared";
-  }
+  const ownership = agentOwnershipLabel(agent);
 
   return (
     <div className="flex flex-col h-full relative">
@@ -167,7 +316,7 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
       <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-8 p-3 max-w-4xl mx-auto text-sm">
           <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-2 flex flex-col">
+            <div className="space-y-2 flex flex-col" data-surface-value="agent_name">
               <Label className="text-sm font-semibold">Name</Label>
               <VoiceTextarea
                 value={draft.name || ""}
@@ -180,7 +329,10 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
               />
             </div>
 
-            <div className="space-y-2 flex flex-col">
+            <div
+              className="space-y-2 flex flex-col"
+              data-surface-value="agent_description"
+            >
               <Label className="text-sm font-semibold">Description</Label>
               <VoiceTextarea
                 value={draft.description || ""}
@@ -194,7 +346,10 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2 flex flex-col">
+            <div
+              className="space-y-2 flex flex-col"
+              data-surface-value="agent_category"
+            >
               <Label className="text-sm font-semibold">Category</Label>
               <AgentCategoryPicker
                 value={draft.category || ""}
@@ -204,7 +359,10 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
               />
             </div>
 
-            <div className="space-y-2 flex flex-col">
+            <div
+              className="space-y-2 flex flex-col"
+              data-surface-value="agent_tags"
+            >
               <Label className="text-sm font-semibold">
                 Tags{" "}
                 <span className="text-xs font-normal text-muted-foreground ml-1">

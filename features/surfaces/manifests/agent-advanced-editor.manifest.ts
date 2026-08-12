@@ -40,7 +40,7 @@
  *
  * ONE composite + three singles, decided per target rather than by habit:
  *
- * - `agent_catalog_profile` is ONE object ({description, category, tags})
+ * - `editor_catalog_profile` is ONE object ({description, category, tags})
  *   because those three are re-derived together in a single act — the category
  *   and the tags ARE the classification OF the description — and they are
  *   consumed by one commit and one catalog row. Same reasoning as
@@ -49,6 +49,16 @@
  *   stages several targets in one turn has every handler resolved BEFORE the
  *   user confirms the first dialog, so three sibling targets could each land
  *   against a different intermediate description. One object cannot.
+ *   Its contract — accepted keys, per-field bounds, and the prose the model
+ *   reads — is NOT defined here: it lives in
+ *   `features/agents/surface-catalog-profile.ts`, because
+ *   `matrx-user/agent-settings` writes the same three columns on the same
+ *   agent from the Agent Settings window and two definitions over the same
+ *   fields is a defect. The two keep separate target NAMES on purpose (see
+ *   that file) but share ONE contract, so they cannot drift. That lift also
+ *   moved this target onto the canonical bounds in
+ *   `agent-identity-metadata.ts` — lengths, tag count, duplicate and comma
+ *   rules it previously did not enforce, and now states in its description.
  * - `system_instruction` and `append_system_instruction` stay separate from
  *   the profile and from each other: a different decision with a different
  *   consumer (the model's preamble, not the catalog listing), and the
@@ -107,6 +117,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { agentCatalogProfileTargetDescription } from "@/features/agents/surface-catalog-profile";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -206,7 +217,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "agent_output_schema",
     label: "Agent output schema",
     description:
-      'Structured-output envelope ({name, description?, schema, strict?}) describing what the agent emits. Empty when the agent returns unstructured text.',
+      "Structured-output envelope ({name, description?, schema, strict?}) describing what the agent emits. Empty when the agent returns unstructured text.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 1000,
@@ -331,8 +342,14 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "editor_catalog_profile",
     label: "Agent catalog profile",
-    description:
-      'Updates how the agent is described and filed in the catalog, in ONE atomic write. Value: an object with at least one of {"description": "a few sentences of plain prose, no markdown headings", "category": "a single short free-text label — reuse an existing category rather than inventing a near-duplicate", "tags": ["short", "free-text"]}. Keys you omit are left alone; `tags` is a FULL replacement of the tag set, so read the `agent_tags` value first and include every tag you want kept (pass [] to clear them all). No other keys are accepted — the agent\'s name, model, tools and visibility are not writable here. Staged into the editor as unsaved changes; the user reviews and presses Save.',
+    // Prose from the SHARED contract (`features/agents/surface-catalog-profile.ts`)
+    // — `matrx-user/agent-settings` declares the same contract under its own
+    // target name, and one builder is what stops the two drifting apart.
+    description: agentCatalogProfileTargetDescription({
+      tagsReadTwin: "agent_tags",
+      landing:
+        "Staged into the editor as unsaved changes; the user reviews and presses Save.",
+    }),
     valueType: "object",
     mode: "draft",
     applyPolicy: "ask",
@@ -381,7 +398,13 @@ reversible. You never press Save — that is the user's.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
-    pickBaseline("selection", "text_before", "text_after", "content", "context"),
+    pickBaseline(
+      "selection",
+      "text_before",
+      "text_after",
+      "content",
+      "context",
+    ),
     surfaceSpecific,
   ),
   writeTargets,
