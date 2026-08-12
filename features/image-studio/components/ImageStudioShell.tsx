@@ -67,6 +67,7 @@ import {
   OUTPUT_QUALITY_BOUNDS,
   isBackgroundColor,
 } from "../constants/conversion-options";
+import { validateImageDescriptionWrite } from "../lib/image-studio-write-targets";
 import type {
   ImageFit,
   ImagePositionAnchor,
@@ -331,6 +332,14 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
   // has to resolve against the fit as it stands WHEN APPLIED, not the one
   // captured when the closure was built.
   const fitRef = useRef(studio.fit);
+  // `image_description` needs the file LIST, not just its length: it resolves
+  // which source image a write lands on by name. Assigned during render
+  // rather than in the effect below because the identifying strings change
+  // WITHOUT the length changing — a `filename_base` write renames the very
+  // value the next call in the same turn matches on, and the effect's deps
+  // would not fire for that.
+  const filesRef = useRef(studio.files);
+  filesRef.current = studio.files;
 
   useEffect(() => {
     isProcessingRef.current = studio.isProcessing;
@@ -348,6 +357,20 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
   // Fresh closures per call (the `getWriteHandlers` contract).
   const getSurfaceWriteHandlers = useCallback(
     () => ({
+      // The one target whose validation is NOT inline: it has to resolve
+      // which source image the value lands on before it can check anything,
+      // so the rule lives in a pure module (`lib/image-studio-write-targets`)
+      // where the throw is synchronous and the resolution is readable on its
+      // own. Lands through the same `updateImageMetadata` the Metadata
+      // panel's inputs call.
+      image_description: (value: unknown) => {
+        const { fileId, patch } = validateImageDescriptionWrite(value, {
+          files: filesRef.current,
+          isProcessing: isProcessingRef.current,
+          isSaving: isSavingRef.current,
+        });
+        studio.updateImageMetadata(fileId, patch);
+      },
       selected_presets: (value: unknown) => {
         // Same guard, same reason, as `conversion_settings` below: the run in
         // flight captured the OLD preset list, and `total_variant_count` is

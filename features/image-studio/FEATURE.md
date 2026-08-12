@@ -273,6 +273,42 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
+- **2026-08-12** — Added the third Convert write target, `image_description`,
+  and the read twin that was blocking it. The manifest previously listed
+  per-file names and AI metadata under "not writable" for two reasons; only
+  one of them held up. There genuinely was no read twin — `source_files`
+  carried `metadata_status` and nothing else — so a write could not be
+  verified from a read value. That is now fixed rather than waived:
+  `source_files` carries `alt_text` / `caption` / `title` / `description` /
+  `keywords` / `dominant_colors` on every entry, empty until something writes
+  them, so an agent reads what is there before writing what is missing. The
+  other reason — that the `image-studio-describe-01` shortcut already writes
+  this metadata — argued the opposite way once examined: pressing that
+  shortcut is a COMMIT (it spends a model call and uploads a preview into the
+  user's library), while writing the text is not, so the shortcut's existence
+  is a reason to give an agent the direct path, not to withhold it.
+  The target takes `{ file, alt_text?, caption?, title?, description?,
+  keywords?, filename_base? }` and lands through the same
+  `updateImageMetadata` the Metadata panel's own inputs call. `file` is how it
+  addresses a row: studio sources are browser-local `File` objects with no
+  durable id until save, so it matches the `name` / `filename_base` the
+  surface already reports, case-insensitively, and throws listing the real
+  filenames on a miss or a tie. That resolution reads `filesRef.current`,
+  assigned during render rather than in the existing sync effect, because the
+  identifying strings change WITHOUT the file count changing — a
+  `filename_base` write renames the very string the next call in the same
+  turn matches on, and the seam resolves every handler closure before the
+  first dialog is confirmed.
+  Validation lives in
+  [`lib/image-studio-write-targets.ts`](./lib/image-studio-write-targets.ts)
+  rather than inline beside the other two handlers: it is the only rule here
+  that has to RESOLVE a row before it can check anything, and keeping it
+  outside React is what makes the throw land synchronously where the
+  writeback seam converts it into an error envelope the agent can correct
+  from. `dominant_colors` is rejected BY NAME even though it sits in the same
+  `ImageMetadata` object — those hex codes are measured off the pixels by a
+  model that can see the image, so writing them from the surface scope would
+  be inventing values.
 - **2026-08-11** — Hardened the Convert write targets: the crop anchor's
   fit gate is now ENFORCED, not just documented. `conversion_settings` accepted
   `resize_position` under any fit, but `CropControls` renders the anchor picker

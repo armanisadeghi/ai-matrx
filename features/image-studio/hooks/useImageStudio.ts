@@ -880,6 +880,15 @@ export function useImageStudio(
           status: f.status,
           variant_count: Object.keys(f.variants).length,
           metadata_status: f.metadataStatus,
+          // The read twin of the `image_description` write target — an agent
+          // has to see what is already written before it can sensibly write
+          // the rest. Absent metadata reads as empty, never as missing keys.
+          alt_text: f.imageMetadata?.alt_text ?? "",
+          caption: f.imageMetadata?.caption ?? "",
+          title: f.imageMetadata?.title ?? "",
+          description: f.imageMetadata?.description ?? "",
+          keywords: f.imageMetadata?.keywords ?? [],
+          dominant_colors: f.imageMetadata?.dominant_colors ?? [],
         })),
         available_presets: PRESET_CATALOG_FOR_SCOPE,
         selected_preset_ids: selectedPresetIds,
