@@ -41,7 +41,7 @@ import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBound
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
 
-const PDF_EXTRACTOR_SURFACE = "matrx-user/pdf-extractor";
+import { PDF_EXTRACTOR_SURFACE_NAME as PDF_EXTRACTOR_SURFACE } from "@/features/surfaces/manifests/pdf-extractor.manifest";
 
 // NOTE: Knowledge Assets is NOT a tab here. A sixth flex-1 tab overflowed this
 // narrow right rail (no horizontal scroll). The Knowledge Asset Builder now
