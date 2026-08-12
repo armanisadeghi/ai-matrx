@@ -101,14 +101,18 @@ the 'Document'"*
    `GeneratePlanBody` is `extra="forbid"` — **ship aidream first (or together), never the FE
    alone**, or every Generate run 422s. aidream: `./scripts/release.sh` (Coolify, verify
    `/health/version` vs `origin/main`). FE: `./scripts/release.sh`.
-2. **Arman reviewed Setup and requested changes — MOBILE (`agent.review_queue`
-   `2ca8190e-…`, status `changes_requested`).** Verbatim: *"desktop Setup is powerful, but
-   mobile exposes only the shape chooser and drops the Work Order, page list, lint, and Make
-   It Real workflow from the accessible surface. Recompose the three-column workbench into
-   explicit mobile steps/tabs or sheets, add a semantic title, fix the visible error, and
-   verify every step at 390px."* Rules live in `.claude/skills/ios-mobile-first/SKILL.md`
-   (stack sections, not tabs; Drawer not Dialog; one scroll area; `useIsMobile()`). Archive
-   the row once handled.
+2. **Arman's review — the mobile half is DONE, the "visible error" is NOT**
+   (`agent.review_queue` `2ca8190e-…`, still `changes_requested`). His words:
+   *"desktop Setup is powerful, but mobile exposes only the shape chooser and drops the Work
+   Order, page list, lint, and Make It Real workflow from the accessible surface. Recompose the
+   three-column workbench into explicit mobile steps/tabs or sheets, add a semantic title, fix
+   the visible error, and verify every step at 390px."* Shipped in commit `dd261354`: the
+   five-step mobile shell (`setup/components/SetupStepper.tsx`), the missing `h1`, sticky
+   commit bar, 40px/16px tap targets. **Two things remain: (a) the "visible error" could not
+   be identified** — every error path in Setup is data-dependent, not structural, and nothing
+   renders unconditionally at any width, so it needs the site he tested or a screenshot;
+   **(b) nothing has been checked in a real browser at 390px** — the CSS was reasoned about,
+   never seen. Do both before flipping the row out of `changes_requested`.
 3. **Nothing downstream READS the planned topics.** Count-only families record researched titles
    at `plan.node.attributes.planned_topics` (`string[]` on the family hub; the brief marker block
    is a human mirror). No aidream generator, writer, or tool parses that key — the work order
