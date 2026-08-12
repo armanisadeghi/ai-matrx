@@ -10,8 +10,8 @@ import {
   ExternalLink,
   EyeOff,
   FileCode2,
-  Loader2,
   Map as MapIcon,
+  Radio,
   RefreshCw,
   RotateCcw,
 } from "lucide-react";
@@ -49,6 +49,7 @@ import {
   QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { syncSitemaps } from "@/features/marketing/crawler/direct-client";
+import { useSiteCommandRun } from "@/features/marketing/data/useSiteCommandRun";
 import { webCopy, webLocation } from "@/features/marketing/lib/copy-payloads";
 import type { SiteSitemap } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
@@ -63,7 +64,6 @@ export function SitemapsWorkspace() {
   const queryClient = useQueryClient();
   const sitemaps = useSitemaps(site.id);
   const coverage = useSitemapCoverage(site.id);
-  const [syncing, setSyncing] = useState(false);
   const setActiveMutation = useSetSitemapActive(site.id);
   const dismissMutation = useDismissSitemap(site.id);
   const restoreMutation = useRestoreSitemap(site.id);
@@ -129,20 +129,31 @@ export function SitemapsWorkspace() {
     }
   };
 
-  const runSync = async () => {
-    setSyncing(true);
-    try {
-      await syncSitemaps(site.id);
+  // A sitemap sync walks every sitemap document and upserts its URLs — the
+  // stream narrates each step, so it runs in the floating window and rejoins
+  // after a reload rather than hiding behind a spinner.
+  const sync = useSiteCommandRun({
+    siteId: site.id,
+    mode: "sitemap_sync",
+    run: (callbacks) => syncSitemaps(site.id, callbacks),
+    onComplete: async () => {
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.site(site.id),
       });
       toast.success("Sitemaps synced");
+    },
+    onRemoteFailure: (message) =>
+      toast.error("Sitemap sync failed", { description: message }),
+  });
+  const syncing = sync.isActive;
+
+  const runSync = async () => {
+    try {
+      await sync.launch();
     } catch (error) {
       toast.error("Sitemap sync failed", {
         description: extractErrorMessage(error),
       });
-    } finally {
-      setSyncing(false);
     }
   };
 
@@ -319,15 +330,14 @@ export function SitemapsWorkspace() {
             <Button
               size="sm"
               className="h-8 gap-1.5"
-              disabled={syncing}
-              onClick={() => void runSync()}
+              onClick={() => (syncing ? sync.openWindow() : void runSync())}
             >
               {syncing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Radio className="h-3.5 w-3.5" />
               ) : (
                 <RefreshCw className="h-3.5 w-3.5" />
               )}
-              {syncing ? "Syncing…" : "Sync sitemaps"}
+              {syncing ? "Watch progress" : "Sync sitemaps"}
             </Button>
           </div>
         </header>
@@ -433,10 +443,9 @@ export function SitemapsWorkspace() {
             <Button
               size="sm"
               className="mt-1 h-8"
-              disabled={syncing}
-              onClick={() => void runSync()}
+              onClick={() => (syncing ? sync.openWindow() : void runSync())}
             >
-              Sync sitemaps
+              {syncing ? "Watch progress" : "Sync sitemaps"}
             </Button>
           </div>
         ) : (

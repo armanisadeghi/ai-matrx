@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { CircleGauge, ExternalLink, Loader2, Play } from "lucide-react";
+import { CircleGauge, ExternalLink, Play, Radio } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
@@ -19,6 +19,7 @@ import {
   type AnalysisWorstPage,
 } from "@/features/marketing/data/analysis-service";
 import { analyzeSite } from "@/features/marketing/crawler/direct-client";
+import { useSiteCommandRun } from "@/features/marketing/data/useSiteCommandRun";
 import { SeverityBadge } from "@/features/marketing/components/analysis/AnalysisBadges";
 import {
   LoadingSurface,
@@ -56,12 +57,14 @@ export function CatalogueAnalysisPanel() {
   const { site, sitePath } = useMarketingSite();
   const queryClient = useQueryClient();
   const overview = useSiteAnalysisOverview(site.id);
-  const [analyzing, setAnalyzing] = useState(false);
-
-  const runAnalysis = async () => {
-    setAnalyzing(true);
-    try {
-      await analyzeSite(site.id);
+  // Analysis is a multi-minute pass over every stored page. It streams its own
+  // progress into the floating run window and survives a reload — never a
+  // spinner on this button.
+  const analysis = useSiteCommandRun({
+    siteId: site.id,
+    mode: "analysis",
+    run: (callbacks) => analyzeSite(site.id, callbacks),
+    onComplete: async () => {
       // Analysis refreshes scores + findings the whole site subtree reads.
       await queryClient.invalidateQueries({
         queryKey: ["marketing", "site", site.id],
@@ -70,12 +73,19 @@ export function CatalogueAnalysisPanel() {
         queryKey: analysisKeys.site(site.id),
       });
       toast.success("Page analysis complete.");
+    },
+    onRemoteFailure: (message) =>
+      toast.error("Page analysis failed", { description: message }),
+  });
+  const analyzing = analysis.isActive;
+
+  const runAnalysis = async () => {
+    try {
+      await analysis.launch();
     } catch (error) {
       toast.error("Page analysis failed", {
         description: extractErrorMessage(error),
       });
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -108,15 +118,14 @@ export function CatalogueAnalysisPanel() {
       variant="outline"
       size="sm"
       className="h-7"
-      onClick={() => void runAnalysis()}
-      disabled={analyzing}
+      onClick={() => (analyzing ? analysis.openWindow() : void runAnalysis())}
     >
       {analyzing ? (
-        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+        <Radio className="mr-1.5 h-3.5 w-3.5 text-primary" />
       ) : (
         <Play className="mr-1.5 h-3.5 w-3.5" />
       )}
-      {analyzing ? "Analyzing…" : "Analyze now"}
+      {analyzing ? "Watch progress" : "Analyze now"}
     </Button>
   );
 

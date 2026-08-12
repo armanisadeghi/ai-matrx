@@ -67,6 +67,7 @@ import type {
   RagAiSectionKey,
 } from "@/features/rag/components/search/ragAiCopy";
 import { isJsonObject } from "@/types/json";
+import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
 
 const AdminIndicator = lazyOverlay(
   () => import("@/components/admin/controls/AdminIndicator"),
@@ -501,9 +502,7 @@ const FeedbackWindow = lazyOverlay(
 );
 const ImageAnnotationWindow = lazyOverlay(
   () =>
-    import(
-      "@/features/window-panels/windows/image-annotation/ImageAnnotationWindow"
-    ),
+    import("@/features/window-panels/windows/image-annotation/ImageAnnotationWindow"),
   { ssr: false },
 );
 const FilePreviewWindow = lazyOverlay(
@@ -587,9 +586,7 @@ const KeywordResearchWindow = lazyOverlay(
 );
 const KeywordClassificationWindow = lazyOverlay(
   () =>
-    import(
-      "@/features/marketing/search-console/windows/KeywordClassificationWindow"
-    ),
+    import("@/features/marketing/search-console/windows/KeywordClassificationWindow"),
   { ssr: false },
 );
 const KeywordWindow = lazyOverlay(
@@ -669,6 +666,11 @@ const DiffViewerWindow = lazyOverlay(
 );
 const LiveRunWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/LiveRunWindow"),
+  { ssr: false },
+);
+const SiteCommandRunWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/SiteCommandRunWindow"),
   { ssr: false },
 );
 const FindReplaceOverlay = lazyOverlay(
@@ -1726,6 +1728,9 @@ export default function OverlayController() {
     ),
     liveRunWindow: useAppSelector((s) =>
       selectOpenInstances(s, "liveRunWindow"),
+    ),
+    siteCommandRunWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "siteCommandRunWindow"),
     ),
     extractionCellEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "extractionCellEditorWindow"),
@@ -3959,9 +3964,7 @@ export default function OverlayController() {
                 : null
             }
             sourceFileId={
-              typeof data?.sourceFileId === "string"
-                ? data.sourceFileId
-                : null
+              typeof data?.sourceFileId === "string" ? data.sourceFileId : null
             }
             sourceUrl={
               typeof data?.sourceUrl === "string" ? data.sourceUrl : null
@@ -4462,9 +4465,13 @@ export default function OverlayController() {
               )
             }
             conversationId={
-              typeof data?.conversationId === "string" ? data.conversationId : null
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : null
             }
-            requestId={typeof data?.requestId === "string" ? data.requestId : null}
+            requestId={
+              typeof data?.requestId === "string" ? data.requestId : null
+            }
             label={typeof data?.label === "string" ? data.label : null}
             pending={data?.pending === true}
             // Undefined when unset so the window's chat-matched size defaults
@@ -4475,10 +4482,44 @@ export default function OverlayController() {
                 : undefined
             }
             height={
-              typeof data?.height === "number" || typeof data?.height === "string"
+              typeof data?.height === "number" ||
+              typeof data?.height === "string"
                 ? data.height
                 : undefined
             }
+          />
+        );
+      })}
+
+      {/* siteCommandRunWindow — multi-instance (one per running command) */}
+      {instancesById.siteCommandRunWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const siteId = typeof data?.siteId === "string" ? data.siteId : "";
+        const modeRaw = typeof data?.mode === "string" ? data.mode : "";
+        // Validated here rather than inside the window: an unknown command id
+        // means there is nothing to watch, so no frame opens at all. The
+        // vocabulary module is type-only plus one guard — no chunk weight.
+        if (!siteId || !isSiteCommandMode(modeRaw)) return null;
+        return (
+          <SiteCommandRunWindow
+            key={inst.instanceId}
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : inst.instanceId
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "siteCommandRunWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            siteId={siteId}
+            mode={modeRaw}
+            target={typeof data?.target === "string" ? data.target : null}
+            sitePath={typeof data?.sitePath === "string" ? data.sitePath : null}
           />
         );
       })}
@@ -4835,7 +4876,10 @@ export default function OverlayController() {
       {/* gscDrilldownWindow — multi-instance */}
       {instancesById.gscDrilldownWindow.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
-        if (typeof data?.siteId !== "string" || typeof data?.dimension !== "string") {
+        if (
+          typeof data?.siteId !== "string" ||
+          typeof data?.dimension !== "string"
+        ) {
           return null;
         }
         return (
@@ -4859,7 +4903,8 @@ export default function OverlayController() {
               data.dimension as import("@/features/marketing/search-console/types").GscDimension
             }
             filters={
-              (data.filters ?? {}) as import("@/features/marketing/search-console/types").GscFilters
+              (data.filters ??
+                {}) as import("@/features/marketing/search-console/types").GscFilters
             }
             range={
               // Fallback for a malformed/legacy persisted payload only. Kept

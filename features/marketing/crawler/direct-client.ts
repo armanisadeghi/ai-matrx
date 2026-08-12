@@ -67,6 +67,29 @@ export interface CrawlStartOptions {
   host_burst: number;
 }
 
+/**
+ * The non-crawl commands (analyze, sitemap sync, GSC sync, link check, …) do
+ * NOT emit page-level crawl events. Each emits ONE progress event type whose
+ * every instance carries `{status, message, summary}` — a narrated line plus a
+ * counter object. That is the whole live surface for those commands, and it is
+ * why a spinner was never necessary: the server has always described itself.
+ *
+ * Server contract: `matrx_scraper/web_crawl/contracts.py` (`*ProgressEvent`).
+ */
+export const SITE_COMMAND_PROGRESS_EVENT_TYPES = [
+  "sitemap_sync_progress",
+  "gsc_sync_progress",
+  "url_reconciliation_progress",
+  "link_resolution_progress",
+  "link_check_progress",
+  "link_score_progress",
+  "analysis_progress",
+  "site_initialization_progress",
+] as const;
+
+export type SiteCommandProgressEventType =
+  (typeof SITE_COMMAND_PROGRESS_EVENT_TYPES)[number];
+
 export const CRAWL_LIVE_EVENT_TYPES = [
   "crawl_session_created",
   "crawl_started",
@@ -82,6 +105,7 @@ export const CRAWL_LIVE_EVENT_TYPES = [
   "crawl_completed",
   "crawl_warning",
   "initialize_step",
+  ...SITE_COMMAND_PROGRESS_EVENT_TYPES,
 ] as const;
 
 export type CrawlLiveEventType = (typeof CRAWL_LIVE_EVENT_TYPES)[number];
@@ -233,6 +257,53 @@ export function initializeStepFromEvent(
     count: initializeStepCount(event),
     message: firstString(event.user_message, event.message, event.error),
     errorType: firstString(event.error_type),
+  };
+}
+
+export interface SiteCommandProgress {
+  eventType: SiteCommandProgressEventType;
+  /** The server's own lifecycle marker for this command. */
+  status: "started" | "progress" | "ok" | "failed";
+  /** The server's human sentence — rendered verbatim, never re-templated. */
+  message: string;
+  /** Flat counters (`{pages_analyzed: 12, …}`) as the command reports them. */
+  summary: Record<string, unknown>;
+  /** Terminal per-item errors the command collected and kept running through. */
+  errors: string[];
+}
+
+function isSiteCommandProgressEventType(
+  value: string,
+): value is SiteCommandProgressEventType {
+  return SITE_COMMAND_PROGRESS_EVENT_TYPES.some((type) => type === value);
+}
+
+/**
+ * Narrow a live event to the shared `*_progress` contract every non-crawl
+ * command speaks. Returns null for crawl-shaped events (a page fetch streams
+ * those instead) so one feed can render both without branching per command.
+ */
+export function siteCommandProgressFromEvent(
+  event: CrawlLiveEvent | null,
+): SiteCommandProgress | null {
+  if (!event || !isSiteCommandProgressEventType(event.event_type)) return null;
+  const status = event.status;
+  if (
+    status !== "started" &&
+    status !== "progress" &&
+    status !== "ok" &&
+    status !== "failed"
+  ) {
+    return null;
+  }
+  return {
+    eventType: event.event_type,
+    status,
+    message: typeof event.message === "string" ? event.message : "",
+    summary: isJsonRecord(event.summary) ? event.summary : {},
+    errors: Array.isArray(event.errors)
+      ? event.errors.filter((entry): entry is string => typeof entry === "string")
+      : [],
   };
 }
 

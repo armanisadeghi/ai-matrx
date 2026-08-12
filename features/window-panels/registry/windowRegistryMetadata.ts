@@ -414,6 +414,20 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "card",
   },
 
+  // ── Marketing site command run (analyze / sitemaps / GSC / links / fetch) ─
+  // Ephemeral: the live stream cannot be restored, and it must not be — the
+  // durable record is the command's own `web.crawl_session` row, which the
+  // launching surface rejoins on load and reopens this window from.
+  {
+    slug: "site-command-run-window",
+    overlayId: "siteCommandRunWindow",
+    kind: "window",
+    label: "Site Command Run",
+    defaultData: {},
+    ephemeral: true,
+    mobilePresentation: "card",
+  },
+
   // ── Audio devices (mic / speaker picker + permission) ────────────────────
   {
     slug: "audio-devices-window",

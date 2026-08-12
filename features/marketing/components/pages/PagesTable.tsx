@@ -27,6 +27,8 @@ import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hu
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { FetchPageButton } from "@/features/marketing/components/pages/FetchPageButton";
 import { fetchPageNow } from "@/features/marketing/crawler/direct-client";
+import { startSiteCommandRun } from "@/features/marketing/crawler/command-run-store";
+import { useOpenSiteCommandRunWindow } from "@/features/overlays/openers/siteCommandRunWindow";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { DismissedPagesTable } from "@/features/marketing/components/pages/DismissedPagesTable";
 import { PreviouslyDismissedBadge } from "@/features/marketing/components/shared/PreviouslyDismissedBadge";
@@ -242,6 +244,7 @@ export function PagesTable() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { site, sitePath } = useMarketingSite();
+  const openCommandWindow = useOpenSiteCommandRunWindow();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const coverageRaw = searchParams.get("coverage");
   const coverage = isPageCoverageFilter(coverageRaw) ? coverageRaw : null;
@@ -633,7 +636,22 @@ export function PagesTable() {
             // dialog closes; failures surface via toast + Error Inspector.
             // Normalize first: the dialog accepts scheme-less input, but the
             // scraper's seed validation needs a full URL.
-            void fetchPageNow(site.id, normalisePageUrl(value))
+            const captureUrl = normalisePageUrl(value);
+            // The capture streams into the floating run window instead of
+            // running invisibly behind a toast — and its durable session is
+            // what the new page's own "Fetch now" button rejoins on reload.
+            openCommandWindow({
+              siteId: site.id,
+              mode: "page_fetch",
+              target: captureUrl,
+              sitePath,
+            });
+            void startSiteCommandRun({
+              siteId: site.id,
+              mode: "page_fetch",
+              target: captureUrl,
+              run: (callbacks) => fetchPageNow(site.id, captureUrl, callbacks),
+            })
               .then(() => {
                 void pages.refetch();
                 toast.success("Page captured");

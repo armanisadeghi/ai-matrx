@@ -1,4 +1,7 @@
-import type { CrawlLiveEvent } from "@/features/marketing/crawler/direct-client";
+import {
+  siteCommandProgressFromEvent,
+  type CrawlLiveEvent,
+} from "@/features/marketing/crawler/direct-client";
 
 export interface PresentedCrawlEvent {
   label: string;
@@ -302,6 +305,38 @@ export function presentLiveCrawlEvent(
                 ? `The ${step} step was skipped because its prerequisite failed.`
                 : `The ${step} step started.`,
         tone: status === "failed" ? "destructive" : "default",
+      };
+    }
+    case "sitemap_sync_progress":
+    case "gsc_sync_progress":
+    case "url_reconciliation_progress":
+    case "link_resolution_progress":
+    case "link_check_progress":
+    case "link_score_progress":
+    case "analysis_progress":
+    case "site_initialization_progress": {
+      // Every non-crawl command narrates itself in `message`. Rendering the
+      // server's own sentence is the whole point — a re-templated "Working…"
+      // is the spinner again, just with words.
+      const progress = siteCommandProgressFromEvent(event);
+      if (!progress) return null;
+      const label =
+        progress.status === "started"
+          ? "Started"
+          : progress.status === "ok"
+            ? "Finished"
+            : progress.status === "failed"
+              ? "Failed"
+              : "Progress";
+      return {
+        label,
+        message: progress.message || "The command reported progress.",
+        tone:
+          progress.status === "failed"
+            ? "destructive"
+            : progress.status === "ok"
+              ? "success"
+              : "default",
       };
     }
   }

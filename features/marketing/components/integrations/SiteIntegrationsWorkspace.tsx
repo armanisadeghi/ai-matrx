@@ -11,6 +11,7 @@ import {
   KeyRound,
   Loader2,
   Plus,
+  Radio,
   RefreshCw,
   Save,
   SearchCheck,
@@ -55,6 +56,7 @@ import {
 } from "@/features/marketing/data/integrations-service";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { syncGsc } from "@/features/marketing/crawler/direct-client";
+import { useSiteCommandRun } from "@/features/marketing/data/useSiteCommandRun";
 import { syncGscSearchPerformance } from "@/features/marketing/search-console/sync";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
@@ -730,32 +732,40 @@ function GscSyncRow({
   connection: GoogleConnectionSummary | null;
 }) {
   const queryClient = useQueryClient();
-  const [syncing, setSyncing] = useState(false);
   const [failure, setFailure] = useState<BackendFailureExplanation | null>(
     null,
   );
   const connected = status === "reference_configured";
   const diagnosis = connection ? diagnoseGoogleConnection(connection) : null;
   const blocked = Boolean(diagnosis?.blocking);
-  const runSync = async () => {
-    setSyncing(true);
-    setFailure(null);
-    try {
-      await syncGsc(site.id);
+  // A GSC sync pulls days of Search Analytics rows per page. It streams its
+  // progress into the floating run window and is rejoined after a reload.
+  const sync = useSiteCommandRun({
+    siteId: site.id,
+    mode: "gsc_sync",
+    run: (callbacks) => syncGsc(site.id, callbacks),
+    onComplete: async () => {
       await queryClient.invalidateQueries({
         queryKey: marketingKeys.site(site.id),
       });
       toast.success("Search Console synced", {
         description: `Fresh page stats are stored for ${site.domain}.`,
       });
+    },
+    onRemoteFailure: (message) =>
+      toast.error("Search Console sync failed", { description: message }),
+  });
+  const syncing = sync.isActive;
+  const runSync = async () => {
+    setFailure(null);
+    try {
+      await sync.launch();
     } catch (error) {
       const explanation = describeBackendFailure(error);
       setFailure(explanation);
       toast.error("Search Console sync failed", {
         description: explanation.headline,
       });
-    } finally {
-      setSyncing(false);
     }
   };
   return (
@@ -779,15 +789,15 @@ function GscSyncRow({
           size="sm"
           variant="outline"
           className="h-7 shrink-0 gap-1.5"
-          disabled={syncing || !connected || blocked}
-          onClick={() => void runSync()}
+          disabled={!syncing && (!connected || blocked)}
+          onClick={() => (syncing ? sync.openWindow() : void runSync())}
         >
           {syncing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Radio className="h-3.5 w-3.5 text-primary" />
           ) : (
             <RefreshCw className="h-3.5 w-3.5" />
           )}
-          {syncing ? "Syncing…" : "Sync now"}
+          {syncing ? "Watch progress" : "Sync now"}
         </Button>
       </div>
 

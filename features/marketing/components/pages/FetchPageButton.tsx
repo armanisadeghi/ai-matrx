@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Radio, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { fetchPageNow } from "@/features/marketing/crawler/direct-client";
 import { marketingKeys } from "@/features/marketing/data/hooks";
+import { useSiteCommandRun } from "@/features/marketing/data/useSiteCommandRun";
 import { extractErrorMessage } from "@/utils/errors";
 
 /**
@@ -14,6 +14,10 @@ import { extractErrorMessage } from "@/utils/errors";
  * touching the crawl machinery. Works for pages that have never been captured
  * (the server creates the canonical page + snapshot). On completion the page
  * subtree (workspace, captures, snapshots) and the site's pages lists refetch.
+ *
+ * The capture streams into the floating run window (fetch, parse, screenshot
+ * are real steps the server reports) and its durable session is rejoined after
+ * a reload, so the button never becomes a spinner that a refresh throws away.
  */
 export function FetchPageButton({
   siteId,
@@ -31,13 +35,12 @@ export function FetchPageButton({
   onDone?: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [pending, setPending] = useState(false);
-
-  const run = async () => {
-    if (pending) return;
-    setPending(true);
-    try {
-      await fetchPageNow(siteId, url);
+  const fetchRun = useSiteCommandRun({
+    siteId,
+    mode: "page_fetch",
+    target: url,
+    run: (callbacks) => fetchPageNow(siteId, url, callbacks),
+    onComplete: () => {
       if (pageId) {
         void queryClient.invalidateQueries({
           queryKey: marketingKeys.page(siteId, pageId),
@@ -50,18 +53,29 @@ export function FetchPageButton({
         description: "The latest version of this page was captured.",
       });
       onDone?.();
+    },
+    onRemoteFailure: (message) =>
+      toast.error("Could not fetch this page", { description: message }),
+  });
+  const pending = fetchRun.isActive;
+
+  const run = async () => {
+    if (pending) {
+      fetchRun.openWindow();
+      return;
+    }
+    try {
+      await fetchRun.launch();
     } catch (error) {
       // streamCommand already captured the failure to the Error Inspector.
       toast.error("Could not fetch this page", {
         description: extractErrorMessage(error),
       });
-    } finally {
-      setPending(false);
     }
   };
 
   const glyph = pending ? (
-    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+    <Radio className="h-3.5 w-3.5 text-primary" />
   ) : (
     <RefreshCw className="h-3.5 w-3.5" />
   );
@@ -73,12 +87,15 @@ export function FetchPageButton({
         variant="ghost"
         size="icon"
         className="h-7 w-7"
-        disabled={pending}
         onClick={(event) => {
           event.stopPropagation();
           void run();
         }}
-        title="Fetch the latest version of this page now"
+        title={
+          pending
+            ? "Capturing this page — click to watch it"
+            : "Fetch the latest version of this page now"
+        }
       >
         {glyph}
       </Button>
@@ -91,16 +108,19 @@ export function FetchPageButton({
       variant="outline"
       size="sm"
       className="h-8"
-      disabled={pending}
       onClick={() => void run()}
-      title="Fetch the latest version of this page now"
+      title={
+        pending
+          ? "Capturing this page — click to watch it"
+          : "Fetch the latest version of this page now"
+      }
     >
       {pending ? (
-        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+        <Radio className="mr-1.5 h-3.5 w-3.5 text-primary" />
       ) : (
         <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
       )}
-      {pending ? "Fetching…" : "Fetch now"}
+      {pending ? "Watch progress" : "Fetch now"}
     </Button>
   );
 }

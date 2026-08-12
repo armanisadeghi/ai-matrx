@@ -13,6 +13,22 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D169 — Sitemap sync crashes on a duplicate-URL bulk upsert (server, matrx-scraper) (2026-08-11)
+
+`POST /api/scraper/crawler/sites/{id}/sitemaps/sync` fails on datadestruction.com
+after finding all 9 sitemaps and 191 URLs and upserting 191 pages:
+
+> Matrx ORM | QueryError … bulk_upsert … asyncpg.exceptions.CardinalityViolationError:
+> ON CONFLICT DO UPDATE command cannot affect row a second time
+
+The sitemap set lists the same canonical URL twice (across an index and a child, or
+two normalizations that collapse to one row), and `bulk_upsert` sends both in one
+statement. Fix is server-side: de-duplicate by the conflict key before the upsert in
+`matrx_scraper/web_crawl/sitemaps.py` (and audit the other `bulk_upsert` callers —
+the same class hits any list that can contain a URL twice). Every sitemap sync on
+such a site fails today; the failure is now fully visible in the floating run window
+(`useSiteCommandRun`), which is how it was found. Fix belongs in aidream.
+
 ### D168 — `preview_start` dev servers are untracked, so parallel agent sessions reap each other (2026-08-11)
 
 `pnpm dev` runs `scripts/dev-cleanup.sh reap` on boot, and a server started by the

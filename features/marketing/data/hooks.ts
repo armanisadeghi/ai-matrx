@@ -48,7 +48,7 @@ import {
   listDismissedSitemaps,
   restorePage,
   restoreSitemap,
-  getActiveCrawl,
+  listActiveCrawlSessions,
   getCoverageMatrix,
   getCrawl,
   getHomepageObservedMeta,
@@ -174,7 +174,7 @@ export const marketingKeys = {
     [...marketingKeys.crawlSessions(siteId), state] as const,
   crawlSessions: (siteId: string) =>
     [...marketingKeys.site(siteId), "crawls"] as const,
-  activeCrawl: (siteId: string) =>
+  activeSessions: (siteId: string) =>
     [...marketingKeys.crawlSessions(siteId), "active"] as const,
   crawl: (siteId: string, crawlId: string) =>
     [...marketingKeys.site(siteId), "crawl", crawlId] as const,
@@ -461,10 +461,14 @@ export function useCrawls(siteId: string, state: MatrxDataTableQueryState) {
   });
 }
 
-export function useActiveCrawl(siteId: string, fallbackPolling: boolean) {
+/** Every live session for the site — the crawl AND any running commands. */
+export function useActiveCrawlSessions(
+  siteId: string,
+  fallbackPolling: boolean,
+) {
   return useQuery({
-    queryKey: marketingKeys.activeCrawl(siteId),
-    queryFn: ({ signal }) => getActiveCrawl(siteId, signal),
+    queryKey: marketingKeys.activeSessions(siteId),
+    queryFn: ({ signal }) => listActiveCrawlSessions(siteId, signal),
     enabled: Boolean(siteId),
     refetchInterval: fallbackPolling ? 3_000 : false,
   });

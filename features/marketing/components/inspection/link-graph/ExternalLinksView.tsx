@@ -17,7 +17,7 @@ import {
   ExternalLink,
   Globe,
   Link2Off,
-  Loader2,
+  Radio,
   ShieldCheck,
   Search,
 } from "lucide-react";
@@ -39,6 +39,7 @@ import {
   useLinkGraphEdges,
 } from "@/features/marketing/data/inspection-hooks";
 import { checkSiteLinks } from "@/features/marketing/crawler/direct-client";
+import { useSiteCommandRun } from "@/features/marketing/data/useSiteCommandRun";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 
 import {
@@ -218,22 +219,31 @@ export function ExternalLinksView({ crawlId }: { crawlId?: string }) {
   const query = useLinkGraphEdges(site.id, crawlId ?? null);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [checking, setChecking] = useState(false);
-
-  const runLinkCheck = async () => {
-    setChecking(true);
-    try {
-      await checkSiteLinks(site.id);
+  // A link check makes a polite live request per outbound target — minutes on
+  // a real site. It streams its counters into the floating run window and is
+  // rejoined after a reload instead of dying with the tab.
+  const linkCheck = useSiteCommandRun({
+    siteId: site.id,
+    mode: "link_check",
+    run: (callbacks) => checkSiteLinks(site.id, callbacks),
+    onComplete: async () => {
       await queryClient.invalidateQueries({
         queryKey: inspectionKeys.linkGraph(site.id, crawlId ?? null),
       });
       toast.success("Link status check complete.");
+    },
+    onRemoteFailure: (message) =>
+      toast.error("Link status check failed", { description: message }),
+  });
+  const checking = linkCheck.isActive;
+
+  const runLinkCheck = async () => {
+    try {
+      await linkCheck.launch();
     } catch (error) {
       toast.error("Link status check failed", {
         description: extractErrorMessage(error),
       });
-    } finally {
-      setChecking(false);
     }
   };
 
@@ -364,15 +374,16 @@ export function ExternalLinksView({ crawlId }: { crawlId?: string }) {
             size="sm"
             variant="outline"
             className="h-7 gap-1.5 text-xs"
-            disabled={checking}
-            onClick={() => void runLinkCheck()}
+            onClick={() =>
+              checking ? linkCheck.openWindow() : void runLinkCheck()
+            }
           >
             {checking ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Radio className="h-3.5 w-3.5 text-primary" />
             ) : (
               <ShieldCheck className="h-3.5 w-3.5" />
             )}
-            Check link status
+            {checking ? "Watch progress" : "Check link status"}
           </Button>
           <CopyButtons size="icon" {...copy} />
         </div>

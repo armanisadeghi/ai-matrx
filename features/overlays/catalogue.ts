@@ -45,6 +45,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  siteCommandRunWindow: {
+    label: "Site Command Run",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   audioDevices: {
     label: "Audio Devices",
     instanceMode: "singleton",

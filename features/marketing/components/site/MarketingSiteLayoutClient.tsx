@@ -54,6 +54,11 @@ import {
   type SiteCrawlActivity,
 } from "@/features/marketing/data/useSiteCrawlActivity";
 import {
+  SITE_COMMAND_COPY,
+  siteCommandModeFromSession,
+  type SiteCommandMode,
+} from "@/features/marketing/crawler/site-commands";
+import {
   MARKETING_SITE_SECTIONS,
   listMarketingSiteModes,
   marketingSiteSectionSuffix,
@@ -216,6 +221,14 @@ export function MarketingSiteLayoutClient({
   const fetched = activeCrawl
     ? jsonNumber(activeCrawl.stats, ["pages_fetched"])
     : 0;
+  // A command running on the server (analysis, sitemaps, GSC, links, a page
+  // fetch) is named for what it IS. It used to read as "Crawling" here,
+  // because the header took the newest active session of any mode.
+  const activeCommand = activeCrawl
+    ? null
+    : (crawlActivity.activeSessions
+        .map(siteCommandModeFromSession)
+        .find((mode): mode is SiteCommandMode => mode !== null) ?? null);
   return (
     <MarketingSiteContext.Provider
       value={{ site: current, sitePath: base, crawlActivity }}
@@ -224,7 +237,12 @@ export function MarketingSiteLayoutClient({
         backHref={marketingRoutes.brand(brandId)}
         entityLabel={current.name}
         entityStatus={
-          activeCrawl ? (
+          activeCommand ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/12 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              {SITE_COMMAND_COPY[activeCommand].runningLabel}
+            </span>
+          ) : activeCrawl ? (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/12 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
               <Loader2 className="h-2.5 w-2.5 animate-spin" />
               Crawling

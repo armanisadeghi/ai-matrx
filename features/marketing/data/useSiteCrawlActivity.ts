@@ -6,9 +6,10 @@ import { supabase } from "@/utils/supabase/client";
 import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import {
   marketingKeys,
-  useActiveCrawl,
+  useActiveCrawlSessions,
   useRecentLiveCrawlEvents,
 } from "@/features/marketing/data/hooks";
+import { isCrawlShapedSession } from "@/features/marketing/crawler/site-commands";
 import {
   crawlLiveEventFromDurableRow,
   type CrawlLiveEvent,
@@ -22,7 +23,18 @@ export type CrawlRealtimeStatus =
   "connecting" | "connected" | "reconnecting" | "disconnected";
 
 export interface SiteCrawlActivity {
+  /**
+   * The live site-wide CRAWL (`full` / `list` / `initialization` / `homepage`),
+   * never a command session. A GSC sync reading as "a crawl is running" is
+   * what taking the newest active row of any mode used to produce.
+   */
   activeCrawl: CrawlSession | null;
+  /**
+   * Every live session for this site, commands included. `useSiteCommandRun`
+   * reads this to rejoin a command that was already running when the page
+   * loaded — the durable half of THE FLOATING LAW.
+   */
+  activeSessions: CrawlSession[];
   events: CrawlLiveEvent[];
   isLoading: boolean;
   error: Error | null;
@@ -61,8 +73,10 @@ export function useSiteCrawlActivity(siteId: string): SiteCrawlActivity {
   const [realtimeStatus, setRealtimeStatus] =
     useState<CrawlRealtimeStatus>("connecting");
   const fallbackPolling = realtimeStatus !== "connected";
-  const active = useActiveCrawl(siteId, fallbackPolling);
-  const activeId = active.data?.id ?? null;
+  const active = useActiveCrawlSessions(siteId, fallbackPolling);
+  const activeSessions = active.data ?? [];
+  const activeCrawl = activeSessions.find(isCrawlShapedSession) ?? null;
+  const activeId = activeCrawl?.id ?? null;
   const activeIdRef = useRef<string | null>(activeId);
   const durableEvents = useRecentLiveCrawlEvents(
     siteId,
@@ -152,7 +166,8 @@ export function useSiteCrawlActivity(siteId: string): SiteCrawlActivity {
   });
 
   return {
-    activeCrawl: active.data ?? null,
+    activeCrawl,
+    activeSessions,
     events: restoredEvents,
     isLoading: active.isLoading,
     error:

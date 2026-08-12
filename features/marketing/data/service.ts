@@ -1737,11 +1737,19 @@ export async function listCrawls(
   };
 }
 
-/** Return the newest crawl that still owns work for this site, if any. */
-export async function getActiveCrawl(
+/**
+ * Every session that still owns work for this site — the site-wide crawl AND
+ * the command sessions (analysis, sitemap sync, GSC sync, link check, page
+ * fetch). This is the durable answer to "what is running right now", which is
+ * what lets a reloaded tab rejoin a run instead of showing a blank panel.
+ *
+ * Deliberately a LIST: several commands can be in flight at once, and taking
+ * only the newest row is what used to make a GSC sync read as a crawl.
+ */
+export async function listActiveCrawlSessions(
   siteId: string,
   signal?: AbortSignal,
-): Promise<CrawlSession | null> {
+): Promise<CrawlSession[]> {
   const response = await (
     await authenticatedWebDb(supabase)
   )
@@ -1753,11 +1761,9 @@ export async function getActiveCrawl(
     .in("status", ["queued", "running"])
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
-    .limit(1)
-    .abortSignal(signal ?? new AbortController().signal)
-    .maybeSingle();
-  if (response.error) throw response.error;
-  return response.data;
+    .limit(20)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
 }
 
 export async function getCrawl(
