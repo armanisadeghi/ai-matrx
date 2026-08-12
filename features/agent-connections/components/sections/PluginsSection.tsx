@@ -37,10 +37,7 @@ import {
   formatSessionTimestamp,
 } from "../../coding-sessions/verdict";
 import { useCodingSessions } from "../../coding-sessions/useCodingSessions";
-import {
-  CODING_SESSION_PAGE_SIZE,
-  type CodingSessionView,
-} from "../../coding-sessions/service";
+import { type CodingSessionView } from "../../coding-sessions/service";
 
 function workConversationHref(conversationId: string): string {
   return `/work/conversations/${conversationId}`;
@@ -63,8 +60,16 @@ export function PluginsSection({
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
     null,
   );
-  const { sessions, loading, error, checkedAtMs, refresh } =
-    useCodingSessions();
+  const {
+    sessions,
+    loading,
+    error,
+    checkedAtMs,
+    refresh,
+    hasMore,
+    loadingMore,
+    loadOlder,
+  } = useCodingSessions();
 
   const selectedSession = selectedSessionId
     ? (sessions.find((session) => session.id === selectedSessionId) ?? null)
@@ -100,7 +105,6 @@ export function PluginsSection({
     checkedAtMs === 0 ? null : error === null,
     checkedAtMs,
   );
-  const atPageLimit = sessions.length === CODING_SESSION_PAGE_SIZE;
   const initialReadFailed =
     filteredSessions.length === 0 && sessions.length === 0 && error !== null;
 
@@ -255,11 +259,22 @@ export function PluginsSection({
               ))}
             </div>
           )}
-          {atPageLimit ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Showing the latest {CODING_SESSION_PAGE_SIZE} sessions. Older
-              sessions are not included in these displayed counts.
-            </p>
+          {hasMore ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={loadOlder}
+                disabled={loadingMore}
+              >
+                {loadingMore ? "Loading older sessions…" : "Load older sessions"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Showing the {sessions.length} most recent sessions; older
+                sessions exist and are not in the displayed counts yet.
+              </p>
+            </div>
           ) : null}
         </section>
       </div>
