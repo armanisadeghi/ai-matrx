@@ -72,7 +72,7 @@ const CONFIGURE_DOORS: WorkDoor[] = [
   {
     title: "Coding connections",
     description:
-      "See exact delivery and runtime state, and sync capability when it is live.",
+      "See exact delivery, account, and runtime state, plus Claude history sync via Matrx Local.",
     href: "/work/connections",
     icon: Plug,
   },
@@ -112,9 +112,18 @@ export function AiWorkOverview() {
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   AI Matrx chat is ready to send messages. Provider
                   conversations appear only after an authenticated coding
-                  adapter captures them. ChatGPT and Claude.ai history import
-                  and sending new turns into independent provider sessions are
-                  not available yet.
+                  adapter captures them. Historical Claude Code sync is
+                  available in the Matrx Local desktop app (sidebar → Claude
+                  History) — see{" "}
+                  <Link
+                    href="/work/connections"
+                    className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+                  >
+                    Connections
+                  </Link>{" "}
+                  for the download and exact state. ChatGPT and Claude.ai
+                  web-chat history import and sending new turns into
+                  independent provider sessions are not available yet.
                 </p>
               </div>
             </div>
