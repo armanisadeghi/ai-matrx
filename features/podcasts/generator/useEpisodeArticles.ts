@@ -44,7 +44,9 @@ const SHOW_NOTES_SLOT_KEY = "podcast_client.show_notes";
 /** Build the episode_metadata JSON the agents consume from the episode + show.
  *  Shared with useEpisodeTitleOptions so every post-episode agent reads the
  *  SAME show/episode context (one builder, no drift). */
-export function episodeMetadata(episode: PcEpisodeWithShow): Record<string, unknown> {
+export function episodeMetadata(
+  episode: PcEpisodeWithShow,
+): Record<string, unknown> {
   const hostNames = (episode.speakers ?? []).map((s) => s.name);
   return {
     show_name: episode.show?.title ?? "",
@@ -85,9 +87,9 @@ export function useEpisodeArticles(
   const openLiveRunWindow = useOpenLiveRunWindow();
   // One window per episode+kind: re-generating replaces the run inside the
   // window the user is already watching instead of stacking a second one.
-  const windowsRef = useRef<Partial<Record<PcArticleKind, LiveRunWindowHandle>>>(
-    {},
-  );
+  const windowsRef = useRef<
+    Partial<Record<PcArticleKind, LiveRunWindowHandle>>
+  >({});
   const [articles, setArticles] = useState<
     Partial<Record<PcArticleKind, PcArticle>>
   >({});
@@ -136,7 +138,8 @@ export function useEpisodeArticles(
       // spinner by another name.
       const handle = openLiveRunWindow({
         instanceId: `episode-article:${kind}:${episode.id}`,
-        label: kind === "blog" ? "Writing the blog post" : "Writing the show notes",
+        label:
+          kind === "blog" ? "Writing the blog post" : "Writing the show notes",
         pending: true,
       });
       windowsRef.current[kind] = handle;
@@ -161,17 +164,20 @@ export function useEpisodeArticles(
         // object; the renderable markdown is assembled from it. The slot is
         // resolved INSIDE the canonical launcher (config_overrides preserved) —
         // never an agent id resolved out here.
-        const value = await (kind === "blog" ? blogRun : notesRun).run<unknown>({
-          slotKey: kind === "blog" ? BLOG_WRITER_SLOT_KEY : SHOW_NOTES_SLOT_KEY,
-          surfaceKey: `podcast-episode-article:${kind}`,
-          sourceFeature: "podcasts",
-          variables,
-          // The live handle lands mid-stream; feeding it to the already-open
-          // window is what turns "pending" into streamed output.
-          onConversationCreated: (conversationId) => {
-            handle.update({ conversationId, pending: false });
+        const value = await (kind === "blog" ? blogRun : notesRun).run<unknown>(
+          {
+            slotKey:
+              kind === "blog" ? BLOG_WRITER_SLOT_KEY : SHOW_NOTES_SLOT_KEY,
+            surfaceKey: `podcast-episode-article:${kind}`,
+            sourceFeature: "podcasts",
+            variables,
+            // The live handle lands mid-stream; feeding it to the already-open
+            // window is what turns "pending" into streamed output.
+            onConversationCreated: (conversationId) => {
+              handle.update({ conversationId, pending: false });
+            },
           },
-        });
+        );
         const fallbackTitle = `${episode.title} — ${kind === "blog" ? "Blog" : "Show notes"}`;
         const { title, markdown, slugSuggestion } = assembleArticleFromValue(
           kind,
@@ -203,7 +209,9 @@ export function useEpisodeArticles(
         });
         setArticles((a) => ({ ...a, [kind]: saved }));
         setDrafts((d) => ({ ...d, [kind]: undefined }));
-        toast.success(kind === "blog" ? "Blog post ready." : "Show notes ready.");
+        toast.success(
+          kind === "blog" ? "Blog post ready." : "Show notes ready.",
+        );
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Generation failed.");
         // The window keeps the partial stream and the run's own error visible.

@@ -13,6 +13,32 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D170 — A live run whose payload is JSON or an XML wrapper shows an EMPTY window until it finishes (2026-08-11)
+
+Migrating a surface to the live posture only removes the spinner when the payload is
+markdown. Watched live in the floating window, two runs stayed **blank for their whole
+duration** and only painted at completion:
+
+- podcast blog writer / show notes (`useEpisodeArticles`) — the agents answer with a
+  structured JSON envelope; the window showed nothing, then a raw JSON code block.
+- the marketing image prompt generator (`generate-page-image.ts` step 1) — its answer
+  is wrapped in `<image_prompt>…</image_prompt>`; nothing rendered mid-run. (Step 2 is
+  fine: the finished image renders in the window.)
+
+So THE FLOATING LAW is satisfied in posture (a window, real stage labels, output that
+survives completion) but not in spirit for these payload shapes — the user still
+watches an empty box while a paid model writes. The fix is NOT at the call site
+(hand-rendering chunks is banned, `matrx/no-bespoke-stream-renderer`): it belongs in
+the canonical pipeline — either content-IR renders an un-kinded live JSON region
+progressively, or these two agents get a registered kind and stream as its component.
+The second is a focused session per `docs/handoffs/live-run-streaming-sweep.md`.
+
+**Correction to that sweep doc's §6:** it records podcast articles as "plain markdown,
+no kind needed, class B only". That is wrong at the wire — `articleMarkdown.ts` exists
+precisely because the agents emit JSON (`{title, intro, sections[], resources[]}` /
+`{key_takeaways[], topics[], links[], people[]}`) and the markdown is ASSEMBLED
+client-side. Deciding whether they get a kind is Arman's call, not an agent's.
+
 ### D169 — Sitemap sync crashes on a duplicate-URL bulk upsert (server, matrx-scraper) (2026-08-11)
 
 `POST /api/scraper/crawler/sites/{id}/sitemaps/sync` fails on datadestruction.com
@@ -94,40 +120,6 @@ key + real credentials, then
 server-side and reports its verdict. Note the `/shapes/[kind]` owner control is
 NOT a fallback for platform kinds: `ShapeOwnerEditor` renders only for kinds the
 viewer owns, and system-org shapes are read-only there.
-
-### D165 — the Redux execution system cannot carry a `context_anchor` (2026-08-11) — FIXED 2026-08-11
-
-`useRunAgent` (the one-shot `callApi` path) accepts `contextAnchor` +
-`organizationId` and puts them on the wire (`useRunAgent.ts:59`, `:103`); the
-Redux execution system does not — `ManagedAgentOptions.runtime`
-(`agent-execution-config.types.ts:153`) has no field for either, and
-`assembleRequest` (`execute-instance.thunk.ts:300-312`) derives org only from
-the instance / ambient active org. `AgentStartRequest.context_anchor` is
-type-legal and never populated from this path.
-
-Consequence: every surface migrated from the one-shot runner to the live posture
-(`useLiveAgentRun`, required for streaming — it is the only path that yields a
-`requestId`/`conversationId`) silently LOSES its durable-entity anchor. Hit
-while migrating the Research Outputs Studio SEO card, which passed
-`{resource_type:"research_topic", resource_id: topicId}`. The report still
-travels in `userInput`, so nothing broke visibly — but the server can no longer
-reload the topic's saved scope, and the same loss lands on every remaining
-class-A migration in `docs/handoffs/live-run-streaming-sweep.md`.
-
-Fix: thread `contextAnchor` through `AgentExecutionRuntime` → instance state →
-`assembleRequest`, the same way `surfaceName` already travels.
-
-**FIXED** (with the slide-deck shape migration, same day). `contextAnchor` +
-`organizationId` are top-level `ManagedAgentOptions` — NOT inside `runtime`,
-because they are durable identity, not per-invocation UI data — and they travel
-`launchAgentExecution` → `createManualInstance` / `createInstanceFromShortcut` →
-`createInstance` → `ExecutionInstance.contextAnchor` → `assembleRequest`, which
-emits `request.context_anchor` BESIDE (never instead of) the ambient scope,
-exactly as the server's `bind_request_scope` expects. `runHeadlessAgentJson` and
-`useLiveAgentRun` pass both through, so a class-A migration keeps its anchor by
-adding two arguments. Both are optional everywhere: omit them and scope
-resolution is byte-identical to before. Both Research Outputs cards (slides +
-SEO) now pass them again.
 
 ### D164 — `keyword_set` and `keyword_variant_set` are byte-identical kinds (2026-08-11)
 
@@ -1182,6 +1174,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D165 — the Redux execution system could not carry a `context_anchor` — RESOLVED 2026-08-11.** `HeadlessAgentJsonOptions` now carries `contextAnchor` / `organizationId` (`run-headless-agent-json.ts:82,88`) straight into `launchAgentExecution`, so migrating a surface to the live posture no longer drops its durable-entity anchor. Filed and closed the same day while migrating the Research Outputs Studio SEO card, which passes `{resource_type:"research_topic", resource_id: topicId}` on the live path.
 
 ### D156 — Python-owned kinds were FIELDLESS to the frontend (140 active rows) — RESOLVED 2026-08-11
 

@@ -104,6 +104,25 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-11 — **Blog post + show notes stream in the floating window (THE FLOATING
+  LAW), and the payload turned out NOT to be markdown.** `useEpisodeArticles` ran
+  through `useRunAgent`, which produces **no requestId at all**, so live rendering was
+  structurally impossible and the user watched a spinner for minutes. It now runs
+  through `useLiveAgentRun` — **one hook instance per kind**, deliberately, because blog
+  and show notes can be generated at the same time and a single live-run hook holds a
+  single conversation (sharing one would let the second run steal the first's window and
+  destroy its instance mid-stream) — and floats one `LiveRunWindow` per episode+kind.
+  The slot now resolves INSIDE the canonical launcher (`slotKey`, config_overrides
+  preserved) instead of `resolveAgentSlot` + a bare agentId, and the run comes back as a
+  parsed object from the structured-JSON primitive, so `articleMarkdown.ts` gained
+  `assembleArticleFromValue` (the text-taking `assembleArticle` stays for the fuzzy
+  path). Live-verified on a real episode: window on click, phase moves, article saved,
+  output survives completion. 🚨 **Correction to the sweep doc:** it recorded these
+  agents as returning plain markdown needing no kind — they do not. They answer with a
+  JSON envelope and the markdown is assembled client-side, so the window is EMPTY for
+  the whole run and paints raw JSON at the end. Filed as **D170**; whether they earn a
+  kind is Arman's call.
+
 - 2026-08-11 — **Chapters stream, and they are a Shape — the `media_chapters`
   kind end to end.** `useEpisodeChapters` ran through `useRunAgent`, which
   produces **no requestId at all**, so live rendering was structurally
