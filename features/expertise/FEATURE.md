@@ -13,8 +13,8 @@
   compile dialog + "From a source" ingest dialog), `/expertise/[id]/desks` (compiled desks +
   version-drift flags), `/expertise/admin` (feature map).
 - **Server half:** aidream `services/expertise_desks` (compile, both shapes) + `services/expertise_ingest`
-  (text→draft rules with verbatim quote verification) — merged to aidream main; LIVE only after the
-  next aidream `release.sh` run. Until then both dialogs surface the server error cleanly.
+  (text→draft rules with verbatim quote verification) are live in production aidream SHA
+  `6f567cba8` (verified 2026-08-12).
 - **Next (work order: docs/handoffs/expertise-system-productization.md):** live interview agent,
   file/PDF ingest via page_extraction, run-history on the desks page, pack version snapshots,
   the Arman-SEO honest test (pack `arman-seo-method` scaffolded, draft, owned by Arman).
@@ -68,3 +68,5 @@
 - 2026-08-10 — Phase 2 FE: CompileDeskDialog ("Create a desk", streams /api/expertise-desks/compile).
 - 2026-08-10 — Phase 3 FE: IngestSourceDialog ("From a source", streams /api/expertise-desks/ingest;
   drafts + quote-verification summary).
+- 2026-08-12 — Verified both aidream services in the production SHA and removed the stale
+  pre-deploy status.
