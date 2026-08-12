@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
@@ -23,6 +23,14 @@ export default function ConversationPage() {
   const dispatch = useAppDispatch();
   const conversationId = params.conversationId as string;
   const markAsReadCalledRef = useRef(false);
+
+  // Loaded-message count, published up from ChatThread (which owns the useChat
+  // subscription). A ref, not state: `getScope` is sampled when the user presses
+  // Run, so this must be the live value and must not re-render the thread.
+  const loadedMessageCountRef = useRef(0);
+  const handleLoadedMessageCountChange = useCallback((count: number) => {
+    loadedMessageCountRef.current = count;
+  }, []);
 
   // Get user from Redux - use auth.users.id (UUID)
   const user = useAppSelector(selectUser);
@@ -91,6 +99,7 @@ export default function ConversationPage() {
     const last = currentConversation?.last_message;
     return createMessagesScope({
       current_conversation_id: conversationId,
+      current_conversation_message_count: loadedMessageCountRef.current,
       current_conversation_title:
         currentConversation?.display_name ??
         currentConversation?.group_name ??
@@ -131,6 +140,7 @@ export default function ConversationPage() {
           userId={userId}
           displayName={displayName}
           className="flex-1"
+          onLoadedMessageCountChange={handleLoadedMessageCountChange}
         />
       </div>
     </SurfaceRuntimeProvider>

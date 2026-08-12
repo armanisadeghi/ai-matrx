@@ -554,3 +554,24 @@ sequenceDiagram
 2. `last_read_at` timestamps are being set properly
 3. Messages have proper `created_at` timestamps
 4. Console logs show correct count after fetch
+
+## Change Log
+
+- **2026-08-12 — the `matrx-user/messages` surface now emits a truthful loaded-message count; still deliberately NOT agent-writable.**
+  `ChatThread` gained an optional `onLoadedMessageCountChange` callback so the
+  `/messages/[conversationId]` route can publish `current_conversation_message_count`
+  into its surface scope. The messages live in this component's `useChat`
+  subscription, so the route cannot read them without opening a second realtime
+  subscription; the count rides up into a ref because `getScope` is sampled when
+  the user presses Run, not on render. **The value was REDEFINED, not just
+  filled in:** it was declared as the conversation's message total, and no such
+  number exists on the client — `useMessages` pages 50 at a time behind
+  `hasMore`/`loadMoreMessages`, and neither `MessagingService` nor the
+  `conversations` row exposes a total. It now says, in the words an agent reads,
+  that it is the size of the LOADED window and must never be reported as how
+  many messages the conversation has. Write targets were re-evaluated and again
+  declined: the composer is the only field clearing the bar (one target, below
+  the floor, and a near-duplicate of `matrx-user/chat`'s shipped `input_draft`),
+  and sending stays a human gesture because the artifact goes to another person.
+  Full reasoning in `features/surfaces/manifests/messages.manifest.ts` and the
+  adopter-side entry in `features/surfaces/FEATURE.md`.
