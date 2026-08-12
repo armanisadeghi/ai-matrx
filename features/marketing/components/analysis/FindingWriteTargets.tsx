@@ -33,8 +33,8 @@ import {
 } from "@/features/marketing/data/finding-lifecycle";
 import {
   acknowledgeFinding,
-  reopenFinding,
   suppressFinding,
+  unacknowledgeFinding,
   unsuppressFinding,
 } from "@/features/marketing/data/finding-mutations";
 
@@ -115,10 +115,15 @@ export function FindingWriteTargets({
         );
       }
 
+      // One canonical verb per status, and `open` MUST be
+      // `unacknowledgeFinding`: `reopenFinding` writes `reopened`, so routing
+      // "undo the acknowledgement" through it stored the wrong status and then
+      // failed the landing check below — a write that corrupted the row and
+      // reported failure at the same time.
       const updated =
         next === "acknowledged"
           ? await acknowledgeFinding(siteId, finding.id)
-          : await reopenFinding(siteId, finding.id);
+          : await unacknowledgeFinding(siteId, finding.id);
       if (updated.status !== next) {
         throw new Error(
           `finding_lifecycle_status did not land — the finding is still ${updated.status}.`,
