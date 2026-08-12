@@ -274,8 +274,9 @@ They split three ways once the payloads were actually read:
   so a bound `output_schema` must put `__kind` FIRST — the canonical emitter
   puts it last, and a discriminator that arrives last means the window cannot
   route until the run is over. The prompt asking for it first does not fix it.
-  Remaining on this item: the browser leg (watching the window render live) was
-  blocked by dev-server contention and has not been run.
+  Verified on PRODUCTION (v0.4.460) rather than localhost, which was unusable
+  (D168): floating window, no page shift, component render not raw JSON, and
+  the persisted list intact through a reload.
   See `features/podcasts/FEATURE.md`.
 
 ### 6. Page-shifting live blocks — DONE 2026-08-11

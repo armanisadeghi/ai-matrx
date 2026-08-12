@@ -138,9 +138,14 @@ is easy to fill in.
   defect — **the model emits keys in the schema's declared property order, so
   `__kind` last means the discriminator arrives last and the window cannot
   route until the run is over.** The prompt asking for it first did NOT fix
-  it; moving `__kind` to the front of `properties` did. Browser leg (watching
-  the window render live) NOT yet run — see the note in
-  `docs/handoffs/live-run-streaming-sweep.md`.
+  it; moving `__kind` to the front of `properties` did. **Verified end to end
+  ON PRODUCTION** (v0.4.460, the same episode): Generate opened a `position:
+  fixed` window titled "Marking chapters" — the page did not move — chapters
+  rendered as `MediaChaptersBlock` rows with mono offset chips and never as
+  raw JSON, the save landed on `metadata.chapters` with `__kind` stripped to
+  the three `PcEpisodeChapter` fields, and after a reload the panel shows the
+  same six offsets through the same component with the button flipped to
+  Regenerate.
 
 - 2026-08-11 — **Title options stream, and each option applies itself — the
   `episode_title_options` kind end to end.** `useEpisodeTitleOptions` ran
