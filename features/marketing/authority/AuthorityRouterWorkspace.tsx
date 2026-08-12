@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -114,10 +114,12 @@ export function AuthorityRouterWorkspace() {
   // handler BEFORE it shows the confirm dialog, so a guard closing over
   // rendered state can act on a status that went stale while the dialog sat
   // open (the `image-studio` trap, recorded on the `chat-voice` adopter). This
-  // ref is advanced every render and read at CALL time, which is immune to
-  // that by construction.
+  // ref is synchronized after each committed status change and read at CALL
+  // time, which is immune to that by construction.
   const runningRef = useRef(false);
-  runningRef.current = authority.run.status === "running";
+  useEffect(() => {
+    runningRef.current = authority.run.status === "running";
+  }, [authority.run.status]);
 
   const buildWriteHandlers = () => ({
     authority_guidance: (value: unknown) => {
