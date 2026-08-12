@@ -13294,19 +13294,16 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_completed: boolean | null
-          is_public: boolean
           metadata: Json
           organization_id: string
-          project_id: string | null
           quiz_content_hash: string | null
           quiz_metadata: Json | null
           state: Json
           title: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
-          visibility: string
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           category?: string | null
@@ -13316,19 +13313,16 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_completed?: boolean | null
-          is_public?: boolean
           metadata?: Json
           organization_id: string
-          project_id?: string | null
           quiz_content_hash?: string | null
           quiz_metadata?: Json | null
           state: Json
           title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
-          visibility?: string
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           category?: string | null
@@ -13338,19 +13332,16 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_completed?: boolean | null
-          is_public?: boolean
           metadata?: Json
           organization_id?: string
-          project_id?: string | null
           quiz_content_hash?: string | null
           quiz_metadata?: Json | null
           state?: Json
           title?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
-          visibility?: string
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
