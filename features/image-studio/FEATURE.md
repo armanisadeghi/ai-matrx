@@ -309,6 +309,40 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
   `ImageMetadata` object — those hex codes are measured off the pixels by a
   model that can see the image, so writing them from the surface scope would
   be inventing values.
+- **2026-08-12** — Added a THIRD Convert write target, `filename_base`: a
+  partial map that renames the filename base of one or more source images
+  through the same `setFilenameBase(fileId, base)` a file card's inline rename
+  field calls. The base is load-bearing twice — it is the slug of every variant
+  an image produces AND the per-image subfolder `saveAll` writes into — and the
+  shell already blocks the first Generate with a rename banner whenever files
+  still carry auto-derived names like `img-4821`, so this answers a nag the page
+  itself raises. Source files are browser-local `File` objects with no durable
+  id, so the map is keyed by whatever coordinate the agent saw in `source_files`
+  — 1-based POSITION, the original `name`, or the current `filename_base` — and
+  the handler resolves that back to the real internal id, refusing a key that
+  matches no image or more than one rather than guessing. The WHOLE map is
+  validated before the first rename lands (the `workbook_sheet_names` shape), and
+  collisions are checked against the RESULT of applying it, so swapping two
+  images' bases is legal while ending up with two images sharing a base is
+  refused — their variants would overwrite each other on save. Bases are
+  rejected rather than coerced: `slugifyFilename` silently falls back to
+  `"image"` for input with no alphanumerics and truncates at 60, so the handler
+  checks the un-truncated slug and throws on both, and refuses any `"."` because
+  the slugifier would strip a trailing `.v2` as an extension. `slugify-filename.ts`
+  now exports `FILENAME_BASE_MAX_CHARS` beside the function that applies it, and
+  the manifest interpolates that same constant into its contract prose. Live
+  state is read through a new `filesRef` for the reason the 2026-08-11 entry
+  documents — the writeback seam resolves every handler closure BEFORE the user
+  confirms, so a rename staged against a render-snapshot file list could hit the
+  wrong image — and the handler refuses while a conversion or a save is in
+  flight, because the base is already baked into the variants and the folder in
+  motion. Live-verified with a real Badass Agent run; see
+  `features/surfaces/FEATURE.md` for the full transcript of what was checked.
+  `matrx-user/image-edit` was re-assessed at the same time and its WRITE
+  DOCTRINE stands unchanged — the AI edit prompt cannot be a target while
+  `IMAGE_STUDIO_BACKEND_CAPABILITIES.promptEdit` is `false`, because the popover
+  it would write into never renders.
+
 - **2026-08-11** — Hardened the Convert write targets: the crop anchor's
   fit gate is now ENFORCED, not just documented. `conversion_settings` accepted
   `resize_position` under any fit, but `CropControls` renders the anchor picker

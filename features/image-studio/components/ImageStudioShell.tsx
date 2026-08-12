@@ -56,7 +56,10 @@ import {
   downloadVariantsAsZip,
   type BundleEntry,
 } from "../utils/download-bundle";
-import { slugifyFilename } from "../utils/slugify-filename";
+import {
+  FILENAME_BASE_MAX_CHARS,
+  slugifyFilename,
+} from "../utils/slugify-filename";
 import { getPresetById } from "../presets";
 import {
   CROPPING_IMAGE_FIT,
@@ -332,23 +335,22 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
   // has to resolve against the fit as it stands WHEN APPLIED, not the one
   // captured when the closure was built.
   const fitRef = useRef(studio.fit);
-  // `image_description` needs the file LIST, not just its length: it resolves
-  // which source image a write lands on by name. Assigned during render
-  // rather than in the effect below because the identifying strings change
-  // WITHOUT the length changing — a `filename_base` write renames the very
-  // value the next call in the same turn matches on, and the effect's deps
-  // would not fire for that.
+  // Same reason again, for `filename_base`: that handler resolves the agent's
+  // coordinate (position / name / current base) against the live file list AND
+  // checks the resulting names for collisions, so it needs the files as they
+  // stand when the user clicks Apply — not as they were when the closure was
+  // built. A rename staged against a stale list could hit the wrong image.
   const filesRef = useRef(studio.files);
-  filesRef.current = studio.files;
 
   useEffect(() => {
     isProcessingRef.current = studio.isProcessing;
     isSavingRef.current = studio.isSaving;
     sourceFileCountRef.current = studio.files.length;
     fitRef.current = studio.fit;
-  }, [studio.files.length, studio.fit, studio.isProcessing, studio.isSaving]);
+    filesRef.current = studio.files;
+  }, [studio.files, studio.fit, studio.isProcessing, studio.isSaving]);
 
-  // Both handlers validate and THROW on a bad shape; the writeback seam
+  // Every handler validates and THROWS on a bad shape; the writeback seam
   // (`applySurfaceWrite`) turns the throw into a safe error envelope the
   // agent reads and corrects from. Enum checks run against the same
   // `constants/conversion-options` module the Output-controls panel renders
@@ -545,6 +547,149 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
           apply.push(() => studio.setPosition(next));
         }
         for (const run of apply) run();
+      },
+
+      /**
+       * Rename the filename base of one or more source images.
+       *
+       * Source files are browser-local `File` objects with no durable id, so
+       * the surface reports them by name and slug — this handler resolves
+       * whichever coordinate the agent actually saw in `source_files`
+       * (1-based position, original `name`, or current `filename_base`) back
+       * to the real internal file id, and refuses one that matches no image
+       * or more than one rather than guessing.
+       *
+       * Everything is validated BEFORE the first rename, like
+       * `selected_presets` above: a map that half-applied and then failed
+       * would leave the batch named in a way neither the user nor the agent
+       * asked for.
+       */
+      filename_base: (value: unknown) => {
+        // Same in-flight reasoning as the two targets above, and it bites
+        // harder here: the base is baked into every variant's filename AND
+        // into the per-source subfolder a save writes to, so renaming during
+        // a run or a save would split one batch across two names.
+        if (isProcessingRef.current)
+          throw new Error(
+            "A conversion is already running. filename_base cannot be written while variants are being generated — the names are baked into the variants in flight. Wait for it to finish, then rename.",
+          );
+        if (isSavingRef.current)
+          throw new Error(
+            "A save to the library is already running. filename_base cannot be written until it finishes — the base is the folder the variants are landing in.",
+          );
+
+        const files = filesRef.current;
+        if (files.length === 0)
+          throw new Error(
+            "No source images are loaded. filename_base cannot rename anything in an empty studio — the user has to drop or upload images first.",
+          );
+        if (typeof value !== "object" || value === null || Array.isArray(value))
+          throw new Error(
+            'filename_base expects an object keyed by which image to rename, e.g. { "1": "autumn-market-stall" }. Read source_files for the images and their current bases.',
+          );
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (entries.length === 0)
+          throw new Error(
+            "filename_base expects at least one { image: newBase } entry.",
+          );
+
+        const coordinates = files
+          .map(
+            (f, i) => `${i + 1} = "${f.originalName}" (base "${f.filenameBase}")`,
+          )
+          .join(", ");
+
+        const resolved: Array<{ fileId: string; base: string }> = [];
+        const claimedBy = new Map<string, string>();
+
+        for (const [key, newBase] of entries) {
+          const needle = key.trim();
+          let matches: typeof files;
+          if (/^\d+$/.test(needle)) {
+            const index = Number(needle) - 1;
+            if (index < 0 || index >= files.length)
+              throw new Error(
+                `filename_base: "${key}" is not a valid position — the studio has ${files.length} image${files.length === 1 ? "" : "s"}, so positions run 1 to ${files.length}. Read source_files: ${coordinates}.`,
+              );
+            matches = [files[index]];
+          } else {
+            const lowered = needle.toLowerCase();
+            matches = files.filter(
+              (f) =>
+                f.originalName.toLowerCase() === lowered ||
+                f.filenameBase.toLowerCase() === lowered,
+            );
+          }
+          if (matches.length === 0)
+            throw new Error(
+              `filename_base: "${key}" does not match any image in the studio. Use the image's 1-based position, its original name, or its current filename_base — read source_files: ${coordinates}.`,
+            );
+          if (matches.length > 1)
+            throw new Error(
+              `filename_base: "${key}" matches ${matches.length} images, so it is ambiguous. Use the 1-based position instead — read source_files: ${coordinates}.`,
+            );
+
+          const file = matches[0];
+          const previousKey = claimedBy.get(file.id);
+          if (previousKey !== undefined)
+            throw new Error(
+              `filename_base: "${previousKey}" and "${key}" both refer to the same image. Give each image at most one new base.`,
+            );
+          claimedBy.set(file.id, key);
+
+          if (typeof newBase !== "string")
+            throw new Error(
+              `filename_base: the new base for "${key}" must be a string — received ${JSON.stringify(newBase)}.`,
+            );
+          const trimmed = newBase.trim();
+          if (trimmed.includes("."))
+            throw new Error(
+              `filename_base: "${trimmed}" contains a "." — pass the base name only, with no file extension. Each variant gets its extension from the output format.`,
+            );
+          // `slugifyFilename` silently falls back to "image" for input with no
+          // alphanumerics and truncates at 60; check the UN-truncated slug so
+          // both cases are refused rather than quietly coerced.
+          const slug = trimmed
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+          if (slug.length === 0)
+            throw new Error(
+              `filename_base: the new base for "${key}" must contain at least one letter or digit — ${JSON.stringify(newBase)} slugifies to nothing.`,
+            );
+          if (slug.length > FILENAME_BASE_MAX_CHARS)
+            throw new Error(
+              `filename_base: "${slug}" is ${slug.length} characters — a filename base is limited to ${FILENAME_BASE_MAX_CHARS} once it is hyphenated.`,
+            );
+
+          resolved.push({ fileId: file.id, base: trimmed });
+        }
+
+        // Collisions are checked against the RESULT of applying the whole map
+        // — so swapping two images' bases is legal, while colliding with an
+        // image the map leaves alone is not. A collision that already exists
+        // between two UNTOUCHED images is the user's own state and is left
+        // alone; only a duplicate this map is party to is refused, because two
+        // images sharing a base overwrite each other's variants on save.
+        const resultingBase = new Map(
+          files.map((f) => [f.id, f.filenameBase] as const),
+        );
+        for (const { fileId, base } of resolved)
+          resultingBase.set(fileId, slugifyFilename(base));
+        const idsByBase = new Map<string, string[]>();
+        for (const [fileId, base] of resultingBase)
+          idsByBase.set(base, [...(idsByBase.get(base) ?? []), fileId]);
+        for (const [base, ids] of idsByBase) {
+          if (ids.length < 2) continue;
+          if (!ids.some((id) => claimedBy.has(id))) continue;
+          throw new Error(
+            `filename_base: applying these renames would leave ${ids.length} images with the base "${base}", and their variants would overwrite each other. Give each image a distinct base.`,
+          );
+        }
+
+        // The SAME setter a file card's inline rename field calls.
+        for (const { fileId, base } of resolved)
+          studio.setFilenameBase(fileId, base);
       },
     }),
     [studio],
