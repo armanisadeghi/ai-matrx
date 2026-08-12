@@ -1326,7 +1326,43 @@ internal platform use — never a washed-down user variant beside a private one:
   `refresh_profile`, the toolbar's weekly/monthly/bootstrap selector — real
   view state, but a mechanical knob sitting beside the Refresh button the
   user must press anyway, where the agent's actual contribution is the
-  recommendation it can already make in prose).
+  recommendation it can already make in prose), and
+  `matrx-admin/agent-apps` (6 ask-policy targets across TWO of the surface's
+  SEVEN mounts, and THE per-mount-posture reference now that both halves have
+  landed: 3 `mode:"draft"` targets on the CATEGORIES editor — `category_name`
+  / `category_description` / `category_icon`, staged through the same
+  `handleEditChange` the admin's typing calls, so the admin's own Save is what
+  runs `updateAgentAppCategory` — plus 3 `mode:"entity"` targets on the
+  edit/[id] APP shell: `app_metadata` (a composite `{name?, tagline?,
+  description?}`, exactly the field set the "Edit name / tagline" modal
+  edits), `app_category` and `app_tags`, handlers on that page's own provider.
+  The two mounts landed independently a day apart and are both kept whole. The
+  edit shell is `entity` because it has NO draft layer to stage into — it
+  holds the loaded row plus a modal whose form state exists only while the
+  modal is open — so each handler lands through the SAME
+  `PATCH /api/agent-apps/[id]` the modal's Save calls; that PATCH is a raw
+  `.update(body)` passthrough with **no server-side column allow-list**, so
+  the handler's allow-list in the unit-tested
+  `features/agent-apps/lib/admin-app-write-targets.ts` IS the guard, and the
+  tests assert `slug` / `status` / `is_featured` / `is_verified` /
+  `is_public` / rate limits / `component_code` / `user_id` are all rejected.
+  `app_tags` has no validator of its own: it imports `validateAppTags` from
+  `features/agent-apps/route/agent-app-entity-writes.ts`, the one the
+  user-facing `matrx-user/agent-apps` surface already uses, so
+  `app.definition.tags` keeps ONE contract across both surfaces.
+  `app_category` is the one place the admin console is deliberately STRICTER
+  than its user-facing twin — `validateAppCategory` there accepts any
+  non-empty string because a user's own picker offers free-text categories,
+  while here the value must match the live `platform.categories` vocabulary
+  case-insensitively, since an agent inventing a category fragments the
+  taxonomy this console governs. That vocabulary is loaded by the page and
+  republished as the new `available_app_categories` read value, so the list an
+  agent is told to pick from and the list the handler accepts cannot drift.
+  The other FIVE mounts register nothing, by decision: dashboard, apps list,
+  executions/errors and analytics are read-only reports whose only mutable
+  state is filters and sort, and rate-limits is enforcement. Verified live from
+  both directions — three targets applied and persisted on the edit shell, and
+  the apps-LIST mount offered the agent no `apply_surface_write` tool at all).
 
 ## Surface client tools — page actions offered to bound agents (v1, 2026-07-29)
 
@@ -1481,6 +1517,7 @@ One concrete item does survive, and it now has a proven recipe:
 
 ## Change Log
 
+- **2026-08-12 — `matrx-admin/agent-apps` edit shell agent-writable: the surface now has a per-mount posture on BOTH halves, and it is the campaign's clearest demonstration that one manifest can serve seven mounts with different answers.** The 2026-08-10 pass made the CATEGORIES editor writable (3 `mode:"draft"` targets); this adds the only other mount that authors copy — the edit/[id] app shell — with `app_metadata` (a composite `{name?, tagline?, description?}`), `app_category` and `app_tags`, all `applyPolicy:"ask"`, handlers on that page's own `getWriteHandlers`. **The two passes collided and both are kept**: the categories work had already merged, so it was taken wholesale and this pass added only what was genuinely additive. **The five silent mounts are the point.** `listAgentWritableTargets()` offers a target only where THAT mount registered a handler, so dashboard, apps list, executions/errors, analytics and rate-limits offer an agent no `apply_surface_write` tool at all — verified live, not assumed: a run on the apps LIST asking to retag an app produced zero dialogs and the agent stated it had no write tool in its toolset. Read-only reports whose only mutable state is filters and sort do not earn handlers, and enforcement (rate limits, unblocks) never will. **`entity` over the preferred `draft`, stated in the description because the reason is structural:** the edit shell has no draft layer to stage into — it holds the loaded row plus a metadata modal whose form state exists only while the modal is open — so a `draft` write would have nowhere to land. Each handler therefore goes through the SAME `PATCH /api/agent-apps/[id]` the modal's Save calls. **That PATCH is a raw `.update(body)` passthrough with no server-side column allow-list**, which is why the validation core (`features/agent-apps/lib/admin-app-write-targets.ts`, pure and unit-tested) matters more than usual: whatever leaves it is written to `app.definition` verbatim, so the allow-list IS the guard, and the tests assert `slug` / `status` / `is_featured` / `is_verified` / `is_public` / rate limits / `component_code` / `user_id` are each rejected by name. **Reuse over a second contract:** `app_tags` has no validator here at all — it imports `validateAppTags` from `features/agent-apps/route/agent-app-entity-writes.ts`, written for the user-facing `matrx-user/agent-apps` surface, so `app.definition.tags` keeps ONE contract across both surfaces rather than two that drift. `app_category` is the one place the admin console is deliberately STRICTER than its user-facing twin: `validateAppCategory` there accepts any non-empty string (a user's own picker offers free-text categories), while here the value must match the live `platform.categories` vocabulary case-insensitively and is stored in that list's canonical casing — an agent inventing a category fragments the taxonomy this console exists to govern. Because that vocabulary is a DB table rather than a code constant, it cannot be interpolated into the description; instead the page loads it once and republishes it as a new `available_app_categories` read value which the handler ALSO validates against, so the list an agent is told to choose from and the list the handler accepts are the same array. `selected_app_summary` gained `tags` and the Metadata card gained a Tags row, so a tag write has a visible twin instead of landing invisibly. **Judgment on the app shell:** the slug and id (identity), `status` / `is_public` / `is_featured` / `is_verified` (each one the admin's own button in `AgentAppAdminActions`), rate limits, ownership, delete, and `component_code` / `variable_schema` / `allowed_imports` all stay human — changing what an app RUNS or may REACH is a capability change, not a copy edit, the line `matrx-user/agent-builder` drew. Live-verified with real Badass Agent runs: three targets applied from ONE message and persisted (card + reload), each ask dialog carried the manifest description verbatim, "Keep as is" returned `{ok:false, declined:true}` and the agent reported it as declined without retrying, a publish+feature request produced no tool call and a plain explanation, and three forced-invalid calls returned the handlers' own throws word-for-word — including `app_category: "Wizardry" is not a system category. Choose exactly one of: Writing, Productivity, Research, Coding, Education, Marketing, Creative, Business, Data, Other.`, the ten real names read from the live table. Error Inspector: "No errors captured" on the clean path. `check:surface-drift` (143 surfaces) + `type-check` + the new unit suite all clean. DB mirror sync still pending. **Pre-existing bug found, NOT fixed:** `PATCH /api/agent-apps/[id]` is RLS-blocked (`PGRST116`, 0 rows) for any app the signed-in admin does not own, including global/system rows — so the admin's own "Edit name / tagline" Save fails identically there, with the Postgres error swallowed into a generic 500. It cost an hour to diagnose because the failure looks like a broken write target; the tell is that the HUMAN modal fails the same way on the same row. Routing the console's metadata save through an admin-client path (as `DELETE` on that route already does for global rows) is the fix and needs its own superadmin check, so it is not a drive-by. **Also worth a second look, found while scouting and deliberately not touched:** the merged `category_name` target's rationale says renaming a category "re-labels it everywhere it is offered to users" — but `app.definition.category` stores the category NAME as loose text (`AgentAppCategoryPicker` commits `opt.name`, and the categories page's own delete dialog says apps are orphaned because the reference is loose), so a rename may orphan every app assigned to that category rather than re-label them. That is the merged design's call to revisit, not this pass's to overturn.
 - **2026-08-12 — `matrx-user/transcript-studio` is mounted and agent-writable.**
   `StudioView` now provides the runtime for both `/transcripts/studio` and the
   floating window; the route alias is ordered above `/transcripts`. Its 26-value

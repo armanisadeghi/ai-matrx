@@ -24,6 +24,11 @@
  * action has happened; those are the admin's own button clicks and API
  * calls (`updateAgentAppAdmin`, `unblockAgentAppRateLimit`, etc.).
  *
+ * WRITE side: two of the seven mounts register handlers — the categories
+ * editor (`category_*`, drafts) and the edit/[id] shell (`app_*`, authored
+ * copy persisted immediately). The other five register nothing. See the
+ * `writeTargets` block below for the per-mount reasoning.
+ *
  * Emitters: WIRED on every section — dashboard (AgentAppsAdminDashboardPage),
  * apps list (AgentAppsAdminListPage), edit/[id] (AdminEditAgentAppPage,
  * controlled admin/code tab), categories (AgentAppsCategoriesAdminPage),
@@ -257,11 +262,22 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_app_summary",
     label: "Selected app summary",
     description:
-      "Identity of the app being edited: name, slug, category, creator_email, tagline, description, status. Absent outside the edit section.",
+      "Identity of the app being edited: name, slug, category, creator_email, tagline, description, tags, status. Absent outside the edit section.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 600,
     sortOrder: 310,
+    group: "app_detail",
+  },
+  {
+    name: "available_app_categories",
+    label: "Available app categories",
+    description:
+      "Every system agent-app category NAME (platform.categories, dimension='app'), in display order — the exact vocabulary the app_category write target accepts. Absent outside the edit section; empty array when the category list failed to load.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 200,
+    sortOrder: 315,
     group: "app_detail",
   },
   {
@@ -534,7 +550,14 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 /**
- * Write targets — the CATEGORIES editor only.
+ * Write targets — TWO of the surface's SEVEN mounts, and the per-mount posture
+ * is the whole story here. `listAgentWritableTargets()` only offers a target
+ * where THAT mount registered a handler, so one manifest and one target list
+ * serve seven very different postures: the categories editor stages drafts, the
+ * edit/[id] shell persists authored copy, and the other five mounts offer an
+ * agent no write tool at all.
+ *
+ * ── The categories editor (draft) ───────────────────────────────────────────
  *
  * This is a moderation console, and almost none of it earns a write path: the
  * apps table's is_featured / is_verified / status are abuse and trust controls,
@@ -560,7 +583,46 @@ const surfaceSpecific: SurfaceValue[] = [
  * creation, and the disabled input says so), `sort_order` (mechanical ordering
  * the admin does with the list's own up/down arrows, one row at a time),
  * category creation and deletion (deletion orphans every app assigned to the
- * category), and every other section of this console.
+ * category).
+ *
+ * ── The edit/[id] shell (entity) ────────────────────────────────────────────
+ *
+ * The other place an admin authors copy is one app's own metadata. The three
+ * `app_*` targets below cover exactly the authored fields — name, tagline,
+ * description, category, tags — and are registered on that page's own provider
+ * (`app/(admin)/administration/agents/agent-apps/edit/[id]/page.tsx`).
+ *
+ * They are `mode: "entity"` rather than the preferred `"draft"` because this
+ * page HAS no draft layer to stage into: it holds the loaded row plus a
+ * metadata modal whose form state exists only while the modal is open. Each
+ * handler therefore lands through the SAME `PATCH /api/agent-apps/[id]` the
+ * modal's Save button calls, and the Metadata card re-renders from the
+ * returned row. Validation lives in the pure, unit-tested
+ * `features/agent-apps/lib/admin-app-write-targets.ts` and THROWS — that
+ * matters more than usual here, because the PATCH route is a raw
+ * `.update(body)` passthrough with no server-side column allow-list, so the
+ * handler's allow-list IS the guard.
+ *
+ * `app_category` validates against the LIVE `platform.categories` vocabulary
+ * the page loads and republishes as `available_app_categories`, so the list an
+ * agent is told to choose from and the list the handler accepts cannot drift.
+ * The human picker also accepts free text; the agent path does not.
+ *
+ * Deliberately NOT writable on the edit shell: the slug and id (identity),
+ * `status` / `is_public` / `is_featured` / `is_verified` (publication and
+ * visibility — each one is the admin's own button in `AgentAppAdminActions`),
+ * the rate limits, ownership, delete, and `component_code` /
+ * `variable_schema` / `allowed_imports` — changing what an app RUNS or may
+ * REACH is a capability change, not a copy edit (the `matrx-user/agent-builder`
+ * adopter drew the same line).
+ *
+ * ── The five mounts that register nothing ───────────────────────────────────
+ *
+ * dashboard, apps list, executions/errors and analytics are read-only reports:
+ * their only mutable state is filters, sort and which row is open, and the rows
+ * themselves are execution history — a log, not a document. rate-limits is
+ * throttling and unblocking, which is enforcement. Read-only by decision, not
+ * by omission.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
@@ -599,6 +661,44 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "categories",
     sortOrder: 450,
   },
+
+  // ── edit/[id] shell — the app's own authored copy (entity, ask) ──────────
+  {
+    name: "app_metadata",
+    label: "App metadata",
+    description:
+      "Rewrite the agent app's authored copy on the edit shell. Value: a partial object with any of { name?: string, tagline?: string, description?: string } — the three fields the admin's 'Edit name / tagline' modal edits. Omitted fields keep their current value; an empty string CLEARS tagline or description, but the name may never be blanked. Any other key throws: the slug, status, featured/verified/public flags, rate limits and component code are NOT authored copy. Persists immediately through the same PATCH the modal's Save button calls, and the Metadata card + selected_app_summary show the result.",
+    valueType: "object",
+    updatesValue: "selected_app_summary",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "app_detail",
+    sortOrder: 350,
+  },
+  {
+    name: "app_category",
+    label: "App category",
+    description:
+      "Assign the agent app open in the edit shell to ONE system category. Value: a single category name, matched case-insensitively against the live vocabulary published as available_app_categories (read that value first — it is the exact accepted list) and stored using that list's canonical casing. A name outside the vocabulary throws and the error names every valid option: the human picker also allows free-text categories, but an agent inventing one fragments a taxonomy that apps reference by loose text. Clearing the category is a human decision and is refused. Persists immediately through the same PATCH the metadata modal uses.",
+    valueType: "string",
+    updatesValue: "selected_app_summary",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "app_detail",
+    sortOrder: 360,
+  },
+  {
+    name: "app_tags",
+    label: "App tags",
+    description:
+      "Set the discovery tags of the agent app open in the edit shell. Value: an array of non-empty strings that REPLACES the full tag set — to add one, include the existing tags from selected_app_summary.tags. An empty array clears every tag. Tags are a set: sending the same tag twice (case-insensitively) throws rather than being collapsed. Persists immediately through the same PATCH the metadata modal uses.",
+    valueType: "array",
+    updatesValue: "selected_app_summary",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "app_detail",
+    sortOrder: 370,
+  },
 ];
 
 export const adminAgentAppsManifest: SurfaceManifest = {
@@ -615,7 +715,13 @@ How to read the values: each section's group (dashboard_*, apps_list_*, selected
 
 What you may safely do: help the admin draft moderation notes, error resolutions, or category descriptions, summarize analytics or a suspicious rate-limit pattern, and explain what a row means. You never feature, verify, publish, delete, resolve, or unblock anything yourself — those are the admin's own actions, which call updateAgentAppAdmin / resolveAgentAppError / unblockAgentAppRateLimit.
 
-The ONE thing you can WRITE through apply_surface_write is the category open in the categories editor: its name, description and icon. All three stage into the edit form for the admin to Save — nothing reaches the database until they press it — and all three need a category selected first. Everything else on this console is read-only to you: featuring, verifying, publishing or suspending an app, editing rate limits, resolving errors, reordering categories, and creating or deleting a category are moderation controls, so propose those in words instead of trying to write them.
+What you can WRITE through apply_surface_write depends on which section you are in, and only two sections offer anything at all.
+
+In the categories editor: the category open in the edit pane — its name, description and icon. All three stage into the edit form for the admin to Save — nothing reaches the database until they press it — and all three need a category selected first.
+
+In the "edit" section: the open app's authored copy — app_metadata (name / tagline / description), app_category, and app_tags. These SAVE IMMEDIATELY once the admin confirms, because that page has no draft layer. Read available_app_categories before setting a category; it is the exact accepted vocabulary.
+
+Everything else on this console is read-only to you: featuring, verifying, publishing or suspending an app, editing rate limits, resolving errors, reordering categories, creating or deleting a category, and changing an app's slug or component code are moderation and capability controls, so propose those in words instead of trying to write them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -672,6 +778,7 @@ export interface AdminAgentAppSummary {
   creator_email: string | null;
   tagline: string | null;
   description: string | null;
+  tags: string[];
   status: string;
 }
 
@@ -769,6 +876,7 @@ export function createAdminAgentAppsScope(values: {
   // app detail
   selected_app_id?: string;
   selected_app_summary?: AdminAgentAppSummary;
+  available_app_categories?: string[];
   selected_app_analytics?: AdminAgentAppAnalytics;
   selected_app_tab?: "admin" | "code";
   selected_app_timestamps?: AdminAgentAppTimestamps;
