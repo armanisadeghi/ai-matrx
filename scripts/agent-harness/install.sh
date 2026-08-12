@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # install.sh — install the Matrx agent harness on this machine.
 #
-# Makes any Claude Code / Codex agent on any machine obey the ONE DEV SERVER LAW:
+# Gives any Claude Code / Codex agent one managed server path and enforces the
+# ONE DEV SERVER LAW:
 # this repo's Next dev tree is huge, and two concurrent dev servers is a reliable
 # hard crash on a 16GB box. The guard is a PreToolUse hook, so it applies to every
 # agent in every session without anyone having to remember a rule.
@@ -31,7 +32,7 @@ status=0
 merge_settings() {
   local settings="$1" hook_path="$2" label="$3"
   /usr/bin/python3 - "$settings" "$hook_path" "$label" "$CHECK_ONLY" <<'PY'
-import json, os, sys
+import json, os, sys, tempfile
 settings, hook, label, check_only = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] == "1"
 
 data = {}
@@ -43,15 +44,28 @@ if os.path.exists(settings):
         print(f"  {label}: SKIPPED — {settings} is not valid JSON; fix it and re-run")
         sys.exit(0)
 
-want = [
-    ("PreToolUse", "mcp__Claude_Browser__preview_start", f"{hook} guard",
-     "Enforcing single preview server"),
-    ("PreToolUse", "Bash", f"{hook} guard-bash", "Enforcing single dev server"),
-    ("SessionEnd", None, f"{hook} reap", None),
-]
+want = [("PreToolUse", "Bash", f"{hook} guard-bash", "Enforcing managed preview server")]
+if label == "claude":
+    want.insert(0, ("PreToolUse", "mcp__Claude_Browser__preview_start", f"{hook} guard",
+                    "Redirecting to managed preview server"))
 
 hooks = data.setdefault("hooks", {})
 changed = False
+
+# Remove obsolete entries we own. The shared managed preview intentionally
+# outlives one agent session, so SessionEnd must not reap it. Codex also has no
+# Claude_Browser preview tool.
+want_keys = {(event, matcher) for event, matcher, _, _ in want}
+for event, entries in list(hooks.items()):
+    kept = []
+    for entry in entries:
+        owned = any("matrx-preview-ports.sh" in h.get("command", "") for h in entry.get("hooks", []))
+        if owned and (event, entry.get("matcher")) not in want_keys:
+            changed = True
+            continue
+        kept.append(entry)
+    hooks[event] = kept
+
 for event, matcher, command, msg in want:
     entries = hooks.setdefault(event, [])
     # Our entry = same event + same matcher + a command mentioning our script.
@@ -82,12 +96,11 @@ elif check_only:
     print(f"  {label}: WOULD UPDATE {settings}")
 else:
     os.makedirs(os.path.dirname(settings), exist_ok=True)
-    if os.path.exists(settings):
-        with open(settings + ".bak", "w") as b:
-            json.dump(json.load(open(settings)), b, indent=2)
-    with open(settings, "w") as f:
+    fd, temp_path = tempfile.mkstemp(prefix=".matrx-hooks-", dir=os.path.dirname(settings))
+    with os.fdopen(fd, "w") as f:
         json.dump(data, f, indent=2)
         f.write("\n")
+    os.replace(temp_path, settings)
     print(f"  {label}: updated {settings}")
 PY
 }
@@ -117,6 +130,49 @@ echo "source: $SRC"
 install_for "$HOME/.claude" "claude" "$HOME/.claude/settings.json"
 # Codex uses a separate hooks.json rather than settings.json.
 install_for "$HOME/.codex" "codex" "$HOME/.codex/hooks.json"
+
+# A 2026-07 local experiment auto-started one server PER Claude session. Remove
+# only those exact repo-local hook entries; all unrelated local settings stay.
+PROJECT_LOCAL="$SRC_DIR/../../.claude/settings.local.json"
+if ! /usr/bin/python3 - "$PROJECT_LOCAL" "$CHECK_ONLY" <<'PY'
+import json, os, sys, tempfile
+path, check_only = sys.argv[1], sys.argv[2] == "1"
+if not os.path.exists(path):
+    raise SystemExit
+try:
+    data = json.load(open(path))
+except json.JSONDecodeError:
+    print(f"  project-local: SKIPPED — {path} is not valid JSON")
+    raise SystemExit
+
+changed = False
+hooks = data.get("hooks", {})
+for event, entries in list(hooks.items()):
+    kept = []
+    for entry in entries:
+        legacy = any("agent-dev-server.sh" in h.get("command", "") for h in entry.get("hooks", []))
+        if legacy:
+            changed = True
+        else:
+            kept.append(entry)
+    hooks[event] = kept
+
+if not changed:
+    print("  project-local: no legacy per-session autoserver hooks")
+elif check_only:
+    print(f"  project-local: WOULD REMOVE legacy per-session autoserver hooks from {path}")
+    raise SystemExit(1)
+else:
+    fd, temp_path = tempfile.mkstemp(prefix=".matrx-project-hooks-", dir=os.path.dirname(path))
+    with os.fdopen(fd, "w") as target:
+        json.dump(data, target, indent=2)
+        target.write("\n")
+    os.replace(temp_path, path)
+    print(f"  project-local: removed legacy per-session autoserver hooks from {path}")
+PY
+then
+  status=1
+fi
 
 echo
 echo "dev servers running right now:"

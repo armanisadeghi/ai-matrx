@@ -169,6 +169,9 @@
     "dev:reap:dry": "bash scripts/dev-cleanup.sh reap --dry-run",
     "dev:stop": "bash scripts/dev-cleanup.sh ports",
     "dev:nuke": "bash scripts/dev-cleanup.sh all",
+    "preview:start": "bash scripts/agent-dev-server.sh start",
+    "preview:stop": "bash scripts/agent-dev-server.sh stop",
+    "preview:status": "bash scripts/dev-cleanup.sh status",
     "fix:tsconfig": "tsx scripts/check-tsconfig-hygiene.ts --fix",
     "lab:graph": "tsx scripts/build-lab/graph-report.ts",
     "lab:run": "bash scripts/build-lab/run.sh"

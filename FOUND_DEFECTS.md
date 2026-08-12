@@ -92,26 +92,6 @@ precisely because the agents emit JSON (`{title, intro, sections[], resources[]}
 `{key_takeaways[], topics[], links[], people[]}`) and the markdown is ASSEMBLED
 client-side. Deciding whether they get a kind is Arman's call, not an agent's.
 
-### D168 — `preview_start` dev servers are untracked, so parallel agent sessions reap each other (2026-08-11)
-
-`pnpm dev` runs `scripts/dev-cleanup.sh reap` on boot, and a server started by the
-harness's `preview_start` shows `TRACKED: no` in `pnpm dev:status`. So every time a
-second agent session starts a dev server, it kills the first session's — and vice
-versa. With three sessions active the box never holds a server long enough to finish
-compiling a route (measured 2026-08-11: servers surviving 1–3 minutes, each ballooning
-to 16–76 GB on a 16 GB machine, `.next-preview` at 155 GB). Browser verification is
-effectively impossible while more than one session is running.
-
-This is not the same thing as the runaway-memory reap, which is correct and wanted. The
-defect is the CLASSIFICATION: a harness-started server is a legitimate dev server and
-must be registered in the tracking file like `pnpm dev`'s is, so `reap` spares it and
-`preview_start` reuses it instead of racing it.
-
-**Fix:** have `preview_start`'s command path register its pid/port/distdir the way
-`pnpm dev` does (`scripts/agent-harness/` + `scripts/dev-cleanup.sh`), so the ONE
-dev-server law is actually enforceable across sessions rather than being a race.
-`scripts/agent-harness/` is the owner.
-
 ### D167 — Transcript Studio never loads its own `studio_runs` rows, so a refresh forgets every pass (2026-08-11)
 
 Nothing in `features/transcript-studio/` dispatches `runsLoaded`, and there is no
@@ -1210,6 +1190,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D168 — Claude-only, untracked `preview_start` replaced by tracked provider-neutral `pnpm preview:start`; Claude/Codex hooks block duplicate raw launches.** 2026-08-12 — `scripts/agent-dev-server.sh`, `scripts/agent-harness/`.
 - **D165 — the Redux execution system could not carry a `context_anchor` — RESOLVED 2026-08-11.** `HeadlessAgentJsonOptions` now carries `contextAnchor` / `organizationId` (`run-headless-agent-json.ts:82,88`) straight into `launchAgentExecution`, so migrating a surface to the live posture no longer drops its durable-entity anchor. Filed and closed the same day while migrating the Research Outputs Studio SEO card, which passes `{resource_type:"research_topic", resource_id: topicId}` on the live path.
 
 ### D156 — Python-owned kinds were FIELDLESS to the frontend (140 active rows) — RESOLVED 2026-08-11

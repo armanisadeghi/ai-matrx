@@ -47,10 +47,10 @@ The Inventory Law is reuse-first's other half: don't build a *poorer* one. Befor
 
 **Read [docs/official/browser-testing.md](./docs/official/browser-testing.md) before driving a browser or starting a dev server** — the verified harness mechanics (viewport, refs, form fill, mobile emulation) that otherwise cost you a turn to rediscover. Two laws, non-negotiable:
 
-- 🚨 **ONE dev server, machine-wide** — shared by you, Arman, and Codex. This box has 16GB; a second Next dev server is a reliable hard crash. Start it ONLY via `preview_start` `name: "next-dev"` (port 3001); **never `pnpm dev` in Bash** (unmanaged, unreaped, leaks until the box dies). One already running? Reuse its port. Enforced by a PreToolUse hook on both `preview_start` and Bash — install/update it on any machine with `pnpm setup:agent-harness` ([`scripts/agent-harness/`](./scripts/agent-harness/); machine setup SoR: `/Users/armanisadeghi/code/common-docs/systems/agent-machine-setup/FEATURE.md`).
-- **ONE browser: the in-app Browser pane (`mcp__Claude_Browser__*`). Never `mcp__claude-in-chrome__*`** — Chrome is Codex's surface and drives Arman's real profile. The pane has its own persistent profile, so a login sticks.
+- 🚨 **ONE dev server, machine-wide** — shared by Arman, Claude, and Codex. Start or reuse it only with `pnpm preview:start` (port 3001, `.next-preview`); stop it with `pnpm preview:stop`. **Named `preview_start` and raw `pnpm dev` are banned** because they create untracked server trees. Install/update the guard with `pnpm setup:agent-harness` ([`scripts/agent-harness/`](./scripts/agent-harness/); machine setup SoR: `/Users/armanisadeghi/code/common-docs/systems/agent-machine-setup/FEATURE.md`).
+- **Use the provider's separate in-app browser** — Claude Browser pane or Codex Browser plugin. Use Chrome only when the task explicitly depends on Arman's existing Chrome state; never commandeer it for routine localhost verification.
 
-- **Form login (canonical — log in once, you're set):** open `/login`, sign in with `admin@admin.com` / `Password1234#`; the session persists for that browser. This is what reliably establishes a full client session for testing.
+- **Form login (canonical — log in once per browser profile):** open `/login`, sign in with `admin@admin.com` / `Password1234#`; the session persists in that browser. This reliably establishes a full client session for testing.
 - Dev auto-login (localhost only, disabled in production): `http://localhost:<port>/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/<route>` — `next` defaults to `/dashboard`. If a session exists, it redirects without re-login. (Sets a cookie; the form login above is more reliable for hydrating client data pages.)
 
 ---
