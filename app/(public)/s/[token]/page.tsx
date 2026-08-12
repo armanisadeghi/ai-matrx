@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { resolveShareToken } from "@/utils/permissions/shareLinks";
+import { resolveShareLensMeta } from "@/features/sharing/lenses/metadata";
 import { SharedResourceView } from "./SharedResourceView";
 import { ShareLinkError } from "./ShareLinkError";
 
@@ -18,47 +19,6 @@ async function resolve(token: string) {
   return resolveShareToken(token, supabase as never);
 }
 
-function resourceTitle(
-  resource: Record<string, unknown> | undefined,
-): string | null {
-  if (!resource) return null;
-  for (const k of ["label", "title", "name", "display_label"]) {
-    const v = resource[k];
-    if (typeof v === "string" && v.trim()) return v;
-  }
-  return null;
-}
-
-function aiVisibilityMeta(resource: Record<string, unknown> | undefined): {
-  title: string;
-  description: string;
-} | null {
-  const value = resource?.["result"];
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const report = value as Record<string, unknown>;
-  if (report.result_kind !== "ai_visibility.analyze") return null;
-  const providers = Array.isArray(report.providers) ? report.providers : [];
-  const hasCompletedAnswer = providers.some((provider) => {
-    if (!provider || typeof provider !== "object" || Array.isArray(provider))
-      return false;
-    const item = provider as Record<string, unknown>;
-    return (
-      item.status === "completed" &&
-      typeof item.answer_text === "string" &&
-      item.answer_text.trim().length > 0
-    );
-  });
-  if (!hasCompletedAnswer) return null;
-  const brand =
-    typeof report.brand_name === "string" ? report.brand_name : "this brand";
-  const query =
-    typeof report.query === "string" ? report.query : "a real buyer question";
-  return {
-    title: `${brand} AI Visibility Report`,
-    description: `See how ChatGPT, Claude, Gemini, and Perplexity answer “${query}” — including brand position, mentions, citations, and decision signals.`,
-  };
-}
-
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -67,33 +27,20 @@ export async function generateMetadata({
   if (!result.success) {
     return { title: "Shared link · AI Matrx", robots: { index: false } };
   }
-  const reportMeta = aiVisibilityMeta(result.resource);
-  if (reportMeta) {
-    return {
-      title: `${reportMeta.title} · AI Matrx`,
-      description: reportMeta.description,
-      robots: { index: false },
-      openGraph: {
-        title: reportMeta.title,
-        description: reportMeta.description,
-        type: "article",
-      },
-      twitter: {
-        card: "summary_large_image",
-        title: reportMeta.title,
-        description: reportMeta.description,
-      },
-    };
-  }
-  const title =
-    resourceTitle(result.resource) ?? result.displayLabel ?? "Shared item";
+  const meta = resolveShareLensMeta(result);
   return {
-    title: `${title} · AI Matrx`,
-    description: `A ${result.displayLabel ?? "resource"} shared with you on AI Matrx.`,
+    title: `${meta.title} · AI Matrx`,
+    description: meta.description,
     robots: { index: false }, // link-shared, not publicly indexable
     openGraph: {
-      title,
-      description: `A ${result.displayLabel ?? "resource"} shared with you on AI Matrx.`,
+      title: meta.title,
+      description: meta.description,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: meta.title,
+      description: meta.description,
     },
   };
 }

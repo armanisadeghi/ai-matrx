@@ -238,6 +238,22 @@ The product layer over the plumbing: shared content works like Google Docs/Quizl
 
 ---
 
+## The share-lens registry (`features/sharing/lenses/`)
+
+**A share = a GRANT (level: what the recipient may do) + a LENS (how it renders for them).**
+Lenses never touch access. `lenses/registry.tsx` maps entity token → renderer for the recipient
+landing (`/s/[token]`); any token without an entry gets `GenericRenderer` — the guaranteed
+default-path floor. `lenses/metadata.ts` is the server-safe half (per-token social/meta for
+`generateMetadata`; the OG image route is next to adopt it). `lenses/default-renderers.tsx`
+holds the bodies (markdown/code/flashcard/file/folder/AI-visibility/generic).
+**Adding a share rendering = one registry entry (+ optional metadata entry). Adding a per-type
+`switch` on any share surface is banned** — `SharedResourceView.tsx` is a pure shell
+(conversion chrome + lens dispatch) and must stay that way. Presentation-lens exemplar:
+`seo_collection_run` → `AiVisibilityReport` (one component serving owner tool, anonymous tool,
+and token landing, `acquisition` flag for conversion chrome). Charter + plan:
+`common-docs/systems/sharing-experience/VISION.md` and
+`common-docs/projects/sharing-experience/PLAN.md`.
+
 ## Invariants & gotchas
 
 - **NEVER claim privacy from a `visibility` column alone — and never say "Only you".** `visibility` is ONE of the six ways `iam.has_access_for_base` grants access (owner · visibility+org · direct grant · membership · education assignment · **reachability through a container**). A `personal` file attached to an org-internal scope is readable by that whole org. Any surface that reads `row.visibility` and renders a privacy claim is lying: it cannot see grants, memberships, or containers. Lists may describe the **setting** ("Personal", "Organization"); only `public.entity_access_summary` may describe **who can see it**.
@@ -294,6 +310,13 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
 ---
 
 ## Change log
+
+- 2026-08-13 — **THE SHARE-LENS REGISTRY lands** (`features/sharing/lenses/`): `SharedResourceView`'s
+  per-type `renderBody` switch and the page's hard-coded AI-visibility metadata sniff are
+  replaced by `resolveShareLens` / `resolveShareLensMeta` (token-keyed, generic floor
+  fallback). `SharedResourceView` is now a pure landing shell. Verified live on an AI
+  visibility report link and a PDF file link. Primitive #1 of
+  `common-docs/projects/sharing-experience/PLAN.md`.
 
 - 2026-08-12 — **Public-state capability is explicit.** Rendering
   `ShareButton` for link-only `seo_collection_run` exposed the generic
