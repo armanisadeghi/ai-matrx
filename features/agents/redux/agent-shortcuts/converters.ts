@@ -267,7 +267,7 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
 
     isActive: row.is_active,
 
-    userId: row.user_id,
+    userId: row.created_by,
     organizationId: row.organization_id,
     projectId: row.project_id,
     taskId: row.task_id,

@@ -1,7 +1,7 @@
 /**
  * responseFeedbackService — user feedback on agent responses.
  *
- * Upsert pattern keyed on (user_id, conversation_id, request_id) so the
+ * Upsert pattern keyed on (created_by, conversation_id, request_id) so the
  * UI can save partial state (rating only, then add overall, then add
  * rank, then comment) without creating duplicate rows.
  *
@@ -25,7 +25,7 @@ export type FeedbackRating = "up" | "down" | null;
 
 export interface ResponseFeedbackRow {
   id: string;
-  user_id: string;
+  created_by: string;
   conversation_id: string;
   request_id: string | null;
   rating: "up" | "down" | null;
@@ -60,7 +60,7 @@ export async function fetchLatestFeedback(
     .schema("agent").from("cmp_response_feedback")
     .select("*")
     .is("deleted_at", null)
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .eq("conversation_id", conversationId)
     .order("updated_at", { ascending: false });
 
@@ -81,7 +81,7 @@ export async function fetchFeedbackBySet(
     .schema("agent").from("cmp_response_feedback")
     .select("*")
     .is("deleted_at", null)
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .eq("comparison_set_id", comparisonSetId)
     .order("updated_at", { ascending: false });
 
@@ -94,7 +94,7 @@ export async function saveFeedback(
 ): Promise<ResponseFeedbackRow> {
   const payload = {
     organization_id: await ensureOrgId(undefined),
-    user_id: input.userId,
+    created_by: input.userId,
     conversation_id: input.conversationId,
     request_id: input.requestId,
     rating: input.rating,
@@ -107,7 +107,7 @@ export async function saveFeedback(
 
   const { data, error } = await supabase()
     .schema("agent").from("cmp_response_feedback")
-    .upsert(payload, { onConflict: "user_id,conversation_id,request_id" })
+    .upsert(payload, { onConflict: "created_by,conversation_id,request_id" })
     .select("*")
     .single();
 
@@ -134,7 +134,7 @@ export async function clearRankForOthers(args: {
   let q = supabase()
     .schema("agent").from("cmp_response_feedback")
     .update({ rank: null })
-    .eq("user_id", args.userId)
+    .eq("created_by", args.userId)
     .eq("comparison_set_id", args.comparisonSetId)
     .eq("rank", args.rank)
     .neq("conversation_id", args.exceptConversationId);

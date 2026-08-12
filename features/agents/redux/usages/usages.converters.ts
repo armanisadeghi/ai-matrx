@@ -171,7 +171,7 @@ export function toHistoryCount(
 export function toDriftAlert(r: Record<string, unknown>): DriftAlertRow {
   return {
     id: r.id as string,
-    userId: r.user_id as string,
+    userId: r.created_by as string,
     agentId: r.agent_id as string,
     agentName: (r.agent_name as string) ?? "",
     severity: (r.severity as DriftAlertRow["severity"]) ?? "warning",

@@ -71,7 +71,9 @@ export default function AdminShortcutsPage() {
   const handleImportSelect = (row: AdminNonGlobalShortcutRow) => {
     setImporterOpen(false);
     setPromoteTarget({
-      shortcut: shortcutRowToFrontend(row),
+      // The admin RPC's OUT column is still named `user_id` (API name, backed
+      // by created_by since the legacy column cut) — adapt to the table shape.
+      shortcut: shortcutRowToFrontend({ ...row, created_by: row.user_id }),
       sourceCategory: null,
     });
   };

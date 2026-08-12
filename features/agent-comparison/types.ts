@@ -125,7 +125,7 @@ export interface FeedbackSnapshot {
 export interface ComparisonSetRow {
   id: string;
   name: string;
-  user_id: string;
+  created_by: string;
   organization_id: string | null;
   project_id: string | null;
   task_id: string | null;

@@ -65,7 +65,7 @@ export async function GET() {
           .schema("agent")
           .from("shortcut")
           .select(
-            "id,label,category_id,agent_id,is_active,user_id,organization_id",
+            "id,label,category_id,agent_id,is_active,user_id:created_by,organization_id",
           )
           .limit(10),
         supabase

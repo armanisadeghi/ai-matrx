@@ -41,7 +41,7 @@ export async function createComparisonSet(
     .schema("agent").from("cmp_comparison_sets")
     .insert({
       name: input.name,
-      user_id: input.userId,
+      created_by: input.userId,
       organization_id: await ensureOrgId(input.organizationId),
       project_id: input.projectId ?? null,
       task_id: input.taskId ?? null,
@@ -73,7 +73,7 @@ export async function listComparisonSets(
     .schema("agent").from("cmp_comparison_sets")
     .select("*")
     .is("deleted_at", null)
-    .eq("user_id", userId)
+    .eq("created_by", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
 
