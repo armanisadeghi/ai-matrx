@@ -19,6 +19,14 @@ interface ChatThreadProps {
   userId?: string;
   displayName?: string;
   className?: string;
+  /**
+   * Reports how many messages are currently LOADED in this thread. The thread
+   * paginates (50 at a time, older ones on demand), so this is the size of the
+   * loaded window, never a conversation total — the surface value it feeds
+   * says so in those words. Optional: only the `/messages/[conversationId]`
+   * route, which mounts the surface runtime, passes it.
+   */
+  onLoadedMessageCountChange?: (count: number) => void;
 }
 
 export function ChatThread({
@@ -26,6 +34,7 @@ export function ChatThread({
   userId: propUserId,
   displayName: propDisplayName,
   className,
+  onLoadedMessageCountChange,
 }: ChatThreadProps) {
   const conversation = useAppSelector(selectCurrentConversation);
 
@@ -97,6 +106,13 @@ export function ChatThread({
     }
     lastMessageCountRef.current = messages.length;
   }, [messages.length, scrollToBottom]);
+
+  // Publish the loaded-message count to whoever owns the surface scope. The
+  // messages themselves live in this component's `useChat` subscription, so the
+  // route above cannot read them without opening a second subscription.
+  useEffect(() => {
+    onLoadedMessageCountChange?.(messages.length);
+  }, [messages.length, onLoadedMessageCountChange]);
 
   // Handle send message
   const handleSendMessage = useCallback(
