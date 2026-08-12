@@ -225,6 +225,11 @@ used by the per-row **Link policy** side panel).
 
 ## Change log
 
+- **2026-08-11** — Entity-registry resolution now honors the live
+  `platform.entity_types` contract: nullable `content_role` means the token is
+  not classified as a knowledge resource, so generic consumers retain their
+  `destination` fallback without emitting a production error. A non-null value
+  outside the five-value vocabulary remains a loud corruption alarm.
 - **2026-08-09** — No-dead-ends sweep. Exposure Audit: resource name →
   `EntityRef`, owner → `AdminUserRef`, organization → `EntityRef`, `resource_id`
   → per-row `fk.token`, and the "N context" signal now links to the Reachability

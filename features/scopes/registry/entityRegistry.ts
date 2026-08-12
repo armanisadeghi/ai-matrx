@@ -480,10 +480,15 @@ export function getEntityInfo(token: EntityTypeToken): EntityInfo {
   const contentRole = isContentRole(meta.contentRole)
     ? meta.contentRole
     : "destination";
-  if (!isContentRole(meta.contentRole)) {
+  // NULL means "not classified as a knowledge resource" in the canonical
+  // registry and is the normal state for most entity types. The destination
+  // fallback keeps generic callers total; only a non-null, out-of-vocabulary
+  // value is corrupt registry data and warrants a production alarm.
+  if (meta.contentRole !== null && !isContentRole(meta.contentRole)) {
     console.error(
-      `[entityRegistry] "${token}" has invalid or missing content_role ` +
-        `in platform.entity_types; using destination as a loud recovery.`,
+      `[entityRegistry] "${token}" has invalid content_role ` +
+        `"${meta.contentRole}" in platform.entity_types; using destination ` +
+        `as a loud recovery.`,
     );
   }
   // `null` override means "this table has no such column"; `undefined` (the
