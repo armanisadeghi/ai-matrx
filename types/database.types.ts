@@ -8753,12 +8753,14 @@ export type Database = {
           created_at: string
           created_by: string | null
           data_snapshot: Json | null
+          deleted_at: string | null
           error_message: string
           error_stack: string | null
           error_type: string
           id: string
           kind: string
           kind_definition_id: string
+          metadata: Json
           organization_id: string
           platform: string | null
           resolution_notes: string | null
@@ -8767,7 +8769,9 @@ export type Database = {
           resolved_by: string | null
           role: string | null
           session_id: string | null
+          updated_at: string
           updated_by: string | null
+          version: number
         }
         Insert: {
           browser_info?: string | null
@@ -8778,12 +8782,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data_snapshot?: Json | null
+          deleted_at?: string | null
           error_message: string
           error_stack?: string | null
           error_type: string
           id?: string
           kind: string
           kind_definition_id: string
+          metadata?: Json
           organization_id: string
           platform?: string | null
           resolution_notes?: string | null
@@ -8792,7 +8798,9 @@ export type Database = {
           resolved_by?: string | null
           role?: string | null
           session_id?: string | null
+          updated_at?: string
           updated_by?: string | null
+          version?: number
         }
         Update: {
           browser_info?: string | null
@@ -8803,12 +8811,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           data_snapshot?: Json | null
+          deleted_at?: string | null
           error_message?: string
           error_stack?: string | null
           error_type?: string
           id?: string
           kind?: string
           kind_definition_id?: string
+          metadata?: Json
           organization_id?: string
           platform?: string | null
           resolution_notes?: string | null
@@ -8817,7 +8827,9 @@ export type Database = {
           resolved_by?: string | null
           role?: string | null
           session_id?: string | null
+          updated_at?: string
           updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
