@@ -55,6 +55,30 @@ _(none)_
 
 ---
 
+> **Surface write-target chips, second set (TASK-SWT-*)** — filed 2026-08-12 by
+> the agent assigned `matrx-user/messages`, which was correctly ruled out on the
+> judgment bar (see the manifest docblock and the 2026-08-11 surfaces Change Log
+> entry — that negative result is settled, do NOT re-derive it). **Invoke the
+> `surface-write-targets` skill first** (`.claude/skills/surface-write-targets/SKILL.md`)
+> and follow it exactly: judgment bar, manifest + handler recipe, and the
+> MANDATORY live-agent run. A separate set (TASK-SWT-COMPETITORS / -REPUTATION /
+> -SETTINGS / -MESSAGES) is filed on `claude/surface-write-marketing-findings` —
+> check that branch before claiming, so the two sets do not collide.
+>
+> **Shared traps.** Live-verify or you have not verified: two independent agents
+> found the `marketing-findings` undo defect ONLY by running it, never by
+> reading it. `grep -rhno 'surfaceName="[^"]*"'` MISSES mounts passing a const
+> (`surfaceName={SURFACE}`) — also grep `SurfaceRuntimeProvider` in the feature
+> dir. Reconcile `features/surfaces/FEATURE.md` conflicts BY HAND, both sides,
+> then check `git diff --numstat origin/main -- features/surfaces/FEATURE.md`.
+> Collisions land MID-FLIGHT: re-check `writeTargets` on latest main right
+> before committing, and if a design already landed it WINS — keep it, add only
+> what is additive, never force-push over another agent's branch.
+
+- **TASK-SWT-AGENT-SETTINGS** — Make `matrx-user/agent-settings` agent-writable (2026-08-12, `ready`). Manifest `features/surfaces/manifests/agent-settings.manifest.ts`, no `writeTargets`. **The candidates:** `AgentSettingsForm` owns four genuinely authored fields — name, description, category, tags — a real multi-field YES set. **Prerequisite:** the surface has NO emitter, is window-only, and `features/surfaces/route-to-surface.ts` (~line 34) maps an `/agents/settings` prefix that does NOT exist as a route — run `surface-authoring` FIRST or you will verify a page that offers an agent no write tool at all. **The gotcha that will cost you the run:** handlers must stage into the form's LOCAL `draft` state; reusing `useAgentBuilderWriteHandlers` dispatches `setAgentField` into the shared Redux record the form DIFFS AGAINST, so the form shows the new value while its Save bar reads "All changes saved" — a silent no-op that looks like success. **The NOs:** id / ownership / access level, and the bound tools / skills / model (changing what an agent may REACH is a capability change, not a copy edit — `agent-builder`'s ruling), and version lineage.
+- **TASK-SWT-BUNDLES** — Make `matrx-admin/bundles` agent-writable, data path FIRST (2026-08-12, `blocked-on-data`). Called "the best remaining write-target candidate on the judgment bar" by the 2026-08-11 replacement search: `BundleDetail` is an inline name / description / metadata editor with its own Save bar, which is the draft-target shape the campaign wants. **It cannot be live-verified today** — its manifest has no emitter AND `/administration/agents/bundles` fails to load any rows ("Failed to load bundles" against `tool.bundle`). So this chip is two jobs in order: fix or explain the `tool.bundle` read path, then `surface-authoring` for the emitter, then the write targets. If the data path turns out to be dead product rather than a bug, say so and stop — that is a useful answer, not a failure.
+- **TASK-SWT-ENTITY-VERB-AUDIT** — Live-audit every shipped `mode:"entity"` write target for the wrong-canonical-verb defect class (2026-08-12, `ready`). **Grounded in a real, reproduced defect**, not a hunch: `matrx-user/marketing-findings` shipped its `finding_lifecycle_status: "open"` branch through `reopenFinding` (writes `reopened`) instead of `unacknowledgeFinding` (writes `open`). That wrote one of the exact two statuses the target's own model-facing description promised an agent could NEVER write, and the handler's post-write landing check then threw AFTER the mutation had committed — reporting `did not land` to the agent for a write that had happened. **The generalisable lesson: a landing check that runs after an irreversible mutation cannot undo it, so the VERB has to be right; the check catches a server that refused, never a client that asked for the wrong thing.** Enumerate the adopters (`grep -l writeTargets features/surfaces/manifests/*.manifest.ts`), and for each `mode:"entity"` target read the handler's canonical call and confirm the value it advertises is the value that verb actually writes — then RUN the ones you doubt, reading the row back after a reload rather than trusting the agent's summary. Report per surface: verb correct / verb wrong / not exercised, and fix what you find. Do not "fix" anything you did not reproduce.
+
 ## Completed
 
 - **TASK-BL-UI-A** — Plain-language pass on the backlinks workspace (2026-08-11, `done`). Root `CLAUDE.md` §"The user — a brilliant, absolutely NON-technical Subject Matter Expert" was violated throughout this surface; it now reads as one voice. The label layer lives ONCE in `lib/vocab.ts` (refresh profiles, review statuses, relevance, control levels, recommended actions, page types, link types, placements, link attributes, `backlinkEmptyHint()`, the rank/spam/credit explainers) — components call a label function, never `humanizeAssessmentValue(raw_key)`. Machine keys, query params and filter values are untouched. Verified 0 occurrences of `Dead letter`, bare `Awaiting`, `Your ruling`, `Cache key`, `PR`/`DR` headers, and user-visible `snapshot`. Kept deliberately: `backlink`, `anchor text`, `referring domain`, `dofollow`/`nofollow`, `spam score` — each explained once where first shown. `StatusBadge` gained an optional `label` prop (extended, not forked) so tone stays keyed on the machine value. Gates: tsc clean in every touched file, eslint clean, 30/30 tests. Layout/tab/mobile restructuring stayed out — TASK-BL-UI-B and TASK-BL-UI-C own those.
