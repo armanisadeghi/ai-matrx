@@ -31,6 +31,7 @@ import { isProviderSourceApp } from "@/features/ai-work/lib/providerSource";
 import {
   providerAccountIdentity,
   recordedCapabilityLabels,
+  workspaceName,
 } from "@/features/ai-work/lib/codingSessionPresentation";
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
 
@@ -236,6 +237,7 @@ function BindingFacts({ binding }: { binding: CodingSessionBinding }) {
   const meta = providerMeta(binding.provider);
   const verdict = fidelityVerdict(binding.fidelity);
   const identity = providerAccountIdentity(binding.metadata);
+  const workspace = workspaceName(binding.metadata);
   const capabilities = recordedCapabilityLabels(binding.capabilities);
 
   return (
@@ -245,6 +247,14 @@ function BindingFacts({ binding }: { binding: CodingSessionBinding }) {
           <h3 className="text-sm font-medium text-foreground">
             {meta?.label ?? formatText(binding.provider)}
           </h3>
+          {workspace ? (
+            <span
+              className="max-w-48 truncate rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-medium text-sky-700 dark:text-sky-300"
+              title={`Workspace: ${workspace}`}
+            >
+              {workspace}
+            </span>
+          ) : null}
           {identity.reported ? (
             <span
               className="max-w-56 truncate rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
@@ -262,6 +272,9 @@ function BindingFacts({ binding }: { binding: CodingSessionBinding }) {
         {verdict.detail}
       </p>
       <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+        <Fact label="Workspace">
+          {workspace ?? "Not reported by this binding"}
+        </Fact>
         <Fact label="Provider account">{identity.display}</Fact>
         <Fact label="Session delivery">
           {formatSessionTimestamp(binding.last_seen_at)}

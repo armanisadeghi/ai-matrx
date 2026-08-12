@@ -3,6 +3,7 @@ import {
   NO_ACCOUNT_IDENTITY,
   providerAccountIdentity,
   recordedCapabilityLabels,
+  workspaceName,
 } from "../lib/codingSessionPresentation";
 
 describe("coding-session presentation", () => {
@@ -55,6 +56,18 @@ describe("coding-session presentation", () => {
     expect(identity.display).toBe(NO_ACCOUNT_IDENTITY);
     expect(identity.reported).toBe(false);
     expect(providerAccountIdentity(null).display).toBe(NO_ACCOUNT_IDENTITY);
+  });
+
+  it("reads the workspace name tolerantly and returns null when absent", () => {
+    expect(workspaceName({ workspace_name: "common-docs" })).toBe(
+      "common-docs",
+    );
+    expect(
+      workspaceName({ source_metadata: { workspace_name: "aidream" } }),
+    ).toBe("aidream");
+    expect(workspaceName({ workspace_name: "  " })).toBeNull();
+    expect(workspaceName({ email: "secret@example.com" })).toBeNull();
+    expect(workspaceName(null)).toBeNull();
   });
 
   it("names only certified boolean capabilities", () => {

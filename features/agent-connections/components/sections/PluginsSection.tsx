@@ -38,6 +38,7 @@ import {
 } from "../../coding-sessions/verdict";
 import { useCodingSessions } from "../../coding-sessions/useCodingSessions";
 import { type CodingSessionView } from "../../coding-sessions/service";
+import { workspaceName } from "@/features/ai-work/lib/codingSessionPresentation";
 
 function workConversationHref(conversationId: string): string {
   return `/work/conversations/${conversationId}`;
@@ -96,7 +97,9 @@ export function PluginsSection({
       !query ||
       title.toLowerCase().includes(query) ||
       (meta?.label ?? session.provider).toLowerCase().includes(query) ||
-      session.fidelity.toLowerCase().includes(query);
+      session.fidelity.toLowerCase().includes(query) ||
+      (workspaceName(session.metadata)?.toLowerCase().includes(query) ??
+        false);
     return matchesProvider && matchesQuery;
   });
 
@@ -402,6 +405,7 @@ function CodingSessionRow({
   const Icon = meta?.icon ?? Code2;
   const title = session.conversation?.title?.trim() || "Untitled conversation";
   const verdict = fidelityVerdict(session.fidelity);
+  const workspace = workspaceName(session.metadata);
   const dispatch = useAppDispatch();
   const sourceApp =
     session.conversation?.source_app ?? meta?.sourceApp ?? session.provider;
@@ -428,6 +432,17 @@ function CodingSessionRow({
         />
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
           <span>{meta?.label ?? formatText(session.provider)}</span>
+          {workspace ? (
+            <>
+              <span aria-hidden>·</span>
+              <span
+                className="rounded-full bg-sky-500/10 px-1.5 py-0.5 font-medium text-sky-700 dark:text-sky-300"
+                title={`Workspace: ${workspace}`}
+              >
+                {workspace}
+              </span>
+            </>
+          ) : null}
           <span aria-hidden>·</span>
           <span>{verdict.label}</span>
           <span aria-hidden>·</span>

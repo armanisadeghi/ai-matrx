@@ -31,6 +31,8 @@ import { ToolCallBatch } from "@/features/tool-call-visualization/components/Too
 import { cxToolCallToLifecycleEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
 import { fetchConversationToolCallsPage } from "@/features/tool-call-visualization/service/fetchConversationToolCalls";
 import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import { fetchCodingSessionBindings } from "@/features/agent-connections/coding-sessions/service";
+import { workspaceName } from "../lib/codingSessionPresentation";
 import type { ProviderConversationDetail } from "../service/providerConversation";
 import {
   fetchEarlierProviderMessages,
@@ -77,6 +79,33 @@ export function ProviderConversationTranscript({
     totalCount: null,
     cursor: null,
   });
+  const [workspace, setWorkspace] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Owner-scoped binding read purely for the workspace/project provenance
+    // chip; sessions without the workspace_name contract simply show nothing.
+    void fetchCodingSessionBindings(conversation.id)
+      .then((bindings) => {
+        if (cancelled) return;
+        for (const binding of bindings) {
+          const name = workspaceName(binding.metadata);
+          if (name) {
+            setWorkspace(name);
+            return;
+          }
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(
+          "[ProviderConversationTranscript] workspace binding read failed",
+          error,
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [conversation.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -196,6 +225,14 @@ export function ProviderConversationTranscript({
               <span className="rounded-full bg-violet-500/10 px-2 py-1 font-medium text-violet-700 dark:text-violet-300">
                 {provider}
               </span>
+              {workspace ? (
+                <span
+                  className="max-w-56 truncate rounded-full bg-sky-500/10 px-2 py-1 font-medium text-sky-700 dark:text-sky-300"
+                  title={`Workspace: ${workspace}`}
+                >
+                  {workspace}
+                </span>
+              ) : null}
               <span>{featureLabel(conversation.source_feature)}</span>
               <span aria-hidden>·</span>
               <span>{formatText(conversation.status)}</span>

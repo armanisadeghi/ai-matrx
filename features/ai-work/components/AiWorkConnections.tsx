@@ -25,6 +25,7 @@ import { formatSessionTimestamp } from "@/features/agent-connections/coding-sess
 import {
   NO_ACCOUNT_IDENTITY,
   providerAccountIdentity,
+  workspaceName,
 } from "@/features/ai-work/lib/codingSessionPresentation";
 
 /**
@@ -109,6 +110,42 @@ function groupSessionsByAccount(sessions: CodingSessionView[]): AccountGroup[] {
         key,
         display: identity.display,
         isLabel: identity.label !== null,
+        sessionCount: 1,
+        lastSeenAt: session.last_seen_at,
+      });
+    }
+  }
+  return [...groups.values()].sort((a, b) =>
+    (b.lastSeenAt ?? "").localeCompare(a.lastSeenAt ?? ""),
+  );
+}
+
+interface WorkspaceGroup {
+  name: string;
+  sessionCount: number;
+  lastSeenAt: string | null;
+}
+
+/** Groups delivered sessions by the bridge-stamped workspace/project name. */
+function groupSessionsByWorkspace(
+  sessions: CodingSessionView[],
+): WorkspaceGroup[] {
+  const groups = new Map<string, WorkspaceGroup>();
+  for (const session of sessions) {
+    const name = workspaceName(session.metadata);
+    if (!name) continue;
+    const existing = groups.get(name);
+    if (existing) {
+      existing.sessionCount += 1;
+      if (
+        session.last_seen_at &&
+        (!existing.lastSeenAt || session.last_seen_at > existing.lastSeenAt)
+      ) {
+        existing.lastSeenAt = session.last_seen_at;
+      }
+    } else {
+      groups.set(name, {
+        name,
         sessionCount: 1,
         lastSeenAt: session.last_seen_at,
       });
@@ -212,6 +249,7 @@ export function AiWorkConnections() {
               );
               const latest = providerSessions[0] ?? null;
               const accounts = groupSessionsByAccount(providerSessions);
+              const workspaces = groupSessionsByWorkspace(providerSessions);
               return (
                 <article
                   key={provider}
@@ -287,6 +325,31 @@ export function AiWorkConnections() {
                         </ul>
                       )}
                     </ConnectionFact>
+                    {workspaces.length > 0 ? (
+                      <ConnectionFact
+                        label={`Workspaces (${workspaces.length})`}
+                      >
+                        <ul className="space-y-1">
+                          {workspaces.map((workspace) => (
+                            <li
+                              key={workspace.name}
+                              className="flex flex-wrap items-baseline gap-x-1.5"
+                            >
+                              <span className="break-all font-medium">
+                                {workspace.name}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {workspace.sessionCount} session
+                                {workspace.sessionCount === 1 ? "" : "s"}
+                                {workspace.lastSeenAt
+                                  ? ` · ${formatSessionTimestamp(workspace.lastSeenAt)}`
+                                  : ""}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </ConnectionFact>
+                    ) : null}
                   </dl>
                 </article>
               );

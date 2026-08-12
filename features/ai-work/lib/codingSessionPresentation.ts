@@ -76,6 +76,21 @@ export function accountFingerprint(metadata: Json | null): string | null {
   return providerAccountIdentity(metadata).fingerprint;
 }
 
+/**
+ * The provider workspace/project name (e.g. the last path segment of the
+ * Claude Code working directory, stamped by the bridge as `workspace_name`).
+ * Tolerant: metadata root first, then nested `source_metadata`; null when
+ * the session predates the contract or the provider reported nothing.
+ */
+export function workspaceName(metadata: Json | null): string | null {
+  const root = record(metadata);
+  const nested = root ? record(root.source_metadata ?? null) : null;
+  return (
+    firstIdentityValue(root, ["workspace_name"]) ??
+    firstIdentityValue(nested, ["workspace_name"])
+  );
+}
+
 export function recordedCapabilityLabels(capabilities: Json): string[] {
   const root = record(capabilities);
   if (!root) return [];
