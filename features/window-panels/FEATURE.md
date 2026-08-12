@@ -60,7 +60,21 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
   accepts validated `LiveRunProgressState`; `LiveRunProgress` replaces append-only
   status narration with in-place waiting/running/completed/failed rows and active
   indicators. AI Visibility is the first consumer.
-
+- 2026-08-12 — **`MarkdownEditorWindow`'s body gains a third agent write
+  target, and a crash in it is now documented.** `matrx-user/markdown-editor`
+  adds `pipeline_processor` (ask-policy `ui`) beside the two content drafts
+  already shipped, wired on `MarkdownClassificationTester`'s existing provider
+  and live-verified through this window. **Found while verifying and NOT
+  fixed:** choosing View → "Key Points" from the window's default state
+  (dynamic coordinator → `combined-processor`) throws in `KeyPointsDisplay`
+  (`Cannot read properties of undefined (reading 'title')`) and
+  `OverlayErrorBoundary` swaps the whole window for its fallback. A plain user
+  click reproduces it with no agent involved, and the coordinator's
+  `availableViews` does not gate it — which is why no view write target was
+  declared. The custom views need to guard their input. Also worth knowing for
+  any window whose surface owns no route: the Agents popover prefers the
+  ROUTE-derived surface over the mounted runtime, so this window's targets are
+  only offered on routes that map to no surface.
 - 2026-08-11 — **`useFloatingLiveRun` is the migration off an inline live-run
   block, and a floating run window NEVER auto-closes.** The three page-shifting
   surfaces (`/marketing/keyword-research`, a site's `authority` and
