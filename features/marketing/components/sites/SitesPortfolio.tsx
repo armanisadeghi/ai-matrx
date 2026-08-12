@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import Link from "next/link";
@@ -33,6 +33,7 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
 import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
@@ -42,6 +43,13 @@ import {
   useSites,
 } from "@/features/marketing/data/hooks";
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
+import type { SiteEditorHandleRef } from "@/features/marketing/components/sites/SiteEditorDialog";
+import {
+  resolveSiteForWrite,
+  SITE_EDITOR_DRAFT_TARGET,
+  validateSiteEditorDraftWrite,
+  type SiteDraftPatch,
+} from "@/features/marketing/lib/site-write-targets";
 import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -101,6 +109,27 @@ export function SitesPortfolio() {
   const [deleting, setDeleting] = useState<MarketingSite | null>(null);
   const [peeking, setPeeking] = useState<SiteListRow | null>(null);
 
+  // The open site editor's live handle (null whenever no editor is open), plus
+  // the patch waiting for an editor this component just asked to open. Both
+  // are refs, not state: `applySurfaceWrite` resolves handlers BEFORE the user
+  // answers the confirm, so an "is it open / is it saving" guard read off a
+  // render closure would be stale by the time Apply is pressed.
+  const editorRef = useRef<SiteEditorHandleRef | null>(null);
+  const pendingStageRef = useRef<{
+    siteId: string;
+    patch: SiteDraftPatch;
+  } | null>(null);
+
+  const registerEditor = useCallback((handle: SiteEditorHandleRef | null) => {
+    editorRef.current = handle;
+    const pending = pendingStageRef.current;
+    const live = handle?.current;
+    if (live && pending && pending.siteId === live.siteId) {
+      pendingStageRef.current = null;
+      live.stage(pending.patch);
+    }
+  }, []);
+
   const confirmDelete = async () => {
     if (!deleting) return;
     try {
@@ -146,10 +175,23 @@ export function SitesPortfolio() {
   // Surface scope — assembled at trigger time from already-loaded queries.
   // Brand totals and the per-brand portfolio rollup are not loaded on this
   // view, so brand_count and portfolio_summary are honestly omitted.
-  const getHubScope = () =>
-    createMarketingScope({
+  const getHubScope = () => {
+    // Read twin of the site_editor_draft target — what is staged RIGHT NOW,
+    // including unsaved edits. Read off the ref at trigger time, not render.
+    const openEditor = editorRef.current?.current ?? null;
+    return createMarketingScope({
       hub_view: "sites",
       list_query: marketingListQuery(table.state),
+      ...(openEditor
+        ? {
+            site_editor: {
+              site_id: openEditor.siteId,
+              domain: openEditor.domain,
+              name: openEditor.draft.name,
+              description: openEditor.draft.description,
+            },
+          }
+        : {}),
       ...(typeof siteCount.data === "number"
         ? { site_count: siteCount.data }
         : {}),
@@ -164,6 +206,9 @@ export function SitesPortfolio() {
               name: row.name,
               domain: row.domain,
               root_url: row.root_url,
+              // Declared in the manifest all along, never emitted — and it is
+              // the read twin for the description half of site_editor_draft.
+              description: row.description,
               status: row.status,
               visibility: row.visibility,
               initialized: Boolean(row.initialized_at),
@@ -179,6 +224,67 @@ export function SitesPortfolio() {
           }
         : {}),
     });
+  };
+
+  /**
+   * The write half of `matrx-user/marketing` — the ONLY mount of this surface
+   * that registers a handler (see the manifest's writeTargets block for why
+   * the brands, connections, cost and hub-map mounts register none).
+   *
+   * `site_editor_draft` stages authored copy into the site editor dialog and
+   * stops there: the user still presses "Save site", which runs the existing
+   * version-guarded `updateSiteIdentity`. Validation is the pure, unit-tested
+   * `site-write-targets.ts`, and it runs to completion BEFORE anything opens
+   * or changes, so a refused write leaves the page exactly as it found it.
+   *
+   * Handlers are rebuilt every render; the provider holds them in a ref, so
+   * `listRows` here is always the freshest committed list.
+   */
+  const buildWriteHandlers = (): SurfaceWriteHandlers => ({
+    [SITE_EDITOR_DRAFT_TARGET]: (value: unknown) => {
+      const { site, patch } = validateSiteEditorDraftWrite(value);
+      const resolved = resolveSiteForWrite(
+        site,
+        listRows.map((row) => ({
+          site_id: row.id,
+          name: row.name,
+          domain: row.domain,
+        })),
+      );
+
+      const open = editorRef.current?.current ?? null;
+      if (open?.busy) {
+        throw new Error(
+          `${SITE_EDITOR_DRAFT_TARGET} refused — the site editor for "${open.domain}" is mid-save. Wait for it to finish, then ask again. Nothing was staged.`,
+        );
+      }
+      // Never silently switch editors: the open one may hold unsaved edits,
+      // and closing it to serve this write would destroy the user's work.
+      if (open && open.siteId !== resolved.site_id) {
+        throw new Error(
+          `${SITE_EDITOR_DRAFT_TARGET} refused — the site editor is already open on "${open.domain}", not "${resolved.domain}", and it may hold unsaved edits. Ask the user to close it first, or write to "${open.domain}" instead. Nothing was staged.`,
+        );
+      }
+
+      if (open) {
+        open.stage(patch);
+        return;
+      }
+
+      // No editor open. Opening one is the whole reason this target is
+      // reachable at all: the dialog is modal, so a user cannot open it and
+      // THEN ask an agent — the overlay covers the header Agents button and
+      // the chat composer. The user names the site; nothing is chosen for them.
+      const row = listRows.find((candidate) => candidate.id === resolved.site_id);
+      if (!row) {
+        throw new Error(
+          `${SITE_EDITOR_DRAFT_TARGET} refused — "${resolved.domain}" left the loaded sites list before the write could be applied. Nothing was staged.`,
+        );
+      }
+      pendingStageRef.current = { siteId: row.id, patch };
+      setEditing(row);
+    },
+  });
 
   const sitesListCopy = webCopy({
     kind: "web-sites-list",
@@ -448,6 +554,7 @@ export function SitesPortfolio() {
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing"
       getScope={getHubScope}
+      getWriteHandlers={buildWriteHandlers}
     >
       <RouteHeader
         left={
@@ -593,8 +700,16 @@ export function SitesPortfolio() {
       ) : null}
       <SiteEditorDialog
         open={Boolean(editing)}
-        onOpenChange={(open) => !open && setEditing(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            // A dismissed editor must not leave a queued agent patch behind to
+            // land on whatever the user opens next.
+            pendingStageRef.current = null;
+            setEditing(null);
+          }
+        }}
         site={editing}
+        onRegister={registerEditor}
       />
       <ConfirmDialog
         open={Boolean(deleting)}
