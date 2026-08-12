@@ -77,7 +77,10 @@ import {
   clearJobResults,
   deleteJob,
 } from "@/features/page-extraction/api/jobs";
-import { listResults } from "@/features/page-extraction/api/runs";
+import {
+  listResults,
+  updateResultPayloadField,
+} from "@/features/page-extraction/api/runs";
 import {
   augmentColumnsWithUncovered,
   buildMergedDuplicateView,
@@ -90,6 +93,7 @@ import {
   parseTemplateColumns,
 } from "@/features/page-extraction/utils/columns";
 import type {
+  ColumnSource,
   ExtractionColumn,
   PageExtractionJob,
   PageExtractionResult,
@@ -115,6 +119,15 @@ import {
 } from "@/components/official/mobile-table/mobileTable";
 
 const PAGE_SIZES = [50, 100, 250, 1000] as const;
+
+/**
+ * Which column sources each cell write target may touch. The split is the
+ * point: correcting a machine-extracted value overwrites what the extractor
+ * claimed the document said, while filling a review field only annotates it —
+ * two different acts, so two targets and two different confirmations.
+ */
+const MACHINE_COLUMN_SOURCES: readonly ColumnSource[] = ["agent", "validation"];
+const REVIEW_COLUMN_SOURCES: readonly ColumnSource[] = ["manual"];
 
 export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
   const router = useRouter();
@@ -332,6 +345,27 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
     [sorted, visibleColumns],
   );
 
+  /**
+   * Rows as the SURFACE sees them: the same cells as `exportRows`, PLUS the
+   * `row_id` the write targets address — without it an agent can read a wrong
+   * value but has no way to name the row it belongs to, and the write half is
+   * unusable. Deliberately NOT `exportRows` itself: that array is the user's
+   * download / copy / push payload and must stay free of internal ids.
+   * `row_id` is assigned last so it wins over a same-named extracted column —
+   * addressing the right row matters more than surfacing a field the grid
+   * already shows.
+   */
+  const surfaceRows = useMemo(
+    () =>
+      sorted.map((row) => {
+        const out: Record<string, unknown> = {};
+        for (const c of visibleColumns) out[c.key] = cellValueFor(row, c);
+        out.row_id = row.id;
+        return out;
+      }),
+    [sorted, visibleColumns],
+  );
+
   // ── Surface scope (matrx-user/knowledge) ───────────────────────────────────
   // Built at TRIGGER time from live state — never on mount. The extraction
   // half of the Knowledge surface; the graph and suggestion halves live on
@@ -356,8 +390,12 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
           key: c.key,
           label: c.label,
           hidden: hidden.has(c.key),
+          // The column's SOURCE decides which write target may touch it, so an
+          // agent cannot choose correctly without seeing it.
+          source: c.source,
+          editable: COLUMN_SOURCE_META[c.source]?.editable ?? false,
         })),
-        extraction_rows: exportRows,
+        extraction_rows: surfaceRows,
         extraction_selected_row_ids: [...selected],
         extraction_query: query || undefined,
         extraction_sort: sortKey
@@ -373,7 +411,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       sorted,
       orderedColumns,
       hidden,
-      exportRows,
+      surfaceRows,
       selected,
       query,
       sortKey,
@@ -382,6 +420,157 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
       pageSize,
       merge,
     ],
+  );
+
+  // ── Surface write handlers (matrx-user/knowledge) ──────────────────────────
+  // Every target lands through the SAME function the user's own click lands
+  // through: a cell write is `updateResultPayloadField` — the cell editor
+  // window's own save — plus the identical local patch its `onSaved` applies;
+  // a rename is `updateJob`, exactly as `commitRename` calls it. Bad input
+  // THROWS: the writeback seam turns a throw into the error envelope the agent
+  // reads, and silently coercing a wrong value is how a "corrected" field
+  // becomes a wrong field nobody notices.
+
+  /**
+   * Resolve and write ONE cell.
+   *
+   * `allowedSources` is the enforcement half of the correction/annotation
+   * split: which target was called decides which column SOURCES it may touch,
+   * and the column's own declared source is what gets checked — never the
+   * caller's word for it. That is what keeps the confirmation the user reads
+   * honest about which act they are approving.
+   */
+  const writeCell = useCallback(
+    async (
+      raw: unknown,
+      allowedSources: readonly ColumnSource[],
+      what: string,
+    ) => {
+      if (!job) {
+        throw new Error(
+          "No extraction dataset is loaded on this page yet — there is nothing to write to.",
+        );
+      }
+      if (results.length === 0) {
+        throw new Error(
+          "This dataset has no extracted rows, so there is no cell to write.",
+        );
+      }
+      if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+        throw new Error(
+          `${what} needs an object like { "row_id": "…", "column_key": "…", "value": "…" }.`,
+        );
+      }
+
+      const {
+        row_id: rowId,
+        column_key: columnKey,
+        value,
+      } = raw as Record<string, unknown>;
+
+      if (typeof rowId !== "string" || rowId.trim() === "") {
+        throw new Error(
+          `${what} needs a "row_id" string naming the row to write — take it from extraction_rows.`,
+        );
+      }
+      if (typeof columnKey !== "string" || columnKey.trim() === "") {
+        throw new Error(
+          `${what} needs a "column_key" string naming the column to write — take it from extraction_columns.`,
+        );
+      }
+      if (typeof value !== "string") {
+        throw new Error(
+          `${what} writes cell text, so "value" must be a string (got ${Array.isArray(value) ? "an array" : typeof value}). Cells are stored as the text the cell editor saves.`,
+        );
+      }
+      if (rowId.includes("#")) {
+        throw new Error(
+          `Row "${rowId}" is a synthetic sub-row this grid split out of one stored row in the browser — it has no stored row of its own and cannot be written to.`,
+        );
+      }
+
+      const column = orderedColumns.find((c) => c.key === columnKey);
+      if (!column) {
+        throw new Error(
+          `This dataset has no column "${columnKey}". Its columns are: ${orderedColumns.map((c) => c.key).join(", ") || "(none)"}.`,
+        );
+      }
+      if (!allowedSources.includes(column.source)) {
+        throw new Error(
+          `"${columnKey}" is a ${column.source} column and ${what.toLowerCase()} only writes ${allowedSources.join(" / ")} columns. ${
+            column.source === "system"
+              ? "The page anchor is provenance and is never writable."
+              : column.source === "manual"
+                ? "Use extraction_review_field for a human-review column."
+                : "Use extraction_field_correction to change a machine-extracted value."
+          }`,
+        );
+      }
+      const writeKey = editKeyFor(column);
+      if (!writeKey) {
+        throw new Error(`Column "${columnKey}" has no writable payload field.`);
+      }
+
+      // Resolve the payload from the STORED rows, never from the display rows:
+      // with "Merge dupes" on, a display row's payload has been back-filled
+      // from its duplicates, and writing that back would silently persist a
+      // view artifact as extracted data.
+      const stored = results.find((r) => r.id === rowId);
+      if (!stored) {
+        throw new Error(
+          `No row "${rowId}" is loaded in this dataset. Take row_id from extraction_rows.`,
+        );
+      }
+
+      await updateResultPayloadField({
+        resultId: stored.id,
+        currentPayload: (stored.payload ?? {}) as Record<string, unknown>,
+        key: writeKey,
+        value,
+      });
+      setResults((rs) =>
+        rs.map((r) =>
+          r.id === stored.id
+            ? { ...r, payload: { ...r.payload, [writeKey]: value } }
+            : r,
+        ),
+      );
+    },
+    [job, results, orderedColumns],
+  );
+
+  const buildWriteHandlers = useCallback(
+    () => ({
+      extraction_field_correction: (value: unknown) =>
+        writeCell(value, MACHINE_COLUMN_SOURCES, "Correct an extracted value"),
+      extraction_review_field: (value: unknown) =>
+        writeCell(value, REVIEW_COLUMN_SOURCES, "Fill a review field"),
+      extraction_dataset_name: async (value: unknown) => {
+        if (!job) {
+          throw new Error(
+            "No extraction dataset is loaded on this page yet — there is nothing to rename.",
+          );
+        }
+        if (typeof value !== "string") {
+          throw new Error(
+            `The dataset name must be a string (got ${Array.isArray(value) ? "an array" : typeof value}).`,
+          );
+        }
+        const next = value.trim();
+        if (next === "") throw new Error("The dataset name cannot be empty.");
+        if (next.length > 200) {
+          throw new Error(
+            `The dataset name is limited to 200 characters (got ${next.length}).`,
+          );
+        }
+        if (next === job.name) return;
+        await updateJob(job.id, { name: next });
+        setJob({ ...job, name: next });
+        // Keep the header's rename input in step, exactly as commitRename ends.
+        setNameDraft(next);
+      },
+    }),
+    [job, writeCell],
   );
 
   // ── Actions ────────────────────────────────────────────────────────────────
@@ -505,6 +694,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
   // merge-duplicates, and column order — see the manifest's writeTargets.
   const getWriteHandlers = useCallback(
     () => ({
+      ...buildWriteHandlers(),
       extraction_dataset_name: async (value: unknown) => {
         if (typeof value !== "string" || !value.trim())
           throw new Error(
@@ -573,7 +763,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
         setSortDir(direction);
       },
     }),
-    [job, busy, loading, orderedColumns],
+    [buildWriteHandlers, job, busy, loading, orderedColumns],
   );
 
   // ── Render ─────────────────────────────────────────────────────────────────
