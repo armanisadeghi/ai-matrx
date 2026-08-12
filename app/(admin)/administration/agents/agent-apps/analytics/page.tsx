@@ -261,7 +261,7 @@ export default function AgentAppsAnalyticsPage() {
                           attributes: { id: app.id, status: app.status },
                         })}
                       />
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start justify-between gap-4 pr-20">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <h4 className="font-semibold text-foreground">
@@ -374,7 +374,7 @@ function OverviewCard({
 }) {
   return (
     <Card className="group/x relative">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 pr-16">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           {icon}
           {label}

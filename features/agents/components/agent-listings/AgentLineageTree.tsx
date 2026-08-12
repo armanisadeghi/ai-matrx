@@ -347,7 +347,7 @@ function LineageCard({
         <button
           type="button"
           onClick={onToggle}
-          className="w-full flex items-center gap-3 p-3 pr-10 hover:bg-accent/30 transition-colors text-left"
+          className="w-full flex items-center gap-3 p-3 pr-28 hover:bg-accent/30 transition-colors text-left"
         >
           {isOpen ? (
             <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />

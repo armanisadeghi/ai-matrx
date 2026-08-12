@@ -402,7 +402,7 @@ export default function CategoriesTab() {
                                     {/* Category header row */}
                                     <div className="group/cat relative">
                                     <button
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 pr-14 hover:bg-muted/40 transition-colors text-left"
+                                        className="w-full flex items-center gap-3 py-2.5 pl-4 pr-20 hover:bg-muted/40 transition-colors text-left"
                                         onClick={() => toggleCategory(key)}
                                     >
                                         {isExpanded
@@ -478,7 +478,7 @@ export default function CategoriesTab() {
                                                         return (
                                                             <div key={item.id} className="group/fbitem relative">
                                                             <button
-                                                                className="w-full flex items-start gap-3 px-4 py-2.5 pr-14 hover:bg-muted/30 transition-colors text-left group"
+                                                                className="w-full flex items-start gap-3 py-2.5 pl-4 pr-20 hover:bg-muted/30 transition-colors text-left group"
                                                                 onClick={() => { setSelectedFeedback(item); setDetailOpen(true); }}
                                                             >
                                                                 <span className="flex-shrink-0 mt-0.5">

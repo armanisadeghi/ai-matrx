@@ -129,7 +129,7 @@ export function DataRowInspector<T = unknown>({
             return (
               <div
                 key={key}
-                className="group/field relative grid grid-cols-[minmax(7rem,9rem)_1fr] gap-2 rounded-md border border-border/60 bg-muted/20 px-2.5 py-2"
+                className="group/field relative grid grid-cols-[minmax(7rem,9rem)_1fr] gap-2 rounded-md border border-border/60 bg-muted/20 py-2 pl-2.5 pr-12"
               >
                 <dt className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                   {key}

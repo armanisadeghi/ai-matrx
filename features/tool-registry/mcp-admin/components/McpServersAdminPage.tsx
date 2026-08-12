@@ -296,7 +296,7 @@ export function McpServersAdminPage() {
                     />
                     <button
                       onClick={() => selectServer(s.slug)}
-                      className={`w-full text-left px-3 py-2 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""}`}
+                      className={`w-full text-left py-2 pl-3 pr-20 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""}`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-mono text-xs truncate flex-1">

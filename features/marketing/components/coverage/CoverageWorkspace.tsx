@@ -97,11 +97,10 @@ function CoverageTile({
       )}
     >
       <Link href={href} className="block">
-        <div className="flex items-start justify-between gap-2 pr-5">
+        <div className="flex items-start gap-2 pr-12">
           <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {label}
           </p>
-          <ArrowUpRight className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/tile:opacity-100" />
         </div>
         <p
           className={cn(
