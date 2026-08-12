@@ -23,19 +23,30 @@ warned either of us, and nothing failed loudly.
 - **aidream:** the podcast session ran `git stash` in the shared tree while another agent
   had uncommitted work there, sweeping four of that agent's files into its stash. Popped
   and recovered intact, and disclosed — but only because they noticed.
-- **A third face, same afternoon: an autostash that nobody owns and is now a TRAP.** My
-  `pull --rebase` autostashed 18 files belonging to *three other sessions* (content-plan,
-  transcript-studio, overlays, research, and a `types/python-generated` regeneration), and
-  the pop only partially reapplied — leaving the tree mid-edit and 500ing on every route
-  for everyone. Nothing was lost: the owning sessions had committed, and I verified their
-  commits are ancestors of `origin/main`. **But the entry is still sitting there as
-  `stash@{1}: autostash`, and it is now actively harmful** — its `stream-events.ts` is
-  3,320 lines SHORTER than HEAD, so anyone who pops it during housekeeping silently
-  reverts a regeneration and re-breaks the build. I deliberately did NOT drop it (it is
-  not my work to destroy) and did not apply it (it would regress). It needs an owner's
-  glance and then a `git stash drop stash@{1}`.
-  *That is the shape of the problem: the safe action and the tidy action are different
-  actions, and no tool tells you which is which.*
+- **A third face, same afternoon — RESOLVED, and it produced the rule that matters.**
+  My `pull --rebase` autostashed 18 files belonging to *three other sessions*, and the pop
+  only partially reapplied — leaving the tree mid-edit and 500ing on every route for
+  everyone. Nothing was lost (the owners had committed; verified their commits are
+  ancestors of `origin/main`). But the leftover entry was **worse than useless: it held a
+  `stream-events.ts` 3,320 lines SHORTER than HEAD**, so popping it during housekeeping
+  would have silently reverted a regeneration and re-broken the build. The podcast session
+  independently reproduced the numbers, saved the full patch, recorded the commit SHA
+  `32c098c8bf755196cc0e20f946df707463addd85` (still recoverable via
+  `git stash apply 32c098c8` for ~90 days), and dropped it. Nothing outstanding.
+
+  **THE RULE THIS PRODUCED — a stash is not automatically newer than what it was stashed
+  from.** An *autostash* is by definition the OLD side of an operation that already moved
+  past it. Before applying or dropping one, diff the stashed file against HEAD; existence
+  is not evidence of currency. Both of our instincts — "preserve, don't destroy someone's
+  work" and "surface it, don't leave it orphaned" — were defensible and both wrong without
+  that one check. **The safe action and the tidy action were different actions, and nothing
+  tells you which is which.**
+
+  **AND THE SECOND-ORDER TRAP, which I walked straight into:** my first version of this
+  entry told you to run `git stash drop stash@{1}`. Three hours later `stash@{1}` was a
+  *different session's work* — dropping an entry renumbers every one below it, so an
+  index-based instruction becomes a loaded gun pointed at whoever is next. **Never write a
+  stash instruction against an index; always against the SHA.**
 
 **Why it can't be fixed by being careful.** `git stash`, `git checkout --`, `git reset`,
 and `git pull --rebase` are all routine, all destructive to *someone else's* uncommitted
