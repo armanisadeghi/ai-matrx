@@ -75,7 +75,6 @@ import {
   formatDateOnly,
   LoadingSurface,
   MetricCell,
-  QueryError,
   SectionCard,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
@@ -141,6 +140,7 @@ import {
   type WorkspaceViewMode,
 } from "@/features/marketing/components/pages/WorkspaceViewToggle";
 import { PagePlanNoteCard } from "@/features/marketing/components/pages/cards/PagePlanNoteCard";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
@@ -368,9 +368,13 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     return <LoadingSurface label="Loading canonical page…" />;
   if (workspace.isError || !workspace.data) {
     return (
-      <QueryError
-        error={workspace.error ?? new Error("Page not found")}
+      <AccessGate
+        token="web_page"
+        id={pageId}
+        error={workspace.error}
         onRetry={() => void workspace.refetch()}
+        fallbackHref={`${sitePath}/pages`}
+        fallbackLabel="All pages"
       />
     );
   }

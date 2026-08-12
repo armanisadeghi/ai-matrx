@@ -19,6 +19,7 @@ import {
   QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 const OUTCOME_OPTIONS = [
   { value: "discovered", label: "Discovered" },
@@ -161,9 +162,13 @@ export function CrawlUrlsTable({ crawlId }: { crawlId: string }) {
   if (crawl.isLoading) return <LoadingSurface label="Loading crawl…" />;
   if (crawl.isError || !crawl.data)
     return (
-      <QueryError
-        error={crawl.error ?? new Error("Crawl not found")}
+      <AccessGate
+        token="web_crawl_session"
+        id={crawlId}
+        error={crawl.error}
         onRetry={() => void crawl.refetch()}
+        fallbackHref={`${sitePath}/crawls`}
+        fallbackLabel="All crawls"
       />
     );
   return (

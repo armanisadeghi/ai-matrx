@@ -252,6 +252,7 @@ export function NodePanel({
     write_page_content: async () => {
       if (!cmsPage) {
         throw new Error(
+          // access-errors: ok — guards an AGENT action against a plan node whose page is unbuilt; the same verdict the human card shows.
           "This page does not exist on the website yet — apply build_page first.",
         );
       }
@@ -261,6 +262,7 @@ export function NodePanel({
     publish_page: async () => {
       if (!cmsPage) {
         throw new Error(
+          // access-errors: ok — guards an AGENT action against a plan node whose page is unbuilt; the same verdict the human card shows.
           "This page does not exist on the website yet — apply build_page first.",
         );
       }

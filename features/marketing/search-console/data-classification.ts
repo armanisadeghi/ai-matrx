@@ -31,17 +31,14 @@ import type { ClassRuleMatchKind } from "@/features/marketing/search-console/lib
 import type { LayeredFilterRule } from "@/components/official/matrx-data-table/layered-filters";
 import type { TableSearchMatchMode } from "@/components/official/matrx-data-table/types";
 import type { Json } from "@/types/database.types";
+import { makeAssertData } from "@/utils/errors";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
   return supabase.schema("seo");
 }
 
-function assertData<T>(data: T | null, error: { message: string } | null): T {
-  if (error) throw new Error(error.message);
-  if (data === null) throw new Error("Supabase returned no data");
-  return data;
-}
+const assertData = makeAssertData("reach your Search Console keyword classification");
 
 export const GSC_CLASS_REVIEW_SORTS = [
   "impressions",
@@ -200,7 +197,7 @@ export async function setGscKeywordClass(
     p_rule_id: options.ruleId ?? undefined,
     p_confirmed: options.confirmed ?? true,
   });
-  return assertData(response.data, response.error);
+  return assertData(response.data, response.error, "save that keyword's class");
 }
 
 /** Confirm auto-applied rulings (clears the unconfirmed flag). Returns the
@@ -215,7 +212,7 @@ export async function confirmGscKeywordClass(
     p_site_id: siteId,
     p_keyword_ids: keywordIds,
   });
-  return assertData(response.data, response.error);
+  return assertData(response.data, response.error, "confirm that keyword's class");
 }
 
 // ── Brand identity (the brand_match rung, narrated) ────────────────────────
@@ -304,7 +301,7 @@ export async function setGscBrandAliases(
     p_site_id: siteId,
     p_aliases: aliases,
   });
-  return assertData(response.data, response.error);
+  return assertData(response.data, response.error, "save your brand aliases");
 }
 
 // ── Import (CSV / workbook round-trip) ─────────────────────────────────────
@@ -340,7 +337,7 @@ export async function importGscKeywordClasses(
     })),
     p_dry_run: dryRun,
   });
-  return assertData(response.data, response.error);
+  return assertData(response.data, response.error, "import those keyword classes");
 }
 
 // ── AI batch classify ──────────────────────────────────────────────────────

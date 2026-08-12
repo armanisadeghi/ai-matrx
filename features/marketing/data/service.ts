@@ -60,7 +60,7 @@ import type {
   UpdateSiteIdentityInput,
 } from "@/features/marketing/types";
 import { isJsonRecord, isPropertyKind } from "@/features/marketing/types";
-import { extractErrorMessage } from "@/utils/errors";
+import { extractErrorMessage, operationFailed } from "@/utils/errors";
 import type { Database, Json } from "@/types/database.types";
 import { parseSnapshotHeadTags } from "@/features/marketing/lib/head-tags";
 import { applyPageOnlyFilters } from "@/features/marketing/lib/page-content-class";
@@ -174,10 +174,12 @@ export function assertFound<T>(
   error: unknown,
   entity: string,
   recordId?: string,
+  /** Canonical entity token — pass it and the surface ASKS instead of guessing. */
+  token?: string,
 ): T {
   if (error) throw error;
   if (data === null) {
-    throw recordUnavailable({ entity, recordId, reason: "unknown" });
+    throw recordUnavailable({ entity, recordId, reason: "unknown", token });
   }
   return data;
 }
@@ -198,6 +200,8 @@ export async function assertFoundOrProbeDeleted<T>(
     data: { deleted_at: string | null } | null;
     error: unknown;
   }>,
+  /** Canonical entity token — pass it and the surface ASKS instead of guessing. */
+  token?: string,
 ): Promise<T> {
   if (error) throw error;
   if (data !== null) return data;
@@ -205,6 +209,7 @@ export async function assertFoundOrProbeDeleted<T>(
   throw recordUnavailable({
     entity,
     recordId,
+    token,
     reason: !probe.error && probe.data?.deleted_at ? "deleted" : "unknown",
   });
 }
@@ -223,8 +228,12 @@ export function assertMutated(
 ): void {
   if (error) throw error;
   if (!rows || rows.length === 0) {
-    throw new Error(
-      `You don't have permission to ${what}, or it was already deleted. Viewing is open to everyone; changing it needs editor access.`,
+    // Zero matched rows is the write-side twin of the zero-row read: it is
+    // equally "no editor access", "already removed", and "stale id". Leading
+    // with a permission verdict asserted one of the three — say what we know
+    // (the write did not happen) and name the possibilities as possibilities.
+    throw operationFailed(
+      `${what} — nothing was changed. It may need editor access you don't have, or the record may already be gone`,
     );
   }
 }
@@ -550,6 +559,7 @@ export async function getSite(
         .eq("id", siteId)
         .abortSignal(abortSignal)
         .maybeSingle(),
+    "web_site",
   );
 }
 
@@ -826,7 +836,8 @@ export type PageCoverageFilter =
   | "crawled_no_sitemap"
   | "in_gsc"
   | "gsc_no_sitemap"
-  | "sitemap_no_gsc";
+  | "sitemap_no_gsc"
+  | "gone";
 
 export const PAGE_COVERAGE_FILTERS: readonly PageCoverageFilter[] = [
   "all_known",
@@ -839,6 +850,7 @@ export const PAGE_COVERAGE_FILTERS: readonly PageCoverageFilter[] = [
   "in_gsc",
   "gsc_no_sitemap",
   "sitemap_no_gsc",
+  "gone",
 ];
 
 export function isPageCoverageFilter(
@@ -939,6 +951,11 @@ export async function listPages(
     query = query.eq("in_gsc", true).eq("sitemap_count", 0);
   } else if (coverage === "sitemap_no_gsc") {
     query = query.gt("sitemap_count", 0).eq("in_gsc", false);
+  } else if (coverage === "gone") {
+    // `status = 'missing'` is the crawler saying it no longer finds the URL.
+    // This is the destination the site audit's gone-page count links to, so
+    // every page it excludes from the HTML-quality findings stays reachable.
+    query = query.eq("status", "missing");
   }
 
   const search = cleanSearch(state.search);
@@ -1312,6 +1329,7 @@ export async function getPageWorkspace(
         .eq("id", pageId)
         .abortSignal(abortSignal)
         .maybeSingle(),
+    "web_page",
   );
 
   const [
@@ -1515,6 +1533,7 @@ export async function updatePageDesiredValues(
     freshResponse.error,
     "page",
     input.pageId,
+    "web_page",
   );
   const current: PageDesiredValues = isJsonRecord(fresh.desired_values)
     ? (fresh.desired_values as PageDesiredValues)
@@ -1688,7 +1707,13 @@ export async function getSnapshot(
     .eq("id", snapshotId)
     .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle();
-  return assertFound(response.data, response.error, "snapshot", snapshotId);
+  return assertFound(
+    response.data,
+    response.error,
+    "snapshot",
+    snapshotId,
+    "web_snapshot",
+  );
 }
 
 export async function listCrawls(
@@ -1783,7 +1808,13 @@ export async function getCrawl(
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle();
-  return assertFound(response.data, response.error, "crawl session", crawlId);
+  return assertFound(
+    response.data,
+    response.error,
+    "crawl session",
+    crawlId,
+    "web_crawl_session",
+  );
 }
 
 export async function listCrawlUrls(
@@ -2498,6 +2529,7 @@ export async function getBrand(
         .eq("id", brandId)
         .abortSignal(abortSignal)
         .maybeSingle(),
+    "web_brand",
   );
 }
 
@@ -2618,7 +2650,13 @@ export async function getSitemap(
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle();
-  return assertFound(response.data, response.error, "sitemap", sitemapId);
+  return assertFound(
+    response.data,
+    response.error,
+    "sitemap",
+    sitemapId,
+    "web_sitemap",
+  );
 }
 
 export type SitemapPagesFilter = "all" | "never_crawled";

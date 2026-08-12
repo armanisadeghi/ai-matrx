@@ -59,6 +59,7 @@ import { SiteLinkComplianceView } from "@/features/marketing/components/inspecti
 import { displayUrl } from "@/features/marketing/components/inspection/link-graph/model";
 import { cn } from "@/lib/utils";
 import { AuthorityRouterDoor } from "@/features/marketing/authority/AuthorityRouterDoor";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 function humanLinkEdgeRow(row: InspectionLinkRow): string {
   return humanLines([
@@ -348,9 +349,13 @@ export function LinksInspectionTable({ crawlId }: { crawlId?: string }) {
     return <LoadingSurface label="Loading crawl…" />;
   if (crawlId && (crawl.isError || !crawl.data)) {
     return (
-      <QueryError
-        error={crawl.error ?? new Error("Crawl not found")}
+      <AccessGate
+        token="web_crawl_session"
+        id={crawlId}
+        error={crawl.error}
         onRetry={() => void crawl.refetch()}
+        fallbackHref={`${sitePath}/crawls`}
+        fallbackLabel="All crawls"
       />
     );
   }

@@ -95,7 +95,7 @@ export async function getPlanNode(
     .is("deleted_at", null)
     .abortSignal(signal ?? new AbortController().signal)
     .maybeSingle();
-  return assertFound(response.data, response.error, "plan node", id);
+  return assertFound(response.data, response.error, "plan node", id, "plan_node");
 }
 
 /**

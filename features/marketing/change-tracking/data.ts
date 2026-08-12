@@ -3,6 +3,7 @@ import { ensureKeywordId } from "@/features/marketing/data/page-keywords";
 import { getGscSummary } from "@/features/marketing/search-console/data";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
+import { makeAssertData } from "@/utils/errors";
 
 type SeoTables = Database["seo"]["Tables"];
 type SeoViews = Database["seo"]["Views"];
@@ -83,11 +84,7 @@ async function seoDb() {
   return supabase.schema("seo");
 }
 
-function requireRows<T>(data: T | null, error: { message: string } | null): T {
-  if (error) throw new Error(error.message);
-  if (data === null) throw new Error("Supabase returned no data.");
-  return data;
-}
+const requireRows = makeAssertData("reach this site's tracked SEO changes");
 
 export async function listSeoChanges(
   siteId: string,

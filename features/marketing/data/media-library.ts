@@ -16,6 +16,7 @@ import {
 import { isJsonRecord } from "@/features/marketing/types";
 import type { MarketingSite } from "@/features/marketing/types";
 import { SITE_COLUMNS } from "@/features/marketing/data/service";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 // ============================================================================
 // Research images — inspiration + reuse candidates for this brand's org
@@ -189,7 +190,15 @@ export async function saveSiteMediaStandards(input: {
     .is("deleted_at", null)
     .maybeSingle();
   if (current.error) throw current.error;
-  if (!current.data) throw new Error("Site not found.");
+  // Zero rows here is a denial, a deletion, or a stale id — never a proven
+  // absence. `recordUnavailable` says all three and screams into the inspector.
+  if (!current.data)
+    throw recordUnavailable({
+      entity: "site",
+      reason: "unknown",
+      recordId: input.siteId,
+      relation: "web.site",
+    });
   const settings = isJsonRecord(current.data.settings)
     ? current.data.settings
     : {};

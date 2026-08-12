@@ -125,6 +125,8 @@ import { SetupBridgeSection } from "./SetupBridgeSection";
 import { SetupPreviewColumn } from "./SetupPreviewColumn";
 import { SetupShapeColumn } from "./SetupShapeColumn";
 import { SetupWorkOrderColumn } from "./SetupWorkOrderColumn";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 /** The status every generated node starts in (same default aidream uses). */
 const DEFAULT_STATUS_SLUG = "planned";
@@ -1732,9 +1734,14 @@ export function SetupView() {
   }
   if (siteId && !site && !sites.isLoading) {
     return (
-      <EmptyState
-        title="That site is not visible to you"
-        body="This link points at a site you cannot see (or that was deleted). Pick another from the header, or go back to the plans list."
+      // The site is absent from the picker's list — denied, deleted, stale id,
+      // or a signed-out tab. Guessing between them is the class the gate kills.
+      <AccessGate
+        token="web_site"
+        id={siteId}
+        onRetry={() => void sites.refetch()}
+        fallbackHref={marketingRoutes.contentPlan()}
+        fallbackLabel="All content plans"
       />
     );
   }

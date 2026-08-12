@@ -6,7 +6,6 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import {
   formatDate,
   LoadingSurface,
-  QueryError,
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useSnapshot } from "@/features/marketing/data/hooks";
@@ -25,6 +24,7 @@ import {
   MOBILE_TABLE_FROZEN_CELL,
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@/components/official/mobile-table/mobileTable";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 interface CompareField {
   label: string;
@@ -148,11 +148,16 @@ export function SnapshotCompare({
     );
   }
   if (first.isError || second.isError || !first.data || !second.data) {
-    const failed = first.isError || !first.data ? first : second;
+    // Which of the two came back empty decides which record the gate resolves
+    // — naming the wrong snapshot would be its own small lie.
+    const firstFailed = first.isError || !first.data;
+    const failed = firstFailed ? first : second;
     return (
       <SectionCard title="Snapshot comparison" headerExtra={closeButton}>
-        <QueryError
-          error={failed.error ?? new Error("Snapshot not found")}
+        <AccessGate
+          token="web_snapshot"
+          id={firstFailed ? firstId : secondId}
+          error={failed.error}
           onRetry={() => {
             void first.refetch();
             void second.refetch();

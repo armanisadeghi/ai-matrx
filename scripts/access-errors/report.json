@@ -1,14 +1,14 @@
 {
   "generatedAt": "2026-08-12",
-  "total": 395,
+  "total": 353,
+  "suppressed": 10,
   "byKind": {
-    "raw-supabase-message": 96,
-    "claims-deleted": 273,
-    "claims-denied": 26
+    "raw-supabase-message": 84,
+    "claims-deleted": 245,
+    "claims-denied": 24
   },
   "byFeature": {
     "lib": 59,
-    "features/marketing": 41,
     "features/agents": 34,
     "features/scope-system": 16,
     "features/administration": 14,
@@ -61,8 +61,7 @@
     "features/recipes": 1,
     "features/research": 1,
     "features/tasks": 1,
-    "features/transcripts": 1,
-    "features/user-lists": 1
+    "features/transcripts": 1
   },
   "findings": [
     {
@@ -1182,252 +1181,6 @@
       "snippet": "throw new Error(detail?.message ?? created.error.message);"
     },
     {
-      "file": "features/marketing/change-tracking/data.ts",
-      "line": 87,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/components/backlinks/BacklinkObservationTable.tsx",
-      "line": 99,
-      "kind": "claims-deleted",
-      "snippet": "controllable: \"We have not found a link you can edit yourself yet.\","
-    },
-    {
-      "file": "features/marketing/components/brands/BrandWorkspace.tsx",
-      "line": 401,
-      "kind": "claims-deleted",
-      "snippet": "error={brand.error ?? new Error(\"Brand not found\")}"
-    },
-    {
-      "file": "features/marketing/components/crawls/CrawlLogsTable.tsx",
-      "line": 108,
-      "kind": "claims-deleted",
-      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
-    },
-    {
-      "file": "features/marketing/components/crawls/CrawlReportWorkspace.tsx",
-      "line": 914,
-      "kind": "claims-deleted",
-      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
-    },
-    {
-      "file": "features/marketing/components/crawls/CrawlReportsIndex.tsx",
-      "line": 61,
-      "kind": "claims-deleted",
-      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
-    },
-    {
-      "file": "features/marketing/components/crawls/CrawlSummary.tsx",
-      "line": 67,
-      "kind": "claims-deleted",
-      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
-    },
-    {
-      "file": "features/marketing/components/crawls/CrawlUrlsTable.tsx",
-      "line": 165,
-      "kind": "claims-deleted",
-      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
-    },
-    {
-      "file": "features/marketing/components/inspection/CrawlSnapshotsInspectionTable.tsx",
-      "line": 159,
-      "kind": "claims-deleted",
-      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
-    },
-    {
-      "file": "features/marketing/components/inspection/LinksInspectionTable.tsx",
-      "line": 352,
-      "kind": "claims-deleted",
-      "snippet": "error={crawl.error ?? new Error(\"Crawl not found\")}"
-    },
-    {
-      "file": "features/marketing/components/pages/PageWorkspace.tsx",
-      "line": 372,
-      "kind": "claims-deleted",
-      "snippet": "error={workspace.error ?? new Error(\"Page not found\")}"
-    },
-    {
-      "file": "features/marketing/components/pages/SnapshotCompare.tsx",
-      "line": 155,
-      "kind": "claims-deleted",
-      "snippet": "error={failed.error ?? new Error(\"Snapshot not found\")}"
-    },
-    {
-      "file": "features/marketing/components/pages/SnapshotDetail.tsx",
-      "line": 34,
-      "kind": "claims-deleted",
-      "snippet": "error={snapshot.error ?? new Error(\"Snapshot not found\")}"
-    },
-    {
-      "file": "features/marketing/components/pages/cards/PageTargetPerformanceCard.tsx",
-      "line": 364,
-      "kind": "claims-deleted",
-      "snippet": "notFoundLabel=\"Site not found in the checked results.\""
-    },
-    {
-      "file": "features/marketing/components/shared/RecordUnavailableNotice.tsx",
-      "line": 49,
-      "kind": "claims-deleted",
-      "snippet": "? `This ${error.entity} was deleted`"
-    },
-    {
-      "file": "features/marketing/components/shared/RecordUnavailableNotice.tsx",
-      "line": 55,
-      "kind": "claims-denied",
-      "snippet": ": `It may have been deleted, or it may belong to an organization you don't have access to. Nothing here proves it is gone.`}"
-    },
-    {
-      "file": "features/marketing/components/sitemaps/SitemapDetail.tsx",
-      "line": 133,
-      "kind": "claims-deleted",
-      "snippet": "error={sitemap.error ?? new Error(\"Sitemap not found\")}"
-    },
-    {
-      "file": "features/marketing/components/sites/NewSiteForm.tsx",
-      "line": 162,
-      "kind": "claims-deleted",
-      "snippet": ": \"Register a site that doesn’t exist yet. You’ll land in Content Plan Setup to design its structure — crawl and search data can come later, once it’s live.\"}"
-    },
-    {
-      "file": "features/marketing/components/sites/NewSiteForm.tsx",
-      "line": 179,
-      "kind": "claims-deleted",
-      "snippet": "body: \"It doesn’t exist yet — start from a content plan.\","
-    },
-    {
-      "file": "features/marketing/content-plan/components/NodePanel.tsx",
-      "line": 255,
-      "kind": "claims-deleted",
-      "snippet": "\"This page does not exist on the website yet — apply build_page first.\","
-    },
-    {
-      "file": "features/marketing/content-plan/components/NodePanel.tsx",
-      "line": 264,
-      "kind": "claims-deleted",
-      "snippet": "\"This page does not exist on the website yet — apply build_page first.\","
-    },
-    {
-      "file": "features/marketing/content-plan/components/NodePanel.tsx",
-      "line": 619,
-      "kind": "claims-deleted",
-      "snippet": "{/* ALWAYS rendered — \"this page does not exist yet\" is the state that"
-    },
-    {
-      "file": "features/marketing/content-plan/hooks/useNodeReality.ts",
-      "line": 218,
-      "kind": "claims-deleted",
-      "snippet": "if (!pageId) throw new Error(\"This page does not exist yet.\");"
-    },
-    {
-      "file": "features/marketing/content-plan/lib/page-reality.ts",
-      "line": 146,
-      "kind": "claims-deleted",
-      "snippet": "headline: \"This page does not exist on the website yet.\","
-    },
-    {
-      "file": "features/marketing/content-plan/setup/components/SetupView.tsx",
-      "line": 1737,
-      "kind": "claims-deleted",
-      "snippet": "body=\"This link points at a site you cannot see (or that was deleted). Pick another from the header, or go back to the plans list.\""
-    },
-    {
-      "file": "features/marketing/data/access-service.ts",
-      "line": 50,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/data/access-service.ts",
-      "line": 74,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/data/access-service.ts",
-      "line": 94,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/data/media-library.ts",
-      "line": 192,
-      "kind": "claims-deleted",
-      "snippet": "if (!current.data) throw new Error(\"Site not found.\");"
-    },
-    {
-      "file": "features/marketing/data/reputation-queries.ts",
-      "line": 13,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/data/service.ts",
-      "line": 227,
-      "kind": "claims-denied",
-      "snippet": "`You don't have permission to ${what}, or it was already deleted. Viewing is open to everyone; changing it needs editor access.`,"
-    },
-    {
-      "file": "features/marketing/lib/finding-remedies.ts",
-      "line": 285,
-      "kind": "claims-deleted",
-      "snippet": "`${pageLabel(ctx)} returns a \"not found\" error.`,"
-    },
-    {
-      "file": "features/marketing/search-console/data-class-rules.ts",
-      "line": 21,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/search-console/data-classification.ts",
-      "line": 41,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/search-console/data-dig.ts",
-      "line": 27,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/search-console/data-insights.ts",
-      "line": 32,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/search-console/data-launch.ts",
-      "line": 32,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/search-console/data-launch.ts",
-      "line": 96,
-      "kind": "claims-deleted",
-      "snippet": "throw new Error(\"Page not found or not editable (RLS).\");"
-    },
-    {
-      "file": "features/marketing/search-console/data.ts",
-      "line": 32,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/seo/ai-visibility/data.ts",
-      "line": 6,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
-    },
-    {
-      "file": "features/marketing/seo/keyword/KeywordUsageChips.tsx",
-      "line": 57,
-      "kind": "claims-deleted",
-      "snippet": ": `Keyword NOT found in ${field.label.toLowerCase()}`"
-    },
-    {
       "file": "features/message-templates/services/message-templates-service.ts",
       "line": 81,
       "kind": "raw-supabase-message",
@@ -2038,12 +1791,6 @@
       "line": 443,
       "kind": "claims-deleted",
       "snippet": "throw new Error(\"Original transcript not found\");"
-    },
-    {
-      "file": "features/user-lists/components/ListItemsTableView.tsx",
-      "line": 170,
-      "kind": "claims-deleted",
-      "snippet": "{/* `/lists-v2` DOES NOT EXIST — the real index is `/lists`. This Back"
     },
     {
       "file": "features/voice-agent/audio/audioCapture.ts",

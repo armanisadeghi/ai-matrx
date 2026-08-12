@@ -20,6 +20,7 @@ import type {
   GscTrafficClass,
   GscTrendRow,
 } from "@/features/marketing/search-console/types";
+import { makeAssertData } from "@/utils/errors";
 
 const INSIGHT_ROW_LIMIT = 200;
 
@@ -28,11 +29,7 @@ async function seoDb() {
   return supabase.schema("seo");
 }
 
-function assertData<T>(data: T | null, error: { message: string } | null): T {
-  if (error) throw new Error(error.message);
-  if (data === null) throw new Error("Supabase returned no data");
-  return data;
-}
+const assertData = makeAssertData("reach your Search Console insights");
 
 export interface GscInsightResult<T> {
   rows: T[];

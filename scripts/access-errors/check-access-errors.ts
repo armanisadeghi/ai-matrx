@@ -106,6 +106,23 @@ const ALLOW = [
 const MATCHING =
   /\.(includes|match|test|startsWith|endsWith|indexOf|search)\s*\(|[=!]==\s*["'`]|case\s+["'`]/;
 
+/**
+ * The escape hatch, and the ONLY one: `// access-errors: ok — <reason>` on the
+ * line itself or the line above it.
+ *
+ * These regexes cannot tell "this record was deleted" (a guess about someone
+ * else's permissions) from "this page does not exist on the website yet" (a
+ * fact the content plan verified) or "Keyword NOT found in the title" (a
+ * finding about a crawled page, not about a read). Marketing alone carries ten
+ * of those. Without a way to mark them the count can never reach zero, and a
+ * report that can never reach zero is one the next agent learns to skip — the
+ * single outcome that would make this whole sweep worthless.
+ *
+ * The reason is REQUIRED and is printed in the summary, so a suppression is a
+ * sentence someone has to defend, not a silent `--fix`.
+ */
+const PRAGMA = /\/\/\s*access-errors:\s*ok\s*[—-]\s*\S/;
+
 function listFiles(): string[] {
   const out = execSync(
     "git ls-files 'app/**/*.ts' 'app/**/*.tsx' 'features/**/*.ts' 'features/**/*.tsx' " +
@@ -119,17 +136,32 @@ function listFiles(): string[] {
     .filter((f) => !ALLOW.some((re) => re.test(f)));
 }
 
+let suppressed = 0;
+
 function scan(): Finding[] {
   const findings: Finding[] = [];
+  suppressed = 0;
   for (const file of listFiles()) {
     const abs = join(ROOT, file);
     if (!existsSync(abs)) continue;
     const lines = readFileSync(abs, "utf8").split("\n");
     lines.forEach((text, i) => {
-      // A comment explaining the class is not an instance of it.
+      // A comment explaining the class is not an instance of it — including
+      // a JSX comment, which opens `{/*` and so slipped past the first two
+      // tests for years (NodePanel's note about the unbuilt-page state was
+      // reported as copy no human reads).
       const trimmed = text.trim();
-      if (trimmed.startsWith("*") || trimmed.startsWith("//")) return;
+      if (
+        trimmed.startsWith("*") ||
+        trimmed.startsWith("//") ||
+        trimmed.startsWith("{/*")
+      )
+        return;
       if (MATCHING.test(text)) return;
+      if (PRAGMA.test(text) || PRAGMA.test(lines[i - 1] ?? "")) {
+        if (RULES.some((rule) => rule.re.test(text))) suppressed += 1;
+        return;
+      }
       for (const rule of RULES) {
         if (rule.re.test(text)) {
           findings.push({
@@ -179,7 +211,10 @@ function main() {
   console.log(
     `       raw supabase message: ${byKind("raw-supabase-message")}  ` +
       `claims deleted: ${byKind("claims-deleted")}  ` +
-      `claims denied: ${byKind("claims-denied")}`,
+      `claims denied: ${byKind("claims-denied")}` +
+      (suppressed > 0
+        ? `  ·  ${suppressed} marked \`access-errors: ok\` with a stated reason`
+        : ""),
   );
   console.log("");
   console.log("  Worst features first:");
@@ -200,6 +235,7 @@ function main() {
         {
           generatedAt: new Date().toISOString().slice(0, 10),
           total: findings.length,
+          suppressed,
           byKind: {
             "raw-supabase-message": byKind("raw-supabase-message"),
             "claims-deleted": byKind("claims-deleted"),
