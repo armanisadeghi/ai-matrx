@@ -154,7 +154,7 @@ export async function fetchOverviewKpis(
   const supabase = await createClient();
   const timeWhere = buildTimeframeCondition(filters, "ur.created_at");
   const userWhere = filters.user_id
-    ? `AND ur.user_id = '${filters.user_id}'`
+    ? `AND ur.created_by = '${filters.user_id}'`
     : "";
 
   // KPIs are aggregated from direct queries below — the prior
@@ -520,7 +520,7 @@ export async function fetchUserRequests(
     })
     .range(offset, offset + perPage - 1);
 
-  if (filters.user_id) query = query.eq("user_id", filters.user_id);
+  if (filters.user_id) query = query.eq("created_by", filters.user_id);
   if (filters.status) query = query.eq("status", filters.status);
 
   if (filters.timeframe !== "all" && filters.timeframe !== "custom") {

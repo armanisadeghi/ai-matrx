@@ -355,7 +355,7 @@ export function userRequestRowToRecord(
     // row — `cx_user_request` no longer carries `conversation_id`. Fall back to
     // any legacy value on the row if present.
     conversationId: conversationId ?? row.conversation_id ?? "",
-    userId: row.user_id,
+    userId: row.created_by ?? "",
     agentId: row.agent_id,
     agentVersionId: row.agent_version_id,
     status: row.status,

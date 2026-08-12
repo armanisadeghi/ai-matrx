@@ -110,7 +110,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             event: "*",
             schema: "transcripts",
             table: "studio_sessions",
-            filter: `user_id=eq.${userId}`,
+            filter: `created_by=eq.${userId}`,
           },
           (payload) => {
             const newRow = payload.new as SessionRow | undefined;
@@ -120,7 +120,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
               return;
             }
             if (newRow?.id) {
-              if (newRow.is_deleted) {
+              if (newRow.deleted_at) {
                 storeApi.dispatch(sessionRemoved(newRow.id));
                 return;
               }

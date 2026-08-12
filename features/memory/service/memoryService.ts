@@ -7,7 +7,7 @@
  * create and captures edits back on teardown. The canonical copy lives in this
  * table; the box copy is a per-session mirror.
  *
- * RLS scopes every row to `auth.uid() = user_id`, so the UI reads/writes
+ * RLS scopes every row to `auth.uid() = created_by`, so the UI reads/writes
  * Supabase-direct (matrx-frontend doctrine — no Next.js middle tier for user
  * data). See docs/sandbox/MEMORY_API.md.
  */
@@ -28,7 +28,7 @@ export interface MemoryEntry {
 
 /** List the current user's memory entries, ordered by path. */
 export async function listMemory(): Promise<MemoryEntry[]> {
-  // VIEW LAW: container-scoped via RLS (auth.uid() = user_id) — see docblock above
+  // VIEW LAW: container-scoped via RLS (auth.uid() = created_by) — see docblock above
   const { data, error } = await supabase
     .schema("users").from("user_memory")
     .select("path, content, updated_at")
@@ -38,7 +38,7 @@ export async function listMemory(): Promise<MemoryEntry[]> {
 }
 
 /**
- * Create or update one entry by path. The table's UNIQUE (user_id, path)
+ * Create or update one entry by path. The table's UNIQUE (created_by, path)
  * constraint makes this an idempotent upsert.
  */
 export async function upsertMemory(
@@ -49,8 +49,8 @@ export async function upsertMemory(
   const { error } = await supabase
     .schema("users").from("user_memory")
     .upsert(
-      { user_id: userId, organization_id: await ensureOrgId(undefined), path, content },
-      { onConflict: "user_id,path" },
+      { created_by: userId, organization_id: await ensureOrgId(undefined), path, content },
+      { onConflict: "created_by,path" },
     );
   if (error) throw error;
 }

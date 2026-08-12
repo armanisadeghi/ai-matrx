@@ -1603,12 +1603,20 @@ export async function savePageContent(
 ): Promise<PageContent> {
   const db = await authenticatedWebDb(supabase);
   if (input.expectedVersion === null) {
+    // organization_id is NOT NULL on page_content — inherit it from the site.
+    const siteRes = await db
+      .from("site")
+      .select("organization_id")
+      .eq("id", input.siteId)
+      .single();
+    if (siteRes.error) throw siteRes.error;
     const response = await db
       .from("page_content")
       .insert({
         site_id: input.siteId,
         page_id: input.pageId,
         content: input.content,
+        organization_id: siteRes.data.organization_id,
       })
       .select("*")
       .maybeSingle();

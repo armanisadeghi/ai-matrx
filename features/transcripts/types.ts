@@ -10,7 +10,7 @@ export interface TranscriptSegment {
 
 export interface Transcript {
     id: string;
-    user_id: string;
+    created_by: string;
     title: string;
     description: string;
     segments: TranscriptSegment[];
@@ -27,7 +27,6 @@ export interface Transcript {
     source_type: 'audio' | 'video' | 'meeting' | 'interview' | 'other';
     tags: string[];
     folder_name: string;
-    is_deleted: boolean;
     is_draft: boolean; // Draft status for recordings
     draft_saved_at?: string; // When draft was saved
     created_at: string;

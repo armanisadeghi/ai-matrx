@@ -99,10 +99,10 @@ export function ResultsSummary({
           <ul className="divide-y divide-border">
             {scoreboard.map((p, i) => (
               <li
-                key={p.user_id}
+                key={p.created_by}
                 className={cn(
                   "flex items-center gap-3 px-4 py-2.5 text-sm",
-                  p.user_id === currentUserId && "bg-accent/50",
+                  p.created_by === currentUserId && "bg-accent/50",
                 )}
               >
                 <span className="w-5 text-center font-mono text-muted-foreground">
@@ -110,7 +110,7 @@ export function ResultsSummary({
                 </span>
                 <span className="flex-1 truncate font-medium text-foreground">
                   {p.display_name || "Player"}
-                  {p.user_id === currentUserId && (
+                  {p.created_by === currentUserId && (
                     <span className="ml-1 text-xs text-muted-foreground">
                       (you)
                     </span>

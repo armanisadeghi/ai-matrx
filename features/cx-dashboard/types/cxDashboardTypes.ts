@@ -43,7 +43,7 @@ export type CxUserRequest = {
   // Derived, not a column: `cx_user_request` no longer stores conversation_id.
   // Resolved through the cx_request m2m (null when no requests exist yet).
   conversation_id: string | null;
-  user_id: string;
+  created_by: string | null;
   total_input_tokens: number;
   total_output_tokens: number;
   total_cached_tokens: number;

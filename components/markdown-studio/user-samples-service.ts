@@ -1,7 +1,7 @@
 // components/markdown-studio/user-samples-service.ts
 // Direct Supabase CRUD for the per-user Markdown Studio samples table.
 // RLS scopes everything to auth.uid() — no client-side userId filter
-// needed, but explicit user_id on insert is required by the RLS check.
+// needed, but explicit created_by on insert is required by the RLS check.
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -43,7 +43,7 @@ export async function createUserSample(
       description: input.description ?? "",
       content: input.content,
       detected_blocks: input.detected_blocks ?? [],
-      user_id: userId,
+      created_by: userId,
       organization_id: await ensureOrgId(undefined),
     })
     .select()

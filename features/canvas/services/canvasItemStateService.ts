@@ -2,7 +2,7 @@
  * canvasItemStateService — per-viewer interactive state for artifacts that use
  * GENERIC persistence (no dedicated domain table).
  *
- * Reads/writes `canvas_item_state(canvas_id, user_id, state)` for the current
+ * Reads/writes `canvas_item_state(canvas_id, created_by, state)` for the current
  * user. Custom-table types (flashcards, quiz, tasks) do NOT use this — they
  * persist through their feature's service via a custom adapter.
  */
@@ -21,7 +21,7 @@ export const canvasItemStateService = {
         .select("state")
         .is("deleted_at", null)
         .eq("canvas_id", canvasId)
-        .eq("user_id", userId)
+        .eq("created_by", userId)
         .maybeSingle();
       if (error) {
         console.error("[canvasItemStateService.getState] error:", error);
@@ -50,11 +50,11 @@ export const canvasItemStateService = {
       const { error } = await supabase.schema("canvas").from("canvas_item_state").upsert(
         {
           canvas_id: canvasId,
-          user_id: userId,
+          created_by: userId,
           organization_id: await ensureOrgId(undefined),
           state: merged,
         },
-        { onConflict: "canvas_id,user_id" },
+        { onConflict: "canvas_id,created_by" },
       );
       if (error) {
         console.error("[canvasItemStateService.saveState] error:", error);

@@ -49,10 +49,9 @@ type ServerSupabaseClient = SupabaseClient<Database>;
 
 export interface SessionRow {
   id: string;
-  user_id: string;
+  created_by: string;
   organization_id: string | null;
   project_id: string | null;
-  is_public: boolean;
   transcript_id: string | null;
   title: string;
   status: StudioSession["status"];
@@ -62,7 +61,7 @@ export interface SessionRow {
   ended_at: string | null;
   total_duration_ms: number;
   audio_storage_path: string | null;
-  is_deleted: boolean;
+  deleted_at: string | null;
   assistant_conversation_id: string | null;
   assistant_conversations: AssistantConversationRef[] | null;
   created_at: string;
@@ -72,10 +71,9 @@ export interface SessionRow {
 export function rowToSession(row: SessionRow): StudioSession {
   return {
     id: row.id,
-    userId: row.user_id,
+    userId: row.created_by,
     organizationId: row.organization_id,
     projectId: row.project_id,
-    isPublic: row.is_public,
     transcriptId: row.transcript_id,
     title: row.title,
     status: row.status,
@@ -85,7 +83,6 @@ export function rowToSession(row: SessionRow): StudioSession {
     endedAt: row.ended_at,
     totalDurationMs: row.total_duration_ms,
     audioStoragePath: row.audio_storage_path,
-    isDeleted: row.is_deleted,
     assistantConversationId: row.assistant_conversation_id ?? null,
     assistantConversations: Array.isArray(row.assistant_conversations)
       ? row.assistant_conversations
@@ -133,8 +130,8 @@ export async function listSessions(
       .schema("transcripts")
       .from("studio_sessions")
       .select("*")
-      .eq("is_deleted", false)
-      .eq("user_id", userId), // VIEW LAW: mine-scoped
+      .is("deleted_at", null)
+      .eq("created_by", userId), // VIEW LAW: mine-scoped
     filter,
   )
     .order("updated_at", { ascending: false })
@@ -165,7 +162,7 @@ export async function createSession(
   userId: string,
 ): Promise<StudioSession> {
   const insert = {
-    user_id: userId,
+    created_by: userId,
     // transcript_id can be null, so the org-inherit trigger may have no parent
     // to read from — resolve the org explicitly (never insert a null org).
     organization_id: await ensureOrgId(input.organizationId),
@@ -206,7 +203,6 @@ export async function updateSession(
     update.audio_storage_path = patch.audioStoragePath;
   if (patch.transcriptId !== undefined)
     update.transcript_id = patch.transcriptId;
-  if (patch.isDeleted !== undefined) update.is_deleted = patch.isDeleted;
   if (patch.assistantConversationId !== undefined)
     update.assistant_conversation_id = patch.assistantConversationId;
   if (patch.assistantConversations !== undefined)
@@ -233,13 +229,13 @@ export async function updateSession(
 }
 
 /**
- * Soft delete — flips is_deleted = true. Hard delete is reserved for admin.
+ * Soft delete — stamps deleted_at. Hard delete is reserved for admin.
  */
 export async function softDeleteSession(id: string): Promise<void> {
   const { error } = await db
     .schema("transcripts")
     .from("studio_sessions")
-    .update({ is_deleted: true })
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
     throw new Error(`[studio] softDeleteSession failed: ${error.message}`);
@@ -264,8 +260,8 @@ export async function listSessionsServer(
       .schema("transcripts")
       .from("studio_sessions")
       .select("*")
-      .eq("is_deleted", false)
-      .eq("user_id", user.id), // VIEW LAW: mine-scoped
+      .is("deleted_at", null)
+      .eq("created_by", user.id), // VIEW LAW: mine-scoped
     filter,
   )
     .order("updated_at", { ascending: false })

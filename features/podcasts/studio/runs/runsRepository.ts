@@ -9,7 +9,7 @@
 // ARCHITECTURE: per the platform rule, the React client reads the database
 // DIRECTLY via Supabase (RLS-scoped to the user) — the Python backend is for
 // COMPUTE only (generate / resume / per-asset regenerate), never a data layer.
-// These tables are RLS-restricted to the owner (agent_run.user_id = auth.uid();
+// These tables are RLS-restricted to the owner (agent_run.created_by = auth.uid();
 // stages + assets via their parent run), so a plain client query returns only
 // the caller's runs.
 

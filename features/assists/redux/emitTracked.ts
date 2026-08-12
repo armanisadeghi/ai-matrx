@@ -39,6 +39,7 @@ export async function emitAssistTracked(
     confidence: null,
     action: input.action as unknown as Json,
     status: "pending",
+    metadata: {},
     decided_at: null,
     decided_by: null,
     decision_note: null,
