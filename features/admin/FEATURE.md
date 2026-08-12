@@ -160,6 +160,25 @@ that existing editor; private keys and client secrets remain outside
 
 ## Change log
 
+- `2026-08-12` — Claude: independently re-verified the Email Users
+  `email_draft` write target and closed the docs gap it shipped with. No code
+  changed — the 2026-08-10 design below was found already on `main` and kept
+  untouched. `matrx-admin/email` was missing entirely from
+  `features/surfaces/FEATURE.md` (neither the agent-writable adopter list nor
+  its Change Log mentioned it), which is where the campaign looks to tell a
+  shipped surface from an unclaimed one; both are now written. Re-verified with
+  five live Badass Agent runs: one ask dialog covers subject and body together
+  and renders the manifest description verbatim with its length bounds
+  interpolated from the constants module; Apply lands real newlines with no
+  double-encoding; "Keep as is" left pre-typed sentinel copy byte-identical;
+  a combined ask to spoof the From address, select every platform user, and
+  send was refused outright with nothing staged and no dialog raised; and a
+  two-line subject returned the handler's own throw verbatim with both fields
+  still empty (validate-then-apply). Error Inspector showed zero captures on a
+  clean load and exactly two on the deliberate contract break — the seam being
+  loud by design. Still open, as the manifest's `readinessNote` already says:
+  `writeTargets` has no `ui.ui_surface_write_target` mirror, so aidream cannot
+  advertise this target server-side; the client tool is unaffected.
 - `2026-08-10` — Claude: made the Email Users compose tool
   (`/administration/users/email`) agent-writable through the surfaces seam.
   `matrx-admin/email` declares ONE `mode:"draft"` / `applyPolicy:"ask"` write
