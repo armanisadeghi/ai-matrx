@@ -38,7 +38,16 @@ If reads remain: repoint or delete those consumers if quick; otherwise graveyard
 ## Step 3 — Resolve inbound FKs
 A cross-schema FK keeps working after the move, so the move won't *break* — but a dead table shouldn't be referenced. Drop or repoint inbound FK constraints that shouldn't exist. If an inbound FK represents real data you can't yet sever, that table isn't dead — reconsider.
 
-## Step 4 — Move it (idempotent, verify no data lost)
+## Step 4 — Deactivate the registration FIRST (enforced, 2026-08-12)
+`platform._enforce_entity_is_table` now ERRORs when an ACTIVE `entity_types` row ends up
+pointing at `graveyard` — the DDL-sync trigger repoints `schema_name` during your `SET SCHEMA`,
+so **moving a still-active registered table into graveyard fails with a check_violation.**
+Deactivate before you move (this is the guard doing its job, not a bug):
+```sql
+update platform.entity_types set is_active=false where token='<token>';   -- or delete the row
+```
+
+## Step 5 — Move it (idempotent, verify no data lost)
 ```sql
 do $$ begin
   if to_regclass('public.<table>') is not null then
@@ -48,16 +57,15 @@ end $$;
 select count(*) from graveyard.<table>;   -- equals the pre-move count
 ```
 
-## Step 5 — De-register
-Remove the platform footprint so nothing resolves to it:
+## Step 6 — De-register the rest
+Remove the remaining platform footprint so nothing resolves to it:
 ```sql
 delete from platform.entity_relationships where child_type='<token>' or parent_type='<token>';
-update platform.entity_types set is_active=false where token='<token>';   -- or delete the row
 delete from platform.shareable_resource_registry where table_name='<table>';
 ```
 Leave satellite rows (`associations`/`comments`/…) keyed by the token in place unless they're now orphaned — sweep separately; they're harmless and reversible.
 
-## Step 6 — Cross-repo cleanup + finalize
+## Step 7 — Cross-repo cleanup + finalize
 `graveyard` IS in the `db-types` schema list, so the table still appears under the `graveyard` schema in FE types — that's fine; the point is to **delete every code usage**. Then run the finalize SOP (db-change/SKILL.md): `pnpm db-types` → remove FE usages → `pnpm sync-types` (fix TS); `python db/generate.py` → remove aidream usages + `package_integration.py` entry → `python db/detect_applied.py` → `python run.py` clean boot. Record the migration in the ledger. Commit + push `main` on both repos.
 
 ## Clean cut — no silent shim (SKILL `db-change` → THE CUT)
