@@ -38,12 +38,18 @@ export function progressDataRenderBlock(
     serverData: { language: "json" },
     metadata,
   });
+  const projectedContent = (
+    routed.serverData as Record<string, unknown> | undefined
+  )?.content;
   return {
     blockId: `progress_content_ir_${eventIndex}`,
     blockIndex,
     type: routed.type,
     status: "complete",
-    content: source,
+    // The unified artifact stage consumes RenderBlockPayload.content directly
+    // for structured_info. Preserve the JSON in the envelope fingerprint; put
+    // the registered component's canonical projection on the visible channel.
+    content: typeof projectedContent === "string" ? projectedContent : source,
     data: routed.serverData ?? null,
     metadata: routed.metadata,
   };
