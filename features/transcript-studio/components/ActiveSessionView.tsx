@@ -38,6 +38,7 @@ import { useStudioSession } from "../hooks/useStudioSession";
 import { useStudioSettings } from "../hooks/useStudioSettings";
 import { useTriggerScheduler } from "../hooks/useTriggerScheduler";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { TRANSCRIPT_STUDIO_SURFACE } from "../constants";
 import { getModule } from "../modules/registry";
 import { EditableSessionTitle } from "./EditableSessionTitle";
 
@@ -156,7 +157,7 @@ export function ActiveSessionView({
             variant="icon"
           />
           <RecordButton sessionId={session.id} />
-          <DictionaryIndicatorButton surfaceKey="matrx-user/transcript-studio" />
+          <DictionaryIndicatorButton surfaceKey={TRANSCRIPT_STUDIO_SURFACE} />
           <ProcessForRagButton
             sourceKind="transcript"
             sourceId={session.id}

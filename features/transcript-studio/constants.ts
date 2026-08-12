@@ -48,6 +48,12 @@ export const COLUMN_IDS = {
 } as const;
 export type ColumnId = (typeof COLUMN_IDS)[keyof typeof COLUMN_IDS];
 
+// Surface name for the studio (`features/surfaces/manifests/transcript-studio.manifest.ts`).
+// One constant so the emitter, the dictionary indicator, and the write
+// handlers can never drift from `ui_surface.name` — a mismatch silently
+// resolves NO bindings at launch.
+export const TRANSCRIPT_STUDIO_SURFACE = "matrx-user/transcript-studio";
+
 // Title used when a session is created without one.
 export const NEW_SESSION_DEFAULT_TITLE = "New Session";
 

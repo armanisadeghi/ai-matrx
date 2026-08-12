@@ -103,8 +103,12 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/sandbox", surface: "matrx-user/sandboxes" },
   { prefix: "/transcripts/cleanup", surface: "matrx-user/transcripts-cleanup" },
   { prefix: "/transcripts/scribe", surface: "matrx-user/transcript-scribe" },
+  // More specific than "/transcripts", so it MUST stay above it. The studio
+  // route is `/transcripts/studio`; the old "/transcript-studio" prefix
+  // matched no route in the app, so the studio silently resolved to the
+  // parent `matrx-user/transcripts` surface.
+  { prefix: "/transcripts/studio", surface: "matrx-user/transcript-studio" },
   { prefix: "/transcripts", surface: "matrx-user/transcripts" },
-  { prefix: "/transcript-studio", surface: "matrx-user/transcript-studio" },
   // Education: specific tools BEFORE the hub prefix.
   { prefix: "/education/tutor", surface: "matrx-user/education-tutor" },
   {

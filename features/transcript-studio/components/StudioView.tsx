@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { TRANSCRIPT_STUDIO_SURFACE } from "../constants";
+import { buildTranscriptStudioScope } from "../lib/transcript-studio-scope";
+import { useStudioSurfaceWriteHandlers } from "../hooks/useStudioSurfaceWriteHandlers";
 import {
   selectActiveSessionId,
   selectFetchStatus,
@@ -27,6 +31,7 @@ interface StudioViewProps {
  */
 export function StudioView({ config }: StudioViewProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const fetchStatus = useAppSelector(selectFetchStatus);
   const sessionsById = useAppSelector(selectSessionsById);
   const activeSessionId = useAppSelector(selectActiveSessionId);
@@ -57,12 +62,33 @@ export function StudioView({ config }: StudioViewProps) {
     }
   }, [activeSessionId, config.initialSessionId, dispatch, sessionsById]);
 
+  const buildWriteHandlers = useStudioSurfaceWriteHandlers(
+    activeSessionId ?? null,
+  );
+
+  // Surface runtime for `matrx-user/transcript-studio`. Mounted HERE rather
+  // than on the route because this component backs BOTH the route
+  // (`/transcripts/studio`) and the floating window (`transcriptStudioWindow`)
+  // — the manifest declares both, so both need the emitter, and the window's
+  // nested provider correctly out-depths the page's when it is open.
+  //
+  // The scope is built from the store at TRIGGER time (not from a render
+  // snapshot): the studio streams new raw chunks continuously while
+  // recording, so anything captured at render is stale within seconds.
   return (
-    <StudioLayout
-      showSidebar={config.showSidebar ?? true}
-      defaultColumnLayout={config.defaultColumnLayout}
-      defaultSidebarLayout={config.defaultSidebarLayout}
-      navigateToSession={syncSessionRoute ? navigateToSession : undefined}
-    />
+    <SurfaceRuntimeProvider
+      surfaceName={TRANSCRIPT_STUDIO_SURFACE}
+      getScope={() =>
+        buildTranscriptStudioScope(store.getState(), activeSessionId ?? null)
+      }
+      getWriteHandlers={buildWriteHandlers}
+    >
+      <StudioLayout
+        showSidebar={config.showSidebar ?? true}
+        defaultColumnLayout={config.defaultColumnLayout}
+        defaultSidebarLayout={config.defaultSidebarLayout}
+        navigateToSession={syncSessionRoute ? navigateToSession : undefined}
+      />
+    </SurfaceRuntimeProvider>
   );
 }

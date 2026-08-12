@@ -14,6 +14,7 @@
  */
 
 import { CLEANING_CONTEXT_CHAR_BUDGET, RESUME_MARKER } from "../constants";
+import { CONCEPT_KINDS } from "../types";
 import type {
   CleanedSegment,
   ConceptItem,
@@ -215,13 +216,7 @@ export function stripResumeMarker(response: string): string | null {
 
 // ── Concept extraction (Column 3) ────────────────────────────────────
 
-const CONCEPT_KIND_VALUES: ReadonlySet<ConceptKind> = new Set([
-  "theme",
-  "key_idea",
-  "entity",
-  "question",
-  "other",
-]);
+const CONCEPT_KIND_VALUES: ReadonlySet<ConceptKind> = new Set(CONCEPT_KINDS);
 /** How many recent concepts feed back into `prior_concepts` to deduplicate. */
 const CONCEPT_PRIOR_LIMIT = 30;
 
