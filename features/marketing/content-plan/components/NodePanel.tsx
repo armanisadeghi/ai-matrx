@@ -37,6 +37,7 @@ import { getLatestSuccessfulDocument } from "@/features/research/service";
 import { NODE_TYPE_LABELS } from "../constants";
 import { useSetupAgents } from "../setup/ai";
 import { fetchFreshSite, readSiteResearchTopicId } from "../setup/draft";
+import { listKeywordLabels } from "../data/service";
 import {
   useDeletePlanNode,
   usePlanNodes,
@@ -162,6 +163,17 @@ export function NodePanel({
           .slice(0, 30)
           .map((row) => describe(row, "child")),
       ].join("\n");
+      // The agent needs the PHRASE. A UUID is noise it cannot write around,
+      // and the phrase is one lookup away through the same helper the plan's
+      // keyword step already uses.
+      let keywordAssignment = "not assigned";
+      if (node.primary_keyword_id) {
+        const labels = await listKeywordLabels([node.primary_keyword_id]);
+        const phrase = labels[0]?.phrase;
+        keywordAssignment = phrase
+          ? `primary keyword: "${phrase}"`
+          : "a primary keyword is bound but its phrase could not be read";
+      }
       const outcome = await agents.writeBrief({
         page: [
           node.route ?? "(no route)",
@@ -170,9 +182,7 @@ export function NodePanel({
           node.technical_depth ?? "-",
           (draft.brief ?? node.brief ?? []).join(" / ") || "no brief yet",
         ].join(" | "),
-        keyword_assignment: node.primary_keyword_id
-          ? `primary keyword id ${node.primary_keyword_id} (see the plan's keyword strategy)`
-          : "not assigned",
+        keyword_assignment: keywordAssignment,
         neighbours,
         research_report: report,
         guidance: "",

@@ -85,6 +85,7 @@ import {
   promoteTopicsToPages,
   missingPageTypes,
   readCommittedArchetype,
+  readPlannedTopics,
   recordSiteArchetype,
   type CommitResult,
 } from "../service";
@@ -405,7 +406,7 @@ export function SetupView() {
           toast.error(`Setup draft not saved: ${extractErrorMessage(error)}`);
         });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   const archetypes = library.data?.archetypes ?? [];
@@ -674,8 +675,24 @@ export function SetupView() {
 
   // Count-only families (blog / guides): the researched TITLES. Same agent as
   // the page namer — a count-only family gets a work order, not pages.
-  const topics: Record<string, string[]> =
-    (selected ? topicsByArchetype[selected.key] : undefined) ?? {};
+  // Staged (draft) topics win; anything NOT staged is re-derived from the
+  // authoritative copy on the live hub node (`attributes.planned_topics`).
+  // Without this the draft is the only copy — clear it (a commit does) and
+  // twenty minutes of typed topics vanish from the UI while still sitting in
+  // the database. The draft is an edit buffer, never the record.
+  const topics: Record<string, string[]> = (() => {
+    const staged = (selected ? topicsByArchetype[selected.key] : undefined) ?? {};
+    if (!expanded) return staged;
+    const merged: Record<string, string[]> = { ...staged };
+    for (const family of expanded.families) {
+      if (merged[family.key]) continue;
+      const hub = nodeRows.find((node) => node.route === family.route);
+      if (!hub) continue;
+      const recorded = readPlannedTopics(hub);
+      if (recorded.length > 0) merged[family.key] = recorded;
+    }
+    return merged;
+  })();
 
   const setTopics = (familyKey: string, next: string[] | null) => {
     if (!selected) return;
@@ -909,16 +926,36 @@ export function SetupView() {
       const stagedNodeIds = new Set<string>();
       for (const item of outcome.assignments) {
         const node = nodeByRoute.get(item.route);
-        if (!node || !item.primaryKeyword) continue;
+        if (!node) {
+          unmatched.push(`${item.route} is not a page in this plan`);
+          continue;
+        }
+        if (!item.primaryKeyword) {
+          // Navigational pages legitimately target nothing; anything else
+          // coming back keyword-less is a real gap the user should see.
+          if (item.pageRole !== "navigational") {
+            unmatched.push(`${item.route} got no keyword`);
+          }
+          continue;
+        }
         const keywordId = idByPhrase.get(item.primaryKeyword.trim().toLowerCase());
         if (!keywordId) {
           // Either the strategist flagged it new, or it drifted from the pool.
           newPhrases.push(item.primaryKeyword);
           continue;
         }
+        // Already bound to exactly this keyword — a no-op, not a loss.
         if (node.primary_keyword_id === keywordId) continue;
-        if (usedKeywordIds.has(keywordId)) continue;
-        if (stagedNodeIds.has(node.id)) continue;
+        if (usedKeywordIds.has(keywordId)) {
+          unmatched.push(
+            `${item.route}: "${item.primaryKeyword}" is already targeted by another page`,
+          );
+          continue;
+        }
+        if (stagedNodeIds.has(node.id)) {
+          unmatched.push(`${item.route} was assigned twice — kept the first`);
+          continue;
+        }
         usedKeywordIds.add(keywordId);
         stagedNodeIds.add(node.id);
         staged.push({
@@ -940,7 +977,9 @@ export function SetupView() {
         newPhrases.length > 0
           ? `${newPhrases.length} proposed keyword(s) are not in this site's pool and cannot be assigned until you add them in Search & Keywords: ${newPhrases.slice(0, 5).join(", ")}.`
           : "",
-        unmatched.length > 0 ? `${unmatched.length} unmatched.` : "",
+        unmatched.length > 0
+          ? `${unmatched.length} proposal(s) were dropped: ${unmatched.slice(0, 4).join("; ")}${unmatched.length > 4 ? " …" : ""}.`
+          : "",
       ]
         .filter(Boolean)
         .join(" ");

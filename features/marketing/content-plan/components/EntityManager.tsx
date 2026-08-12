@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
+import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { createContentPlanEntitiesScope } from "@/features/surfaces/manifests/content-plan-entities.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { toast } from "@/lib/toast";
@@ -45,6 +46,7 @@ import {
   useUpdatePlanEntity,
 } from "../data/hooks";
 import { createPlanEntity } from "../data/service";
+import { EntityAttachDialog } from "./EntityAttachDialog";
 import { useSetupAgents } from "../setup/ai";
 import { fetchFreshSite, readSiteResearchTopicId } from "../setup/draft";
 import {
@@ -73,29 +75,47 @@ export function EntityManager({
 
   const rows = entities.data ?? [];
 
+  // Real per-node status for the attacher's `current_plan` — never fabricated.
+  const statuses = useCategories({ dimension: CATEGORY_DIMENSIONS.planStatus });
+  const statusSlugById = new Map<string, string>();
+  for (const category of statuses.categories) {
+    if (category.slug) statusSlugById.set(category.id, category.slug);
+  }
+
+  // Both entity agents are grounded in the SAME artifact — the site's linked
+  // research topic's latest successful Document. Resolved in one place so the
+  // two can never disagree about what "the report" is.
+  const resolveResearchReport = async (): Promise<{
+    report: string;
+    domain: string;
+  }> => {
+    const fresh = await fetchFreshSite(siteId);
+    const topicId = readSiteResearchTopicId(fresh.settings);
+    if (!topicId) {
+      toast.error(
+        "No research topic is linked to this site yet — pick one in Setup's AI grounding bar (or the Generate popover) first.",
+      );
+      return { report: "", domain: "" };
+    }
+    const document = await getLatestSuccessfulDocument(topicId);
+    const report = (document?.content ?? "").trim();
+    if (!report) {
+      toast.error(
+        "The linked research topic has no successful final report — run Document assembly in Research first.",
+      );
+    }
+    return { report, domain: fresh.domain ?? fresh.name ?? "" };
+  };
+
   // The Entity Curator agent: read the site's linked research report and
   // propose real E-E-A-T entities; the user confirms before anything writes.
   const handleSuggestFromResearch = async () => {
     try {
-      const fresh = await fetchFreshSite(siteId);
-      const topicId = readSiteResearchTopicId(fresh.settings);
-      if (!topicId) {
-        toast.error(
-          "No research topic is linked to this site yet — pick one in Setup's AI grounding bar (or the Generate popover) first.",
-        );
-        return;
-      }
-      const document = await getLatestSuccessfulDocument(topicId);
-      const report = (document?.content ?? "").trim();
-      if (!report) {
-        toast.error(
-          "The linked research topic has no successful final report — run Document assembly in Research first.",
-        );
-        return;
-      }
+      const { report, domain } = await resolveResearchReport();
+      if (!report) return;
       const outcome = await agents.curateEntities({
         research_report: report,
-        site_domain: fresh.domain ?? fresh.name ?? "",
+        site_domain: domain,
         existing_entities: rows
           .map((entity) => `${entity.entity_type}: ${entity.label}`)
           .join("\n"),
@@ -203,6 +223,13 @@ export function EntityManager({
             </p>
           </div>
           <div className="flex items-center gap-1.5">
+            <EntityAttachDialog
+              siteId={siteId}
+              entities={rows}
+              statusSlugById={statusSlugById}
+              agents={agents}
+              researchReport={async () => (await resolveResearchReport()).report}
+            />
             <Button
               size="sm"
               variant="outline"

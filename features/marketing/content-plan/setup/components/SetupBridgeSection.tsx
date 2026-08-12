@@ -158,7 +158,7 @@ export function SetupBridgeSection({
       stop = true;
       clearInterval(timer);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [linked, fillRunning, site.id]);
 
   const invalidateCms = () =>
@@ -186,7 +186,7 @@ export function SetupBridgeSection({
     } else if (current === "completed") {
       toast.success(`Content generation finished: ${fillStatus?.succeeded ?? 0} page(s) written.`);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [fillStatus?.status]);
 
   // ── rung 1: create (or pick) the CMS counterpart and link both sides ──────

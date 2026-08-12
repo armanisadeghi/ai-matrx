@@ -421,7 +421,7 @@ export const contentPlanNodeManifest: SurfaceManifest = {
   label: "Content Plan Node",
   readiness: "partial",
   readinessNote:
-    "Emitter + write handlers wired in NodePanel; no default agent bound to brief_writer yet, and write targets are not yet mirrored to the DB (code-only v1).",
+    "Emitter + write handlers wired in NodePanel; brief_writer has a default agent bound (the panel's Draft brief button runs it); write targets are not yet mirrored to the DB (code-only v1).",
   urlPattern: "/marketing/content-plan/[siteId]",
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
@@ -448,7 +448,10 @@ Hard rules: node_route, node_depth, node_pillar_label, and node_cluster_label ar
       // immediately, while this STAGES a brief into the panel draft for the
       // user to review and save — the behaviour the `node_brief` draft write
       // target was declared for.
-      defaultAgentId: "f9789816-91b9-4e64-a38d-aa4d2a8127be",
+      // NEIGHBOUR-AWARE: it reads the page's parent, siblings and children so
+      // a sibling's subject lands in `must_not_cover` instead of being written
+      // twice. Same id the panel's button runs (setup/ai.ts).
+      defaultAgentId: "711d29b5-0afc-494c-a665-6011e529efce",
       sortOrder: 100,
     },
   ],

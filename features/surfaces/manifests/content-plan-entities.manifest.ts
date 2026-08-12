@@ -59,7 +59,7 @@ export const contentPlanEntitiesManifest: SurfaceManifest = {
   label: "Content Plan Entities",
   readiness: "partial",
   readinessNote:
-    "Emitter wired in EntityManager; per-entity attributes not audited field-by-field; entity_curator bound to the Content Plan Entity Curator (manifest + ui.ui_surface_agent_role synced 2026-07-30).",
+    "Emitter wired in EntityManager; per-entity attributes not audited field-by-field; entity_curator and entity_attacher bound to their platform agents (manifest + ui.ui_surface_agent_role synced).",
   urlPattern: "/marketing/content-plan/[siteId]?view=entities",
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
@@ -84,6 +84,18 @@ Suggestions belong to the roster: who is missing, whose credentials matter for t
       // from research" button runs (setup/ai.ts).
       defaultAgentId: "c43e4497-3093-4b18-a906-b088127d8b9c",
       sortOrder: 100,
+    },
+    {
+      name: "entity_attacher",
+      label: "Entity attacher",
+      description:
+        "Assigns roster entities to the pages they belong on (authored_by / reviewed_by / cites / about), choosing only from the existing roster and reporting the gaps it cannot fill.",
+      kind: "single",
+      // Platform agent "Content Plan Entity Attacher" — the roster's "Attach
+      // to pages" button (EntityAttachDialog). It never invents an entity;
+      // the client drops any label that does not resolve to a real row.
+      defaultAgentId: "a1a7784c-538b-44e5-b09d-40d215b79aa6",
+      sortOrder: 110,
     },
   ],
 };

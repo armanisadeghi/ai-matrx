@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-30
+updated: 2026-08-12
 repos: [matrx-frontend, aidream]
 vision:
   - /Users/armanisadeghi/code/common-docs/systems/content-planning/FEATURE.md
@@ -62,15 +62,23 @@ the 'Document'"*
 - **Server grounding:** `aidream/services/content_plan/generator.py`
   (`_load_research_report`, `_research_section`, `_user_can_read_topic`) and its
   `SITE_RESEARCH_TOPIC_KEY` twin in `archetypes.py`.
-- **Live agents** (agx, created via the AI Dream MCP; run them with `agent_run`):
+- **Live agents** (agx, run them with `agent_run`) — the seven the UI calls, covering eight
+  steps (the Family Namer serves both "names" and "topics"):
   | Agent | id | Used by |
   |---|---|---|
   | Content Plan Shape Planner | `b600975c-fc8f-4f1d-ab36-670be436a038` | Setup "Recommend shape & counts"; `site_shaper` role |
   | Content Plan Family Namer | `7a16db8c-48eb-4997-a8d0-dc4a8892d7c5` | "AI names" (pages families) + "AI topics" (count-only) |
   | Content Plan Entity Curator | `c43e4497-3093-4b18-a906-b088127d8b9c` | Entities "Suggest from research"; `entity_curator` + `eeat_curator` roles |
+  | Content Plan Entity Attacher | `a1a7784c-538b-44e5-b09d-40d215b79aa6` | Entities "Attach to pages"; `entity_attacher` role |
   | Content Plan Reviewer | `2a7f0dc8-5525-437a-8f2e-35f12a45cb27` | Setup "Plan review"; `plan_architect` role |
-  | Content Plan Keyword Binder | `8ffb091c-dccf-4550-a14f-95807fd96b95` | Setup "Suggest keywords" |
-  | Content Plan Brief Writer | `f9789816-91b9-4e64-a38d-aa4d2a8127be` | NodePanel "Draft brief"; `brief_writer` role |
+  | Content Plan Keyword Strategist | `e063ded1-38b2-4721-a526-aad01d26e2ef` | Setup "Suggest keywords" (whole-plan, top-down) |
+  | Content Plan Brief Writer | `711d29b5-0afc-494c-a665-6011e529efce` | NodePanel "Draft brief"; `brief_writer` role (neighbour-aware) |
+
+  **Two agents I built are now ORPHANED and should be deleted or left dormant** — Arman's
+  Keyword Strategist and neighbour-aware Brief Writer strictly supersede them, so the wiring
+  was repointed rather than kept in parallel (a second implementation of a job we own is a
+  defect even when it works): Keyword Binder `8ffb091c-dccf-4550-a14f-95807fd96b95` and Brief
+  Writer `f9789816-91b9-4e64-a38d-aa4d2a8127be`. Nothing references either.
 - **Skills:** `matrx-agents` (authoring/running agx agents), `agent-execution-redux`
   (launch + structured output), `surface-authoring` (roles/writeTargets), `handoffs`.
 - **Test route:** `/marketing/content-plan` → pick a site → `?view=setup`. Needs a site with a
@@ -93,22 +101,26 @@ the 'Document'"*
    `GeneratePlanBody` is `extra="forbid"` — **ship aidream first (or together), never the FE
    alone**, or every Generate run 422s. aidream: `./scripts/release.sh` (Coolify, verify
    `/health/version` vs `origin/main`). FE: `./scripts/release.sh`.
-2. **Nothing downstream READS the planned topics.** Count-only families record researched titles
+2. **Arman reviewed Setup and requested changes — MOBILE (`agent.review_queue`
+   `2ca8190e-…`, status `changes_requested`).** Verbatim: *"desktop Setup is powerful, but
+   mobile exposes only the shape chooser and drops the Work Order, page list, lint, and Make
+   It Real workflow from the accessible surface. Recompose the three-column workbench into
+   explicit mobile steps/tabs or sheets, add a semantic title, fix the visible error, and
+   verify every step at 390px."* Rules live in `.claude/skills/ios-mobile-first/SKILL.md`
+   (stack sections, not tabs; Drawer not Dialog; one scroll area; `useIsMobile()`). Archive
+   the row once handled.
+3. **Nothing downstream READS the planned topics.** Count-only families record researched titles
    at `plan.node.attributes.planned_topics` (`string[]` on the family hub; the brief marker block
    is a human mirror). No aidream generator, writer, or tool parses that key — the work order
    exists but nobody consumes it. Wiring it into the cms-fill / writer stage is the payoff step.
    (The "Create as pages" action is the other half: promoted titles become normal plan nodes the
    whole pipeline already understands.)
-3. **The shell-header Agents panel can't see these agents.** `SurfaceBoundAgentsList` reads
-   `agent.menu_surface`, a view over `platform.associations` JOINed to **`agent.card`**; all six
+4. **The shell-header Agents panel can't see these agents.** `SurfaceBoundAgentsList` reads
+   `agent.menu_surface`, a view over `platform.associations` JOINed to **`agent.card`**; all of these
    agents live in `agent.definition` only (`agent.card` 138 rows, `agent.definition` 723), so no
    binding edge can exist for them. The on-page buttons are the only entry point. Fix is a
    platform decision — promote them into `agent.card`, or teach the panel to resolve roles via
-   `useSurfaceAgentRoles`, which DOES see them (all 11 content-plan role rows are bound).
-4. **Entity ATTACHMENT is still manual.** The Entity Curator builds the roster; assigning
-   author / reviewer / cited-source entities to individual pages is per-page hand work in
-   `NodeAssociations`. One agent + one bulk action is the same recipe as the keyword binder
-   (which is the worked example: propose → resolve against real rows → stage → user applies).
+   `useSurfaceAgentRoles`, which DOES see them (all 12 content-plan role rows are bound).
 5. **Bulk deepen.** Deepen is one node at a time. A fan-out over the existing server pipeline
    (progress + per-page results, no new agent) would make a 200-page plan practical.
 6. **Reviewer needs its output contract sent by every caller.** `REVIEWER_OUTPUT_CONTRACT`
@@ -121,7 +133,7 @@ the 'Document'"*
 
 ## Done
 
-- **Six platform agents**, model-pinned + smoke-tested — ids in Resources above. **All 11
+- **Seven platform agents wired**, one per step — ids in Resources above. **All 12
   `ui.ui_surface_agent_role` rows across the content-plan surfaces are bound.**
 - Every Setup step has AI staging into the view's own state: shape + counts, family page names,
   count-only topics, keyword binding, plan review — `features/marketing/content-plan/setup/`.
@@ -132,10 +144,13 @@ the 'Document'"*
 - Save-at-every-step draft persistence with unmount/commit flush — `setup/draft.ts`.
 - ONE site↔research link (`settings.content_plan.research_topic_id`) read by both repos;
   generator + deepen grounded in the final Document — `aidream/services/content_plan/generator.py`.
-- Entities "Suggest from research"; plan review with one-click page creation from `gap` findings.
+- Entities "Suggest from research" (roster) AND "Attach to pages" (bulk node→entity edges through
+  the canonical `attachNodeEntity` chokepoint, unresolvable labels/routes dropped and counted) —
+  `components/EntityAttachDialog.tsx`. Plan review with one-click page creation from `gap` findings.
 - Blog/guide topics: recorded on the hub (`attributes.planned_topics`) AND promotable into real
   pages — `setup/service.ts#promoteTopicsToPages`.
-- Four adversarial review rounds (20 + 12 + 21 + 12 agents); every confirmed finding fixed —
+- Five adversarial review rounds plus an independent completeness sweep; every confirmed finding
+  fixed —
   including a cross-org research-report exfiltration hole, a `send_warning` crash on the exact
   degrade path, and a draft-clear that destroyed staged topics. See the FEATURE.md change log.
 
@@ -150,7 +165,7 @@ Decide: keep it a deliberate click (today), or have a commit create those pages 
 whenever titles exist — which would change what the site shapes mean for every site.
 
 **Should these agents appear in the header Agents popover?**
-Situation: the popover lists agents bound to a surface through `agent.card`; all six exist only
+Situation: the popover lists agents bound to a surface through `agent.card`; all of them exist only
 as `agent.definition` rows, so they cannot be listed there — they are reachable only from the
 buttons on the Setup and Entities pages. Every other surface with agents has the same split.
 Decide: promote agents like these into `agent.card` when they are bound to a surface, or change

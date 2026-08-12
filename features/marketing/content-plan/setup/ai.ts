@@ -30,7 +30,12 @@ import {
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 
-import type { PlanNodeRow } from "../types";
+import {
+  PLAN_NODE_ENTITY_ROLES,
+  type PlanEntityRow,
+  type PlanNodeEntityRole,
+  type PlanNodeRow,
+} from "../types";
 import type { Archetype, ExpandedArchetype } from "./archetypes";
 import type { CommittedArchetype } from "./service";
 
@@ -112,6 +117,30 @@ export const KEYWORD_BINDER_AGENT_ID = "e063ded1-38b2-4721-a526-aad01d26e2ef";
  */
 export const BRIEF_WRITER_AGENT_ID = "711d29b5-0afc-494c-a665-6011e529efce";
 
+/**
+ * Platform agent "Content Plan Entity Attacher" — permanent latest-version
+ * pointer. Variables: current_plan, entity_roster, research_report, guidance.
+ * Structured output: {attachments: [{route, entity_label, role, reason}],
+ * missing_entities: [{suggested_label, entity_type, why_needed}], notes}.
+ *
+ * It assigns EXISTING roster entities to pages (authored_by / reviewed_by /
+ * cites / about) — the bulk twin of the per-page hand work in
+ * `NodeAssociations`. It may never invent an entity: a gap comes back as
+ * `missing_entities` for the Entity Curator (or the user) to fill, and the
+ * client drops any `entity_label` that does not resolve to a real roster row.
+ */
+export const ENTITY_ATTACHER_AGENT_ID = "a1a7784c-538b-44e5-b09d-40d215b79aa6";
+
+/**
+ * The Attacher's prompt labels `current_plan`'s fourth field `page_role`, but
+ * the plan does not persist a page role — we send the node's workflow status
+ * there instead. Saying so is the difference between context and a lie.
+ */
+export const ENTITY_ATTACHER_FIELD_NOTE =
+  "NOTE ON INPUT: in current_plan the fourth field is the page's workflow " +
+  "status (planned / drafting / published…), NOT a page_role. Treat a " +
+  "published page as one whose credibility signals matter most today.";
+
 export const REVIEWER_OUTPUT_CONTRACT =
   "BINDING OUTPUT CONTRACT: summary and findings must agree. Every problem you " +
   "name in the summary MUST appear as its own entry in findings — a summary " +
@@ -184,6 +213,23 @@ export interface PlanReviewFinding {
 export interface PlanReviewResult {
   summary: string;
   findings: PlanReviewFinding[];
+}
+
+export interface EntityAttachment {
+  route: string;
+  entityLabel: string;
+  role: PlanNodeEntityRole;
+  reason: string;
+}
+
+export interface EntityAttachResult {
+  attachments: EntityAttachment[];
+  missing: Array<{
+    suggestedLabel: string;
+    entityType: CuratedEntityType;
+    whyNeeded: string;
+  }>;
+  notes: string;
 }
 
 export const ENTITY_TYPES = ["person", "source", "media", "org"] as const;
@@ -290,6 +336,78 @@ export function coerceEntityCuration(value: unknown): EntityCurationResult {
     entities,
     notes: typeof root.notes === "string" ? root.notes : "",
   };
+}
+
+export function coerceEntityAttach(value: unknown): EntityAttachResult {
+  const root = asRecord(value, "Entity Attacher output");
+  if (!Array.isArray(root.attachments)) {
+    throw new Error("Entity Attacher output has no attachments array");
+  }
+  const attachments: EntityAttachment[] = [];
+  for (const item of root.attachments) {
+    const row = asRecord(item, "attachments item");
+    const role = PLAN_NODE_ENTITY_ROLES.find((candidate) => candidate === row.role);
+    if (!role) {
+      throw new Error(
+        `Entity Attacher returned unknown role ${JSON.stringify(row.role)}`,
+      );
+    }
+    if (typeof row.route !== "string" || !row.route.trim()) {
+      throw new Error("Entity Attacher returned an attachment with no route");
+    }
+    if (typeof row.entity_label !== "string" || !row.entity_label.trim()) {
+      throw new Error("Entity Attacher returned an attachment with no entity_label");
+    }
+    attachments.push({
+      route: row.route.trim(),
+      entityLabel: row.entity_label.trim(),
+      role,
+      reason: typeof row.reason === "string" ? row.reason : "",
+    });
+  }
+  const missing: EntityAttachResult["missing"] = [];
+  if (Array.isArray(root.missing_entities)) {
+    for (const item of root.missing_entities) {
+      const row = asRecord(item, "missing_entities item");
+      if (typeof row.suggested_label !== "string" || !row.suggested_label.trim()) {
+        continue;
+      }
+      missing.push({
+        suggestedLabel: row.suggested_label.trim(),
+        entityType:
+          ENTITY_TYPES.find((type) => type === row.entity_type) ?? "source",
+        whyNeeded: typeof row.why_needed === "string" ? row.why_needed : "",
+      });
+    }
+  }
+  return {
+    attachments,
+    missing,
+    notes: typeof root.notes === "string" ? root.notes : "",
+  };
+}
+
+/**
+ * The roster as the Attacher's `entity_roster` expects it:
+ * `label | entity_type | description`. The agent must echo a label back
+ * CHARACTER-PERFECT, so nothing is reformatted on the way in.
+ */
+export function buildEntityRosterLines(entities: PlanEntityRow[]): string {
+  if (entities.length === 0) return "no entities yet";
+  return entities
+    .map((entity) => {
+      const attributes = entity.attributes;
+      const research =
+        attributes && typeof attributes === "object" && !Array.isArray(attributes)
+          ? (attributes as Record<string, unknown>).research
+          : null;
+      const description =
+        research && typeof research === "object" && !Array.isArray(research)
+          ? String((research as Record<string, unknown>).description ?? "")
+          : "";
+      return [entity.label, entity.entity_type, description || "-"].join(" | ");
+    })
+    .join("\n");
 }
 
 export function coercePlanReview(value: unknown): PlanReviewResult {
@@ -556,6 +674,7 @@ export function useSetupAgents(siteId: string | null) {
   /** The family key currently being named, or null. */
   const [namingFamilyKey, setNamingFamilyKey] = useState<string | null>(null);
   const [entitiesBusy, setEntitiesBusy] = useState(false);
+  const [attachBusy, setAttachBusy] = useState(false);
   const [reviewBusy, setReviewBusy] = useState(false);
   const [keywordsBusy, setKeywordsBusy] = useState(false);
   const [briefBusy, setBriefBusy] = useState(false);
@@ -637,6 +756,20 @@ export function useSetupAgents(siteId: string | null) {
     }
   }
 
+  async function attachEntities(
+    variables: Record<string, string>,
+  ): Promise<EntityAttachResult> {
+    if (inFlight.current) throw new Error("An agent run is already in progress");
+    inFlight.current = true;
+    setAttachBusy(true);
+    try {
+      return await run(ENTITY_ATTACHER_AGENT_ID, variables, coerceEntityAttach);
+    } finally {
+      inFlight.current = false;
+      setAttachBusy(false);
+    }
+  }
+
   async function reviewPlan(
     variables: Record<string, string>,
   ): Promise<PlanReviewResult> {
@@ -669,12 +802,14 @@ export function useSetupAgents(siteId: string | null) {
     recommendShape,
     nameFamily,
     curateEntities,
+    attachEntities,
     reviewPlan,
     bindKeywords,
     writeBrief,
     shapeBusy,
     namingFamilyKey,
     entitiesBusy,
+    attachBusy,
     reviewBusy,
     keywordsBusy,
     briefBusy,

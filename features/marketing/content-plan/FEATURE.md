@@ -38,17 +38,33 @@ plan CRUD through it.
 - AI actions (`hooks/useContentPlanAi.ts`) — Generate plan (`PlanGenerateBar`
   strip on tree/table/map, streams `/content-plan/sites/{id}/generate`) and
   Deepen (NodePanel header button, streams `/content-plan/nodes/{id}/deepen`).
-- **Setup step agents (`setup/ai.ts`)** — every Setup step has a real AI,
-  grounded in the RESEARCH system's final report (the "Document",
-  `research.rs_document.content`, picked by topic in the `SetupAiBar` strip):
-  the **Content Plan Shape Planner** (`b600975c-…`, archetype + counts +
-  concept names) and the **Content Plan Family Namer** (`7a16db8c-…`, real
-  page names for one family — services, locations, guides). Both are platform
-  agents (agx, created via the AI Dream MCP) with json_schema output, run
-  HEADLESS through `launchAgentExecution` + JSON extraction (the
-  useGenerateQuiz pattern). Results stage into the view's own setters — the
-  USER commits. The `site_shaper` surface role is bound to the Shape Planner
-  (manifest + `ui.ui_surface_agent_role`).
+- **Step agents (`setup/ai.ts` — ONE runner, seven agents)** — every step of
+  building a plan has a real AI, all grounded in the RESEARCH system's final
+  report (the "Document", `research.rs_document.content`, picked by topic in
+  the `SetupAiBar` strip and recorded on the site as
+  `settings.content_plan.research_topic_id`):
+
+  | Step | Agent | Where it runs |
+  |---|---|---|
+  | Shape | Shape Planner `b600975c-…` | Setup — archetype + family counts + concept names |
+  | Names | Family Namer `7a16db8c-…` | Setup — the real pages of ONE family |
+  | Topics | Family Namer (same agent) | Setup — titles for a count-only family (blog/guides) |
+  | Keywords | Keyword Strategist `e063ded1-…` | Setup — whole-plan money/supporting/navigational + primary keyword |
+  | Audit | Plan Reviewer `2a7f0dc8-…` | Setup — semantic gap findings, each addable as a page |
+  | Roster | Entity Curator `c43e4497-…` | Entity manager — "Suggest from research" |
+  | Attachment | Entity Attacher `a1a7784c-…` | Entity manager — "Attach to pages" (bulk node→entity edges) |
+  | Brief | Brief Writer `711d29b5-…` | Node panel — "Draft brief", neighbour-aware |
+
+  All are platform agents (agx, via the AI Dream MCP) with json_schema output,
+  run HEADLESS through `launchAgentExecution` + JSON extraction (the
+  useGenerateQuiz pattern), one in-flight run at a time. **Every one of them
+  STAGES — the user commits.** A proposal that does not resolve to a real row
+  (a keyword outside the site's pool, an entity outside the roster, a route
+  outside the plan) is dropped and COUNTED in the UI, never applied and never
+  silently swallowed. Surface roles `site_shaper`, `entity_curator`,
+  `entity_attacher`, `brief_writer`, `plan_architect`, `eeat_curator` are
+  bound in both the manifests and `ui.ui_surface_agent_role` (12 live rows =
+  6 own manifest roles + inherited).
 - Plan↔CMS bridge (`setup/bridge.ts`, consumed by
   `setup/components/SetupBridgeSection.tsx`) — the OTHER sanctioned aidream
   calls: `POST /content-plan/sites/{id}/cms-reconcile | cms-align |
@@ -339,6 +355,31 @@ plan CRUD through it.
   pattern as `features/marketing`). No barrels.
 
 ## Change log
+
+- 2026-08-12 — Claude (round 9): **the last unwired agent shipped, plus the
+  completeness sweep.** The **Content Plan Entity Attacher** (`a1a7784c-…`,
+  Arman's third agent) now runs from the entity manager's "Attach to pages"
+  button (`components/EntityAttachDialog.tsx`): it reads the plan, the roster,
+  and the research report, and stages node→entity edges (authored_by /
+  reviewed_by / cites / about) applied through the canonical
+  `attachNodeEntity` chokepoint. It may never invent an entity — a label that
+  does not resolve to a real `plan.entity` row and a route that does not
+  resolve to a real node are both DROPPED and counted, and the agent's
+  `missing_entities` render as roster gaps for the curator to fill. That
+  closes "entity attachment is still manual"; entity ATTACHMENT and entity
+  CREATION are now the same two-agent loop grounded in one report (resolved
+  once, in `resolveResearchReport`, so they cannot disagree about it).
+  Also fixed from an independent completeness sweep: `readPlannedTopics` was
+  write-only — Setup now re-derives a family's topics from the hub node's
+  `attributes.planned_topics` when the draft has none, so clearing the draft
+  (which a commit does) no longer makes recorded topics vanish from the UI;
+  the brief writer was handed a raw keyword UUID and now gets the PHRASE; the
+  keyword step's "dropped proposals" note had been silently lost in a rewrite
+  and now reports every reason a proposal was skipped; and three stale
+  manifest/doc claims ("no default agents bound yet", a superseded
+  `brief_writer` agent id, and the Setup-agents entry point listing two of
+  eight agents) were corrected against the live `ui.ui_surface_agent_role`
+  rows (12 now, with `entity_attacher` added in both manifest and DB).
 
 - 2026-07-30 — Claude (round 8): **adopted Arman's superseding agents; deleted
   my duplicates from the wiring.** Three agents built outside this session are
