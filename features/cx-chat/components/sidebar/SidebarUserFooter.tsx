@@ -5,12 +5,14 @@ import { useSelector } from 'react-redux';
 import { selectUser, selectDisplayName, selectProfilePhoto } from '@/lib/redux/slices/userSlice';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogIn, UserPlus, ChevronRight } from 'lucide-react';
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
 // ============================================================================
 // SIDEBAR USER FOOTER
 // ============================================================================
 
 export function SidebarUserFooter() {
+  const loginHref = useLoginHref();
     const user = useSelector(selectUser);
     const displayName = useSelector(selectDisplayName);
     const profilePhoto = useSelector(selectProfilePhoto);
@@ -33,7 +35,7 @@ export function SidebarUserFooter() {
                         Sign Up
                     </Link>
                     <Link
-                        href="/login"
+                        href={loginHref}
                         className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
                     >
                         <LogIn className="h-3 w-3" />

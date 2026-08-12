@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AssistsManager } from "@/features/assists/manager/AssistsManager";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
+import { loginHref } from "@/utils/auth/auth-destination";
 
 export const metadata = {
   title: "Assists",
@@ -10,7 +11,7 @@ export const metadata = {
 
 export default async function AssistsPage() {
   const { isAuthenticated } = await getServerAuth();
-  if (!isAuthenticated) redirect("/login");
+  if (!isAuthenticated) redirect(loginHref("/assists"));
 
   return (
     <>
