@@ -5893,6 +5893,7 @@ export type Database = {
           message_count: number
           metadata: Json
           organization_id: string
+          origin_class: string
           overrides: Json
           parent_conversation_id: string | null
           sandbox_instance_id: string | null
@@ -5933,6 +5934,7 @@ export type Database = {
           message_count?: number
           metadata?: Json
           organization_id: string
+          origin_class?: string
           overrides?: Json
           parent_conversation_id?: string | null
           sandbox_instance_id?: string | null
@@ -5973,6 +5975,7 @@ export type Database = {
           message_count?: number
           metadata?: Json
           organization_id?: string
+          origin_class?: string
           overrides?: Json
           parent_conversation_id?: string | null
           sandbox_instance_id?: string | null
@@ -7069,6 +7072,8 @@ export type Database = {
           last_activity_at: string | null
           metadata: Json
           organization_id: string
+          origin_class: string
+          origin_witness: Json
           source_app: string
           source_feature: string
           status: string
@@ -7100,6 +7105,8 @@ export type Database = {
           last_activity_at?: string | null
           metadata?: Json
           organization_id: string
+          origin_class?: string
+          origin_witness?: Json
           source_app?: string
           source_feature?: string
           status?: string
@@ -7131,6 +7138,8 @@ export type Database = {
           last_activity_at?: string | null
           metadata?: Json
           organization_id?: string
+          origin_class?: string
+          origin_witness?: Json
           source_app?: string
           source_feature?: string
           status?: string
@@ -7295,6 +7304,7 @@ export type Database = {
           last_request_status: string | null
           message_count: number | null
           organization_id: string | null
+          origin_class: string | null
           project_id: string | null
           request_count: number | null
           snapshot_count: number | null
@@ -7329,6 +7339,7 @@ export type Database = {
           known_cost_subtotal: number | null
           last_activity_at: string | null
           last_request_at: string | null
+          origin_class: string | null
           request_count: number | null
           source_app: string | null
           source_feature: string | null
