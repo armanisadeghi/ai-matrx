@@ -241,10 +241,20 @@ used by the per-row **Link policy** side panel).
   JSON / Copy-for-AI): registry tables via `MatrxDataTable copy`, drift panel +
   problem rows, the Overview status header, Reachability lookup results (payload
   reads the last-RUN lookup, never the live form fields), the explorer
-  `[token]` header (orbit graph), and the Access Planner — whole-snapshot pair
-  in its header + selected-table detail pair in its right pane. Planner payload
-  builders are pure functions in `access-planner/copy.ts`; never hand-roll a
-  clipboard handler or envelope.
+  `[token]` header (orbit graph), and the Access Planner. Builders live in
+  `access-planner/copy.ts`; never hand-roll a clipboard handler or envelope.
+- **THE WHAT-I-SEE LAW (Arman, 2026-08-12, in anger): the PRIMARY Copy-for-AI
+  payload is the rendered surface converted to data — never a raw dump.** The
+  planner's panel copy is built from LIVE component state inside the click
+  handler (`buildPanelView` in the Impl → `plannerPanelHuman/AgentPayload`):
+  the disposition text, every decision-blocker sentence as rendered, the reach
+  trace, the CURRENT form inputs (mode/token/label/parent/reason) with an
+  `unsaved_changes` diff vs the saved row, visible validation warnings, why
+  Apply is blocked, the doors, and the left panel's blocker list. The full
+  faithful dump (all FKs/rules/column objects) is ONLY the "Everything" menu
+  variant. A payload that dumps 50k chars of adjacent data while missing the
+  red blocker the user is staring at — or that copies saved values after the
+  user edited the form — is the exact defect this law bans.
 - **THE DOOR LAW** (`common-docs/policies/no-dead-ends.md`) — this hub names
   real records constantly, so it never prints a bare id or an unlinked name:
   a record name → `EntityRef`, a raw FK column → `MatrxUuidCell` with the
@@ -296,6 +306,11 @@ used by the per-row **Link policy** side panel).
   graph toggles, Explorer selection/window state, Reachability run targets, and
   Exposure Audit scope/search/page state. Browser Back/Forward now rehydrates
   the controls and open record instead of changing only the address bar.
+- **2026-08-12** — Planner Copy-for-AI rebuilt after Arman rejected the first
+  cut: primary payload is now the panel/page AS RENDERED from live state
+  (blockers, reach, unsaved form values, warnings, apply-blocked reasons,
+  schema blocker list); the raw full-detail dump demoted to the "Everything"
+  menu variant. See THE WHAT-I-SEE LAW above.
 - **2026-08-12** — Copy / Copy-for-AI coverage completed across the hub: Access
   Planner (schema snapshot + selected-table detail, builders in
   `access-planner/copy.ts`), Overview status header, Reachability results, and

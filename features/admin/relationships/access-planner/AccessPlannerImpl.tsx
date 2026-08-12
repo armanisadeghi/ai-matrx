@@ -67,12 +67,17 @@ import { cn } from "@/lib/utils";
 import type { Json } from "@/types/database.types";
 import type { AccessPlannerProps } from "./AccessPlanner";
 import {
+  DISPOSITION_COPY,
+  issueText,
+  plannerPageAgentPayload,
+  plannerPageHuman,
+  plannerPanelAgentPayload,
+  plannerPanelHuman,
   plannerSnapshotAgentPayload,
   plannerSnapshotData,
-  plannerSnapshotHuman,
   plannerTableAgentPayload,
   plannerTableDetailData,
-  plannerTableHuman,
+  type PlannerPanelView,
 } from "./copy";
 import {
   parseAccessPlannerSnapshot,
@@ -95,51 +100,11 @@ type PlannerNodeData = {
 
 type PlannerFlowNode = Node<PlannerNodeData, "plannerTable">;
 
-const DISPOSITION_COPY: Record<
-  PlannerTable["disposition"],
-  { label: string; description: string }
-> = {
-  entity: {
-    label: "Own access",
-    description: "Can be granted directly and can contain descendants.",
-  },
-  nested_entity: {
-    label: "Nested entity",
-    description: "Inherits from a parent and can still be granted directly.",
-  },
-  component: {
-    label: "Parent-owned",
-    description:
-      "Exists inside its parent and has no independent access opinion.",
-  },
-  infrastructure: {
-    label: "Infrastructure",
-    description: "Intentionally excluded from user-facing access planning.",
-  },
-  unplanned: {
-    label: "Needs a decision",
-    description: "This table has not been placed in the access model.",
-  },
-  derived: {
-    label: "Derived",
-    description:
-      "A view; access follows its underlying query and is audited separately.",
-  },
-};
-
-const ISSUE_COPY: Record<string, string> = {
-  unplanned_table: "No access decision has been recorded.",
-  rls_disabled: "Row-level security is disabled.",
-  no_policies: "No row-level security policies exist.",
-  component_without_parent: "Parent-owned table has no composition parent.",
-  component_directly_shareable:
-    "A parent-owned component is also directly shareable. Choose one model.",
-  component_rls_mismatch: "Component metadata and its RLS template disagree.",
-  entity_rls_mismatch: "Independent entity is using component RLS.",
-  containment_without_visibility:
-    "Nested entities need a visibility column before access can inherit.",
-  sharing_not_enforced_by_rls:
-    "Sharing is registered but direct grants are not enforced by RLS.",
+const MODE_TITLES: Record<AccessMode, string> = {
+  root: "Own access",
+  nested: "Inherit + share directly",
+  component: "Part of parent",
+  infrastructure: "Infrastructure",
 };
 
 function titleCase(value: string) {
@@ -719,6 +684,129 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
     ((mode === "nested" || mode === "component") && !selectedParent) ||
     (mode === "nested" && !hasVisibility);
 
+  /** The detail panel AS RENDERED, from live state — called inside the copy
+   *  click handler so unsaved form edits are captured, not the saved row. */
+  function buildPanelView(table: PlannerTable): PlannerPanelView {
+    const unsavedChanges: string[] = [];
+    const savedMode = modeFor(table);
+    if (mode !== savedMode)
+      unsavedChanges.push(
+        `mode changed (saved: ${MODE_TITLES[savedMode]}, now: ${MODE_TITLES[mode]})`,
+      );
+    if (table.token !== null && token !== table.token)
+      unsavedChanges.push(
+        `entity token edited (saved: ${table.token}, now: ${token})`,
+      );
+    const savedLabel = table.label ?? titleCase(table.table_name);
+    if (label !== savedLabel)
+      unsavedChanges.push(`label edited (saved: ${savedLabel}, now: ${label})`);
+    const savedRelationship = snapshot.access_relationships.find(
+      (relationship) => relationship.child_type === table.token,
+    );
+    const savedChoice = savedRelationship
+      ? `${savedRelationship.parent_type}|${savedRelationship.fk_column}`
+      : "";
+    if (parentChoice !== savedChoice)
+      unsavedChanges.push("parent relationship changed");
+    if (
+      mode === "infrastructure" &&
+      reason !== (table.exclusion_reason ?? "")
+    )
+      unsavedChanges.push("reason edited");
+
+    const warnings: string[] = [];
+    if (!isDerived) {
+      if (mode === "infrastructure" && table.token)
+        warnings.push(
+          "This is an active entity. Deactivate it in the Entity registry before classifying it as infrastructure.",
+        );
+      if (
+        (mode === "nested" || mode === "component") &&
+        parentOptions.length === 0
+      )
+        warnings.push(
+          "No non-plumbing foreign key points to a registered parent.",
+        );
+      if (mode === "nested" && !hasVisibility)
+        warnings.push(
+          "This table needs a visibility column before it can inherit and remain directly shareable.",
+        );
+      if ((mode === "root" || mode === "nested") && !hasOwnershipColumns)
+        warnings.push(
+          "A table that owns access needs organization_id and created_by columns first.",
+        );
+    }
+
+    const applyBlockedReasons: string[] = [];
+    if (isDerived)
+      applyBlockedReasons.push("derived view — nothing to decide");
+    if (!token.trim()) applyBlockedReasons.push("entity token is empty");
+    if (!label.trim()) applyBlockedReasons.push("label is empty");
+    if (mode === "infrastructure" && !reason.trim())
+      applyBlockedReasons.push("infrastructure classification needs a reason");
+    if (mode === "infrastructure" && Boolean(table.token))
+      applyBlockedReasons.push(
+        "active entity must be deactivated in the Entity registry first",
+      );
+    if ((mode === "root" || mode === "nested") && !hasOwnershipColumns)
+      applyBlockedReasons.push(
+        "missing organization_id + created_by ownership columns",
+      );
+    if ((mode === "nested" || mode === "component") && !selectedParent)
+      applyBlockedReasons.push("no parent relationship chosen");
+    if (mode === "nested" && !hasVisibility)
+      applyBlockedReasons.push("missing visibility column");
+
+    return {
+      schema: snapshot.schema,
+      table,
+      reach,
+      isDerived,
+      form: {
+        mode,
+        modeTitle: MODE_TITLES[mode],
+        token,
+        label,
+        parentRelationship: selectedParent
+          ? `${selectedParent.target_label ?? selectedParent.target_token} via ${selectedParent.source_columns[0]}`
+          : null,
+        reason,
+        unsavedChanges,
+      },
+      warnings,
+      applyBlocked: decisionBlocked,
+      applyBlockedReasons,
+      doors: {
+        entityRegistryToken: table.token,
+        sharingRegistered: table.is_shareable,
+        connectedRuleCount: snapshot.association_rules.filter(
+          (rule) =>
+            rule.source_type === table.token ||
+            rule.target_type === table.token,
+        ).length,
+      },
+      physical: {
+        columnCount: table.columns.length,
+        estimatedRows: table.estimated_rows,
+        rlsEnabled: table.rls_enabled,
+        policyCount: table.policy_count,
+        parentFkCandidates: parentOptions.length,
+        isManyToMany: table.is_many_to_many,
+        columnNames: table.column_names,
+      },
+      schemaContext: {
+        decided: plannedCount,
+        baseTables: baseTables.length,
+        problemTables: snapshot.tables
+          .filter((candidate) => candidate.issue_codes.length > 0)
+          .map((candidate) => ({
+            table: `${candidate.schema_name}.${candidate.table_name}`,
+            issues: candidate.issue_codes.map(issueText),
+          })),
+      },
+    };
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <header className="shrink-0 border-b border-border bg-card px-3 py-3 lg:px-4">
@@ -744,9 +832,23 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
             <CopyButtons
               size="sm"
               label={`Schema ${snapshot.schema} access map`}
-              human={() => plannerSnapshotHuman(snapshot)}
+              human={() => plannerPageHuman(snapshot)}
               json={() => plannerSnapshotData(snapshot)}
-              agent={() => plannerSnapshotAgentPayload(snapshot)}
+              agent={() => plannerPageAgentPayload(snapshot)}
+              agentVariant={{
+                id: "page-view",
+                label: "This page (what I see)",
+                hint: "Dispositions + every open blocker, as rendered",
+                position: "first",
+              }}
+              aiVariants={[
+                {
+                  id: "full-snapshot",
+                  label: "Everything (full snapshot)",
+                  hint: "All tables with RLS state + canonical findings",
+                  build: () => plannerSnapshotAgentPayload(snapshot),
+                },
+              ]}
             />
             <Select
               value={snapshot.schema}
@@ -998,13 +1100,30 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                       <CopyButtons
                         size="icon"
                         label={`${selectedTable.schema_name}.${selectedTable.table_name}`}
-                        human={() => plannerTableHuman(snapshot, selectedTable)}
+                        human={() =>
+                          plannerPanelHuman(buildPanelView(selectedTable))
+                        }
                         json={() =>
                           plannerTableDetailData(snapshot, selectedTable)
                         }
                         agent={() =>
-                          plannerTableAgentPayload(snapshot, selectedTable)
+                          plannerPanelAgentPayload(buildPanelView(selectedTable))
                         }
+                        agentVariant={{
+                          id: "panel-view",
+                          label: "This panel (what I see)",
+                          hint: "Blockers, reach, LIVE form values, warnings",
+                          position: "first",
+                        }}
+                        aiVariants={[
+                          {
+                            id: "full-detail",
+                            label: "Everything (full table detail)",
+                            hint: "All columns, FKs, access relationships, association rules",
+                            build: () =>
+                              plannerTableAgentPayload(snapshot, selectedTable),
+                          },
+                        ]}
                       />
                       <Badge
                         variant={
@@ -1033,7 +1152,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                       <ul className="mt-1 space-y-1">
                         {selectedTable.issue_codes.map((issue) => (
                           <li key={issue}>
-                            • {ISSUE_COPY[issue] ?? titleCase(issue)}
+                            • {issueText(issue)}
                           </li>
                         ))}
                       </ul>
