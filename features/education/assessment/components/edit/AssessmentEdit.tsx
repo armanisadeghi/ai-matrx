@@ -227,7 +227,7 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
                 // Float FIRST, before the launch — the window is what the user
                 // watches while the run connects.
                 const live = deepenWindow.start(
-                  `Writing a ${target}-depth version of Q${i + 1}`,
+                  `Writing an ${target}-depth version of Q${i + 1}`,
                 );
                 const deeper = await dispatch(
                   deepenItem({
@@ -254,7 +254,7 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
                   next.splice(i + 1, 0, added.data![0]);
                   return next;
                 });
-                toast.success(`Added a ${target}-depth version`);
+                toast.success(`Added an ${target}-depth version`);
               }}
             />
           ))}

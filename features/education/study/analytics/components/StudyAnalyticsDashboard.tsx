@@ -80,6 +80,7 @@ export function StudyAnalyticsDashboard({
         analytics && analytics.hasData ? (
           <NarrativeCard
             report={report}
+            conversationId={narrator.conversationId}
             loading={narrator.isNarrating}
             error={narrator.error}
             onRegenerate={() => {

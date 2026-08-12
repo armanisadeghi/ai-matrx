@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { useContentConverter } from "./useContentConverter";
 import { isTargetAvailable } from "./registry";
 import type { ConvertResult, ConvertSource, SourceRef, TargetKind } from "./types";
@@ -166,10 +166,13 @@ export function ConvertContentDialog({
 }: ConvertContentDialogProps) {
   const router = useRouter();
   const { convert } = useContentConverter();
-  // THE FLOATING LAW: each conversion streams in the floating LiveRunWindow —
-  // the generator's output is written in front of the user instead of behind
-  // the row's "Working" spinner. One window, reused per target.
-  const liveWindow = useFloatingRunWindow({ instanceId: "education-convert" });
+  // THE FLOATING LAW, inline exception: the generator streams INSIDE the row
+  // the user just clicked, not in the floating window. A modal sits ABOVE every
+  // window, so floating it here would hide the run behind the dialog the user
+  // is looking at — a spinner by another name. Inside a modal there is no page
+  // to shift, the stream appears exactly where the click was, and the dialog
+  // stays open so the user can convert another target afterwards.
+  const [liveRequestId, setLiveRequestId] = useState<string | null>(null);
   // School-safe COPPA gate: an under-13 account with no active guardian link is
   // blocked from AI generation until a parent approves (never a silent failure).
   const coppa = useAiComplianceGate();
@@ -205,10 +208,10 @@ export function ConvertContentDialog({
         entityId: origin.entityId,
       },
     };
-    const live = liveWindow.start(`Creating your ${kind.replace(/_/g, " ")}`);
+    setLiveRequestId(null);
     try {
       const result = await convert({ source, targetKind: kind }, (requestId) =>
-        live.bindRequest(requestId),
+        setLiveRequestId(requestId),
       );
       setRows((r) => ({ ...r, [kind]: { status: "done", result } }));
       onConverted?.();
@@ -274,6 +277,7 @@ export function ConvertContentDialog({
               meta={t}
               available={isTargetAvailable(t.kind)}
               state={rows[t.kind] ?? { status: "idle" }}
+              liveRequestId={liveRequestId}
               onConvert={() => runConvert(t.kind)}
               onOpen={(href) => router.push(href)}
             />
@@ -289,12 +293,15 @@ function TargetRow({
   meta,
   available,
   state,
+  liveRequestId,
   onConvert,
   onOpen,
 }: {
   meta: TargetMeta;
   available: boolean;
   state: RowState;
+  /** The in-flight run's request id — streamed under THIS row while it works. */
+  liveRequestId: string | null;
   /** Runs the conversion; resolves true on success so usage is metered. */
   onConvert: () => Promise<boolean>;
   onOpen: (href: string) => void;
@@ -310,10 +317,11 @@ function TargetRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5",
+        "rounded-lg border border-border bg-card px-3 py-2.5",
         !available && "opacity-60",
       )}
     >
+      <div className="flex items-center gap-3">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
         <Icon className="h-4 w-4" />
       </div>
@@ -370,6 +378,20 @@ function TargetRow({
           )}
         </Button>
       )}
+      </div>
+
+      {/* The run streams right here while this target works — never a bare
+          "Working" spinner. Renders nothing until the stream connects. */}
+      {running && (
+        <LiveRunDisplay
+          requestId={liveRequestId}
+          label={`Creating your ${meta.label.toLowerCase()}`}
+          pending
+          className="mt-2"
+          bodyClassName="max-h-52 overflow-y-auto px-2.5 py-2 text-sm"
+        />
+      )}
+
       <gen.Paywall />
     </div>
   );

@@ -256,19 +256,24 @@ them.
 Still open on this file: `AnalysisList.tsx:703` truncates its live stream to 200
 characters.
 
-### 5. Podcasts — one generator left — B, S
+### 5. Podcasts — DONE 2026-08-11 (all three), one payload question left for Arman
 
-`useEpisodeArticles.ts:67` still uses `useRunAgent`, which **produces no
-`requestId` at all** — live rendering is structurally impossible from it, so
-this is class B: migrate to `useLiveAgentRun` first.
-Host: `features/podcasts/studio/components/EpisodeContentStudio.tsx`.
-(The other two are done — see below.)
+All three generators run through `useLiveAgentRun` into the floating
+`LiveRunWindow`. Host: `features/podcasts/studio/components/EpisodeContentStudio.tsx`.
 
-They split three ways once the payloads were actually read:
-
-- **Articles (blog / show notes) — plain markdown.** No kind, no schema. The
-  hook already holds the assembled markdown in `drafts`; migrating to
-  `useLiveAgentRun` and streaming it is the WHOLE fix. **S.**
+- **Articles (blog / show notes)** — **DONE 2026-08-11.** `useEpisodeArticles` runs on
+  `useLiveAgentRun` (ONE hook instance per kind — blog and show notes can run at the
+  same time, and a single hook holds a single conversation), floats one window per
+  episode+kind, and resolves the slot inside the canonical launcher. Live-verified on a
+  real episode: window opens on click, phase moves, the article saves, the output
+  survives completion.
+  🚨 **The "plain markdown, no kind" verdict recorded here was WRONG at the wire.**
+  These agents answer with a JSON envelope (`{title, intro, sections[], resources[]}` /
+  `{key_takeaways[], topics[], links[], people[]}`) — `articleMarkdown.ts` exists
+  precisely to assemble the markdown client-side. So the window sits EMPTY for the whole
+  run and paints raw JSON at the end: no spinner, but nothing to watch. Filed as **D170**
+  (which also covers the same symptom on the marketing image-prompt step). Whether these
+  two agents earn a kind is **Arman's call** — do not start it inline in a sweep.
 - ~~**Title options**~~ — **DONE 2026-08-11.** `episode_title_options` kind
   authored + activated, the agent (`podcast.title_optimizer` v4) emits the
   envelope, `useEpisodeTitleOptions` runs through `useLiveAgentRun` into the
@@ -325,17 +330,38 @@ leaving the page) reaps the adopted row out from under anything still bound to
 it. The inline feed hid this behind its saved-artifact fallback; a floating
 window shows it as an empty box. Chip it with the class-D durability work.
 
-### 7. Marketing miscellaneous — A, S–M
+### 7. Marketing miscellaneous — image runs + agent sets DONE 2026-08-11; 3 server-blocked
 
-- `features/marketing/lib/generate-page-image.ts` — background image run, holds
-  a `requestId` (`:113`) and shows no live status.
-- `features/agents/agent-sets/orchestrator/thunks.ts:153` — every set member
-  launches `displayMode: "background"` with the `requestId` captured at `:162`
-  and never surfaced. A set run is long and multi-step: the highest-value
-  candidate for `LiveRunWindow` in this list.
-- `features/marketing/components/settings/SiteStrategyCard.tsx:106`,
-  `features/marketing/components/operations/KeywordDataQualityPanel.tsx:99,211`
-  — verify whether these are AI runs or plain saves before spending effort.
+- ~~`features/marketing/lib/generate-page-image.ts`~~ — **DONE.** The shared
+  `runHeadlessAgent` shell (consumed by the image plan card, the site media desk, and
+  `generate-video-metadata.ts`) took a `live: {instanceId, label}` option, so every path
+  floats. The two-step pipeline drives ONE window: "Writing the image prompt" →
+  "Rendering the image". The instance is held past completion (the next run releases it)
+  so the finished image does not vanish the moment it lands, and a launch that dies
+  before a stream closes its own window instead of hanging on "pending".
+  Live-verified on `…/sites/[siteId]/media`: both steps re-bound one window and the
+  generated image rendered inside it. Callers pass a per-subject `liveInstanceId`
+  (`page-image:${entry.id}` / `site-media-image:${site.id}`) so two orders give two
+  windows. `generate-video-metadata.ts` inherits the capability but has not been opted
+  in — one line when someone touches it.
+- ~~Agent sets~~ — **DONE.** The sweep's claim that
+  `agent-sets/orchestrator/thunks.ts:153` "launches EVERY set member" is **wrong**: that
+  line is ONE describer pass over the whole set ("Sync agent listings"), and the actual
+  multi-member set RUN already streams — `SetRunPanel` embeds the canonical
+  `AgentRunnerPage` and `useSetMemberRunStatus` lights each member on the canvas as it
+  executes. The real offender was the describer, a multi-minute pass with up to 3 silent
+  retries behind the button's spinner. It now runs `direct` into one window per set
+  (`agent-set-sync:${orchestratorId}`), each retry re-binding that window under a
+  "retry N of 3" label, and the finished description is held so it survives completion.
+  Live-verified on a real set: streamed, completed, both members got roles.
+- `SiteStrategyCard.tsx:106` and `KeywordDataQualityPanel.tsx:99,211` — **verified: all
+  three ARE AI runs, not plain saves.** They POST to `/seo/sites/strategy-interview`,
+  `/seo/keywords/classify` and `/seo/keywords/assign-topics`, each of which runs a system
+  agent inside the request (the classifier measures ~88s for 40 keywords). **Not
+  fixable from here:** these are synchronous JSON endpoints with no stream to adopt, so
+  the FE has nothing to bind — the work is server-side in aidream (stream the route, or
+  emit phase/info milestones the way content_plan `_progress` does), then adopt with
+  `adoptForeignStream`. Do NOT paper over it with invented client-side stages.
 
 ### 8. Refresh-fragility only (stage narration is present) — D, M each
 

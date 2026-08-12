@@ -7,6 +7,12 @@
 // right study surface. The narration is optional chrome over the real numbers —
 // it never blocks the dashboard.
 //
+// While the narrator runs, the card streams it (THE FLOATING LAW's inline
+// exception): this card IS the run's destination and the run AUTO-STARTS on
+// page load, so a floating window would cover the dashboard on every visit.
+// The stream is bounded and scrolls, and it occupies the same block the
+// finished narrative will.
+//
 // React Compiler is on: no manual memo.
 
 import { useRouter } from "next/navigation";
@@ -21,6 +27,7 @@ import {
   Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { cn } from "@/lib/utils";
 import { blockHref } from "../../planner/blockLinks";
 import type { PlanBlockKind } from "../../planner/types";
@@ -45,6 +52,8 @@ export interface NarrativeCardProps {
   loading: boolean;
   error: string | null;
   onRegenerate: () => void;
+  /** The narrator's live run — streamed here instead of a waiting line. */
+  conversationId?: string | null;
 }
 
 export function NarrativeCard({
@@ -52,6 +61,7 @@ export function NarrativeCard({
   loading,
   error,
   onRegenerate,
+  conversationId,
 }: NarrativeCardProps) {
   const router = useRouter();
 
@@ -81,9 +91,12 @@ export function NarrativeCard({
       </div>
 
       {loading && !report ? (
-        <p className="py-2 text-sm text-muted-foreground">
-          Reading your progress…
-        </p>
+        <LiveRunDisplay
+          conversationId={conversationId}
+          label="Reading your progress"
+          pending
+          bodyClassName="max-h-56 overflow-y-auto px-2.5 py-2 text-sm"
+        />
       ) : error && !report ? (
         <p className="py-2 text-xs text-muted-foreground">
           Couldn&apos;t generate insights right now — your numbers below are
