@@ -19,6 +19,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { TASK_LABELS } from "@/features/tasks/constants/labels";
 import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -355,7 +356,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     label: "Task labels",
     description: [
       "Stages the FULL label set onto the task open in the Quick Tasks details panel.",
-      "Value: an array of label strings drawn from bug | feature | improvement | docs | design | research | question | blocked. Send [] to clear every label.",
+      `Value: an array of label strings drawn from ${TASK_LABELS.join(" | ")}. Send [] to clear every label.`,
       "It REPLACES the set rather than appending — read selected_task_labels and include the ones you want kept.",
       "Staged only — the panel's Save button appears and the user saves.",
     ].join(" "),
