@@ -88,7 +88,7 @@ async function findStudioSessionByTranscriptId(
     .from("studio_sessions")
     .select("*")
     .eq("transcript_id", transcriptId)
-    .eq("is_deleted", false)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(1);
   if (error) {

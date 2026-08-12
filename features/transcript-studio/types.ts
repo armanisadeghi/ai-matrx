@@ -58,7 +58,6 @@ export interface StudioSession {
   userId: string;
   organizationId: string | null;
   projectId: string | null;
-  isPublic: boolean;
   transcriptId: string | null;
 
   title: string;
@@ -70,7 +69,6 @@ export interface StudioSession {
   endedAt: string | null;
   totalDurationMs: number;
   audioStoragePath: string | null;
-  isDeleted: boolean;
   /**
    * The audio-first assistant's persisted conversation id (cx_conversation.id).
    * Durable so the Assistant screen reuses one conversation across refreshes
@@ -305,7 +303,6 @@ export interface UpdateSessionInput {
   totalDurationMs?: number;
   audioStoragePath?: string | null;
   transcriptId?: string | null;
-  isDeleted?: boolean;
   assistantConversationId?: string | null;
   assistantConversations?: AssistantConversationRef[];
 }
