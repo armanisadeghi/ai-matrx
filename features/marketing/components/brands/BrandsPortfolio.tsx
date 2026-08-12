@@ -303,6 +303,13 @@ export function BrandsPortfolio() {
   ];
 
   return (
+    // Read-only mount, deliberately: no `getWriteHandlers`, so the surface's
+    // `site_editor_draft` target is not offered here. The brand editor below
+    // writes { name, industry, description }, and `matrx-user/marketing-brand`
+    // already ships `brand_identity` over industry/description while declaring
+    // the brand NAME human-owned. Adding a second target set over the same
+    // fields would be a defect — see the writeTargets block in
+    // `features/surfaces/manifests/marketing.manifest.ts`.
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing"
       getScope={getHubScope}

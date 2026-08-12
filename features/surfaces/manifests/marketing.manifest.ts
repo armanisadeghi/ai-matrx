@@ -24,6 +24,11 @@
  * `MarketingHub.tsx`, `BrandsPortfolio.tsx`, `SitesPortfolio.tsx`,
  * `MarketingConnectionsCatalog.tsx`, `WorkspaceCostWorkspace.tsx`. The shared
  * list-state helper lives in `features/marketing/lib/scopes/marketing-hub-scope.ts`.
+ *
+ * The WRITE half is deliberately narrower than the read half: only the sites
+ * view registers a handler. See the `writeTargets` block below — which mount
+ * writes and why the other four write nothing is the load-bearing decision on
+ * this surface, not a detail.
  */
 
 import type {
@@ -31,7 +36,12 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  SITE_DESCRIPTION_MAX,
+  SITE_NAME_MAX,
+} from "@/features/marketing/lib/site-write-targets";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -168,6 +178,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 450,
     group: "portfolio",
   },
+  {
+    name: "site_editor",
+    label: "Open site editor",
+    description:
+      "The site editor dialog on the sites view while it is open: { site_id, domain, name, description } as CURRENTLY STAGED, including edits the user or an agent has made but not yet saved. Empty whenever no editor is open — which is the normal state — so treat empty as 'no editor is open', never as 'the site has no name'. This is the read twin of the site_editor_draft write target.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    sortOrder: 460,
+    group: "portfolio",
+  },
 
   // ── Connections ───────────────────────────────────────────────────────
   {
@@ -209,6 +230,71 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — THE PER-MOUNT POSTURE IS THE POINT HERE.
+ *
+ * Five components mount this one surface, and `listAgentWritableTargets()`
+ * only offers a target where a handler is actually REGISTERED. So the
+ * decision is made mount by mount, and four of the five deliberately register
+ * nothing:
+ *
+ *  • `SitesPortfolio` (/marketing/sites) — THE ONLY WRITER. It owns the site
+ *    editor dialog, whose `name` and `description` are the only authored copy
+ *    anywhere on this surface. Handlers live there; the pure contract is
+ *    `features/marketing/lib/site-write-targets.ts` (unit-tested), whose
+ *    constants this manifest interpolates into the model-facing description
+ *    below so the advertised contract IS the enforced one.
+ *  • `BrandsPortfolio` (/marketing/brands) — NO handlers, and that is a
+ *    judgment recorded rather than an oversight. Its `BrandEditorDialog`
+ *    edits exactly { name, industry, description }, and
+ *    `matrx-user/marketing-brand` ALREADY ships `brand_identity` over
+ *    { industry, description } through `updateBrand` with the version guard.
+ *    Two target sets over the same fields is a defect, not coverage. That
+ *    surface also declares the brand NAME human-owned identity; contradicting
+ *    it from the hub would be worse than declaring nothing. Organization and
+ *    visibility are ownership/permissions. The brand cockpit is where brand
+ *    copy gets written — the hub's brand editor earns nothing.
+ *  • `MarketingConnectionsCatalog` (/marketing/connections) — NO handlers.
+ *    Its state is provider credentials and Search Console / Bing property
+ *    ids: pure IDENTITY, binding a real analytics account to a real site.
+ *    Never agent-writable at any policy.
+ *  • `WorkspaceCostWorkspace` (/marketing/cost) — NO handlers. A spend
+ *    report; there is nothing to author.
+ *  • `MarketingHub` (/marketing) — NO handlers. The pillar map is navigation.
+ *
+ * Deliberately NOT writable on the site editor either, though these fields
+ * sit inches from the two that are:
+ *  • `root_url` / `domain` — the identity of the row. The editor itself shows
+ *    them read-only: changing one is a page-registry migration, not an edit.
+ *  • `brand_id` and the owning organization — ownership.
+ *  • `logo_url` / `favicon_url` / `og_image_url` — the line
+ *    `matrx-user/html-page` already drew on `og_image`: an agent can only
+ *    invent a plausible URL.
+ *  • `status` / `visibility` — pausing a site governs whether metered crawl
+ *    and scan work runs, `error` is written by the system, and visibility is
+ *    permissions. `matrx-user/marketing-brand` drew the same line.
+ *  • Deleting a site stays human, and so does creating one: /marketing/sites/new
+ *    mounts no runtime, and its only non-identity field is a display name
+ *    that already defaults to the domain.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "site_editor_draft",
+    label: "Site editor draft",
+    description:
+      `Stage a managed website's display name and/or description into the site editor on /marketing/sites. Nothing is persisted by this write — the user reviews the dialog and presses "Save site". Value: an object { site, name?, description? }. ` +
+      `\`site\` is REQUIRED and says WHICH loaded row to edit: its domain ("example.com", with or without scheme/www), its site_id, or its exact name from the visible_sites value. An unknown or ambiguous selector is refused with the loaded rows listed — and because that list is filtered and paginated, a site that exists may simply not be on this page. ` +
+      `Supply at least one of \`name\` (the display label the portfolio lists it under, 1-${SITE_NAME_MAX} characters) or \`description\` (prose saying what the website is FOR, up to ${SITE_DESCRIPTION_MAX} characters; an empty string clears it). Both are PLAIN TEXT strings — never JSON and never JSON-encoded. Omitted keys keep whatever is currently in the editor. ` +
+      `If no editor is open this opens one on the named site; if an editor is already open on a DIFFERENT site the write is refused rather than discarding that unsaved work. The site's domain, root URL, owning brand, organization, lifecycle status, visibility and image URLs are NOT writable here.`,
+    valueType: "object",
+    updatesValue: "site_editor",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "portfolio",
+    sortOrder: 100,
+  },
+];
+
 export const marketingManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing",
   readiness: "partial",
@@ -227,6 +313,7 @@ connection_status carries per-provider loading and unavailable flags — an unav
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "portfolio_analyst",
@@ -272,6 +359,7 @@ export function createMarketingScope(values: {
   site_count?: number;
   sites_total?: number;
   visible_sites?: ReadonlyArray<Record<string, unknown>>;
+  site_editor?: Record<string, unknown>;
   connection_status?: Record<string, unknown>;
   cost_view?: string;
   list_query?: Record<string, unknown>;

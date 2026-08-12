@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import {
   useUpdateSiteIdentity,
 } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
+import type { SiteDraftPatch } from "@/features/marketing/lib/site-write-targets";
 import { extractErrorMessage } from "@/utils/errors";
 
 const STATUS_OPTIONS: Array<{ value: MarketingSite["status"]; label: string }> =
@@ -70,6 +71,26 @@ function draftFrom(site: MarketingSite): SiteDraft {
 }
 
 /**
+ * The live handle this dialog publishes while it is open, so the component
+ * that owns the surface runtime (`SitesPortfolio`) can both READ what is
+ * currently staged (the `site_editor` surface value) and STAGE into it (the
+ * `site_editor_draft` write target) without a parallel write path — `stage`
+ * is the same `setDraft` the user's own typing fires.
+ */
+export interface SiteEditorHandle {
+  siteId: string;
+  domain: string;
+  /** Mid-save: a write must be refused rather than raced against the mutation. */
+  busy: boolean;
+  /** What is in the editor right now, including unsaved edits. */
+  draft: { name: string; description: string };
+  stage: (patch: SiteDraftPatch) => void;
+}
+
+/** A ref so readers always see the CURRENT render's draft, never mount state. */
+export type SiteEditorHandleRef = { readonly current: SiteEditorHandle | null };
+
+/**
  * The ONE site editor — exposes EVERY user-editable site field. Hiding a
  * stored, user-editable value from this dialog is a defect. `root_url` /
  * `domain` are shown read-only: changing them is a deliberate page-registry
@@ -80,10 +101,13 @@ export function SiteEditorDialog({
   open,
   onOpenChange,
   site,
+  onRegister,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   site: MarketingSite | null;
+  /** Publish/retract the live handle above. Omit outside the sites portfolio. */
+  onRegister?: (handle: SiteEditorHandleRef | null) => void;
 }) {
   if (!site) return null;
   return (
@@ -93,6 +117,7 @@ export function SiteEditorDialog({
       open={open}
       onOpenChange={onOpenChange}
       site={site}
+      onRegister={onRegister}
     />
   );
 }
@@ -101,10 +126,12 @@ function SiteEditorDialogBody({
   open,
   onOpenChange,
   site,
+  onRegister,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   site: MarketingSite;
+  onRegister?: (handle: SiteEditorHandleRef | null) => void;
 }) {
   const updateMutation = useUpdateSiteIdentity();
   const moveMutation = useMoveSiteBrand();
@@ -117,6 +144,30 @@ function SiteEditorDialogBody({
     <K extends keyof SiteDraft>(key: K) =>
     (value: SiteDraft[K]) =>
       setDraft((current) => ({ ...current, [key]: value }));
+
+  // An agent write goes through the SAME draft setter as a keystroke, so the
+  // Save button, the version guard, and the trim-on-save rules all still apply.
+  const stage = useCallback((patch: SiteDraftPatch) => {
+    setDraft((current) => ({ ...current, ...patch }));
+  }, []);
+
+  // Refreshed after EVERY render: `applySurfaceWrite` resolves handlers before
+  // the confirm dialog is answered, so anything read off a render closure
+  // (busy, the live draft) would be stale by the time Apply is pressed.
+  const handleRef = useRef<SiteEditorHandle | null>(null);
+  useEffect(() => {
+    handleRef.current = {
+      siteId: site.id,
+      domain: site.domain,
+      busy,
+      draft: { name: draft.name, description: draft.description },
+      stage,
+    };
+  });
+  useEffect(() => {
+    onRegister?.(handleRef);
+    return () => onRegister?.(null);
+  }, [onRegister]);
 
   const save = async () => {
     const name = draft.name.trim();
@@ -155,7 +206,14 @@ function SiteEditorDialogBody({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent
+        className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl"
+        // A surface-write confirm renders OUTSIDE this dialog, so answering it
+        // would otherwise count as an outside interaction and close the editor
+        // — discarding the copy just staged. Cancel, Escape and the X still
+        // close it, and unsaved edits now survive a stray click either way.
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Edit {site.name}</DialogTitle>
           <DialogDescription>
