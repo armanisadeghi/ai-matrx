@@ -80,8 +80,8 @@ with `router.replace` so refresh/back never re-triggers.
 
 **`admin_relationship_problems()` drift categories** (ordered error-first): `unregistered_pair`,
 `wrong_way_edges`, `conveying_container_not_shareable` (DB-only drift the client
-can't compute — a conveying rule whose container isn't in
-`shareable_resource_registry`, so the cascade is dead), `conveying_rule_no_edges`,
+can't compute — a conveying rule whose container is neither directly shareable
+nor structurally descended from a shareable ancestor, so the cascade is dead), `conveying_rule_no_edges`,
 `inactive_rule_with_edges`.
 
 ### Entity types registry RPCs
@@ -171,10 +171,13 @@ used by the per-row **Link policy** side panel).
 - **Direction doctrine — little points to big.** Source = content, target =
   container; `container_side='target'` is the norm. `'source'` (big→little) is a
   documented exception, tinted amber. The DB rejects wrong-direction writes.
-- **Direction does not imply conveyance.** `note → web_screenshot` and
-  `file → web_screenshot` are semantic “about/attached to” links with
-  `container_side='none'`. The screenshot image is `web.screenshot.file_id`, and
-  screenshot access derives from its `web_site` composition parent.
+- **Direction does not imply containment by itself.** `note → web_screenshot`
+  and `file → web_screenshot` are little-to-big “about/attached to” links whose
+  target is deliberately the container (`container_side='target'`, viewer cap).
+  Screenshot access therefore conveys access to those attachments. The image
+  itself is still the direct `web.screenshot.file_id` FK, not an association.
+  Screenshots inherit through every registered structural parent, including
+  page and snapshot—not only site.
 - **Container tint = the container side** in every row/chip — the primary-tinted
   entity is the one that conveys.
 - **Cache is disposable.** Never write `platform.reachability` from the UI; the
@@ -237,9 +240,13 @@ used by the per-row **Link policy** side panel).
 
 ## Change log
 
-- **2026-08-12** — Kept `note → web_screenshot` and `file → web_screenshot` in
-  little-to-big direction but made both semantic-only. Screenshots are site-owned
-  components; their image uses the direct `file_id` FK, not an association edge.
+- **2026-08-12** — Corrected screenshot conveyance after the platform-wide
+  access-tree audit: `note/file → web_screenshot` keep little-to-big direction
+  and now use the screenshot target as a viewer-capped container. A page share
+  reaches the screenshot through structural composition, then reaches its
+  attached note/file through association conveyance. Drift accepts a container
+  with a shareable structural ancestor; direct registry membership is no longer
+  falsely required for every inheriting component.
 - **2026-08-12** — Made shareable-resource registration usable without fake
   values: the in-app destination is optional and auto-prefilled from the entity
   registry, advanced database mapping is collapsed, and no-login share fields
