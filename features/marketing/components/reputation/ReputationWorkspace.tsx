@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -461,10 +461,13 @@ export function ReputationWorkspace() {
     );
   };
 
-  // Keep the newest cases reachable from the write handler without making the
-  // handler identity depend on them — `getWriteHandlers` is read at Run time.
+  // Keep the newest committed cases reachable from the write handler without
+  // making the handler identity depend on them — `getWriteHandlers` is read at
+  // Run time.
   const casesRef = useRef(data?.cases ?? []);
-  casesRef.current = data?.cases ?? [];
+  useEffect(() => {
+    casesRef.current = data?.cases ?? [];
+  }, [data?.cases]);
 
   /**
    * Handler for the `reputation_case_triage` write target.
