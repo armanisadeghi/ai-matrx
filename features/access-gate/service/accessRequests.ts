@@ -79,6 +79,15 @@ function rpcError(error: { message?: string } | null): Error {
     // constraint "access_requests_one_pending"` verbatim.)
     !/violates|constraint|relation |column |permission denied for|syntax error|null value in|PGRST|SQLSTATE|_pkey|_fkey/i.test(
       message,
+    ) &&
+    // Our OWN sentences can still be written for a developer. Granting against
+    // an unshareable resource type raises "permissions.resource_type=organization
+    // is not registered (canonical token or table_name). See
+    // features/sharing/FEATURE.md" — a repo path and two schema names, shown to
+    // a user, from the feature whose LAW is that this never happens. (Caught in
+    // the browser, 2026-08-11, answering a request from this page.)
+    !/\bfeatures\/|\.md\b|resource_type=|table_name|canonical token|is not registered/i.test(
+      message,
     );
   return new Error(isOurs ? message : "We could not complete that just now.");
 }

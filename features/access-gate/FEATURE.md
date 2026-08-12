@@ -208,6 +208,12 @@ surface means importing them too, never reimplementing the RPC call.
   invented route, and no bare uuid when a record has no title. Deliberately not
   on `lib/entity-list`: that shell wants a scoped/faceted server RPC over the
   five-scope vocabulary, and this is a two-box authorization-derived inbox.
+  Answering a request in the browser also exposed a defect in the DM's own
+  path: `rpcError` passed through "permissions.resource_type=organization is
+  not registered (canonical token or table_name). See features/sharing/
+  FEATURE.md" — our own sentence, but written for a developer, complete with a
+  repo path and two schema names, from the feature whose LAW forbids exactly
+  that. The heuristic now rejects internal markers as well as Postgres prose.
 - **2026-08-11** — **`features/education` converted (38 → 0).** Six single-record
   surfaces render the gate: assessment detail / edit / results (the results page
   resolves the ASSESSMENT or the RESULT depending on which read came back empty,
