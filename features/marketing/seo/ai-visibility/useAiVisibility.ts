@@ -14,6 +14,10 @@ import {
 } from "@/lib/api/errors";
 import { isErrorEvent, type TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import {
+  useOpenLiveRunWindow,
+  type LiveRunWindowHandle,
+} from "@/features/overlays/openers/liveRunWindow";
 import { isJsonObject, type JsonObject } from "@/types/json";
 
 import { listAiVisibilityEvidence } from "./data";
@@ -136,8 +140,8 @@ function readAiVisibilityResult(value: unknown): AiVisibilityResult | null {
         )
     : undefined;
   const engines = Array.isArray(value.engines)
-    ? value.engines.filter((engine): engine is string =>
-        typeof engine === "string",
+    ? value.engines.filter(
+        (engine): engine is string => typeof engine === "string",
       )
     : undefined;
   return {
@@ -157,6 +161,8 @@ const STAGES: Record<string, string> = {
   "seo.ai_visibility_started": "Starting the comparison",
   "seo.ai_visibility_provider_started": "Querying an AI provider",
   "seo.ai_visibility_provider_progress": "Provider response in progress",
+  "seo.ai_visibility_provider_waiting":
+    "Still waiting for the live provider answer",
   "seo.ai_visibility_answer_received": "Answer received — inspecting citations",
   "seo.ai_visibility_source_started": "Capturing a cited page",
   "seo.ai_visibility_source_completed": "Cited page captured",
@@ -177,6 +183,7 @@ const STAGES: Record<string, string> = {
 
 export function useAiVisibility(siteId: string, organizationId: string) {
   const dispatch = useAppDispatch();
+  const openLiveRunWindow = useOpenLiveRunWindow();
   const queryClient = useQueryClient();
   const evidenceKey = ["marketing", "ai-visibility", siteId] as const;
   const evidence = useQuery({
@@ -189,16 +196,22 @@ export function useAiVisibility(siteId: string, organizationId: string) {
     answers: {},
   });
   const adoptedRequestId = useRef<string | null>(null);
+  const liveWindow = useRef<LiveRunWindowHandle | null>(null);
+  const windowInstanceId = `ai-visibility:${siteId}`;
 
-  useEffect(
-    () => () => {
-      if (adoptedRequestId.current) {
-        dispatch(removeRequest(adoptedRequestId.current));
-        adoptedRequestId.current = null;
-      }
-    },
-    [dispatch],
-  );
+  const openProgressWindow = (
+    label: string,
+    requestId?: string | null,
+  ): LiveRunWindowHandle => {
+    const handle = openLiveRunWindow({
+      instanceId: windowInstanceId,
+      label,
+      requestId,
+      pending: !requestId,
+    });
+    liveWindow.current = handle;
+    return handle;
+  };
 
   const consume = async (
     query: string,
@@ -215,6 +228,7 @@ export function useAiVisibility(siteId: string, organizationId: string) {
     if (adoptedRequestId.current) {
       dispatch(removeRequest(adoptedRequestId.current));
       adoptedRequestId.current = null;
+      liveWindow.current?.update({ requestId: null, pending: true });
     }
     const streamAbort = new AbortController();
     const consumeStream = dispatch(
@@ -222,6 +236,7 @@ export function useAiVisibility(siteId: string, organizationId: string) {
         abortController: streamAbort,
         onAdopted: ({ requestId }) => {
           adoptedRequestId.current = requestId;
+          liveWindow.current?.update({ requestId, pending: false });
           setRun((current) => ({ ...current, requestId }));
         },
         onEvent: (event) => {
@@ -405,7 +420,9 @@ export function useAiVisibility(siteId: string, organizationId: string) {
           await new Promise((resolve) =>
             setTimeout(resolve, BUSY_REJOIN_DELAY_MS),
           );
-          return consume(query, { kind: "rejoin", runId: observedRunId },
+          return consume(
+            query,
+            { kind: "rejoin", runId: observedRunId },
             busyAttempt + 1,
           );
         }
@@ -436,6 +453,7 @@ export function useAiVisibility(siteId: string, organizationId: string) {
   const analyze = async (body: AiVisibilityAnalyzeBody) => {
     const query = body.query.trim();
     if (!query) return;
+    openProgressWindow("Preparing the provider comparison");
     setRun({
       status: "running",
       stage: "Preparing provider calls",
@@ -451,6 +469,7 @@ export function useAiVisibility(siteId: string, organizationId: string) {
     const stored = readRun();
     if (stored?.siteId === siteId) {
       void Promise.resolve().then(() => {
+        openProgressWindow("Rejoining the saved AI visibility analysis");
         setRun({
           status: "running",
           stage: "Rejoining the saved analysis",
@@ -465,5 +484,9 @@ export function useAiVisibility(siteId: string, organizationId: string) {
     }
   });
 
-  return { evidence, run, analyze };
+  const watchProgress = () => {
+    openProgressWindow(run.stage ?? "AI visibility analysis", run.requestId);
+  };
+
+  return { evidence, run, analyze, watchProgress };
 }

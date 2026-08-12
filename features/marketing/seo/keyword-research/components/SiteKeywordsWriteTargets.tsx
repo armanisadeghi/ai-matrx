@@ -25,10 +25,8 @@
  */
 
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import {
-  addPageSupportingKeywords,
-  ensureKeywordId,
-} from "@/features/marketing/data/page-keywords";
+import { addPageSupportingKeywords } from "@/features/marketing/data/page-keywords";
+import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import {
   setGscKeywordClass,
   type GscClassRuling,
@@ -36,8 +34,7 @@ import {
 import { GSC_TRAFFIC_CLASSES } from "@/features/marketing/search-console/types";
 import type { MarketingSite } from "@/features/marketing/types";
 
-export const SITE_KEYWORDS_SURFACE_NAME =
-  "matrx-user/marketing-site-keywords";
+export const SITE_KEYWORDS_SURFACE_NAME = "matrx-user/marketing-site-keywords";
 
 /** Wire value for the `library_keywords` target. */
 export interface LibraryKeywordsWrite {
@@ -162,8 +159,7 @@ export function SiteKeywordsWriteTargets({
 
     attach_page_keywords: async (value: unknown) => {
       const obj = asRecord(value, "attach_page_keywords");
-      const pageId =
-        typeof obj.page_id === "string" ? obj.page_id.trim() : "";
+      const pageId = typeof obj.page_id === "string" ? obj.page_id.trim() : "";
       if (!pageId) {
         throw new Error(
           "attach_page_keywords: page_id is required (a web.page id, e.g. a row's top_page_id).",

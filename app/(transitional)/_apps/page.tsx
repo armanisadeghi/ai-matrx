@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, ExternalLink, Calendar, BarChart3, Edit } from "lucide-react";
+import { loginHref } from "@/utils/auth/auth-destination";
 // Minimal inline type — prompt_apps table is in graveyard; this page always returns empty.
 type PromptApp = {
   id: string;
@@ -27,7 +28,7 @@ export default async function AppsListPage() {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
-    redirect("/login");
+    redirect(loginHref("/apps"));
   }
 
   // NOTE: The `prompt_apps` table has been moved to the graveyard schema.

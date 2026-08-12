@@ -28,12 +28,12 @@ import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow"
 import { useUpdatePageIntent } from "@/features/marketing/data/hooks";
 import {
   addPageSupportingKeyword,
-  ensureKeywordId,
   fetchPageKeywordBoard,
   pageKeywordsQueryKey,
   removePageKeyword,
   type PageKeywordBoardEntry,
 } from "@/features/marketing/data/page-keywords";
+import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { normalizeKeywordPhrase } from "@/features/marketing/seo/keyword/data";
 import type { KeywordSuggestion } from "@/features/marketing/seo/keyword/types";
 import type { MarketingPage } from "@/features/marketing/types";

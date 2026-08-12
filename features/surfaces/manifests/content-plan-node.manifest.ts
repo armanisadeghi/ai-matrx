@@ -12,10 +12,9 @@
  * the fields an agent result (via the `apply_surface_write` kind action or an
  * automated apply) may write back into the panel. Field targets are
  * `mode: "draft"`: they stage into the panel's draft for the user to review
- * and save — never a silent DB write. `save_node` is the one entity-mode
- * target (equivalent to the user pressing Save). All targets except
- * `node_primary_keyword_id` are `applyPolicy: "ask"` — offered to agents,
- * applied only after an in-place confirm.
+ * and save — never a silent DB write. Supporting-keyword association writes
+ * are entity-mode because edges have no panel draft; every agent-offered
+ * target requires an in-place confirmation.
  *
  * Runtime emitter + write handlers: `NodePanel.tsx` mounts a nested
  * `SurfaceRuntimeProvider` (deepest wins while the panel is open).
@@ -49,7 +48,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Targeting",
     sortOrder: 300,
     description:
-      "Type, status, priority, technical depth, reviewer flag, primary keyword.",
+      "Type, status, priority, technical depth, reviewer flag, keyword plan, and planned search metadata.",
   },
   {
     key: "node_content",
@@ -246,6 +245,86 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 36,
     sortOrder: 360,
     group: "node_targeting",
+    autoContext: false,
+  },
+  {
+    name: "node_primary_keyword",
+    label: "Primary keyword",
+    description:
+      "Human-readable phrase for the canonical primary seo.keyword row (draft-overlaid). Agents read and write this; the UUID is identity plumbing.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 45,
+    sortOrder: 361,
+    group: "node_targeting",
+  },
+  {
+    name: "node_primary_keyword_data",
+    label: "Primary keyword intelligence",
+    description:
+      "Condensed canonical keyword dossier for the primary phrase: library identity, market metrics, intent, and enrichment standing when available.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 600,
+    sortOrder: 362,
+    group: "node_targeting",
+  },
+  {
+    name: "node_supporting_keywords",
+    label: "Supporting keywords",
+    description:
+      "Every supporting keyword associated with this planned page as [{ id, phrase }]. Empty array means none are attached.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 500,
+    sortOrder: 363,
+    group: "node_targeting",
+  },
+  {
+    name: "node_meta_title",
+    label: "Planned meta title",
+    description:
+      "The draft-overlaid SEO title this planned page should use when realized. Intent, not observed live metadata.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 60,
+    sortOrder: 370,
+    group: "node_targeting",
+  },
+  {
+    name: "node_meta_description",
+    label: "Planned meta description",
+    description:
+      "The draft-overlaid SEO description this planned page should use when realized. Intent, not observed live metadata.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 160,
+    sortOrder: 371,
+    group: "node_targeting",
+  },
+  {
+    name: "node_meta_tags",
+    label: "Planned meta tags",
+    description:
+      "Natural metadata composite: { meta_title, meta_description }, including nulls for unset fields.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 260,
+    sortOrder: 372,
+    group: "node_targeting",
+    autoContext: false,
+  },
+  {
+    name: "node_keyword_plan",
+    label: "Keyword plan",
+    description:
+      "Natural keyword composite: primary phrase + canonical intelligence and every supporting keyword.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 1100,
+    sortOrder: 373,
+    group: "node_targeting",
+    autoContext: false,
   },
 
   // ── Content (400-499) ─────────────────────────────────────────────────
@@ -475,18 +554,52 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 340,
   },
   {
-    name: "node_primary_keyword_id",
+    name: "node_primary_keyword",
     label: "Primary keyword",
     description:
-      "Stages a `seo.keyword` UUID (or null to unbind) as the primary keyword into the draft.",
-    valueType: "string",
-    updatesValue: "node_primary_keyword_id",
-    // Deliberately manual (kind-component only): the surface exposes no
-    // keyword options — an agent has no legitimate way to produce a valid
-    // `seo.keyword` UUID here. Revisit if keyword options are declared.
+      "Set the page's primary keyword by phrase. Value: { keyword: string }. The handler ensures the canonical seo.keyword row, then stages its id in the node draft.",
+    valueType: "object",
+    updatesValue: "node_primary_keyword",
     mode: "draft",
+    applyPolicy: "ask",
     group: "node_targeting",
     sortOrder: 350,
+  },
+  {
+    name: "node_supporting_keywords",
+    label: "Add supporting keywords",
+    description:
+      "Attach supporting keyword phrases. Value: { keywords: string[] }. Each phrase is ensured in the canonical library and written as a secondary_keyword association edge; duplicates are a no-op.",
+    valueType: "object",
+    updatesValue: "node_supporting_keywords",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "node_targeting",
+    sortOrder: 351,
+  },
+  {
+    name: "node_remove_supporting_keywords",
+    label: "Remove supporting keywords",
+    description:
+      "Detach supporting keyword phrases. Value: { keywords: string[] }. Phrases must currently be attached; library rows are never deleted.",
+    valueType: "object",
+    updatesValue: "node_supporting_keywords",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "node_targeting",
+    sortOrder: 352,
+  },
+  {
+    name: "node_meta_tags",
+    label: "Planned meta tags",
+    description:
+      "Stage the planned SEO title and/or description. Value: { meta_title?: string | null, meta_description?: string | null }; omitted fields stay unchanged and null clears a field.",
+    valueType: "object",
+    updatesValue: "node_meta_tags",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "node_targeting",
+    sortOrder: 353,
   },
   {
     name: "node_brief",
@@ -542,20 +655,20 @@ export const contentPlanNodeManifest: SurfaceManifest = {
   label: "Content Plan Node",
   readiness: "partial",
   readinessNote:
-    "Emitter + write handlers wired in NodePanel; brief_writer bound. Write targets are agent-offered (applyPolicy ask; node_primary_keyword_id deliberately manual — no keyword options exposed). DB mirror sync pending (client tool works code-only).",
+    "Emitter + live write handlers are wired in NodePanel, including phrase-level primary/supporting keyword writes and planned metadata; brief_writer is bound.",
   urlPattern: "/marketing/content-plan/[siteId]",
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
 You are inside the editor panel for ONE planned page of the site's content plan. The values here are the node's PARTS as the user currently sees them — draft-overlaid: unsaved edits are included, and has_unsaved_edits tells you when the panel differs from the saved row.
 This surface can be WRITTEN TO. Its field write targets stage into the user's draft for review (never a silent save), except save_node, which persists the draft through the canonical write path. Prefer proposing staged field writes and let the user save.
 It also carries the three targets that turn this plan into a REAL page on the real website: build_page, write_page_content, publish_page. Read node_page_state and node_page_next_step first — they tell you exactly which one applies, and applying the wrong one is refused with the reason. These do real work: build and write are safe (the page stays a draft nobody can see), publish changes what real visitors see.
-Hard rules: node_route, node_depth, node_pillar_label, and node_cluster_label are computed by database triggers — read-only evidence. The primary keyword is a column (node_primary_keyword_id), secondary keywords are association edges on the parent surface's selected_node_edges. Slug shape, duplicate routes, and cross-site parents are rejected by the DB with exact messages — expect and relay them rather than pre-validating loosely.
+Hard rules: node_route, node_depth, node_pillar_label, and node_cluster_label are computed by database triggers — read-only evidence. Read/write the primary keyword by phrase through node_primary_keyword; node_primary_keyword_id is identity plumbing only. Supporting keywords are canonical association edges exposed as node_supporting_keywords. Planned meta tags are intent consumed when the page is realized, never observed crawl evidence. Slug shape, duplicate routes, and cross-site parents are rejected by the DB with exact messages — expect and relay them rather than pre-validating loosely.
 </surface_intro>`,
   groups,
-  values: mergeBaselineValues(
-    pickBaseline("selection", "context"),
-    [...surfaceSpecific, ...realityValues],
-  ),
+  values: mergeBaselineValues(pickBaseline("selection", "context"), [
+    ...surfaceSpecific,
+    ...realityValues,
+  ]),
   writeTargets: [...writeTargets, ...buildTargets],
   agentRoles: [
     {
@@ -602,6 +715,20 @@ export function createContentPlanNodeScope(values: {
   node_priority?: number;
   node_technical_depth?: string;
   node_primary_keyword_id?: string;
+  node_primary_keyword?: string;
+  node_primary_keyword_data?: Record<string, unknown>;
+  node_supporting_keywords: { id: string; phrase: string | null }[];
+  node_meta_title?: string;
+  node_meta_description?: string;
+  node_meta_tags: {
+    meta_title: string | null;
+    meta_description: string | null;
+  };
+  node_keyword_plan: {
+    primary_keyword: string | null;
+    primary_keyword_data: Record<string, unknown> | null;
+    supporting_keywords: { id: string; phrase: string | null }[];
+  };
   node_brief?: string[];
   node_attributes?: Record<string, unknown>;
   node_updated_at?: string;

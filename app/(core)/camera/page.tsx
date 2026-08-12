@@ -7,10 +7,11 @@
 import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import CameraPage from "@/features/media-capture/components/CameraPage";
+import { loginHref } from "@/utils/auth/auth-destination";
 
 export default async function CameraRoutePage() {
   const { isAuthenticated } = await getServerAuth();
-  if (!isAuthenticated) redirect("/login");
+  if (!isAuthenticated) redirect(loginHref("/camera"));
 
   return <CameraPage />;
 }

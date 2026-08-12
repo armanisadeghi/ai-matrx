@@ -7,10 +7,11 @@ import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ExpertiseBrowsePage } from "@/features/expertise/browse/components/ExpertiseBrowsePage";
+import { loginHref } from "@/utils/auth/auth-destination";
 
 export default async function ExpertiseListRoute() {
   const { isAuthenticated } = await getServerAuth();
-  if (!isAuthenticated) redirect("/login");
+  if (!isAuthenticated) redirect(loginHref("/expertise"));
   return (
     <>
       <PageHeader>

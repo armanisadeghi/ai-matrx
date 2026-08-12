@@ -693,6 +693,28 @@
     "is_active": true
   },
   {
+    "resource_type": "web_property",
+    "table_name": "property",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Marketing Property",
+    "url_path_template": "/marketing/properties/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "web_screenshot",
+    "table_name": "screenshot",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Web Screenshot",
+    "url_path_template": "/marketing/screenshots/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "web_site",
     "table_name": "site",
     "id_column": "id",
@@ -700,6 +722,17 @@
     "is_public_column": null,
     "display_label": "Site",
     "url_path_template": "/marketing/sites/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "web_snapshot",
+    "table_name": "snapshot",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Web Snapshot",
+    "url_path_template": "/marketing/snapshots/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },

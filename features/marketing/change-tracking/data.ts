@@ -1,5 +1,5 @@
 import type { Database, Json } from "@/types/database.types";
-import { ensureKeywordId } from "@/features/marketing/data/page-keywords";
+import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { getGscSummary } from "@/features/marketing/search-console/data";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";

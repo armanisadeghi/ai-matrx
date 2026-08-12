@@ -10,7 +10,11 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { extractErrorMessage } from "@/utils/errors";
-import { safeForwardedHost, safeRelativePath } from "@/utils/auth/safe-redirect";
+import { safeForwardedHost } from "@/utils/auth/safe-redirect";
+import {
+  authDestinationOr,
+  preserveAuthDestination,
+} from "@/utils/auth/auth-destination";
 import {
   GUEST_OAUTH_FP_COOKIE,
   transferGuestDataAfterOAuth,
@@ -28,23 +32,24 @@ export async function GET(request: Request) {
     // Validate to a same-site relative path BEFORE it is concatenated into the
     // final redirect URL — an absolute / userinfo-trick value (e.g. "@evil.com")
     // would otherwise produce an off-site open redirect (`${baseUrl}@evil.com`).
-    const defaultRedirect = type === "recovery" ? "/reset-password" : "/dashboard";
-    let redirectTo = safeRelativePath(
-      redirectToParam ? decodeURIComponent(redirectToParam) : null,
-      defaultRedirect,
-    );
-
-    if (
-      redirectTo === "/" ||
-      redirectTo === "/login" ||
-      redirectTo === "/sign-up" ||
-      redirectTo === ""
-    ) {
-      console.log(
-        `[${timestamp}] Auth callback - Invalid redirectTo (${redirectTo}), using /dashboard`,
-      );
-      redirectTo = "/dashboard";
-    }
+    // A recovery link legitimately targets /reset-password — which the shared
+    // validator refuses as a *final* destination (it is an auth page). So the
+    // recovery default is applied here, where it is the correct next HOP, and
+    // the user's real destination rides nested inside it as its own param.
+    const recoveryDefault =
+      type === "recovery"
+        ? redirectToParam
+          ? decodeURIComponent(redirectToParam)
+          : "/reset-password"
+        : null;
+    const redirectTo =
+      recoveryDefault && recoveryDefault.startsWith("/reset-password")
+        ? recoveryDefault
+        : authDestinationOr(
+            redirectToParam
+              ? { redirectTo: decodeURIComponent(redirectToParam) }
+              : null,
+          );
 
     console.log(
       `[${timestamp}] Auth callback - Code: ${code ? "present" : "missing"}, redirectTo: ${redirectTo}`,
@@ -69,7 +74,7 @@ export async function GET(request: Request) {
           `[${timestamp}] Auth callback - Error exchanging code:`,
           error,
         );
-        const loginUrl = `${origin}/login?error=${encodeURIComponent("Authentication failed. Please try again.")}`;
+        const loginUrl = `${origin}${preserveAuthDestination("/login", { redirectTo }, { error: "Authentication failed. Please try again." })}`;
         return NextResponse.redirect(loginUrl);
       }
 
@@ -168,13 +173,7 @@ export async function GET(request: Request) {
         baseUrl = origin;
       }
 
-      const finalRedirectTo =
-        redirectTo &&
-        redirectTo !== "/" &&
-        redirectTo !== "/login" &&
-        redirectTo !== "/sign-up"
-          ? redirectTo
-          : "/dashboard";
+      const finalRedirectTo = redirectTo;
 
       const finalRedirectUrl = `${baseUrl}${finalRedirectTo}`;
       console.log(
@@ -192,7 +191,7 @@ export async function GET(request: Request) {
       `[${timestamp}] Auth callback - No code present, redirecting to login`,
     );
     return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent("Invalid authentication callback")}`,
+      `${origin}${preserveAuthDestination("/login", { redirectTo }, { error: "Invalid authentication callback" })}`,
     );
   } catch (unexpectedError) {
     const errMsg = extractErrorMessage(unexpectedError);

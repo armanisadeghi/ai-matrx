@@ -11,15 +11,15 @@ keyword payload for AI — call `buildKeywordBrief`.**
 
 ## Parts
 
-| Part | File | What it is |
-|---|---|---|
-| `KeywordInput` | `KeywordInput.tsx` | THE canonical keyword input: live library resolution, data chips underneath, contextual + library suggestion dropdown (source-tagged: GSC / Analyzer / Library), Keyword Intelligence launcher. Controlled; callers own save. Repeat-entry surfaces use `onSubmit` + `showDetails={false}` for type→Enter batching without a second-line lookup jump. |
-| `KeywordIntelPanel` | `KeywordIntelPanel.tsx` | The full dossier: Overview (market + 13-column classification), Relationships (edge navigation re-targets the panel), Site (v_site_keyword_performance), Rankings (rank targets + live check + track), SERP (stored landscape as a Google-style results page, own site highlighted), Research (full pipeline, live kind components). |
-| `keywordWindow` overlay | `features/window-panels/windows/seo/KeywordWindow.tsx` + `features/overlays/openers/keywordWindow.tsx` | The panel as a floating window. Open from anywhere: `useOpenKeywordWindow({ phrase, organizationId, siteId, pageId, brandId, tab })`. A site binding always travels with its owning organization; site-scoped compute tabs stay off without both. `?panels=keyword`. |
-| `buildKeywordBrief` | `keyword-brief.ts` | The condensed keyword+data payload (`{ data, lines }`) for Copy-for-AI envelopes and agent payloads. |
-| `KeywordDataChips` | `KeywordDataChips.tsx` | Inline condensed data row (volume, trend, competition, CPC, site position). |
-| `KeywordUsageChips` | `KeywordUsageChips.tsx` + `keywordUsedIn` | Presence checks of a phrase across observed fields (title/description/H1/URL). |
-| Reads | `data.ts`, `hooks.ts` | Direct-Supabase `seo` reads + `useKeywordVolumeRefresh` (the ONE sanctioned way the UI adds an unknown phrase to the library — the aidream volume-refresh command upserts it server-side). Query keys: `seoKeywordKeys`. |
+| Part                    | File                                                                                                   | What it is                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `KeywordInput`          | `KeywordInput.tsx`                                                                                     | THE canonical keyword input: live library resolution, data chips underneath, contextual + library suggestion dropdown (source-tagged: GSC / Analyzer / Library), Keyword Intelligence launcher. Controlled; callers own save. Repeat-entry surfaces use `onSubmit` + `showDetails={false}` for type→Enter batching without a second-line lookup jump. |
+| `KeywordIntelPanel`     | `KeywordIntelPanel.tsx`                                                                                | The full dossier: Overview (market + 13-column classification), Relationships (edge navigation re-targets the panel), Site (v_site_keyword_performance), Rankings (rank targets + live check + track), SERP (stored landscape as a Google-style results page, own site highlighted), Research (full pipeline, live kind components).                  |
+| `keywordWindow` overlay | `features/window-panels/windows/seo/KeywordWindow.tsx` + `features/overlays/openers/keywordWindow.tsx` | The panel as a floating window. Open from anywhere: `useOpenKeywordWindow({ phrase, organizationId, siteId, pageId, brandId, tab })`. A site binding always travels with its owning organization; site-scoped compute tabs stay off without both. `?panels=keyword`.                                                                                  |
+| `buildKeywordBrief`     | `keyword-brief.ts`                                                                                     | The condensed keyword+data payload (`{ data, lines }`) for Copy-for-AI envelopes and agent payloads.                                                                                                                                                                                                                                                  |
+| `KeywordDataChips`      | `KeywordDataChips.tsx`                                                                                 | Inline condensed data row (volume, trend, competition, CPC, site position).                                                                                                                                                                                                                                                                           |
+| `KeywordUsageChips`     | `KeywordUsageChips.tsx` + `keywordUsedIn`                                                              | Presence checks of a phrase across observed fields (title/description/H1/URL).                                                                                                                                                                                                                                                                        |
+| Reads + identity        | `data.ts`, `hooks.ts`                                                                                  | Direct-Supabase `seo` reads. `ensureKeywordId` is the canonical explicit-entry path: it upserts an arbitrary phrase through `seo.fn_upsert_keyword` and restores archived matches. `useKeywordVolumeRefresh` enriches the saved phrase through aidream; it is not required before selection. Query keys: `seoKeywordKeys`.                            |
 
 ## The window IS a surface
 
@@ -53,11 +53,19 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
   global keyword tools intentionally inherit the active organization.
 - `normalizeKeywordPhrase` is a LOOKUP mirror of `seo.fn_normalize_phrase`;
   persisted normalization stays server-owned.
-- Consumers today: page-workspace intent form (scope-bound input, GSC/analyzer
-  suggestions, usage chips, brief in the `web-page-intent` copy payload,
-  unknown-keyword save nudge), `PageQueriesCard` (adopt-as-target + launcher),
-  ranks add-target form + row launchers, site-keywords row launchers,
-  content-plan `KeywordPicker` (market chips + launcher; still id-based).
+- Consumers today: page-workspace intent/supporting-keyword forms, content-plan
+  page intent (primary + supporting), ranks add-target, keyword-research launch,
+  SEO change-target selection, the intelligence self-selector, and keyword row
+  launchers. ID-backed consumers adapt at their save boundary with
+  `ensureKeywordId`; they never limit entry to the existing library.
+- The 2026-08-12 marketing audit deliberately keeps simple text controls for
+  text that is not a keyword identity: AI-answer prompts, search/filter/rule
+  patterns, brand aliases, narrative strategy prose, and a multiline brand
+  vocabulary used only as agent context. Keyword tables and cards that do not
+  edit an assignment remain display-only, but each named keyword is a door to
+  the Intelligence window. Any new keyword assignment or research seed uses
+  `KeywordInput`; exceptions must explain which non-identity text concept they
+  actually represent.
 - Page-bound Research results are selection surfaces: hierarchy chips and
   intent-classification cards share one checkbox state and attach through
   `addPageSupportingKeywords`. The primary phrase is never selectable.
@@ -73,6 +81,11 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Change Log
 
+- 2026-08-12 — Codex: consolidated content-plan primary/supporting selection,
+  ranks, research launch, and SEO change-target entry onto `KeywordInput`;
+  promoted arbitrary phrase persistence to `data.ts#ensureKeywordId`; added
+  immediate dropdown selection for ID adapters; and recorded the marketing
+  audit's non-keyword text exceptions above.
 - 2026-07-29 — Codex: Keyword Intelligence now uses the existing WindowPanel
   sidebar for a persistent research path: the opening target stays pinned,
   related/researched phrases are deduplicated beneath it, and selecting any
@@ -99,8 +112,8 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
   (`matrx-user/keyword-intelligence`, DB-synced live); `target_keyword_data`
   added to the marketing-page surface; adoption sweep (ranks, site keywords,
   content-plan picker); page evidence cards (queries/findings/links/backlinks)
-  + snapshot compare landed on the page workspace; save nudge for unknown
-  keywords; edge-confidence display fix.
+  - snapshot compare landed on the page workspace; save nudge for unknown
+    keywords; edge-confidence display fix.
 - 2026-07-26 — Claude: initial build — canonical KeywordInput, Keyword
   Intelligence window (6 tabs), keyword brief, usage chips; adopted by the
   page-workspace intent form.

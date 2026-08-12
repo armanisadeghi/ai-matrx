@@ -2,7 +2,7 @@
 
 **Status:** active
 **Tier:** 1
-**Last updated:** 2026-07-25
+**Last updated:** 2026-08-12
 
 ## Draft brief — SERVER-side, persisted on arrival
 
@@ -27,10 +27,9 @@ starts and puts the model's output above the thing the user is editing. The
 window is generic (`features/window-panels/windows/agents/LiveRunWindow.tsx`) —
 use it for any live run rather than inserting one into a page.
 
-
 ## Purpose
 
-The client workspace for the `plan` schema — every URL a site *should* have,
+The client workspace for the `plan` schema — every URL a site _should_ have,
 as an editable tree (pillars → clusters → articles) with briefs, keyword
 bindings, topics, and the people/sources behind the content (E-E-A-T). The UI
 is for **seeing, deciding, and correcting — agents do the bulk writing**;
@@ -96,7 +95,7 @@ plan CRUD through it.
 - Plan↔CMS bridge (`setup/bridge.ts`, consumed by
   `setup/components/SetupBridgeSection.tsx`) — the OTHER sanctioned aidream
   calls: `POST /content-plan/sites/{id}/cms-reconcile | cms-align |
-  cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
+cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   server-side), never DB reads. Everything else stays Supabase-direct.
 - Nav: Marketing Hub → "Content Plan" (`features/shell/constants/nav-data.ts`).
 - `data/service.ts` — THE plan write path on the client. Every entrance
@@ -123,13 +122,15 @@ plan CRUD through it.
   - `matrx-user/content-plan-setup` / `-entities` / `-node` — nested
     providers inside SetupView / EntityManager / NodePanel (deepest wins
     while active), all inheriting the base.
-  **`content-plan-node` is the platform's FIRST read/WRITE surface**: 10
-  draft-mode field targets (label/slug/type/status/priority/depth/reviewer/
-  keyword/brief/attributes stage into the panel draft — the user saves) +
-  `save_node` (entity mode). Agent results and kind-component buttons land
-  through `applySurfaceWrite` / the `apply_surface_write` kind action —
-  read `features/surfaces/FEATURE.md` § Surface writeback before touching
-  any of this.
+    **`content-plan-node` is the platform's FIRST read/WRITE surface**. Its
+    draft-mode targets include identity, editorial state, phrase-level primary
+    keyword, planned meta title/description, brief, and attributes. Supporting
+    keyword add/remove targets write canonical association edges after in-place
+    confirmation; `save_node` commits the staged draft. Agent results and
+    kind-component buttons land
+    through `applySurfaceWrite` / the `apply_surface_write` kind action —
+    read `features/surfaces/FEATURE.md` § Surface writeback before touching
+    any of this.
 
 ## Data model (all live in Supabase, PostgREST-exposed)
 
@@ -137,7 +138,9 @@ plan CRUD through it.
   `cluster_label` are TRIGGER-OWNED derived cache** (`plan._node_shape` +
   `_z_node_cascade`); `types.ts` omits them from the Insert/Update types so a
   client write is a compile error. `organization_id` is stamped from the
-  site by the DB guard.
+  site by the DB guard. Nullable `meta_title` / `meta_description` carry the
+  planned search presentation into CMS realization and fill without burying
+  that intent in JSON metadata.
 - `plan.entity` — person/source/media/org per site.
 - `plan.profile` — vertical config (attribute schemas, cadences, template
   maps) per org. **No hard site→vertical binding exists yet** (open item in
@@ -179,7 +182,7 @@ plan CRUD through it.
    branches legible. While a search/filter is active the
    collapse set is bypassed so every match is visible; all of it is
    client-side over the already-loaded plan.
-1b. **Table view** (`PlanNodesTable.tsx`, `?view=table`): every planned URL
+   1b. **Table view** (`PlanNodesTable.tsx`, `?view=table`): every planned URL
    as one `MatrxDataTable` row — CONTROLLED mode over the canonical local
    engine (`filterAndSortRows`) since the plan is fully client-loaded.
    Columns: Label, Route (mono), Type, Status (dot + name), Priority,
@@ -197,11 +200,14 @@ plan CRUD through it.
 2. **Node panel** (`NodePanel.tsx`): label/slug/type, page-type + status
    category pickers, priority, technical depth, needs-reviewer, brief
    (line-per-bullet), vertical attributes (schema-driven,
-   `AttributesEditor.tsx`), primary keyword (`KeywordPicker.tsx` — searches
-   `seo.keyword`, displays THIS site's `seo.site_keyword_value`
-   workflow/role/priority; the plan reads keyword value, never re-decides
-   it), topics / secondary keywords / entity attachments
-   (`NodeAssociations.tsx`).
+   `AttributesEditor.tsx`), and one canonical `NodeSeoIntentEditor` for the
+   page's primary keyword, supporting keywords, meta title, and meta
+   description. Its thin `KeywordPicker` adapter wraps `KeywordInput`, accepts
+   any phrase, resolves it with `ensureKeywordId` only at the ID-backed save
+   seam, and retains site keyword-value context plus the Keyword Intelligence
+   window. Supporting phrases use the existing `secondary_keyword`
+   association; topic and entity attachments remain in `NodeAssociations`.
+   Metadata uses the same SERP-length evaluation primitives as crawled pages.
 
    🚨 **A KEYWORD-LESS PAGE SHOWS THE GAP ON THE PICKER, AND DRAFT BRIEF IS
    DISABLED.** A page with no target term cannot be briefed or written — the
@@ -214,17 +220,18 @@ plan CRUD through it.
    door, never an error.
 
    Two rules that are easy to get wrong here:
-   * `keywordGap` reads the **saved** row, not the staged draft. The server's
+   - `keywordGap` reads the **saved** row, not the staged draft. The server's
      precondition reads the saved row, so enabling the button on an unsaved pick
      would send the user into a guaranteed 409. When a pick IS staged
      (`keywordStaged`) the notice becomes "press Save" — the real next step.
-   * What counts as an assignment is `hasKeywordAssignment`
+   - What counts as an assignment is `hasKeywordAssignment`
      (`plan-assists-producer.ts`), the mirror of aidream's
      `assert_brief_preconditions`: the `primary_keyword_id` FK **or**
      `attributes.keyword_strategy` (a supporting page's role + the money routes
      it feeds). **Change one predicate and you must change the other** — if they
      disagree, the UI offers a fix for a gap the server does not see, or blocks
      a page the server would happily brief.
+
 3. **Pillar map** (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
    behind the view switch with `ssr:false`): three user-switchable pure
    layouts (radial orbit / tidy tree / pillar columns — `pillar-map/layouts.ts`,
@@ -237,7 +244,7 @@ plan CRUD through it.
    ancestors visible but dimmed. Click = open node panel; drag a node onto
    another = real reparent; box-select (shift-drag) = bulk status change.
    Positions are a projection, never persisted.
-3b. **Site Setup** (`setup/`, `?view=setup`): go from nothing (or half a plan)
+   3b. **Site Setup** (`setup/`, `?view=setup`): go from nothing (or half a plan)
    to a structured site plan in minutes, never writing a page the user has not
    seen first. Three columns left to right — **Shape** (the archetype library:
    platform builtins on the system-org `plan.profile`
@@ -264,20 +271,20 @@ plan CRUD through it.
    rung is restart-agnostic — the section hydrates the latest job on mount and
    polls live queue counts every 2.5s while one runs; **previewing ONE authored
    page is mandatory before fan-out** and renders composed global CSS + header
-   + fragment + footer in a sandboxed iframe; failures/dead-letters listed
-   verbatim; Stop cancels claiming without killing in-flight pages), 5
-   **publish the site** (`POST /content-plan/sites/{id}/cms-publish`,
-   2026-07-29 — bulk publish of every pending page through aidream's ONE
-   per-page publish path; dry-run preview mandatory, apply behind a
-   destructive confirm since this is the rung that changes the LIVE site;
-   per-page results + `remaining_candidates` shown verbatim, and linked plan
-   nodes advance to `published`).
-   CMS reads obey the same prerequisite: plan-bearing views first resolve the
-   recorded `settings.cms` choice (then the existing domain match) through
-   `useCmsLink`; only a concrete CMS id enables `useCmsPageMap`, and that id is
-   sent as `cms_site`. A genuinely unlinked plan therefore makes no doomed
-   `/cms-pages` request, while a half-linked plan uses the choice it already
-   has instead of raising `content_plan_cms_unpaired`.
+   - fragment + footer in a sandboxed iframe; failures/dead-letters listed
+     verbatim; Stop cancels claiming without killing in-flight pages), 5
+     **publish the site** (`POST /content-plan/sites/{id}/cms-publish`,
+     2026-07-29 — bulk publish of every pending page through aidream's ONE
+     per-page publish path; dry-run preview mandatory, apply behind a
+     destructive confirm since this is the rung that changes the LIVE site;
+     per-page results + `remaining_candidates` shown verbatim, and linked plan
+     nodes advance to `published`).
+     CMS reads obey the same prerequisite: plan-bearing views first resolve the
+     recorded `settings.cms` choice (then the existing domain match) through
+     `useCmsLink`; only a concrete CMS id enables `useCmsPageMap`, and that id is
+     sent as `cms_site`. A genuinely unlinked plan therefore makes no doomed
+     `/cms-pages` request, while a half-linked plan uses the choice it already
+     has instead of raising `content_plan_cms_unpaired`.
 4. **Entities** (`EntityManager.tsx`): `plan.entity` CRUD per site.
 5. **Agent writes** land directly in the DB (chat tools today, aidream
    generator later) and appear on refetch — the header Refresh invalidates
@@ -315,7 +322,7 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
 
 - **ONE identity, shared by the preview and the writer:** the DB's own unique
   index `node_site_parent_slug_key (site_id, parent_id, slug) NULLS NOT
-  DISTINCT`, resolved parent-first down the tree (`setup/service.ts#identityKey`,
+DISTINCT`, resolved parent-first down the tree (`setup/service.ts#identityKey`,
   consumed by both `setup/preview.ts` and `commitArchetype`). Diffing by route
   while writing by (parent, slug) disagrees in exactly the case that matters —
   a page already living at that route under a DIFFERENT parent. The second
@@ -422,7 +429,7 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
   next, and it died at the moment they clicked Apply.
 - **The committed work order lives in ONE place:**
   `web.site.settings.content_plan.archetype = {key, counts, concept_names?,
-  instantiated_at}` — byte-identical to what aidream's `_record_site_archetype`
+instantiated_at}` — byte-identical to what aidream's `_record_site_archetype`
   writes (`concept_names` only when names were chosen), MERGED into the
   `content_plan` block that already carries `vertical`, and guarded by the
   row's `version`. Nothing extra is stored beside it. In particular **child
@@ -463,7 +470,8 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
 ## Doctrine compliance
 
 - Reused: `associationsService`, `useCategories` + `cat_list`,
-  `listKeywordsWithMarket`, `useSiteOptions`, marketing's
+  canonical `KeywordInput` + Keyword Intelligence window + `ensureKeywordId`,
+  metadata validators, `listKeywordsWithMarket`, `useSiteOptions`, marketing's
   `assertData`/`assertFound`/`assertMutated`, generated `Database["plan"]`
   types, shadcn primitives, `ConfirmDialog`, `toast` (captured), dnd-kit,
   React Flow, `convertToKebabCase`.
@@ -474,10 +482,11 @@ Reviewer, Keyword Strategist, Entity Attacher) is held to the same rule.
 ### A planned page must always be able to become a real page
 
 **The node panel's "The real page" section ALWAYS renders** (`NodeRealityCard`
-+ the pure `lib/page-reality.ts` verdict). It used to be `{cmsPage ? … : null}`,
-so the state that matters most — *this page has not been built yet* — showed
-nothing at all, and the only route from a finished brief to a real page was a
-bulk rung three views away in Setup.
+
+- the pure `lib/page-reality.ts` verdict). It used to be `{cmsPage ? … : null}`,
+  so the state that matters most — _this page has not been built yet_ — showed
+  nothing at all, and the only route from a finished brief to a real page was a
+  bulk rung three views away in Setup.
 
 Seven states, each carrying its own next action: `no-cms-site` → Setup ·
 `not-built` → **Create the page** · `empty` → **Write the content** ·
@@ -530,6 +539,16 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-12 — Codex: **page intent now uses the canonical keyword and metadata
+  system end to end.** The node editor accepts arbitrary primary/supporting
+  phrases, resolves keyword identities only at persistence, exposes the full
+  Intelligence window on every selected phrase, and places supporting-keyword
+  associations beside the primary phrase. Planned meta title/description are
+  first-class `plan.node` fields and flow into CMS realization/fill. The node
+  surface now emits phrase-level keyword briefs, supporting phrases, and meta
+  tags, with confirmed write targets for primary/supporting add/remove and
+  metadata. The SQL surface emitter also mirrors write targets, closing the
+  previous CLI-sync gap.
 - 2026-08-11 — Claude: **Entities view — source type is now agent-writable,
   an agent can open the editor itself, and a draft-losing modal bug is fixed.**
   Follows the reconciliation entry below (which restored the write-half docs
@@ -605,7 +624,7 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   overlap.
 - 2026-08-11 — Codex: **A missing CMS pairing is no longer a red background
   error.** The plan workspace used to call `GET /cms-pages` for every site and
-  only reinterpret `content_plan_cms_unpaired` as normal *after* the shared API
+  only reinterpret `content_plan_cms_unpaired` as normal _after_ the shared API
   layer had captured the HTTP 400 in Error Inspector. Plan-bearing views now
   resolve the existing `settings.cms` choice/domain match first, pass the
   concrete `cms_site` to the page-map read, and skip the read entirely when no
@@ -673,7 +692,7 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   verbatim. **Open usability finding, NOT fixed here** (it is the subject of a
   pending review-queue question): `entity_draft` requires the editor dialog to
   already be open, but that dialog is MODAL — with it open, a `fixed inset-0
-  z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
+z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
   button and the chat composer, so `elementFromPoint` returns the overlay and
   a real click times out (measured; the same click succeeds once the dialog is
   closed). The target is therefore only reachable by starting the turn with
@@ -681,8 +700,8 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   the handler OPEN the editor on a named row would remove the race; that is
   the decision the review row asks for.
 - 2026-08-10 — Claude: ~~**The Entities view is agent-writable — the last
-  member of the content-plan family to get write targets.**~~ *(Superseded —
-  this entry describes the design that did NOT ship; see the entry above.)*
+  member of the content-plan family to get write targets.**~~ _(Superseded —
+  this entry describes the design that did NOT ship; see the entry above.)_
   `matrx-user/content-plan-entities` declares 3: `create_entity`
   (`entity`/ask) through the canonical `useCreatePlanEntity` →
   `createPlanEntity` (the same service "Suggest from research" already
@@ -875,11 +894,11 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   paid run), `_record_site_archetype` re-reads the row before its settings
   write (FE autosaves made the stale-snapshot clobber real), and
   `research_topic_id` is authorized through `iam.has_access_for(user,
-  'research_topic', id, 'viewer')` — fail-closed (it was a cross-org report
+'research_topic', id, 'viewer')` — fail-closed (it was a cross-org report
   exfiltration hole).
 - 2026-07-30 — Claude (round 2): **research grounding everywhere + entity
   curation.** ONE site↔research link — `settings.content_plan
-  .research_topic_id` (`SITE_RESEARCH_TOPIC_KEY`, FE-written via
+.research_topic_id` (`SITE_RESEARCH_TOPIC_KEY`, FE-written via
   `recordSiteResearchTopic` in `setup/draft.ts`; aidream's generator AND
   deepen read the same key server-side, twin constant in its
   `archetypes.py`). New shared `components/ResearchTopicSelect.tsx` (consumed
@@ -951,7 +970,7 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   failures shown verbatim; Stop = server-side cancel.
 - 2026-07-29 — Claude: **"Publish the site" rung (Make-it-real rung 4).**
   `setup/bridge.ts bridgePublish` → aidream `POST
-  /content-plan/sites/{id}/cms-publish` (new `publish_many` capability —
+/content-plan/sites/{id}/cms-publish` (new `publish_many` capability —
   aidream v0.1.684+); `SetupBridgeSection` rung 4 with mandatory dry-run
   preview, destructive confirm on apply, per-page verbatim results and a
   re-run hint when `remaining_candidates > 0`.
@@ -1080,8 +1099,9 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   controlled React Flow (`onNodesChange`; drop detection on live positions),
   org-scoped site auto-select only (stale `?site=` still resolves), bulk
   status single-pass + one invalidation, entity dialog remounts per open,
-  >10k-node loud cap, late-bound status default, canonical error/type
-  narrowing, dead exports removed.
+
+  > 10k-node loud cap, late-bound status default, canonical error/type
+  > narrowing, dead exports removed.
 
 - 2026-07-25 — Claude: surface manifest `matrx-user/content-plan` (21 values,
   5 curated groups, 3 agent roles), runtime emitter in the workbench

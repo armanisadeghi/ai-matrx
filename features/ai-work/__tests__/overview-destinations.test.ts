@@ -10,12 +10,12 @@ describe("AI Work overview destinations", () => {
     expect(hrefs).toEqual(
       expect.arrayContaining([
         "/work/conversations",
+        "/work/connections",
         "/chat/new",
         "/projects",
         "/tasks",
         "/war-room/all",
         "/agent-connections/skills",
-        "/agent-connections/plugins",
         "/agent-connections/mcp-servers",
         "/schedules",
       ]),

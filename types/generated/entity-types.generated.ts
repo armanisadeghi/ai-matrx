@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 328 active entity tokens. A token here is FK-valid for
+// 362 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -178,7 +178,9 @@ export type EntityTypeToken =
   | "global_meter_entry"
   | "global_origin"
   | "global_request"
+  | "growth_loop_event"
   | "growth_loop_run"
+  | "growth_loop_stage_run"
   | "heatmap_save"
   | "hindsight_enrollment"
   | "hindsight_finding"
@@ -216,6 +218,8 @@ export type EntityTypeToken =
   | "pc_studio_run"
   | "pc_studio_run_asset"
   | "pdf_redaction_audit"
+  | "plan_cms_fill_item"
+  | "plan_cms_fill_job"
   | "plan_entity"
   | "plan_node"
   | "plan_profile"
@@ -246,16 +250,46 @@ export type EntityTypeToken =
   | "scope_item_value_suggestion"
   | "scope_suggestion"
   | "scope_type"
+  | "seo_ai_visibility_citation"
+  | "seo_ai_visibility_claim"
+  | "seo_ai_visibility_response"
+  | "seo_ai_visibility_signal"
+  | "seo_backlink"
+  | "seo_backlink_dimension_snapshot"
+  | "seo_backlink_observation"
+  | "seo_backlink_snapshot"
+  | "seo_change_assessment"
+  | "seo_change_event"
+  | "seo_change_item"
+  | "seo_change_metric"
   | "seo_change_set"
+  | "seo_change_theory"
   | "seo_collection_run"
+  | "seo_competitor"
+  | "seo_competitor_observation"
+  | "seo_competitor_opportunity"
+  | "seo_gsc_dig_rule"
   | "seo_keyword"
+  | "seo_keyword_class_rule"
   | "seo_keyword_edge"
   | "seo_keyword_market"
+  | "seo_keyword_market_observation"
   | "seo_keyword_topic"
+  | "seo_page_performance"
+  | "seo_provider_call"
+  | "seo_provider_task"
+  | "seo_rank_observation"
   | "seo_rank_target"
+  | "seo_raw_payload"
+  | "seo_referring_domain_profile"
+  | "seo_reputation_case"
+  | "seo_search_performance_daily"
+  | "seo_serp_result"
+  | "seo_serp_snapshot"
   | "seo_site_keyword_value"
   | "seo_site_topic_value"
   | "seo_topic"
+  | "seo_web_analytics_daily"
   | "share_link"
   | "shared_canvas_item"
   | "shortcut_category"
@@ -527,12 +561,16 @@ export type ComponentEntityToken =
   | "global_execution_checkpoint"
   | "global_execution_event"
   | "global_meter_entry"
+  | "growth_loop_event"
+  | "growth_loop_stage_run"
   | "hindsight_finding"
   | "hindsight_replay"
   | "hindsight_review"
   | "message"
   | "party_contact_point"
   | "pc_studio_run_asset"
+  | "plan_cms_fill_item"
+  | "plan_cms_fill_job"
   | "processed_document_page"
   | "redaction_mapping"
   | "research_analysis"
@@ -546,9 +584,39 @@ export type ComponentEntityToken =
   | "sch_agent_task"
   | "sch_run"
   | "sch_trigger"
+  | "seo_ai_visibility_citation"
+  | "seo_ai_visibility_claim"
+  | "seo_ai_visibility_response"
+  | "seo_ai_visibility_signal"
+  | "seo_backlink"
+  | "seo_backlink_dimension_snapshot"
+  | "seo_backlink_observation"
+  | "seo_backlink_snapshot"
+  | "seo_change_assessment"
+  | "seo_change_event"
+  | "seo_change_item"
+  | "seo_change_metric"
   | "seo_change_set"
+  | "seo_change_theory"
+  | "seo_competitor"
+  | "seo_competitor_observation"
+  | "seo_competitor_opportunity"
+  | "seo_gsc_dig_rule"
+  | "seo_keyword_class_rule"
+  | "seo_keyword_market_observation"
+  | "seo_page_performance"
+  | "seo_provider_call"
+  | "seo_provider_task"
+  | "seo_rank_observation"
+  | "seo_raw_payload"
+  | "seo_referring_domain_profile"
+  | "seo_reputation_case"
+  | "seo_search_performance_daily"
+  | "seo_serp_result"
+  | "seo_serp_snapshot"
   | "seo_site_keyword_value"
   | "seo_site_topic_value"
+  | "seo_web_analytics_daily"
   | "sms_message"
   | "sms_message_media"
   | "studio_documents"
@@ -717,7 +785,9 @@ export type ScopeableEntityToken =
   | "global_meter_entry"
   | "global_origin"
   | "global_request"
+  | "growth_loop_event"
   | "growth_loop_run"
+  | "growth_loop_stage_run"
   | "heatmap_save"
   | "hindsight_enrollment"
   | "hindsight_finding"
@@ -755,6 +825,8 @@ export type ScopeableEntityToken =
   | "pc_studio_run"
   | "pc_studio_run_asset"
   | "pdf_redaction_audit"
+  | "plan_cms_fill_item"
+  | "plan_cms_fill_job"
   | "plan_entity"
   | "plan_node"
   | "plan_profile"
@@ -785,16 +857,46 @@ export type ScopeableEntityToken =
   | "scope_item_value_suggestion"
   | "scope_suggestion"
   | "scope_type"
+  | "seo_ai_visibility_citation"
+  | "seo_ai_visibility_claim"
+  | "seo_ai_visibility_response"
+  | "seo_ai_visibility_signal"
+  | "seo_backlink"
+  | "seo_backlink_dimension_snapshot"
+  | "seo_backlink_observation"
+  | "seo_backlink_snapshot"
+  | "seo_change_assessment"
+  | "seo_change_event"
+  | "seo_change_item"
+  | "seo_change_metric"
   | "seo_change_set"
+  | "seo_change_theory"
   | "seo_collection_run"
+  | "seo_competitor"
+  | "seo_competitor_observation"
+  | "seo_competitor_opportunity"
+  | "seo_gsc_dig_rule"
   | "seo_keyword"
+  | "seo_keyword_class_rule"
   | "seo_keyword_edge"
   | "seo_keyword_market"
+  | "seo_keyword_market_observation"
   | "seo_keyword_topic"
+  | "seo_page_performance"
+  | "seo_provider_call"
+  | "seo_provider_task"
+  | "seo_rank_observation"
   | "seo_rank_target"
+  | "seo_raw_payload"
+  | "seo_referring_domain_profile"
+  | "seo_reputation_case"
+  | "seo_search_performance_daily"
+  | "seo_serp_result"
+  | "seo_serp_snapshot"
   | "seo_site_keyword_value"
   | "seo_site_topic_value"
   | "seo_topic"
+  | "seo_web_analytics_daily"
   | "shared_canvas_item"
   | "shortcut_category"
   | "skill"
@@ -1083,7 +1185,9 @@ export const ENTITY_TYPE_METADATA = {
   "global_meter_entry": { token: "global_meter_entry", schema: "runtime", table: "global_meter_entry", label: "Runtime Meter Entry", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "global_origin": { token: "global_origin", schema: "runtime", table: "global_origin", label: "Runtime Origin", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "global_request": { token: "global_request", schema: "runtime", table: "global_request", label: "Runtime Request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "growth_loop_event": { token: "growth_loop_event", schema: "growth", table: "loop_event", label: "Growth Loop Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "growth_loop_run": { token: "growth_loop_run", schema: "growth", table: "loop_run", label: "Growth Loop Run", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
+  "growth_loop_stage_run": { token: "growth_loop_stage_run", schema: "growth", table: "loop_stage_run", label: "Growth Loop Stage Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "heatmap_save": { token: "heatmap_save", schema: "public", table: "heatmap_saves", label: "Heatmap Save", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "hindsight_enrollment": { token: "hindsight_enrollment", schema: "hindsight", table: "enrollment", label: "Hindsight Enrollment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "hindsight_finding": { token: "hindsight_finding", schema: "hindsight", table: "finding", label: "Hindsight Finding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1121,6 +1225,8 @@ export const ENTITY_TYPE_METADATA = {
   "pc_studio_run": { token: "pc_studio_run", schema: "podcast", table: "pc_studio_runs", label: "Podcast Studio Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "pc_studio_run_asset": { token: "pc_studio_run_asset", schema: "podcast", table: "pc_studio_run_assets", label: "Podcast Studio Run Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "pdf_redaction_audit": { token: "pdf_redaction_audit", schema: "pdf", table: "pdf_redaction_audits", label: "PDF Redaction Audit", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "plan_cms_fill_item": { token: "plan_cms_fill_item", schema: "plan", table: "cms_fill_item", label: "CMS Fill Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "plan_cms_fill_job": { token: "plan_cms_fill_job", schema: "plan", table: "cms_fill_job", label: "CMS Fill Job", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "plan_entity": { token: "plan_entity", schema: "plan", table: "entity", label: "Plan Entity", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "plan_node": { token: "plan_node", schema: "plan", table: "node", label: "Plan Node", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "plan_profile": { token: "plan_profile", schema: "plan", table: "profile", label: "Plan Vertical Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "vertical", contentRole: null, referenceCategory: null },
@@ -1151,16 +1257,46 @@ export const ENTITY_TYPE_METADATA = {
   "scope_item_value_suggestion": { token: "scope_item_value_suggestion", schema: "rag", table: "scope_item_value_suggestions", label: "Scope Item Value Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "scope_suggestion": { token: "scope_suggestion", schema: "rag", table: "scope_suggestions", label: "Scope Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "scope_type": { token: "scope_type", schema: "context", table: "scope_types", label: "Scope Type", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "slug", contentRole: "container", referenceCategory: null },
+  "seo_ai_visibility_citation": { token: "seo_ai_visibility_citation", schema: "seo", table: "ai_visibility_citation", label: "AI Visibility Citation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_ai_visibility_claim": { token: "seo_ai_visibility_claim", schema: "seo", table: "ai_visibility_claim", label: "AI Visibility Claim", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_ai_visibility_response": { token: "seo_ai_visibility_response", schema: "seo", table: "ai_visibility_response", label: "AI Visibility Response", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_ai_visibility_signal": { token: "seo_ai_visibility_signal", schema: "seo", table: "ai_visibility_signal", label: "AI Visibility Signal", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_backlink": { token: "seo_backlink", schema: "seo", table: "backlink", label: "SEO Backlink", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_backlink_dimension_snapshot": { token: "seo_backlink_dimension_snapshot", schema: "seo", table: "backlink_dimension_snapshot", label: "Backlink Dimension Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_backlink_observation": { token: "seo_backlink_observation", schema: "seo", table: "backlink_observation", label: "Backlink Observation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_backlink_snapshot": { token: "seo_backlink_snapshot", schema: "seo", table: "backlink_snapshot", label: "Backlink Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_change_assessment": { token: "seo_change_assessment", schema: "seo", table: "change_assessment", label: "SEO Change Assessment", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_change_event": { token: "seo_change_event", schema: "seo", table: "change_event", label: "SEO Change Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_change_item": { token: "seo_change_item", schema: "seo", table: "change_item", label: "SEO Change Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_change_metric": { token: "seo_change_metric", schema: "seo", table: "change_metric", label: "SEO Change Metric", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_change_set": { token: "seo_change_set", schema: "seo", table: "change_set", label: "SEO Change", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: "title", contentRole: "source", referenceCategory: null },
+  "seo_change_theory": { token: "seo_change_theory", schema: "seo", table: "change_theory", label: "SEO Change Theory", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_collection_run": { token: "seo_collection_run", schema: "seo", table: "collection_run", label: "SEO Collection Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_competitor": { token: "seo_competitor", schema: "seo", table: "competitor", label: "SEO Competitor", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_competitor_observation": { token: "seo_competitor_observation", schema: "seo", table: "competitor_observation", label: "Competitor Observation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_competitor_opportunity": { token: "seo_competitor_opportunity", schema: "seo", table: "competitor_opportunity", label: "Competitor Opportunity", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_gsc_dig_rule": { token: "seo_gsc_dig_rule", schema: "seo", table: "gsc_dig_rule", label: "GSC Dig Rule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword": { token: "seo_keyword", schema: "seo", table: "keyword", label: "SEO Keyword", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: "phrase", contentRole: null, referenceCategory: null },
+  "seo_keyword_class_rule": { token: "seo_keyword_class_rule", schema: "seo", table: "keyword_class_rule", label: "Keyword Class Rule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword_edge": { token: "seo_keyword_edge", schema: "seo", table: "keyword_edge", label: "Keyword Edge", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword_market": { token: "seo_keyword_market", schema: "seo", table: "keyword_market", label: "Keyword Market Data", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_keyword_market_observation": { token: "seo_keyword_market_observation", schema: "seo", table: "keyword_market_observation", label: "Keyword Market Observation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword_topic": { token: "seo_keyword_topic", schema: "seo", table: "keyword_topic", label: "Keyword Topic Assignment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_page_performance": { token: "seo_page_performance", schema: "seo", table: "page_performance", label: "Page Performance", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_provider_call": { token: "seo_provider_call", schema: "seo", table: "provider_call", label: "SEO Provider Call", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_provider_task": { token: "seo_provider_task", schema: "seo", table: "provider_task", label: "SEO Provider Task", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_rank_observation": { token: "seo_rank_observation", schema: "seo", table: "rank_observation", label: "Rank Observation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_rank_target": { token: "seo_rank_target", schema: "seo", table: "rank_target", label: "SEO Rank Target", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_raw_payload": { token: "seo_raw_payload", schema: "seo", table: "raw_payload", label: "SEO Raw Payload", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_referring_domain_profile": { token: "seo_referring_domain_profile", schema: "seo", table: "referring_domain_profile", label: "Referring Domain Profile", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_reputation_case": { token: "seo_reputation_case", schema: "seo", table: "reputation_case", label: "Reputation Case", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_search_performance_daily": { token: "seo_search_performance_daily", schema: "seo", table: "search_performance_daily", label: "Search Performance Daily", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_serp_result": { token: "seo_serp_result", schema: "seo", table: "serp_result", label: "SERP Result", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_serp_snapshot": { token: "seo_serp_snapshot", schema: "seo", table: "serp_snapshot", label: "SERP Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_keyword_value": { token: "seo_site_keyword_value", schema: "seo", table: "site_keyword_value", label: "Site Keyword Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_topic_value": { token: "seo_site_topic_value", schema: "seo", table: "site_topic_value", label: "Site Topic Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_topic": { token: "seo_topic", schema: "seo", table: "topic", label: "SEO Topic", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
+  "seo_web_analytics_daily": { token: "seo_web_analytics_daily", schema: "seo", table: "web_analytics_daily", label: "Web Analytics Daily", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "share_link": { token: "share_link", schema: "graveyard", table: "files_share_links", label: "Share Link", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "System", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "shared_canvas_item": { token: "shared_canvas_item", schema: "canvas", table: "shared_canvas_items", label: "Shared Canvas Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "shortcut_category": { token: "shortcut_category", schema: "graveyard", table: "shortcut_categories_legacy", label: "Shortcut Category", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1415,7 +1551,9 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "global_meter_entry",
   "global_origin",
   "global_request",
+  "growth_loop_event",
   "growth_loop_run",
+  "growth_loop_stage_run",
   "heatmap_save",
   "hindsight_enrollment",
   "hindsight_finding",
@@ -1453,6 +1591,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "pc_studio_run",
   "pc_studio_run_asset",
   "pdf_redaction_audit",
+  "plan_cms_fill_item",
+  "plan_cms_fill_job",
   "plan_entity",
   "plan_node",
   "plan_profile",
@@ -1483,16 +1623,46 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "scope_item_value_suggestion",
   "scope_suggestion",
   "scope_type",
+  "seo_ai_visibility_citation",
+  "seo_ai_visibility_claim",
+  "seo_ai_visibility_response",
+  "seo_ai_visibility_signal",
+  "seo_backlink",
+  "seo_backlink_dimension_snapshot",
+  "seo_backlink_observation",
+  "seo_backlink_snapshot",
+  "seo_change_assessment",
+  "seo_change_event",
+  "seo_change_item",
+  "seo_change_metric",
   "seo_change_set",
+  "seo_change_theory",
   "seo_collection_run",
+  "seo_competitor",
+  "seo_competitor_observation",
+  "seo_competitor_opportunity",
+  "seo_gsc_dig_rule",
   "seo_keyword",
+  "seo_keyword_class_rule",
   "seo_keyword_edge",
   "seo_keyword_market",
+  "seo_keyword_market_observation",
   "seo_keyword_topic",
+  "seo_page_performance",
+  "seo_provider_call",
+  "seo_provider_task",
+  "seo_rank_observation",
   "seo_rank_target",
+  "seo_raw_payload",
+  "seo_referring_domain_profile",
+  "seo_reputation_case",
+  "seo_search_performance_daily",
+  "seo_serp_result",
+  "seo_serp_snapshot",
   "seo_site_keyword_value",
   "seo_site_topic_value",
   "seo_topic",
+  "seo_web_analytics_daily",
   "share_link",
   "shared_canvas_item",
   "shortcut_category",

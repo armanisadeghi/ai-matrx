@@ -2,10 +2,11 @@ import { redirect } from "next/navigation";
 import { SuggestionsManager } from "@/features/kg-suggestions/components/manager/SuggestionsManager";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { loginHref } from "@/utils/auth/auth-destination";
 
 export default async function SuggestionsPage() {
   const { isAuthenticated } = await getServerAuth();
-  if (!isAuthenticated) redirect("/login");
+  if (!isAuthenticated) redirect(loginHref("/suggestions"));
 
   return (
     <>

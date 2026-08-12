@@ -10,7 +10,7 @@
  * find-or-create by normalized phrase) and favorites the resulting keyword.
  */
 
-import { ensureKeywordId } from "@/features/marketing/data/page-keywords";
+import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 

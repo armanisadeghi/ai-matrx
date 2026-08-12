@@ -65,6 +65,7 @@ import {
   Tag,
   Webhook,
   Workflow,
+  UsersRound,
   Zap,
 } from "lucide-react";
 import {
@@ -381,6 +382,11 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Tasks",
     hrefFor: (id) => `/tasks/${id}`,
   },
+  war_room: {
+    Icon: UsersRound,
+    labelPlural: "War Rooms",
+    hrefFor: (id) => `/war-room/${id}`,
+  },
 
   // ─── CRM (crm.party — the ONE record for an external person/company) ──────
   party: {
@@ -395,7 +401,12 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     // here before it exists would mint dead links on every association card.
   },
 
-  // ─── Web (canonical pages — the marketing page workspace anchors here) ────
+  // ─── Web (canonical Marketing access-tree doors) ─────────────────────────
+  web_brand: {
+    Icon: Building2,
+    labelPlural: "Marketing Accounts",
+    hrefFor: (id) => `/marketing/brands/${id}`,
+  },
   web_site: {
     Icon: Globe,
     labelPlural: "Sites",
@@ -408,6 +419,21 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Canonical Pages",
     // hrefFor resolves the nested brand/site route via a tiny server redirect.
     hrefFor: (id) => `/marketing/pages/${id}`,
+  },
+  web_property: {
+    Icon: Globe,
+    labelPlural: "Marketing Properties",
+    hrefFor: (id) => `/marketing/properties/${id}`,
+  },
+  web_snapshot: {
+    Icon: FileText,
+    labelPlural: "Web Snapshots",
+    hrefFor: (id) => `/marketing/snapshots/${id}`,
+  },
+  web_screenshot: {
+    Icon: Frame,
+    labelPlural: "Web Screenshots",
+    hrefFor: (id) => `/marketing/screenshots/${id}`,
   },
 
   // ─── SEO (canonical keywords — Search Console watchlist targets) ──────────

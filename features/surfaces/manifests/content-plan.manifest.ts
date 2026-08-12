@@ -198,7 +198,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_node",
     label: "Selected node detail",
     description:
-      "Full detail of the open plan node: every editable field (label, slug, node_type, page_type_id, status_id, priority, technical_depth, needs_reviewer, primary_keyword_id, brief, attributes, parent_id) plus the DB-derived route, depth, pillar_label, and cluster_label (trigger-owned — never write or recompute them). Empty when no node is selected.",
+      "Full detail of the open plan node: every editable field (label, slug, node_type, page_type_id, status_id, priority, technical_depth, needs_reviewer, primary_keyword_id, meta_title, meta_description, brief, attributes, parent_id) plus the DB-derived route, depth, pillar_label, and cluster_label (trigger-owned — never write or recompute them). Empty when no node is selected.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 900,
@@ -280,12 +280,12 @@ export const contentPlanManifest: SurfaceManifest = {
   label: "Content Plan",
   readiness: "partial",
   readinessNote:
-    "Runtime emitter live (workbench getScope over loaded query data); child surfaces (list/setup/entities/node) refine per view; plan_architect and eeat_curator have default agents bound; write targets code-only (not mirrored to DB).",
+    "Runtime emitter live (workbench getScope over loaded query data); child surfaces (list/setup/entities/node) refine per view; plan_architect and eeat_curator have default agents bound; write targets are mirrored to DB.",
   urlPattern: "/marketing/content-plan/[siteId]",
   intro: `<surface_intro>
 You are on the Content Plan workspace: the editable tree of every URL a managed website SHOULD have (pillars → clusters → articles), with per-node briefs, a primary keyword, topics, and the people/sources behind the content (E-E-A-T). The user sees, decides, and corrects here — agents do the bulk writing; plan rows land directly in the database and appear on refetch.
 Read site (or site_id) first to know which website is being planned, then plan_tree for the whole structure and node_counts_by_status for progress. selected_node is the node the user is focused on; selected_node_edges carries its topics, secondary keywords, and entity attachments when loaded.
-Hard rules: route, depth, pillar_label, and cluster_label are computed by database triggers — treat them as observed evidence, never invent or recompute them, and never propose writing them. The primary keyword is the node's primary_keyword_id column; secondary keywords are association edges. A site with a null brand cannot hold plan rows — the database rejects loudly by design; the fix is assigning a brand in Marketing, not working around the error.
+Hard rules: route, depth, pillar_label, and cluster_label are computed by database triggers — treat them as observed evidence, never invent or recompute them, and never propose writing them. Read and write the primary keyword by phrase on the child node surface; its UUID is identity plumbing. Secondary keywords are association edges. A site with a null brand cannot hold plan rows — the database rejects loudly by design; the fix is assigning a brand in Marketing, not working around the error.
 This surface is the plan-editor base (tree, table, and map are three projections of the same plan). The workspace's other views are their own surfaces with their own agents: Site Setup (content-plan-setup), the entity manager (content-plan-entities), the sites front door (content-plan-list), and the open node panel (content-plan-node — where field-level write targets live). The one write target here is select_node: opening a node in the panel, exactly as a user click would.
 Empty values mean the workspace is still loading, no site is selected, or the data genuinely does not exist yet — say so plainly instead of guessing.
 </surface_intro>`,

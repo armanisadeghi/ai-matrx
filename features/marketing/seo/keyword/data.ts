@@ -39,6 +39,35 @@ export function normalizeKeywordPhrase(phrase: string): string {
   return phrase.toLowerCase().trim().replace(/\s+/g, " ");
 }
 
+/**
+ * Ensure the universal keyword plane contains this phrase and return its id.
+ * The SECURITY DEFINER RPC owns normalization and deduplication. Explicit
+ * user entry also restores an archived identity; background upserts do not.
+ */
+export async function ensureKeywordId(phrase: string): Promise<string> {
+  const trimmed = phrase.trim();
+  if (!trimmed) throw new Error("Cannot use an empty keyword phrase.");
+  await requireAuthenticatedSupabaseSession(supabase);
+  const response = await supabase
+    .schema("seo")
+    .rpc("fn_upsert_keyword", { p_phrase: trimmed, p_language: "en" });
+  if (response.error) throw response.error;
+  const row = response.data as {
+    o_id?: string | null;
+    o_created?: boolean | null;
+  } | null;
+  if (!row?.o_id) {
+    throw new Error(`Keyword upsert returned no id for "${trimmed}".`);
+  }
+  if (!row.o_created) {
+    const restore = await supabase
+      .schema("seo")
+      .rpc("fn_restore_keywords", { p_keyword_ids: [row.o_id] });
+    if (restore.error) throw restore.error;
+  }
+  return row.o_id;
+}
+
 /** The freshest market row for a keyword, preferring the US market. */
 export function pickKeywordMarket(
   markets: KeywordMarketRow[] | null | undefined,

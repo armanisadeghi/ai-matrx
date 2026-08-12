@@ -33,6 +33,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import SavedResearchFeed from "./SavedResearchFeed";
+import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
 import {
   assertNoRunInFlight,
   parseStagedKeywordWrite,
@@ -170,21 +171,18 @@ export default function KeywordResearchLauncher({
   return (
     <div>
       <div className="flex max-w-2xl items-center gap-2">
-        <div className="relative flex-1">
-          <SearchCheck className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={primaryInput}
-            onChange={(event) => {
-              setPrimaryInput(event.target.value);
-              onKeywordChange?.(event.target.value);
-            }}
-            onKeyDown={(event) => event.key === "Enter" && handleRun()}
-            placeholder="Research a primary keyword (e.g. botox cost)"
-            className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            style={{ fontSize: "16px" }}
-            disabled={run.status === "running"}
-          />
-        </div>
+        <KeywordInput
+          value={primaryInput}
+          onChange={(value) => {
+            setPrimaryInput(value);
+            onKeywordChange?.(value);
+          }}
+          onSubmit={() => handleRun()}
+          scope={{ organizationId }}
+          placeholder="Research a primary keyword (e.g. botox cost)"
+          disabled={run.status === "running"}
+          className="min-w-0 flex-1"
+        />
         <button
           type="button"
           onClick={handleRun}

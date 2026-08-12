@@ -934,10 +934,18 @@ export const adminCategoriesData: AdminCategory[] = [
   },
   {
     name: "Sharing & Access",
-    landingPath: "/administration/database/relationships/sharing",
+    landingPath: "/administration/database/relationships/planner",
     iconName: "Share2",
     iconColor: "text-sky-600",
     features: [
+      {
+        title: "Schema Access Planner",
+        description:
+          "Plan a whole schema at once: account for every table, visualize inheritance and cross-schema edges, trace sharing cascades, and apply canonical root, nested, component, or infrastructure decisions.",
+        iconName: "Workflow",
+        link: "/administration/database/relationships/planner",
+        isNew: true,
+      },
       {
         title: "Sharing Registry & Link Policy",
         description:
@@ -971,9 +979,17 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Relationships Hub",
         description:
-          "Route-tabbed control plane for the entity/relationship system — Overview (status, drift report, cache rebuild, enforcement), Rules, Entity Types, Sharing, Explorer, Reachability, and Actions.",
+          "Route-tabbed control plane for the entity/relationship system — Overview, schema access planning, Rules, Entity Types, Sharing, Explorer, Reachability, and Actions.",
         iconName: "Network",
         link: "/administration/database/relationships",
+        isNew: true,
+      },
+      {
+        title: "Schema Access Planner",
+        description:
+          "Account for every table in a schema and visually decide whether it owns access, inherits while remaining shareable, belongs entirely to a parent, or is infrastructure.",
+        iconName: "Workflow",
+        link: "/administration/database/relationships/planner",
         isNew: true,
       },
       {
