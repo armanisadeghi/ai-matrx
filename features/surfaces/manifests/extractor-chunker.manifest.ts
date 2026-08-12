@@ -25,6 +25,32 @@
  * The Job's saved `variable_mapping` is the source of truth for which
  * surface keys flow into which agent variables at run time — this
  * manifest is the menu of *available* keys.
+ *
+ * ── NO `writeTargets` HERE, ON PURPOSE ───────────────────────────────
+ * This surface has NO client mount. It is a SERVER-side per-chunk
+ * vocabulary catalog that aidream's `_build_surface_vars` fills once per
+ * chunk at run time; its only client consumer is `VariableMappingEditor`
+ * calling `getManifest()` to populate dropdowns. There is no
+ * `SurfaceRuntimeProvider` for `matrx-user/extractor-chunker` anywhere in
+ * the app, so write targets declared here would be mirrored and then
+ * never offered to a single agent — the `surface-write-targets` skill's
+ * "no mounted runtime looks exactly like a broken target" trap.
+ *
+ * The Job-builder FORM that campaign chips keep pointing at
+ * (`ChunkingConfigForm`, the template editor at
+ * `/tools/pdf-extractor/[documentId]`) renders inside `PdfStudioShell`'s
+ * provider, so its write targets live on the PARENT surface,
+ * `matrx-user/pdf-extractor`: `extraction_template_draft` (partial
+ * `{template_name, page_range, chunk_size, chunk_overlap}`) and
+ * `extraction_output_columns`. Same page, same URL, mounted surface.
+ * See `pdf-extractor.manifest.ts` (`PDF_EXTRACTOR_WRITE_TARGETS` and the
+ * doc comment above `writeTargets`) for the full judgment call, including
+ * why `agent_id`, `variable_mapping`, `chunking_strategy` and Run are
+ * deliberately NOT writable, and the surfaces FEATURE.md Change Log entry
+ * of 2026-08-11.
+ *
+ * This surface has now been assigned three times. Check which surface is
+ * MOUNTED before you check which surface is named.
  */
 
 import type {
