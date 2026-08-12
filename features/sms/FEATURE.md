@@ -77,10 +77,12 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - Every message recipient must have applicable consent unless the message is a system/administrative exception with its own lawful basis.
 - STOP-like keywords and the web settings control both produce a durable opt-out record.
 - Twilio accepting an API request is not proof of delivery; delivery status comes from the status webhook.
+- Message reads page newest-first, but conversation surfaces render each page oldest-to-newest.
 
 ---
 
 ## Change log
 
+- `2026-08-12` — Rendered the newest SMS history page in chronological chat order while preserving newest-first pagination.
 - `2026-08-11` — Aligned the public SMS program and site policies to the registered legal operator, versioned the revised consent, and branded every outbound body before send and logging.
 - `2026-07-20` — Added a public, carrier-reviewable consent path and SMS terms; moved enrollment into production Messaging settings; versioned the verified consent record; prevented preferences from creating unverified consent; and made the test surface distinguish Twilio acceptance from confirmed delivery.
