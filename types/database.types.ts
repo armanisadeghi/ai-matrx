@@ -23914,7 +23914,6 @@ export type Database = {
           subject_selector: Json
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -23940,7 +23939,6 @@ export type Database = {
           subject_selector?: Json
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -23966,7 +23964,6 @@ export type Database = {
           subject_selector?: Json
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
