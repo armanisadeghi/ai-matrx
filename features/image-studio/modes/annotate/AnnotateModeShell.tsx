@@ -150,9 +150,11 @@ export function AnnotateModeShell({
         toast.info("No faces detected.");
         return;
       }
-      // marker.js doesn't expose a programmatic-marker API in v2. Surface
-      // the detected count + leave the user to draw blur boxes — the
-      // detected coordinates are still useful for visual reference.
+      // marker.js 2 CAN place markers programmatically (`createNewMarker` /
+      // `restoreState`), but `restoreState` replaces the whole marker set,
+      // which would clobber anything the user has already drawn. Surface the
+      // detected count + leave the user to draw blur boxes — the detected
+      // coordinates are still useful for visual reference.
       toast.success(
         `Detected ${faces.length} face${faces.length === 1 ? "" : "s"}. Use the freehand or rectangle marker to obscure them.`,
       );

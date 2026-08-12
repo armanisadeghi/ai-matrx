@@ -273,6 +273,18 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
+- **2026-08-12** — Annotate mode assessed for agent write targets and ruled
+  out; the manifest (`features/surfaces/manifests/image-annotate.manifest.ts`)
+  now carries a WRITE DOCTRINE block explaining why, alongside the ones Edit
+  mode and `canvas` already have. Corrected a load-bearing inaccuracy in
+  `AnnotateModeShell.handleBlurFaces`: the comment claimed marker.js 2 has no
+  programmatic-marker API, but `MarkerArea` ships `createNewMarker` and
+  `restoreState`. The real blockers are that `restoreState` REPLACES the whole
+  marker set (so a programmatic write clobbers whatever the user has drawn —
+  which is also why face detection still only reports a count), and that
+  `TextMarkerState` carries its text inseparably from its box geometry, so
+  annotation content cannot be authored without seeing the pixels. No
+  behavior change; comments and docs only.
 - **2026-08-11** — Hardened the Convert write targets: the crop anchor's
   fit gate is now ENFORCED, not just documented. `conversion_settings` accepted
   `resize_position` under any fit, but `CropControls` renders the anchor picker
