@@ -1,12 +1,14 @@
 import type { Tables } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/server";
 import {
-  providerMessageDisplay,
-  type ProviderMessageDisplay,
-} from "../lib/providerMessageText";
+  normalizeProviderMessage,
+  PROVIDER_MESSAGE_COLUMNS,
+  PROVIDER_TRANSCRIPT_PAGE_SIZE,
+  type ProviderConversationMessage,
+} from "../lib/providerConversationMessage";
 import { isProviderSourceApp } from "../lib/providerSource";
 
-export const PROVIDER_TRANSCRIPT_PAGE_SIZE = 200;
+export { PROVIDER_TRANSCRIPT_PAGE_SIZE };
 
 export type ProviderConversation = Pick<
   Tables<{ schema: "chat" }, "conversation">,
@@ -18,28 +20,12 @@ export type ProviderConversation = Pick<
   | "status"
   | "message_count"
   | "initial_agent_id"
+  | "exclude_from_kg"
   | "created_at"
   | "updated_at"
 >;
 
-type ProviderConversationMessageRow = Pick<
-  Tables<{ schema: "chat" }, "message">,
-  | "id"
-  | "conversation_id"
-  | "role"
-  | "content"
-  | "position"
-  | "status"
-  | "created_at"
->;
-
-export type ProviderConversationMessage = Omit<
-  ProviderConversationMessageRow,
-  "content"
-> & {
-  display: ProviderMessageDisplay;
-  contentValid: boolean;
-};
+export type { ProviderConversationMessage };
 
 export interface ProviderConversationDetail {
   conversation: ProviderConversation;
@@ -66,38 +52,6 @@ export type ProviderConversationRead =
       error: unknown;
     };
 
-function normalizeProviderMessage(
-  message: ProviderConversationMessageRow,
-): ProviderConversationMessage {
-  try {
-    return {
-      id: message.id,
-      conversation_id: message.conversation_id,
-      role: message.role,
-      position: message.position,
-      status: message.status,
-      created_at: message.created_at,
-      display: providerMessageDisplay(message.content),
-      contentValid: true,
-    };
-  } catch (error) {
-    console.error(
-      "[readProviderConversation] invalid persisted message content",
-      { messageId: message.id, error },
-    );
-    return {
-      id: message.id,
-      conversation_id: message.conversation_id,
-      role: message.role,
-      position: message.position,
-      status: message.status,
-      created_at: message.created_at,
-      display: { text: "", activityCount: 0 },
-      contentValid: false,
-    };
-  }
-}
-
 /**
  * Direct RLS read of a canonical conversation and its user-visible messages.
  * External coding sessions deliberately have no initial agent, so the normal
@@ -111,7 +65,7 @@ export async function readProviderConversation(
     .schema("chat")
     .from("conversation")
     .select(
-      "id, title, description, source_app, source_feature, status, message_count, initial_agent_id, created_at, updated_at",
+      "id, title, description, source_app, source_feature, status, message_count, initial_agent_id, exclude_from_kg, created_at, updated_at",
     )
     .eq("id", conversationId)
     .is("deleted_at", null)
@@ -137,12 +91,9 @@ export async function readProviderConversation(
   const messagesResult = await supabase
     .schema("chat")
     .from("message")
-    .select(
-      "id, conversation_id, role, content, position, status, created_at",
-      {
-        count: "exact",
-      },
-    )
+    .select(PROVIDER_MESSAGE_COLUMNS, {
+      count: "exact",
+    })
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
     .eq("is_visible_to_user", true)

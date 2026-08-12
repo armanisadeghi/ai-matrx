@@ -1,10 +1,24 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CircleDot, MessageSquareText } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronUp,
+  CircleAlert,
+  CircleDot,
+  Loader2,
+  MessageSquareText,
+  MoreHorizontal,
+} from "lucide-react";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { Button } from "@/components/ui/button";
+import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { favoritesService } from "@/features/scopes/service/favoritesService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import { cn } from "@/lib/utils";
 import { formatAbsoluteDate } from "@/utils/datetime";
 import { formatText } from "@/utils/text/text-case-converter";
@@ -12,17 +26,166 @@ import {
   appLabel,
   featureLabel,
 } from "@/features/agents/redux/conversation-history/source-registry";
+import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
+import { ToolCallBatch } from "@/features/tool-call-visualization/components/ToolCallBatch";
+import { cxToolCallToLifecycleEntry } from "@/features/tool-call-visualization/utils/cxToolCallToLifecycleEntry";
+import { fetchConversationToolCallsPage } from "@/features/tool-call-visualization/service/fetchConversationToolCalls";
+import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
 import type { ProviderConversationDetail } from "../service/providerConversation";
+import {
+  fetchEarlierProviderMessages,
+  fetchProviderConversationState,
+} from "../service/providerConversationClient";
+import type { ProviderConversationMessage } from "../lib/providerConversationMessage";
+import { buildProviderTimeline } from "../lib/providerTimeline";
+import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
+
+/** Tool activity page loaded per request — a mirror can hold thousands. */
+const TOOL_ACTIVITY_PAGE_SIZE = 200;
+
+interface ToolActivityState {
+  records: CxToolCallRecord[];
+  state: "loading" | "ready" | "error";
+  error: string | null;
+  hasMore: boolean;
+  totalCount: number | null;
+  cursor: string | null;
+}
 
 export function ProviderConversationTranscript({
   detail,
 }: {
   detail: ProviderConversationDetail;
 }) {
-  const { conversation, messages, visibleMessageCount, hasEarlierMessages } =
-    detail;
+  const { conversation, visibleMessageCount } = detail;
   const title = conversation.title?.trim() || "Untitled conversation";
   const provider = appLabel(conversation.source_app);
+
+  const [messages, setMessages] = useState<ProviderConversationMessage[]>(
+    detail.messages,
+  );
+  const [hasEarlierMessages, setHasEarlierMessages] = useState(
+    detail.hasEarlierMessages,
+  );
+  const [loadingEarlier, setLoadingEarlier] = useState(false);
+  const [earlierError, setEarlierError] = useState<string | null>(null);
+  const [activity, setActivity] = useState<ToolActivityState>({
+    records: [],
+    state: "loading",
+    error: null,
+    hasMore: false,
+    totalCount: null,
+    cursor: null,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchConversationToolCallsPage(conversation.id, {
+      limit: TOOL_ACTIVITY_PAGE_SIZE,
+    })
+      .then((page) => {
+        if (cancelled) return;
+        setActivity({
+          records: page.records,
+          state: "ready",
+          error: null,
+          hasMore: page.hasMore,
+          totalCount: page.totalCount,
+          cursor: page.oldestStartedAt,
+        });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setActivity((existing) => ({
+          ...existing,
+          state: "error",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Tool activity read failed",
+        }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [conversation.id]);
+
+  const loadEarlier = useCallback(() => {
+    setLoadingEarlier(true);
+    setEarlierError(null);
+    const wants: Promise<void>[] = [];
+
+    if (hasEarlierMessages && messages.length > 0) {
+      wants.push(
+        fetchEarlierProviderMessages(
+          conversation.id,
+          messages[0].position,
+        ).then((page) => {
+          setMessages((existing) => {
+            const known = new Set(existing.map((message) => message.id));
+            return [
+              ...page.messages.filter((message) => !known.has(message.id)),
+              ...existing,
+            ];
+          });
+          setHasEarlierMessages(page.hasEarlierMessages);
+        }),
+      );
+    }
+
+    if (activity.hasMore && activity.cursor) {
+      const cursor = activity.cursor;
+      wants.push(
+        fetchConversationToolCallsPage(conversation.id, {
+          limit: TOOL_ACTIVITY_PAGE_SIZE,
+          beforeStartedAt: cursor,
+        }).then((page) => {
+          setActivity((current) => {
+            const known = new Set(current.records.map((record) => record.id));
+            return {
+              ...current,
+              records: [
+                ...page.records.filter((record) => !known.has(record.id)),
+                ...current.records,
+              ],
+              hasMore: page.hasMore,
+              cursor: page.oldestStartedAt ?? current.cursor,
+            };
+          });
+        }),
+      );
+    }
+
+    void Promise.all(wants)
+      .catch((error: unknown) => {
+        setEarlierError(
+          error instanceof Error ? error.message : "Loading earlier failed",
+        );
+      })
+      .finally(() => {
+        setLoadingEarlier(false);
+      });
+  }, [
+    conversation.id,
+    hasEarlierMessages,
+    messages,
+    activity.hasMore,
+    activity.cursor,
+  ]);
+
+  const timeline = useMemo(
+    () =>
+      buildProviderTimeline({
+        messages,
+        toolCalls: activity.records,
+        hasEarlierMessages,
+        toolCallsHaveMore: activity.hasMore,
+      }),
+    [messages, activity.records, hasEarlierMessages, activity.hasMore],
+  );
+
+  const shownToolCalls = activity.records.length - timeline.hiddenToolCalls;
+  const hasEarlierAnything = hasEarlierMessages || activity.hasMore;
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-5 sm:px-6">
@@ -49,20 +212,31 @@ export function ProviderConversationTranscript({
               Updated {formatAbsoluteDate(conversation.updated_at)} ·{" "}
               {visibleMessageCount} visible{" "}
               {visibleMessageCount === 1 ? "message" : "messages"}
+              {activity.totalCount !== null
+                ? ` · ${activity.totalCount} tool ${
+                    activity.totalCount === 1 ? "action" : "actions"
+                  }`
+                : null}
             </p>
           </div>
-          <AssociateTaskButton
-            entityType="conversation"
-            entityId={conversation.id}
-            label={title}
-            metadata={{
-              sourceApp: conversation.source_app,
-              sourceFeature: conversation.source_feature,
-            }}
-            prePopulate={{ title: `Follow up: ${title}` }}
-            variant="button"
-            label_text="Attach to task"
-          />
+          <div className="flex items-center gap-1.5">
+            <AssociateTaskButton
+              entityType="conversation"
+              entityId={conversation.id}
+              label={title}
+              metadata={{
+                sourceApp: conversation.source_app,
+                sourceFeature: conversation.source_feature,
+              }}
+              prePopulate={{ title: `Follow up: ${title}` }}
+              variant="button"
+              label_text="Attach to task"
+            />
+            <TranscriptConversationMenu
+              conversation={conversation}
+              title={title}
+            />
+          </div>
         </div>
       </section>
 
@@ -81,14 +255,50 @@ export function ProviderConversationTranscript({
         </Button>
       </section>
 
-      {hasEarlierMessages ? (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-foreground">
-          Showing the most recent {messages.length} visible messages. Earlier
-          messages remain stored but are not loaded on this page yet.
+      <ConversationOrganizationPanel conversationId={conversation.id} />
+
+      {hasEarlierAnything ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={loadEarlier}
+            disabled={loadingEarlier}
+          >
+            {loadingEarlier ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ChevronUp className="h-3.5 w-3.5" />
+            )}
+            Load earlier
+          </Button>
+          <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+            Showing {timeline.items.length > 0 ? "the most recent" : ""}{" "}
+            {messages.length - timeline.hiddenMessages} of{" "}
+            {visibleMessageCount} messages
+            {activity.totalCount !== null
+              ? ` and ${shownToolCalls} of ${activity.totalCount} tool actions`
+              : null}
+            . Earlier history stays stored and loads in order.
+          </p>
+        </div>
+      ) : null}
+      {earlierError ? (
+        <p className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <CircleAlert className="h-3.5 w-3.5 shrink-0" />
+          {earlierError}
+        </p>
+      ) : null}
+      {activity.state === "error" ? (
+        <p className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-foreground">
+          <CircleAlert className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          Tool activity could not be loaded: {activity.error}
         </p>
       ) : null}
 
-      {messages.length === 0 ? (
+      {timeline.items.length === 0 && activity.state !== "loading" ? (
         <section className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
           <MessageSquareText className="mx-auto h-7 w-7 text-muted-foreground/60" />
           <h2 className="mt-2 text-sm font-medium text-foreground">
@@ -104,16 +314,166 @@ export function ProviderConversationTranscript({
           className="space-y-4"
           aria-label={`${provider} conversation transcript`}
         >
-          {messages.map((message) => (
-            <ProviderTranscriptMessage
-              key={message.id}
-              message={message}
-              provider={provider}
-            />
-          ))}
+          {activity.state === "loading" ? (
+            <li className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Loading tool activity…
+            </li>
+          ) : null}
+          {timeline.items.map((item) =>
+            item.kind === "message" ? (
+              <ProviderTranscriptMessage
+                key={item.message.id}
+                message={item.message}
+                provider={provider}
+              />
+            ) : (
+              <ProviderActivityGroup
+                key={item.records[0].id}
+                records={item.records}
+                conversationId={conversation.id}
+              />
+            ),
+          )}
         </ol>
       )}
     </div>
+  );
+}
+
+/**
+ * The canonical conversation menu (pin / share / archive / duplicate / KG)
+ * on the transcript surface — the same registry every conversation list row
+ * consumes. Delete stays hidden because the provider binding would survive
+ * and become a dead door.
+ */
+function TranscriptConversationMenu({
+  conversation,
+  title,
+}: {
+  conversation: ProviderConversationDetail["conversation"];
+  title: string;
+}) {
+  const dispatch = useAppDispatch();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteStateKnown, setFavoriteStateKnown] = useState(false);
+  const [isArchived, setIsArchived] = useState(
+    conversation.status === "archived",
+  );
+  const [excludeFromKg, setExcludeFromKg] = useState(
+    conversation.exclude_from_kg ?? false,
+  );
+
+  const readCanonicalState = useCallback(async () => {
+    const [favoriteResult, mutableState] = await Promise.all([
+      favoritesService.getBulk("conversation", [conversation.id]),
+      fetchProviderConversationState(conversation.id),
+    ]);
+    if (isScopesRpcErr(favoriteResult)) {
+      console.error(
+        "[TranscriptConversationMenu] favorite-state read failed",
+        favoriteResult.error,
+      );
+      setFavoriteStateKnown(false);
+    } else {
+      setIsFavorite(
+        favoriteResult.data.items.some((state) => state.isFavorite),
+      );
+      setFavoriteStateKnown(true);
+    }
+    if (mutableState) {
+      setIsArchived(mutableState.status === "archived");
+      setExcludeFromKg(mutableState.excludeFromKg);
+    }
+  }, [conversation.id]);
+
+  useEffect(() => {
+    void readCanonicalState();
+  }, [readCanonicalState]);
+
+  const onMutationSuccess = useCallback(() => {
+    // The thunks own the DB write; reconcile this page's local snapshot.
+    void readCanonicalState();
+  }, [readCanonicalState]);
+
+  return (
+    <ItemMenu
+      config={() =>
+        buildConversationMenu({
+          conversationId: conversation.id,
+          title,
+          isFavorite,
+          isArchived,
+          excludeFromKg,
+          href: `/work/conversations/${conversation.id}`,
+          source: {
+            app: conversation.source_app,
+            feature: conversation.source_feature,
+          },
+          showRename: false,
+          showFavorite: favoriteStateKnown,
+          showDelete: false,
+          onMutationSuccess,
+          dispatch,
+        })
+      }
+      align="end"
+    >
+      <button
+        type="button"
+        aria-label={`Share, pin, archive, or manage ${title}`}
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-accent hover:text-foreground"
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </button>
+    </ItemMenu>
+  );
+}
+
+/**
+ * A consecutive run of provider tool calls, rendered through the canonical
+ * tool-call system: one `ToolCallVisualization` per call, folded behind the
+ * standard `ToolCallBatch` line when the run has 2+ calls.
+ */
+function ProviderActivityGroup({
+  records,
+  conversationId,
+}: {
+  records: CxToolCallRecord[];
+  conversationId: string;
+}) {
+  const entries = useMemo(
+    () => records.map(cxToolCallToLifecycleEntry),
+    [records],
+  );
+
+  return (
+    <li className="flex justify-start">
+      <div className="w-full max-w-3xl">
+        {entries.length === 1 ? (
+          <ToolCallVisualization
+            entries={entries}
+            conversationId={conversationId}
+            isPersisted
+          />
+        ) : (
+          <ToolCallBatch
+            entries={entries}
+            conversationId={conversationId}
+            isPersisted
+          >
+            {entries.map((entry) => (
+              <ToolCallVisualization
+                key={entry.callId}
+                entries={[entry]}
+                conversationId={conversationId}
+                isPersisted
+              />
+            ))}
+          </ToolCallBatch>
+        )}
+      </div>
+    </li>
   );
 }
 
@@ -167,7 +527,7 @@ function ProviderTranscriptMessage({
             {message.display.activityCount === 1
               ? "activity"
               : "activities"}{" "}
-            captured
+            captured inside this message
           </p>
         ) : null}
       </article>
