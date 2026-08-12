@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Routes (route-tabbed hub, Super Admin — gated by the `(admin)` layout):**
-`/administration/database/relationships` (Overview) · `/rules` · `/entity-types` · `/sharing` · `/explorer` (+ `/explorer/[token]`) · `/reachability` · `/exposure-audit` · `/actions`
+`/administration/database/relationships` (Overview) · `/planner` · `/rules` · `/entity-types` · `/sharing` · `/explorer` (+ `/explorer/[token]`) · `/reachability` · `/exposure-audit` · `/actions`
 **Owner surface for:** the reachability / containment registry control plane, the **`platform.entity_types` registry admin** (the only UI write path), and the **one** home for `platform.shareable_resource_registry` (full CRUD **plus** link policy — the old `/administration/sharing` page is deleted and redirects here).
 
 ---
@@ -14,6 +14,13 @@ The no-SQL control plane for the platform's **reachability / sharing-cascade** s
 defines, here, **which entity types exist, which association shapes exist, which of
 them convey access when a container is shared, and at what ceiling** — and the
 Overview reports **all drift** between the registry and the live association data.
+
+The **Schema Access Planner** is the schema-level front door. It accounts for every
+base table before an administrator edits registries one row at a time, combines
+physical FKs with canonical composition/containment and logical association
+conveyance, and makes the primary decision explicit: an entity owns access, a nested
+entity inherits while retaining its own identity, a component belongs entirely to
+one parent, or infrastructure is intentionally outside the user-facing model.
 
 The load-bearing model: `platform.entity_types` (the token vocabulary) +
 `platform.association_types` (the rule/edge dictionary) + `platform.associations`
@@ -43,6 +50,7 @@ DB — the UI just `router.refresh()`es.
 | Tab            | Page (server fetch)                                                                                     | Client                                                                                                                                 |
 | -------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Overview       | `page.tsx` (`admin_relationship_system_status` + `admin_relationship_problems`)                         | `RelationshipsOverviewClient` — status tiles, Rebuild cache, Enforcement switch, `ProblemsPanel`, direction legend                     |
+| Planner        | `planner/page.tsx` (`admin_access_planner_snapshot('web')`)                                             | `AccessPlanner` dynamic gate → `AccessPlannerImpl` — schema coverage rail, XYFlow access graph, cascade trace, decision inspector      |
 | Rules          | `rules/page.tsx` (`admin_relationship_rules`; `?edit=<source:target:label>`)                            | `RelationshipRulesClient` — `MatrxDataTable` + `RuleEditorForm` (side panel / WindowPanel), delete confirm                             |
 | Entity Types   | `entity-types/page.tsx` (`admin_entity_types_list`)                                                     | `EntityTypesClient` + `EntityTypeForm` — full CRUD, deactivate-only delete, generated-types drift banner                               |
 | Sharing        | `sharing/page.tsx` (`admin_shareable_registry_list` + `admin_list_share_policies`; `?register=<token>`) | `RelationshipSharingClient` → `ShareableRegistryPanel` (+ `ShareableResourceForm`, `SharePolicyColumnEditor`)                          |
@@ -64,19 +72,23 @@ with `router.replace` so refresh/back never re-triggers.
 `relationship_rules_reverse_count_refinement.sql`,
 `relationship_manager_crud_and_problems.sql`.
 
-| RPC                                                      | Role                                                                                                            |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `admin_relationship_rules()`                             | Rules + live `edge_count` / `closure_rows` / `reverse_edge_count`.                                              |
-| `admin_relationship_system_status()`                     | Status tiles (totals, enforcement state).                                                                       |
-| `admin_unregistered_pairs()`                             | Shapes in data with no active rule (drives the enforcement lock).                                               |
-| `admin_relationship_problems()`                          | **Unified drift report** — see below.                                                                           |
-| `admin_upsert_relationship_rule(...)`                    | Create **and** update (ON CONFLICT). `''` label/notes → NULL.                                                   |
-| `admin_delete_relationship_rule(source, target, label?)` | True delete (completes CRUD).                                                                                   |
-| `admin_rebuild_reachability()`                           | Nuke + rebuild the closure cache; returns row count.                                                            |
-| `admin_reachability_contents/containers(type, id)`       | The "why can they see this?" inspector.                                                                         |
-| `admin_exposure_audit_summary()`                         | Active/deleted counts by resource + visibility, including grant/link/context totals.                            |
-| `admin_exposure_audit_rows(...)`                         | Paginated file/note rows with owner/org identity and exact public/internal/link/grant/context exposure reasons. |
-| `admin_set_association_enforcement(bool)`                | Toggle the write-time known-shape guard trigger.                                                                |
+| RPC                                                      | Role                                                                                                                      |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `admin_relationship_rules()`                             | Rules + live `edge_count` / `closure_rows` / `reverse_edge_count`.                                                        |
+| `admin_relationship_system_status()`                     | Status tiles (totals, enforcement state).                                                                                 |
+| `admin_unregistered_pairs()`                             | Shapes in data with no active rule (drives the enforcement lock).                                                         |
+| `admin_relationship_problems()`                          | **Unified drift report** — see below.                                                                                     |
+| `admin_upsert_relationship_rule(...)`                    | Create **and** update (ON CONFLICT). `''` label/notes → NULL.                                                             |
+| `admin_delete_relationship_rule(source, target, label?)` | True delete (completes CRUD).                                                                                             |
+| `admin_rebuild_reachability()`                           | Nuke + rebuild the closure cache; returns row count.                                                                      |
+| `admin_reachability_contents/containers(type, id)`       | The "why can they see this?" inspector.                                                                                   |
+| `admin_exposure_audit_summary()`                         | Active/deleted counts by resource + visibility, including grant/link/context totals.                                      |
+| `admin_exposure_audit_rows(...)`                         | Paginated file/note rows with owner/org identity and exact public/internal/link/grant/context exposure reasons.           |
+| `admin_set_association_enforcement(bool)`                | Toggle the write-time known-shape guard trigger.                                                                          |
+| `admin_access_planner_snapshot(schema)`                  | Whole-schema physical/catalog/access/sharing/RLS snapshot, including meaningful cross-schema edges and explicit problems. |
+| `admin_configure_entity_access(...)`                     | Atomically classify a table as root, nested, or component and apply the canonical `iam.apply_rls` template.               |
+| `admin_set_access_planner_exclusion(...)`                | Record/remove an explicit, reasoned non-entity infrastructure decision.                                                   |
+| `admin_set_containment_edge(...)`                        | Add/remove a validated extra containment parent for an existing non-component entity.                                     |
 
 **`admin_relationship_problems()` drift categories** (ordered error-first): `unregistered_pair`,
 `wrong_way_edges`, `conveying_container_not_shareable` (DB-only drift the client
@@ -126,6 +138,19 @@ used by the per-row **Link policy** side panel).
 
 ## Key flows
 
+- **Plan a schema (Planner tab):** choose a schema → the coverage rail lists every
+  table and view, with undecided/problem tables first → select a table in the rail
+  or graph → choose **Own access**, **Inherit + share directly**, **Part of parent**,
+  or **Infrastructure**. Parent choices come only from real FKs to active entity
+  types. Applying a user-facing decision writes the canonical entity relationship
+  and rebuilds RLS; infrastructure requires a written reason. The graph defaults to
+  access-bearing edges and can reveal physical FKs and core plumbing on demand.
+- **Prove a cascade (Planner tab):** selecting an entity traces composition,
+  containment, and conveying association descendants and states how many inherit
+  editor access versus a viewer cap. Cross-schema entity endpoints stay visible;
+  auth/org/audit plumbing stays hidden by default, never misrepresented as domain
+  containment.
+
 - **Define a rule (Rules tab):** New rule → pick source (content) + target
   (container) via the tabular `EntityTypeCombobox` (existing pairs for the current
   label are disabled + listed as chips) → container side + conveyance ceiling →
@@ -167,6 +192,22 @@ used by the per-row **Link policy** side panel).
   owner-or-explicit-grant only.
 
 ## Invariants & gotchas
+
+- **Every base table is decided.** A table is canonical root/nested/component or
+  has an explicit `access_planner_non_entity` exemption with a reason. Views are
+  shown as derived evidence but do not pretend to be independent entities.
+- **Composition and containment are not synonyms.** `composition` means the child
+  has no independent grants or share registration. `containment` means the child
+  can be shared directly and also inherits through a parent, and therefore requires
+  `organization_id`, `created_by`, and `visibility`.
+- **A component cannot be directly shareable.** The planner reports this as a
+  blocker (currently including the pre-existing `web_page` contradiction) and
+  requires an explicit model decision; it never silently changes registry meaning.
+- **Catalog evidence, not typed guesses.** Column names, real FKs, RLS state,
+  policies, many-to-many candidates, canonical audit findings, entity metadata,
+  sharing flags, and association conveyance all come from one super-admin snapshot.
+- **One dynamic gate.** `AccessPlanner.tsx` is the only `next/dynamic({ssr:false})`
+  boundary; `AccessPlannerImpl` and all XYFlow imports remain static inside it.
 
 - **Direction doctrine — little points to big.** Source = content, target =
   container; `container_side='target'` is the norm. `'source'` (big→little) is a
@@ -237,6 +278,13 @@ used by the per-row **Link policy** side panel).
 
 ## Change log
 
+- **2026-08-12** — Added the schema-level **Access Planner** and
+  `access_planner_control_plane` RPC family. The three-pane surface accounts for
+  every relation, distinguishes root/nested/component/infrastructure, focuses its
+  XYFlow map on access-bearing edges, keeps meaningful cross-schema entities in the
+  picture, hides plumbing by default, traces viewer/editor cascade ceilings, and
+  applies only canonical registry + RLS primitives. Contradictory component/direct-
+  share registrations are now visible blockers instead of silent drift.
 - **2026-08-12** — Kept `note → web_screenshot` and `file → web_screenshot` in
   little-to-big direction but made both semantic-only. Screenshots are site-owned
   components; their image uses the direct `file_id` FK, not an association edge.

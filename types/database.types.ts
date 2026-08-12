@@ -33729,6 +33729,23 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_access_planner_snapshot: {
+        Args: { p_schema?: string }
+        Returns: Json
+      }
+      admin_configure_entity_access: {
+        Args: {
+          p_fk_column?: string
+          p_label: string
+          p_mode: string
+          p_notes?: string
+          p_parent_type?: string
+          p_schema: string
+          p_table: string
+          p_token: string
+        }
+        Returns: Json
+      }
       admin_delete_catalog_entry: {
         Args: { p_app: string; p_key: string; p_kind: string }
         Returns: {
@@ -34079,9 +34096,28 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_set_access_planner_exclusion: {
+        Args: {
+          p_excluded: boolean
+          p_reason?: string
+          p_schema: string
+          p_table: string
+        }
+        Returns: undefined
+      }
       admin_set_association_enforcement: {
         Args: { p_enabled: boolean }
         Returns: boolean
+      }
+      admin_set_containment_edge: {
+        Args: {
+          p_child_type: string
+          p_enabled: boolean
+          p_fk_column: string
+          p_notes?: string
+          p_parent_type: string
+        }
+        Returns: undefined
       }
       admin_set_entity_type_active: {
         Args: { p_is_active: boolean; p_token: string }

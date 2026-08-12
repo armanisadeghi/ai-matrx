@@ -304,6 +304,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "Network",
         destinations: [
           destination("/administration/database/relationships"),
+          destination("/administration/database/relationships/planner"),
           destination("/administration/database/relationships/rules"),
           destination("/administration/database/relationships/entity-types"),
           destination("/administration/database/relationships/explorer", [

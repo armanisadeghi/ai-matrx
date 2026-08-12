@@ -15,6 +15,7 @@ import {
   Network,
   Search,
   ShieldQuestion,
+  Workflow,
   Waypoints,
   Zap,
 } from "lucide-react";
@@ -26,6 +27,11 @@ const NAV_ITEMS = [
     href: "/administration/database/relationships",
     icon: LayoutDashboard,
     exact: true,
+  },
+  {
+    label: "Planner",
+    href: "/administration/database/relationships/planner",
+    icon: Workflow,
   },
   {
     label: "Rules",
