@@ -37,7 +37,9 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { LIBRARY_STATUS_FILTER_VALUES } from "@/features/rag/constants/libraryStatusFilters";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -278,6 +280,17 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "library_query",
     sortOrder: 380,
   },
+  {
+    name: "library_filters",
+    label: "Library filters",
+    description:
+      "Composite of everything shaping the document table right now: `{ search_query, status_filter }`. `status_filter` is \"all\" when unfiltered. This is the READ TWIN of the write target of the same name — read it to see what is already applied before narrowing further, because a write REPLACES only the keys it names. Absent in the catalog view.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 60,
+    group: "library_query",
+    sortOrder: 385,
+  },
 
   // ── Documents on screen (390-429) ─────────────────────────────────────
   {
@@ -408,6 +421,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 475,
   },
   {
+    name: "catalog_filters",
+    label: "Catalog filters",
+    description:
+      "Composite of everything narrowing the catalog list right now: `{ search_query, entitled_only }`. This is the READ TWIN of the write target of the same name — read it before narrowing further, because a write REPLACES only the keys it names. Absent in the library view.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 50,
+    group: "catalog_browse",
+    sortOrder: 478,
+  },
+  {
     name: "catalog_entitled_count",
     label: "Entitled libraries",
     description:
@@ -454,11 +478,122 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * What an agent may WRITE on the Knowledge Library.
+ *
+ * The judgment that produced this set, written down because the shape is not
+ * obvious from the field list:
+ *
+ * This surface holds exactly ONE piece of authored content — a document's
+ * name. Everything else on screen is either a derived count or a filter. So
+ * the target set is deliberately small, and it is built around the one job an
+ * agent is genuinely better at here: FINDING a document in a corpus the user
+ * cannot eyeball, opening it, and giving it a name a human can search for
+ * later. Search → open → rename is one coherent flow, and each of its three
+ * steps is a target below.
+ *
+ * The two filter pairs are COMPOSITE (one object each) rather than four
+ * separate targets, following `matrx-user/agents`' `catalog_filters`:
+ * "show me only the pending documents matching 'invoice'" is ONE user intent
+ * and deserves ONE confirm dialog, not two. Validating the whole object before
+ * touching any state also means a half-applied filter is unreachable.
+ *
+ * DELIBERATELY NOT WRITABLE, and each for its own reason:
+ *   - Every rollup and count (`documents_*`, `library_totals`, `segment_count`,
+ *     `pages_persisted`, `embeddings_*`, `visible_documents`, `active_jobs`,
+ *     `document_status_breakdown`). These are DERIVED — the database's answer,
+ *     not a field. A target that "sets" one would be a lie the user then reads
+ *     back as truth.
+ *   - Ingest, re-embed, and re-process. An embedding run spends real money per
+ *     call; the human pressing the button IS the spending gate, and moving that
+ *     gate behind an agent's judgment is not a convenience.
+ *   - Delete and trash. Destructive stays human, always.
+ *   - Catalog subscribe / unsubscribe. That changes what the user is entitled
+ *     to read, which is an access decision, not a view decision.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "library_filters",
+    label: "Library filters",
+    description:
+      "Narrows the document table on /rag/library — the same search box and status buttons the user clicks. " +
+      "Value is an OBJECT containing ONLY the keys you want to change; each key you send REPLACES that filter outright. " +
+      'Keys: `search_query` (string, matched server-side against the document NAME only — not its contents; pass "" to clear it), ' +
+      "and `status_filter` (exactly one of: " +
+      LIBRARY_STATUS_FILTER_VALUES.map((v) => `"${v}"`).join(" | ") +
+      '; "all" clears the filter). ' +
+      "Send both in ONE call rather than two — a second call replaces only the keys it names. " +
+      "This ONLY changes what is on screen: no document is modified, moved, re-processed or deleted, and nothing is saved. " +
+      'Note "pending" means the document FAILED to ingest — filtering to it is how you find broken uploads. ' +
+      "After this lands, `visible_documents`, `library_visible_count` and `library_total_matches` are STALE — they describe the table from before your write, so do not report them as what is now on screen.",
+    valueType: "object",
+    updatesValue: "library_filters",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "library_query",
+    sortOrder: 386,
+  },
+  {
+    name: "selected_document_id",
+    label: "Open document",
+    description:
+      "Opens one processed document's detail sheet on /rag/library — the same thing clicking its row does. " +
+      "Value is the document's UUID as a plain string, and it MUST be the `id` of a document in `visible_documents` " +
+      "(narrow the table with `library_filters` first if the one you want is not listed; an id that is not on screen is refused rather than guessed at). " +
+      'Pass "" to close the sheet and clear the selection. ' +
+      "Opening a document changes nothing about it — it only shows the user its pages, segments and processing history. " +
+      "Open the document BEFORE writing `selected_document_name`, which can only rename the one that is open.",
+    valueType: "string",
+    updatesValue: "selected_document_id",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "library_documents",
+    sortOrder: 396,
+  },
+  {
+    name: "selected_document_name",
+    label: "Open document name",
+    description:
+      "RENAMES the document whose detail sheet is currently open, exactly as the sheet's Rename dialog does. " +
+      "This one is PERSISTED immediately to the database on approval — it is not staged, and there is no undo, though the user is asked first and can decline. " +
+      "Value is the new name as a PLAIN TEXT STRING — not JSON, not a JSON-encoded string, and not wrapped in a code fence. " +
+      'Send `Q3 Vendor Agreement — Acme`, never `"Q3 Vendor Agreement"` or `{"name": "..."}`. ' +
+      "One line only (no newlines), 1-200 characters after trimming. " +
+      "A document must be open first — write `selected_document_id` if none is. " +
+      "This is the value worth an agent's judgment on this page: source files arrive named `scan_final_v3.pdf`, and a name describing what the document actually IS makes it findable later. " +
+      "Renaming changes the label only — it never re-processes, re-embeds or moves the document, and the file it came from keeps its own name.",
+    valueType: "string",
+    updatesValue: "selected_document_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "library_documents",
+    sortOrder: 401,
+  },
+  {
+    name: "catalog_filters",
+    label: "Catalog filters",
+    description:
+      "Narrows the shared-library list on /rag/library-catalog — the same search box and checkbox the user clicks. " +
+      "Value is an OBJECT containing ONLY the keys you want to change; each key you send REPLACES that filter outright. " +
+      'Keys: `search_query` (string, matched client-side against library name, description, short code and entitling industry; pass "" to clear it), ' +
+      'and `entitled_only` (boolean; true hides libraries the user cannot read — the "Only libraries I can read" checkbox). ' +
+      "Send both in ONE call rather than two. " +
+      "This ONLY changes what is on screen — it does NOT subscribe the user to anything, unsubscribe them, or change what they are entitled to read. " +
+      "After this lands, `catalog_libraries` and `catalog_visible_count` are STALE — they describe the list from before your write.",
+    valueType: "object",
+    updatesValue: "catalog_filters",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "catalog_browse",
+    sortOrder: 479,
+  },
+];
+
 export const ragLibraryManifest: SurfaceManifest = {
   surfaceName: "matrx-user/rag-library",
   readiness: "partial",
   readinessNote:
-    "Manifest authored against the live /rag/library + /rag/library-catalog components and both emitters are wired via SurfaceRuntimeProvider; not yet DB-synced and no live non-matching-name binding test run. The detail sheet's LibraryDocDetail body stays undeclared by design — it belongs to matrx-user/rag-viewer.",
+    "Values authored against the live /rag/library + /rag/library-catalog components and both emitters are wired via SurfaceRuntimeProvider; not yet DB-synced and no live non-matching-name binding test run. All four write targets ARE live-verified against a real agent run on /rag/library — apply, decline, an undeclared-target refusal, and a handler throw reaching the agent. catalog_filters' handler is verified by construction on the same seam but its route (/rag/library-catalog) was not separately driven. The detail sheet's LibraryDocDetail body stays undeclared by design — it belongs to matrx-user/rag-viewer.",
   label: "Knowledge Library",
   urlPattern: "/rag/library",
   intro: `<surface_intro>
@@ -488,12 +623,33 @@ This surface holds document SUMMARIES only, never their text. To read a
 document's pages or segments, use its id on the document viewer surface.
 In the catalog, entitled_via is the honest answer to "why can I read this?" —
 null means the user cannot read that library at all.
+
+YOU CAN NAVIGATE THIS CORPUS AND NAME ONE DOCUMENT — NOTHING ELSE.
+Four targets are writable, and they exist to serve one flow: FIND a document
+the user is describing, OPEN it, and give it a name they can find it by later.
+  - library_filters   — narrow the table (search_query + status_filter, ONE
+                        object, one call)
+  - selected_document_id   — open a row from visible_documents
+  - selected_document_name — RENAME the open document; persisted on approval
+  - catalog_filters   — narrow the catalog list (catalog view only)
+Renaming is the one place your judgment produces real value here: a corpus
+full of scan_final_v3.pdf is a corpus nobody can search. Read the document's
+row first and name it for what it IS.
+Everything that SPENDS or DESTROYS is deliberately not writable — ingesting,
+re-processing, re-embedding, deleting, and catalog subscribe/unsubscribe.
+An embedding run costs real money, so the user's own click is the gate. Hand
+them the narrowed list and let them press the button.
+Every count and total is DERIVED and cannot be written at all. After any
+filter write, the counts and row lists you were given describe the PREVIOUS
+view — they were captured when this run started, so do not read them back as
+what is now on screen.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One processed-document row as this surface hands it to an agent. */
@@ -570,6 +726,7 @@ export function createRagLibraryScope(values: {
   // List query
   library_search_query?: string;
   library_status_filter?: string;
+  library_filters?: Record<string, unknown>;
   library_total_matches?: number;
   library_visible_count?: number;
   library_list_status?: string;
@@ -590,6 +747,7 @@ export function createRagLibraryScope(values: {
   catalog_visible_count?: number;
   catalog_search_query?: string;
   catalog_entitled_only?: boolean;
+  catalog_filters?: Record<string, unknown>;
   catalog_entitled_count?: number;
   catalog_selected_library_id?: string;
   catalog_selected_library?: RagLibraryCatalogEntry;

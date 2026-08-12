@@ -113,10 +113,89 @@ export function LibraryCatalogPage() {
     [catalog.items, items, query, entitledOnly, storeId],
   );
 
+  // ── Surface write handlers ──────────────────────────────────────────────
+  //
+  // ONE target on this half of the surface: `catalog_filters`, carrying the
+  // search box and the entitled-only checkbox as a single object, landing
+  // through the same `setQuery` / `setEntitledOnly` setters those two controls
+  // use. Both are React state setters — stable for the component's life — so
+  // there is no stale-closure hazard across the confirm dialog, and no live
+  // vocabulary to re-read at call time.
+  //
+  // Subscribe / unsubscribe is deliberately NOT writable: it changes what the
+  // user is ENTITLED to read, which is an access decision rather than a view
+  // decision, and the button stays theirs to press.
+  const buildWriteHandlers = () => ({
+    catalog_filters: (value: unknown) => {
+      let raw = value;
+      if (typeof raw === "string") {
+        try {
+          raw = JSON.parse(raw);
+        } catch {
+          throw new Error(
+            "catalog_filters expects an object of filter keys, e.g. " +
+              '{"search_query": "legal", "entitled_only": true} — received a string that is not valid JSON.',
+          );
+        }
+      }
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        throw new Error(
+          `catalog_filters expects an object of filter keys — received ${Array.isArray(raw) ? "an array" : typeof raw}.`,
+        );
+      }
+      const input = raw as Record<string, unknown>;
+
+      const validKeys = ["search_query", "entitled_only"];
+      const badKeys = Object.keys(input).filter((k) => !validKeys.includes(k));
+      if (badKeys.length > 0) {
+        throw new Error(
+          `catalog_filters received unknown key(s): ${badKeys.join(", ")}. Nothing was changed. ` +
+            `Valid keys are: ${validKeys.join(", ")}. This target only shapes the VIEW — it cannot ` +
+            `subscribe the user to a library, unsubscribe them, or change what they are entitled to read.`,
+        );
+      }
+      if (Object.keys(input).length === 0) {
+        throw new Error(
+          `catalog_filters needs at least one of: ${validKeys.join(", ")}. An empty object would change nothing.`,
+        );
+      }
+
+      // Validate the whole object before touching either control.
+      let nextQuery: string | null = null;
+      let nextEntitledOnly: boolean | null = null;
+
+      if ("search_query" in input) {
+        if (typeof input.search_query !== "string") {
+          throw new Error(
+            `catalog_filters.search_query expects a plain string (pass "" to clear the search) — received ${typeof input.search_query}.`,
+          );
+        }
+        nextQuery = input.search_query;
+      }
+      if ("entitled_only" in input) {
+        const candidate = input.entitled_only;
+        // The exact "true"/"false" strings are tolerated because the inline-tool
+        // layer's parsing makes double-encoding a common model correction;
+        // anything else throws rather than being guessed at for truthiness.
+        if (candidate === true || candidate === "true") nextEntitledOnly = true;
+        else if (candidate === false || candidate === "false")
+          nextEntitledOnly = false;
+        else
+          throw new Error(
+            `catalog_filters.entitled_only expects a boolean (true or false) — received ${JSON.stringify(candidate)}.`,
+          );
+      }
+
+      if (nextQuery !== null) setQuery(nextQuery);
+      if (nextEntitledOnly !== null) setEntitledOnly(nextEntitledOnly);
+    },
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={RAG_LIBRARY_SURFACE}
       getScope={getScope}
+      getWriteHandlers={buildWriteHandlers}
       isEditable={false}
     >
       <RagHubHeader
