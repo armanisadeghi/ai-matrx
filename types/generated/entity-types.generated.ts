@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 324 active entity tokens. A token here is FK-valid for
+// 328 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -180,6 +180,10 @@ export type EntityTypeToken =
   | "global_request"
   | "growth_loop_run"
   | "heatmap_save"
+  | "hindsight_enrollment"
+  | "hindsight_finding"
+  | "hindsight_replay"
+  | "hindsight_review"
   | "industry_curator"
   | "invitation"
   | "invitation_code"
@@ -523,6 +527,9 @@ export type ComponentEntityToken =
   | "global_execution_checkpoint"
   | "global_execution_event"
   | "global_meter_entry"
+  | "hindsight_finding"
+  | "hindsight_replay"
+  | "hindsight_review"
   | "message"
   | "party_contact_point"
   | "pc_studio_run_asset"
@@ -712,6 +719,10 @@ export type ScopeableEntityToken =
   | "global_request"
   | "growth_loop_run"
   | "heatmap_save"
+  | "hindsight_enrollment"
+  | "hindsight_finding"
+  | "hindsight_replay"
+  | "hindsight_review"
   | "industry_curator"
   | "invitation"
   | "invitation_code"
@@ -1074,6 +1085,10 @@ export const ENTITY_TYPE_METADATA = {
   "global_request": { token: "global_request", schema: "runtime", table: "global_request", label: "Runtime Request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "growth_loop_run": { token: "growth_loop_run", schema: "growth", table: "loop_run", label: "Growth Loop Run", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
   "heatmap_save": { token: "heatmap_save", schema: "public", table: "heatmap_saves", label: "Heatmap Save", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
+  "hindsight_enrollment": { token: "hindsight_enrollment", schema: "hindsight", table: "enrollment", label: "Hindsight Enrollment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_name", contentRole: null, referenceCategory: null },
+  "hindsight_finding": { token: "hindsight_finding", schema: "hindsight", table: "finding", label: "Hindsight Finding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hindsight_replay": { token: "hindsight_replay", schema: "hindsight", table: "replay", label: "Hindsight Replay", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hindsight_review": { token: "hindsight_review", schema: "hindsight", table: "review", label: "Hindsight Review", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "industry_curator": { token: "industry_curator", schema: "iam", table: "industry_curators", label: "Industry Curator", baseTier: 2, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "invitation": { token: "invitation", schema: "iam", table: "invitations", label: "Invitation", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "invitation_code": { token: "invitation_code", schema: "users", table: "invitation_codes", label: "Invitation Code", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1402,6 +1417,10 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "global_request",
   "growth_loop_run",
   "heatmap_save",
+  "hindsight_enrollment",
+  "hindsight_finding",
+  "hindsight_replay",
+  "hindsight_review",
   "industry_curator",
   "invitation",
   "invitation_code",
