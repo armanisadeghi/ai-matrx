@@ -18,7 +18,8 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { callApi } from "@/lib/api/call-api";
 import type { Json } from "@/types/database.types";
-import { decideAssist } from "../service";
+import { decideAssist, snoozeAssist } from "../service";
+import { snoozeUntilIso, type SnoozeWindowKey } from "../constants";
 import { assistDecided } from "../redux/assistsSlice";
 import {
   getAssistAction,
@@ -39,6 +40,14 @@ export interface AssistRunnerApi {
   acceptAssist: (assist: Assist) => Promise<AssistActionResult>;
   /** Dismiss without running — durable (the producer will not re-emit). */
   dismissAssist: (assist: Assist) => Promise<void>;
+  /**
+   * "Not now, but ask me again" — goes quiet for a window WITHOUT deciding, so
+   * the producer still treats the thing as un-answered and the chip returns on
+   * its own. The middle rung kg-suggestions had (defer) and assists lacked:
+   * without it, the only way to clear a chip you cannot act on today was to
+   * kill it forever.
+   */
+  snoozeAssist: (assist: Assist, window?: SnoozeWindowKey) => Promise<void>;
 }
 
 export function useAssistRunner(): AssistRunnerApi {
@@ -148,5 +157,23 @@ export function useAssistRunner(): AssistRunnerApi {
     [dispatch],
   );
 
-  return { acceptAssist, dismissAssist };
+  const snooze = useCallback(
+    async (assist: Assist, window: SnoozeWindowKey = "7d"): Promise<void> => {
+      if (!assist.id) return;
+      try {
+        await snoozeAssist(assist.id, snoozeUntilIso(window));
+        dispatch(assistDecided(assist.id));
+      } catch (error) {
+        toast.error("Could not snooze — try again");
+        captureError({
+          source: "assists",
+          message: `Assist ${assist.id} snooze failed`,
+          details: error instanceof Error ? error.message : String(error),
+        });
+      }
+    },
+    [dispatch],
+  );
+
+  return { acceptAssist, dismissAssist, snoozeAssist: snooze };
 }

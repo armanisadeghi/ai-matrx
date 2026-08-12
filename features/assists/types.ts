@@ -93,7 +93,58 @@ export interface Assist {
   priority: number;
   dedupeKey: string | null;
   createdAt: string;
+  /** Set once the row leaves `pending` — the manager's history column. */
+  decidedAt: string | null;
+  /** In the future = snoozed: still pending, deliberately out of sight. */
+  suppressedUntil: string | null;
+  expiresAt: string | null;
+  /** The receipt written when the action ran. */
+  result: Json | null;
 }
+
+/**
+ * The manager's free-form query — EVERY status, server-side filter / sort /
+ * paginate. Deliberately separate from the chip read (`listMyPendingAssists`),
+ * which is the narrow live-pending view THE VIEW LAW requires of a chip.
+ *
+ * Absorbed from kg-suggestions' `KgSuggestionsQuery`: a triage surface has to
+ * reach decided rows, and folding that into the chip read would either flood
+ * the dock or hide the history.
+ */
+export interface AssistsQuery {
+  /** Empty = every status. */
+  statuses: AssistStatus[];
+  sourceKey: string | null;
+  sourceKind: AssistSourceKind | null;
+  surfaceName: string | null;
+  search: string;
+  /** Exclusive upper bound on confidence — the low-confidence fold-out. */
+  maxConfidence: number | null;
+  /** Inclusive lower bound on confidence. */
+  minConfidence: number | null;
+  /** Include rows currently snoozed (`suppressed_until` in the future). */
+  includeSnoozed: boolean;
+  sortField: AssistSortField;
+  sortAscending: boolean;
+  page: number;
+  pageSize: number;
+}
+
+export type AssistSortField =
+  | "created_at"
+  | "decided_at"
+  | "priority"
+  | "confidence"
+  | "status"
+  | "source_key";
+
+export interface AssistsPage {
+  rows: Assist[];
+  total: number;
+}
+
+/** Per-status counts for the manager's summary strip. */
+export type AssistStats = Record<AssistStatus, number>;
 
 /** Producer input for `emitAssist` — deterministic client-side producers. */
 export interface EmitAssistInput {
@@ -191,6 +242,10 @@ export function makeEphemeralAssist(input: {
     priority: 0,
     dedupeKey: null,
     createdAt: new Date().toISOString(),
+    decidedAt: null,
+    suppressedUntil: null,
+    expiresAt: null,
+    result: null,
   };
 }
 
@@ -222,5 +277,9 @@ export function toAssist(row: AssistRow): Assist | null {
     priority: row.priority,
     dedupeKey: row.dedupe_key,
     createdAt: row.created_at,
+    decidedAt: row.decided_at,
+    suppressedUntil: row.suppressed_until,
+    expiresAt: row.expires_at,
+    result: row.result,
   };
 }
