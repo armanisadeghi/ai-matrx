@@ -90,6 +90,15 @@ export function useWarRoomThreadWriteHandlers(
         throw new Error(
           `${target}: the note's body could not be loaded, so it cannot be written safely. Open the thread's Notes tab once and try again.`,
         );
+      // A thread can still carry an assignment to a SOFT-DELETED note, and
+      // `selectActiveNoteId` will happily hand it back (it filters on
+      // `is_active`, not `deleted_at`). Writing there succeeds all the way to
+      // the database and the user never sees a character of it — the worst
+      // shape of "applied" there is. Refuse and name the real fix.
+      if (note.deleted_at)
+        throw new Error(
+          `${target}: the note this thread points at has been deleted, so writing to it would be invisible to the user. Ask them to add a new note from the thread's Notes tab first.`,
+        );
       // `null` is a LOADED but empty body — distinct from `undefined` above.
       return note.content ?? "";
     };

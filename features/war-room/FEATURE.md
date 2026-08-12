@@ -192,7 +192,12 @@ Dev-login → `/war-room/all`. Create a room; add threads. **Stage mode:** the l
   then read the buffer back — a thread whose Notes tab was never opened has no
   record in the notes slice at all, and without the hydrate the reducer has
   nothing to patch and `autoSaveMiddleware` bails, so the agent would be told
-  "applied" for a write that never reached the note. Recording, transcripts,
+  "applied" for a write that never reached the note. They also **refuse a
+  soft-deleted note**: `selectActiveNoteId` filters on `is_active`, not on
+  `deleted_at`, so a thread can still point at a deleted note, and a write
+  there persists all the way to `workbench.notes` while the user never sees a
+  character of it — an id that resolves is not the same as a row the user can
+  see. Recording, transcripts,
   the conversation, thread position/pin and the resource attachment sets stay
   human. The thread TITLE is deliberately absent: it is already writable as
   `active_thread_title` on the room surface (see the entry below), and a
