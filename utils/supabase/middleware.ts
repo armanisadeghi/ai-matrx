@@ -11,6 +11,11 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { requireEnv } from "@/utils/supabase/env";
 import { authCookieOptions } from "@/utils/supabase/authCookie";
+import {
+  captureAuthDestination,
+  loginHref,
+  readAuthDestination,
+} from "@/utils/auth/auth-destination";
 
 export async function updateSession(
   request: NextRequest,
@@ -52,7 +57,10 @@ export async function updateSession(
   // With Fluid compute, don't put this client in a global environment
   // variable. Always create a new one on each request.
   const supabase = createServerClient(
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL),
+    requireEnv(
+      "NEXT_PUBLIC_SUPABASE_URL",
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+    ),
     requireEnv(
       "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
@@ -92,7 +100,37 @@ export async function updateSession(
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Handle authenticated users trying to access login/signup pages
+  // An authenticated user sitting on an auth page or a generic landing page
+  // while still carrying a destination gets forwarded straight there. This is
+  // the safety net that closes the whole flow: whatever route the user took —
+  // a stale /login tab, a second browser tab, an OAuth hop that landed on
+  // /dashboard — the destination they asked for wins over the generic landing.
+  //
+  // The destination check MUST come before the login/sign-up bounce below.
+  // That bounce sent every authenticated visitor to `landing`, so an authed
+  // user opening /login?redirectTo=/tasks lost /tasks on the way to /dashboard.
+  //
+  // readAuthDestination refuses off-site targets and auth pages, so a hostile
+  // or self-referential value falls through to normal rendering instead of
+  // looping.
+  if (user) {
+    const isBounceablePage =
+      pathname === landing ||
+      pathname === "/dashboard" ||
+      pathname === "/login" ||
+      pathname === "/sign-up";
+    if (isBounceablePage) {
+      const destination = readAuthDestination(request.nextUrl.searchParams);
+      if (destination && destination !== pathname + request.nextUrl.search) {
+        return NextResponse.redirect(
+          new URL(destination, request.nextUrl.origin),
+        );
+      }
+    }
+  }
+
+  // Handle authenticated users trying to access login/signup pages with no
+  // destination to honour — send them to the surface's landing page.
   if (
     user &&
     (request.nextUrl.pathname === "/login" ||
@@ -101,35 +139,6 @@ export async function updateSession(
     const url = request.nextUrl.clone();
     url.pathname = landing;
     return NextResponse.redirect(url);
-  }
-
-  // Handle authenticated users landing on /dashboard with a redirectTo param —
-  // forward them directly to the intended destination instead of showing the dashboard.
-  if (user && request.nextUrl.pathname === "/dashboard") {
-    const redirectTo = request.nextUrl.searchParams.get("redirectTo");
-    if (
-      redirectTo &&
-      redirectTo !== "/" &&
-      redirectTo !== "/login" &&
-      redirectTo !== "/sign-up"
-    ) {
-      const url = request.nextUrl.clone();
-      // redirectTo may be a full path+search like /some/path?foo=bar
-      try {
-        const target = new URL(redirectTo, request.nextUrl.origin);
-        // Only allow same-origin redirects to prevent open-redirect attacks
-        if (target.origin === request.nextUrl.origin) {
-          return NextResponse.redirect(target);
-        }
-      } catch {
-        // redirectTo is a relative path — construct the URL directly
-        const target = new URL(request.nextUrl.origin);
-        const [pathname, search] = redirectTo.split("?");
-        target.pathname = pathname;
-        if (search) target.search = `?${search}`;
-        return NextResponse.redirect(target);
-      }
-    }
   }
 
   // Handle unauthenticated users trying to access routes that require a valid session.
@@ -144,11 +153,16 @@ export async function updateSession(
     pathname.startsWith("/scraper/");
 
   if (!user && requiresAuth) {
-    const url = request.nextUrl.clone();
-    const fullPath = pathname + request.nextUrl.search;
-    url.pathname = "/login";
-    url.searchParams.set("redirectTo", fullPath);
-    return NextResponse.redirect(url);
+    // THE CAPTURE POINT. This is where a destination is born: the page the
+    // user actually asked for, with its query intact and auth chrome stripped.
+    // Everything downstream only ever passes it along — it is never recreated.
+    const destination = captureAuthDestination(
+      pathname,
+      request.nextUrl.search,
+    );
+    return NextResponse.redirect(
+      new URL(loginHref(destination), request.nextUrl.origin),
+    );
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
@@ -166,6 +180,12 @@ export async function updateSession(
 
   // Forward the pathname so server layouts can read it via headers()
   supabaseResponse.headers.set("x-pathname", request.nextUrl.pathname);
+  // ...and the query string with it. `app/(admin)/layout.tsx` has been READING
+  // `x-search-params` to build its login redirect since it was written, but
+  // nothing ever SET it — so every admin bounce silently dropped the query
+  // half of the destination (`/administration/users?tab=invites` came back as
+  // `/administration/users`).
+  supabaseResponse.headers.set("x-search-params", request.nextUrl.search);
 
   return supabaseResponse;
 }

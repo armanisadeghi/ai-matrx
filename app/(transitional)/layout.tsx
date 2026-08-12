@@ -28,6 +28,10 @@ import { headers } from "next/headers";
 // `lib/sync/identity::attachStore` (called from StoreProvider) wires the
 // reactive identity source so non-React consumers see the current state.
 import ResponsiveLayout from "@/components/layout/new-layout/ResponsiveLayout";
+import {
+  captureAuthDestination,
+  loginHref,
+} from "@/utils/auth/auth-destination";
 
 export default async function AuthenticatedLayout({
   children,
@@ -46,9 +50,16 @@ export default async function AuthenticatedLayout({
   } = await supabase.auth.getUser();
 
   // Proxy already handles redirecting unauthenticated users to login
-  // This is a safety check in case proxy is bypassed somehow
+  // This is a safety check in case proxy is bypassed somehow — and it must
+  // carry the destination too, or a bypassed proxy silently costs the user
+  // their place.
   if (!user) {
-    return redirect("/login");
+    const headersList = await headers();
+    const destination = captureAuthDestination(
+      headersList.get("x-pathname"),
+      headersList.get("x-search-params"),
+    );
+    return redirect(loginHref(destination));
   }
 
   // Phase 3: admin check is now a narrow single-row lookup; preferences
