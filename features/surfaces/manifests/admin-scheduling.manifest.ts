@@ -1,23 +1,22 @@
 /**
  * Surface manifest — Scheduling admin (`matrx-admin/scheduling`).
  *
- * ADMIN SURFACE. NEW surface — no `ui_surface` row exists yet; seed one
- * before syncing. Drives `/administration/automation/scheduling/**`
- * (`app/(admin)/administration/automation/scheduling/`), the cross-user view
- * of the `sch_*` spine (feature code `features/scheduling/`): scheduled
- * tasks, their run history, orphaned leases, a cron expression tester, live
- * scanner health from aidream, and curated starter templates.
+ * ADMIN SURFACE. Drives `/administration/automation/scheduling/**`
+ * (`app/(admin)/administration/automation/scheduling/`), the console over the
+ * `sch_*` spine (feature code `features/scheduling/`): scheduled tasks, their
+ * run history, orphaned leases, a cron expression tester, live scanner health
+ * from aidream, and curated starter templates. The `ui_surface` row exists
+ * (verified 2026-08-12); only the VALUE rows still need a manifest sync.
  *
  * Seven route-tabbed pages share one shell
  * (`SchedulingAdminLayoutClient.tsx`):
  *
  *   - Overview        `page.tsx` — health-summary tiles (task/run/failure/
  *     orphan counts via `fetchHealthSummary`) plus link tiles to the rest.
- *   - Tasks           `tasks/page.tsx` — every scheduled task across the
- *     platform, with a title search and an enabled/disabled filter
- *     (`fetchAllTasksAdmin`).
- *   - Runs            `runs/page.tsx` — run history with status + surface
- *     filters (`fetchAllRunsAdmin`).
+ *   - Tasks           `tasks/page.tsx` — scheduled tasks in a
+ *     `MatrxDataTable` (`fetchAllTasksAdmin`, server-capped at 200).
+ *   - Runs            `runs/page.tsx` — run history with SERVER-side status +
+ *     surface filters (`fetchAllRunsAdmin`, server-capped at 200).
  *   - Orphan leases   `orphan-leases/page.tsx` — claimed/running runs whose
  *     lease expired (`fetchOrphanLeases`), with a "mark failed" admin action.
  *   - Cron tester     `cron-tester/page.tsx` — pure client-side cron
@@ -30,21 +29,39 @@
  *
  * `active_tab` is derived from the pathname (route-tabbed, so reliably
  * knowable at any moment). Every other value below is real client-component
- * state (THE COMPLETENESS LAW), but each tab keeps its own state with no
- * cross-tab bridge, and only ONE tab mounts a `SurfaceRuntimeProvider` so far
- * — hence `readiness: "partial"`.
+ * state (THE COMPLETENESS LAW), and each tab owns its own state.
  *
- * The Cron tester mounts it (2026-08-12, the surface's first runtime): that
- * page emits `active_tab` plus its five `cron_*` values and registers the
- * surface's two write targets. The other six tabs mount nothing, so a run
- * started on them still sees an empty scope.
+ * TWO runtime mounts, and the nesting is deliberate:
  *
- * What an agent bound here may safely do: on the Cron tester, read the
- * expression/timezone/validation result and propose or apply a better
- * expression (see `writeTargets` below). Anywhere else in this console it
- * must NOT assume anything is in scope — those tabs emit nothing today, and
- * nothing that changes what the platform actually RUNS is writable from here
- * at all.
+ *   - The SHELL (`SchedulingAdminLayoutClient`) mounts the outer provider. It
+ *     always knows `active_tab` from the pathname, and each of the other six
+ *     tabs publishes its own slice up to it through
+ *     `features/scheduling/lib/admin-scheduling-scope.ts` — only the MOUNTED
+ *     tab's slice is ever emitted, so no tab can report another's state.
+ *   - The Cron tester (2026-08-12, the surface's first runtime) mounts its own
+ *     provider INSIDE that one, via
+ *     `features/scheduling/lib/cron-tester-surface.ts`. Nested providers
+ *     resolve deepest-first, so on that tab its richer scope wins outright and
+ *     it is also where the surface's two write targets are registered.
+ *
+ * What an agent bound here may safely do: read this console's operational
+ * state on any tab, and on the Cron tester read the expression/timezone/
+ * validation result and propose or apply a better expression (see
+ * `writeTargets` below). Nothing that changes what the platform actually RUNS
+ * is writable from here at all.
+ *
+ * NOT A FLEET VIEW (`FOUND_DEFECTS` D140). `scheduler.sch_task` / `sch_run`
+ * carry only the canonical std_select policies — there is no live admin RLS
+ * clause — so every count and row below is the VIEWER'S OWN scheduled work,
+ * not the platform's. The tabs are cross-user by intent and single-user in
+ * fact; an agent reasoning about "platform health" from these numbers would be
+ * wrong, so the vocabulary says "visible to the viewer" throughout.
+ *
+ * Two values this manifest USED to declare — `task_search` and
+ * `task_enabled_filter` — were removed on 2026-08-12: the Tasks tab has no
+ * such page state. Its search box and enabled/disabled filter live INSIDE
+ * `MatrxDataTable`'s own internals, which the page never reads, so both were
+ * promises no data source could keep (the `matrx-user/canvas` failure mode).
  */
 
 import type {
@@ -69,19 +86,19 @@ const groups: SurfaceValueGroup[] = [
     key: "overview",
     label: "Overview",
     sortOrder: 200,
-    description: "Cross-platform health counters for the sch_* spine.",
+    description: "Health counters for the sch_* spine visible to the viewer.",
   },
   {
     key: "tasks",
     label: "Tasks",
     sortOrder: 300,
-    description: "The task list, its search text, and its enabled filter.",
+    description: "The scheduled-task list loaded into the Tasks tab.",
   },
   {
     key: "runs",
     label: "Runs",
     sortOrder: 400,
-    description: "The run list and its status/surface filters.",
+    description: "The run list and its server-side status/surface filters.",
   },
   {
     key: "orphan_leases",
@@ -123,7 +140,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "task_total_count",
     label: "Total task count",
     description:
-      "Total number of scheduled tasks across the platform (health summary). Absent outside the Overview tab.",
+      "Total number of scheduled tasks VISIBLE TO THE VIEWER (health summary; not a platform-wide figure — see D140). Absent outside the Overview tab and until the summary resolves.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 4,
@@ -134,7 +151,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "task_enabled_count",
     label: "Enabled task count",
     description:
-      "Number of scheduled tasks currently enabled (health summary). Absent outside the Overview tab.",
+      "Number of the viewer's scheduled tasks currently enabled (health summary). Absent outside the Overview tab and until the summary resolves.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 4,
@@ -145,7 +162,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "task_due_next_hour_count",
     label: "Tasks due next hour",
     description:
-      "Number of tasks whose next fire falls within the next hour (health summary). Absent outside the Overview tab.",
+      "Number of the viewer's tasks whose next fire falls within the next hour (health summary). Absent outside the Overview tab and until the summary resolves.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -156,7 +173,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "runs_last_24h_count",
     label: "Runs in last 24h",
     description:
-      "Total runs recorded in the last 24 hours across every task (health summary). Absent outside the Overview tab.",
+      "Runs recorded in the last 24 hours across the viewer's tasks (health summary). Absent outside the Overview tab and until the summary resolves.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 4,
@@ -186,34 +203,24 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "overview",
   },
 
+  {
+    name: "overview_load_error",
+    label: "Overview load error",
+    description:
+      "Error message shown in the Overview tab's destructive alert when the health summary query failed. Absent when the summary loaded fine, and outside the Overview tab.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 90,
+    sortOrder: 260,
+    group: "overview",
+  },
+
   // ── Tasks ────────────────────────────────────────────────────────────────
-  {
-    name: "task_search",
-    label: "Task search",
-    description:
-      "Title search text in the Tasks tab's search box. Empty string when no search is active. Absent outside the Tasks tab.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 20,
-    sortOrder: 300,
-    group: "tasks",
-  },
-  {
-    name: "task_enabled_filter",
-    label: "Task enabled filter",
-    description:
-      'The Tasks tab\'s state filter: "any", "enabled", or "disabled". Absent outside the Tasks tab.',
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 8,
-    sortOrder: 310,
-    group: "tasks",
-  },
   {
     name: "task_row_count",
     label: "Task row count",
     description:
-      "Number of tasks currently loaded into the Tasks tab's table after search/filter (capped at 200 by the query). Absent outside the Tasks tab.",
+      "Number of scheduled tasks the Tasks tab fetched from the server (capped at 200 by the query). This is the RAW fetched count — the table's own search box and column filters narrow what is on screen without changing it, and the page cannot read those. Absent outside the Tasks tab.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -226,7 +233,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "run_status_filter",
     label: "Run status filter",
     description:
-      'The Runs tab\'s status filter: "any", or one of the RunStatus values (queued/claimed/running/success/failed/cancelled/skipped). Absent outside the Runs tab.',
+      'The Runs tab\'s SERVER-side status filter: "any", or one of the RunStatus values (queued/claimed/running/success/failed/cancelled/skipped). Reported as "any" when the picker is on "Any status". Absent outside the Runs tab.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 9,
@@ -237,7 +244,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "run_surface_filter",
     label: "Run surface filter",
     description:
-      'The Runs tab\'s originating-surface filter: "any", or one of the Surface enum values. Absent outside the Runs tab.',
+      'The Runs tab\'s SERVER-side originating-surface filter: "any", or one of the Surface enum values. Reported as "any" when the picker is on "Any surface". Absent outside the Runs tab.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 20,
@@ -248,7 +255,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "run_row_count",
     label: "Run row count",
     description:
-      "Number of runs currently loaded into the Runs tab's table after filtering (capped at 200 by the query). Absent outside the Runs tab.",
+      "Number of runs the Runs tab fetched for the current status/surface filters (capped at 200 by the query). The table's own search box narrows what is on screen without changing this. Absent outside the Runs tab.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -316,6 +323,18 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "cron_tester",
   },
 
+  {
+    name: "cron_expression_human",
+    label: "Cron expression in words",
+    description:
+      'The plain-English reading of the current expression that the tester renders under the input (cronstrue, e.g. "At 09:00 AM, Monday through Friday"). Absent when the expression is invalid or cannot be humanized, and outside the Cron tester tab.',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 60,
+    sortOrder: 625,
+    group: "cron_tester",
+  },
+
   // ── Scanner health ───────────────────────────────────────────────────────
   {
     name: "scanner_running",
@@ -359,6 +378,94 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 3,
     sortOrder: 730,
+    group: "scanner_health",
+  },
+  {
+    name: "scanner_started_at",
+    label: "Scanner started at",
+    description:
+      "ISO timestamp the scanner process started, as shown beside the running/stopped badge. Absent outside the Scanner health tab, before the first poll resolves, or when the scanner is not running.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 24,
+    sortOrder: 715,
+    group: "scanner_health",
+  },
+  {
+    name: "scanner_last_tick_duration_ms",
+    label: "Scanner last tick duration",
+    description:
+      "How long the scanner's last tick took, in milliseconds. Absent outside the Scanner health tab, before the first poll resolves, or when the scanner reports no duration yet.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 4,
+    sortOrder: 740,
+    group: "scanner_health",
+  },
+  {
+    name: "scanner_last_tick_claimed",
+    label: "Scanner claimed (last tick)",
+    description:
+      "How many due runs the scanner claimed on its last tick. Absent outside the Scanner health tab, or before the first poll resolves.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 750,
+    group: "scanner_health",
+  },
+  {
+    name: "scanner_last_tick_manual_claimed",
+    label: "Scanner manual claimed (last tick)",
+    description:
+      "How many manually-triggered runs the scanner claimed on its last tick. Absent outside the Scanner health tab, or before the first poll resolves.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 760,
+    group: "scanner_health",
+  },
+  {
+    name: "scanner_last_tick_expired_sweeps",
+    label: "Scanner expired sweeps (last tick)",
+    description:
+      "How many expired claims the scanner swept on its last tick — the stat tile warns when this is non-zero. Absent outside the Scanner health tab, or before the first poll resolves.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 770,
+    group: "scanner_health",
+  },
+  {
+    name: "scanner_total_runs_dispatched",
+    label: "Scanner total dispatched",
+    description:
+      "Lifetime count of runs the scanner has dispatched since the process started. Absent outside the Scanner health tab, or before the first poll resolves.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 6,
+    sortOrder: 780,
+    group: "scanner_health",
+  },
+  {
+    name: "scanner_error_message",
+    label: "Scanner recent error",
+    description:
+      'The scanner\'s own most recent error message, rendered in the "Recent error" alert. Absent when the scanner reports no error, outside the Scanner health tab, or before the first poll resolves.',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 790,
+    group: "scanner_health",
+  },
+  {
+    name: "scanner_unreachable_error",
+    label: "Scanner unreachable error",
+    description:
+      'Why the status poll itself failed — the message in the "Scanner unreachable" alert (backend down, or AIDREAM_SCHEDULER not enabled). Distinct from scanner_error_message, which is an error the scanner itself reported. Absent when the poll succeeded, and outside the Scanner health tab.',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 800,
     group: "scanner_health",
   },
 ];
@@ -426,17 +533,21 @@ export const adminSchedulingManifest: SurfaceManifest = {
   surfaceName: ADMIN_SCHEDULING_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "The Cron tester tab (cron-tester/page.tsx) mounts the surface's FIRST SurfaceRuntimeProvider and emits active_tab + the five cron_* values live; it is also the only tab with write targets. The other six tabs still mount NO provider, so their values (Overview's fetchHealthSummary counters, Tasks/Runs' filters and row counts, Orphan leases' row count, Scanner health's polled status) reflect real component state but are not emitted at runtime yet — an agent run started on those tabs gets an empty scope. Templates (templates/page.tsx) is a hardcoded in-file SEEDS array with no backing table yet — the page's own \"Coming next\" alert says a sch_template table + read RPC are pending — so it is deliberately NOT declared as page data here; declaring it would promise a value no real data source supplies.",
+    "All seven tabs emit live. The shell (SchedulingAdminLayoutClient) mounts the outer SurfaceRuntimeProvider and derives active_tab from the pathname; Overview, Tasks, Runs, Orphan leases and Scanner health publish their own slices through features/scheduling/lib/admin-scheduling-scope.ts, and only the MOUNTED tab's slice is emitted. The Cron tester nests its own provider (features/scheduling/lib/cron-tester-surface.ts), wins that tab by depth, and carries the surface's two write targets. Every value was checked against the live page and both write targets were verified with real agent runs (apply, decline, undeclared-target refusal, and invalid-value throws). Still short of `verified`: the DB value sync has NOT been applied, so ui_surface_value still carries the removed task_search/task_enabled_filter rows and none of the newly declared scanner_*/cron_expression_human/cron_preview_count/overview_load_error rows; and no page element carries a data-surface-value anchor for Locate. Templates (templates/page.tsx) is a hardcoded in-file SEEDS array with no backing table yet — the page's own \"Coming next\" alert says a sch_template table + read RPC are pending — so it is deliberately NOT declared as page data here; declaring it would promise a value no real data source supplies.",
   label: "Scheduling",
   urlPattern: "/administration/automation/scheduling",
   intro: `<surface_intro>
-This is an ADMIN surface: the Scheduling admin console at /administration/automation/scheduling — a cross-user, platform-wide view of the sch_* spine (scheduled tasks, their runs, and the scanner that dispatches them).
+This is an ADMIN surface: the Scheduling console at /administration/automation/scheduling, a view over the sch_* spine (scheduled tasks, their runs, and the scanner that dispatches them).
 
-active_tab tells you which of the tabs the admin is on and is always present. Overview carries platform-wide health counters (task_total_count, task_enabled_count, runs_last_24h_count, failures_last_24h_count, orphan_lease_summary_count). Tasks and Runs carry their own search/filter state plus how many rows are currently loaded. Orphan leases counts runs whose claim lease expired without completing — these should self-heal on the next scanner tick; a persistent nonzero count means something is wrong upstream. Cron tester is a pure client-side validator: cron_expression / cron_timezone / cron_next_fires describe what the admin is testing, not a live schedule. Scanner health mirrors aidream's live scanner process state (scanner_running, scanner_consecutive_errors, scanner_in_flight_count).
+active_tab tells you which of the seven tabs the admin is on and is always present. Only the MOUNTED tab's values are emitted — every other tab's values are absent, not stale, because each tab owns its own state.
+
+READ THE COUNTS CORRECTLY: despite the console's cross-user framing, scheduler.sch_task / sch_run have no live admin RLS clause (FOUND_DEFECTS D140), so every count and row here is the VIEWER'S OWN scheduled work, not the platform's. Do not report these as fleet-wide numbers.
+
+Overview carries the health counters. Tasks and Runs report how many rows the SERVER returned (each capped at 200); their tables also have their own search boxes and column filters, which narrow the screen without changing these counts and which the page cannot read — so never infer \"what the admin is looking at\" from them. Runs additionally exposes its two server-side filters. Orphan leases counts runs whose claim lease expired without completing — these should self-heal on the next scanner tick; a persistent nonzero count means something is wrong upstream. Scanner health mirrors aidream's live scanner process state.
 
 Templates has no backing data source yet (hardcoded starter examples pending a real table) and is deliberately undeclared.
 
-ONLY the Cron tester tab is wired today: it emits active_tab plus cron_expression / cron_timezone / cron_validation_error / cron_next_fires, and it is the only tab that accepts writes — you may replace the expression and the timezone there, both confirmed with the admin first. That tab is a scratchpad: it validates and previews, it does not schedule anything. On every other tab nothing is emitted yet, so do not assume any value is in scope. Nothing in this console can enable, disable, re-cron or fail a real scheduled task — those stay human.
+Cron tester is a pure client-side scratch pad and the one place here you can WRITE. It validates an expression + timezone and previews the next fires; it reads no database and fires nothing. You may set cron_expression and cron_timezone (the admin confirms each change), then read cron_validation_error, cron_expression_human and cron_next_fires to check your own work. Everything else on this surface is read-only operational evidence: reason about it, report on it, and leave the changing to a person. Nothing in this console can enable, disable, re-cron or fail a real scheduled task — those stay human.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -450,16 +561,29 @@ ONLY the Cron tester tab is wired today: it emits active_tab plus cron_expressio
  * Type-safe payload helper. Required keys (no `?`) mirror every value declared
  * `alwaysAvailable: true`; optional keys mirror `alwaysAvailable: false`.
  */
-export function createAdminSchedulingScope(values: {
+/** The seven route-tabbed pages, as `active_tab` reports them. */
+export type AdminSchedulingTab =
+  | "overview"
+  | "tasks"
+  | "runs"
+  | "orphan_leases"
+  | "cron_tester"
+  | "scanner_health"
+  | "templates";
+
+/**
+ * The values this surface can emit. Required keys (no `?`) mirror every value
+ * declared `alwaysAvailable: true`; optional keys mirror `alwaysAvailable:
+ * false`. Exported so each tab can publish a typed slice of it — see
+ * `features/scheduling/lib/admin-scheduling-scope.ts`.
+ *
+ * A `type` rather than an `interface` on purpose: only type aliases get an
+ * implicit index signature, which is what lets the payload satisfy
+ * `ApplicationScope` without casting through `unknown` and losing the check.
+ */
+export type AdminSchedulingScopeValues = {
   // alwaysAvailable: true → required
-  active_tab:
-    | "overview"
-    | "tasks"
-    | "runs"
-    | "orphan_leases"
-    | "cron_tester"
-    | "scanner_health"
-    | "templates";
+  active_tab: AdminSchedulingTab;
   // alwaysAvailable: false → optional
   selection?: string;
   context?: Record<string, unknown>;
@@ -469,8 +593,7 @@ export function createAdminSchedulingScope(values: {
   runs_last_24h_count?: number;
   failures_last_24h_count?: number;
   orphan_lease_summary_count?: number;
-  task_search?: string;
-  task_enabled_filter?: "any" | "enabled" | "disabled";
+  overview_load_error?: string;
   task_row_count?: number;
   run_status_filter?: string;
   run_surface_filter?: string;
@@ -479,11 +602,25 @@ export function createAdminSchedulingScope(values: {
   cron_expression?: string;
   cron_timezone?: string;
   cron_validation_error?: string;
+  cron_expression_human?: string;
   cron_next_fires?: string[];
   scanner_running?: boolean;
   scanner_last_tick_at?: string;
+  scanner_started_at?: string;
   scanner_consecutive_errors?: number;
   scanner_in_flight_count?: number;
-}): SurfaceScopePayload {
+  scanner_last_tick_duration_ms?: number;
+  scanner_last_tick_claimed?: number;
+  scanner_last_tick_manual_claimed?: number;
+  scanner_last_tick_expired_sweeps?: number;
+  scanner_total_runs_dispatched?: number;
+  scanner_error_message?: string;
+  scanner_unreachable_error?: string;
+};
+
+/** Type-safe payload helper — the "a UI cannot lie" enforcement. */
+export function createAdminSchedulingScope(
+  values: AdminSchedulingScopeValues,
+): SurfaceScopePayload {
   return values as SurfaceScopePayload;
 }

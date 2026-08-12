@@ -64,10 +64,17 @@ export default function CronTesterPage() {
     tz,
     validationError,
     fires,
+    human,
   });
   useEffect(() => {
-    liveRef.current = { expression, tz, validationError, fires };
-  }, [expression, tz, validationError, fires]);
+    liveRef.current = {
+      expression,
+      tz,
+      validationError,
+      fires,
+      human,
+    };
+  }, [expression, tz, validationError, fires, human]);
 
   const getSurfaceScope = () => buildCronTesterScope(liveRef.current);
   const getSurfaceWriteHandlers = () =>

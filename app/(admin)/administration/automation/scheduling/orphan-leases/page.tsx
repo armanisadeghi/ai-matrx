@@ -25,12 +25,19 @@ import {
 } from "@/lib/services/scheduling-admin-service";
 import { scheduleHref } from "@/features/scheduling/constants/routes";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 
 export default function OrphanLeasesPage() {
   const [rows, setRows] = useState<AdminRunRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  // Read-only evidence. Force-failing a run is an operator gesture with
+  // production blast radius, so it is a row button and never a write target.
+  useAdminSchedulingScopeSlice("orphan_leases", () => ({
+    orphan_lease_row_count: rows.length,
+  }));
 
   const load = useCallback(async () => {
     setFetching(true);

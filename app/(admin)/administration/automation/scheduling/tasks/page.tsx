@@ -36,6 +36,7 @@ import {
 } from "@/lib/services/scheduling-admin-service";
 import { humanizeRelative, humanizeTrigger } from "@/features/scheduling/utils/triggerHumanize";
 import { scheduleHref } from "@/features/scheduling/constants/routes";
+import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 
 function triggerText(r: AdminTaskRow): string {
   return r.trigger
@@ -47,6 +48,12 @@ export default function AdminTasksPage() {
   const [rows, setRows] = useState<AdminTaskRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
+
+  // The RAW fetched count. The toolbar's search box and the State column's
+  // filter live inside MatrxDataTable and narrow the screen without telling
+  // this page, so there is deliberately no `task_search`/`task_enabled_filter`
+  // value — the surface cannot promise state it cannot read.
+  useAdminSchedulingScopeSlice("tasks", () => ({ task_row_count: rows.length }));
 
   const load = useCallback(async () => {
     setFetching(true);
