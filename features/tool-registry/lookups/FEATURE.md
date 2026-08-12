@@ -32,6 +32,19 @@ that every other piece of the registry references via FK.
 
 ## Change Log
 
+- 2026-08-12 — **The agent-writable work below shipped to `main` from a
+  different branch, unchanged, after independently re-verifying it.** It had
+  been finished and live-verified a day earlier but its branch never merged,
+  so none of it was on `main` while `main` moved 40+ commits ahead. Landed by
+  cherry-pick with authorship intact — no re-authoring, no second target set.
+  Re-verified on today's `main` because nobody had run it there: a real
+  Badass Agent run staged `matrx-tablet` + its description into the real New
+  UI Client inputs, refused Sort order / Active with no tool call, returned
+  the handler's own throw verbatim for an invalid name with nothing staged,
+  and declined cleanly on "Keep as is". `ui.ui_client` still holds its
+  original 6 rows (SQL-checked) — `draft` wrote nothing. `type-check` clean
+  (0 errors), `check:surface-drift` clean at 142 surfaces.
+
 - 2026-08-11 — **Agent-writable, and the page's first surface emitter.**
   `LookupsAdminPage` now mounts a `SurfaceRuntimeProvider` for
   `matrx-admin/lookups`, fed by the new `components/LookupsSurfaceRuntime.tsx`
