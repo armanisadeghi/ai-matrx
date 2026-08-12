@@ -41,6 +41,10 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  DOCUMENT_DESCRIPTION_MAX_LENGTH,
+  DOCUMENT_NAME_MAX_LENGTH,
+} from "@/features/data-tables/agent-context/documentWriteValidation";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -386,6 +390,17 @@ const surfaceSpecific: SurfaceValue[] = [
  * Both are `applyPolicy: "ask"` — a document is the user's own writing, so
  * every agent-originated change is confirmed in place.
  *
+ * BOUNDS LIVE IN ONE PLACE. `DOCUMENT_NAME_MAX_LENGTH` /
+ * `DOCUMENT_DESCRIPTION_MAX_LENGTH` come from the pure
+ * `features/data-tables/agent-context/documentWriteValidation.ts`, which the
+ * page handlers also call — the numbers below are interpolated from those same
+ * constants, so the contract the model reads cannot drift from the rule the
+ * handler enforces. The name bound is 255 because that is the REAL
+ * `varchar(255)` on `workbench.udt_documents.document_name` (verified against
+ * `information_schema`); an earlier hand-typed 200 in this description was
+ * both narrower than the column and duplicated in the handler, which is
+ * exactly the drift this indirection removes.
+ *
  * Deliberately NOT agent-writable on this surface:
  *   - `document_summary` — it LOOKS like the jackpot target ("summarize this
  *     document") and it is not. There is no summary column on `udt_documents`;
@@ -432,7 +447,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "document_name",
     label: "Document name",
     description:
-      "Renames the document open at /documents/[id] and saves it immediately through the canonical rename path; the header name field updates in place. Plain text string, not JSON and not JSON-encoded, 1-200 characters, replacing the whole name — read document_name first if you mean to extend it rather than replace it. Renames only the document; it does not touch a single word of the document's body text. Refused when the user only has viewer access.",
+      `Renames the document open at /documents/[id] and saves it immediately through the canonical rename path; the header name field updates in place. Plain text string on a SINGLE line, not JSON and not JSON-encoded, 1-${DOCUMENT_NAME_MAX_LENGTH} characters, replacing the whole name — read document_name first if you mean to extend it rather than replace it. Renames only the document; it does not touch a single word of the document's body text. Refused while the document is still loading, and when the user only has viewer access.`,
     valueType: "string",
     updatesValue: "document_name",
     mode: "entity",
@@ -444,7 +459,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "document_description",
     label: "Document description",
     description:
-      "Rewrites the open document's description and saves it immediately through the canonical update path — this is the blurb shown under the document's name in the /documents library, and the natural home for a short summary of what the document contains. Plain text string, not JSON and not JSON-encoded, up to 2000 characters; replaces the FULL text, so read document_description first if you mean to extend it, and pass an empty string to clear it. Writing it does not change the document's body. Refused when the user only has viewer access.",
+      `Rewrites the open document's description and saves it immediately through the canonical update path — this is the blurb shown under the document's name in the /documents library (it is NOT rendered on the editor page itself), and the natural home for a short summary of what the document contains. Plain text string, not JSON and not JSON-encoded, up to ${DOCUMENT_DESCRIPTION_MAX_LENGTH} characters; replaces the FULL text, so read document_description first if you mean to extend it, and pass an empty string to clear it. Writing it does not change the document's body. Refused while the document is still loading, and when the user only has viewer access.`,
     valueType: "string",
     updatesValue: "document_description",
     mode: "entity",

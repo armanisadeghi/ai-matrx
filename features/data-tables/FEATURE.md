@@ -465,6 +465,21 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-11 — claude: **Document write-target bounds moved into a pure module;
+  the name limit was wrong (200 → 255).** New
+  `agent-context/documentWriteValidation.ts` owns `DOCUMENT_NAME_MAX_LENGTH`
+  (255 — the REAL `varchar(255)` on `udt_documents.document_name`, verified
+  against `information_schema`) and `DOCUMENT_DESCRIPTION_MAX_LENGTH` (2000,
+  matching the workbooks sibling). The page handlers call its validators and
+  the surface manifest interpolates the same constants into the prose the model
+  reads, so the advertised contract and the enforced rule cannot drift. Before
+  this, 200 was hand-typed in the handler AND again in the manifest text, and
+  the surface refused titles the column accepts. Validation also moved out of
+  the async handler bodies so a bad shape throws synchronously, ahead of any
+  state change, and `canEdit` joined `docRef` behind a ref because the
+  permission gate was still reading a render closure the writeback seam
+  resolves early. Live re-verified after the change (see
+  `features/surfaces/FEATURE.md`).
 - 2026-08-11 — claude: **Documents surface is agent-writable (2 ask-policy write
   targets on the `/documents/[id]` route only).** `document_name` and
   `document_description` — the two human-authored columns on `udt_documents` —

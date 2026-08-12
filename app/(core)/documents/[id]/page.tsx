@@ -26,6 +26,10 @@ import {
   DOCUMENTS_SURFACE_NAME,
 } from "@/features/data-tables/agent-context/buildDocumentsContextData";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  validateDocumentDescription,
+  validateDocumentName,
+} from "@/features/data-tables/agent-context/documentWriteValidation";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
 
@@ -72,11 +76,19 @@ export default function DocumentPage({
   // applied, and would report the pre-write name back to the agent. Rendering
   // still reads `doc`; only the write paths read this.
   const docRef = useRef<DocumentRow | null>(null);
+  /** Same staleness argument as `docRef`, for the permission gate. */
+  const canEditRef = useRef(false);
 
   /** The ONE place that advances the row — keeps state and the ref in step. */
   const commitDocument = (next: DocumentRow) => {
     docRef.current = next;
     setDoc(next);
+  };
+
+  /** Same, for the edit gate. */
+  const applyCanEdit = (next: boolean) => {
+    canEditRef.current = next;
+    setCanEdit(next);
   };
 
   useEffect(() => {
@@ -98,14 +110,14 @@ export default function DocumentPage({
       // Editor gate: owner ALWAYS edits; non-owner edits when has_permission
       // returns true for level=editor. Matches the workbook permission flow.
       if (userId && userId === res.data.user_id) {
-        setCanEdit(true);
+        applyCanEdit(true);
       } else {
         const { data: perm } = await supabase.rpc("has_permission", {
           p_resource_type: "udt_document",
           p_resource_id: id,
           p_required_permission: "editor",
         });
-        setCanEdit(perm === true);
+        applyCanEdit(perm === true);
       }
       setPermsResolved(true);
     })();
@@ -149,41 +161,34 @@ export default function DocumentPage({
   // the agent reads. Fresh closures per call (getWriteHandlers contract), and
   // every read of the row goes through `docRef` because the seam resolves these
   // closures before the first confirm resolves.
+  //
+  // Shape validation lives in the PURE `documentWriteValidation` module rather
+  // than inline here: it keeps the bounds in one place (the manifest
+  // interpolates the same constants into the prose the model reads) and it
+  // throws SYNCHRONOUSLY, before any state is touched, so a bad shape can never
+  // half-apply.
+  const assertWritable = (whatItBlocks: string) => {
+    // `canEdit` goes through the ref for the same reason `doc` does — the seam
+    // resolves these closures before the first confirm returns, so a render
+    // snapshot can be stale by the time the user clicks Apply.
+    if (!docRef.current)
+      throw new Error("The document has not finished loading yet.");
+    if (!canEditRef.current)
+      throw new Error(
+        `This document is open in viewer-only mode — the user does not have edit permission, so ${whatItBlocks}.`,
+      );
+  };
+
   const getSurfaceWriteHandlers = () => ({
     document_name: async (value: unknown) => {
-      if (typeof value !== "string")
-        throw new Error(
-          "document_name expects a plain text string, not JSON and not JSON-encoded — send the new title itself.",
-        );
-      const next = value.trim();
-      if (!next || next.length > 200)
-        throw new Error(
-          "document_name expects a non-empty string of at most 200 characters.",
-        );
-      if (!docRef.current)
-        throw new Error("The document has not finished loading yet.");
-      if (!canEdit)
-        throw new Error(
-          "This document is open in viewer-only mode — the user does not have edit permission, so it cannot be renamed.",
-        );
+      const next = validateDocumentName(value);
+      assertWritable("it cannot be renamed");
       await applyRename(next);
     },
     document_description: async (value: unknown) => {
-      if (typeof value !== "string")
-        throw new Error(
-          "document_description expects a plain text string, not JSON and not JSON-encoded — send the description prose itself.",
-        );
-      if (value.length > 2000)
-        throw new Error(
-          "document_description expects a string of at most 2000 characters.",
-        );
-      if (!docRef.current)
-        throw new Error("The document has not finished loading yet.");
-      if (!canEdit)
-        throw new Error(
-          "This document is open in viewer-only mode — the user does not have edit permission, so its description cannot be changed.",
-        );
-      const res = await updateDocumentDescription(id, value);
+      const next = validateDocumentDescription(value);
+      assertWritable("its description cannot be changed");
+      const res = await updateDocumentDescription(id, next);
       if (isServiceFailure(res)) throw new Error(res.error);
       commitDocument(res.data);
     },
