@@ -93,18 +93,16 @@ const values: SurfaceValue[] = [
 ];
 
 /**
- * Write targets — the run form's guidance note, plus triage on the proposed
- * routes. Handlers are registered by `AuthorityRouterWorkspace`, the component
- * that owns both the guidance state and the two server actions.
+ * Write targets — ONE, the run form's guidance note. Handler is registered by
+ * `AuthorityRouterWorkspace`, which owns that state.
  *
- * **Why these three.** The surface's whole authored input is one textarea, and
- * its whole decision surface is "which of these proposed routes do we take".
- * `authority_guidance` is prose an agent drafts well and is the classic staged
- * run-input (`marketing-crawls`, `image-generate`, `chat-voice`): the value is
- * staged, nothing is persisted, and the user presses run. The two triage
- * targets are the `marketing-findings` shape — suppress / act on an item in a
- * reviewed list — and both go through the SAME server actions the Dismiss and
- * "Add to link plan" buttons call.
+ * **Why this one.** `authority_guidance` is the surface's ONLY authored input:
+ * free prose steering which pages the next analysis should favour or leave
+ * alone. It is the classic staged run-input (`marketing-crawls`,
+ * `image-generate`, `chat-voice`) — the value is staged, nothing is persisted,
+ * and the user presses run. A single-target adoption is deliberate and has
+ * precedent: `matrx-admin/applications` shipped exactly one (`app_notice`),
+ * "a surface can be worth exactly one target and still be worth doing".
  *
  * **DELIBERATELY NOT WRITABLE.** Running the analysis: `authority.start` opens
  * a durable run that joins backlinks, the crawl graph, Search Console and the
@@ -116,14 +114,26 @@ const values: SurfaceValue[] = [
  * `authority_pages`, `authority_candidates`, `authority_recommendations` — is
  * the RECORD of what the analysis computed from real evidence; writing them
  * would forge the finding rather than change it. An agent moves those by
- * writing guidance and letting the user re-run, which IS the evidence loop
- * here.
+ * writing guidance and letting the user re-run, which IS the evidence loop.
  *
- * **Both triage targets are `mode: "entity"`** because there is no draft state
- * behind those buttons: one click calls `updatePageDesiredValues` and the row
- * changes. `applyPolicy: "ask"` is therefore doing the real work, and the
- * descriptions say plainly that the write persists and that it touches the
- * PLAN and not the live site.
+ * **DEFERRED, NOT REJECTED — the two triage targets.** Dismissing a proposed
+ * route and adding one to the link plan are both genuine candidates on the
+ * judgment bar (the `marketing-findings` suppress/acknowledge shape) and both
+ * have canonical write paths already: `dismissAuthorityRecommendation` and
+ * `addAuthorityRecommendationToPlan`, the exact server actions the Dismiss and
+ * "Add to link plan" buttons call. They are NOT declared here because they
+ * could not be LIVE-VERIFIED: `seo.collection_run` RLS is
+ * `created_by = auth.uid() OR iam.has_access(...)`, and the only authority run
+ * carrying recommendations belongs to another user, so the test account's page
+ * renders "Your authority map has not been calculated yet" and the only run it
+ * does own completed with zero recommendations. Declaring a target whose
+ * success path has never been exercised is precisely what this skill forbids.
+ * Anyone who can see a result with recommendations can finish this quickly,
+ * but note the shape the guard must have, which the aborted attempt proved
+ * matters: resolve the `candidate_key` against the CURRENTLY VISIBLE set and
+ * distinguish "result not loaded yet" from "no recommendations proposed" from
+ * "already dismissed" — a null `result` is lazily-loaded absence, not
+ * emptiness, and treating them alike makes the target silently no-op.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
@@ -133,26 +143,6 @@ const writeTargets: SurfaceWriteTarget[] = [
     valueType: "string",
     updatesValue: "authority_guidance",
     mode: "draft",
-    applyPolicy: "ask",
-  },
-  {
-    name: "authority_dismiss_recommendation",
-    label: "Dismiss recommendation",
-    description:
-      "Dismisses ONE proposed route so it stops being offered, exactly as the user's own Dismiss button does. Pass the `candidate_key` string of a recommendation from authority_recommendations — not its URL, index or anchor. Persists immediately to the source page's `authority_router_dismissed` list. Refused if the key is unknown, already dismissed, the result has not loaded, or an analysis is running.",
-    valueType: "string",
-    updatesValue: "authority_recommendations",
-    mode: "entity",
-    applyPolicy: "ask",
-  },
-  {
-    name: "authority_add_recommendation_to_plan",
-    label: "Add recommendation to link plan",
-    description:
-      "Enters ONE proposed route into BOTH pages' existing link plans — the target URL and anchor onto the source page's outbound links, and the source URL onto the target page's inbound links — exactly as the user's own \"Add to link plan\" button does. Pass the `candidate_key` string of a recommendation from authority_recommendations. Persists immediately and is idempotent by partner URL. It changes the PLAN only; the live site and the observed link graph are unaffected until someone edits the site and it is crawled again. Refused if the key is unknown, already dismissed, already in the plan, the result has not loaded, or an analysis is running.",
-    valueType: "string",
-    updatesValue: "authority_recommendations",
-    mode: "entity",
     applyPolicy: "ask",
   },
 ];

@@ -36,9 +36,7 @@ import {
 } from "./actions";
 import {
   AUTHORITY_GUIDANCE_MAX_CHARS,
-  resolveAuthorityRecommendation,
   validateAuthorityGuidance,
-  type AuthorityTriageState,
 } from "./authority-write-targets";
 import { AuthorityFlowMap } from "./AuthorityFlowMap";
 import type { AuthorityRecommendation, AuthorityRouterResult } from "./types";
@@ -72,102 +70,57 @@ export function AuthorityRouterWorkspace() {
     (item) => !dismissed.has(item.candidate_key),
   );
 
-  // The two triage writes, as ONE path that THROWS. The user's buttons wrap
-  // these in a toast; the surface write handlers call them bare so the failure
-  // reaches the agent instead of dying in a toast it cannot see.
-  const performApprove = async (recommendation: AuthorityRecommendation) => {
+  const approve = async (recommendation: AuthorityRecommendation) => {
     setWorking(recommendation.candidate_key);
     try {
       await addAuthorityRecommendationToPlan(site.id, recommendation);
       setApproved((current) =>
         new Set(current).add(recommendation.candidate_key),
       );
+      toast.success("Added to both pages’ existing link plans.");
+    } catch (error) {
+      toast.error("Could not add this route to the link plan", {
+        description: extractErrorMessage(error),
+      });
     } finally {
       setWorking(null);
     }
   };
 
-  const performDismiss = async (recommendation: AuthorityRecommendation) => {
+  const dismiss = async (recommendation: AuthorityRecommendation) => {
     setWorking(recommendation.candidate_key);
     try {
       await dismissAuthorityRecommendation(site.id, recommendation);
       setDismissed((current) =>
         new Set(current).add(recommendation.candidate_key),
       );
-    } finally {
-      setWorking(null);
-    }
-  };
-
-  const approve = async (recommendation: AuthorityRecommendation) => {
-    try {
-      await performApprove(recommendation);
-      toast.success("Added to both pages’ existing link plans.");
-    } catch (error) {
-      toast.error("Could not add this route to the link plan", {
-        description: extractErrorMessage(error),
-      });
-    }
-  };
-
-  const dismiss = async (recommendation: AuthorityRecommendation) => {
-    try {
-      await performDismiss(recommendation);
       toast.success("Recommendation dismissed.");
     } catch (error) {
       toast.error("Could not dismiss this recommendation", {
         description: extractErrorMessage(error),
       });
+    } finally {
+      setWorking(null);
     }
   };
 
-  // Live state for the write handlers. `applySurfaceWrite` resolves a handler
-  // BEFORE it shows the confirm dialog, so a guard closing over rendered state
-  // can act on a value that went stale while the dialog sat open (the
-  // `image-studio` trap). This ref is advanced every render and read at CALL
-  // time, which is immune to that by construction.
-  const triageRef = useRef<AuthorityTriageState>({
-    recommendations: null,
-    dismissed: new Set(),
-    approved: new Set(),
-    working: null,
-    running: false,
-  });
-  triageRef.current = {
-    // `result` is null until the latest run has loaded — preserved as null so
-    // the handler can tell "not loaded yet" from "nothing was proposed".
-    recommendations: result ? result.recommendations : null,
-    dismissed,
-    approved,
-    working,
-    running: authority.run.status === "running",
-  };
+  // Live run status for the write handler. `applySurfaceWrite` resolves a
+  // handler BEFORE it shows the confirm dialog, so a guard closing over
+  // rendered state can act on a status that went stale while the dialog sat
+  // open (the `image-studio` trap, recorded on the `chat-voice` adopter). This
+  // ref is advanced every render and read at CALL time, which is immune to
+  // that by construction.
+  const runningRef = useRef(false);
+  runningRef.current = authority.run.status === "running";
 
   const buildWriteHandlers = () => ({
     authority_guidance: (value: unknown) => {
-      if (triageRef.current.running) {
+      if (runningRef.current) {
         throw new Error(
           "authority_guidance is refused while the authority analysis is running — the note is only read when a run starts, so changing it mid-run would silently do nothing.",
         );
       }
       setGuidance(validateAuthorityGuidance(value));
-    },
-    authority_dismiss_recommendation: async (value: unknown) => {
-      const recommendation = resolveAuthorityRecommendation(
-        "authority_dismiss_recommendation",
-        value,
-        triageRef.current,
-      );
-      await performDismiss(recommendation);
-    },
-    authority_add_recommendation_to_plan: async (value: unknown) => {
-      const recommendation = resolveAuthorityRecommendation(
-        "authority_add_recommendation_to_plan",
-        value,
-        triageRef.current,
-        { requireNotApproved: true },
-      );
-      await performApprove(recommendation);
     },
   });
 
