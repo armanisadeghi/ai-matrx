@@ -55,8 +55,9 @@ export const ISSUE_COPY: Record<string, string> = {
   rls_disabled: "Row-level security is disabled.",
   no_policies: "No row-level security policies exist.",
   component_without_parent: "Parent-owned table has no composition parent.",
-  component_directly_shareable:
-    "A parent-owned component is also directly shareable. Choose one model.",
+  // component_directly_shareable was RETIRED 2026-08-12: a component that is
+  // also a share point is the ratified dual-identity model (SHARING_MODEL.md
+  // §3), now surfaced as the nested_entity disposition — never a blocker.
   component_rls_mismatch: "Component metadata and its RLS template disagree.",
   entity_rls_mismatch: "Independent entity is using component RLS.",
   containment_without_visibility:

@@ -315,6 +315,20 @@ used by the per-row **Link policy** side panel).
   Planner (schema snapshot + selected-table detail, builders in
   `access-planner/copy.ts`), Overview status header, Reachability results, and
   the explorer `[token]` orbit header now carry the shared `agent-copy` pair.
+- **2026-08-12** — **The `component_directly_shareable` blocker is RETIRED as a
+  fake error.** A component that is also in the shareable registry is the
+  RATIFIED dual-identity model (access-architecture `SHARING_MODEL.md` §3:
+  "a share point that is also a component keeps BOTH identities" — proven live
+  on `web_page`/`web_property`/`web_screenshot`/`web_snapshot`). The snapshot
+  RPC now dispositions `is_component AND is_shareable` as `nested_entity`
+  ("inherits from a parent and can still be granted directly") and no longer
+  emits the issue (migration `access_planner_shareable_component_ruling.sql`;
+  real drift still caught by `component_without_parent`,
+  `component_rls_mismatch`, `sharing_not_enforced_by_rls`). Also recorded the
+  one genuine web finding the planner caught that certification cannot (cert
+  judges only REGISTERED tables): `web.endpoint_family_sweep_state` marked
+  infrastructure via `meta.audit_exemption` (site_id-keyed machinery, no UUID
+  identity, per access-architecture §2.4a). Web planner: 5 blockers → 0.
 - **2026-08-12** — Corrected screenshot conveyance after the platform-wide
   access-tree audit: `note/file → web_screenshot` keep little-to-big direction
   and now use the screenshot target as a viewer-capped container. A page share
@@ -327,8 +341,9 @@ used by the per-row **Link policy** side panel).
   every relation, distinguishes root/nested/component/infrastructure, focuses its
   XYFlow map on access-bearing edges, keeps meaningful cross-schema entities in the
   picture, hides plumbing by default, traces viewer/editor cascade ceilings, and
-  applies only canonical registry + RLS primitives. Contradictory component/direct-
-  share registrations are now visible blockers instead of silent drift.
+  applies only canonical registry + RLS primitives. (The original
+  component/direct-share "blocker" this entry introduced was retired the same
+  day — see the dual-identity entry above.)
 - **2026-08-12** — Made shareable-resource registration usable without fake
   values: the in-app destination is optional and auto-prefilled from the entity
   registry, advanced database mapping is collapsed, and no-login share fields
