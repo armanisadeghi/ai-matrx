@@ -22,6 +22,7 @@ import { createMarketingCrawlsScope } from "@/features/surfaces/manifests/market
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { ClampedNumberInput } from "@/features/marketing/components/shared/ClampedNumberInput";
 import { LiveCrawlFeed } from "@/features/marketing/components/crawls/LiveCrawlFeed";
+import { CrawlScheduleCard } from "@/features/marketing/components/crawls/CrawlScheduleCard";
 import {
   cancelCrawl,
   mergeCrawlLiveEvents,
@@ -412,7 +413,8 @@ export function NewCrawlWorkspace() {
               </Button>
             </div>
 
-            <div className="grid shrink-0 gap-3 p-3 sm:grid-cols-2 xl:grid-cols-1">
+            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-1">
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label htmlFor="crawl-max-pages" className="text-[11px]">
@@ -552,6 +554,14 @@ export function NewCrawlWorkspace() {
                   </div>
                 );
               })}
+            </div>
+
+              {/* The unattended half of this page: the same crawl, on a
+                  cadence, with nobody here to press the button. */}
+              <CrawlScheduleCard
+                siteId={site.id}
+                organizationId={site.organization_id}
+              />
             </div>
 
             <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-border px-3 py-2">
