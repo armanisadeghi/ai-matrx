@@ -2665,6 +2665,97 @@ export type Database = {
       [_ in never]: never
     }
   }
+  api: {
+    Tables: {
+      html_extractions: {
+        Row: {
+          content_length: number | null
+          created_at: string | null
+          extracted_at: string | null
+          html_content: string
+          id: number
+          meta_description: string | null
+          meta_keywords: string | null
+          title: string | null
+          url: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content_length?: number | null
+          created_at?: string | null
+          extracted_at?: string | null
+          html_content: string
+          id?: number
+          meta_description?: string | null
+          meta_keywords?: string | null
+          title?: string | null
+          url: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content_length?: number | null
+          created_at?: string | null
+          extracted_at?: string | null
+          html_content?: string
+          id?: number
+          meta_description?: string | null
+          meta_keywords?: string | null
+          title?: string | null
+          url?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      fetch_foreign_key_info: {
+        Args: never
+        Returns: {
+          source_column: string
+          source_table: string
+          target_column: string
+          target_data: Json
+          target_table: string
+        }[]
+      }
+      schema_table_column_relationships: {
+        Args: { p_schema?: string }
+        Returns: {
+          column_name: string
+          constraint_name: string
+          data_type: string
+          is_nullable: string
+          related_column_name: string
+          related_table_name: string
+          related_table_schema: string
+          relationship_direction: string
+          table_name: string
+          table_schema: string
+        }[]
+      }
+      simple_foreign_key_info: {
+        Args: never
+        Returns: {
+          source_column: string
+          source_table: string
+          target_column: string
+          target_table: string
+        }[]
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   app: {
     Tables: {
       definition: {
@@ -3107,6 +3198,734 @@ export type Database = {
             columns: ["app_id"]
             isOneToOne: false
             referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  assignment: {
+    Tables: {
+      attempt: {
+        Row: {
+          attempt_number: number
+          completed_at: string | null
+          conversation_id: string | null
+          error: Json | null
+          holder: string
+          id: string
+          item_id: string
+          runtime_execution_id: string | null
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_number: number
+          completed_at?: string | null
+          conversation_id?: string | null
+          error?: Json | null
+          holder: string
+          id: string
+          item_id: string
+          runtime_execution_id?: string | null
+          started_at?: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_number?: number
+          completed_at?: string | null
+          conversation_id?: string | null
+          error?: Json | null
+          holder?: string
+          id?: string
+          item_id?: string
+          runtime_execution_id?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "item"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item: {
+        Row: {
+          attempt_count: number
+          completed_at: string | null
+          conversation_id: string | null
+          created_at: string
+          error: Json | null
+          id: string
+          input_fingerprint: string
+          input_values: Json
+          item_key: string
+          lease_expires_at: string | null
+          lease_holder: string | null
+          max_attempts: number
+          metadata: Json
+          ordinal: number
+          output: Json | null
+          output_kind: string | null
+          output_kind_version: number | null
+          runtime_execution_id: string | null
+          session_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          visible_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          error?: Json | null
+          id: string
+          input_fingerprint: string
+          input_values: Json
+          item_key: string
+          lease_expires_at?: string | null
+          lease_holder?: string | null
+          max_attempts: number
+          metadata?: Json
+          ordinal: number
+          output?: Json | null
+          output_kind?: string | null
+          output_kind_version?: number | null
+          runtime_execution_id?: string | null
+          session_id: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          visible_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          completed_at?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          error?: Json | null
+          id?: string
+          input_fingerprint?: string
+          input_values?: Json
+          item_key?: string
+          lease_expires_at?: string | null
+          lease_holder?: string | null
+          max_attempts?: number
+          metadata?: Json
+          ordinal?: number
+          output?: Json | null
+          output_kind?: string | null
+          output_kind_version?: number | null
+          runtime_execution_id?: string | null
+          session_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          visible_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          idempotency_key: string
+          materialized_plan: Json
+          organization_id: string
+          plan_fingerprint: string
+          request: Json
+          result_kind: string | null
+          runtime_execution_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          idempotency_key: string
+          materialized_plan: Json
+          organization_id: string
+          plan_fingerprint: string
+          request: Json
+          result_kind?: string | null
+          runtime_execution_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          idempotency_key?: string
+          materialized_plan?: Json
+          organization_id?: string
+          plan_fingerprint?: string
+          request?: Json
+          result_kind?: string | null
+          runtime_execution_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  audit: {
+    Tables: {
+      broken_functions: {
+        Row: {
+          context: string | null
+          function_name: string | null
+          level: string | null
+          lineno: number | null
+          message: string | null
+          schema_name: string | null
+          signature: string | null
+          sqlstate: string | null
+        }
+        Insert: {
+          context?: string | null
+          function_name?: string | null
+          level?: string | null
+          lineno?: number | null
+          message?: string | null
+          schema_name?: string | null
+          signature?: string | null
+          sqlstate?: string | null
+        }
+        Update: {
+          context?: string | null
+          function_name?: string | null
+          level?: string | null
+          lineno?: number | null
+          message?: string | null
+          schema_name?: string | null
+          signature?: string | null
+          sqlstate?: string | null
+        }
+        Relationships: []
+      }
+      canonical_findings: {
+        Row: {
+          check_name: string | null
+          detail: string | null
+          id: number
+          schema_name: string | null
+          source: string | null
+          status: string | null
+          table_name: string | null
+          token: string | null
+        }
+        Insert: {
+          check_name?: string | null
+          detail?: string | null
+          id?: number
+          schema_name?: string | null
+          source?: string | null
+          status?: string | null
+          table_name?: string | null
+          token?: string | null
+        }
+        Update: {
+          check_name?: string | null
+          detail?: string | null
+          id?: number
+          schema_name?: string | null
+          source?: string | null
+          status?: string | null
+          table_name?: string | null
+          token?: string | null
+        }
+        Relationships: []
+      }
+      function_deps: {
+        Row: {
+          dep_name: string | null
+          dep_schema: string | null
+          dep_type: string | null
+          function_name: string | null
+          function_schema: string | null
+          signature: string | null
+        }
+        Insert: {
+          dep_name?: string | null
+          dep_schema?: string | null
+          dep_type?: string | null
+          function_name?: string | null
+          function_schema?: string | null
+          signature?: string | null
+        }
+        Update: {
+          dep_name?: string | null
+          dep_schema?: string | null
+          dep_type?: string | null
+          function_name?: string | null
+          function_schema?: string | null
+          signature?: string | null
+        }
+        Relationships: []
+      }
+      m2m_candidates: {
+        Row: {
+          entity_fk_count: number | null
+          fk_targets: string | null
+          payload_cols: number | null
+          registered: boolean | null
+          schema_name: string | null
+          table_name: string | null
+        }
+        Insert: {
+          entity_fk_count?: number | null
+          fk_targets?: string | null
+          payload_cols?: number | null
+          registered?: boolean | null
+          schema_name?: string | null
+          table_name?: string | null
+        }
+        Update: {
+          entity_fk_count?: number | null
+          fk_targets?: string | null
+          payload_cols?: number | null
+          registered?: boolean | null
+          schema_name?: string | null
+          table_name?: string | null
+        }
+        Relationships: []
+      }
+      refresh_log: {
+        Row: {
+          broken_fn: number | null
+          ext_fail: number | null
+          ext_warn: number | null
+          gate_fail: number | null
+          gate_warn: number | null
+          m2m: number | null
+          note: string | null
+          run_at: string | null
+          stale: number | null
+          unregistered: number | null
+        }
+        Insert: {
+          broken_fn?: number | null
+          ext_fail?: number | null
+          ext_warn?: number | null
+          gate_fail?: number | null
+          gate_warn?: number | null
+          m2m?: number | null
+          note?: string | null
+          run_at?: string | null
+          stale?: number | null
+          unregistered?: number | null
+        }
+        Update: {
+          broken_fn?: number | null
+          ext_fail?: number | null
+          ext_warn?: number | null
+          gate_fail?: number | null
+          gate_warn?: number | null
+          m2m?: number | null
+          note?: string | null
+          run_at?: string | null
+          stale?: number | null
+          unregistered?: number | null
+        }
+        Relationships: []
+      }
+      stale_registry: {
+        Row: {
+          schema_name: string | null
+          table_name: string | null
+          token: string | null
+        }
+        Insert: {
+          schema_name?: string | null
+          table_name?: string | null
+          token?: string | null
+        }
+        Update: {
+          schema_name?: string | null
+          table_name?: string | null
+          token?: string | null
+        }
+        Relationships: []
+      }
+      unregistered_candidates: {
+        Row: {
+          base_col_score: number | null
+          has_created_at: boolean | null
+          has_id_uuid: boolean | null
+          schema_name: string | null
+          table_name: string | null
+        }
+        Insert: {
+          base_col_score?: number | null
+          has_created_at?: boolean | null
+          has_id_uuid?: boolean | null
+          schema_name?: string | null
+          table_name?: string | null
+        }
+        Update: {
+          base_col_score?: number | null
+          has_created_at?: boolean | null
+          has_id_uuid?: boolean | null
+          schema_name?: string | null
+          table_name?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      summary: {
+        Row: {
+          certified: boolean | null
+          fails: number | null
+          schema_name: string | null
+          table_name: string | null
+          token: string | null
+          warns: number | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      is_m2m_shape: { Args: { p_rel: unknown }; Returns: boolean }
+      refresh: { Args: never; Returns: string }
+      table_impact: {
+        Args: { p_schema: string; p_table: string }
+        Returns: {
+          currently_broken: boolean
+          dependency: string
+          function_sig: string
+          referenced_columns: string[]
+        }[]
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  batch: {
+    Tables: {
+      cost_event: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          created_by: string | null
+          idempotency_key: string
+          metadata: Json
+          organization_id: string
+          source: string | null
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          cost_usd: number
+          created_at?: string
+          created_by?: string | null
+          idempotency_key: string
+          metadata?: Json
+          organization_id: string
+          source?: string | null
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          created_by?: string | null
+          idempotency_key?: string
+          metadata?: Json
+          organization_id?: string
+          source?: string | null
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      provider_batch: {
+        Row: {
+          batch_id: string | null
+          cache_read_tokens: number | null
+          cache_write_tokens: number | null
+          completed_at: string | null
+          cost_recorded_at: string | null
+          cost_usd: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: Json | null
+          est_cost_usd: number
+          est_live_cost_usd: number
+          id: string
+          last_polled_at: string | null
+          metadata: Json
+          model: string | null
+          next_poll_at: string
+          organization_id: string
+          poll_count: number
+          prefix_group_key: string
+          provider: string
+          purpose: string
+          request_count: number
+          status: string
+          submitted_at: string
+          tokens_in: number | null
+          tokens_out: number | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          batch_id?: string | null
+          cache_read_tokens?: number | null
+          cache_write_tokens?: number | null
+          completed_at?: string | null
+          cost_recorded_at?: string | null
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          est_cost_usd?: number
+          est_live_cost_usd?: number
+          id?: string
+          last_polled_at?: string | null
+          metadata?: Json
+          model?: string | null
+          next_poll_at?: string
+          organization_id: string
+          poll_count?: number
+          prefix_group_key?: string
+          provider: string
+          purpose: string
+          request_count?: number
+          status?: string
+          submitted_at?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          batch_id?: string | null
+          cache_read_tokens?: number | null
+          cache_write_tokens?: number | null
+          completed_at?: string | null
+          cost_recorded_at?: string | null
+          cost_usd?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          est_cost_usd?: number
+          est_live_cost_usd?: number
+          id?: string
+          last_polled_at?: string | null
+          metadata?: Json
+          model?: string | null
+          next_poll_at?: string
+          organization_id?: string
+          poll_count?: number
+          prefix_group_key?: string
+          provider?: string
+          purpose?: string
+          request_count?: number
+          status?: string
+          submitted_at?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      work_item: {
+        Row: {
+          actual_cost_usd: number | null
+          attempt_count: number
+          cache_read_tokens: number | null
+          claimed_at: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          custom_id: string
+          dedupe_key: string | null
+          deleted_at: string | null
+          error: Json | null
+          est_live_cost_usd: number
+          est_tokens_in: number
+          est_tokens_out: number
+          handler_args: Json
+          handler_error: Json | null
+          handler_status: string | null
+          id: string
+          lease_expires_at: string | null
+          link_id: string | null
+          link_kind: string | null
+          metadata: Json
+          model: string
+          organization_id: string
+          payload: Json
+          prefix_group_key: string
+          provider: string
+          provider_batch_row_id: string | null
+          purpose: string
+          result: Json | null
+          result_handler: string
+          status: string
+          submitted_at: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+          updated_at: string
+          updated_by: string | null
+          urgency: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          actual_cost_usd?: number | null
+          attempt_count?: number
+          cache_read_tokens?: number | null
+          claimed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_id: string
+          dedupe_key?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          est_live_cost_usd?: number
+          est_tokens_in?: number
+          est_tokens_out?: number
+          handler_args?: Json
+          handler_error?: Json | null
+          handler_status?: string | null
+          id?: string
+          lease_expires_at?: string | null
+          link_id?: string | null
+          link_kind?: string | null
+          metadata?: Json
+          model: string
+          organization_id: string
+          payload: Json
+          prefix_group_key?: string
+          provider: string
+          provider_batch_row_id?: string | null
+          purpose: string
+          result?: Json | null
+          result_handler: string
+          status?: string
+          submitted_at?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          urgency?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          actual_cost_usd?: number | null
+          attempt_count?: number
+          cache_read_tokens?: number | null
+          claimed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_id?: string
+          dedupe_key?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          est_live_cost_usd?: number
+          est_tokens_in?: number
+          est_tokens_out?: number
+          handler_args?: Json
+          handler_error?: Json | null
+          handler_status?: string | null
+          id?: string
+          lease_expires_at?: string | null
+          link_id?: string | null
+          link_kind?: string | null
+          metadata?: Json
+          model?: string
+          organization_id?: string
+          payload?: Json
+          prefix_group_key?: string
+          provider?: string
+          provider_batch_row_id?: string | null
+          purpose?: string
+          result?: Json | null
+          result_handler?: string
+          status?: string
+          submitted_at?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          urgency?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_item_provider_batch_row_id_fkey"
+            columns: ["provider_batch_row_id"]
+            isOneToOne: false
+            referencedRelation: "provider_batch"
             referencedColumns: ["id"]
           },
         ]
@@ -22732,6 +23551,1777 @@ export type Database = {
       [_ in never]: never
     }
   }
+  growth: {
+    Tables: {
+      loop_event: {
+        Row: {
+          created_at: string
+          cycle: number | null
+          event_type: string
+          id: string
+          loop_run_id: string
+          payload: Json
+          seq: number
+          stage: string | null
+          stage_run_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          cycle?: number | null
+          event_type: string
+          id?: string
+          loop_run_id: string
+          payload?: Json
+          seq?: number
+          stage?: string | null
+          stage_run_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          cycle?: number | null
+          event_type?: string
+          id?: string
+          loop_run_id?: string
+          payload?: Json
+          seq?: number
+          stage?: string | null
+          stage_run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loop_event_loop_run_id_fkey"
+            columns: ["loop_run_id"]
+            isOneToOne: false
+            referencedRelation: "loop_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loop_event_loop_run_id_fkey"
+            columns: ["loop_run_id"]
+            isOneToOne: false
+            referencedRelation: "v_loop_state"
+            referencedColumns: ["loop_run_id"]
+          },
+          {
+            foreignKeyName: "loop_event_stage_run_id_fkey"
+            columns: ["stage_run_id"]
+            isOneToOne: false
+            referencedRelation: "loop_stage_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loop_event_stage_run_id_fkey"
+            columns: ["stage_run_id"]
+            isOneToOne: false
+            referencedRelation: "v_loop_state"
+            referencedColumns: ["stage_run_id"]
+          },
+        ]
+      }
+      loop_run: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_stage: string
+          cycle: number
+          deleted_at: string | null
+          ended_at: string | null
+          error: Json | null
+          event_seq: number
+          id: string
+          label: string | null
+          metadata: Json
+          organization_id: string
+          pipe_policy: Json
+          site_id: string
+          started_at: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          wf_run_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_stage?: string
+          cycle?: number
+          deleted_at?: string | null
+          ended_at?: string | null
+          error?: Json | null
+          event_seq?: number
+          id?: string
+          label?: string | null
+          metadata?: Json
+          organization_id: string
+          pipe_policy?: Json
+          site_id: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          wf_run_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_stage?: string
+          cycle?: number
+          deleted_at?: string | null
+          ended_at?: string | null
+          error?: Json | null
+          event_seq?: number
+          id?: string
+          label?: string | null
+          metadata?: Json
+          organization_id?: string
+          pipe_policy?: Json
+          site_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          wf_run_id?: string | null
+        }
+        Relationships: []
+      }
+      loop_stage_run: {
+        Row: {
+          attempt: number
+          blocker: Json | null
+          blocker_kind: string | null
+          created_at: string
+          cycle: number
+          ended_at: string | null
+          error: Json | null
+          escalate_at: string | null
+          escalate_to_pipe: string | null
+          id: string
+          loop_run_id: string
+          outcome: Json | null
+          pipe: string | null
+          pipe_requested: string
+          ref_id: string | null
+          ref_kind: string | null
+          stage: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt?: number
+          blocker?: Json | null
+          blocker_kind?: string | null
+          created_at?: string
+          cycle: number
+          ended_at?: string | null
+          error?: Json | null
+          escalate_at?: string | null
+          escalate_to_pipe?: string | null
+          id?: string
+          loop_run_id: string
+          outcome?: Json | null
+          pipe?: string | null
+          pipe_requested: string
+          ref_id?: string | null
+          ref_kind?: string | null
+          stage: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt?: number
+          blocker?: Json | null
+          blocker_kind?: string | null
+          created_at?: string
+          cycle?: number
+          ended_at?: string | null
+          error?: Json | null
+          escalate_at?: string | null
+          escalate_to_pipe?: string | null
+          id?: string
+          loop_run_id?: string
+          outcome?: Json | null
+          pipe?: string | null
+          pipe_requested?: string
+          ref_id?: string | null
+          ref_kind?: string | null
+          stage?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loop_stage_run_loop_run_id_fkey"
+            columns: ["loop_run_id"]
+            isOneToOne: false
+            referencedRelation: "loop_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loop_stage_run_loop_run_id_fkey"
+            columns: ["loop_run_id"]
+            isOneToOne: false
+            referencedRelation: "v_loop_state"
+            referencedColumns: ["loop_run_id"]
+          },
+          {
+            foreignKeyName: "loop_stage_run_ref_kind_fkey"
+            columns: ["ref_kind"]
+            isOneToOne: false
+            referencedRelation: "stage_ref_kind"
+            referencedColumns: ["kind"]
+          },
+        ]
+      }
+      stage_ref_kind: {
+        Row: {
+          id_column: string
+          is_active: boolean
+          kind: string
+          label: string
+          notes: string | null
+          schema_name: string
+          status_column: string | null
+          table_name: string
+        }
+        Insert: {
+          id_column?: string
+          is_active?: boolean
+          kind: string
+          label: string
+          notes?: string | null
+          schema_name: string
+          status_column?: string | null
+          table_name: string
+        }
+        Update: {
+          id_column?: string
+          is_active?: boolean
+          kind?: string
+          label?: string
+          notes?: string | null
+          schema_name?: string
+          status_column?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      v_loop_state: {
+        Row: {
+          blocker: Json | null
+          blocker_kind: string | null
+          created_by: string | null
+          current_stage: string | null
+          cycle: number | null
+          ended_at: string | null
+          error: Json | null
+          escalate_at: string | null
+          escalate_to_pipe: string | null
+          event_seq: number | null
+          is_blocked: boolean | null
+          label: string | null
+          loop_run_id: string | null
+          open_stage: string | null
+          organization_id: string | null
+          pipe: string | null
+          pipe_policy: Json | null
+          pipe_requested: string | null
+          ref_id: string | null
+          ref_kind: string | null
+          site_domain: string | null
+          site_id: string | null
+          site_name: string | null
+          stage_run_id: string | null
+          stage_started_at: string | null
+          stage_status: string | null
+          stages_completed_this_cycle: number | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+          wf_run_id: string | null
+          wf_run_status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loop_stage_run_ref_kind_fkey"
+            columns: ["ref_kind"]
+            isOneToOne: false
+            referencedRelation: "stage_ref_kind"
+            referencedColumns: ["kind"]
+          },
+        ]
+      }
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  hindsight: {
+    Tables: {
+      enrollment: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string
+          example_watermark_at: string
+          goal: string | null
+          id: string
+          last_review_at: string | null
+          lens_config: Json
+          max_examples_per_review: number
+          metadata: Json
+          next_eligible_at: string | null
+          organization_id: string
+          review_every_n: number
+          status: string
+          subject_id: string | null
+          subject_kind: string
+          subject_ref: string | null
+          subject_selector: Json
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name: string
+          example_watermark_at?: string
+          goal?: string | null
+          id?: string
+          last_review_at?: string | null
+          lens_config?: Json
+          max_examples_per_review?: number
+          metadata?: Json
+          next_eligible_at?: string | null
+          organization_id: string
+          review_every_n?: number
+          status?: string
+          subject_id?: string | null
+          subject_kind: string
+          subject_ref?: string | null
+          subject_selector?: Json
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string
+          example_watermark_at?: string
+          goal?: string | null
+          id?: string
+          last_review_at?: string | null
+          lens_config?: Json
+          max_examples_per_review?: number
+          metadata?: Json
+          next_eligible_at?: string | null
+          organization_id?: string
+          review_every_n?: number
+          status?: string
+          subject_id?: string | null
+          subject_kind?: string
+          subject_ref?: string | null
+          subject_selector?: Json
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      finding: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          applied_version_number: number | null
+          assist_id: string | null
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          dedupe_key: string | null
+          deleted_at: string | null
+          enrollment_id: string
+          evidence: Json
+          id: string
+          lever: string
+          machine_applicable: boolean
+          metadata: Json
+          organization_id: string
+          proposal: Json
+          reasoning: string | null
+          review_id: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_version_number?: number | null
+          assist_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string | null
+          deleted_at?: string | null
+          enrollment_id: string
+          evidence?: Json
+          id?: string
+          lever: string
+          machine_applicable?: boolean
+          metadata?: Json
+          organization_id: string
+          proposal?: Json
+          reasoning?: string | null
+          review_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          applied_version_number?: number | null
+          assist_id?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string | null
+          deleted_at?: string | null
+          enrollment_id?: string
+          evidence?: Json
+          id?: string
+          lever?: string
+          machine_applicable?: boolean
+          metadata?: Json
+          organization_id?: string
+          proposal?: Json
+          reasoning?: string | null
+          review_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finding_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finding_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "review"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      replay: {
+        Row: {
+          batch_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          custom_id: string | null
+          deleted_at: string | null
+          enrollment_id: string
+          error: Json | null
+          estimated_tokens_in: number | null
+          estimated_tokens_out: number | null
+          finding_id: string | null
+          id: string
+          judge: Json | null
+          metadata: Json
+          metrics: Json
+          organization_id: string
+          original_metrics: Json
+          overrides: Json
+          replay_conversation_id: string | null
+          source_conversation_id: string
+          source_position: number | null
+          source_user_input: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          urgency: string
+          variant: string
+          verdict: string | null
+          version: number
+        }
+        Insert: {
+          batch_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_id?: string | null
+          deleted_at?: string | null
+          enrollment_id: string
+          error?: Json | null
+          estimated_tokens_in?: number | null
+          estimated_tokens_out?: number | null
+          finding_id?: string | null
+          id?: string
+          judge?: Json | null
+          metadata?: Json
+          metrics?: Json
+          organization_id: string
+          original_metrics?: Json
+          overrides?: Json
+          replay_conversation_id?: string | null
+          source_conversation_id: string
+          source_position?: number | null
+          source_user_input?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          urgency?: string
+          variant?: string
+          verdict?: string | null
+          version?: number
+        }
+        Update: {
+          batch_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_id?: string | null
+          deleted_at?: string | null
+          enrollment_id?: string
+          error?: Json | null
+          estimated_tokens_in?: number | null
+          estimated_tokens_out?: number | null
+          finding_id?: string | null
+          id?: string
+          judge?: Json | null
+          metadata?: Json
+          metrics?: Json
+          organization_id?: string
+          original_metrics?: Json
+          overrides?: Json
+          replay_conversation_id?: string | null
+          source_conversation_id?: string
+          source_position?: number | null
+          source_user_input?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          urgency?: string
+          variant?: string
+          verdict?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replay_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "replay_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "finding"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          enrollment_id: string
+          error: Json | null
+          example_count: number
+          examples: Json
+          id: string
+          metadata: Json
+          organization_id: string
+          reviewer_conversation_id: string | null
+          started_at: string | null
+          status: string
+          summary: string | null
+          total_cost: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          what_worked: string | null
+          window_from: string
+          window_to: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enrollment_id: string
+          error?: Json | null
+          example_count?: number
+          examples?: Json
+          id?: string
+          metadata?: Json
+          organization_id: string
+          reviewer_conversation_id?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+          total_cost?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          what_worked?: string | null
+          window_from: string
+          window_to?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enrollment_id?: string
+          error?: Json | null
+          example_count?: number
+          examples?: Json
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          reviewer_conversation_id?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+          total_cost?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          what_worked?: string | null
+          window_from?: string
+          window_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  history: {
+    Tables: {
+      row_versions: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2025_11: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2025_12: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_01: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_02: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_03: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_04: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_05: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_06: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_07: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_08: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_09: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_10: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_11: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2026_12: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_01: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_02: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_03: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_04: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_05: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_06: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_07: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_08: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_09: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_10: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_11: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2027_12: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_2028_01: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      row_versions_default: {
+        Row: {
+          actor_id: string | null
+          entity_type: string
+          id: number
+          occurred_at: string
+          operation: string
+          organization_id: string | null
+          row_data: Json
+          row_id: string | null
+          version: number
+        }
+        Insert: {
+          actor_id?: string | null
+          entity_type: string
+          id?: never
+          occurred_at?: string
+          operation: string
+          organization_id?: string | null
+          row_data: Json
+          row_id?: string | null
+          version?: number
+        }
+        Update: {
+          actor_id?: string | null
+          entity_type?: string
+          id?: never
+          occurred_at?: string
+          operation?: string
+          organization_id?: string | null
+          row_data?: Json
+          row_id?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      ensure_row_version_partitions: {
+        Args: { months_ahead?: number }
+        Returns: number
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   iam: {
     Tables: {
       access_requests: {
@@ -24784,6 +27374,143 @@ export type Database = {
     Enums: {
       wc_finger_type: "index" | "middle" | "ring" | "little" | "thumb"
       wc_side: "right" | "left" | "default"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  meta: {
+    Tables: {
+      audit_exemption: {
+        Row: {
+          check_name: string
+          created_at: string
+          created_by: string | null
+          reason: string
+          schema_name: string
+          table_name: string
+        }
+        Insert: {
+          check_name: string
+          created_at?: string
+          created_by?: string | null
+          reason: string
+          schema_name: string
+          table_name: string
+        }
+        Update: {
+          check_name?: string
+          created_at?: string
+          created_by?: string | null
+          reason?: string
+          schema_name?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      excluded_schema: {
+        Row: {
+          reason: string | null
+          schema_name: string
+        }
+        Insert: {
+          reason?: string | null
+          schema_name: string
+        }
+        Update: {
+          reason?: string | null
+          schema_name?: string
+        }
+        Relationships: []
+      }
+      table_stats_history: {
+        Row: {
+          captured_at: string
+          est_rows: number | null
+          exact_rows: number | null
+          last_data_ts: string | null
+          schema_name: string
+          table_name: string
+          total_bytes: number | null
+          ts_col: string | null
+        }
+        Insert: {
+          captured_at?: string
+          est_rows?: number | null
+          exact_rows?: number | null
+          last_data_ts?: string | null
+          schema_name: string
+          table_name: string
+          total_bytes?: number | null
+          ts_col?: string | null
+        }
+        Update: {
+          captured_at?: string
+          est_rows?: number | null
+          exact_rows?: number | null
+          last_data_ts?: string | null
+          schema_name?: string
+          table_name?: string
+          total_bytes?: number | null
+          ts_col?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      table_stats_current: {
+        Row: {
+          est_rows: number | null
+          exact_rows: number | null
+          is_new_since_snapshot: boolean | null
+          last_data_ts: string | null
+          schema_name: unknown
+          stats_as_of: string | null
+          table_name: unknown
+          total_bytes: number | null
+          total_pretty: string | null
+          ts_col: string | null
+        }
+        Relationships: []
+      }
+      table_stats_live: {
+        Row: {
+          dead_ratio: number | null
+          est_rows: number | null
+          idx_scan: number | null
+          index_bytes: number | null
+          last_analyze: string | null
+          last_vacuum: string | null
+          n_dead_tup: number | null
+          n_live_tup: number | null
+          schema_name: unknown
+          seq_scan: number | null
+          table_bytes: number | null
+          table_name: unknown
+          total_bytes: number | null
+          total_pretty: string | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      capture_table_stats: { Args: never; Returns: number }
+      exempt: {
+        Args: {
+          p_check: string
+          p_reason: string
+          p_schema: string
+          p_table: string
+        }
+        Returns: undefined
+      }
+      unexempt: {
+        Args: { p_check: string; p_schema: string; p_table: string }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -40490,6 +43217,480 @@ export type Database = {
       [_ in never]: never
     }
   }
+  runtime: {
+    Tables: {
+      _org_repair_0253_backup: {
+        Row: {
+          conversation_id: string
+          new_organization_id: string
+          old_organization_id: string | null
+          repaired_at: string
+          request_id: string
+        }
+        Insert: {
+          conversation_id: string
+          new_organization_id: string
+          old_organization_id?: string | null
+          repaired_at?: string
+          request_id: string
+        }
+        Update: {
+          conversation_id?: string
+          new_organization_id?: string
+          old_organization_id?: string | null
+          repaired_at?: string
+          request_id?: string
+        }
+        Relationships: []
+      }
+      execution_event_cursor: {
+        Row: {
+          last_seq: number
+          root_execution_id: string
+        }
+        Insert: {
+          last_seq?: number
+          root_execution_id: string
+        }
+        Update: {
+          last_seq?: number
+          root_execution_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execution_event_cursor_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: true
+            referencedRelation: "global_execution"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      global_execution: {
+        Row: {
+          context: Json | null
+          context_mode: string | null
+          cost: number
+          created_at: string
+          ended_at: string | null
+          error: Json | null
+          id: string
+          lease_expires_at: string | null
+          lease_holder: string | null
+          link_id: string | null
+          link_kind: string | null
+          meters: Json
+          parent_execution_id: string | null
+          request_id: string
+          root_execution_id: string
+          started_at: string | null
+          status: string
+          type: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          context?: Json | null
+          context_mode?: string | null
+          cost?: number
+          created_at?: string
+          ended_at?: string | null
+          error?: Json | null
+          id?: string
+          lease_expires_at?: string | null
+          lease_holder?: string | null
+          link_id?: string | null
+          link_kind?: string | null
+          meters?: Json
+          parent_execution_id?: string | null
+          request_id: string
+          root_execution_id: string
+          started_at?: string | null
+          status?: string
+          type: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          context?: Json | null
+          context_mode?: string | null
+          cost?: number
+          created_at?: string
+          ended_at?: string | null
+          error?: Json | null
+          id?: string
+          lease_expires_at?: string | null
+          lease_holder?: string | null
+          link_id?: string | null
+          link_kind?: string | null
+          meters?: Json
+          parent_execution_id?: string | null
+          request_id?: string
+          root_execution_id?: string
+          started_at?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_execution_parent_execution_id_fkey"
+            columns: ["parent_execution_id"]
+            isOneToOne: false
+            referencedRelation: "global_execution"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "global_execution_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "global_request"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "global_execution_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: false
+            referencedRelation: "global_execution"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      global_execution_checkpoint: {
+        Row: {
+          created_at: string
+          execution_id: string
+          id: string
+          state: Json
+        }
+        Insert: {
+          created_at?: string
+          execution_id: string
+          id?: string
+          state: Json
+        }
+        Update: {
+          created_at?: string
+          execution_id?: string
+          id?: string
+          state?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_execution_checkpoint_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "global_execution"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      global_execution_control: {
+        Row: {
+          cancel_requested_at: string | null
+          cancel_requested_by: string | null
+          cost_budget: number | null
+          created_at: string
+          deadline: string | null
+          limits: Json
+          root_execution_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          cancel_requested_at?: string | null
+          cancel_requested_by?: string | null
+          cost_budget?: number | null
+          created_at?: string
+          deadline?: string | null
+          limits?: Json
+          root_execution_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          cancel_requested_at?: string | null
+          cancel_requested_by?: string | null
+          cost_budget?: number | null
+          created_at?: string
+          deadline?: string | null
+          limits?: Json
+          root_execution_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_execution_control_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: true
+            referencedRelation: "global_execution"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      global_execution_event: {
+        Row: {
+          created_at: string
+          detail: Json | null
+          execution_id: string
+          id: string
+          kind: string
+          root_execution_id: string | null
+          seq: number | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json | null
+          execution_id: string
+          id?: string
+          kind: string
+          root_execution_id?: string | null
+          seq?: number | null
+        }
+        Update: {
+          created_at?: string
+          detail?: Json | null
+          execution_id?: string
+          id?: string
+          kind?: string
+          root_execution_id?: string | null
+          seq?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_execution_event_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "global_execution"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "global_execution_event_root_execution_id_fkey"
+            columns: ["root_execution_id"]
+            isOneToOne: false
+            referencedRelation: "global_execution"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      global_meter_entry: {
+        Row: {
+          created_at: string
+          execution_id: string
+          id: string
+          label: string | null
+          payload: Json | null
+          quantities: Json
+        }
+        Insert: {
+          created_at?: string
+          execution_id: string
+          id?: string
+          label?: string | null
+          payload?: Json | null
+          quantities?: Json
+        }
+        Update: {
+          created_at?: string
+          execution_id?: string
+          id?: string
+          label?: string | null
+          payload?: Json | null
+          quantities?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_meter_entry_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "global_execution"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      global_origin: {
+        Row: {
+          allow_unknown: boolean
+          app: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          surface: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          allow_unknown?: boolean
+          app: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          surface: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          allow_unknown?: boolean
+          app?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          surface?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      global_request: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          idempotency_key: string | null
+          organization_id: string
+          origin_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          organization_id: string
+          origin_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          organization_id?: string
+          origin_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "global_request_origin_id_fkey"
+            columns: ["origin_id"]
+            isOneToOne: false
+            referencedRelation: "global_origin"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_item: {
+        Row: {
+          attempts: number
+          canonical_key: string
+          claim_holder: string | null
+          claimed_at: string | null
+          created_at: string
+          ended_at: string | null
+          error: Json | null
+          execution_id: string
+          id: string
+          lease_expires_at: string | null
+          max_attempts: number
+          not_before: string | null
+          payload: Json | null
+          raw_key: string | null
+          seq: number
+          state: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          attempts?: number
+          canonical_key: string
+          claim_holder?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          ended_at?: string | null
+          error?: Json | null
+          execution_id: string
+          id?: string
+          lease_expires_at?: string | null
+          max_attempts?: number
+          not_before?: string | null
+          payload?: Json | null
+          raw_key?: string | null
+          seq?: number
+          state?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          attempts?: number
+          canonical_key?: string
+          claim_holder?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          ended_at?: string | null
+          error?: Json | null
+          execution_id?: string
+          id?: string
+          lease_expires_at?: string | null
+          max_attempts?: number
+          not_before?: string | null
+          payload?: Json | null
+          raw_key?: string | null
+          seq?: number
+          state?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_item_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "global_execution"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      agent_usage_totals: {
+        Args: { p_request_ids: string[] }
+        Returns: {
+          input_tokens: number
+          output_tokens: number
+          total_conversations: number
+          total_cost: number
+          total_tokens: number
+        }[]
+      }
+      spine_soft_delete_conversation_requests: {
+        Args: { p_conversation_id: string }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   scheduler: {
     Tables: {
       sch_agent_task: {
@@ -55428,7 +58629,19 @@ export const Constants = {
   ai: {
     Enums: {},
   },
+  api: {
+    Enums: {},
+  },
   app: {
+    Enums: {},
+  },
+  assignment: {
+    Enums: {},
+  },
+  audit: {
+    Enums: {},
+  },
+  batch: {
     Enums: {},
   },
   billing: {
@@ -55490,6 +58703,15 @@ export const Constants = {
   graveyard: {
     Enums: {},
   },
+  growth: {
+    Enums: {},
+  },
+  hindsight: {
+    Enums: {},
+  },
+  history: {
+    Enums: {},
+  },
   iam: {
     Enums: {},
   },
@@ -55498,6 +58720,9 @@ export const Constants = {
       wc_finger_type: ["index", "middle", "ring", "little", "thumb"],
       wc_side: ["right", "left", "default"],
     },
+  },
+  meta: {
+    Enums: {},
   },
   pdf: {
     Enums: {},
@@ -56180,6 +59405,9 @@ export const Constants = {
     Enums: {},
   },
   research: {
+    Enums: {},
+  },
+  runtime: {
     Enums: {},
   },
   scheduler: {
