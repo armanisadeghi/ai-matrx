@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -34,6 +34,12 @@ import {
   addAuthorityRecommendationToPlan,
   dismissAuthorityRecommendation,
 } from "./actions";
+import {
+  AUTHORITY_GUIDANCE_MAX_CHARS,
+  resolveAuthorityRecommendation,
+  validateAuthorityGuidance,
+  type AuthorityTriageState,
+} from "./authority-write-targets";
 import { AuthorityFlowMap } from "./AuthorityFlowMap";
 import type { AuthorityRecommendation, AuthorityRouterResult } from "./types";
 import { useAuthorityRouter } from "./useAuthorityRouter";
@@ -66,39 +72,104 @@ export function AuthorityRouterWorkspace() {
     (item) => !dismissed.has(item.candidate_key),
   );
 
-  const approve = async (recommendation: AuthorityRecommendation) => {
+  // The two triage writes, as ONE path that THROWS. The user's buttons wrap
+  // these in a toast; the surface write handlers call them bare so the failure
+  // reaches the agent instead of dying in a toast it cannot see.
+  const performApprove = async (recommendation: AuthorityRecommendation) => {
     setWorking(recommendation.candidate_key);
     try {
       await addAuthorityRecommendationToPlan(site.id, recommendation);
       setApproved((current) =>
         new Set(current).add(recommendation.candidate_key),
       );
-      toast.success("Added to both pages’ existing link plans.");
-    } catch (error) {
-      toast.error("Could not add this route to the link plan", {
-        description: extractErrorMessage(error),
-      });
     } finally {
       setWorking(null);
     }
   };
 
-  const dismiss = async (recommendation: AuthorityRecommendation) => {
+  const performDismiss = async (recommendation: AuthorityRecommendation) => {
     setWorking(recommendation.candidate_key);
     try {
       await dismissAuthorityRecommendation(site.id, recommendation);
       setDismissed((current) =>
         new Set(current).add(recommendation.candidate_key),
       );
+    } finally {
+      setWorking(null);
+    }
+  };
+
+  const approve = async (recommendation: AuthorityRecommendation) => {
+    try {
+      await performApprove(recommendation);
+      toast.success("Added to both pages’ existing link plans.");
+    } catch (error) {
+      toast.error("Could not add this route to the link plan", {
+        description: extractErrorMessage(error),
+      });
+    }
+  };
+
+  const dismiss = async (recommendation: AuthorityRecommendation) => {
+    try {
+      await performDismiss(recommendation);
       toast.success("Recommendation dismissed.");
     } catch (error) {
       toast.error("Could not dismiss this recommendation", {
         description: extractErrorMessage(error),
       });
-    } finally {
-      setWorking(null);
     }
   };
+
+  // Live state for the write handlers. `applySurfaceWrite` resolves a handler
+  // BEFORE it shows the confirm dialog, so a guard closing over rendered state
+  // can act on a value that went stale while the dialog sat open (the
+  // `image-studio` trap). This ref is advanced every render and read at CALL
+  // time, which is immune to that by construction.
+  const triageRef = useRef<AuthorityTriageState>({
+    recommendations: null,
+    dismissed: new Set(),
+    approved: new Set(),
+    working: null,
+    running: false,
+  });
+  triageRef.current = {
+    // `result` is null until the latest run has loaded — preserved as null so
+    // the handler can tell "not loaded yet" from "nothing was proposed".
+    recommendations: result ? result.recommendations : null,
+    dismissed,
+    approved,
+    working,
+    running: authority.run.status === "running",
+  };
+
+  const buildWriteHandlers = () => ({
+    authority_guidance: (value: unknown) => {
+      if (triageRef.current.running) {
+        throw new Error(
+          "authority_guidance is refused while the authority analysis is running — the note is only read when a run starts, so changing it mid-run would silently do nothing.",
+        );
+      }
+      setGuidance(validateAuthorityGuidance(value));
+    },
+    authority_dismiss_recommendation: async (value: unknown) => {
+      const recommendation = resolveAuthorityRecommendation(
+        "authority_dismiss_recommendation",
+        value,
+        triageRef.current,
+      );
+      await performDismiss(recommendation);
+    },
+    authority_add_recommendation_to_plan: async (value: unknown) => {
+      const recommendation = resolveAuthorityRecommendation(
+        "authority_add_recommendation_to_plan",
+        value,
+        triageRef.current,
+        { requireNotApproved: true },
+      );
+      await performApprove(recommendation);
+    },
+  });
 
   return (
     <SurfaceRuntimeProvider
@@ -122,8 +193,10 @@ export function AuthorityRouterWorkspace() {
             Array<Record<string, unknown>> | undefined,
           authority_recommendations: result?.recommendations as
             Array<Record<string, unknown>> | undefined,
+          authority_guidance: guidance || undefined,
         })
       }
+      getWriteHandlers={buildWriteHandlers}
     >
       <div className="mx-auto w-full max-w-[1600px] space-y-4 p-3 sm:p-5">
         <section className="overflow-hidden rounded-2xl border bg-gradient-to-br from-card via-card to-emerald-500/5 shadow-sm">
@@ -155,7 +228,7 @@ export function AuthorityRouterWorkspace() {
                 id="authority-guidance"
                 value={guidance}
                 onChange={(event) => setGuidance(event.target.value)}
-                maxLength={4000}
+                maxLength={AUTHORITY_GUIDANCE_MAX_CHARS}
                 placeholder="Example: prioritize the California service pages and avoid changing the pricing guide."
                 className="mt-2 min-h-20 resize-none text-xs"
               />
