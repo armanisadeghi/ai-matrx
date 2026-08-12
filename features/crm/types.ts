@@ -197,6 +197,61 @@ export interface PartySortOpts {
   pageSize: number;
 }
 
+/** Sort directions the list offers. */
+export const PARTY_SORT_DIRECTIONS = ["asc", "desc"] as const;
+export type PartySortDirection = (typeof PARTY_SORT_DIRECTIONS)[number];
+
+// ── Agent-facing vocabulary (ONE source for the prose AND the guard) ────────
+//
+// The CRM list surface (`matrx-user/crm`) is agent-writable, and every write
+// target's description spells out the vocabulary the handler enforces. These
+// constants are interpolated into that description and read again by the
+// handlers on `CrmListPage`, so the contract a model READS and the contract a
+// handler ENFORCES cannot drift apart — same discipline as
+// `SCRAPE_MODE_ENUM_TEXT` in `features/scraper/scrape-command.ts`.
+
+/** The kind facet's full vocabulary, including the "no filter" reset. */
+export const PARTY_KIND_FILTERS: readonly PartyKindFilter[] = [
+  "all",
+  ...PARTY_KINDS,
+];
+
+/** Every key `PartyListFilters` accepts, in the order the table shows them. */
+export const PARTY_COLUMN_FILTER_KEYS = [
+  "display_name",
+  "job_title",
+  "primary_domain",
+  "party_kind",
+  "do_not_contact",
+  "updated_at",
+  "created_at",
+] as const;
+export type PartyColumnFilterKey = (typeof PARTY_COLUMN_FILTER_KEYS)[number];
+
+/** The `PartyListFilters` keys carrying a free-text substring match. */
+export const PARTY_TEXT_FILTER_KEYS = [
+  "display_name",
+  "job_title",
+  "primary_domain",
+] as const;
+export type PartyTextFilterKey = (typeof PARTY_TEXT_FILTER_KEYS)[number];
+
+/** Just the bucket values, without the human labels. */
+export const DATE_BUCKET_VALUES: readonly DateBucket[] = DATE_BUCKETS.map(
+  (b) => b.value,
+);
+
+export const PARTY_KIND_ENUM_TEXT = PARTY_KINDS.join(" | ");
+export const PARTY_KIND_FILTER_ENUM_TEXT = PARTY_KIND_FILTERS.join(" | ");
+export const PARTY_SORT_KEY_ENUM_TEXT = PARTY_SORT_KEYS.join(" | ");
+export const PARTY_SORT_DIRECTION_ENUM_TEXT = PARTY_SORT_DIRECTIONS.join(" | ");
+export const PARTY_COLUMN_FILTER_KEY_ENUM_TEXT =
+  PARTY_COLUMN_FILTER_KEYS.join(" | ");
+/** Buckets WITH their labels — the agent picks better when it sees both. */
+export const DATE_BUCKET_ENUM_TEXT = DATE_BUCKETS.map(
+  (b) => `"${b.value}" (${b.label})`,
+).join(" | ");
+
 /** The caller's identity + org membership, resolved once by the hook. */
 export interface CrmQueryContext {
   userId: string;
