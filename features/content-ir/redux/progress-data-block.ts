@@ -3,6 +3,7 @@ import { isJsonObject } from "@/types/json";
 
 import { IR_ENVELOPE_KEY } from "../core/ir-types";
 import { envelopeFromCompleteValue } from "../core/normalize";
+import { applyIrKindRoute } from "../react/kind-route";
 
 /**
  * Promote a server progress event's canonical `content_ir` value into the
@@ -25,15 +26,25 @@ export function progressDataRenderBlock(
   if (typeof kind !== "string" || kind.trim().length === 0) return null;
 
   const source = JSON.stringify(value);
+  const metadata = {
+    [IR_ENVELOPE_KEY]: envelopeFromCompleteValue(value, kind),
+  };
+  // Route before Redux storage so the render block carries the canonical
+  // component projection in `data`. Some LiveRunDisplay hops reconstruct a
+  // content block from the Redux payload and cannot preserve serverData added
+  // only by a later render-time transform.
+  const routed = applyIrKindRoute({
+    type: "code",
+    serverData: { language: "json" },
+    metadata,
+  });
   return {
     blockId: `progress_content_ir_${eventIndex}`,
     blockIndex,
-    type: kind,
+    type: routed.type,
     status: "complete",
     content: source,
-    data: null,
-    metadata: {
-      [IR_ENVELOPE_KEY]: envelopeFromCompleteValue(value, kind),
-    },
+    data: routed.serverData ?? null,
+    metadata: routed.metadata,
   };
 }

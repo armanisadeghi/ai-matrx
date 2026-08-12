@@ -31,13 +31,20 @@
  * `active_tab` is derived from the pathname (route-tabbed, so reliably
  * knowable at any moment). Every other value below is real client-component
  * state (THE COMPLETENESS LAW), but each tab keeps its own state with no
- * cross-tab bridge, and no page here mounts a `SurfaceRuntimeProvider` —
- * `readiness: "stub"`, no emitter wired.
+ * cross-tab bridge, and only ONE tab mounts a `SurfaceRuntimeProvider` so far
+ * — hence `readiness: "partial"`.
  *
- * What an agent bound here may safely do, once wired: read which tab the
- * admin is on and reason about scheduling health, a specific task/run, or a
- * cron expression. It must NOT assume anything is currently live in scope —
- * nothing here is emitted today.
+ * The Cron tester mounts it (2026-08-12, the surface's first runtime): that
+ * page emits `active_tab` plus its five `cron_*` values and registers the
+ * surface's two write targets. The other six tabs mount nothing, so a run
+ * started on them still sees an empty scope.
+ *
+ * What an agent bound here may safely do: on the Cron tester, read the
+ * expression/timezone/validation result and propose or apply a better
+ * expression (see `writeTargets` below). Anywhere else in this console it
+ * must NOT assume anything is in scope — those tabs emit nothing today, and
+ * nothing that changes what the platform actually RUNS is writable from here
+ * at all.
  */
 
 import type {
@@ -45,6 +52,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -355,11 +363,70 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the Cron tester tab ONLY (`cron-tester/page.tsx`), which is
+ * also the surface's FIRST and so far ONLY `SurfaceRuntimeProvider` mount.
+ *
+ * The cron tester is the one place in this console where an agent produces a
+ * value a human would otherwise hand-derive: translating "every weekday at
+ * 9am Eastern" into `0 9 * * 1-5` + `America/New_York` is real work, and the
+ * page then shows the admin exactly what that expression means (cronstrue
+ * humanization) and when it would fire (the next N timestamps). Both targets
+ * have a 1:1 read twin, so the evidence loop closes on the same page.
+ *
+ * Both are `mode: "ui"`: this tab is PURELY EPHEMERAL. It schedules nothing,
+ * reads no DB, spends nothing, and has no Save bar — the state dies with the
+ * page. They are still `applyPolicy: "ask"` rather than `"auto"`, because the
+ * expression is the thing the admin is actively reasoning about and silently
+ * replacing what they typed would be surprising, not helpful.
+ *
+ * NOT a competing set with `matrx-user/schedules`. That surface's
+ * `schedule_draft_trigger` also carries a cron expression + tz, but it stages
+ * the trigger of a REAL scheduled task through `ScheduleForm.tsx`. This admin
+ * console does not render `ScheduleForm` anywhere — these targets drive two
+ * `useState` values in a throwaway validator. Different page, different state,
+ * different blast radius.
+ *
+ * Deliberately NOT agent-writable anywhere in this console: enabling or
+ * disabling a scheduled task, re-cronning one, and the orphan-lease "mark
+ * failed" action all change what the platform actually runs for real users, so
+ * they stay human. The Runs / Overview / Scanner health / Orphan leases tabs
+ * are reports and register nothing. Templates is a hardcoded in-file SEEDS
+ * array, not real page data. The tester's own "Show next N" preview count is a
+ * mechanical view knob nobody would ask an agent to flip — it is not a target.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "cron_expression",
+    label: "Cron expression",
+    description:
+      'Replaces the expression in the Cron tester\'s input, so the page re-validates it and previews its next fires. Send a PLAIN TEXT STRING — not JSON, and not JSON-encoded — holding a standard 5-field cron expression in the order "minute hour day-of-month month day-of-week" (e.g. "0 9 * * 1-5" = weekdays at 9:00 in the selected timezone; "30 8 * * 1" = Mondays at 8:30; "0 */4 * * *" = every 4 hours). There is NO seconds field and @daily-style macros are not accepted. The value is checked with the SAME parser the page previews with and REFUSED with the parser\'s own message if it will not parse, so nothing invalid can be staged. Ephemeral: this tester schedules nothing and persists nothing.',
+    valueType: "string",
+    updatesValue: "cron_expression",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "cron_tester",
+    sortOrder: 100,
+  },
+  {
+    name: "cron_timezone",
+    label: "Cron timezone",
+    description:
+      'Replaces the timezone the Cron tester evaluates the expression in, which changes the previewed fire times. Send a PLAIN TEXT STRING — not JSON, and not JSON-encoded — holding one IANA timezone name. Only the zones this page\'s picker can display are accepted: "America/Los_Angeles", "America/Denver", "America/Chicago", "America/New_York", "UTC", "Europe/London", "Europe/Paris", "Europe/Berlin", "Asia/Tokyo", "Australia/Sydney". US zone names like "Eastern"/"EST" or any other IANA zone are REFUSED, because the picker could not show them. Ephemeral: this tester schedules nothing and persists nothing.',
+    valueType: "string",
+    updatesValue: "cron_timezone",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "cron_tester",
+    sortOrder: 110,
+  },
+];
+
 export const adminSchedulingManifest: SurfaceManifest = {
   surfaceName: ADMIN_SCHEDULING_SURFACE_NAME,
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Manifest-only — no page in this subtree mounts a SurfaceRuntimeProvider yet. Values reflect real page/component state (Overview's fetchHealthSummary, Tasks/Runs' filters and row counts, Orphan leases' row count, Cron tester's live validation, Scanner health's polled status) but nothing is emitted at runtime today. Templates (templates/page.tsx) is a hardcoded in-file SEEDS array with no backing table yet — the page's own \"Coming next\" alert says a sch_template table + read RPC are pending — so it is deliberately NOT declared as page data here; declaring it would promise a value no real data source supplies.",
+    "The Cron tester tab (cron-tester/page.tsx) mounts the surface's FIRST SurfaceRuntimeProvider and emits active_tab + the five cron_* values live; it is also the only tab with write targets. The other six tabs still mount NO provider, so their values (Overview's fetchHealthSummary counters, Tasks/Runs' filters and row counts, Orphan leases' row count, Scanner health's polled status) reflect real component state but are not emitted at runtime yet — an agent run started on those tabs gets an empty scope. Templates (templates/page.tsx) is a hardcoded in-file SEEDS array with no backing table yet — the page's own \"Coming next\" alert says a sch_template table + read RPC are pending — so it is deliberately NOT declared as page data here; declaring it would promise a value no real data source supplies.",
   label: "Scheduling",
   urlPattern: "/administration/automation/scheduling",
   intro: `<surface_intro>
@@ -369,13 +436,14 @@ active_tab tells you which of the tabs the admin is on and is always present. Ov
 
 Templates has no backing data source yet (hardcoded starter examples pending a real table) and is deliberately undeclared.
 
-Nothing below active_tab is currently emitted — treat this surface as tab-identity-only until an emitter is wired.
+ONLY the Cron tester tab is wired today: it emits active_tab plus cron_expression / cron_timezone / cron_validation_error / cron_next_fires, and it is the only tab that accepts writes — you may replace the expression and the timezone there, both confirmed with the admin first. That tab is a scratchpad: it validates and previews, it does not schedule anything. On every other tab nothing is emitted yet, so do not assume any value is in scope. Nothing in this console can enable, disable, re-cron or fail a real scheduled task — those stay human.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**
