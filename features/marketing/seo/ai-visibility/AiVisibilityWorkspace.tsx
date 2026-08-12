@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Loader2,
   MessageSquareQuote,
+  PanelRightOpen,
   Play,
   RefreshCw,
   ScanSearch,
@@ -17,6 +18,7 @@ import {
 
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -94,6 +96,7 @@ function ProviderCard({
   response,
   live,
   running,
+  onOpen,
 }: {
   engine: AiVisibilityEngine;
   response?: AiVisibilityResponse;
@@ -101,6 +104,7 @@ function ProviderCard({
     typeof useAiVisibility
   >["run"]["answers"][AiVisibilityEngine];
   running: boolean;
+  onOpen: () => void;
 }) {
   const title = engineLabel(engine);
   const answer = live?.answerText || response?.answer_text || "";
@@ -124,19 +128,34 @@ function ProviderCard({
             </p>
           </div>
         </div>
-        {live?.error ? (
-          <Badge variant="destructive">Partial</Badge>
-        ) : answer ? (
-          <Badge variant={analysisReady ? "success" : "secondary"}>
-            {analysisReady ? "Analyzed" : "Answer received"}
-          </Badge>
-        ) : running ? (
-          <Badge variant="outline" className="gap-1">
-            <Loader2 className="h-3 w-3 animate-spin" /> Waiting
-          </Badge>
-        ) : (
-          <Badge variant="outline">No saved answer</Badge>
-        )}
+        <div className="flex items-center gap-1.5">
+          {live?.error ? (
+            <Badge variant="destructive">Partial</Badge>
+          ) : answer ? (
+            <Badge variant={analysisReady ? "success" : "warning"}>
+              {analysisReady ? "Analyzed" : "Analysis incomplete"}
+            </Badge>
+          ) : running ? (
+            <Badge variant="outline" className="gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Waiting
+            </Badge>
+          ) : (
+            <Badge variant="outline">No saved answer</Badge>
+          )}
+          {answer ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              aria-label={`Read full ${title} answer`}
+              title="Read full answer"
+              onClick={onOpen}
+            >
+              <PanelRightOpen className="h-3.5 w-3.5" />
+            </Button>
+          ) : null}
+        </div>
       </header>
       <div className="flex flex-1 flex-col gap-3 p-3">
         {answer ? (
@@ -151,6 +170,12 @@ function ProviderCard({
             <div
               aria-hidden
               className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-card to-transparent"
+            />
+            <button
+              type="button"
+              className="absolute inset-0 z-10 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={`Read full ${title} answer`}
+              onClick={onOpen}
             />
           </div>
         ) : (
@@ -210,6 +235,11 @@ export function AiVisibilityWorkspace({
   const [countryIso, setCountryIso] = useState("US");
   const [city, setCity] = useState("");
   const [forceRefresh, setForceRefresh] = useState(false);
+  const [openAnswer, setOpenAnswer] = useState<{
+    engine: AiVisibilityEngine;
+    answer: string;
+    model: string;
+  } | null>(null);
   const [engines, setEngines] = useState<AiVisibilityEngine[]>(
     AI_VISIBILITY_ENGINES.map((item) => item.id),
   );
@@ -236,6 +266,9 @@ export function AiVisibilityWorkspace({
     engine: responseById.get(row.response_id)?.engine ?? "unknown",
     query: responseById.get(row.response_id)?.query ?? "",
   }));
+  const latestIncompleteCount = latestResponses.filter(
+    (row) => row.answer_text && !hasAnalysis(row.analysis),
+  ).length;
 
   const claimColumns: MatrxColumnDef<ClaimRow>[] = [
     {
@@ -636,6 +669,19 @@ export function AiVisibilityWorkspace({
             live={run.answers[engine.id]}
             response={latestResponses.find((row) => row.engine === engine.id)}
             running={running && engines.includes(engine.id)}
+            onOpen={() => {
+              const live = run.answers[engine.id];
+              const saved = latestResponses.find(
+                (row) => row.engine === engine.id,
+              );
+              const answer = live?.answerText || saved?.answer_text || "";
+              if (!answer) return;
+              setOpenAnswer({
+                engine: engine.id,
+                answer,
+                model: live?.modelName ?? saved?.model_name ?? "Answer engine",
+              });
+            }}
           />
         ))}
       </section>
@@ -682,6 +728,23 @@ export function AiVisibilityWorkspace({
           error={evidence.error}
           onRetry={() => void evidence.refetch()}
         />
+      ) : null}
+
+      {latestIncompleteCount > 0 ? (
+        <section className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div>
+            <p className="font-medium">
+              The answers arrived, but their specialist analysis did not finish.
+            </p>
+            <p className="mt-0.5 text-muted-foreground">
+              Claims and decision signals are created automatically after cited
+              pages are captured; there is no separate button. Select “Ignore
+              today’s saved provider result,” then run the exact query again to
+              start a fresh analysis.
+            </p>
+          </div>
+        </section>
       ) : null}
 
       <Tabs defaultValue="claims" className="flex min-h-[520px] flex-col">
@@ -806,6 +869,19 @@ export function AiVisibilityWorkspace({
           />
         </TabsContent>
       </Tabs>
+
+      {openAnswer ? (
+        <SidePanelSurface
+          title={`${engineLabel(openAnswer.engine)} answer`}
+          description={openAnswer.model}
+          onClose={() => setOpenAnswer(null)}
+          defaultWidth={620}
+        >
+          <div className="p-5 text-sm leading-relaxed">
+            <BasicMarkdownContent content={openAnswer.answer} showCopyButton />
+          </div>
+        </SidePanelSurface>
+      ) : null}
     </main>
   );
 }
