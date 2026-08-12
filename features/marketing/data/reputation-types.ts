@@ -22,6 +22,29 @@ export type ReputationCaseStatus =
   | "dismissed"
   | "monitoring";
 
+/**
+ * The lifecycle statuses a HUMAN can set from the case card's own action row
+ * (Dismiss / Monitor / Accept / Start action / Complete), and therefore the
+ * only ones the `reputation_case_triage` surface write target accepts.
+ *
+ * `"open"` is deliberately absent: it is the state the analysis pipeline
+ * creates a case in, and no control in `ReputationWorkspace` sets a case back
+ * to it, so an agent must not be able to either. `seo.update_reputation_case`
+ * would accept it — this list is the narrower UI contract. The manifest builds
+ * its description FROM this constant, so the vocabulary the agent is told and
+ * the vocabulary the handler enforces cannot drift apart.
+ */
+export const REPUTATION_CASE_USER_SETTABLE_STATUSES = [
+  "accepted",
+  "in_progress",
+  "monitoring",
+  "completed",
+  "dismissed",
+] as const satisfies readonly ReputationCaseStatus[];
+
+/** Max length of the rationale stored on a case ruling by the triage target. */
+export const REPUTATION_RULING_NOTE_MAX_LENGTH = 1000;
+
 export interface ReputationEvidenceRef {
   source_kind: string;
   source_id: string | null;

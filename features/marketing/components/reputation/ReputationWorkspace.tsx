@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -46,6 +47,10 @@ import type {
   ReputationEvidenceRef,
   ReputationNarrative,
   ReputationWorkspaceData,
+} from "@/features/marketing/data/reputation-types";
+import {
+  REPUTATION_CASE_USER_SETTABLE_STATUSES,
+  REPUTATION_RULING_NOTE_MAX_LENGTH,
 } from "@/features/marketing/data/reputation-types";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -456,6 +461,91 @@ export function ReputationWorkspace() {
     );
   };
 
+  // Keep the newest cases reachable from the write handler without making the
+  // handler identity depend on them — `getWriteHandlers` is read at Run time.
+  const casesRef = useRef(data?.cases ?? []);
+  casesRef.current = data?.cases ?? [];
+
+  /**
+   * Handler for the `reputation_case_triage` write target.
+   *
+   * Routes through the SAME `updateCase` mutation the card's Dismiss / Monitor /
+   * Accept / Start action / Complete buttons call — never raw supabase. Throws
+   * on a bad shape so the writeback seam hands the agent a usable error; the
+   * manifest docblock carries the full judgment behind this target.
+   */
+  const applyCaseTriage = async (value: unknown): Promise<void> => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      throw new Error(
+        "reputation_case_triage expects an object like { case_id, status, note? }.",
+      );
+    }
+    const input = value as Record<string, unknown>;
+    const caseId = input.case_id;
+    const status = input.status;
+    const note = input.note;
+
+    const cases = casesRef.current;
+    if (!cases.length) {
+      throw new Error(
+        "There are no reputation cases on this site yet, so there is nothing to triage. Run the analysis first.",
+      );
+    }
+    if (typeof caseId !== "string" || !caseId.trim()) {
+      throw new Error(
+        `reputation_case_triage requires case_id (a string). This page is a queue with no selected case, so the decision must name one. Cases on screen: ${cases
+          .map((row) => `${row.id} (${row.headline})`)
+          .join("; ")}`,
+      );
+    }
+    const target = cases.find((row) => row.id === caseId);
+    if (!target) {
+      throw new Error(
+        `No reputation case with id "${caseId}" on this site. Cases on screen: ${cases
+          .map((row) => `${row.id} (${row.headline})`)
+          .join("; ")}`,
+      );
+    }
+    const isSettableStatus = (candidate: unknown): candidate is ReputationCaseStatus =>
+      typeof candidate === "string" &&
+      (REPUTATION_CASE_USER_SETTABLE_STATUSES as readonly string[]).includes(candidate);
+    if (!isSettableStatus(status)) {
+      throw new Error(
+        `reputation_case_triage status must be one of ${REPUTATION_CASE_USER_SETTABLE_STATUSES.join(
+          " | ",
+        )}. Received ${JSON.stringify(status)}.`,
+      );
+    }
+    if (status === "accepted" && target.status !== "open") {
+      throw new Error(
+        `"accepted" is only valid on a case that is currently open — the Accept button is not rendered otherwise. Case "${target.headline}" is ${target.status}.`,
+      );
+    }
+    if (note !== undefined && typeof note !== "string") {
+      throw new Error(
+        "reputation_case_triage note must be a string when provided.",
+      );
+    }
+    if (typeof note === "string" && note.length > REPUTATION_RULING_NOTE_MAX_LENGTH) {
+      throw new Error(
+        `reputation_case_triage note must be ${REPUTATION_RULING_NOTE_MAX_LENGTH} characters or fewer (received ${note.length}).`,
+      );
+    }
+
+    // `seo.update_reputation_case` REPLACES human_ruling wholesale, so send a
+    // complete ruling. `decided_via` keeps the provenance honest: the human
+    // confirmed it, but the prose came from an agent.
+    const ruling: Record<string, Json> = {
+      lifecycle_decision: status,
+      decided_at: new Date().toISOString(),
+      decided_via: "agent_surface_write",
+    };
+    if (typeof note === "string" && note.trim()) ruling.note = note.trim();
+
+    await updateCase.mutateAsync({ caseId: target.id, status, ruling });
+    toast.success(`Case marked ${status.replaceAll("_", " ")}.`);
+  };
+
   if (workspace.isLoading) return <LoadingSurface label="Loading reputation intelligence…" />;
   if (workspace.isError || !data) {
     return <QueryError error={workspace.error} onRetry={() => void workspace.refetch()} />;
@@ -481,6 +571,9 @@ export function ReputationWorkspace() {
           },
         })
       }
+      getWriteHandlers={() => ({
+        reputation_case_triage: applyCaseTriage,
+      })}
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/10">
         <div className="shrink-0 border-b bg-background px-4 py-3">
