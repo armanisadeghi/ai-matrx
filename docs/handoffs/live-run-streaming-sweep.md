@@ -31,7 +31,7 @@ defect as a spinner**.
 | **A** | Spinner-only, stream handle already available (`requestId` / `conversationId` / ignored `onEvent`) | **31 surfaces** (Transcript Studio's 4 fixed 2026-08-11) |
 | **B** | Spinner-only, no stream handle yet — needs `adoptForeignStream` or a `useRunAgent`→`useLiveAgentRun` migration first | **5** |
 | **C** | Page-shifting live-run block (live output above the page's own content) | **0 — all 3 fixed 2026-08-11** |
-| **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **12** (11 overlap A) |
+| **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **12** (11 overlap A; 6 done — §1) |
 | **E** | Needs a content-IR kind before it can stream well — **title options, the SEO package, and the slide deck all shipped 2026-08-11**; only podcast chapters remain | **1** |
 
 Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L** ≈ a day+.
@@ -48,7 +48,9 @@ Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L*
   the window BEFORE the launch, run the slot through `useLiveAgentRun`, and
   let the kind component carry the action so the window is the primary
   surface rather than a preview of one.
-- Reference implementation for class D done right:
+- Reference implementation for class D done right (generalized past crawls in
+  §1 — `useSiteCommandRun` is now the primitive to copy for any durable,
+  server-owned run):
   `features/marketing/data/useSiteCrawlActivity.ts` +
   `features/marketing/components/crawls/LiveCrawlFeed.tsx` (durable server rows
   + reattach on load) — consumed correctly by
@@ -147,29 +149,15 @@ carry no agent-run import at all. That is the signature to search on next time.
 
 ## Remaining work — ranked by pain × reach
 
-### 1. Marketing crawler commands — the whole family discards its NDJSON stream — A + D, M each
+### 1. Marketing crawler commands — DONE 2026-08-11
 
-Every one of these already receives a live NDJSON progress stream and throws it
-away, then dies if the user reloads. This is the single largest cluster and it
-sits on the highest-traffic marketing routes.
-
-| File:line | Route | Command |
-|---|---|---|
-| `features/marketing/components/analysis/CatalogueAnalysisPanel.tsx:64` | `/marketing/brands/[brandId]/sites/[siteId]/audit` and `…/capabilities` | `analyzeSite(site.id)` — **no callbacks at all**; spinner at `:115` |
-| `features/marketing/components/sitemaps/SitemapsWorkspace.tsx:135` | `…/sites/[siteId]/sitemaps` | `syncSitemaps` |
-| `features/marketing/components/inspection/link-graph/ExternalLinksView.tsx:226` | `…/sites/[siteId]` link inspection (via `LinksInspectionTable`) | `checkSiteLinks` |
-| `features/marketing/components/integrations/SiteIntegrationsWorkspace.tsx:744` | `…/sites/[siteId]/integrations` | `syncGsc` |
-| `features/marketing/components/pages/PagesTable.tsx:636` | `…/sites/[siteId]/pages` | `fetchPageNow` |
-| `features/marketing/components/pages/FetchPageButton.tsx:40` | `…/sites/[siteId]/pages` | `fetchPageNow` |
-
-**Fix:** pass `onEvent` and drive `LiveCrawlFeed` (or `LiveRunDisplay` where the
-payload is agent output). Then the D half: persist the run the way
-`useSiteCrawlActivity` does and reattach on mount, so a reload rejoins instead
-of showing a blank panel. `SiteOverview.tsx:143` already passes `onEvent` —
-copy that shape.
-
-**Effort:** M each for the A half; the D half is one shared M once
-`useSiteCrawlActivity` is generalized past crawls.
+All six callers now run through `features/marketing/data/useSiteCommandRun.ts`:
+the stream drives the floating `SiteCommandRunWindow`, and a durable
+`web.crawl_session` lookup rejoins a live run after a reload. The class-D
+primitive was generalized in place (`listActiveCrawlSessions` +
+`useSiteCrawlActivity.activeSessions`), not copied. Live-verified against
+datadestruction.com across analysis, sitemaps, links, page fetch, and GSC.
+See `features/marketing/FEATURE.md` change log (2026-08-11).
 
 ### 2. Education fleet — DONE 2026-08-11
 
@@ -222,6 +210,31 @@ not a dead spinner. Do not "fix" it.
 
 `features/flashcards/data/quiz/makeQuizItems.ts` stays out of scope (headless
 fallback distractor source, never rendered — see Class E below).
+
+**Two things found while verifying live, both chipped, both still open:**
+
+1. 🚨 **The card-by-card live preview does not work on EITHER generation
+   surface — including `CreateFromTopic`, which this doc called the working
+   exemplar.** Sampling page text every 1.5s across full real runs on
+   `/education/flashcards/new` and `…/new/from-source`, the text sat flat at the
+   "Generating N cards…" box for the whole ~15s run, then jumped to the finished
+   set. `LiveGenerationPreview` never rendered. The runs succeed and persist
+   correct cards, so the agents work — the `flashcard_set` envelope simply never
+   reaches `selectKindEnvelope`. `CreateFromSource` is now wired identically to
+   the exemplar and will light up the moment that path does, but **as of today
+   both screens still show a spinner.** Do not re-cite `CreateFromTopic` as
+   proof until this is fixed.
+2. **The enrich / expand / spoken-grader agents emit kind-less JSON**, so their
+   (now live) runs render a raw JSON code block — the exact developer artifact
+   our non-technical user must never see. `EnhanceSetDialog` binds its display
+   only while the run is in flight as an interim measure, so the JSON is
+   replaced by its own rendered preview the moment one exists. The real fix is
+   three earned kinds (Class E work).
+
+**Not verified in a browser:** `SingleCardVoiceTest`'s grading stream needs a
+real microphone recording, which the test harness cannot produce. The wiring is
+the same opt-in handle proven live in `EnhanceSetDialog`; treat it as unproven
+until someone speaks into it.
 
 ### 4. Research Outputs Studio — DONE 2026-08-11
 
