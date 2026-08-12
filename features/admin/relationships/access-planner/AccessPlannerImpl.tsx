@@ -566,6 +566,9 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
   const hasOwnershipColumns =
     selectedTable?.column_names.includes("organization_id") === true &&
     selectedTable.column_names.includes("created_by");
+  const isDerived =
+    selectedTable?.relation_kind === "view" ||
+    selectedTable?.relation_kind === "materialized_view";
   const selectedParent = parentOptions.find(
     (option) =>
       `${option.target_token}|${option.source_columns[0]}` === parentChoice,
@@ -982,6 +985,18 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                   </div>
                 )}
 
+                {isDerived ? (
+                  <Alert>
+                    <Eye className="h-4 w-4" />
+                    <AlertTitle>Derived view — nothing to decide</AlertTitle>
+                    <AlertDescription>
+                      Access to a view follows the RLS of the tables in its
+                      underlying query. Views are never registered as entities
+                      and never carry ownership columns.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <>
                 <section className="space-y-3">
                   <div>
                     <h3 className="text-sm font-semibold">Access decision</h3>
@@ -1131,6 +1146,8 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                   )}
                   Apply access decision
                 </Button>
+                  </>
+                )}
 
                 <section className="space-y-2 border-t border-border pt-4">
                   <h3 className="text-sm font-semibold">
