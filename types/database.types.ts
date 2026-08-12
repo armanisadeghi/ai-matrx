@@ -28062,6 +28062,93 @@ export type Database = {
   }
   platform: {
     Tables: {
+      _bak_assoc_file_processed_document_20260812: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          label: string | null
+          metadata: Json | null
+          organization_id: string | null
+          payload: Json | null
+          payload_kind: string | null
+          position: number | null
+          role: string | null
+          source_id: string | null
+          source_type: string | null
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          payload?: Json | null
+          payload_kind?: string | null
+          position?: number | null
+          role?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          label?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          payload?: Json | null
+          payload_kind?: string | null
+          position?: number | null
+          role?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
+      _bak_assoc_type_file_processed_document_20260812: {
+        Row: {
+          container_side: string | null
+          conveys_max: Database["public"]["Enums"]["permission_level"] | null
+          created_at: string | null
+          is_active: boolean | null
+          label: string | null
+          notes: string | null
+          source_type: string | null
+          target_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          container_side?: string | null
+          conveys_max?: Database["public"]["Enums"]["permission_level"] | null
+          created_at?: string | null
+          is_active?: boolean | null
+          label?: string | null
+          notes?: string | null
+          source_type?: string | null
+          target_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          container_side?: string | null
+          conveys_max?: Database["public"]["Enums"]["permission_level"] | null
+          created_at?: string | null
+          is_active?: boolean | null
+          label?: string | null
+          notes?: string | null
+          source_type?: string | null
+          target_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       _base_entity: {
         Row: {
           created_at: string
@@ -29178,6 +29265,10 @@ export type Database = {
         Returns: Record<string, unknown>
       }
       entity_title: { Args: { p_id: string; p_type: string }; Returns: string }
+      entity_type_has_shareable_ancestor: {
+        Args: { p_type: string }
+        Returns: boolean
+      }
       log_activity:
         | {
             Args: {
@@ -33729,6 +33820,23 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_access_planner_snapshot: {
+        Args: { p_schema?: string }
+        Returns: Json
+      }
+      admin_configure_entity_access: {
+        Args: {
+          p_fk_column?: string
+          p_label: string
+          p_mode: string
+          p_notes?: string
+          p_parent_type?: string
+          p_schema: string
+          p_table: string
+          p_token: string
+        }
+        Returns: Json
+      }
       admin_delete_catalog_entry: {
         Args: { p_app: string; p_key: string; p_kind: string }
         Returns: {
@@ -34079,9 +34187,28 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_set_access_planner_exclusion: {
+        Args: {
+          p_excluded: boolean
+          p_reason?: string
+          p_schema: string
+          p_table: string
+        }
+        Returns: undefined
+      }
       admin_set_association_enforcement: {
         Args: { p_enabled: boolean }
         Returns: boolean
+      }
+      admin_set_containment_edge: {
+        Args: {
+          p_child_type: string
+          p_enabled: boolean
+          p_fk_column: string
+          p_notes?: string
+          p_parent_type: string
+        }
+        Returns: undefined
       }
       admin_set_entity_type_active: {
         Args: { p_is_active: boolean; p_token: string }
