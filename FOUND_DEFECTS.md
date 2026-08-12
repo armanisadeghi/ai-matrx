@@ -787,36 +787,32 @@ already filter by the entity's own `deleted_at`); or tombstone the edges reversi
 done here — it is a platform-wide trigger on many tables and changing conveyance semantics
 is **Arman's call**, not one an agent takes on its own authority.
 
-### D133 — Arman's real accounts have viewer access to ZERO marketing sites; masqueraded as "site was deleted" (2026-08-08)
+### D133 — RESOLVED 2026-08-11 (owner decisions taken)
 
-Both agent-review items for the backlinks copy work came back "site was deleted or is no
-longer accessible" — but `web.site` row `7853b973` (aimatrx.com) is live and active. The
-message is `assertFound`'s wording for a `maybeSingle()` → null, and the null was RLS:
-`std_select` is `created_by = auth.uid() OR iam.has_access('web_site', id, 'viewer')`, the
-site is `visibility=internal` in the AI Matrx org, and `arman@allgreenrecycling.com` (the
-reviewing login) is a member of none of the orgs holding the brands —
-`iam.has_access_for` returns false for it on ALL FOUR sites with backlink data
-(aimatrx.com, allgreenrecycling.com, titaniumsuccess.com, datadestruction.com).
-`arman@armansadeghi.com` sees only the three client sites it created. Per the security
-philosophy this is the over-tightening defect class: the owner blocked from his own data.
-**Decision needed (Arman) — STILL OPEN:** which of your accounts should be members of which
-orgs — memberships are one INSERT each once ruled. Review items 2ecba5c0/b60b6c75 were
-repointed at datadestruction.com (visible to admin@admin.com) and resubmitted.
+A live site read as "deleted" to accounts that simply weren't members of the owning org.
+Both halves are now closed:
 
-**The wording half is DONE (2026-08-11), now end to end.** Two layers, both live:
-`lib/records/recordUnavailable.ts` is the honest THROW — `deleted` is claimed ONLY when a
-probe read the row and saw `deleted_at` — and `features/access-gate/` is the SURFACE that
-resolves which of the four situations it actually was (denied / deleted / missing /
-signed-out) via `public.access_denied_context`, names the owner and organization, and offers
-**Request access** with one-click approval in the owner's DM. The exact sentence "This site
-was deleted or is no longer accessible." no longer exists in the tree.
+**The wording** — a zero-row read no longer asserts anything. `lib/records/recordUnavailable.ts`
+is the honest throw and `features/access-gate/` is the surface that resolves which of the four
+situations it actually was (denied / deleted / missing / signed-out), names the owner, and
+offers **Request access**.
 
-**What that does and does NOT fix for D133:** a reviewer hitting a site they aren't a member
-of now sees who owns it and can ask for access in one click, instead of being told it was
-deleted. It does not decide the membership question below — that is still the
-over-tightening defect, and the ask flow is a humane workaround, not the answer.
-**This does not close the defect** — the membership question above is the actual cause, and
-honest ambiguity is a better error message, not access.
+**The memberships — Arman's rulings:**
+- `arman@allgreenrecycling.com` **stays at 0 of 12 sites, deliberately.** It is the permanent
+  outsider test account: opening any site URL on it is how we see exactly what a stranger sees.
+  Do not "fix" it by adding memberships.
+- The `aimatrx.com` site **moved out of `admin@admin.com`'s personal workspace into the shared
+  `AI Matrx` org** — a company site does not belong in one login's private space. Site row plus
+  every child table that denormalizes `organization_id`; `arman@armansadeghi.com` went 11 → 12
+  sites and nobody lost access (`admin@admin.com` keeps it as `created_by`).
+- 3 `web.snapshot` rows still carry the old org and were deliberately left: that table is
+  append-only by design (`web.reject_immutable_fact_mutation`), the rows are historical facts
+  stamped with the org that held the site at the time, and access resolves through the parent
+  site regardless.
+
+**Gap this exposed, still open:** there is NO product path to move a site between organizations —
+no settings control, no RPC. It took a hand-written transaction. Anyone hitting this again has
+the same problem, so a site-settings "Move to organization" action is worth building.
 
 ### D134 — agx_list_scoped org-grant branch: nondeterministic access_level (2026-08-08)
 
