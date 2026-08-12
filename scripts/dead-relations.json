@@ -1032,6 +1032,166 @@
       "new": "skill.render_definition",
       "since": "2026-08-08",
       "reason": "canonicalized onto skill.render_definition (superset: block_type, skill_id, visibility, category_id). Use .schema('skill').from('render_definition'). Table drop pending CONTRACT phase."
+    },
+    {
+      "relation": "cld_files",
+      "old": "public.cld_files",
+      "newSchema": "files",
+      "new": "files.files",
+      "since": "2026-08-12",
+      "reason": "cld_ family superseded by files.*; table DROPPED (0 rows)."
+    },
+    {
+      "relation": "cld_folders",
+      "old": "public.cld_folders",
+      "newSchema": "files",
+      "new": "files.folders",
+      "since": "2026-08-12",
+      "reason": "superseded; DROPPED (0 rows)."
+    },
+    {
+      "relation": "cld_file_versions",
+      "old": "public.cld_file_versions",
+      "newSchema": "files",
+      "new": "files.file_versions",
+      "since": "2026-08-12",
+      "reason": "superseded; DROPPED (0 rows)."
+    },
+    {
+      "relation": "cld_uploads_inflight",
+      "old": "public.cld_uploads_inflight",
+      "newSchema": "files",
+      "new": "files.uploads_inflight",
+      "since": "2026-08-12",
+      "reason": "superseded; DROPPED (0 rows)."
+    },
+    {
+      "relation": "cld_share_links",
+      "old": "public.cld_share_links",
+      "newSchema": null,
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "no successor; DROPPED (0 rows, no consumers)."
+    },
+    {
+      "relation": "cld_file_permissions",
+      "old": "public.cld_file_permissions",
+      "newSchema": null,
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "no successor; DROPPED (0 rows; only consumer was the uncalled cld RPC family, also dropped)."
+    },
+    {
+      "relation": "cld_user_groups",
+      "old": "public.cld_user_groups",
+      "newSchema": null,
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "no successor; DROPPED (0 rows)."
+    },
+    {
+      "relation": "cld_user_group_members",
+      "old": "public.cld_user_group_members",
+      "newSchema": null,
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "no successor; DROPPED (0 rows)."
+    },
+    {
+      "relation": "agenda_task",
+      "old": "public.agenda_task",
+      "newSchema": null,
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "superseded by matrx-extend sch_* tables; DROPPED (0 rows)."
+    },
+    {
+      "relation": "agenda_run",
+      "old": "public.agenda_run",
+      "newSchema": null,
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "superseded by matrx-extend sch_* tables; DROPPED (0 rows)."
+    },
+    {
+      "relation": "window_sessions",
+      "old": "public.window_sessions",
+      "newSchema": null,
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "FE window persistence moved to IndexedDB/localStorage; DROPPED (0 rows)."
+    },
+    {
+      "relation": "forbidden_urls",
+      "old": "public.forbidden_urls",
+      "newSchema": null,
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "scraper-era leftover; DROPPED (0 rows)."
+    },
+    {
+      "relation": "analysis_recipes",
+      "old": "public.analysis_recipes",
+      "newSchema": "files",
+      "new": "files.analysis",
+      "since": "2026-08-12",
+      "reason": "redaction/analysis config superseded; DROPPED (0 rows)."
+    },
+    {
+      "relation": "container_fields",
+      "old": "public.container_fields",
+      "newSchema": null,
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "applet-builder junction (FKs pointed into graveyard); DROPPED (0 rows)."
+    },
+    {
+      "relation": "applet_containers",
+      "old": "public.applet_containers",
+      "newSchema": null,
+      "new": null,
+      "since": "2026-08-12",
+      "reason": "applet-builder junction; DROPPED (0 rows)."
+    },
+    {
+      "relation": "dashboard_saved_views",
+      "old": "public.dashboard_saved_views",
+      "newSchema": "graveyard",
+      "new": "graveyard.dashboard_saved_views",
+      "since": "2026-08-12",
+      "reason": "no code consumers in any repo; moved to graveyard (2 rows preserved)."
+    },
+    {
+      "relation": "microservice_project",
+      "old": "public.microservice_project",
+      "newSchema": "graveyard",
+      "new": "graveyard.microservice_project",
+      "since": "2026-08-12",
+      "reason": "no consumers; moved to graveyard (1 row preserved)."
+    },
+    {
+      "relation": "full_spectrum_positions",
+      "old": "public.full_spectrum_positions",
+      "newSchema": "graveyard",
+      "new": "graveyard.full_spectrum_positions",
+      "since": "2026-08-12",
+      "reason": "2025 recruiting content, no feature; moved to graveyard (12 rows preserved)."
+    },
+    {
+      "relation": "ts_check_runs",
+      "old": "public.ts_check_runs",
+      "newSchema": "graveyard",
+      "new": "graveyard.ts_check_runs",
+      "since": "2026-08-12",
+      "reason": "writer removed from FE scripts; moved to graveyard (1 row preserved)."
+    },
+    {
+      "relation": "site_metadata",
+      "old": "public.site_metadata",
+      "newSchema": "graveyard",
+      "new": "graveyard.site_metadata",
+      "since": "2026-08-12",
+      "reason": "client-site SEO metadata superseded by web.* schema; moved to graveyard (9 rows preserved)."
     }
   ]
 }
