@@ -57703,7 +57703,6 @@ export type Database = {
           run_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -57719,7 +57718,6 @@ export type Database = {
           run_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -57735,7 +57733,6 @@ export type Database = {
           run_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -57856,7 +57853,6 @@ export type Database = {
           source: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           value: Json
           version: number
         }
@@ -57877,7 +57873,6 @@ export type Database = {
           source: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           value: Json
           version?: number
         }
@@ -57898,7 +57893,6 @@ export type Database = {
           source?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           value?: Json
           version?: number
         }
@@ -58317,7 +58311,6 @@ export type Database = {
           surface: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
           was_applied: boolean
           was_overridden: boolean
@@ -58338,7 +58331,6 @@ export type Database = {
           surface: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           was_applied?: boolean
           was_overridden?: boolean
@@ -58359,7 +58351,6 @@ export type Database = {
           surface?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           was_applied?: boolean
           was_overridden?: boolean
@@ -58699,7 +58690,6 @@ export type Database = {
           trigger_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -58720,7 +58710,6 @@ export type Database = {
           trigger_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -58741,7 +58730,6 @@ export type Database = {
           trigger_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: [

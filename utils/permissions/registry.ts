@@ -712,7 +712,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     tableName: "node_data_slot",
     schemaName: "workflow",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Workflow Node Data Slot",
     urlPathTemplate: "/workflows/{id}",

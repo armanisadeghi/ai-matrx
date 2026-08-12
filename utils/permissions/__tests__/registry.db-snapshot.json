@@ -751,7 +751,7 @@
     "resource_type": "wf_node_data_slot",
     "table_name": "node_data_slot",
     "id_column": "id",
-    "owner_column": "user_id",
+    "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Node Data Slot",
     "url_path_template": "/workflows/{id}",
