@@ -30,9 +30,10 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/styles/themes/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import {
@@ -41,7 +42,6 @@ import {
   setGscBrandAliases,
   type GscBrandIdentityRow,
 } from "@/features/marketing/search-console/data-classification";
-import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
 import type { GscDateRange } from "@/features/marketing/search-console/types";
 import { formatCount } from "@/features/marketing/search-console/types";
 
@@ -137,6 +137,68 @@ export function BrandIdentityPanel({
     }
     save.mutate([...customAliases, value]);
   };
+  const columns: MatrxColumnDef<GscBrandIdentityRow>[] = [
+    {
+      id: "alias",
+      accessorKey: "alias",
+      header: "Alias",
+      filter: "text",
+      cellKind: "text",
+      cell: (row) => (
+        <span className="inline-flex items-center gap-1.5">
+          <Fingerprint className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <span className="font-medium">{row.alias}</span>
+          {row.demoted ? (
+            <span
+              className="rounded border border-warning/60 bg-warning/10 px-1 py-px text-[10px] font-medium text-warning"
+              title="Matches too much of the corpus to be distinctive — only exact unspaced / legal-suffix forms count as brand."
+            >
+              Generic
+            </span>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      id: "alias_source",
+      accessorKey: "alias_source",
+      header: "Source",
+      filter: "select",
+      cell: (row) => SOURCE_LABELS[row.alias_source] ?? row.alias_source,
+    },
+    {
+      id: "matched_keywords",
+      accessorKey: "matched_keywords",
+      header: "Matches",
+      filter: "number",
+      align: "right",
+      cell: (row) => {
+        const label = row.demoted
+          ? `${row.strong_matches} of ${row.matched_keywords}`
+          : String(row.matched_keywords);
+        const title = `${row.matched_keywords} matching keywords in the corpus (${row.strong_matches} exact-form)`;
+        return onInspectAlias && row.matched_keywords > 0 ? (
+          <button
+            type="button"
+            className="rounded px-1 py-0.5 underline decoration-dotted underline-offset-2 transition-colors hover:bg-accent hover:text-primary"
+            title={`${title} — show them in the keyword table`}
+            onClick={() => onInspectAlias(row.alias)}
+          >
+            {label}
+          </button>
+        ) : (
+          <span title={title}>{label}</span>
+        );
+      },
+    },
+    {
+      id: "demoted",
+      accessorKey: "demoted",
+      header: "Generic",
+      filter: "boolean",
+      cell: (row) => (row.demoted ? "Yes" : "No"),
+    },
+  ];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pt-2">
@@ -158,54 +220,37 @@ export function BrandIdentityPanel({
         />
       ) : null}
 
-      <div className="overflow-hidden rounded-md border border-border">
-        <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-          <thead className="bg-muted/60 text-left">
-            <tr>
-              <th className="px-2 py-1.5 font-medium">Alias</th>
-              <th className="px-2 py-1.5 font-medium">Source</th>
-              <th
-                className="px-2 py-1.5 text-right font-medium"
-                title="Corpus keywords this alias matches — click a count to see those keywords in the table"
+      <div className="overflow-hidden rounded-md border border-border p-2">
+        <MatrxDataTable
+          data={rows}
+          columns={columns}
+          getRowId={(row) => `${row.alias_source}:${row.alias}`}
+          isLoading={identity.isLoading}
+          pageSize={10}
+          pageSizeOptions={[10, 25, 50, 100]}
+          emptyState={{
+            title: "No brand identity",
+            description: "The site needs a domain, name, or linked brand.",
+          }}
+          rowActions={(row) =>
+            row.alias_source === "custom" ? (
+              <button
+                type="button"
+                className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
+                title={`Remove ${row.alias}`}
+                aria-label={`Remove ${row.alias}`}
+                disabled={save.isPending}
+                onClick={() =>
+                  save.mutate(
+                    customAliases.filter((alias) => alias !== row.alias),
+                  )
+                }
               >
-                Matches
-              </th>
-              <th className="w-8 px-1 py-1.5" />
-            </tr>
-          </thead>
-          <tbody>
-            {identity.isLoading ? (
-              <tr>
-                <td colSpan={4} className="px-2 py-3 text-center">
-                  <Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" />
-                </td>
-              </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-2 py-3 text-center text-muted-foreground"
-                >
-                  No brand identity — the site needs a domain, name, or linked
-                  brand.
-                </td>
-              </tr>
-            ) : (
-              rows.map((row) => (
-                <BrandAliasRow
-                  key={`${row.alias_source}:${row.alias}`}
-                  row={row}
-                  removable={row.alias_source === "custom"}
-                  removing={save.isPending}
-                  onInspect={onInspectAlias}
-                  onRemove={() =>
-                    save.mutate(customAliases.filter((a) => a !== row.alias))
-                  }
-                />
-              ))
-            )}
-          </tbody>
-        </table>
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null
+          }
+        />
       </div>
 
       <div className="shrink-0">
@@ -330,77 +375,5 @@ export function BrandIdentityPanel({
         explicit ruling always beats the brand match.
       </p>
     </div>
-  );
-}
-
-function BrandAliasRow({
-  row,
-  removable,
-  removing,
-  onInspect,
-  onRemove,
-}: {
-  row: GscBrandIdentityRow;
-  removable: boolean;
-  removing: boolean;
-  onInspect?: (alias: string) => void;
-  onRemove: () => void;
-}) {
-  const countLabel = row.demoted
-    ? `${row.strong_matches} of ${row.matched_keywords}`
-    : String(row.matched_keywords);
-  const countTitle = `${row.matched_keywords} matching keywords in the corpus (${row.strong_matches} exact-form)`;
-  return (
-    <tr className="border-t border-border">
-      <td className="px-2 py-1.5">
-        <span className="inline-flex items-center gap-1.5">
-          <Fingerprint className="h-3 w-3 shrink-0 text-muted-foreground" />
-          <span className="font-medium">{row.alias}</span>
-          {row.demoted ? (
-            <span
-              className="rounded border border-warning/60 bg-warning/10 px-1 py-px text-[10px] font-medium text-warning"
-              title="Matches too much of the corpus to be distinctive — only exact unspaced / legal-suffix forms count as brand."
-            >
-              Generic
-            </span>
-          ) : null}
-        </span>
-      </td>
-      <td className="px-2 py-1.5 text-muted-foreground">
-        {SOURCE_LABELS[row.alias_source] ?? row.alias_source}
-      </td>
-      <td
-        className={cn(
-          "px-2 py-1.5 text-right tabular-nums",
-          row.matched_keywords === 0 && "text-muted-foreground",
-        )}
-      >
-        {onInspect && row.matched_keywords > 0 ? (
-          <button
-            type="button"
-            className="rounded px-1 py-0.5 underline decoration-dotted underline-offset-2 transition-colors hover:bg-accent hover:text-primary"
-            title={`${countTitle} — show them in the keyword table`}
-            onClick={() => onInspect(row.alias)}
-          >
-            {countLabel}
-          </button>
-        ) : (
-          <span title={countTitle}>{countLabel}</span>
-        )}
-      </td>
-      <td className="px-1 py-1.5 text-right">
-        {removable ? (
-          <button
-            type="button"
-            className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
-            title="Remove this alias"
-            disabled={removing}
-            onClick={onRemove}
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        ) : null}
-      </td>
-    </tr>
   );
 }

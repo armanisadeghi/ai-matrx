@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  ArrowRight,
   CircleAlert,
   CircleCheckBig,
   Clock3,
@@ -16,6 +15,8 @@ import {
   Zap,
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +43,9 @@ import { cn } from "@/lib/utils";
 
 type ChangePage = NonNullable<SitePerformanceResponse["most_improved"]>[number];
 type SuggestedPage = NonNullable<SitePerformanceResponse["suggested_action"]>;
+type TrafficPage = NonNullable<
+  SitePerformanceResponse["worst_pages_with_traffic"]
+>[number];
 
 const distributionConfig = {
   count: { label: "Pages" },
@@ -71,6 +75,13 @@ function compactNumber(value: number): string {
 
 function formatRunTime(value: string | null | undefined): string {
   if (!value) return "soon";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function formatObservedAt(value: string): string {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -129,9 +140,83 @@ function ChangeList({
   siteId: string;
 }) {
   const Icon = direction === "up" ? TrendingUp : TrendingDown;
+  const columns: MatrxColumnDef<ChangePage>[] = [
+    {
+      id: "url",
+      accessorKey: "url",
+      header: "Page",
+      filter: "text",
+      cellKind: "text",
+      entityToken: "web_page",
+      href: (row) => marketingRoutes.sitePage(brandId, siteId, row.page_id),
+      cell: (row) => (
+        <span className="block min-w-56 max-w-xl truncate" title={row.url}>
+          {row.url}
+        </span>
+      ),
+    },
+    {
+      id: "strategy",
+      accessorKey: "strategy",
+      header: "Device",
+      filter: "select",
+      cell: (row) => (
+        <Badge variant="outline" className="capitalize">
+          {row.strategy}
+        </Badge>
+      ),
+    },
+    {
+      id: "previous_performance_score",
+      accessorKey: "previous_performance_score",
+      header: "Previous",
+      filter: "number",
+      align: "right",
+      cell: (row) => scoreLabel(row.previous_performance_score),
+    },
+    {
+      id: "current_performance_score",
+      accessorKey: "current_performance_score",
+      header: "Current",
+      filter: "number",
+      align: "right",
+      cell: (row) => scoreLabel(row.current_performance_score),
+    },
+    {
+      id: "delta",
+      accessorKey: "delta",
+      header: "Change",
+      filter: "number",
+      align: "right",
+      cell: (row) => (
+        <span
+          className={cn(
+            "font-semibold tabular-nums",
+            direction === "up"
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-destructive",
+          )}
+        >
+          {row.delta > 0 ? "+" : ""}
+          {Math.round(row.delta * 100)}
+        </span>
+      ),
+    },
+    {
+      id: "current_observed_at",
+      accessorKey: "current_observed_at",
+      header: "Observed",
+      filter: "text",
+      cell: (row) => (
+        <span className="whitespace-nowrap">
+          {formatObservedAt(row.current_observed_at)}
+        </span>
+      ),
+    },
+  ];
   return (
     <section className="rounded-lg border border-border bg-card p-3">
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
         <Icon
           className={cn(
             "h-4 w-4",
@@ -140,40 +225,18 @@ function ChangeList({
         />
         {title}
       </h3>
-      {rows.length ? (
-        <div className="mt-2 divide-y divide-border">
-          {rows.slice(0, 5).map((row) => (
-            <Link
-              key={`${row.page_id}-${row.strategy}`}
-              href={marketingRoutes.sitePage(brandId, siteId, row.page_id)}
-              className="group flex min-w-0 items-center gap-2 py-2 text-xs hover:text-primary"
-            >
-              <span className="min-w-0 flex-1 truncate" title={row.url}>
-                {row.url}
-              </span>
-              <Badge variant="outline" className="capitalize">
-                {row.strategy}
-              </Badge>
-              <span
-                className={cn(
-                  "font-semibold tabular-nums",
-                  direction === "up"
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-destructive",
-                )}
-              >
-                {row.delta > 0 ? "+" : ""}
-                {Math.round(row.delta * 100)}
-              </span>
-              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover:text-primary" />
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Two tests within this window are needed to show changes.
-        </p>
-      )}
+      <MatrxDataTable
+        data={rows}
+        columns={columns}
+        getRowId={(row) => `${row.page_id}-${row.strategy}`}
+        pageSize={10}
+        pageSizeOptions={[10, 25, 50, 100]}
+        emptyState={{
+          title: "No performance changes yet",
+          description:
+            "Two tests within this window are needed to show changes.",
+        }}
+      />
     </section>
   );
 }
@@ -223,6 +286,116 @@ export function SitePerformanceWorkspace() {
       bucket: "Poor",
       count: distribution.poor ?? 0,
       fill: "var(--color-poor)",
+    },
+  ];
+  const suggestedColumns: MatrxColumnDef<SuggestedPage>[] = [
+    {
+      id: "url",
+      accessorKey: "url",
+      header: "Page",
+      filter: "text",
+      cellKind: "text",
+      entityToken: "web_page",
+      href: (row) => marketingRoutes.sitePage(brandId, site.id, row.page_id),
+      cell: (row) => (
+        <span className="block min-w-64 max-w-2xl truncate" title={row.url}>
+          {row.url}
+        </span>
+      ),
+    },
+    {
+      id: "gsc_clicks",
+      accessorKey: "gsc_clicks",
+      header: "Clicks",
+      filter: "number",
+      align: "right",
+      cell: (row) => compactNumber(row.gsc_clicks ?? 0),
+    },
+    {
+      id: "gsc_impressions",
+      accessorKey: "gsc_impressions",
+      header: "Impressions",
+      filter: "number",
+      align: "right",
+      cell: (row) => compactNumber(row.gsc_impressions ?? 0),
+    },
+    {
+      id: "tier",
+      accessorKey: "tier",
+      header: "Priority",
+      filter: "select",
+      cell: (row) => (
+        <Badge variant="outline" className="capitalize">
+          {row.tier}
+        </Badge>
+      ),
+    },
+    {
+      id: "reason",
+      accessorKey: "reason",
+      header: "Why now",
+      filter: "select",
+      cell: (row) => row.reason.replaceAll("_", " "),
+    },
+  ];
+  const worstPageColumns: MatrxColumnDef<TrafficPage>[] = [
+    {
+      id: "url",
+      accessorKey: "url",
+      header: "Page",
+      filter: "text",
+      cellKind: "text",
+      entityToken: "web_page",
+      href: (row) => marketingRoutes.sitePage(brandId, site.id, row.page_id),
+      cell: (row) => (
+        <span className="block min-w-64 max-w-2xl truncate" title={row.url}>
+          {row.url}
+        </span>
+      ),
+    },
+    {
+      id: "performance_score",
+      accessorKey: "performance_score",
+      header: "Mobile score",
+      filter: "number",
+      align: "right",
+      cell: (row) => (
+        <span
+          className={cn(
+            "text-lg font-semibold tabular-nums",
+            scoreTone(row.performance_score),
+          )}
+        >
+          {scoreLabel(row.performance_score)}
+        </span>
+      ),
+    },
+    {
+      id: "gsc_clicks",
+      accessorKey: "gsc_clicks",
+      header: "Clicks",
+      filter: "number",
+      align: "right",
+      cell: (row) => compactNumber(row.gsc_clicks),
+    },
+    {
+      id: "gsc_impressions",
+      accessorKey: "gsc_impressions",
+      header: "Impressions",
+      filter: "number",
+      align: "right",
+      cell: (row) => compactNumber(row.gsc_impressions),
+    },
+    {
+      id: "observed_at",
+      accessorKey: "observed_at",
+      header: "Tested",
+      filter: "text",
+      cell: (row) => (
+        <span className="whitespace-nowrap">
+          {formatObservedAt(row.observed_at)}
+        </span>
+      ),
     },
   ];
 
@@ -351,44 +524,21 @@ export function SitePerformanceWorkspace() {
                 </Button>
               ) : null}
             </div>
-            <div className="divide-y divide-border">
-              {suggestedPages.map((page, index) => (
-                <div
-                  key={page.page_id}
-                  className="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:grid-cols-[2rem_minmax(0,1fr)_5rem_7rem_auto_auto]"
-                >
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {index + 1}
-                  </span>
-                  <Link
-                    href={marketingRoutes.sitePage(
-                      brandId,
-                      site.id,
-                      page.page_id,
-                    )}
-                    className="min-w-0 truncate text-sm font-medium text-foreground hover:text-primary"
-                    title={page.url}
-                  >
-                    {page.url}
-                  </Link>
-                  <span className="hidden text-right text-xs text-muted-foreground sm:block">
-                    <strong className="block text-foreground">
-                      {compactNumber(page.gsc_clicks ?? 0)}
-                    </strong>
-                    clicks
-                  </span>
-                  <span className="hidden text-right text-xs text-muted-foreground sm:block">
-                    <strong className="block text-foreground">
-                      {compactNumber(page.gsc_impressions ?? 0)}
-                    </strong>
-                    impressions
-                  </span>
-                  <Badge variant="outline" className="hidden capitalize sm:inline-flex">
-                    {page.tier}
-                  </Badge>
+            <div className="p-3">
+              <MatrxDataTable
+                data={suggestedPages}
+                columns={suggestedColumns}
+                getRowId={(row) => row.page_id}
+                pageSize={10}
+                pageSizeOptions={[10, 25, 50, 100]}
+                rowActions={(page) => (
                   <Button
                     size="sm"
-                    variant={index === 0 ? "default" : "outline"}
+                    variant={
+                      page.page_id === suggested?.page_id
+                        ? "default"
+                        : "outline"
+                    }
                     onClick={() => void runPageTest(page)}
                     disabled={testingPageId !== null}
                   >
@@ -399,8 +549,8 @@ export function SitePerformanceWorkspace() {
                     )}
                     Test now
                   </Button>
-                </div>
-              ))}
+                )}
+              />
             </div>
           </section>
         ) : null}
@@ -532,58 +682,20 @@ export function SitePerformanceWorkspace() {
                 </div>
                 <Badge variant="outline">28-day GSC traffic</Badge>
               </div>
-              {worstPages.length ? (
-                <div className="divide-y divide-border">
-                  {worstPages.map((row, index) => (
-                    <Link
-                      key={row.page_id}
-                      href={marketingRoutes.sitePage(
-                        brandId,
-                        site.id,
-                        row.page_id,
-                      )}
-                      className="group grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40 sm:grid-cols-[2rem_minmax(0,1fr)_5rem_6rem_7rem_auto]"
-                    >
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {index + 1}
-                      </span>
-                      <span
-                        className="min-w-0 truncate text-sm font-medium text-foreground group-hover:text-primary"
-                        title={row.url}
-                      >
-                        {row.url}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-right text-lg font-semibold tabular-nums",
-                          scoreTone(row.performance_score),
-                        )}
-                      >
-                        {scoreLabel(row.performance_score)}
-                      </span>
-                      <span className="hidden text-right text-xs text-muted-foreground sm:block">
-                        <strong className="block text-foreground">
-                          {compactNumber(row.gsc_clicks)}
-                        </strong>
-                        clicks
-                      </span>
-                      <span className="hidden text-right text-xs text-muted-foreground sm:block">
-                        <strong className="block text-foreground">
-                          {compactNumber(row.gsc_impressions)}
-                        </strong>
-                        impressions
-                      </span>
-                      <ArrowRight className="hidden h-4 w-4 text-muted-foreground group-hover:text-primary sm:block" />
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-5 text-sm text-muted-foreground">
-                  No tested page currently has Search Console clicks or
-                  impressions. The list will populate automatically as coverage
-                  and GSC evidence overlap.
-                </div>
-              )}
+              <div className="p-3">
+                <MatrxDataTable
+                  data={worstPages}
+                  columns={worstPageColumns}
+                  getRowId={(row) => row.page_id}
+                  pageSize={10}
+                  pageSizeOptions={[10, 25, 50, 100]}
+                  emptyState={{
+                    title: "No traffic-qualified performance rows",
+                    description:
+                      "The list will populate automatically as PageSpeed coverage and Search Console evidence overlap.",
+                  }}
+                />
+              </div>
             </section>
 
             <div className="grid gap-4 lg:grid-cols-2">

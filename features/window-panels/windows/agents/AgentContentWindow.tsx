@@ -59,6 +59,9 @@ import { AgentRunWrapper } from "@/features/agents/components/smart/AgentRunWrap
 import { AgentVersionDiffPage } from "@/features/agents/components/diff/AgentVersionDiffPage";
 import { AgentContentHistoryPanel } from "./AgentContentHistoryPanel";
 import { AgentContentTab } from "./agent-content.types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { AGENT_ADVANCED_EDITOR_SURFACE_NAME } from "./agentAdvancedEditorWrite";
+import { useAgentAdvancedEditorSurface } from "./useAgentAdvancedEditorSurface";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import {
   AgentSidebar,
@@ -785,6 +788,15 @@ export default function AgentContentWindow({
     [agentId, activeTab],
   );
 
+  // Surface runtime — this window is the ONLY mount of
+  // `matrx-user/agent-advanced-editor`. It publishes the open agent as the
+  // read half and registers the manifest's write targets as the write half;
+  // both read `agentId` / `activeTab` live rather than off this closure.
+  const { getScope, getWriteHandlers } = useAgentAdvancedEditorSurface(
+    agentId,
+    activeTab,
+  );
+
   // Sidebar — only present in multi-agent mode.
   const sidebarNode = multiAgentMode ? (
     <AgentSidebar
@@ -795,7 +807,12 @@ export default function AgentContentWindow({
   ) : undefined;
 
   return (
-    <>
+    <SurfaceRuntimeProvider
+      surfaceName={AGENT_ADVANCED_EDITOR_SURFACE_NAME}
+      getScope={getScope}
+      isEditable
+      getWriteHandlers={getWriteHandlers}
+    >
       <WindowPanel
         id="agent-advanced-editor-window"
         title="Agent Advanced Editor"
@@ -877,6 +894,6 @@ export default function AgentContentWindow({
             onCancel={handleDirtyCancel}
           />
         ))}
-    </>
+    </SurfaceRuntimeProvider>
   );
 }

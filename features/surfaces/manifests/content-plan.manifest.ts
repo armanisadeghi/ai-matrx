@@ -280,7 +280,7 @@ export const contentPlanManifest: SurfaceManifest = {
   label: "Content Plan",
   readiness: "partial",
   readinessNote:
-    "Runtime emitter live (workbench getScope over loaded query data); child surfaces (list/setup/entities/node) refine per view; write targets are mirrored to DB; no default agents are bound on this base surface.",
+    "Runtime emitter live (workbench getScope over loaded query data); child surfaces (list/setup/entities/node) refine per view; plan_architect and eeat_curator have default agents bound; write targets are mirrored to DB.",
   urlPattern: "/marketing/content-plan/[siteId]",
   intro: `<surface_intro>
 You are on the Content Plan workspace: the editable tree of every URL a managed website SHOULD have (pillars → clusters → articles), with per-node briefs, a primary keyword, topics, and the people/sources behind the content (E-E-A-T). The user sees, decides, and corrects here — agents do the bulk writing; plan rows land directly in the database and appear on refetch.

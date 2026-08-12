@@ -13,6 +13,7 @@ import { toast } from "@/lib/toast";
 import { Eye, EyeOff, AlertCircle, AlertTriangle, Info, Megaphone, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { renderAnnouncementMessage } from '@/utils/render-announcement-message';
+import { useRegisterAnnouncementEditor } from './FeedbackConsoleEditorStore';
 
 interface CreateAnnouncementDialogProps {
     open: boolean;
@@ -48,6 +49,35 @@ export default function CreateAnnouncementDialog({ open, onOpenChange, onSuccess
     const [minDisplaySeconds, setMinDisplaySeconds] = useState(3);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
+
+    /**
+     * Write half — the `create` handle for `announcement_draft` (see the
+     * manifest and `FeedbackConsoleEditorStore`). Registered UNCONDITIONALLY,
+     * including while the dialog is closed: a Radix modal puts
+     * `pointer-events: none` on the body, so an admin cannot open this dialog
+     * and then type to an agent. The agent has to be able to open it, which
+     * means the closed form still has to be reachable. `open()` is why.
+     *
+     * `applyDraft` calls this component's own setters — the same ones the
+     * admin's keystrokes go through — so nothing here is a parallel write
+     * path, and the staged copy still needs the admin to press "Create
+     * Announcement". That press is never an agent action.
+     */
+    useRegisterAnnouncementEditor({
+        mode: 'create',
+        isOpen: open,
+        announcementId: null,
+        title,
+        message,
+        announcementType,
+        isSubmitting,
+        open: () => onOpenChange(true),
+        applyDraft: (patch) => {
+            if (patch.title !== undefined) setTitle(patch.title);
+            if (patch.message !== undefined) setMessage(patch.message);
+            if (patch.announcement_type !== undefined) setAnnouncementType(patch.announcement_type);
+        },
+    });
 
     const handleSubmit = async () => {
         if (!title.trim() || !message.trim()) {
@@ -89,7 +119,15 @@ export default function CreateAnnouncementDialog({ open, onOpenChange, onSuccess
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
+            {/* A surface-write confirm ("An agent wants to set Announcement
+                draft…") renders OUTSIDE this dialog, so answering or dismissing
+                it counts as an outside interaction and would close this dialog —
+                discarding the copy the admin was about to review. Keep it open;
+                Cancel and Escape still close it. */}
+            <DialogContent
+                className="max-w-2xl max-h-[90dvh] overflow-y-auto"
+                onInteractOutside={(e) => e.preventDefault()}
+            >
                 <DialogHeader>
                     <DialogTitle>Create New Announcement</DialogTitle>
                     <DialogDescription>

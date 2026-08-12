@@ -34,7 +34,8 @@ export type SettingsSelectProps<T extends string = string> =
   SettingsCommonProps & {
     value: T;
     onValueChange: (value: T) => void;
-    options: SettingsOption<T>[];
+    /** Read-only: shared vocabularies (agent-writable-settings) are `as const`. */
+    options: readonly SettingsOption<T>[];
     placeholder?: string;
     size?: SettingsControlSize;
     width?: Width;

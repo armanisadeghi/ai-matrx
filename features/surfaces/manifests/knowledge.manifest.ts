@@ -49,6 +49,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { EXTRACTION_JOB_NAME_MAX_LENGTH } from "@/features/page-extraction/data-review/constants";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -624,8 +625,7 @@ const writeTargets: SurfaceWriteTarget[] = [
   {
     name: "extraction_dataset_name",
     label: "Extraction dataset name",
-    description:
-      "Renames the extraction dataset. Pass a non-empty string of at most 120 characters; it REPLACES the current name (see extraction_job_name) and is persisted immediately through the dataset's own updateJob service the moment the user approves — there is no separate Save step. Only available on /knowledge/extractions/[id] once the dataset has loaded and no destructive confirm is running.",
+    description: `Renames the extraction dataset. Pass a non-empty string of at most ${EXTRACTION_JOB_NAME_MAX_LENGTH} characters; it REPLACES the current name (see extraction_job_name) and is persisted immediately through the dataset's own updateJob service the moment the user approves — there is no separate Save step. Only available on /knowledge/extractions/[id] once the dataset has loaded and no destructive confirm is running.`,
     valueType: "string",
     updatesValue: "extraction_job_name",
     mode: "entity",

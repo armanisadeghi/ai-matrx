@@ -20,7 +20,12 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  SUPPRESSION_REASON_MAX_LENGTH,
+  USER_WRITABLE_FINDING_STATUSES,
+} from "@/features/marketing/data/finding-lifecycle";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -276,6 +281,51 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the two triage verbs the DETAIL route owns.
+ *
+ * `finding-mutations.ts` draws the line these targets sit on: the analyzer
+ * owns detection (open / refresh / resolve / reopen) and never touches
+ * suppression; the user owns judgement, and their judgement is exactly two
+ * verbs — "I've seen this" and "this is intentional, stop telling me". Those
+ * two are declared here and nothing else is: the evidence trail
+ * (`analysis_result`) is immutable, and severity/category are the catalogue's.
+ *
+ * Both are `mode: "entity"` — `web.finding` has no draft buffer, so the value
+ * lands the moment it is applied — and both are `applyPolicy: "ask"`, which is
+ * what "the decision belongs to the user" looks like once an agent can
+ * propose it: the agent brings the reasoning, the in-place confirm keeps the
+ * call. Handlers: `FindingWriteTargets`, mounted by `FindingDetail` inside the
+ * detail route's provider, so the LIST route (which mounts this same surface)
+ * registers no handlers and is offered no write tool.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "finding_suppression",
+    label: "Suppression",
+    description: `Suppress the open finding, or lift an existing suppression, on THIS site's register. Value is an object: { suppressed: boolean, reason?: string }. To suppress, send suppressed: true WITH a reason (a string, ${SUPPRESSION_REASON_MAX_LENGTH} characters or fewer) saying why this condition is intentional for this site — the reason is stored on the row and is the permanent record of the decision. To lift one, send suppressed: false and NO reason (lifting clears the stored reason). A suppressed finding keeps being re-detected but drops out of the priority queue, so suppress only what you can justify from the evidence on screen — never to make a number look better. Persists immediately through the register's own suppress/unsuppress path once the user confirms; reflected in finding_summary.suppressed and finding_summary.suppressed_reason.`,
+    valueType: "object",
+    updatesValue: "finding_summary",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_finding",
+    sortOrder: 800,
+  },
+  {
+    name: "finding_lifecycle_status",
+    label: "Lifecycle status",
+    description: `Mark the open finding as acknowledged ("seen it, it's being worked"), or undo that back to open. Value is one of the strings ${USER_WRITABLE_FINDING_STATUSES.join(
+      " | ",
+    )}. "acknowledged" is only valid while the finding is open or reopened; "open" is only valid while it is acknowledged — anything else is refused. You can NEVER write "resolved" or "reopened": those belong to the analysis pipeline, and only a passing re-analysis resolves a finding. Acknowledging does not fix or close anything; it records that a human is on it. Persists immediately once the user confirms; reflected in finding_summary.status.`,
+    valueType: "string",
+    updatesValue: "finding_summary",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "open_finding",
+    sortOrder: 810,
+  },
+];
+
 export const marketingFindingsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-findings",
   readiness: "verified",
@@ -286,13 +336,14 @@ export const marketingFindingsManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are on the findings register of a managed website: the durable record of every problem the analysis pipeline has detected against this site, and — on the detail route — one finding's full lifecycle. The brand_context and site_context values give you the client and website framing; read them first.
 A finding is LIFECYCLE STATE (open, resolved, suppressed) derived from immutable analysis results — the evidence itself is never edited, and metrics behind it are deterministic and stored. Never re-derive a metric or invent evidence; reason only from what the register and finding_summary report.
-The user triages here: deciding what is real, what to fix first, and what to suppress with a reason. Suppression is a deliberate human judgment — you may recommend suppressing or un-suppressing a finding, but the decision and its reason belong to the user.
+The user triages here: deciding what is real, what to fix first, and what to suppress with a reason. Suppression is a deliberate human judgment — you may PROPOSE suppressing or un-suppressing a finding, or marking it acknowledged, through the write targets (finding_suppression, finding_lifecycle_status); each one asks the user in place before anything is written, so the reasoning is yours and the decision stays theirs. Propose a suppression only when the evidence on screen shows the condition is intentional for this site, and say so in the reason.
 When finding_id and finding_summary are empty, the user is on the list view; use findings_view_state, findings_total, and the loaded findings_rows to understand what slice of the register they are looking at. On the detail route, finding_item tells you what the check measures, finding_page what it is about, and latest_result / first_result / result_history are the immutable evidence trail.
 </surface_intro>`,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
   agentRoles: [
     {
       name: "finding_investigator",

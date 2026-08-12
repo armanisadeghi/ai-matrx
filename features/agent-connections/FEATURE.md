@@ -2,7 +2,7 @@
 
 **Status:** `live` (route family + overlay window shipped; `redux/skl` is the canonical content-block/render-definition store consumed platform-wide; 6 of 14 sections read real data, the rest are declared placeholders)
 **Tier:** `1`
-**Last updated:** `2026-08-09` — verified against live code this date.
+**Last updated:** `2026-08-11` — verified against live code this date.
 
 > Two things live here, and the second matters more than the first:
 > 1. **The Agent Connections hub UI** — "what can this agent reach?" (agents, skills, render blocks, MCP servers, …) at `/agent-connections/*` and as the `agentConnectionsWindow` overlay.
@@ -13,6 +13,8 @@
 ## Purpose
 
 Agent Connections is the registry surface for what agents can reach — and the home of the one content-block store. The broader external-integrations story (MCP protocol, OAuth, credential storage) belongs to `features/api-integrations/` and `features/agents/services/mcp-oauth/`.
+
+Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md) — read it before building conversation browsing, provider launch, saved requests, skills, associations, or automation for this integration.
 
 ---
 
@@ -69,6 +71,8 @@ Agent Connections is the registry surface for what agents can reach — and the 
 | `PreferencesSection` | `useSetting<T>("userPreferences.agentConnections.<key>")` — persistence via the user-preferences engine, no slice-binding needed |
 | `PluginsSection` (shown as **Coding Platforms**) | Owner-scoped `chat.coding_session` rows via direct Supabase; storage health, Claude-first connection status, four-provider filters, fidelity verdicts, and canonical conversation doors/actions |
 
+`/work/conversations` composes the same `PluginsSection` and opts into the existing `AssociateTaskButton`. Provider conversation doors open the read-only `/work/conversations/[conversationId]` transcript because external mirrors intentionally have no initial AI Matrx agent; routing one to `/chat/[conversationId]` would redirect to a new chat. `/agent-connections/plugins` remains the compatible diagnostics route and leaves the product-only task action off.
+
 Placeholders (empty-state copy, no data source): `SubAgentsSection`, `ResourcesSection` (inert slice — see Resources above), `InstructionsSection`, `PromptsSection`, `CommandsSection`, `HooksSection`, `RegistriesSection`. Prompts as a concept is superseded by agents + shortcuts + agent-apps; treat that tab as a slot to repurpose or remove.
 
 **Hooks** (`hooks/`)
@@ -102,6 +106,8 @@ The server resolves the full tool/skill/MCP set from the stored agent definition
 
 ### (e) Coding-platform bridge health and history
 `PluginsSection` is repurposed as **Coding Platforms** because the provider integrations are plugins/extensions. It reads `chat.coding_session` directly through browser Supabase (RLS owner-only plus an explicit owner predicate), joins only the canonical conversation's display/action state, and never reads `chat.coding_session_entry` raw payloads. A successful empty read says **Storage reachable**, not “plugin installed”; a binding is **Detected** only after an authenticated adapter has delivered a session. Every session names its conversation through `EntityRef` (open/new-tab/peek) and reuses `buildConversationMenu` for share, canonical fork/duplicate, pin, archive, and knowledge-graph state. The binding surface suppresses inline Rename (which only `ItemRow` can service) and conversation Delete (which would leave the surviving provider binding pointing at a deleted conversation); users can open the canonical conversation for those lifecycle operations.
+
+When `showTaskAssociation` is enabled by `/work/conversations`, each row and detail header reuse `AssociateTaskButton entityType="conversation"`; that writes the canonical association edge and offers existing-task plus create-task paths without changing the provider binding.
 
 Fidelity is a verdict, never an inference: `event_mirror` says native resume is unavailable and continuation is a seeded handoff; `native` says only that the exact ledger exists and lists the still-required credential/workspace/runtime/lease checks. The page never turns either state into a “Resume” button on its own. Canonical provider vocabulary is storage `claude_code|codex|cursor|vscode`, conversation `source_app` `claude-code|codex|cursor|vscode`, and `source_feature='code-editor'`; the conversation source tree provides the provenance filter.
 
@@ -150,6 +156,9 @@ Fidelity is a verdict, never an inference: `event_mirror` says native resume is 
 
 ## Change log
 
+- `2026-08-11` — Provider conversation doors now target the agentless-safe `/work/conversations/[conversationId]` transcript instead of runnable chat; `PluginsSection` gained opt-in conversation-to-task association for the AI Work inbox.
+- `2026-08-11` — Linked the canonical AI Work Hub plan that turns the existing Coding Platforms,
+  chat, skills, projects, tasks, war rooms, and schedules primitives into one user-facing workflow.
 - `2026-08-11` — The Skills vertical is **agent-writable**: `matrx-user/connections-skills` gained 5 ask-policy `mode:"draft"` targets over the skill editor (label, description, type, body, trigger patterns), with handlers in `features/skills/components/SkillDetailEditor.tsx`. `SkillsSection` now passes that editor `surfaceName` + `onDraftSnapshot` and spreads the returned draft into `getScope`, so the manifest's new `skill_draft_*` values report the STAGED form while `selected_skill_summary` keeps reporting the saved registry row. Nothing else in the vertical changed — the browser, ingest panel and category tree register no handlers and offer an agent no write tool. See `features/surfaces/FEATURE.md` (2026-08-11).
 - `2026-08-09` — Repurposed the Plugins placeholder as the live Coding Platforms bridge: direct owner-scoped `chat.coding_session` health/history, Claude-first detection/install truth, four-provider vocabulary, explicit event-mirror/native-ledger verdicts, retryable stale reads, and canonical conversation open/new-tab/peek/share/fork actions. Registered Claude Code, Codex, Cursor, and VS Code in conversation provenance filters; raw entry payloads remain owner-only and unread by the browser.
 - `2026-08-09` — Adversarial review closed four truthfulness gaps before release: the personal history now declares its owner predicate, initial load says “Checking” rather than “Storage reachable,” the 100-row ceiling is disclosed, invalid timestamps fail visibly, and canonical actions read canonical conversation/UES state instead of provider-binding fields or hard-coded defaults. Non-row Rename and orphan-producing Delete are suppressed on this surface.

@@ -328,7 +328,23 @@ export const ADMIN_DECISION_COLORS: Record<
   },
 };
 
-export type AnnouncementType = "info" | "warning" | "critical" | "update";
+/**
+ * The announcement type vocabulary — the runtime constant, with
+ * `AnnouncementType` DERIVED from it so the list and the union can never drift
+ * apart. Same shape and same reason as `FEEDBACK_TYPES` above: the
+ * `matrx-admin/feedback` surface manifest spells this array into the
+ * `announcement_draft` write-target description, and the console's handler
+ * validates an agent's value against the same array — what the agent is told is
+ * legal and what the handler accepts read from ONE source, never a re-typed
+ * literal.
+ */
+export const ANNOUNCEMENT_TYPES = [
+  "info",
+  "warning",
+  "critical",
+  "update",
+] as const;
+export type AnnouncementType = (typeof ANNOUNCEMENT_TYPES)[number];
 
 export interface SystemAnnouncement {
   id: string;

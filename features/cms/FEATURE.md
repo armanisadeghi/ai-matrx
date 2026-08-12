@@ -344,6 +344,21 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-12` — **The CMS hub's write target independently re-verified live, and
+  its missing `features/surfaces/FEATURE.md` entry written.** A follow-up chip was
+  assigned to make `matrx-user/cms` agent-writable and found the entry below had
+  already shipped it, so nothing here changed: the landed design stands. What was
+  missing was the campaign-wide half — the hub appeared in neither the
+  agent-writable adopter list nor the Change Log in
+  [`features/surfaces/FEATURE.md`](../surfaces/FEATURE.md), so the entry below's
+  closing pointer at it resolved to nothing. Both are now written. The target was
+  re-verified from scratch with real Badass Agent runs rather than trusted: the ask
+  dialog carries the manifest prose verbatim, Apply stages name/slug/domain into the
+  visible dialog (opening it from closed), "Keep as is" stages nothing without an
+  error, `agent_write_policy` and `is_active` are refused with no dialog raised, and
+  an invalid scheme-bearing domain returns the handler's throw verbatim with nothing
+  staged — including the valid `name` sent alongside it, confirming validate-then-apply.
+
 - `2026-08-10` — **The CMS hub (`matrx-user/cms`) is now agent-WRITABLE — one
   target, `new_site_draft`.** The manifest declares a single ask-policy DRAFT
   target: a partial `{name?, slug?, domain?}` object staged into the Create New

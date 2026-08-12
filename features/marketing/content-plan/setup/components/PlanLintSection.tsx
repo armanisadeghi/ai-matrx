@@ -32,7 +32,7 @@ export function PlanLintSection({ nodes }: { nodes: PlanNodeRow[] }) {
     <SetupSection title="Plan lint">
       {report.findings.length === 0 ? (
         <p className="flex items-center gap-1.5 text-sm text-foreground">
-          <ShieldCheck className="h-4 w-4 text-emerald-600" />
+          <ShieldCheck className="h-4 w-4 text-success" />
           Clean — {report.nodesChecked} pages, no structural problems.
         </p>
       ) : (

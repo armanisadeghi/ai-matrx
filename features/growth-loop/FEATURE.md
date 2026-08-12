@@ -54,6 +54,18 @@ Rules (also stated at the top of the file):
 
 ## Change log
 
+- 2026-08-12 — claude: full verification audit (five parallel auditors + live DB + deployment
+  checks) after the first chip wave. Corrected all 20 gap entries against SHIPPED code rather than
+  docs or commit messages, and added **rule 1b** to `loop-map.ts`: *"live" means SHIPPED* — code in
+  a working tree is `in-progress`, never `live`. That rule exists because its absence let ~10 gaps
+  sit fully built on one laptop (several with their migrations already applied to the live
+  database) while the map showed no movement. Closed and evidenced: sitemap/robots (live-verified
+  200), server-rendered collections, the findings→assists ledger producer. Still true at audit
+  time: the growth-loop router is unmounted, the pipe primitive's AI leg is unwired and forked, the
+  human-escalation sweeper has no caller, and aidream's deployed server is 13 commits behind so
+  publish→crawl, templates, research triggers and GA4 are committed but not running. Handoff:
+  `common-docs/projects/growth-loop-gaps/HANDOFF.md`.
+
 - 2026-08-11 — Codex: corrected the Measure pipe and `G-MEASURE-SCHEDULE` after PageSpeed gained a live resumable ten-minute coverage scheduler; the remaining scheduling gap is GA4 only.
 - 2026-08-09 — claude: feature created. Loop mapped from live code by six parallel explorers
   (research, content-plan, CMS, crawler/SEO, suggestions/write-back, workflow substrate);

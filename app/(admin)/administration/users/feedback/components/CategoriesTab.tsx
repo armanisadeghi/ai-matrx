@@ -57,6 +57,7 @@ import {
 import { toast } from "@/lib/toast";
 import { cn } from '@/lib/utils';
 import FeedbackDetailDialog from './FeedbackDetailDialog';
+import { useRegisterCategoryEditor } from './FeedbackConsoleEditorStore';
 
 const COLOR_OPTIONS = Object.keys(CATEGORY_COLORS) as (keyof typeof CATEGORY_COLORS)[];
 
@@ -119,6 +120,37 @@ export default function CategoriesTab() {
     // Detail dialog
     const [selectedFeedback, setSelectedFeedback] = useState<UserFeedback | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
+
+    /**
+     * Write half — the `category_draft` handle (see the manifest and
+     * `FeedbackConsoleEditorStore`). This tab owns the inline `CategoryForm`,
+     * so it publishes its own state and setters rather than the container
+     * threading them down.
+     *
+     * `applyDraft` does the two things a `mode: "draft"` write owes the admin:
+     * it stages through the SAME `setEditing` the form's own inputs call, and
+     * it makes the result VISIBLE. The form renders only inside the "Manage
+     * Categories" view, so staging while the admin is on "By Category" would
+     * put the copy somewhere they cannot see it — hence `setActiveView`. With
+     * no form open it starts a new-category draft, which is what makes this
+     * target reachable at all (see the create-dialog note about modals).
+     */
+    useRegisterCategoryEditor({
+        isEditing: editing !== null,
+        mode: editing === null ? null : editing.id === null ? 'create' : 'edit',
+        categoryId: editing?.id ?? null,
+        name: editing?.name ?? '',
+        description: editing?.description ?? '',
+        isSaving: saving,
+        applyDraft: (patch) => {
+            setActiveView('manage');
+            setEditing(prev => ({
+                ...(prev ?? EMPTY_EDIT),
+                ...(patch.name !== undefined ? { name: patch.name } : {}),
+                ...(patch.description !== undefined ? { description: patch.description } : {}),
+            }));
+        },
+    });
 
     const loadData = useCallback(async () => {
         setLoading(true);

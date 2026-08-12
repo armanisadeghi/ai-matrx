@@ -56,10 +56,50 @@ import {
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_BUNDLES_SURFACE_NAME } from "@/features/surfaces/manifests/admin-bundles.manifest";
+import {
+  BUNDLE_NAME_RULE,
+  listerToolNameFor,
+} from "@/features/tool-registry/bundles/bundlesVocabulary";
+import {
+  BundlesSurfaceStoreProvider,
+  useBundleDetailRegistration,
+  useBundlesScopeBuilder,
+  useBundlesWriteHandlers,
+  useNewBundleRegistration,
+  usePublishBundleList,
+  usePublishBundleMembers,
+  usePublishOpenCreate,
+} from "./BundlesSurfaceRuntime";
 
 type Filter = "active" | "all";
 
+/**
+ * Keep an unsaved form open when something outside it is interacted with.
+ *
+ * Not cosmetic. The surface-write confirm dialog for `new_bundle_draft` opens
+ * as a layer ABOVE this one, and dismissing that confirm counts as an
+ * interaction OUTSIDE the create form — which would close it and discard the
+ * value just staged. Escape, Cancel and the X still close normally.
+ */
+const keepOpenOnOutsideInteraction = (event: Event) => event.preventDefault();
+
+/**
+ * Surface mount. The store provider wraps everything so the detail panel and
+ * the create dialog can publish into it, and `SurfaceRuntimeProvider` reads
+ * that same store for both the live scope and the write handlers — see
+ * `BundlesSurfaceRuntime.tsx` for why the state is threaded this way.
+ */
 export function BundlesAdminPage() {
+  return (
+    <BundlesSurfaceStoreProvider>
+      <BundlesAdminPageInner />
+    </BundlesSurfaceStoreProvider>
+  );
+}
+
+function BundlesAdminPageInner() {
   const [bundles, setBundles] = useState<BundleRow[]>([]);
   const [filter, setFilter] = useState<Filter>("active");
   const [search, setSearch] = useState("");
@@ -128,7 +168,20 @@ export function BundlesAdminPage() {
   // resolves only after the user switches to All.
   const deepLinkUnresolved = Boolean(deepLink) && !selected;
 
+  const getScope = useBundlesScopeBuilder();
+  const getWriteHandlers = useBundlesWriteHandlers();
+  usePublishBundleList({ filter, search, bundles, selected });
+  // Published so `new_bundle_draft` can open this form itself — the dialog is
+  // modal, so an admin cannot open it and THEN ask the agent for help.
+  usePublishOpenCreate(() => setCreating(true));
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_BUNDLES_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+      isEditable
+    >
     <div className="min-h-dvh flex flex-col">
       <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3 bg-background">
         <Package className="h-4 w-4 text-muted-foreground" />
@@ -272,6 +325,7 @@ export function BundlesAdminPage() {
         />
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
@@ -291,10 +345,20 @@ function NewBundleDialog({
   const [isSystem, setIsSystem] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const NAME_RE = /^[a-z0-9][a-z0-9_-]*$/;
-  const nameValid = NAME_RE.test(name);
+  const nameValid = BUNDLE_NAME_RULE.pattern.test(name);
   const nameClash = existingNames.has(name);
-  const listerName = name ? `bundle:list_${name}` : "bundle:list_<name>";
+  const listerName = name ? listerToolNameFor(name) : "bundle:list_<name>";
+
+  // Registers this dialog as the live create editor, so `new_bundle_draft`
+  // can stage through these exact setters while it is open.
+  useNewBundleRegistration({
+    name,
+    description,
+    isSystem,
+    busy,
+    setName,
+    setDescription,
+  });
 
   const submit = async () => {
     if (!nameValid || nameClash) return;
@@ -330,7 +394,10 @@ function NewBundleDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onInteractOutside={keepOpenOnOutsideInteraction}
+      >
         <DialogHeader>
           <DialogTitle>New bundle</DialogTitle>
         </DialogHeader>
@@ -440,6 +507,21 @@ function BundleDetail({
   useEffect(() => {
     void load();
   }, [bundle.id]);
+
+  usePublishBundleMembers(members);
+  // Registers this panel as the live editor for the selected bundle, so
+  // `bundle_description` stages through the same setter the admin's typing
+  // uses. `persistedDescription` is what the loaded row says, which is how the
+  // read twin reports whether the staged text is unsaved.
+  useBundleDetailRegistration({
+    bundleId: bundle.id,
+    bundleName: bundle.name,
+    description,
+    persistedDescription: bundle.description,
+    isActive,
+    saving: savingMeta,
+    setDescription,
+  });
 
   const onSaveMeta = async () => {
     let metadata: Record<string, unknown>;

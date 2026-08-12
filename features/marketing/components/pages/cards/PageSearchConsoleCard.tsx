@@ -16,8 +16,10 @@
  */
 
 import { useState } from "react";
-import { Crosshair, SearchCheck, Unplug } from "lucide-react";
+import { Crosshair, Unplug } from "lucide-react";
 
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
@@ -39,11 +41,6 @@ import {
 } from "@/features/marketing/seo/keyword/data";
 import type { PageQueryStat } from "@/features/marketing/seo/keyword/types";
 import type { MarketingPage } from "@/features/marketing/types";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
-
-const QUERY_LIMIT = 50;
 
 function formatCtr(ctr: number | null): string {
   return ctr === null ? "—" : `${(ctr * 100).toFixed(2)}%`;
@@ -71,7 +68,7 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
   const [range, setRange] = useState<GscRangeKey>("28d");
   const days = gscRangeDays(range);
   const totals = usePageSearchTotals(page.id, days);
-  const queries = usePageQueryStats(page.id, days, QUERY_LIMIT);
+  const queries = usePageQueryStats(page.id, days);
 
   const rangeLabel =
     GSC_RANGES.find((entry) => entry.key === range)?.label ?? range;
@@ -84,6 +81,65 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
     (totals.data && totals.data.impressions > 0) || rows.length > 0,
   );
   const neverSynced = !site.gsc_synced_at;
+  const columns: MatrxColumnDef<PageQueryStat>[] = [
+    {
+      id: "query",
+      accessorKey: "query",
+      header: "Query",
+      filter: "text",
+      cellKind: "text",
+      cell: (row) => {
+        const isTarget =
+          targetNormalized !== "" &&
+          normalizeKeywordPhrase(row.query) === targetNormalized;
+        return (
+          <span
+            className={
+              isTarget ? "font-medium text-primary" : "text-foreground"
+            }
+            title={row.query}
+          >
+            {isTarget ? (
+              <Crosshair className="mr-1 inline h-3 w-3 align-[-1px]" />
+            ) : null}
+            {row.query}
+          </span>
+        );
+      },
+    },
+    {
+      id: "clicks",
+      accessorKey: "clicks",
+      header: "Clicks",
+      filter: "number",
+      align: "right",
+      cell: (row) => row.clicks.toLocaleString(),
+    },
+    {
+      id: "impressions",
+      accessorKey: "impressions",
+      header: "Impressions",
+      filter: "number",
+      align: "right",
+      cell: (row) => row.impressions.toLocaleString(),
+    },
+    {
+      id: "ctr",
+      accessorFn: queryCtr,
+      header: "CTR",
+      filter: "number",
+      align: "right",
+      cell: (row) => formatCtr(queryCtr(row)),
+    },
+    {
+      id: "position",
+      accessorKey: "position",
+      header: "Position",
+      filter: "number",
+      align: "right",
+      cell: (row) => (row.position === null ? "—" : row.position.toFixed(1)),
+    },
+  ];
 
   const copy = webCopy({
     kind: "web-page-search-console",
@@ -204,78 +260,20 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
             {hasAnyData ? "Reporting" : "No page data"}
           </Badge>
         </div>
-        {rows.length === 0 ? (
-          <p className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
-            <SearchCheck className="h-4 w-4 shrink-0" />
-            No query-level Search Console rows stored for this page in the
-            selected range.
-          </p>
-        ) : (
-          <div className="max-h-72 overflow-y-auto">
-            <table className={cn("border-collapse text-xs", MOBILE_TABLE_FROZEN)}>
-              <thead>
-                <tr className="sticky top-0 z-10 bg-card text-left text-[11px] text-muted-foreground">
-                  <th className="border-b border-border px-3 py-1.5 font-medium">
-                    Query
-                  </th>
-                  <th className="border-b border-border px-2 py-1.5 text-right font-medium">
-                    Clicks
-                  </th>
-                  <th className="border-b border-border px-2 py-1.5 text-right font-medium">
-                    Impr
-                  </th>
-                  <th className="border-b border-border px-2 py-1.5 text-right font-medium">
-                    CTR
-                  </th>
-                  <th className="border-b border-border px-3 py-1.5 text-right font-medium">
-                    Pos
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {rows.map((row) => {
-                  const isTarget =
-                    targetNormalized !== "" &&
-                    normalizeKeywordPhrase(row.query) === targetNormalized;
-                  return (
-                    <tr
-                      key={row.query}
-                      className={cn(
-                        "hover:bg-accent/50",
-                        isTarget && "bg-primary/5",
-                      )}
-                    >
-                      <td
-                        className={cn(
-                          "px-3 py-1 text-foreground sm:max-w-0 sm:truncate",
-                          isTarget && "font-medium text-primary",
-                        )}
-                        title={row.query}
-                      >
-                        {isTarget ? (
-                          <Crosshair className="mr-1 inline h-3 w-3 align-[-1px]" />
-                        ) : null}
-                        {row.query}
-                      </td>
-                      <td className="px-2 py-1 text-right tabular-nums text-foreground">
-                        {row.clicks.toLocaleString()}
-                      </td>
-                      <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
-                        {row.impressions.toLocaleString()}
-                      </td>
-                      <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
-                        {formatCtr(queryCtr(row))}
-                      </td>
-                      <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
-                        {row.position === null ? "—" : row.position.toFixed(1)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="p-2">
+          <MatrxDataTable
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.query}
+            pageSize={10}
+            pageSizeOptions={[10, 25, 50, 100]}
+            emptyState={{
+              title: "No query-level Search Console rows",
+              description:
+                "No query-level Search Console rows are stored for this page in the selected range.",
+            }}
+          />
+        </div>
         <p className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
           Site sync last completed {formatDate(site.gsc_synced_at)}. Sync runs
           site-wide from site integrations — there is no page-only refresh.

@@ -549,6 +549,30 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   tags, with confirmed write targets for primary/supporting add/remove and
   metadata. The SQL surface emitter also mirrors write targets, closing the
   previous CLI-sync gap.
+- 2026-08-11 — Claude: **Entities view — source type is now agent-writable,
+  an agent can open the editor itself, and a draft-losing modal bug is fixed.**
+  Follows the reconciliation entry below (which restored the write-half docs
+  and deleted the superseded validation module as debris) and adds the three
+  things that were genuinely missing. `source_type_id` was refused for the
+  reason `content-plan-node` still keeps `node_primary_keyword_id` manual — a
+  `plan_source_type` UUID with no options exposed — so the fix was to publish
+  the vocabulary, not to relax the check: a new `source_type_options` value
+  emits `{id, name}` from the same `useCategories(planSourceType)` read the
+  dialog's `CategorySelect` renders, and the handler refuses any id absent from
+  it, including while the dimension is still loading. It is `autoContext: true`
+  because a live run with it fetch-on-demand returned `context_not_attached`
+  and the agent rightly refused to invent a UUID. New `open_entity_editor`
+  (`ui`/auto) resolves the modal precondition trap the surfaces doc flagged:
+  `entity_draft` needs an open editor, the editor's overlay covers the chat
+  composer, so the agent now opens it (by id from `entities_detail`, or null
+  for a blank one) and stages in the same turn. **Fixed a real defect:**
+  applying a staged draft dismissed the editor — Radix counted the confirm
+  alertdialog's Apply click as an interact-outside, which runs `onClose()` and
+  discards the draft, while the caller was told it succeeded; guarded with
+  `onInteractOutside`. `lib/entity-write-targets.ts` is back, but only as the
+  two validators that must check LIVE page state (an offered category id, a
+  live entity id), imported by `EntityManager` and covered by 12 tests — not
+  the superseded suite that was correctly deleted.
 - 2026-08-11 — Claude: **a page with no target keyword names the gap where the
   fix is, instead of costing a paid run to discover.** Reported live: the Brief
   Writer spent a full run on `/blog/article-4` to return prose saying it could

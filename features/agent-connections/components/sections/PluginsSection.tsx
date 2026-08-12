@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
+import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { formatText } from "@/utils/text/text-case-converter";
 import { SectionToolbar } from "../SectionToolbar";
@@ -41,7 +42,21 @@ import {
   type CodingSessionView,
 } from "../../coding-sessions/service";
 
-export function PluginsSection() {
+function workConversationHref(conversationId: string): string {
+  return `/work/conversations/${conversationId}`;
+}
+
+export interface PluginsSectionProps {
+  /**
+   * The technical diagnostics route stays read-oriented. Product inboxes can
+   * opt into the existing conversation → task association primitive.
+   */
+  showTaskAssociation?: boolean;
+}
+
+export function PluginsSection({
+  showTaskAssociation = false,
+}: PluginsSectionProps = {}) {
   const [search, setSearch] = useState("");
   const [providerFilter, setProviderFilter] =
     useState<CodingSessionProvider | null>(null);
@@ -59,6 +74,7 @@ export function PluginsSection() {
     return (
       <CodingSessionDetail
         session={selectedSession}
+        showTaskAssociation={showTaskAssociation}
         onBack={() => setSelectedSessionId(null)}
         onMutationSuccess={refresh}
       />
@@ -232,6 +248,7 @@ export function PluginsSection() {
                 <CodingSessionRow
                   key={session.id}
                   session={session}
+                  showTaskAssociation={showTaskAssociation}
                   onInspect={() => setSelectedSessionId(session.id)}
                   onMutationSuccess={refresh}
                 />
@@ -357,10 +374,12 @@ function ClaudeInstallStatus({ sessionCount }: { sessionCount: number }) {
 
 function CodingSessionRow({
   session,
+  showTaskAssociation,
   onInspect,
   onMutationSuccess,
 }: {
   session: CodingSessionView;
+  showTaskAssociation: boolean;
   onInspect: () => void;
   onMutationSuccess: () => void;
 }) {
@@ -388,6 +407,7 @@ function CodingSessionRow({
           token="conversation"
           id={session.conversation_id}
           name={title}
+          href={workConversationHref(session.conversation_id)}
           showIcon={false}
           fill
         />
@@ -411,6 +431,17 @@ function CodingSessionRow({
       >
         {verdict.label}
       </span>
+      {showTaskAssociation ? (
+        <AssociateTaskButton
+          entityType="conversation"
+          entityId={session.conversation_id}
+          label={title}
+          metadata={{ provider: session.provider, codingSessionId: session.id }}
+          prePopulate={{ title: `Follow up: ${title}` }}
+          size="sm"
+          label_text={`Attach ${title} to a task`}
+        />
+      ) : null}
       <ItemMenu
         config={() =>
           buildConversationMenu({
@@ -419,7 +450,7 @@ function CodingSessionRow({
             isFavorite: session.isFavorite,
             isArchived: session.conversation?.status === "archived",
             excludeFromKg: session.conversation?.exclude_from_kg ?? false,
-            href: `/chat/${session.conversation_id}`,
+            href: workConversationHref(session.conversation_id),
             source: { app: sourceApp, feature: sourceFeature },
             showRename: false,
             showFavorite: session.favoriteStateKnown,
@@ -444,10 +475,12 @@ function CodingSessionRow({
 
 function CodingSessionDetail({
   session,
+  showTaskAssociation,
   onBack,
   onMutationSuccess,
 }: {
   session: CodingSessionView;
+  showTaskAssociation: boolean;
   onBack: () => void;
   onMutationSuccess: () => void;
 }) {
@@ -475,6 +508,7 @@ function CodingSessionDetail({
             token="conversation"
             id={session.conversation_id}
             name={title}
+            href={workConversationHref(session.conversation_id)}
             showIcon={false}
             alwaysShowActions
           />
@@ -482,6 +516,20 @@ function CodingSessionDetail({
             {meta?.label ?? formatText(session.provider)} · {verdict.label}
           </div>
         </div>
+        {showTaskAssociation ? (
+          <AssociateTaskButton
+            entityType="conversation"
+            entityId={session.conversation_id}
+            label={title}
+            metadata={{
+              provider: session.provider,
+              codingSessionId: session.id,
+            }}
+            prePopulate={{ title: `Follow up: ${title}` }}
+            variant="button"
+            label_text="Attach to task"
+          />
+        ) : null}
         <ItemMenu
           config={() =>
             buildConversationMenu({
@@ -490,7 +538,7 @@ function CodingSessionDetail({
               isFavorite: session.isFavorite,
               isArchived: session.conversation?.status === "archived",
               excludeFromKg: session.conversation?.exclude_from_kg ?? false,
-              href: `/chat/${session.conversation_id}`,
+              href: workConversationHref(session.conversation_id),
               source: { app: sourceApp, feature: sourceFeature },
               showRename: false,
               showFavorite: session.favoriteStateKnown,
@@ -558,6 +606,7 @@ function CodingSessionDetail({
               token="conversation"
               id={session.conversation_id}
               name={title}
+              href={workConversationHref(session.conversation_id)}
               alwaysShowActions
             />
           </DetailValue>

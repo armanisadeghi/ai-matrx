@@ -465,6 +465,22 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- 2026-08-12 — claude: **The `/data/[id]` agent-write path was independently
+  re-verified by a second agent; no code changed.** A later chip landed on this
+  surface after the entry below had already shipped it, so per the surfaces
+  collision rule nothing competing was written. It instead re-ran the full live
+  verification from scratch against its OWN throwaway table (not the fixture the
+  `agent.review_queue` row points at, which was left untouched with its
+  description still unset). All six checks held, and the two that matter most for
+  this feature were re-confirmed with SQL rather than the agent's summary:
+  `updateTableMetadata` wrote ONLY `description` and left `table_name` intact on
+  a second table (the RPC's `COALESCE` contract), and `upsertCell` moved exactly
+  one row 1→2 with every other field byte-identical while the untouched rows kept
+  their original `version` and `updated_at`. The handler's coercion refusal for a
+  non-numeric value into a `number` column reached the agent verbatim with
+  nothing written. Detail, plus refreshed campaign scouting, lives in the
+  `features/surfaces/FEATURE.md` Change Log entry for the same date.
+
 - 2026-08-11 — claude: **`matrx-user/data-tables` (`/data/[id]`) got its FIRST
   surface emitter and 2 ask-policy entity write targets.** This is the third
   surface backed by this feature, and it is distinct from `matrx-user/workbooks`

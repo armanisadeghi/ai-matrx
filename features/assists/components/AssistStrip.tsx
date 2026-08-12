@@ -16,6 +16,7 @@
  */
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ import {
   selectAssistsLoaded,
 } from "../redux/assistsSlice";
 import { AssistChip } from "./AssistChip";
+import { ASSISTS_MANAGER_HREF, partitionByConfidence } from "../constants";
 import type { Assist } from "../types";
 
 export function AssistStrip({
@@ -54,11 +56,25 @@ export function AssistStrip({
   const assists = filter ? surfaceAssists.filter(filter) : surfaceAssists;
   if (assists.length === 0) return null;
 
+  // Weak proposals never sit as equal peers beside strong ones — they fold
+  // into one quiet door to the manager (absorbed from kg-suggestions, where
+  // sub-50% rows drowned the inbox until they were folded out).
+  const { strong, weak } = partitionByConfidence(assists);
+
   return (
     <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-      {assists.map((assist) => (
+      {strong.map((assist) => (
         <AssistChip key={assist.id} assist={assist} />
       ))}
+      {weak.length > 0 && (
+        <Link
+          href={ASSISTS_MANAGER_HREF}
+          className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          {weak.length} lower-confidence suggestion
+          {weak.length === 1 ? "" : "s"} — review
+        </Link>
+      )}
     </div>
   );
 }

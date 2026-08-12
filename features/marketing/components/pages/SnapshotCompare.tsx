@@ -1,6 +1,9 @@
 "use client";
 
 import { X } from "lucide-react";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import {
@@ -18,12 +21,6 @@ import {
 } from "@/features/marketing/lib/snapshot-content";
 import { parseStoredSeoMetrics } from "@/features/marketing/seo/serp/metrics";
 import type { PageSnapshot } from "@/features/marketing/types";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE,
-  MOBILE_TABLE_FROZEN_CELL,
-  MOBILE_TABLE_FROZEN_HEAD,
-} from "@/components/official/mobile-table/mobileTable";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 interface CompareField {
@@ -67,7 +64,11 @@ function buildCompareFields(
 
   const pairs: Array<[string, string, string]> = [
     ["Title", fmt(headA.title), fmt(headB.title)],
-    ["Meta description", fmt(headA.metaDescription), fmt(headB.metaDescription)],
+    [
+      "Meta description",
+      fmt(headA.metaDescription),
+      fmt(headB.metaDescription),
+    ],
     ["Canonical URL", fmt(headA.canonicalUrl), fmt(headB.canonicalUrl)],
     ["Meta robots", fmt(headA.metaRobots), fmt(headB.metaRobots)],
     ["First H1", fmt(h1A), fmt(h1B)],
@@ -89,11 +90,7 @@ function buildCompareFields(
       okFlag(seoA ? seoA.overall_ok : null),
       okFlag(seoB ? seoB.overall_ok : null),
     ],
-    [
-      "Headings outline",
-      fmt(headingsA.all.length),
-      fmt(headingsB.all.length),
-    ],
+    ["Headings outline", fmt(headingsA.all.length), fmt(headingsB.all.length)],
     ["Links total", fmt(linksA.total), fmt(linksB.total)],
     ["Links internal", fmt(linksA.internal), fmt(linksB.internal)],
     ["Links external", fmt(linksA.external), fmt(linksB.external)],
@@ -174,6 +171,71 @@ export function SnapshotCompare({
   const after = chronological[1];
   const fields = buildCompareFields(before, after);
   const changedCount = fields.filter((field) => field.changed).length;
+  const columns: MatrxColumnDef<CompareField>[] = [
+    {
+      id: "label",
+      accessorKey: "label",
+      header: "Field",
+      filter: "text",
+      cellKind: "text",
+      cell: (field) => (
+        <span
+          className={
+            field.changed
+              ? "font-medium text-amber-600 dark:text-amber-400"
+              : "font-medium text-muted-foreground"
+          }
+        >
+          {field.label}
+        </span>
+      ),
+    },
+    {
+      id: "before",
+      accessorKey: "before",
+      header: `Before — ${formatDate(before.captured_at)}`,
+      filter: "text",
+      cellKind: "text",
+      cell: (field) => (
+        <span
+          className={
+            field.changed ? "text-foreground" : "text-muted-foreground"
+          }
+        >
+          {field.before}
+        </span>
+      ),
+    },
+    {
+      id: "after",
+      accessorKey: "after",
+      header: `After — ${formatDate(after.captured_at)}`,
+      filter: "text",
+      cellKind: "text",
+      cell: (field) => (
+        <span
+          className={
+            field.changed
+              ? "font-medium text-amber-600 dark:text-amber-400"
+              : "text-muted-foreground"
+          }
+        >
+          {field.after}
+        </span>
+      ),
+    },
+    {
+      id: "changed",
+      accessorKey: "changed",
+      header: "Verdict",
+      filter: "boolean",
+      cell: (field) => (
+        <Badge variant={field.changed ? "warning" : "secondary"}>
+          {field.changed ? "Changed" : "Identical"}
+        </Badge>
+      ),
+    },
+  ];
 
   const copy = webCopy({
     kind: "web-page-snapshot-diff",
@@ -202,12 +264,10 @@ export function SnapshotCompare({
       ["Changed fields", changedCount],
       ...fields
         .filter((field) => field.changed)
-        .map(
-          (field): [string, string] => [
-            field.label,
-            `${field.before} → ${field.after}`,
-          ],
-        ),
+        .map((field): [string, string] => [
+          field.label,
+          `${field.before} → ${field.after}`,
+        ]),
     ],
     attributes: {
       page_id: pageId,
@@ -228,67 +288,13 @@ export function SnapshotCompare({
       headerExtra={closeButton}
       anchor="snapshot_compare"
     >
-      <div className="overflow-x-auto">
-        <table className={cn("text-xs", MOBILE_TABLE)}>
-          <thead>
-            <tr className="border-b border-border text-left">
-              <th className={cn("px-3 py-2 font-semibold uppercase tracking-wide text-[10px] text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD, "max-sm:min-w-[7rem]")}>
-                Field
-              </th>
-              <th className="px-3 py-2 font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">
-                Before — {formatDate(before.captured_at)}
-              </th>
-              <th className="px-3 py-2 font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">
-                After — {formatDate(after.captured_at)}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {fields.map((field) => (
-              <tr
-                key={field.label}
-                className={cn(
-                  "border-b border-border/60 last:border-b-0",
-                  field.changed && "bg-amber-500/10",
-                )}
-              >
-                <td
-                  className={cn(
-                    "whitespace-nowrap px-3 py-1.5 font-medium",
-                    MOBILE_TABLE_FROZEN_CELL,
-                    "max-sm:min-w-[7rem]",
-                    field.changed
-                      ? "text-amber-600 dark:text-amber-400"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  {field.label}
-                </td>
-                <td
-                  className={cn(
-                    "break-words px-3 py-1.5 max-sm:min-w-[9rem] sm:max-w-xs",
-                    field.changed
-                      ? "text-foreground"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  {field.before}
-                </td>
-                <td
-                  className={cn(
-                    "break-words px-3 py-1.5 max-sm:min-w-[9rem] sm:max-w-xs",
-                    field.changed
-                      ? "font-medium text-amber-600 dark:text-amber-400"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  {field.after}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <MatrxDataTable
+        data={fields}
+        columns={columns}
+        getRowId={(field) => field.label}
+        pageSize={25}
+        pageSizeOptions={[10, 25, 50, 100]}
+      />
     </SectionCard>
   );
 }

@@ -180,6 +180,28 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ## Change log
 
+- 2026-08-12 — Made the LIST surface agent-writable: 4 `mode: "ui"` /
+  `applyPolicy: "ask"` write targets on `matrx-user/crm` — `search_query`,
+  `party_kind_filter`, `column_filters` and `list_sort` — so an agent can put
+  the records a user described in front of them. Handlers live on the
+  `SurfaceRuntimeProvider` `CrmListPage` already mounts and call the SAME
+  setters the human controls call (`usePartyList.setQuery` for search, the
+  People/Companies facet and the column filters; `useListViewPrefs.setPrefs`
+  for the sort), so an agent write and a user click are indistinguishable
+  downstream. They validate the whole value and THROW before mutating —
+  `column_filters` replaces the entire filter bag and rejects unrecognised
+  keys rather than dropping them, `list_sort` reads the current sort through a
+  ref because the writeback seam captures handler closures before the confirm
+  dialog resolves. Enum checks read new shared constants in `types.ts`
+  (`PARTY_KIND_FILTERS`, `PARTY_COLUMN_FILTER_KEYS`, `PARTY_SORT_DIRECTIONS`
+  and the `*_ENUM_TEXT` strings), which the manifest interpolates into the
+  descriptions the model reads so contract and guard cannot drift. Because
+  write targets and groups do NOT cross `inheritsFrom`, the same arrays are
+  re-exported onto `crm-manager.manifest.ts` — the floating `CrmManagerWindow`
+  renders this same component and would otherwise be offered no write tool.
+  Scope (Mine / My Orgs / Public), organization assignment, paging, the trash
+  view and every create/delete/restore/merge path are deliberately NOT
+  writable; delete stays human. Live-verified with a real agent run on `/crm`.
 - 2026-08-09 — Made the create-record surface (`matrx-user/crm-create-party`)
   agent-writable: ONE composite `party_draft` write target (`mode: "draft"`,
   `applyPolicy: "ask"`) so an agent can stage a person or company drafted from

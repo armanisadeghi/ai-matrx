@@ -34,10 +34,10 @@ import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import SavedResearchFeed from "./SavedResearchFeed";
 import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
-
-/** A primary keyword is a search phrase, not a paragraph — the bound the
- * `research_input_keyword` write target enforces (and advertises). */
-const MAX_STAGED_KEYWORD_LENGTH = 200;
+import {
+  assertNoRunInFlight,
+  parseStagedKeywordWrite,
+} from "../keyword-research-write";
 
 export interface KeywordResearchLauncherProps {
   run: ResearchRunState;
@@ -86,6 +86,14 @@ export default function KeywordResearchLauncher({
   const [primaryInput, setPrimaryInput] = useState(initialKeyword ?? "");
   const autoRanRef = useRef(false);
   const queryClient = useQueryClient();
+
+  // Live run status for the write handler below. The writeback seam resolves
+  // handler closures before the user confirms, so the guard must not read the
+  // status off the render that happened to build the closure.
+  const runStatusRef = useRef(run.status);
+  useEffect(() => {
+    runStatusRef.current = run.status;
+  }, [run.status]);
 
   // Durable memory: the latest persisted artifact for the phrase in play.
   // The live stream is ephemeral (the server's rejoin replays stages, never
@@ -138,32 +146,13 @@ export default function KeywordResearchLauncher({
    */
   useSurfaceWriteHandlers(writeTargetSurfaceName, {
     research_input_keyword: (value: unknown) => {
-      if (typeof value !== "string") {
-        throw new Error(
-          `research_input_keyword expects a string keyword phrase, got ${Array.isArray(value) ? "array" : typeof value}.`,
-        );
-      }
-      const phrase = value.trim();
-      if (!phrase) {
-        throw new Error(
-          "research_input_keyword needs a keyword phrase — an empty string would leave the Research button disabled.",
-        );
-      }
-      if (phrase.length > MAX_STAGED_KEYWORD_LENGTH) {
-        throw new Error(
-          `research_input_keyword: "${phrase.slice(0, 40)}…" is ${phrase.length} characters — a primary keyword must be at most ${MAX_STAGED_KEYWORD_LENGTH}.`,
-        );
-      }
-      if (/[\r\n]/.test(phrase)) {
-        throw new Error(
-          "research_input_keyword takes ONE keyword phrase, not a list — the launcher researches a single primary keyword per run.",
-        );
-      }
-      if (run.status === "running") {
-        throw new Error(
-          "research_input_keyword: the research input is locked while a run is in flight, exactly as it is for the user. Wait for the run to finish.",
-        );
-      }
+      // Refuse before validating shape: while a run is in flight the answer is
+      // the same whatever was sent, and it is the more actionable reason.
+      // Read through the REF — the writeback seam resolves every handler
+      // BEFORE the user confirms the first ask dialog, so `run.status` off this
+      // render closure can be a stale "idle" for a run that has since started.
+      assertNoRunInFlight(runStatusRef.current, "research_input_keyword");
+      const phrase = parseStagedKeywordWrite(value);
       setPrimaryInput(phrase);
       onKeywordChange?.(phrase);
     },

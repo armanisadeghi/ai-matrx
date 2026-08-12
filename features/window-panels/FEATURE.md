@@ -76,6 +76,28 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
   with per-kind `width`/`height` overrides threaded through the opener and
   `OverlayController`. See the section above.
 
+- 2026-08-11 — **Agent Advanced Editor window is agent-writable, and mounts
+  the surface's first `SurfaceRuntimeProvider`.** `AgentContentWindow` now
+  wraps its `WindowPanel` in a provider for
+  `matrx-user/agent-advanced-editor` (`useAgentAdvancedEditorSurface`),
+  publishing the open agent plus the active tab as the read half and
+  registering 4 ask-policy `draft` write targets —
+  `editor_system_instruction`, `editor_append_system_instruction`,
+  `editor_output_schema`, `editor_catalog_profile`. Handlers dispatch the
+  SAME Redux actions the window's own editors dispatch, so a staged agent
+  rewrite and the user's typing are indistinguishable, and the footer Save
+  stays the user's press — no target commits. Two window-specific hazards
+  drove the shape: (1) every target NAME is prefixed `editor_` because this
+  window floats over any route and `applySurfaceWrite` resolves a bare name
+  against the deepest surface that DECLARES it, so unprefixed
+  `system_instruction` would be captured by `matrx-user/agent-builder` on
+  `/agents/[id]/build` — the same shadowing this log's 2026-08-10 entry
+  records, in its write-target form; (2) `agentId` and `activeTab` are read
+  through refs rather than the render closure, because the window can switch
+  agents (sidebar + multi-agent tab strip) while handlers staged in one agent
+  turn are already resolved and waiting on the user's confirm. Full reasoning,
+  exclusions and the live-run evidence are in
+  [features/surfaces/FEATURE.md](../surfaces/FEATURE.md).
 - 2026-08-10 — **A window's surface is SHADOWED by the host route's own
   surface — verify overlay surfaces on a route that emits none.** Found while
   live-verifying the (separately landed) `matrx-user/markdown-editor` write

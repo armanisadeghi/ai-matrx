@@ -12,6 +12,7 @@
 //     query (search, filters, page, scope) deliberately does not
 //   * ONE "…" menu per row carrying every record action
 
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
@@ -44,10 +45,29 @@ import { deleteParty, purgeParty, restoreParty } from "../service";
 import type {
   DateBucket,
   PartyKind,
+  PartyKindFilter,
   PartyListFilters,
   PartyListRow,
+  PartySortDirection,
+  PartySortKey,
 } from "../types";
-import { CRM_LIST_SCOPES, DATE_BUCKETS } from "../types";
+import {
+  CRM_LIST_SCOPES,
+  DATE_BUCKETS,
+  DATE_BUCKET_ENUM_TEXT,
+  DATE_BUCKET_VALUES,
+  PARTY_COLUMN_FILTER_KEYS,
+  PARTY_COLUMN_FILTER_KEY_ENUM_TEXT,
+  PARTY_KINDS,
+  PARTY_KIND_ENUM_TEXT,
+  PARTY_KIND_FILTERS,
+  PARTY_KIND_FILTER_ENUM_TEXT,
+  PARTY_SORT_DIRECTIONS,
+  PARTY_SORT_DIRECTION_ENUM_TEXT,
+  PARTY_SORT_KEYS,
+  PARTY_SORT_KEY_ENUM_TEXT,
+  PARTY_TEXT_FILTER_KEYS,
+} from "../types";
 import { PARTY_COLUMNS } from "./columns";
 import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -114,6 +134,213 @@ function toTableFilters(filters: PartyListFilters): ColumnFiltersState {
   if (filters.created_at)
     out.created_at = { kind: "select", value: filters.created_at };
   return out;
+}
+
+// ── Surface write-target parsers (manifest `writeTargets`) ──────────────────
+//
+// Validation for the four agent-writable targets on `matrx-user/crm` (and, by
+// re-export, `matrx-user/crm-manager`). Every parser VALIDATES THE WHOLE VALUE
+// AND THROWS before anything mutates: the writeback seam turns a throw into a
+// safe error envelope the agent reads and can correct from, which beats a
+// silent coercion that leaves the user staring at a list they did not ask for.
+//
+// Every vocabulary check reads the SAME constants `crm.manifest.ts`
+// interpolates into the descriptions the model is shown, so the contract the
+// agent reads and the contract enforced here cannot drift.
+
+/** A type name for an error message, distinguishing null/array from object. */
+function describeValue(value: unknown): string {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "an array";
+  return typeof value;
+}
+
+/**
+ * An object argument from an agent.
+ *
+ * The inline-tool layer parses a JSON-looking argument before a handler ever
+ * sees it, so a well-formed call arrives as a real object. A model that
+ * double-encodes sends the JSON *string* instead — tolerating that explicitly
+ * is cheaper than letting it fail, read the error, and escape even harder.
+ */
+function parseObjectArg(
+  target: string,
+  value: unknown,
+): Record<string, unknown> {
+  let raw = value;
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      throw new Error(
+        `${target} expects an object — received a string that is not valid JSON. Send the object itself, not a JSON-encoded string.`,
+      );
+    }
+  }
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error(
+      `${target} expects an object — received ${describeValue(raw)}.`,
+    );
+  }
+  return raw as Record<string, unknown>;
+}
+
+/**
+ * `column_filters` — the WHOLE per-column filter bag, replacing what is set.
+ *
+ * Unknown keys are rejected rather than dropped: an agent that misspells
+ * `name` for `display_name` would otherwise watch its filter silently do
+ * nothing, which is a worse outcome than being told. Blank text and an empty
+ * `party_kind` array mean "no filter on that column" — the same normalisation
+ * `fromTableFilters` applies to what the user types, so an agent write and a
+ * user click produce the identical bag.
+ */
+function parseColumnFilters(value: unknown): PartyListFilters {
+  const raw = parseObjectArg("column_filters", value);
+
+  const unknown = Object.keys(raw).filter(
+    (key) => !(PARTY_COLUMN_FILTER_KEYS as readonly string[]).includes(key),
+  );
+  if (unknown.length > 0) {
+    throw new Error(
+      `column_filters rejected: unrecognised key(s) ${unknown.join(", ")}. ` +
+        `The filters were left unchanged. Allowed keys are ${PARTY_COLUMN_FILTER_KEY_ENUM_TEXT} — send {} to clear every column filter.`,
+    );
+  }
+
+  const out: PartyListFilters = {};
+
+  for (const key of PARTY_TEXT_FILTER_KEYS) {
+    if (!(key in raw)) continue;
+    const entry = raw[key];
+    if (typeof entry !== "string") {
+      throw new Error(
+        `column_filters.${key} expects a string matched as a case-insensitive substring (send "" or omit the key for no filter) — received ${describeValue(entry)}.`,
+      );
+    }
+    const trimmed = entry.trim();
+    if (trimmed) out[key] = trimmed;
+  }
+
+  if ("party_kind" in raw) {
+    const entry = raw.party_kind;
+    if (!Array.isArray(entry)) {
+      throw new Error(
+        `column_filters.party_kind expects an array of record kinds (${PARTY_KIND_ENUM_TEXT}); send [] or omit the key for no filter — received ${describeValue(entry)}.`,
+      );
+    }
+    const kinds = entry.map((item, index) => {
+      if (
+        typeof item !== "string" ||
+        !(PARTY_KINDS as readonly string[]).includes(item)
+      ) {
+        throw new Error(
+          `column_filters.party_kind entry ${index} is not a record kind — expected one of ${PARTY_KIND_ENUM_TEXT}, received ${JSON.stringify(item)}.`,
+        );
+      }
+      return item as PartyKind;
+    });
+    // A kind twice is the same filter, not a different one.
+    const deduped = Array.from(new Set(kinds));
+    if (deduped.length > 0) out.party_kind = deduped;
+  }
+
+  if ("do_not_contact" in raw) {
+    const entry = raw.do_not_contact;
+    // Booleans arrive parsed; tolerate the exact "true"/"false" strings a
+    // double-encoding model produces, and reject anything else rather than
+    // guessing at truthiness.
+    const next =
+      typeof entry === "boolean"
+        ? entry
+        : entry === "true"
+          ? true
+          : entry === "false"
+            ? false
+            : null;
+    if (next === null) {
+      throw new Error(
+        `column_filters.do_not_contact expects a boolean (true lists only records flagged do-not-contact; omit the key for no filter) — received ${describeValue(entry)}.`,
+      );
+    }
+    out.do_not_contact = next;
+  }
+
+  for (const key of ["updated_at", "created_at"] as const) {
+    if (!(key in raw)) continue;
+    const entry = raw[key];
+    if (
+      typeof entry !== "string" ||
+      !(DATE_BUCKET_VALUES as readonly string[]).includes(entry)
+    ) {
+      throw new Error(
+        `column_filters.${key} expects one relative bucket — ${DATE_BUCKET_ENUM_TEXT} — received ${JSON.stringify(entry)}. Omit the key for no filter; an absolute date is not supported here.`,
+      );
+    }
+    out[key] = entry as DateBucket;
+  }
+
+  return out;
+}
+
+/**
+ * `list_sort` — `{ key?, direction? }`, each half optional.
+ *
+ * `current` MUST be read at apply time, not at handler-resolve time:
+ * `applySurfaceWrite` captures the handler closure BEFORE awaiting the confirm
+ * dialog, so a partial write that folded in a value off the render closure
+ * would silently reinstate whatever the sort was when the agent asked, undoing
+ * a header click the user made while the dialog was open.
+ */
+function parseListSort(
+  value: unknown,
+  current: { sort: string; direction: PartySortDirection },
+): { sort: PartySortKey | string; direction: PartySortDirection } {
+  const raw = parseObjectArg("list_sort", value);
+
+  const unknown = Object.keys(raw).filter(
+    (key) => key !== "key" && key !== "direction",
+  );
+  if (unknown.length > 0) {
+    throw new Error(
+      `list_sort rejected: unrecognised key(s) ${unknown.join(", ")}. The sort was left unchanged. Send {"key": …} and/or {"direction": …}.`,
+    );
+  }
+  if (!("key" in raw) && !("direction" in raw)) {
+    throw new Error(
+      `list_sort needs at least one of key (${PARTY_SORT_KEY_ENUM_TEXT}) or direction (${PARTY_SORT_DIRECTION_ENUM_TEXT}) — received an empty object.`,
+    );
+  }
+
+  let sort = current.sort;
+  if ("key" in raw) {
+    const entry = raw.key;
+    if (
+      typeof entry !== "string" ||
+      !(PARTY_SORT_KEYS as readonly string[]).includes(entry)
+    ) {
+      throw new Error(
+        `list_sort.key expects one of ${PARTY_SORT_KEY_ENUM_TEXT} — received ${JSON.stringify(entry)}. These are database columns; Employer is a joined embed and cannot be sorted on.`,
+      );
+    }
+    sort = entry;
+  }
+
+  let direction = current.direction;
+  if ("direction" in raw) {
+    const entry = raw.direction;
+    if (
+      typeof entry !== "string" ||
+      !(PARTY_SORT_DIRECTIONS as readonly string[]).includes(entry)
+    ) {
+      throw new Error(
+        `list_sort.direction expects ${PARTY_SORT_DIRECTION_ENUM_TEXT} — received ${JSON.stringify(entry)}.`,
+      );
+    }
+    direction = entry as PartySortDirection;
+  }
+
+  return { sort, direction };
 }
 
 export interface CrmListPageProps {
@@ -272,6 +499,56 @@ export function CrmListPage({
     });
   };
 
+  // ── Write half of the CRM list surface (manifest `writeTargets`) ──────────
+  //
+  // Four targets, all `mode:"ui"` / `applyPolicy:"ask"`, registered here on
+  // the provider this component already mounts — it owns every piece of state
+  // they touch, so no `useSurfaceWriteHandlers` child seam is needed. Both
+  // mounts (the /crm route and CrmManagerWindow) run this same component, so
+  // both get the same handlers; `crm-manager.manifest.ts` re-exports the
+  // target array to match. See the WRITE DOCTRINE block in `crm.manifest.ts`.
+  //
+  // Each handler lands through the EXACT setter the human control calls:
+  // `list.setQuery` for search / kind facet / column filters (the same call
+  // `onTableState` makes from the toolbar and the column popovers) and
+  // `setPrefs` for the sort (the same call a column-header click makes). No
+  // parallel write path exists.
+
+  // `applySurfaceWrite` captures the handler closure BEFORE it awaits the
+  // confirm dialog, so anything a handler READS off this render is stale by
+  // the time Apply is pressed. Only `list_sort` reads current state (the
+  // other three replace wholesale) — it reads it through this ref.
+  const sortRef = useRef({ sort: prefs.sort, direction: prefs.direction });
+  sortRef.current = { sort: prefs.sort, direction: prefs.direction };
+
+  const buildCrmWriteHandlers = () => ({
+    search_query: (value: unknown) => {
+      if (typeof value !== "string") {
+        throw new Error(
+          `search_query expects a plain string, not JSON and not JSON-encoded (pass "" to clear the search) — received ${describeValue(value)}.`,
+        );
+      }
+      list.setQuery({ search: value });
+    },
+    party_kind_filter: (value: unknown) => {
+      if (
+        typeof value !== "string" ||
+        !(PARTY_KIND_FILTERS as readonly string[]).includes(value)
+      ) {
+        throw new Error(
+          `party_kind_filter expects exactly one of ${PARTY_KIND_FILTER_ENUM_TEXT} — received ${JSON.stringify(value)}. The facet was left unchanged.`,
+        );
+      }
+      list.setQuery({ kind: value as PartyKindFilter });
+    },
+    column_filters: (value: unknown) => {
+      list.setQuery({ filters: parseColumnFilters(value) });
+    },
+    list_sort: (value: unknown) => {
+      setPrefs(parseListSort(value, sortRef.current));
+    },
+  });
+
   const newButtons = (
     <div className="flex items-center gap-1.5">
       <Button
@@ -341,6 +618,7 @@ export function CrmListPage({
           load_error: list.error ?? undefined,
         })
       }
+      getWriteHandlers={buildCrmWriteHandlers}
     >
       <div className="flex h-full flex-col overflow-hidden">
         {/* Static interactive chrome must clear the glass header; only the list

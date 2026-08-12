@@ -20,6 +20,7 @@ export interface FaviconRouteEntry {
 
 export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/dashboard", favicon: { color: "#0ea5e9", letter: "H" } },
+  { href: "/work", favicon: { color: "#7c3aed", letter: "Aw" } },
   { href: "/agents", favicon: { color: "#f43f5e", letter: "G" } },
   { href: "/research", favicon: { color: "#7c3aed", letter: "R" } },
   { href: "/chat", favicon: { color: "#2563eb", letter: "C" } },

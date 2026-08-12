@@ -58,6 +58,17 @@ sections when next in here.
 
 ## Change Log
 
+- 2026-08-12 — `PDF_EXTRACTOR_SURFACE_NAME` is now exported from
+  `features/surfaces/manifests/pdf-extractor.manifest.ts` and imported by
+  `PdfStudioInspector` and `PdfExtractorWorkspace`, which each carried their
+  own re-typed `"matrx-user/pdf-extractor"` literal. `PdfStudioShell` already
+  read `pdfExtractorManifest.surfaceName`, so the studio's mount, its two
+  bound-agent panels and the manifest itself now share ONE spelling — the same
+  discipline `PDF_EXTRACTOR_WRITE_TARGETS` applies to the write-target names.
+  Also re-verified the surface's write half live (a real Badass Agent run
+  staged the extraction template and its output columns into the visible
+  editor; Error Inspector clean) — see the 2026-08-12 entry in
+  `features/surfaces/FEATURE.md`.
 - 2026-07-17 — Named and guaranteed the **Document Evidence System** activation
   path for surface runs: PDF Extractor now declares its processed-document
   evidence source in the manifest; the universal launcher injects the lazy

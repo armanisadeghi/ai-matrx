@@ -243,6 +243,16 @@ and the same block renders read-only in chat.
   hash/merge-joined. The view remains for bounded point reads. The Error
   Inspector and inline failure state were already correct and remain red/loud;
   no timeout, blind retry, downgrade, or payload special case was added.
+- 2026-08-11 — Write-target hardening (no target added or changed). Validation for
+  `research_input_keyword` and `library_search` moved out of the components into the pure
+  `keyword-research-write.ts`, which also now owns `MAX_STAGED_KEYWORD_LENGTH` so the
+  manifest description interpolates the bound it is enforced from instead of repeating
+  "200" as a literal. The staged-keyword throw now says "plain text, not JSON and not
+  JSON-encoded" — the inline-tool layer pre-parses JSON-looking arguments, and an agent
+  told only "expected a string" tends to retry by double-encoding. The launcher's
+  in-flight guard and `cluster_scope`'s append base now read through refs rather than the
+  render closure: the writeback seam resolves handlers before the user confirms the first
+  dialog, so an append could otherwise extend a cluster no longer on screen.
 - 2026-08-10 — **The workbench is agent-writable** (`matrx-user/keyword-research`,
   3 `ask`-policy targets — see `features/surfaces/FEATURE.md` for the full
   entry). `library_search` and `cluster_scope` land through the explorer's own
