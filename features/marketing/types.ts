@@ -42,6 +42,36 @@ export type CrawlSession = WebTables["crawl_session"]["Row"];
 export type PageSnapshot = WebTables["snapshot"]["Row"];
 export type CrawlUrl = WebTables["crawl_url"]["Row"];
 export type CrawlEvent = WebTables["crawl_event"]["Row"];
+/**
+ * A site's recurring-crawl schedule, as this app reads it.
+ *
+ * Fired by the server's every-minute `web_crawl_schedule_dispatch`; written
+ * ONLY through `data/crawl-schedule-service.ts`. The dispatcher's in-flight
+ * lease columns (`claim_token` / `claim_expires_at`) are deliberately NOT in
+ * this shape — nothing in the UI has a use for them, and leaving them out
+ * keeps them from drifting into a client write. Keep in lockstep with
+ * `CRAWL_SCHEDULE_COLUMNS`.
+ */
+export type CrawlSchedule = Pick<
+  WebTables["crawl_schedule"]["Row"],
+  | "id"
+  | "site_id"
+  | "organization_id"
+  | "name"
+  | "enabled"
+  | "cadence"
+  | "timezone"
+  | "next_run_at"
+  | "last_run_at"
+  | "last_session_id"
+  | "last_outcome"
+  | "last_error"
+  | "consecutive_failures"
+  | "preset_id"
+  | "version"
+  | "created_at"
+  | "updated_at"
+>;
 export type PageUpdate = WebTables["page"]["Update"];
 export type SiteScore = WebViews["v_site_score"]["Row"];
 export type PageScore = WebViews["v_page_score"]["Row"];
