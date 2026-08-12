@@ -560,6 +560,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_tools: Json | null
+          deleted_at: string | null
           description: string | null
           id: string
           is_active: boolean | null
@@ -594,6 +595,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_tools?: Json | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
@@ -628,6 +630,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_tools?: Json | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
@@ -676,6 +679,7 @@ export type Database = {
           breaking_count: number
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           detected_at: string
           dismissed_at: string | null
           dm_message_id: string | null
@@ -704,6 +708,7 @@ export type Database = {
           breaking_count?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           detected_at?: string
           dismissed_at?: string | null
           dm_message_id?: string | null
@@ -732,6 +737,7 @@ export type Database = {
           breaking_count?: number
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           detected_at?: string
           dismissed_at?: string | null
           dm_message_id?: string | null
@@ -1396,6 +1402,7 @@ export type Database = {
           code_path: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           first_seen_at: string
           id: string
           last_seen_at: string
@@ -1418,6 +1425,7 @@ export type Database = {
           code_path?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           first_seen_at?: string
           id?: string
           last_seen_at?: string
@@ -1440,6 +1448,7 @@ export type Database = {
           code_path?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           first_seen_at?: string
           id?: string
           last_seen_at?: string
@@ -3027,6 +3036,7 @@ export type Database = {
           description: string | null
           id: string
           layout_config: Json | null
+          metadata: Json
           name: string | null
           pinned_version: number | null
           status: string | null
@@ -3049,6 +3059,7 @@ export type Database = {
           description?: string | null
           id?: string
           layout_config?: Json | null
+          metadata?: Json
           name?: string | null
           pinned_version?: number | null
           status?: string | null
@@ -3071,6 +3082,7 @@ export type Database = {
           description?: string | null
           id?: string
           layout_config?: Json | null
+          metadata?: Json
           name?: string | null
           pinned_version?: number | null
           status?: string | null
@@ -3101,6 +3113,7 @@ export type Database = {
           execution_id: string | null
           expected_variables: Json | null
           id: string
+          metadata: Json
           resolution_notes: string | null
           resolved: boolean | null
           resolved_at: string | null
@@ -3117,6 +3130,7 @@ export type Database = {
           execution_id?: string | null
           expected_variables?: Json | null
           id?: string
+          metadata?: Json
           resolution_notes?: string | null
           resolved?: boolean | null
           resolved_at?: string | null
@@ -3133,6 +3147,7 @@ export type Database = {
           execution_id?: string | null
           expected_variables?: Json | null
           id?: string
+          metadata?: Json
           resolution_notes?: string | null
           resolved?: boolean | null
           resolved_at?: string | null
@@ -3243,6 +3258,7 @@ export type Database = {
           ip_address: unknown
           is_blocked: boolean | null
           last_execution_at: string
+          metadata: Json
           updated_at: string
           user_id: string | null
           window_start_at: string
@@ -3259,6 +3275,7 @@ export type Database = {
           ip_address?: unknown
           is_blocked?: boolean | null
           last_execution_at?: string
+          metadata?: Json
           updated_at?: string
           user_id?: string | null
           window_start_at?: string
@@ -3275,6 +3292,7 @@ export type Database = {
           ip_address?: unknown
           is_blocked?: boolean | null
           last_execution_at?: string
+          metadata?: Json
           updated_at?: string
           user_id?: string | null
           window_start_at?: string
@@ -5236,6 +5254,7 @@ export type Database = {
           domains: string[] | null
           estimated_minutes: number | null
           id: string
+          metadata: Json
           organization_id: string
           project_id: string | null
           reasoning: string | null
@@ -5254,6 +5273,7 @@ export type Database = {
           domains?: string[] | null
           estimated_minutes?: number | null
           id?: string
+          metadata?: Json
           organization_id: string
           project_id?: string | null
           reasoning?: string | null
@@ -5272,6 +5292,7 @@ export type Database = {
           domains?: string[] | null
           estimated_minutes?: number | null
           id?: string
+          metadata?: Json
           organization_id?: string
           project_id?: string | null
           reasoning?: string | null
@@ -5373,6 +5394,7 @@ export type Database = {
           error: Json | null
           finished_at: string | null
           id: string
+          metadata: Json
           output: Json | null
           run_id: string
           stage_key: string
@@ -5386,6 +5408,7 @@ export type Database = {
           error?: Json | null
           finished_at?: string | null
           id?: string
+          metadata?: Json
           output?: Json | null
           run_id: string
           stage_key: string
@@ -5399,6 +5422,7 @@ export type Database = {
           error?: Json | null
           finished_at?: string | null
           id?: string
+          metadata?: Json
           output?: Json | null
           run_id?: string
           stage_key?: string
@@ -5422,6 +5446,7 @@ export type Database = {
           created_at: string
           created_by: Database["public"]["Enums"]["cx_agent_task_creator"]
           id: string
+          metadata: Json
           note: string | null
           plan_id: string | null
           position: number
@@ -5435,6 +5460,7 @@ export type Database = {
           created_at?: string
           created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
           id?: string
+          metadata?: Json
           note?: string | null
           plan_id?: string | null
           position?: number
@@ -5448,6 +5474,7 @@ export type Database = {
           created_at?: string
           created_by?: Database["public"]["Enums"]["cx_agent_task_creator"]
           id?: string
+          metadata?: Json
           note?: string | null
           plan_id?: string | null
           position?: number
@@ -5598,6 +5625,7 @@ export type Database = {
           id: string
           message_file_id: string
           message_id: string
+          metadata: Json
           reject_reason: string | null
           rejected_at: string | null
           replace_text: string
@@ -5615,6 +5643,7 @@ export type Database = {
           id?: string
           message_file_id: string
           message_id: string
+          metadata?: Json
           reject_reason?: string | null
           rejected_at?: string | null
           replace_text: string
@@ -5632,6 +5661,7 @@ export type Database = {
           id?: string
           message_file_id?: string
           message_id?: string
+          metadata?: Json
           reject_reason?: string | null
           rejected_at?: string | null
           replace_text?: string
@@ -5688,6 +5718,7 @@ export type Database = {
           id: string
           library_file_id: string | null
           message_id: string
+          metadata: Json
           organization_id: string
           reverted_at: string | null
           status: Database["public"]["Enums"]["code_message_file_status"]
@@ -5709,6 +5740,7 @@ export type Database = {
           id?: string
           library_file_id?: string | null
           message_id: string
+          metadata?: Json
           organization_id: string
           reverted_at?: string | null
           status?: Database["public"]["Enums"]["code_message_file_status"]
@@ -5730,6 +5762,7 @@ export type Database = {
           id?: string
           library_file_id?: string | null
           message_id?: string
+          metadata?: Json
           organization_id?: string
           reverted_at?: string | null
           status?: Database["public"]["Enums"]["code_message_file_status"]
@@ -5872,6 +5905,7 @@ export type Database = {
           id: string
           ingest_order: number
           kind: string
+          metadata: Json
           occurred_at: string | null
           organization_id: string
           payload: Json
@@ -5897,6 +5931,7 @@ export type Database = {
           id?: string
           ingest_order?: never
           kind: string
+          metadata?: Json
           occurred_at?: string | null
           organization_id: string
           payload: Json
@@ -5922,6 +5957,7 @@ export type Database = {
           id?: string
           ingest_order?: never
           kind?: string
+          metadata?: Json
           occurred_at?: string | null
           organization_id?: string
           payload?: Json
@@ -6772,6 +6808,7 @@ export type Database = {
           cx_request_id: string | null
           id: string
           iteration: number
+          metadata: Json
           model: string | null
           provider: string
           request_payload: Json
@@ -6788,6 +6825,7 @@ export type Database = {
           cx_request_id?: string | null
           id?: string
           iteration?: number
+          metadata?: Json
           model?: string | null
           provider: string
           request_payload: Json
@@ -6804,6 +6842,7 @@ export type Database = {
           cx_request_id?: string | null
           id?: string
           iteration?: number
+          metadata?: Json
           model?: string | null
           provider?: string
           request_payload?: Json
@@ -7247,6 +7286,7 @@ export type Database = {
           done_at: string | null
           due: string | null
           id: string
+          metadata: Json
           organization_id: string
           title: string
           updated_at: string
@@ -7264,6 +7304,7 @@ export type Database = {
           done_at?: string | null
           due?: string | null
           id?: string
+          metadata?: Json
           organization_id: string
           title: string
           updated_at?: string
@@ -7281,6 +7322,7 @@ export type Database = {
           done_at?: string | null
           due?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string
           title?: string
           updated_at?: string
@@ -7871,6 +7913,7 @@ export type Database = {
           media_thumbnail_url: string | null
           media_url: string | null
           message_type: string | null
+          metadata: Json
           organization_id: string
           reply_to_id: string | null
           sender_id: string
@@ -7894,6 +7937,7 @@ export type Database = {
           media_thumbnail_url?: string | null
           media_url?: string | null
           message_type?: string | null
+          metadata?: Json
           organization_id: string
           reply_to_id?: string | null
           sender_id: string
@@ -7917,6 +7961,7 @@ export type Database = {
           media_thumbnail_url?: string | null
           media_url?: string | null
           message_type?: string | null
+          metadata?: Json
           organization_id?: string
           reply_to_id?: string | null
           sender_id?: string
@@ -11413,6 +11458,7 @@ export type Database = {
           kind: string
           latest_run_id: string | null
           max_concurrent: number
+          metadata: Json
           model_overrides: Json | null
           name: string
           organization_id: string
@@ -11445,6 +11491,7 @@ export type Database = {
           kind?: string
           latest_run_id?: string | null
           max_concurrent?: number
+          metadata?: Json
           model_overrides?: Json | null
           name: string
           organization_id: string
@@ -11477,6 +11524,7 @@ export type Database = {
           kind?: string
           latest_run_id?: string | null
           max_concurrent?: number
+          metadata?: Json
           model_overrides?: Json | null
           name?: string
           organization_id?: string
@@ -12535,6 +12583,7 @@ export type Database = {
           id: string
           is_deleted: boolean | null
           lesson: string | null
+          metadata: Json
           organization_id: string | null
           personal_notes: string | null
           project_id: string | null
@@ -12558,6 +12607,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           lesson?: string | null
+          metadata?: Json
           organization_id?: string | null
           personal_notes?: string | null
           project_id?: string | null
@@ -12581,6 +12631,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean | null
           lesson?: string | null
+          metadata?: Json
           organization_id?: string | null
           personal_notes?: string | null
           project_id?: string | null
@@ -12731,6 +12782,7 @@ export type Database = {
           created_by: string | null
           difficulty: string | null
           lesson: string | null
+          metadata: Json
           name: string
           organization_id: string | null
           project_id: string | null
@@ -12749,6 +12801,7 @@ export type Database = {
           created_by?: string | null
           difficulty?: string | null
           lesson?: string | null
+          metadata?: Json
           name: string
           organization_id?: string | null
           project_id?: string | null
@@ -12767,6 +12820,7 @@ export type Database = {
           created_by?: string | null
           difficulty?: string | null
           lesson?: string | null
+          metadata?: Json
           name?: string
           organization_id?: string | null
           project_id?: string | null
@@ -14909,6 +14963,7 @@ export type Database = {
           is_user_named: boolean
           label: string
           label_category: string
+          metadata: Json
           normalized_value: Json | null
           owner_id: string
           source_annotation_id: string | null
@@ -14922,6 +14977,7 @@ export type Database = {
           is_user_named?: boolean
           label: string
           label_category?: string
+          metadata?: Json
           normalized_value?: Json | null
           owner_id: string
           source_annotation_id?: string | null
@@ -14935,6 +14991,7 @@ export type Database = {
           is_user_named?: boolean
           label?: string
           label_category?: string
+          metadata?: Json
           normalized_value?: Json | null
           owner_id?: string
           source_annotation_id?: string | null
@@ -15024,6 +15081,7 @@ export type Database = {
           created_by: string | null
           file_id: string
           id: string
+          metadata: Json
           organization_id: string
           size_bytes: number | null
           storage_uri: string
@@ -15036,6 +15094,7 @@ export type Database = {
           created_by?: string | null
           file_id: string
           id?: string
+          metadata?: Json
           organization_id: string
           size_bytes?: number | null
           storage_uri: string
@@ -15048,6 +15107,7 @@ export type Database = {
           created_by?: string | null
           file_id?: string
           id?: string
+          metadata?: Json
           organization_id?: string
           size_bytes?: number | null
           storage_uri?: string
@@ -15270,6 +15330,7 @@ export type Database = {
           created_by: string | null
           file_id: string
           id: string
+          metadata: Json
           notes: string | null
           override_kind: string
           override_value: Json
@@ -15282,6 +15343,7 @@ export type Database = {
           created_by?: string | null
           file_id: string
           id?: string
+          metadata?: Json
           notes?: string | null
           override_kind: string
           override_value: Json
@@ -15294,6 +15356,7 @@ export type Database = {
           created_by?: string | null
           file_id?: string
           id?: string
+          metadata?: Json
           notes?: string | null
           override_kind?: string
           override_value?: Json
@@ -15332,6 +15395,7 @@ export type Database = {
           label: string
           label_category: string
           last_edited_by: string | null
+          metadata: Json
           normalized_value: Json | null
           notes: string | null
           owner_id: string
@@ -15357,6 +15421,7 @@ export type Database = {
           label: string
           label_category?: string
           last_edited_by?: string | null
+          metadata?: Json
           normalized_value?: Json | null
           notes?: string | null
           owner_id: string
@@ -15382,6 +15447,7 @@ export type Database = {
           label?: string
           label_category?: string
           last_edited_by?: string | null
+          metadata?: Json
           normalized_value?: Json | null
           notes?: string | null
           owner_id?: string
@@ -23646,6 +23712,7 @@ export type Database = {
           event_type: string
           id: string
           loop_run_id: string
+          metadata: Json
           payload: Json
           seq: number
           stage: string | null
@@ -23657,6 +23724,7 @@ export type Database = {
           event_type: string
           id?: string
           loop_run_id: string
+          metadata?: Json
           payload?: Json
           seq?: number
           stage?: string | null
@@ -23668,6 +23736,7 @@ export type Database = {
           event_type?: string
           id?: string
           loop_run_id?: string
+          metadata?: Json
           payload?: Json
           seq?: number
           stage?: string | null
@@ -23789,6 +23858,7 @@ export type Database = {
           escalate_to_pipe: string | null
           id: string
           loop_run_id: string
+          metadata: Json
           outcome: Json | null
           pipe: string | null
           pipe_requested: string
@@ -23811,6 +23881,7 @@ export type Database = {
           escalate_to_pipe?: string | null
           id?: string
           loop_run_id: string
+          metadata?: Json
           outcome?: Json | null
           pipe?: string | null
           pipe_requested: string
@@ -23833,6 +23904,7 @@ export type Database = {
           escalate_to_pipe?: string | null
           id?: string
           loop_run_id?: string
+          metadata?: Json
           outcome?: Json | null
           pipe?: string | null
           pipe_requested?: string
@@ -25980,6 +26052,7 @@ export type Database = {
           is_system: boolean
           logo_file_id: string | null
           logo_url: string | null
+          metadata: Json
           name: string
           settings: Json | null
           slug: string
@@ -25996,6 +26069,7 @@ export type Database = {
           is_system?: boolean
           logo_file_id?: string | null
           logo_url?: string | null
+          metadata?: Json
           name: string
           settings?: Json | null
           slug: string
@@ -26012,6 +26086,7 @@ export type Database = {
           is_system?: boolean
           logo_file_id?: string | null
           logo_url?: string | null
+          metadata?: Json
           name?: string
           settings?: Json | null
           slug?: string
@@ -26119,6 +26194,7 @@ export type Database = {
           error_code: string | null
           error_message: string | null
           id: string
+          metadata: Json
           organization_id: string
           resolved_at: string | null
           resolved_org_id: string | null
@@ -26132,6 +26208,7 @@ export type Database = {
           error_code?: string | null
           error_message?: string | null
           id?: string
+          metadata?: Json
           organization_id: string
           resolved_at?: string | null
           resolved_org_id?: string | null
@@ -26145,6 +26222,7 @@ export type Database = {
           error_code?: string | null
           error_message?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string
           resolved_at?: string | null
           resolved_org_id?: string | null
@@ -27284,6 +27362,7 @@ export type Database = {
           finger_type: Database["legal"]["Enums"]["wc_finger_type"] | null
           id: string
           impairment_number: string | null
+          metadata: Json
           name: string | null
           search_aliases: string[]
         }
@@ -27293,6 +27372,7 @@ export type Database = {
           finger_type?: Database["legal"]["Enums"]["wc_finger_type"] | null
           id?: string
           impairment_number?: string | null
+          metadata?: Json
           name?: string | null
           search_aliases?: string[]
         }
@@ -27302,6 +27382,7 @@ export type Database = {
           finger_type?: Database["legal"]["Enums"]["wc_finger_type"] | null
           id?: string
           impairment_number?: string | null
+          metadata?: Json
           name?: string | null
           search_aliases?: string[]
         }
@@ -27317,6 +27398,7 @@ export type Database = {
           impairment_definition_id: string | null
           industrial: number | null
           le: number | null
+          metadata: Json
           pain: number | null
           rating: number | null
           report_id: string | null
@@ -27335,6 +27417,7 @@ export type Database = {
           impairment_definition_id?: string | null
           industrial?: number | null
           le?: number | null
+          metadata?: Json
           pain?: number | null
           rating?: number | null
           report_id?: string | null
@@ -27353,6 +27436,7 @@ export type Database = {
           impairment_definition_id?: string | null
           industrial?: number | null
           le?: number | null
+          metadata?: Json
           pain?: number | null
           rating?: number | null
           report_id?: string | null
@@ -27392,6 +27476,7 @@ export type Database = {
           id: string
           left_side_total: number | null
           life_pension_weekly: number | null
+          metadata: Json
           pd_adjustment_pct: number | null
           pd_adjustment_reason: string | null
           right_side_total: number | null
@@ -27411,6 +27496,7 @@ export type Database = {
           id?: string
           left_side_total?: number | null
           life_pension_weekly?: number | null
+          metadata?: Json
           pd_adjustment_pct?: number | null
           pd_adjustment_reason?: string | null
           right_side_total?: number | null
@@ -27430,6 +27516,7 @@ export type Database = {
           id?: string
           left_side_total?: number | null
           life_pension_weekly?: number | null
+          metadata?: Json
           pd_adjustment_pct?: number | null
           pd_adjustment_reason?: string | null
           right_side_total?: number | null
@@ -27635,6 +27722,7 @@ export type Database = {
           created_by: string | null
           file_id: string | null
           id: string
+          metadata: Json
           organization_id: string
           parent_file_id: string | null
           reason: string
@@ -27652,6 +27740,7 @@ export type Database = {
           created_by?: string | null
           file_id?: string | null
           id?: string
+          metadata?: Json
           organization_id: string
           parent_file_id?: string | null
           reason: string
@@ -27669,6 +27758,7 @@ export type Database = {
           created_by?: string | null
           file_id?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string
           parent_file_id?: string | null
           reason?: string
@@ -27730,6 +27820,7 @@ export type Database = {
           file_id: string
           id: string
           location: Json
+          metadata: Json
           mode: string
           nonce: string | null
           owner_id: string
@@ -27751,6 +27842,7 @@ export type Database = {
           file_id: string
           id?: string
           location?: Json
+          metadata?: Json
           mode: string
           nonce?: string | null
           owner_id: string
@@ -27772,6 +27864,7 @@ export type Database = {
           file_id?: string
           id?: string
           location?: Json
+          metadata?: Json
           mode?: string
           nonce?: string | null
           owner_id?: string
@@ -28356,6 +28449,7 @@ export type Database = {
           first_seen_at: string | null
           id: string
           is_starred: boolean
+          metadata: Json
           occurrences: number
           organization_id: string | null
           priority: number
@@ -28393,6 +28487,7 @@ export type Database = {
           first_seen_at?: string | null
           id?: string
           is_starred?: boolean
+          metadata?: Json
           occurrences?: number
           organization_id?: string | null
           priority?: number
@@ -28430,6 +28525,7 @@ export type Database = {
           first_seen_at?: string | null
           id?: string
           is_starred?: boolean
+          metadata?: Json
           occurrences?: number
           organization_id?: string | null
           priority?: number
@@ -28830,6 +28926,8 @@ export type Database = {
           table_ref: unknown
           title_column: string | null
           token: string
+          version_store: string
+          version_store_ref: unknown
         }
         Insert: {
           agent_writable?: boolean
@@ -28861,6 +28959,8 @@ export type Database = {
           table_ref?: unknown
           title_column?: string | null
           token: string
+          version_store?: string
+          version_store_ref?: unknown
         }
         Update: {
           agent_writable?: boolean
@@ -28892,6 +28992,8 @@ export type Database = {
           table_ref?: unknown
           title_column?: string | null
           token?: string
+          version_store?: string
+          version_store_ref?: unknown
         }
         Relationships: [
           {
@@ -28910,6 +29012,7 @@ export type Database = {
           deleted_at: string | null
           description: string
           id: string
+          metadata: Json
           name: string
           organization_id: string
           principles: Json
@@ -28928,6 +29031,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string
           id?: string
+          metadata?: Json
           name: string
           organization_id: string
           principles?: Json
@@ -28946,6 +29050,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string
           id?: string
+          metadata?: Json
           name?: string
           organization_id?: string
           principles?: Json
@@ -30186,6 +30291,7 @@ export type Database = {
           id: string
           is_active: boolean
           match_rules: Json
+          metadata: Json
           name: string
           owner_account_id: string | null
           owner_team_id: string | null
@@ -30204,6 +30310,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           match_rules?: Json
+          metadata?: Json
           name: string
           owner_account_id?: string | null
           owner_team_id?: string | null
@@ -30222,6 +30329,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           match_rules?: Json
+          metadata?: Json
           name?: string
           owner_account_id?: string | null
           owner_team_id?: string | null
@@ -32544,6 +32652,7 @@ export type Database = {
           id: string
           is_retryable: boolean
           issue_class_id: string
+          metadata: Json
           model: string | null
           occurred_at: string
           organization_id: string
@@ -32564,6 +32673,7 @@ export type Database = {
           id?: string
           is_retryable?: boolean
           issue_class_id: string
+          metadata?: Json
           model?: string | null
           occurred_at?: string
           organization_id: string
@@ -32584,6 +32694,7 @@ export type Database = {
           id?: string
           is_retryable?: boolean
           issue_class_id?: string
+          metadata?: Json
           model?: string | null
           occurred_at?: string
           organization_id?: string
@@ -32874,6 +32985,7 @@ export type Database = {
           error_type: string | null
           id: string
           kind: string
+          metadata: Json
           occurred_at: string
           organization_id: string | null
           payload: Json | null
@@ -32896,6 +33008,7 @@ export type Database = {
           error_type?: string | null
           id?: string
           kind: string
+          metadata?: Json
           occurred_at?: string
           organization_id?: string | null
           payload?: Json | null
@@ -32918,6 +33031,7 @@ export type Database = {
           error_type?: string | null
           id?: string
           kind?: string
+          metadata?: Json
           occurred_at?: string
           organization_id?: string | null
           payload?: Json | null
@@ -32941,6 +33055,7 @@ export type Database = {
           error_text: string
           failed_at: string
           id: string
+          metadata: Json
           op_id: string
           op_type: string
           organization_id: string | null
@@ -32963,6 +33078,7 @@ export type Database = {
           error_text: string
           failed_at?: string
           id?: string
+          metadata?: Json
           op_id: string
           op_type: string
           organization_id?: string | null
@@ -32985,6 +33101,7 @@ export type Database = {
           error_text?: string
           failed_at?: string
           id?: string
+          metadata?: Json
           op_id?: string
           op_type?: string
           organization_id?: string | null
@@ -39247,6 +39364,7 @@ export type Database = {
         Returns: {
           access_level: string
           created_at: string
+          created_by: string
           description: string
           duration_seconds: number
           folder_name: string
@@ -39265,7 +39383,6 @@ export type Database = {
           total_count: number
           transcript_id: string
           updated_at: string
-          user_id: string
           visibility: string
           word_count: number
         }[]
@@ -40409,6 +40526,7 @@ export type Database = {
           id: string
           is_active: boolean
           kind: string
+          metadata: Json
           name: string
           organization_id: string | null
           settings: Json
@@ -40424,6 +40542,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           kind?: string
+          metadata?: Json
           name: string
           organization_id?: string | null
           settings?: Json
@@ -40439,6 +40558,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           kind?: string
+          metadata?: Json
           name?: string
           organization_id?: string | null
           settings?: Json
@@ -42181,6 +42301,7 @@ export type Database = {
           id: string
           instructions: string | null
           keyword_id: string | null
+          metadata: Json
           model_id: string | null
           organization_id: string
           result: string | null
@@ -42203,6 +42324,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           keyword_id?: string | null
+          metadata?: Json
           model_id?: string | null
           organization_id: string
           result?: string | null
@@ -42225,6 +42347,7 @@ export type Database = {
           id?: string
           instructions?: string | null
           keyword_id?: string | null
+          metadata?: Json
           model_id?: string | null
           organization_id?: string
           result?: string | null
@@ -42292,6 +42415,7 @@ export type Database = {
           is_good_scrape: boolean | null
           linked_extraction_id: string | null
           linked_transcript_id: string | null
+          metadata: Json
           modified_at: string | null
           organization_id: string
           original_content: string | null
@@ -42320,6 +42444,7 @@ export type Database = {
           is_good_scrape?: boolean | null
           linked_extraction_id?: string | null
           linked_transcript_id?: string | null
+          metadata?: Json
           modified_at?: string | null
           organization_id: string
           original_content?: string | null
@@ -42348,6 +42473,7 @@ export type Database = {
           is_good_scrape?: boolean | null
           linked_extraction_id?: string | null
           linked_transcript_id?: string | null
+          metadata?: Json
           modified_at?: string | null
           organization_id?: string
           original_content?: string | null
@@ -42397,6 +42523,7 @@ export type Database = {
           entity_type: string
           id: string
           is_system: boolean
+          metadata: Json
           name: string
           organization_id: string | null
           selectors: Json
@@ -42418,6 +42545,7 @@ export type Database = {
           entity_type?: string
           id?: string
           is_system?: boolean
+          metadata?: Json
           name: string
           organization_id?: string | null
           selectors?: Json
@@ -42439,6 +42567,7 @@ export type Database = {
           entity_type?: string
           id?: string
           is_system?: boolean
+          metadata?: Json
           name?: string
           organization_id?: string | null
           selectors?: Json
@@ -42461,6 +42590,7 @@ export type Database = {
           error: string | null
           id: string
           is_current: boolean
+          metadata: Json
           model_id: string | null
           organization_id: string
           source_consolidation_ids: Json | null
@@ -42482,6 +42612,7 @@ export type Database = {
           error?: string | null
           id?: string
           is_current?: boolean
+          metadata?: Json
           model_id?: string | null
           organization_id: string
           source_consolidation_ids?: Json | null
@@ -42503,6 +42634,7 @@ export type Database = {
           error?: string | null
           id?: string
           is_current?: boolean
+          metadata?: Json
           model_id?: string | null
           organization_id?: string
           source_consolidation_ids?: Json | null
@@ -42533,6 +42665,7 @@ export type Database = {
           is_stale: boolean | null
           keyword: string
           last_searched_at: string | null
+          metadata: Json
           organization_id: string
           position: number
           raw_api_response: Json | null
@@ -42552,6 +42685,7 @@ export type Database = {
           is_stale?: boolean | null
           keyword: string
           last_searched_at?: string | null
+          metadata?: Json
           organization_id: string
           position?: number
           raw_api_response?: Json | null
@@ -42571,6 +42705,7 @@ export type Database = {
           is_stale?: boolean | null
           keyword?: string
           last_searched_at?: string | null
+          metadata?: Json
           organization_id?: string
           position?: number
           raw_api_response?: Json | null
@@ -42697,6 +42832,7 @@ export type Database = {
           last_seen_at: string | null
           last_server_attempt_at: string | null
           last_server_failure_reason: string | null
+          metadata: Json
           organization_id: string
           origin: string
           page_age: string | null
@@ -42746,6 +42882,7 @@ export type Database = {
           last_seen_at?: string | null
           last_server_attempt_at?: string | null
           last_server_failure_reason?: string | null
+          metadata?: Json
           organization_id: string
           origin?: string
           page_age?: string | null
@@ -42795,6 +42932,7 @@ export type Database = {
           last_seen_at?: string | null
           last_server_attempt_at?: string | null
           last_server_failure_reason?: string | null
+          metadata?: Json
           organization_id?: string
           origin?: string
           page_age?: string | null
@@ -42849,6 +42987,7 @@ export type Database = {
           is_current: boolean | null
           iteration_mode: string | null
           keyword_id: string | null
+          metadata: Json
           model_id: string | null
           organization_id: string
           previous_synthesis_id: string | null
@@ -42876,6 +43015,7 @@ export type Database = {
           is_current?: boolean | null
           iteration_mode?: string | null
           keyword_id?: string | null
+          metadata?: Json
           model_id?: string | null
           organization_id: string
           previous_synthesis_id?: string | null
@@ -42903,6 +43043,7 @@ export type Database = {
           is_current?: boolean | null
           iteration_mode?: string | null
           keyword_id?: string | null
+          metadata?: Json
           model_id?: string | null
           organization_id?: string
           previous_synthesis_id?: string | null
@@ -42954,6 +43095,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          metadata: Json
           name: string
           organization_id: string
           sort_order: number | null
@@ -42967,6 +43109,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          metadata?: Json
           name: string
           organization_id: string
           sort_order?: number | null
@@ -42980,6 +43123,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          metadata?: Json
           name?: string
           organization_id?: string
           sort_order?: number | null
@@ -43559,6 +43703,7 @@ export type Database = {
           lease_holder: string | null
           link_id: string | null
           link_kind: string | null
+          metadata: Json
           meters: Json
           parent_execution_id: string | null
           request_id: string
@@ -43581,6 +43726,7 @@ export type Database = {
           lease_holder?: string | null
           link_id?: string | null
           link_kind?: string | null
+          metadata?: Json
           meters?: Json
           parent_execution_id?: string | null
           request_id: string
@@ -43603,6 +43749,7 @@ export type Database = {
           lease_holder?: string | null
           link_id?: string | null
           link_kind?: string | null
+          metadata?: Json
           meters?: Json
           parent_execution_id?: string | null
           request_id?: string
@@ -43642,18 +43789,21 @@ export type Database = {
           created_at: string
           execution_id: string
           id: string
+          metadata: Json
           state: Json
         }
         Insert: {
           created_at?: string
           execution_id: string
           id?: string
+          metadata?: Json
           state: Json
         }
         Update: {
           created_at?: string
           execution_id?: string
           id?: string
+          metadata?: Json
           state?: Json
         }
         Relationships: [
@@ -43717,6 +43867,7 @@ export type Database = {
           execution_id: string
           id: string
           kind: string
+          metadata: Json
           root_execution_id: string | null
           seq: number | null
         }
@@ -43726,6 +43877,7 @@ export type Database = {
           execution_id: string
           id?: string
           kind: string
+          metadata?: Json
           root_execution_id?: string | null
           seq?: number | null
         }
@@ -43735,6 +43887,7 @@ export type Database = {
           execution_id?: string
           id?: string
           kind?: string
+          metadata?: Json
           root_execution_id?: string | null
           seq?: number | null
         }
@@ -43761,6 +43914,7 @@ export type Database = {
           execution_id: string
           id: string
           label: string | null
+          metadata: Json
           payload: Json | null
           quantities: Json
         }
@@ -43769,6 +43923,7 @@ export type Database = {
           execution_id: string
           id?: string
           label?: string | null
+          metadata?: Json
           payload?: Json | null
           quantities?: Json
         }
@@ -43777,6 +43932,7 @@ export type Database = {
           execution_id?: string
           id?: string
           label?: string | null
+          metadata?: Json
           payload?: Json | null
           quantities?: Json
         }
@@ -43797,6 +43953,7 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           id: string
+          metadata: Json
           surface: string
           updated_at: string
           version: number
@@ -43807,6 +43964,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           surface: string
           updated_at?: string
           version?: number
@@ -43817,6 +43975,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           surface?: string
           updated_at?: string
           version?: number
@@ -43830,6 +43989,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           idempotency_key: string | null
+          metadata: Json
           organization_id: string
           origin_id: string | null
           updated_at: string
@@ -43843,6 +44003,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           idempotency_key?: string | null
+          metadata?: Json
           organization_id: string
           origin_id?: string | null
           updated_at?: string
@@ -43856,6 +44017,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           idempotency_key?: string | null
+          metadata?: Json
           organization_id?: string
           origin_id?: string | null
           updated_at?: string
@@ -43886,6 +44048,7 @@ export type Database = {
           id: string
           lease_expires_at: string | null
           max_attempts: number
+          metadata: Json
           not_before: string | null
           payload: Json | null
           raw_key: string | null
@@ -43906,6 +44069,7 @@ export type Database = {
           id?: string
           lease_expires_at?: string | null
           max_attempts?: number
+          metadata?: Json
           not_before?: string | null
           payload?: Json | null
           raw_key?: string | null
@@ -43926,6 +44090,7 @@ export type Database = {
           id?: string
           lease_expires_at?: string | null
           max_attempts?: number
+          metadata?: Json
           not_before?: string | null
           payload?: Json | null
           raw_key?: string | null
@@ -43980,6 +44145,7 @@ export type Database = {
           id: string
           max_concurrent: number
           max_runtime_seconds: number
+          metadata: Json
           persistent_conversation_id: string | null
           prompt: string
           variables: Json
@@ -43990,6 +44156,7 @@ export type Database = {
           id: string
           max_concurrent?: number
           max_runtime_seconds?: number
+          metadata?: Json
           persistent_conversation_id?: string | null
           prompt: string
           variables?: Json
@@ -44000,6 +44167,7 @@ export type Database = {
           id?: string
           max_concurrent?: number
           max_runtime_seconds?: number
+          metadata?: Json
           persistent_conversation_id?: string | null
           prompt?: string
           variables?: Json
@@ -44641,6 +44809,7 @@ export type Database = {
           endorsement_signal: string | null
           evidence_quality: number | null
           id: string
+          metadata: Json
           normalized_url: string
           ordinal: number
           organization_id: string
@@ -44664,6 +44833,7 @@ export type Database = {
           endorsement_signal?: string | null
           evidence_quality?: number | null
           id?: string
+          metadata?: Json
           normalized_url: string
           ordinal: number
           organization_id: string
@@ -44687,6 +44857,7 @@ export type Database = {
           endorsement_signal?: string | null
           evidence_quality?: number | null
           id?: string
+          metadata?: Json
           normalized_url?: string
           ordinal?: number
           organization_id?: string
@@ -44726,6 +44897,7 @@ export type Database = {
           id: string
           influence_role: string
           influential_unverified: boolean
+          metadata: Json
           organization_id: string
           response_id: string
           significance: number
@@ -44744,6 +44916,7 @@ export type Database = {
           id?: string
           influence_role: string
           influential_unverified?: boolean
+          metadata?: Json
           organization_id: string
           response_id: string
           significance: number
@@ -44762,6 +44935,7 @@ export type Database = {
           id?: string
           influence_role?: string
           influential_unverified?: boolean
+          metadata?: Json
           organization_id?: string
           response_id?: string
           significance?: number
@@ -44797,6 +44971,7 @@ export type Database = {
           error: Json | null
           id: string
           keyword_id: string
+          metadata: Json
           model_name: string | null
           observed_at: string
           organization_id: string
@@ -44828,6 +45003,7 @@ export type Database = {
           error?: Json | null
           id?: string
           keyword_id: string
+          metadata?: Json
           model_name?: string | null
           observed_at: string
           organization_id: string
@@ -44859,6 +45035,7 @@ export type Database = {
           error?: Json | null
           id?: string
           keyword_id?: string
+          metadata?: Json
           model_name?: string | null
           observed_at?: string
           organization_id?: string
@@ -44906,6 +45083,7 @@ export type Database = {
           evidence_text: string
           id: string
           influence: number
+          metadata: Json
           ordinal: number
           organization_id: string
           response_id: string
@@ -44920,6 +45098,7 @@ export type Database = {
           evidence_text: string
           id?: string
           influence: number
+          metadata?: Json
           ordinal: number
           organization_id: string
           response_id: string
@@ -44934,6 +45113,7 @@ export type Database = {
           evidence_text?: string
           id?: string
           influence?: number
+          metadata?: Json
           ordinal?: number
           organization_id?: string
           response_id?: string
@@ -44986,6 +45166,7 @@ export type Database = {
           last_seen_at: string | null
           link_type: string | null
           lost_at: string | null
+          metadata: Json
           next_enrichment_at: string | null
           organization_id: string
           page_id: string | null
@@ -45035,6 +45216,7 @@ export type Database = {
           last_seen_at?: string | null
           link_type?: string | null
           lost_at?: string | null
+          metadata?: Json
           next_enrichment_at?: string | null
           organization_id: string
           page_id?: string | null
@@ -45084,6 +45266,7 @@ export type Database = {
           last_seen_at?: string | null
           link_type?: string | null
           lost_at?: string | null
+          metadata?: Json
           next_enrichment_at?: string | null
           organization_id?: string
           page_id?: string | null
@@ -45123,6 +45306,7 @@ export type Database = {
           id: string
           label: string | null
           last_seen_at: string | null
+          metadata: Json
           organization_id: string
           provider: string
           rank_score: number | null
@@ -45146,6 +45330,7 @@ export type Database = {
           id?: string
           label?: string | null
           last_seen_at?: string | null
+          metadata?: Json
           organization_id: string
           provider: string
           rank_score?: number | null
@@ -45169,6 +45354,7 @@ export type Database = {
           id?: string
           label?: string | null
           last_seen_at?: string | null
+          metadata?: Json
           organization_id?: string
           provider?: string
           rank_score?: number | null
@@ -45219,6 +45405,7 @@ export type Database = {
           last_seen_at: string | null
           link_type: string | null
           lost_at: string | null
+          metadata: Json
           organization_id: string
           page_id: string | null
           provider: string
@@ -45247,6 +45434,7 @@ export type Database = {
           last_seen_at?: string | null
           link_type?: string | null
           lost_at?: string | null
+          metadata?: Json
           organization_id: string
           page_id?: string | null
           provider: string
@@ -45275,6 +45463,7 @@ export type Database = {
           last_seen_at?: string | null
           link_type?: string | null
           lost_at?: string | null
+          metadata?: Json
           organization_id?: string
           page_id?: string | null
           provider?: string
@@ -45331,6 +45520,7 @@ export type Database = {
           extras: Json
           id: string
           lost_backlinks: number | null
+          metadata: Json
           new_backlinks: number | null
           nofollow_backlinks: number | null
           observed_at: string
@@ -45359,6 +45549,7 @@ export type Database = {
           extras?: Json
           id?: string
           lost_backlinks?: number | null
+          metadata?: Json
           new_backlinks?: number | null
           nofollow_backlinks?: number | null
           observed_at: string
@@ -45387,6 +45578,7 @@ export type Database = {
           extras?: Json
           id?: string
           lost_backlinks?: number | null
+          metadata?: Json
           new_backlinks?: number | null
           nofollow_backlinks?: number | null
           observed_at?: string
@@ -45537,6 +45729,7 @@ export type Database = {
           details: Json
           event_type: string
           id: string
+          metadata: Json
           occurred_at: string
           organization_id: string
           site_id: string
@@ -45556,6 +45749,7 @@ export type Database = {
           details?: Json
           event_type: string
           id?: string
+          metadata?: Json
           occurred_at?: string
           organization_id: string
           site_id: string
@@ -45575,6 +45769,7 @@ export type Database = {
           details?: Json
           event_type?: string
           id?: string
+          metadata?: Json
           occurred_at?: string
           organization_id?: string
           site_id?: string
@@ -46038,6 +46233,7 @@ export type Database = {
           idempotency_key: string
           lease_expires_at: string | null
           lease_owner: string | null
+          metadata: Json
           observation_period: string
           operation: string
           organization_id: string
@@ -46074,6 +46270,7 @@ export type Database = {
           idempotency_key: string
           lease_expires_at?: string | null
           lease_owner?: string | null
+          metadata?: Json
           observation_period: string
           operation: string
           organization_id: string
@@ -46110,6 +46307,7 @@ export type Database = {
           idempotency_key?: string
           lease_expires_at?: string | null
           lease_owner?: string | null
+          metadata?: Json
           observation_period?: string
           operation?: string
           organization_id?: string
@@ -46150,6 +46348,7 @@ export type Database = {
           last_observed_at: string | null
           latest_autopsy: Json
           latest_run_id: string | null
+          metadata: Json
           normalized_domain: string
           organic_keywords: number | null
           organization_id: string
@@ -46179,6 +46378,7 @@ export type Database = {
           last_observed_at?: string | null
           latest_autopsy?: Json
           latest_run_id?: string | null
+          metadata?: Json
           normalized_domain: string
           organic_keywords?: number | null
           organization_id: string
@@ -46208,6 +46408,7 @@ export type Database = {
           last_observed_at?: string | null
           latest_autopsy?: Json
           latest_run_id?: string | null
+          metadata?: Json
           normalized_domain?: string
           organic_keywords?: number | null
           organization_id?: string
@@ -46243,6 +46444,7 @@ export type Database = {
           language_code: string | null
           location_code: number | null
           median_position: number | null
+          metadata: Json
           metrics: Json
           observed_at: string
           organic_keywords: number | null
@@ -46266,6 +46468,7 @@ export type Database = {
           language_code?: string | null
           location_code?: number | null
           median_position?: number | null
+          metadata?: Json
           metrics?: Json
           observed_at: string
           organic_keywords?: number | null
@@ -46289,6 +46492,7 @@ export type Database = {
           language_code?: string | null
           location_code?: number | null
           median_position?: number | null
+          metadata?: Json
           metrics?: Json
           observed_at?: string
           organic_keywords?: number | null
@@ -46342,6 +46546,7 @@ export type Database = {
           human_notes: string | null
           id: string
           impact: string
+          metadata: Json
           opportunity_key: string
           opportunity_type: string
           organization_id: string
@@ -46376,6 +46581,7 @@ export type Database = {
           human_notes?: string | null
           id?: string
           impact: string
+          metadata?: Json
           opportunity_key: string
           opportunity_type: string
           organization_id: string
@@ -46410,6 +46616,7 @@ export type Database = {
           human_notes?: string | null
           id?: string
           impact?: string
+          metadata?: Json
           opportunity_key?: string
           opportunity_type?: string
           organization_id?: string
@@ -46455,6 +46662,7 @@ export type Database = {
           dimension: string
           id: string
           is_template: boolean
+          metadata: Json
           name: string
           organization_id: string | null
           row_limit: number
@@ -46475,6 +46683,7 @@ export type Database = {
           dimension?: string
           id?: string
           is_template?: boolean
+          metadata?: Json
           name: string
           organization_id?: string | null
           row_limit?: number
@@ -46495,6 +46704,7 @@ export type Database = {
           dimension?: string
           id?: string
           is_template?: boolean
+          metadata?: Json
           name?: string
           organization_id?: string | null
           row_limit?: number
@@ -46617,6 +46827,7 @@ export type Database = {
           is_template: boolean
           last_applied_at: string | null
           match_kind: string
+          metadata: Json
           name: string
           notes: string | null
           organization_id: string | null
@@ -46636,6 +46847,7 @@ export type Database = {
           is_template?: boolean
           last_applied_at?: string | null
           match_kind?: string
+          metadata?: Json
           name: string
           notes?: string | null
           organization_id?: string | null
@@ -46655,6 +46867,7 @@ export type Database = {
           is_template?: boolean
           last_applied_at?: string | null
           match_kind?: string
+          metadata?: Json
           name?: string
           notes?: string | null
           organization_id?: string | null
@@ -46875,6 +47088,7 @@ export type Database = {
           keyword_id: string
           location_code: number
           low_top_of_page_bid: number | null
+          metadata: Json
           metrics_task_id: string | null
           monthly_searches: Json
           observed_at: string
@@ -46897,6 +47111,7 @@ export type Database = {
           keyword_id: string
           location_code: number
           low_top_of_page_bid?: number | null
+          metadata?: Json
           metrics_task_id?: string | null
           monthly_searches?: Json
           observed_at: string
@@ -46919,6 +47134,7 @@ export type Database = {
           keyword_id?: string
           location_code?: number
           low_top_of_page_bid?: number | null
+          metadata?: Json
           metrics_task_id?: string | null
           monthly_searches?: Json
           observed_at?: string
@@ -47079,6 +47295,7 @@ export type Database = {
           diagnostics: Json
           id: string
           lighthouse: Json
+          metadata: Json
           observed_at: string
           organization_id: string
           page_id: string
@@ -47100,6 +47317,7 @@ export type Database = {
           diagnostics?: Json
           id?: string
           lighthouse?: Json
+          metadata?: Json
           observed_at: string
           organization_id: string
           page_id: string
@@ -47121,6 +47339,7 @@ export type Database = {
           diagnostics?: Json
           id?: string
           lighthouse?: Json
+          metadata?: Json
           observed_at?: string
           organization_id?: string
           page_id?: string
@@ -47206,6 +47425,7 @@ export type Database = {
           external_task_id: string
           id: string
           last_polled_at: string | null
+          metadata: Json
           provider_cost: number | null
           request_count: number
           request_payload: Json
@@ -47223,6 +47443,7 @@ export type Database = {
           external_task_id: string
           id?: string
           last_polled_at?: string | null
+          metadata?: Json
           provider_cost?: number | null
           request_count?: number
           request_payload?: Json
@@ -47240,6 +47461,7 @@ export type Database = {
           external_task_id?: string
           id?: string
           last_polled_at?: string | null
+          metadata?: Json
           provider_cost?: number | null
           request_count?: number
           request_payload?: Json
@@ -47274,6 +47496,7 @@ export type Database = {
           match_rule: string
           matched_domain: string | null
           matched_url: string | null
+          metadata: Json
           observed_at: string
           organic_rank: number | null
           organization_id: string
@@ -47303,6 +47526,7 @@ export type Database = {
           match_rule?: string
           matched_domain?: string | null
           matched_url?: string | null
+          metadata?: Json
           observed_at: string
           organic_rank?: number | null
           organization_id: string
@@ -47332,6 +47556,7 @@ export type Database = {
           match_rule?: string
           matched_domain?: string | null
           matched_url?: string | null
+          metadata?: Json
           observed_at?: string
           organic_rank?: number | null
           organization_id?: string
@@ -47474,6 +47699,7 @@ export type Database = {
           external_task_id: string | null
           fetched_at: string
           id: string
+          metadata: Json
           offload_error: Json | null
           payload: Json | null
           provider_schema_version: string | null
@@ -47488,6 +47714,7 @@ export type Database = {
           external_task_id?: string | null
           fetched_at?: string
           id?: string
+          metadata?: Json
           offload_error?: Json | null
           payload?: Json | null
           provider_schema_version?: string | null
@@ -47502,6 +47729,7 @@ export type Database = {
           external_task_id?: string | null
           fetched_at?: string
           id?: string
+          metadata?: Json
           offload_error?: Json | null
           payload?: Json | null
           provider_schema_version?: string | null
@@ -47533,6 +47761,7 @@ export type Database = {
           human_ruling: Json
           id: string
           last_seen_at: string | null
+          metadata: Json
           normalized_domain: string
           opinion_score: number | null
           opinion_summary: string | null
@@ -47558,6 +47787,7 @@ export type Database = {
           human_ruling?: Json
           id?: string
           last_seen_at?: string | null
+          metadata?: Json
           normalized_domain: string
           opinion_score?: number | null
           opinion_summary?: string | null
@@ -47583,6 +47813,7 @@ export type Database = {
           human_ruling?: Json
           id?: string
           last_seen_at?: string | null
+          metadata?: Json
           normalized_domain?: string
           opinion_score?: number | null
           opinion_summary?: string | null
@@ -47624,6 +47855,7 @@ export type Database = {
           id: string
           inferences: Json
           last_observed_at: string | null
+          metadata: Json
           missing_evidence: Json
           opportunity_score: number
           organization_id: string
@@ -47675,6 +47907,7 @@ export type Database = {
           id?: string
           inferences?: Json
           last_observed_at?: string | null
+          metadata?: Json
           missing_evidence?: Json
           opportunity_score: number
           organization_id: string
@@ -47726,6 +47959,7 @@ export type Database = {
           id?: string
           inferences?: Json
           last_observed_at?: string | null
+          metadata?: Json
           missing_evidence?: Json
           opportunity_score?: number
           organization_id?: string
@@ -47790,6 +48024,7 @@ export type Database = {
           id: string
           impressions: number
           keyword_id: string | null
+          metadata: Json
           organization_id: string
           page_id: string | null
           provider: string
@@ -47814,6 +48049,7 @@ export type Database = {
           id?: string
           impressions?: number
           keyword_id?: string | null
+          metadata?: Json
           organization_id: string
           page_id?: string | null
           provider: string
@@ -47838,6 +48074,7 @@ export type Database = {
           id?: string
           impressions?: number
           keyword_id?: string | null
+          metadata?: Json
           organization_id?: string
           page_id?: string | null
           provider?: string
@@ -47877,6 +48114,7 @@ export type Database = {
           domain: string | null
           extras: Json
           id: string
+          metadata: Json
           organic_rank: number | null
           result_type: string
           snapshot_id: string
@@ -47889,6 +48127,7 @@ export type Database = {
           domain?: string | null
           extras?: Json
           id?: string
+          metadata?: Json
           organic_rank?: number | null
           result_type?: string
           snapshot_id: string
@@ -47901,6 +48140,7 @@ export type Database = {
           domain?: string | null
           extras?: Json
           id?: string
+          metadata?: Json
           organic_rank?: number | null
           result_type?: string
           snapshot_id?: string
@@ -47929,6 +48169,7 @@ export type Database = {
           keyword_id: string
           language: string
           location_id: string | null
+          metadata: Json
           observed_at: string
           organization_id: string
           provider: string
@@ -47949,6 +48190,7 @@ export type Database = {
           keyword_id: string
           language?: string
           location_id?: string | null
+          metadata?: Json
           observed_at: string
           organization_id: string
           provider: string
@@ -47969,6 +48211,7 @@ export type Database = {
           keyword_id?: string
           language?: string
           location_id?: string | null
+          metadata?: Json
           observed_at?: string
           organization_id?: string
           provider?: string
@@ -48266,6 +48509,7 @@ export type Database = {
           key_events: number
           landing_page: string | null
           medium: string | null
+          metadata: Json
           organization_id: string
           page_id: string | null
           property_timezone: string | null
@@ -48296,6 +48540,7 @@ export type Database = {
           key_events?: number
           landing_page?: string | null
           medium?: string | null
+          metadata?: Json
           organization_id: string
           page_id?: string | null
           property_timezone?: string | null
@@ -48326,6 +48571,7 @@ export type Database = {
           key_events?: number
           landing_page?: string | null
           medium?: string | null
+          metadata?: Json
           organization_id?: string
           page_id?: string | null
           property_timezone?: string | null
@@ -49148,6 +49394,7 @@ export type Database = {
           last_seen_at: string | null
           link_type: string | null
           lost_at: string | null
+          metadata: Json
           next_enrichment_at: string | null
           organization_id: string
           page_id: string | null
@@ -49194,6 +49441,7 @@ export type Database = {
           human_notes: string | null
           id: string
           impact: string
+          metadata: Json
           opportunity_key: string
           opportunity_type: string
           organization_id: string
@@ -49241,6 +49489,7 @@ export type Database = {
           last_observed_at: string | null
           latest_autopsy: Json
           latest_run_id: string | null
+          metadata: Json
           normalized_domain: string
           organic_keywords: number | null
           organization_id: string
@@ -49276,6 +49525,7 @@ export type Database = {
           human_ruling: Json
           id: string
           last_seen_at: string | null
+          metadata: Json
           normalized_domain: string
           opinion_score: number | null
           opinion_summary: string | null
@@ -49323,6 +49573,7 @@ export type Database = {
           id: string
           inferences: Json
           last_observed_at: string | null
+          metadata: Json
           missing_evidence: Json
           opportunity_score: number
           organization_id: string
@@ -49682,6 +49933,7 @@ export type Database = {
           is_active: boolean
           managed_by_server_id: string | null
           max_client_wait_seconds: number | null
+          metadata: Json
           name: string
           organization_id: string
           output_schema: Json | null
@@ -49712,6 +49964,7 @@ export type Database = {
           is_active?: boolean
           managed_by_server_id?: string | null
           max_client_wait_seconds?: number | null
+          metadata?: Json
           name: string
           organization_id: string
           output_schema?: Json | null
@@ -49742,6 +49995,7 @@ export type Database = {
           is_active?: boolean
           managed_by_server_id?: string | null
           max_client_wait_seconds?: number | null
+          metadata?: Json
           name?: string
           organization_id?: string
           output_schema?: Json | null
@@ -49779,6 +50033,7 @@ export type Database = {
           icon: string | null
           id: string
           is_active: boolean | null
+          metadata: Json
           name: string | null
           output_schema: Json | null
           parameters: Json | null
@@ -49803,6 +50058,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          metadata?: Json
           name?: string | null
           output_schema?: Json | null
           parameters?: Json | null
@@ -49827,6 +50083,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean | null
+          metadata?: Json
           name?: string | null
           output_schema?: Json | null
           parameters?: Json | null
@@ -50225,6 +50482,7 @@ export type Database = {
           final_payload: Json | null
           id: string
           is_success: boolean | null
+          metadata: Json
           raw_stream_events: Json
           tested_by: string | null
           tool_id: string | null
@@ -50239,6 +50497,7 @@ export type Database = {
           final_payload?: Json | null
           id?: string
           is_success?: boolean | null
+          metadata?: Json
           raw_stream_events?: Json
           tested_by?: string | null
           tool_id?: string | null
@@ -50253,6 +50512,7 @@ export type Database = {
           final_payload?: Json | null
           id?: string
           is_success?: boolean | null
+          metadata?: Json
           raw_stream_events?: Json
           tested_by?: string | null
           tool_id?: string | null
@@ -50284,6 +50544,7 @@ export type Database = {
           is_active: boolean
           keep_expanded_on_stream: boolean
           language: string
+          metadata: Json
           notes: string | null
           overlay_code: string | null
           results_label: string | null
@@ -50308,6 +50569,7 @@ export type Database = {
           is_active?: boolean
           keep_expanded_on_stream?: boolean
           language?: string
+          metadata?: Json
           notes?: string | null
           overlay_code?: string | null
           results_label?: string | null
@@ -50332,6 +50594,7 @@ export type Database = {
           is_active?: boolean
           keep_expanded_on_stream?: boolean
           language?: string
+          metadata?: Json
           notes?: string | null
           overlay_code?: string | null
           results_label?: string | null
@@ -50364,6 +50627,7 @@ export type Database = {
           error_stack: string | null
           error_type: string
           id: string
+          metadata: Json
           resolution_notes: string | null
           resolved: boolean
           resolved_at: string | null
@@ -50382,6 +50646,7 @@ export type Database = {
           error_stack?: string | null
           error_type: string
           id?: string
+          metadata?: Json
           resolution_notes?: string | null
           resolved?: boolean
           resolved_at?: string | null
@@ -50400,6 +50665,7 @@ export type Database = {
           error_stack?: string | null
           error_type?: string
           id?: string
+          metadata?: Json
           resolution_notes?: string | null
           resolved?: boolean
           resolved_at?: string | null
@@ -50432,6 +50698,7 @@ export type Database = {
           is_active: boolean | null
           keep_expanded_on_stream: boolean | null
           language: string | null
+          metadata: Json
           notes: string | null
           overlay_code: string | null
           results_label: string | null
@@ -50454,6 +50721,7 @@ export type Database = {
           is_active?: boolean | null
           keep_expanded_on_stream?: boolean | null
           language?: string | null
+          metadata?: Json
           notes?: string | null
           overlay_code?: string | null
           results_label?: string | null
@@ -50476,6 +50744,7 @@ export type Database = {
           is_active?: boolean | null
           keep_expanded_on_stream?: boolean | null
           language?: string | null
+          metadata?: Json
           notes?: string | null
           overlay_code?: string | null
           results_label?: string | null
@@ -50661,6 +50930,7 @@ export type Database = {
           created_by: string | null
           id: string
           kind: string
+          metadata: Json
           organization_id: string | null
           session_id: string
           title: string
@@ -50674,6 +50944,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           kind?: string
+          metadata?: Json
           organization_id?: string | null
           session_id: string
           title?: string
@@ -50687,6 +50958,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           kind?: string
+          metadata?: Json
           organization_id?: string | null
           session_id?: string
           title?: string
@@ -50819,6 +51091,7 @@ export type Database = {
           created_by: string
           file_id: string
           id: string
+          metadata: Json
           mime_type: string
           organization_id: string | null
           safety_id: string
@@ -50830,6 +51103,7 @@ export type Database = {
           created_by?: string
           file_id: string
           id?: string
+          metadata?: Json
           mime_type?: string
           organization_id?: string | null
           safety_id: string
@@ -50841,6 +51115,7 @@ export type Database = {
           created_by?: string
           file_id?: string
           id?: string
+          metadata?: Json
           mime_type?: string
           organization_id?: string | null
           safety_id?: string
@@ -50857,6 +51132,7 @@ export type Database = {
           detached_at: string | null
           ended_at: string | null
           id: string
+          metadata: Json
           organization_id: string | null
           safety_id: string | null
           segment_index: number
@@ -50877,6 +51153,7 @@ export type Database = {
           detached_at?: string | null
           ended_at?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string | null
           safety_id?: string | null
           segment_index: number
@@ -50897,6 +51174,7 @@ export type Database = {
           detached_at?: string | null
           ended_at?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string | null
           safety_id?: string | null
           segment_index?: number
@@ -51010,6 +51288,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_slots: Json | null
+          metadata: Json
           module_id: string
           module_interval_ms: number | null
           module_shortcut_id: string | null
@@ -51030,6 +51309,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_slots?: Json | null
+          metadata?: Json
           module_id?: string
           module_interval_ms?: number | null
           module_shortcut_id?: string | null
@@ -51050,6 +51330,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_slots?: Json | null
+          metadata?: Json
           module_id?: string
           module_interval_ms?: number | null
           module_shortcut_id?: string | null
@@ -51092,7 +51373,6 @@ export type Database = {
           transcript_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -51117,7 +51397,6 @@ export type Database = {
           transcript_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -51142,7 +51421,6 @@ export type Database = {
           transcript_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -51177,7 +51455,6 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           video_file_path: string | null
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -51202,7 +51479,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           video_file_path?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -51227,7 +51503,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           video_file_path?: string | null
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -51288,6 +51563,7 @@ export type Database = {
           intro: string | null
           is_active: boolean
           label: string | null
+          metadata: Json
           name: string
           overlay_id: string | null
           parent_surface_name: string | null
@@ -51309,6 +51585,7 @@ export type Database = {
           intro?: string | null
           is_active?: boolean
           label?: string | null
+          metadata?: Json
           name: string
           overlay_id?: string | null
           parent_surface_name?: string | null
@@ -51330,6 +51607,7 @@ export type Database = {
           intro?: string | null
           is_active?: boolean
           label?: string | null
+          metadata?: Json
           name?: string
           overlay_id?: string | null
           parent_surface_name?: string | null
@@ -52176,8 +52454,8 @@ export type Database = {
           unlocked_at: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           achievement_data?: Json | null
@@ -52191,8 +52469,8 @@ export type Database = {
           unlocked_at?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           achievement_data?: Json | null
@@ -52206,8 +52484,8 @@ export type Database = {
           unlocked_at?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -52578,8 +52856,8 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           card_count?: number
@@ -52598,8 +52876,8 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           card_count?: number
@@ -52618,8 +52896,8 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -52781,8 +53059,8 @@ export type Database = {
           organization_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           content?: string
@@ -52797,8 +53075,8 @@ export type Database = {
           organization_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           content?: string
@@ -52813,8 +53091,8 @@ export type Database = {
           organization_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -52831,8 +53109,8 @@ export type Database = {
           path: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           content?: string
@@ -52846,8 +53124,8 @@ export type Database = {
           path: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           content?: string
@@ -52861,8 +53139,8 @@ export type Database = {
           path?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -56439,6 +56717,7 @@ export type Database = {
           id: string
           is_public: boolean
           is_required: boolean
+          metadata: Json
           organization_id: string | null
           table_id: string
           updated_at: string
@@ -56458,6 +56737,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           is_required?: boolean
+          metadata?: Json
           organization_id?: string | null
           table_id: string
           updated_at?: string
@@ -56477,6 +56757,7 @@ export type Database = {
           id?: string
           is_public?: boolean
           is_required?: boolean
+          metadata?: Json
           organization_id?: string | null
           table_id?: string
           updated_at?: string
@@ -56535,6 +56816,7 @@ export type Database = {
           data: Json
           id: string
           is_public: boolean
+          metadata: Json
           organization_id: string | null
           table_id: string
           updated_at: string
@@ -56548,6 +56830,7 @@ export type Database = {
           data: Json
           id?: string
           is_public?: boolean
+          metadata?: Json
           organization_id?: string | null
           table_id: string
           updated_at?: string
@@ -56561,6 +56844,7 @@ export type Database = {
           data?: Json
           id?: string
           is_public?: boolean
+          metadata?: Json
           organization_id?: string | null
           table_id?: string
           updated_at?: string
@@ -56674,6 +56958,7 @@ export type Database = {
           description: string | null
           id: string
           is_public: boolean
+          metadata: Json
           organization_id: string
           project_id: string | null
           row_ordering_config: Json | null
@@ -56695,6 +56980,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          metadata?: Json
           organization_id: string
           project_id?: string | null
           row_ordering_config?: Json | null
@@ -56716,6 +57002,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          metadata?: Json
           organization_id?: string
           project_id?: string | null
           row_ordering_config?: Json | null
@@ -56855,6 +57142,7 @@ export type Database = {
           is_public: boolean | null
           label: string | null
           list_id: string | null
+          metadata: Json
           organization_id: string | null
           public_read: boolean | null
           updated_at: string | null
@@ -56873,6 +57161,7 @@ export type Database = {
           is_public?: boolean | null
           label?: string | null
           list_id?: string | null
+          metadata?: Json
           organization_id?: string | null
           public_read?: boolean | null
           updated_at?: string | null
@@ -56891,6 +57180,7 @@ export type Database = {
           is_public?: boolean | null
           label?: string | null
           list_id?: string | null
+          metadata?: Json
           organization_id?: string | null
           public_read?: boolean | null
           updated_at?: string | null
@@ -56916,6 +57206,7 @@ export type Database = {
           id: string
           is_public: boolean | null
           list_name: string | null
+          metadata: Json
           organization_id: string | null
           public_read: boolean | null
           updated_at: string | null
@@ -56930,6 +57221,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           list_name?: string | null
+          metadata?: Json
           organization_id?: string | null
           public_read?: boolean | null
           updated_at?: string | null
@@ -56944,6 +57236,7 @@ export type Database = {
           id?: string
           is_public?: boolean | null
           list_name?: string | null
+          metadata?: Json
           organization_id?: string | null
           public_read?: boolean | null
           updated_at?: string | null
