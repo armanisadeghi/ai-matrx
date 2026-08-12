@@ -20,20 +20,11 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrapedContentPretty } from "@/features/scraper/parts/ScrapedContentPretty";
-
-function normalizeUrl(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  const withProtocol = /^https?:\/\//i.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
-  try {
-    new URL(withProtocol);
-    return withProtocol;
-  } catch {
-    return null;
-  }
-}
+import { ScraperSurfaceMount } from "@/features/scraper/agent-context/ScraperSurfaceMount";
+// THE scrape-target URL rule — the same helper the floating workspace and the
+// `scrape_command` write handler use, so an agent can never stage a URL this
+// page's own Scrape buttons would reject.
+import { normalizeUrl } from "@/features/scraper/utils/scraper-floating-helpers";
 
 export default function QuickScrapePage() {
   const searchParams = useSearchParams();
@@ -168,7 +159,34 @@ export default function QuickScrapePage() {
   const isAnyLoading = isLoading || fullScrapeApi.isLoading;
   const activeStatus = statusMessage || fullScrapeApi.statusMessage;
 
+  // The scraped page the user is reading — the full-scrape envelope when the
+  // full view is showing, otherwise the quick one.
+  const selectedResult =
+    viewMode === "full" ? (fullScrapeApi.data ?? data) : data;
+
   return (
+    // `matrx-user/scraper` — the single-URL mount. It owns the URL box and
+    // nothing else, so `scrape_command` (URL only) is the one target here.
+    <ScraperSurfaceMount
+      context={{
+        mode: "url",
+        selected: selectedResult,
+        activeTab: (viewMode === "full" ? activeTab : quickContentTab) as never,
+        failureReason: urlError || error || fullScrapeApi.error,
+        targetUrl: url,
+        results: selectedResult ? [selectedResult] : [],
+        selectedIndex: 0,
+        isScraping: isAnyLoading,
+      }}
+      write={{
+        setUrl: (next) => {
+          setUrl(next);
+          setUrlError(null);
+        },
+        notHereHint:
+          "This is the Quick Scrape route, which scrapes one URL. Open /scraper/search or /scraper/search-and-scrape for keyword modes, or the floating Web Scraper workspace, which owns every mode at once.",
+      }}
+    >
     <div
       className="h-full flex flex-col overflow-hidden bg-textured"
       style={{ paddingTop: "var(--shell-header-h)" }}
@@ -412,5 +430,6 @@ export default function QuickScrapePage() {
         </div>
       )}
     </div>
+    </ScraperSurfaceMount>
   );
 }
