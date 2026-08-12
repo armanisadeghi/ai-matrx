@@ -18,7 +18,6 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { CrawlSubnav } from "@/features/marketing/components/crawls/CrawlSubnav";
 import {
   LoadingSurface,
-  QueryError,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useCrawl } from "@/features/marketing/data/hooks";
@@ -29,6 +28,7 @@ import {
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { CrawlSurfaceProvider } from "@/features/marketing/lib/scopes/crawl-surface";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 const REPORT_ICONS: Record<CrawlReportKey, LucideIcon> = {
   "response-codes": Route,
@@ -51,15 +51,19 @@ const CATEGORIES = [
 ] as const;
 
 export function CrawlReportsIndex({ crawlId }: { crawlId: string }) {
-  const { site } = useMarketingSite();
+  const { site, sitePath } = useMarketingSite();
   const crawl = useCrawl(site.id, crawlId);
 
   if (crawl.isLoading) return <LoadingSurface label="Loading crawl reports…" />;
   if (crawl.isError || !crawl.data) {
     return (
-      <QueryError
-        error={crawl.error ?? new Error("Crawl not found")}
+      <AccessGate
+        token="web_crawl_session"
+        id={crawlId}
+        error={crawl.error}
         onRetry={() => void crawl.refetch()}
+        fallbackHref={`${sitePath}/crawls`}
+        fallbackLabel="All crawls"
       />
     );
   }

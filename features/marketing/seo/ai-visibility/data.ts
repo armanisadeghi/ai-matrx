@@ -1,12 +1,9 @@
 import { supabase } from "@/utils/supabase/client";
 
 import type { AiVisibilityEvidence } from "./types";
+import { makeAssertData } from "@/utils/errors";
 
-function assertData<T>(data: T | null, error: { message: string } | null): T {
-  if (error) throw new Error(error.message);
-  if (data === null) throw new Error("AI visibility query returned no data.");
-  return data;
-}
+const assertData = makeAssertData("reach this site's AI visibility evidence");
 
 /** Read one site's durable answer evidence directly from the shared database. */
 export async function listAiVisibilityEvidence(

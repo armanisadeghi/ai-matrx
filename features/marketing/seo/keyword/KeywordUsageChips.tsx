@@ -54,6 +54,7 @@ export function KeywordUsageChips({
                 ? `${field.label}: no observed content to check`
                 : present
                   ? `Keyword found in ${field.label.toLowerCase()}`
+                  // access-errors: ok — the keyword is absent from page text we already have in hand; a string search, not a record read.
                   : `Keyword NOT found in ${field.label.toLowerCase()}`
             }
             className={cn(

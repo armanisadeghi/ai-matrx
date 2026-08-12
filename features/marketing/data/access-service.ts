@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { iamDb } from "@/utils/supabase/iamDb";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
+import { operationFailed } from "@/utils/errors";
 
 export type SiteGrantTarget = "user" | "organization";
 export type SiteGrantLevel = "viewer" | "editor" | "admin";
@@ -47,7 +48,7 @@ export async function listSitePermissions(
       p_resource_id: siteId,
     },
   );
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("load who can reach this site", error);
   return permissionRows(data);
 }
 
@@ -71,7 +72,7 @@ export async function grantSitePermission(input: {
       p_expires_at: input.expiresAt || undefined,
     },
   );
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("share this site", error);
   return permissionRow(data);
 }
 
@@ -91,6 +92,6 @@ export async function revokeSitePermission(input: {
       p_grantee_type: input.granteeType,
     },
   );
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("remove that person's access", error);
   return Boolean(data);
 }

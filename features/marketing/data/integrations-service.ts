@@ -74,6 +74,7 @@ async function getCurrentSite(siteId: string): Promise<MarketingSite> {
     "site",
     siteId,
     () => db.from("site").select("deleted_at").eq("id", siteId).maybeSingle(),
+    "web_site",
   );
 }
 

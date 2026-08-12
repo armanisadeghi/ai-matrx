@@ -8,7 +8,9 @@
  * (`web.snapshot.seo_metrics` + `audit_metrics`, stamped per capture; URL
  * quality computed by the shared evaluator): indexability verdict counts,
  * per-section pass rates (SERP / social / headings / indexability / URL),
- * top issues with sample pages, and worst pages. Inherits the brand + site
+ * top issues with sample pages, worst pages, and the pages that are GONE
+ * (excluded from every HTML-quality finding, reported as their own
+ * traffic-ranked finding). Inherits the brand + site
  * context backbone from `matrx-user/marketing-site`.
  *
  * Runtime emitter: `AuditWorkspace` mounts the nested
@@ -60,7 +62,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "audit_rollup",
     label: "Site audit rollup",
     description:
-      "The full deterministic audit rollup (SiteAuditRollup) as one composite object: total/audited/uncomputed page counts, non-HTML resource count, indexability verdict counts, per-section pass counts (serp/social/headings/url), top issues with sample pages, and worst pages. Mirrors every individual audit value as one bag. Always present — the workspace only renders once the rollup has resolved.",
+      "The full deterministic audit rollup (SiteAuditRollup) as one composite object: total/audited/uncomputed page counts, non-HTML resource count, indexability verdict counts, per-section pass counts (serp/social/headings/url), top issues with sample pages, worst pages, and the gone-page count plus the full gone-page list. Mirrors every individual audit value as one bag. Always present — the workspace only renders once the rollup has resolved.",
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 2500,
@@ -122,6 +124,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 340,
     group: "audit_coverage",
   },
+  {
+    name: "pages_gone",
+    label: "Pages that are gone",
+    description:
+      "Number of pages the crawler no longer finds (web.page.status = 'missing'). These are HELD OUT of pages_total and of every HTML-quality finding — their stored metrics describe documents that no longer resolve — and reported separately in gone_pages. Zero when every registered page is still reachable.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    sortOrder: 345,
+    group: "audit_coverage",
+  },
 
   // ── Verdicts & pass rates ─────────────────────────────────────────────
   {
@@ -170,6 +183,17 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 510,
     group: "audit_findings",
   },
+  {
+    name: "gone_pages",
+    label: "Gone pages",
+    description:
+      "EVERY page the crawler no longer finds, ranked by the Google Search traffic it was still earning (clicks, then impressions, then how recently it was last seen; complete — the workspace truncates only at render): per page its id, path, url, gscClicks28d, gscImpressions28d (both null when the page was never in Google Search), and lastSeen. These pages carry NO HTML-quality finding anywhere else on this surface. The fix for one is to restore the page or redirect the URL — never to edit its metadata. Empty array when every registered page is still reachable.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 2000,
+    sortOrder: 520,
+    group: "audit_findings",
+  },
 
   // ── Trend ─────────────────────────────────────────────────────────────
   {
@@ -198,8 +222,9 @@ Every metric here is DETERMINISTIC and STORED: the scraper (and its byte-identic
 The user comes here to decide what to fix first across the whole site. Your job is prioritization and remediation planning from the evidence — turning top issues and worst pages into an ordered work plan — not re-auditing.
 Uncomputed pages are pages with no stored metrics yet (never crawled or pre-stamping); treat them as unknown, never as passing or failing.
 Known non-HTML resources are retained as crawl evidence and reported in non_html_resources, but are not pages eligible for HTML-only findings. An unusual URL that returned HTML remains a normal audited page.
+GONE pages (pages_gone / gone_pages) are pages the crawler no longer finds. They are excluded from pages_total, from every pass rate and verdict, and from top_issues and worst_pages, because their stored metrics describe documents that no longer resolve — never tell the user to fix an og:title or a heading on one of them. Being gone is itself a finding, and often the most valuable one on the page: a gone page with GSC clicks or impressions is traffic the site is losing right now. Read gone_pages in traffic order and recommend the real remedy — restore the page, or redirect the URL to its successor.
 The coverage statement (audit_coverage_statement) is the honest scope of this rollup — it is aggregated server-side over every page, uncapped and unsampled. Quote it when you summarize; never imply the audit saw more or less than it did.
-Read the individual values (pages_total / pages_audited / pages_uncomputed / non_html_resources, indexability_verdicts, section_passes, top_issues, worst_pages, audit_score_trend) rather than re-deriving them from audit_rollup — the composite exists only for callers that want the whole bag at once.
+Read the individual values (pages_total / pages_audited / pages_uncomputed / non_html_resources / pages_gone, gone_pages, indexability_verdicts, section_passes, top_issues, worst_pages, audit_score_trend) rather than re-deriving them from audit_rollup — the composite exists only for callers that want the whole bag at once.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -253,6 +278,8 @@ export function createMarketingAuditScope(values: {
   pages_audited: number;
   pages_uncomputed: number;
   non_html_resources: number;
+  pages_gone: number;
+  gone_pages: Array<Record<string, unknown>>;
   indexability_verdicts: Record<string, unknown>;
   section_passes: Record<string, unknown>;
   top_issues: Array<Record<string, unknown>>;

@@ -4,7 +4,7 @@ import React, { useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Panel, type Layout } from "react-resizable-panels";
 import { ListTree } from "lucide-react";
-import { useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
   selectProjectId,
@@ -15,6 +15,7 @@ import {
   createAgentConnectionsScope,
 } from "@/features/surfaces/manifests/agent-connections.manifest";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { getSliceBinding } from "@/features/settings/slice-bindings";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
@@ -68,6 +69,7 @@ export function AgentConnectionsRouteShell({
   // render snapshot. Verticals with their own child surface (e.g. Skills)
   // mount a nested provider that out-depths this one.
   const store = useAppStore();
+  const dispatch = useAppDispatch();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
@@ -82,14 +84,71 @@ export function AgentConnectionsRouteShell({
     if (viewScope === "organization") viewScopeId = selectOrganizationId(state);
     else if (viewScope === "project") viewScopeId = selectProjectId(state);
     else if (viewScope === "task") viewScopeId = selectTaskId(state);
+    const workspacePrefs = state.userPreferences.agentConnections;
     return createAgentConnectionsScope({
       active_section: activeSection,
       view_scope: viewScope,
       available_sections: AVAILABLE_SECTIONS,
       view_scope_id: viewScopeId ?? undefined,
       selected_item_id: selectSelectedItemId(state) ?? undefined,
+      workspace_name: workspacePrefs.workspaceName ?? "",
+      welcome_message: workspacePrefs.welcomeMessage ?? "",
     });
   };
+
+  // ── Surface write targets ─────────────────────────────────────────────
+  // Only the Workspace group on the Preferences vertical is agent-writable;
+  // registries, safety switches and the hub's navigation state deliberately
+  // are not (see the writeTargets note on the manifest).
+  //
+  // Both handlers go through the SAME slice binding `useSetting` dispatches
+  // when the user types in the field — `PreferencesSection` calls
+  // `useSetting("userPreferences.agentConnections.<key>")`, which resolves to
+  // exactly this write. No parallel path, and the binding's own
+  // "module.preference" parsing still applies.
+  //
+  // Registered here rather than in `PreferencesSection` so the targets stay
+  // wired on every vertical: the values are synced account preferences, not
+  // section-scoped editor state, and a declared-but-unwired target is a loud
+  // runtime defect by design.
+  const writePreference = (key: string, value: string) => {
+    dispatch(
+      getSliceBinding("userPreferences").write(
+        `agentConnections.${key}`,
+        value,
+      ),
+    );
+  };
+
+  const getWriteHandlers = () => ({
+    workspace_name: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error("workspace_name expects a string.");
+      const next = value.trim();
+      if (!next)
+        throw new Error(
+          "workspace_name expects a non-empty name — pass the full replacement name.",
+        );
+      if (next.length > 60)
+        throw new Error(
+          `workspace_name expects 60 characters or fewer (got ${next.length}).`,
+        );
+      if (/[\r\n]/.test(next))
+        throw new Error("workspace_name must be a single line — no newlines.");
+      writePreference("workspaceName", next);
+    },
+    welcome_message: (value: unknown) => {
+      if (typeof value !== "string")
+        throw new Error(
+          'welcome_message expects a string (pass "" to clear it).',
+        );
+      if (value.length > 2000)
+        throw new Error(
+          `welcome_message expects 2000 characters or fewer (got ${value.length}).`,
+        );
+      writePreference("welcomeMessage", value);
+    },
+  });
 
   const mainPane = (
     <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
@@ -101,6 +160,7 @@ export function AgentConnectionsRouteShell({
     <SurfaceRuntimeProvider
       surfaceName={AGENT_CONNECTIONS_SURFACE_NAME}
       getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
     >
     <PanelControlProvider>
       <PageHeader>

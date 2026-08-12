@@ -21,6 +21,7 @@ import {
   humanLines,
   webLocation,
 } from "@/features/marketing/lib/copy-payloads";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 function pageUrl(row: InspectionSnapshotRow): string {
   return row.page?.url ?? row.final_url ?? row.page_id;
@@ -155,9 +156,13 @@ export function CrawlSnapshotsInspectionTable({
   if (crawl.isLoading) return <LoadingSurface label="Loading crawl…" />;
   if (crawl.isError || !crawl.data) {
     return (
-      <QueryError
-        error={crawl.error ?? new Error("Crawl not found")}
+      <AccessGate
+        token="web_crawl_session"
+        id={crawlId}
+        error={crawl.error}
         onRetry={() => void crawl.refetch()}
+        fallbackHref={`${sitePath}/crawls`}
+        fallbackLabel="All crawls"
       />
     );
   }

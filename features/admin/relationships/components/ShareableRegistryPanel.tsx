@@ -60,11 +60,15 @@ const EMPTY_EDITOR: ShareableEditorState = {
   contentRole: "",
   isScopeable: false,
   isLinkShareable: false,
-  publicColumns: "",
+  allColumns: [],
+  publicColumns: [],
   notes: "",
 };
 
-function rowToEditor(row: ShareableRegistryRow): ShareableEditorState {
+function rowToEditor(
+  row: ShareableRegistryRow,
+  allColumns: string[],
+): ShareableEditorState {
   return {
     mode: "edit",
     resourceType: row.resource_type,
@@ -80,7 +84,8 @@ function rowToEditor(row: ShareableRegistryRow): ShareableEditorState {
     contentRole: row.content_role ?? "",
     isScopeable: row.is_scopeable,
     isLinkShareable: row.is_link_shareable,
-    publicColumns: (row.public_columns ?? []).join(", "),
+    allColumns,
+    publicColumns: row.public_columns ?? [],
     notes: row.notes ?? "",
   };
 }
@@ -128,7 +133,12 @@ export function ShareableRegistryPanel({
   async function openForToken(token: string) {
     const existing = registry.find((r) => r.resource_type === token);
     if (existing) {
-      setEditor(rowToEditor(existing));
+      setEditor(
+        rowToEditor(
+          existing,
+          policyByType.get(existing.resource_type)?.all_columns ?? [],
+        ),
+      );
       setSidePanelId(existing.resource_type);
       return;
     }
@@ -140,12 +150,26 @@ export function ShareableRegistryPanel({
       );
       if (error) throw error;
       const d = data?.[0];
+      const allColumns = d?.all_columns ?? [];
+      const canonicalHref = tryGetEntityInfo(token)?.hrefFor?.("{id}") ?? "";
       setEditor({
         ...EMPTY_EDITOR,
         resourceType: token,
         schemaName: d?.schema_name ?? "",
         tableName: d?.table_name ?? "",
         displayLabel: d?.display_label ?? label(token),
+        urlPathTemplate: canonicalHref,
+        idColumn: allColumns.includes("id") ? "id" : (allColumns[0] ?? ""),
+        ownerColumn:
+          ["created_by", "user_id", "owner_id"].find((column) =>
+            allColumns.includes(column),
+          ) ?? "",
+        isPublicColumn: allColumns.includes("visibility")
+          ? "visibility"
+          : allColumns.includes("is_public")
+            ? "is_public"
+            : "",
+        allColumns,
         notes:
           "Registered as shareable from the Relationship Manager drift report.",
       });
@@ -157,6 +181,7 @@ export function ShareableRegistryPanel({
         ...EMPTY_EDITOR,
         resourceType: token,
         displayLabel: label(token),
+        urlPathTemplate: tryGetEntityInfo(token)?.hrefFor?.("{id}") ?? "",
       });
     } finally {
       setResolving(false);
@@ -183,7 +208,9 @@ export function ShareableRegistryPanel({
   }
 
   function openEdit(row: ShareableRegistryRow) {
-    setEditor(rowToEditor(row));
+    setEditor(
+      rowToEditor(row, policyByType.get(row.resource_type)?.all_columns ?? []),
+    );
   }
 
   function openEditInSidePanel(row: ShareableRegistryRow) {
@@ -197,18 +224,16 @@ export function ShareableRegistryPanel({
     editor.schemaName.length > 0 &&
     editor.tableName.length > 0 &&
     editor.displayLabel.length > 0 &&
-    editor.urlPathTemplate.includes("{id}");
+    editor.idColumn.length > 0 &&
+    editor.ownerColumn.length > 0 &&
+    (editor.urlPathTemplate.length === 0 ||
+      editor.urlPathTemplate.includes("{id}"));
 
   async function saveResource() {
     if (!editor || !valid) return;
     setSaving(true);
     try {
-      const columns = editor.isLinkShareable
-        ? editor.publicColumns
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [];
+      const columns = editor.isLinkShareable ? editor.publicColumns : [];
       const { error } = await supabase.rpc("admin_upsert_shareable_resource", {
         p_resource_type: editor.resourceType,
         p_schema_name: editor.schemaName,

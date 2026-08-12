@@ -143,6 +143,7 @@ export function judgePageReality(input: RealityInput): RealityVerdict {
     if (!page) {
         return {
             state: "not-built",
+            // access-errors: ok — verdict over the site's OWN page list, already loaded: the page is genuinely unbuilt, and the card offers Create.
             headline: "This page does not exist on the website yet.",
             action: "create-page",
             actionLabel: "Create the page",

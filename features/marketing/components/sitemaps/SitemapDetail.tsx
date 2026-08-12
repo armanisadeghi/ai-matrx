@@ -24,10 +24,10 @@ import {
 import {
   formatCompactDate,
   LoadingSurface,
-  QueryError,
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { cn } from "@/lib/utils";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 const FILTERS: Array<{ value: SitemapPagesFilter; label: string }> = [
   { value: "all", label: "All listed" },
@@ -129,9 +129,13 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
   if (sitemap.isLoading) return <LoadingSurface label="Loading sitemap…" />;
   if (sitemap.isError || !sitemap.data) {
     return (
-      <QueryError
-        error={sitemap.error ?? new Error("Sitemap not found")}
+      <AccessGate
+        token="web_sitemap"
+        id={sitemapId}
+        error={sitemap.error}
         onRetry={() => void sitemap.refetch()}
+        fallbackHref={`${sitePath}/sitemaps`}
+        fallbackLabel="All sitemaps"
       />
     );
   }

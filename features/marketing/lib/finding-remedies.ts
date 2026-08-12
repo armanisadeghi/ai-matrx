@@ -282,6 +282,7 @@ const REMEDIES: Record<string, RemedyBuilder> = {
     summary:
       "Visitors and search engines asking for this address get an error page. Anything linking to it is wasted.",
     instruction: [
+      // access-errors: ok — reports the HTTP 404 our crawler observed on the customer's page; that 404 is the finding.
       `${pageLabel(ctx)} returns a "not found" error.`,
       "",
       "Pick one:",
