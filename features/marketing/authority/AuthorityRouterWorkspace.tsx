@@ -310,8 +310,8 @@ export function AuthorityRouterWorkspace() {
             </h2>
             <p className="mx-auto mt-1 max-w-xl text-sm text-muted-foreground">
               Run it once to join the evidence already in the platform. The
-              deterministic map appears first; the strategist’s Content IR
-              develops live underneath it.
+              deterministic map fills in here; the strategist’s thinking streams
+              live in a floating window you can move, resize, or set aside.
             </p>
           </section>
         ) : null}
