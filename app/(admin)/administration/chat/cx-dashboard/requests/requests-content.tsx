@@ -24,6 +24,7 @@ import {
   exportToCSV,
   exportToJSON,
 } from "@/features/cx-dashboard/utils/export";
+import { originClassLabel } from "@/features/agents/redux/conversation-history/source-registry";
 import type {
   CxUserRequest,
   CxPaginatedResponse,
@@ -54,6 +55,7 @@ export function RequestsContent({ result }: Props) {
         conversation_id: r.conversation_id,
         conversation_title: r.conversation_title,
         status: r.status,
+        origin_class: r.origin_class ?? null,
         finish_reason: r.finish_reason,
         iterations: r.iterations,
         total_tool_calls: r.total_tool_calls,
@@ -111,6 +113,25 @@ export function RequestsContent({ result }: Props) {
             {r.error && <AlertTriangle className="h-3 w-3 text-red-500" />}
           </span>
         ),
+      },
+      {
+        id: "origin_class",
+        header: "Origin",
+        accessorFn: (r) => r.origin_class ?? "",
+        filter: "select",
+        align: "center",
+        width: 110,
+        cell: (r) =>
+          r.origin_class ? (
+            <span
+              className="inline-flex h-4 items-center rounded-full border border-border px-1.5 text-[10px] font-medium text-muted-foreground"
+              title="Server-derived provenance (who initiated this request)"
+            >
+              {originClassLabel(r.origin_class)}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
       },
       {
         id: "finish_reason",

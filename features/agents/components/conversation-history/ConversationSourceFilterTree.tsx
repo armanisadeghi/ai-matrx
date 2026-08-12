@@ -51,6 +51,8 @@ import {
 import {
   EMPTY_SOURCE_KEY,
   FEATURE_GROUPS,
+  ORIGIN_CLASSES,
+  ORIGIN_CLASS_META,
   appLabel,
   appMeta,
   featureMeta,
@@ -339,7 +341,10 @@ export const ConversationSourceFilterTree: React.FC<
     tree,
   ]);
 
-  const activeCount = selectedFeatures.size + (emptySelected ? 1 : 0);
+  const activeCount =
+    selectedFeatures.size +
+    (emptySelected ? 1 : 0) +
+    (scope.includeOriginClasses?.length ?? 0);
 
   // Commit a new selection → persist + refetch first page.
   const commit = useCallback(
@@ -391,7 +396,19 @@ export const ConversationSourceFilterTree: React.FC<
     [commit, selectedFeatures, emptySelected],
   );
 
-  const clearAll = useCallback(() => commit(new Set(), false), [commit]);
+  // "Clear filter" clears BOTH dimensions (sources + origin classes).
+  const clearAll = useCallback(() => {
+    dispatch(
+      setScopeSourceFilter({
+        scopeId,
+        includeSourceFeatures: [],
+        includeSourceApps: [],
+        includeEmptySource: false,
+        includeOriginClasses: [],
+      }),
+    );
+    void dispatch(fetchConversationHistory({ scopeId, replace: true }));
+  }, [dispatch, scopeId]);
 
   // Replace the selection with EXACTLY these keys ("only" buttons + presets).
   const onlyKeys = useCallback(
@@ -405,6 +422,40 @@ export const ConversationSourceFilterTree: React.FC<
       commit(next, nextEmpty);
     },
     [commit],
+  );
+
+  // ── Origin-class filter (server-derived trust axis) ───────────────────────
+  // Independent dimension that ANDs with the source allow-list: "my chat
+  // features, but only ones a person started". Empty = no origin filter.
+  const selectedOriginClasses = useMemo(
+    () => new Set(scope.includeOriginClasses ?? []),
+    [scope.includeOriginClasses],
+  );
+
+  const toggleOriginClass = useCallback(
+    (originClass: string) => {
+      const next = new Set(selectedOriginClasses);
+      if (next.has(originClass)) next.delete(originClass);
+      else next.add(originClass);
+      dispatch(
+        setScopeSourceFilter({
+          scopeId,
+          includeSourceFeatures: scope.includeSourceFeatures,
+          includeSourceApps: scope.includeSourceApps,
+          includeEmptySource: scope.includeEmptySource,
+          includeOriginClasses: Array.from(next),
+        }),
+      );
+      void dispatch(fetchConversationHistory({ scopeId, replace: true }));
+    },
+    [
+      dispatch,
+      scopeId,
+      selectedOriginClasses,
+      scope.includeSourceFeatures,
+      scope.includeSourceApps,
+      scope.includeEmptySource,
+    ],
   );
 
   const presets = useMemo(() => buildPresets(tree), [tree]);
@@ -440,6 +491,8 @@ export const ConversationSourceFilterTree: React.FC<
         includeSourceFeatures: def.includeFeatures,
         includeSourceApps: def.includeApps,
         includeEmptySource: def.includeEmptySource,
+        // Surface defaults carry no origin-class filter.
+        includeOriginClasses: [],
       }),
     );
     void dispatch(fetchConversationHistory({ scopeId, replace: true }));
@@ -544,6 +597,37 @@ export const ConversationSourceFilterTree: React.FC<
             })}
           </div>
         )}
+
+        {/* Origin classes — server-derived "who started it" trust axis.
+            Independent AND-dimension over the source tree below. Nothing
+            selected = no origin filter. */}
+        <div className="border-b border-border px-2 py-1.5">
+          <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Started by
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            {ORIGIN_CLASSES.map((oc) => {
+              const isActive = selectedOriginClasses.has(oc);
+              return (
+                <button
+                  key={oc}
+                  type="button"
+                  onClick={() => toggleOriginClass(oc)}
+                  className={cn(
+                    "inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-medium transition-colors",
+                    isActive
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                  aria-pressed={isActive}
+                  title={`Only show conversations started by: ${ORIGIN_CLASS_META[oc].label}`}
+                >
+                  {ORIGIN_CLASS_META[oc].label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="max-h-[min(60dvh,420px)] overflow-y-auto py-1">
           {facetsStatus === "loading" && tree.length === 0 && (

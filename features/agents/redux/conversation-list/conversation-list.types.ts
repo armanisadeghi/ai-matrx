@@ -38,6 +38,12 @@ export interface ConversationListItem {
   lastModelId?: string | null;
   sourceApp?: string;
   sourceFeature?: string;
+  /**
+   * Server-derived provenance trust class (`chat.conversation.origin_class`):
+   * human | client_auto | api | child_agent | workflow | scheduled | system |
+   * unknown. Never client-written — display/filter only.
+   */
+  originClass?: string;
 }
 
 export type ConversationListLoadStatus =

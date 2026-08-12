@@ -71,7 +71,7 @@ export interface FetchConversationHistoryResult {
  * `platform.user_entity_state` (overlaid via `applyFavoritesFromUes`), and the
  * column is being retired. */
 const HISTORY_COLUMNS =
-  "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, exclude_from_kg";
+  "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, origin_class, created_at, updated_at, exclude_from_kg";
 
 /**
  * Fetches a page of conversations for `scopeId`. If the scope doesn't yet
@@ -189,6 +189,14 @@ export const fetchConversationHistory = createAsyncThunk<
       query = query.or(orParts.join(","));
     }
 
+    // Origin-class ALLOW-list (server-derived trust axis). ANDs with the
+    // source filter above — "my chat features, but only ones a person
+    // started" is a legitimate combination.
+    const includeOriginClasses = scope.includeOriginClasses ?? [];
+    if (includeOriginClasses.length > 0) {
+      query = query.in("origin_class", includeOriginClasses);
+    }
+
     const { data, error } = await query;
     if (error) {
       dispatch(
@@ -219,6 +227,7 @@ export const fetchConversationHistory = createAsyncThunk<
       lastModelId: (row.last_model_id ?? null) as string | null,
       sourceApp: (row.source_app ?? undefined) as string | undefined,
       sourceFeature: (row.source_feature ?? undefined) as string | undefined,
+      originClass: (row.origin_class ?? undefined) as string | undefined,
     }));
     const items = await applyFavoritesFromUes(mapped);
 

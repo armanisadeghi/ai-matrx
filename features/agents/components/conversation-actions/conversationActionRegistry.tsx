@@ -103,6 +103,8 @@ export interface ConversationMenuContext {
   source?: {
     app?: string | null;
     feature?: string | null;
+    /** Server-derived origin_class (human, client_auto, workflow, …). */
+    originClass?: string | null;
     /** Filter the current scope to ONLY this conversation's source. */
     onShowOnly?: () => void;
     /** Remove this conversation's source from the current scope's view. */
@@ -160,7 +162,7 @@ export function buildConversationMenu(
     header: {
       title: displayTitle(ctx.title),
       description: src
-        ? describeSource(src.app, src.feature)
+        ? describeSource(src.app, src.feature, src.originClass)
         : undefined,
     },
     sections: [

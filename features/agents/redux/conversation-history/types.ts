@@ -72,6 +72,12 @@ export interface ConversationHistoryScopeState {
    */
   includeEmptySource: boolean;
   /**
+   * `origin_class` ALLOW-list (server-derived trust axis: human, client_auto,
+   * api, child_agent, workflow, scheduled, system, unknown). Empty = no
+   * origin filter. ANDs with the source allow-lists above.
+   */
+  includeOriginClasses: string[];
+  /**
    * Identity of the surface default this scope's source filter was seeded
    * from (`seedScopeSourceFilter`). A scope is seeded ONCE per default value:
    * on remount the host re-seeds with the same key and it no-ops, so a user's
@@ -134,6 +140,7 @@ export const defaultScopeState: ConversationHistoryScopeState = {
   includeSourceFeatures: [],
   includeSourceApps: [],
   includeEmptySource: false,
+  includeOriginClasses: [],
   seededSourceKey: null,
   searchTerm: "",
   grouping: "date",

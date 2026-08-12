@@ -45,6 +45,8 @@ function ensureScope(
     scope = { ...defaultScopeState };
     state.scopes[scopeId] = scope;
   }
+  // Field added 2026-08: heal scopes created before it existed.
+  if (scope.includeOriginClasses === undefined) scope.includeOriginClasses = [];
   return scope;
 }
 
@@ -80,6 +82,8 @@ const slice = createSlice({
         includeSourceApps?: string[];
         /** Include empty/null-source conversations. */
         includeEmptySource?: boolean;
+        /** `origin_class` ALLOW-list. Empty = no origin filter. */
+        includeOriginClasses?: string[];
         grouping?: HistoryGrouping;
         pageSize?: number;
         /** When true, drops items/offset so a fresh fetch repopulates. */
@@ -93,6 +97,7 @@ const slice = createSlice({
         includeSourceFeatures,
         includeSourceApps,
         includeEmptySource,
+        includeOriginClasses,
         grouping,
         pageSize,
         reset,
@@ -111,6 +116,9 @@ const slice = createSlice({
       if (includeEmptySource !== undefined) {
         scope.includeEmptySource = includeEmptySource;
       }
+      if (includeOriginClasses !== undefined) {
+        scope.includeOriginClasses = includeOriginClasses;
+      }
       if (grouping !== undefined) scope.grouping = grouping;
       if (pageSize !== undefined) scope.pageSize = pageSize;
       if (reset) invalidateScopeWindow(scope);
@@ -128,6 +136,8 @@ const slice = createSlice({
         includeSourceFeatures: string[];
         includeSourceApps: string[];
         includeEmptySource: boolean;
+        /** Omitted = leave the scope's origin-class filter untouched. */
+        includeOriginClasses?: string[];
       }>,
     ) {
       const {
@@ -135,16 +145,21 @@ const slice = createSlice({
         includeSourceFeatures,
         includeSourceApps,
         includeEmptySource,
+        includeOriginClasses,
       } = action.payload;
       const scope = ensureScope(state, scopeId);
+      const nextOriginClasses =
+        includeOriginClasses ?? scope.includeOriginClasses;
       const unchanged =
         sameStringArray(scope.includeSourceFeatures, includeSourceFeatures) &&
         sameStringArray(scope.includeSourceApps, includeSourceApps) &&
+        sameStringArray(scope.includeOriginClasses, nextOriginClasses) &&
         scope.includeEmptySource === includeEmptySource;
       if (unchanged) return;
       scope.includeSourceFeatures = includeSourceFeatures;
       scope.includeSourceApps = includeSourceApps;
       scope.includeEmptySource = includeEmptySource;
+      scope.includeOriginClasses = nextOriginClasses;
       invalidateScopeWindow(scope);
     },
     /**

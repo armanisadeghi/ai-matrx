@@ -66,6 +66,7 @@ import {
 import {
   EMPTY_SOURCE_KEY,
   featureLabel,
+  originClassLabel,
   sourceKey,
 } from "@/features/agents/redux/conversation-history/source-registry";
 import type { HistoryGrouping } from "@/features/agents/redux/conversation-history/types";
@@ -377,7 +378,11 @@ function useConversationHistoryController(
   const getSourceMenuCtx = useCallback(
     (conv: ConversationListItem): ConversationMenuContext["source"] => {
       if (!surfaceId) {
-        return { app: conv.sourceApp, feature: conv.sourceFeature };
+        return {
+          app: conv.sourceApp,
+          feature: conv.sourceFeature,
+          originClass: conv.originClass,
+        };
       }
       const featureKey = sourceKey(conv.sourceFeature);
       const isEmpty = featureKey === EMPTY_SOURCE_KEY;
@@ -400,6 +405,7 @@ function useConversationHistoryController(
       return {
         app: conv.sourceApp,
         feature: conv.sourceFeature,
+        originClass: conv.originClass,
         onShowOnly: () => {
           commitSourceFilter(
             isEmpty ? new Set<string>() : new Set([featureKey]),
@@ -1089,12 +1095,25 @@ const Row: React.FC<RowProps> = ({
 
   const meta = formatRelative(conv.updatedAt);
 
+  // Server-derived provenance badge — only when NOT started by the person
+  // ("You" on every row would be noise). Theme-token colors only.
+  const originBadge =
+    conv.originClass && conv.originClass !== "human" ? (
+      <span
+        className="inline-flex h-4 shrink-0 items-center rounded-full border border-border px-1.5 text-[9px] font-medium text-muted-foreground"
+        title={`Started by: ${originClassLabel(conv.originClass)}`}
+      >
+        {originClassLabel(conv.originClass)}
+      </span>
+    ) : null;
+
   // Name the agent instead of announcing its UUID. The chip is plain text (the
   // row itself is an anchor — an inner link would be invalid DOM); the door to
   // the agent lives in the row menu, where every other action lives.
   const trailing =
     showAgentHint && conv.agentId ? (
       <>
+        {originBadge}
         <span
           className="max-w-[7rem] truncate text-[10px] text-muted-foreground"
           title={agentName ? `Agent: ${agentName}` : undefined}
@@ -1106,6 +1125,11 @@ const Row: React.FC<RowProps> = ({
             <span className="sr-only">{`agent ${conv.agentId.slice(0, 8)}`}</span>
           )}
         </span>
+        {star}
+      </>
+    ) : originBadge ? (
+      <>
+        {originBadge}
         {star}
       </>
     ) : (

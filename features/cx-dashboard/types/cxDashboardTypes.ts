@@ -57,6 +57,12 @@ export type CxUserRequest = {
   status: string;
   finish_reason: string | null;
   error: string | null;
+  /**
+   * Server-derived provenance trust class (human | client_auto | api |
+   * child_agent | workflow | scheduled | system | unknown). Never
+   * client-written. Optional: rows fetched before the column existed omit it.
+   */
+  origin_class?: string | null;
   created_at: string;
   completed_at: string | null;
   deleted_at: string | null;

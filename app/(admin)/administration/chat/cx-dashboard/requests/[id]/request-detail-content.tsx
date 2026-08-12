@@ -18,6 +18,7 @@ import {
   truncateId,
   computeDuration,
 } from "@/features/cx-dashboard/utils/format";
+import { originClassLabel } from "@/features/agents/redux/conversation-history/source-registry";
 import { exportToJSON } from "@/features/cx-dashboard/utils/export";
 import type {
   CxUserRequest,
@@ -227,6 +228,15 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                 className="text-[10px]"
               >
                 {ur.finish_reason}
+              </Badge>
+            )}
+            {ur.origin_class && (
+              <Badge
+                variant="outline"
+                className="text-[10px]"
+                title="Server-derived provenance (who initiated this request)"
+              >
+                {originClassLabel(ur.origin_class)}
               </Badge>
             )}
             <span>{formatDateFull(ur.created_at)}</span>

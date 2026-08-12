@@ -17,6 +17,7 @@ import {
   truncateId,
   computeDuration,
 } from "@/features/cx-dashboard/utils/format";
+import { originClassLabel } from "@/features/agents/redux/conversation-history/source-registry";
 import {
   exportToCSV,
   exportToJSON,
@@ -233,6 +234,14 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
                   >
                     {ur.status}
                   </Badge>
+                  {ur.origin_class && (
+                    <span
+                      className="inline-flex h-4 items-center rounded-full border border-border px-1.5 text-[10px] font-medium text-muted-foreground"
+                      title="Server-derived provenance (who initiated this request)"
+                    >
+                      {originClassLabel(ur.origin_class)}
+                    </span>
+                  )}
                   <span>{ur.iterations} iter</span>
                   <span>{ur.total_tool_calls} tools</span>
                   <span className="font-mono">
