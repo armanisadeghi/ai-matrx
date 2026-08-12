@@ -304,42 +304,103 @@ export async function listSiteFindings(
 
   const response = await query.range(from, to).abortSignal(abortSignal);
   const rows = assertData(response.data, response.error);
-  // Three cheap direct reads keyed by the ids already in hand — the register
-  // must be readable WITHOUT opening each row (NO DEAD ENDS: a row that only
-  // shows `canonical_conflicts / high` is not a UI). Every finding's latest
-  // result carries the analyzer's own sentence; that is what we render.
+
+  return {
+    rows: await enrichFindings(siteId, rows, abortSignal),
+    total: response.count ?? 0,
+  };
+}
+
+/**
+ * Findings → readable rows. Three cheap direct reads keyed by ids already in
+ * hand — the register must be readable WITHOUT opening each row (NO DEAD ENDS:
+ * a row that only shows `canonical_conflicts / high` is not a UI). Every
+ * finding's latest result carries the analyzer's own sentence; that is what
+ * we render — and what the assist producer briefs the agent with.
+ */
+async function enrichFindings(
+  siteId: string,
+  rows: MarketingFinding[],
+  signal: AbortSignal,
+): Promise<FindingListRow[]> {
+  if (rows.length === 0) return [];
   const [pages, labels, latestResults] = await Promise.all([
     loadPageReferences(
       siteId,
       rows.map((row) => row.page_id),
-      abortSignal,
+      signal,
     ),
     loadAnalysisItemLabels(
       rows.map((row) => row.item_id),
-      abortSignal,
+      signal,
     ),
     loadReferencedResults(
       siteId,
       rows.map((row) => row.last_result_id),
-      abortSignal,
+      signal,
     ),
   ]);
+  return rows.map((row) => {
+    const page = row.page_id ? pages.get(row.page_id) : null;
+    const latest = row.last_result_id
+      ? latestResults.get(row.last_result_id)
+      : null;
+    return {
+      ...row,
+      page_path: page?.path ?? null,
+      page_url: page?.url ?? null,
+      item_label: labels.get(row.item_id) ?? null,
+      reasoning: latest ? resultReasoning(latest.metadata) : null,
+    };
+  });
+}
 
+export interface ActionableFindingsRead {
+  rows: FindingListRow[];
+  /** Live open+reopened, unsuppressed count for these keys (not the fetched
+   * slice) — so a rollup chip can state the true number, never the sample. */
+  total: number;
+}
+
+/**
+ * The findings assist producer's ONE read: open (or reopened), unsuppressed
+ * findings for the checks that have a real one-click AI action today.
+ *
+ * Deliberately narrow — the producer never sweeps the whole register. The key
+ * allowlist comes from `aiRemedyItemKeys()` (derived from the remedy
+ * registry), so a check with only a copy-able manual instruction can never
+ * reach a chip whose button would have nothing to run.
+ */
+export async function listActionableOpenFindings(
+  siteId: string,
+  itemKeys: readonly string[],
+  limit: number,
+  signal?: AbortSignal,
+): Promise<ActionableFindingsRead> {
+  if (itemKeys.length === 0) return { rows: [], total: 0 };
+  const abortSignal = signal ?? new AbortController().signal;
+  const response = await (
+    await authenticatedWebDb(supabase)
+  )
+    .from("finding")
+    .select(
+      "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, site_id, subject_type, subject_id, page_id, item_id, item_key, category, subcategory, severity, status, suppressed, suppressed_reason, first_result_id, last_result_id, first_detected_at, last_detected_at, resolved_at",
+      { count: "exact" },
+    )
+    .eq("site_id", siteId)
+    .in("item_key", itemKeys as string[])
+    .in("status", ["open", "reopened"])
+    .eq("suppressed", false)
+    .is("deleted_at", null)
+    // Deterministic sample when capped: most recently detected first, then id.
+    .order("last_detected_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: true })
+    .limit(limit)
+    .abortSignal(abortSignal);
+  const rows = assertData(response.data, response.error);
   return {
-    rows: rows.map((row) => {
-      const page = row.page_id ? pages.get(row.page_id) : null;
-      const latest = row.last_result_id
-        ? latestResults.get(row.last_result_id)
-        : null;
-      return {
-        ...row,
-        page_path: page?.path ?? null,
-        page_url: page?.url ?? null,
-        item_label: labels.get(row.item_id) ?? null,
-        reasoning: latest ? resultReasoning(latest.metadata) : null,
-      };
-    }),
-    total: response.count ?? 0,
+    rows: await enrichFindings(siteId, rows, abortSignal),
+    total: response.count ?? rows.length,
   };
 }
 

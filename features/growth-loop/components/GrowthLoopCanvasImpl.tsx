@@ -278,6 +278,15 @@ function GrowthLoopCanvasInner() {
                         <div className="mt-0.5 text-[11px] text-muted-foreground">
                             {openGaps.length} open gaps · {blockers.length} blockers
                         </div>
+                        {/* No dead ends: the customer-facing view of this same map. */}
+                        <a
+                            href="/how-it-works"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-block text-[11px] font-medium text-primary hover:underline"
+                        >
+                            Customer-facing view →
+                        </a>
                     </Panel>
                 </ReactFlow>
             </div>
