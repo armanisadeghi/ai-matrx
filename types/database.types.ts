@@ -223,9 +223,15 @@ export type Database = {
           comparison_set_id: string
           conversation_id: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           display_order: number
           id: string
           metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           agent_id: string
@@ -234,9 +240,15 @@ export type Database = {
           comparison_set_id: string
           conversation_id: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           display_order: number
           id?: string
           metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           agent_id?: string
@@ -245,9 +257,15 @@ export type Database = {
           comparison_set_id?: string
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           display_order?: number
           id?: string
           metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -401,6 +419,7 @@ export type Database = {
           matrx_actions: Json
           mcp_servers: string[]
           messages: Json
+          metadata: Json
           model_id: string | null
           model_tiers: Json | null
           name: string
@@ -444,6 +463,7 @@ export type Database = {
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name: string
@@ -487,6 +507,7 @@ export type Database = {
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name?: string
@@ -536,6 +557,8 @@ export type Database = {
           change_note: string | null
           changed_at: string
           context_slots: Json | null
+          created_at: string
+          created_by: string | null
           custom_tools: Json | null
           description: string | null
           id: string
@@ -543,9 +566,11 @@ export type Database = {
           matrx_actions: Json
           mcp_servers: string[]
           messages: Json | null
+          metadata: Json
           model_id: string | null
           model_tiers: Json | null
           name: string | null
+          organization_id: string
           output_schema: Json | null
           settings: Json | null
           skill_config: Json
@@ -553,7 +578,10 @@ export type Database = {
           tool_config: Json
           tools: string[] | null
           ui_gates: Json
+          updated_at: string
+          updated_by: string | null
           variable_definitions: Json | null
+          version: number
           version_number: number
         }
         Insert: {
@@ -563,6 +591,8 @@ export type Database = {
           change_note?: string | null
           changed_at?: string
           context_slots?: Json | null
+          created_at?: string
+          created_by?: string | null
           custom_tools?: Json | null
           description?: string | null
           id?: string
@@ -570,9 +600,11 @@ export type Database = {
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json | null
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name?: string | null
+          organization_id: string
           output_schema?: Json | null
           settings?: Json | null
           skill_config?: Json
@@ -580,7 +612,10 @@ export type Database = {
           tool_config?: Json
           tools?: string[] | null
           ui_gates?: Json
+          updated_at?: string
+          updated_by?: string | null
           variable_definitions?: Json | null
+          version?: number
           version_number: number
         }
         Update: {
@@ -590,6 +625,8 @@ export type Database = {
           change_note?: string | null
           changed_at?: string
           context_slots?: Json | null
+          created_at?: string
+          created_by?: string | null
           custom_tools?: Json | null
           description?: string | null
           id?: string
@@ -597,9 +634,11 @@ export type Database = {
           matrx_actions?: Json
           mcp_servers?: string[]
           messages?: Json | null
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name?: string | null
+          organization_id?: string
           output_schema?: Json | null
           settings?: Json | null
           skill_config?: Json
@@ -607,7 +646,10 @@ export type Database = {
           tool_config?: Json
           tools?: string[] | null
           ui_gates?: Json
+          updated_at?: string
+          updated_by?: string | null
           variable_definitions?: Json | null
+          version?: number
           version_number?: number
         }
         Relationships: [
@@ -633,6 +675,7 @@ export type Database = {
           agent_name: string
           breaking_count: number
           created_at: string
+          created_by: string | null
           detected_at: string
           dismissed_at: string | null
           dm_message_id: string | null
@@ -641,12 +684,17 @@ export type Database = {
           id: string
           info_count: number
           last_scanned_at: string
+          metadata: Json
+          organization_id: string
           severity: string
           silent_count: number
           status: string
           suppressed_until: string | null
+          updated_at: string
+          updated_by: string | null
           usage_count: number
           user_id: string
+          version: number
           viewed_at: string | null
           warning_count: number
         }
@@ -655,6 +703,7 @@ export type Database = {
           agent_name: string
           breaking_count?: number
           created_at?: string
+          created_by?: string | null
           detected_at?: string
           dismissed_at?: string | null
           dm_message_id?: string | null
@@ -663,12 +712,17 @@ export type Database = {
           id?: string
           info_count?: number
           last_scanned_at?: string
+          metadata?: Json
+          organization_id: string
           severity: string
           silent_count?: number
           status?: string
           suppressed_until?: string | null
+          updated_at?: string
+          updated_by?: string | null
           usage_count?: number
           user_id: string
+          version?: number
           viewed_at?: string | null
           warning_count?: number
         }
@@ -677,6 +731,7 @@ export type Database = {
           agent_name?: string
           breaking_count?: number
           created_at?: string
+          created_by?: string | null
           detected_at?: string
           dismissed_at?: string | null
           dm_message_id?: string | null
@@ -685,12 +740,17 @@ export type Database = {
           id?: string
           info_count?: number
           last_scanned_at?: string
+          metadata?: Json
+          organization_id?: string
           severity?: string
           silent_count?: number
           status?: string
           suppressed_until?: string | null
+          updated_at?: string
+          updated_by?: string | null
           usage_count?: number
           user_id?: string
+          version?: number
           viewed_at?: string | null
           warning_count?: number
         }
@@ -780,6 +840,7 @@ export type Database = {
           keyboard_shortcut: string | null
           label: string
           llm_overrides: Json | null
+          metadata: Json
           organization_id: string
           pre_execution_message: string | null
           project_id: string | null
@@ -827,6 +888,7 @@ export type Database = {
           keyboard_shortcut?: string | null
           label: string
           llm_overrides?: Json | null
+          metadata?: Json
           organization_id: string
           pre_execution_message?: string | null
           project_id?: string | null
@@ -874,6 +936,7 @@ export type Database = {
           keyboard_shortcut?: string | null
           label?: string
           llm_overrides?: Json | null
+          metadata?: Json
           organization_id?: string
           pre_execution_message?: string | null
           project_id?: string | null
@@ -1218,6 +1281,7 @@ export type Database = {
           is_public: boolean
           mcp_servers: string[]
           messages: Json
+          metadata: Json
           model_id: string | null
           model_tiers: Json | null
           name: string
@@ -1252,6 +1316,7 @@ export type Database = {
           is_public?: boolean
           mcp_servers?: string[]
           messages?: Json
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name: string
@@ -1286,6 +1351,7 @@ export type Database = {
           is_public?: boolean
           mcp_servers?: string[]
           messages?: Json
+          metadata?: Json
           model_id?: string | null
           model_tiers?: Json | null
           name?: string
@@ -1328,46 +1394,67 @@ export type Database = {
           agent_id: string | null
           agent_version_id: string | null
           code_path: string | null
+          created_at: string
+          created_by: string | null
           first_seen_at: string
           id: string
           last_seen_at: string
           last_synced_at: string
+          metadata: Json
+          organization_id: string
           purpose: string
           ref_kind: string
           source_system: string
           status: string
           synced_by: string | null
+          updated_at: string
+          updated_by: string | null
           usage_key: string
+          version: number
         }
         Insert: {
           agent_id?: string | null
           agent_version_id?: string | null
           code_path?: string | null
+          created_at?: string
+          created_by?: string | null
           first_seen_at?: string
           id?: string
           last_seen_at?: string
           last_synced_at?: string
+          metadata?: Json
+          organization_id: string
           purpose: string
           ref_kind: string
           source_system: string
           status?: string
           synced_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
           usage_key: string
+          version?: number
         }
         Update: {
           agent_id?: string | null
           agent_version_id?: string | null
           code_path?: string | null
+          created_at?: string
+          created_by?: string | null
           first_seen_at?: string
           id?: string
           last_seen_at?: string
           last_synced_at?: string
+          metadata?: Json
+          organization_id?: string
           purpose?: string
           ref_kind?: string
           source_system?: string
           status?: string
           synced_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
           usage_key?: string
+          version?: number
         }
         Relationships: [
           {
@@ -27737,16 +27824,22 @@ export type Database = {
           claimed_at: string | null
           claimed_by: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error: Json | null
           id: string
           job_id: string
           max_attempts: number
+          metadata: Json
           node_id: string
+          organization_id: string
           page_id: string
           result: Json | null
           route: string
           status: string
           updated_at: string
+          updated_by: string | null
+          version: number
           visible_at: string
         }
         Insert: {
@@ -27754,16 +27847,22 @@ export type Database = {
           claimed_at?: string | null
           claimed_by?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           id?: string
           job_id: string
           max_attempts?: number
+          metadata?: Json
           node_id: string
+          organization_id: string
           page_id: string
           result?: Json | null
           route?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           visible_at?: string
         }
         Update: {
@@ -27771,16 +27870,22 @@ export type Database = {
           claimed_at?: string | null
           claimed_by?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           id?: string
           job_id?: string
           max_attempts?: number
+          metadata?: Json
           node_id?: string
+          organization_id?: string
           page_id?: string
           result?: Json | null
           route?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           visible_at?: string
         }
         Relationships: [
@@ -27799,14 +27904,20 @@ export type Database = {
           cms_site_id: string
           cms_site_slug: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error: Json | null
           finished_at: string | null
           id: string
+          metadata: Json
           options: Json
+          organization_id: string
           result: Json | null
           started_at: string | null
           status: string
           updated_at: string
+          updated_by: string | null
+          version: number
           web_site_id: string
         }
         Insert: {
@@ -27814,14 +27925,20 @@ export type Database = {
           cms_site_id: string
           cms_site_slug?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           finished_at?: string | null
           id?: string
+          metadata?: Json
           options?: Json
+          organization_id: string
           result?: Json | null
           started_at?: string | null
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           web_site_id: string
         }
         Update: {
@@ -27829,14 +27946,20 @@ export type Database = {
           cms_site_id?: string
           cms_site_slug?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           finished_at?: string | null
           id?: string
+          metadata?: Json
           options?: Json
+          organization_id?: string
           result?: Json | null
           started_at?: string | null
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           web_site_id?: string
         }
         Relationships: []
