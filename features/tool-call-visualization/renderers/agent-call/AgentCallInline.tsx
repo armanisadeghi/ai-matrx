@@ -8,6 +8,7 @@ import { isImageGenerationAgentCall } from "./agentCallKind";
 import { isCollaborationAgentCall } from "./collab";
 import { CollabCallCard } from "./CollabCallCard";
 import { ImageGenerationResult } from "./ImageGenerationResult";
+import { findResultMedia } from "./findResultMedia";
 
 function ImageGenerationLoading() {
   return (
@@ -94,6 +95,18 @@ export function AgentCallInline(props: ToolRendererProps) {
 
   if (entry.status !== "error" && isCollaborationAgentCall(entry)) {
     return <CollabCallCard {...props} />;
+  }
+
+  // A child that produced audio / video / a document declares it on the same
+  // canonical channel. Without this the result rendered as a UUID chip in a
+  // key/value grid — a dead end: a raw id, no player, no download. The media
+  // component resolves the file and gives the user something to actually use.
+  if (
+    entry.status === "completed" &&
+    !isImageGenerationAgentCall(entry) &&
+    findResultMedia(entry.result)
+  ) {
+    return <ImageGenerationResult {...props} />;
   }
 
   return <GenericRenderer {...props} />;
