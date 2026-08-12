@@ -344,6 +344,26 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-12` — **`matrx-user/cms-site` gains two more agent write targets, on
+  two different tabs: `site_name` (Settings, `draft`) and `add_page` (Pages,
+  `entity`).** Additive to the 2026-08-10 pass's four Settings-tab staging
+  targets, which are kept as they merged. `site_name` stages into the same
+  `useState` the Site Name input drives, sharing the General card's single Save
+  Changes with `site_global_css`. `add_page` is the surface's first real write:
+  it calls the SAME `CmsPageService.createPage` the New Page route uses (so the
+  API's `is_published: false` / `show_in_nav: false` defaults hold — the new
+  page is an unpublished, out-of-nav, empty stub), derives an omitted slug
+  through the canonical `slugifyTitle` and validates an explicit one against
+  `SLUG_RE`, then calls `refreshPages()` so the layout's page cache and
+  `site_structure` do not drift from what was just created. Being a genuine
+  write, it is the one target that refuses when the site's
+  `agent_write_policy` is `blocked`. Handlers live on each tab's own nested
+  provider; the writeback seam only offers a target where a handler is
+  mounted, so Settings and Pages present disjoint tool sets. Live-verified
+  with real Badass Agent runs on `dev-website` (apply, decline, undeclared-
+  target refusal, and both handlers' throws reaching the agent verbatim); test
+  pages were deleted afterwards. See `features/surfaces/FEATURE.md` for the
+  full entry.
 - `2026-08-12` — **The CMS hub's write target independently re-verified live, and
   its missing `features/surfaces/FEATURE.md` entry written.** A follow-up chip was
   assigned to make `matrx-user/cms` agent-writable and found the entry below had
