@@ -33,7 +33,7 @@ export const PEEK_KINDS = [
   "workflow",
   "message_template",
   "conversation",
-  "flashcard_data",
+  "fc_set",
   "canvas_item",
   "task",
   "dataset",

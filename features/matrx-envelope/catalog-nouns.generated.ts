@@ -201,17 +201,9 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "education.fc_set",
   "title_column": "name"
  },
- "flashcard_history": {
-  "table": "education.flashcard_history",
-  "title_column": null
- },
  "flashcard_set": {
   "table": "users.user_flashcard_sets",
   "title_column": "title"
- },
- "flashcard_sets": {
-  "table": "education.flashcard_sets",
-  "title_column": "name"
  },
  "flexible_data": {
   "table": "flexible_data",

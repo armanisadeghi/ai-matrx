@@ -18,7 +18,7 @@ const SHORTCUT_FIELDS = [
   "agent_version_id",
   "use_latest",
   "is_active",
-  "user_id",
+  "created_by",
   "organization_id",
   "project_id",
   "task_id",
@@ -73,12 +73,12 @@ export async function GET(request: NextRequest) {
     if (scope === "global") {
       // Global/platform content now lives in the system org (was NULL org).
       query = query
-        .is("user_id", null)
+        .is("created_by", null)
         .eq("organization_id", await resolveSystemOrgId(supabase))
         .is("project_id", null)
         .is("task_id", null);
     } else if (scope === "user") {
-      query = query.eq("user_id", user.id);
+      query = query.eq("created_by", user.id);
     } else if (scope === "organization") {
       if (!scopeId) {
         return NextResponse.json(

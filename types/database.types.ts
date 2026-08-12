@@ -280,7 +280,7 @@ export type Database = {
       cmp_comparison_sets: {
         Row: {
           created_at: string
-          created_by: string | null
+          created_by: string
           deleted_at: string | null
           id: string
           metadata: Json
@@ -290,13 +290,12 @@ export type Database = {
           task_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
+          created_by: string
           deleted_at?: string | null
           id?: string
           metadata?: Json
@@ -306,13 +305,12 @@ export type Database = {
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           deleted_at?: string | null
           id?: string
           metadata?: Json
@@ -322,7 +320,6 @@ export type Database = {
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -334,7 +331,7 @@ export type Database = {
           comparison_set_id: string | null
           conversation_id: string
           created_at: string
-          created_by: string | null
+          created_by: string
           deleted_at: string | null
           id: string
           metadata: Json
@@ -345,7 +342,6 @@ export type Database = {
           request_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -354,7 +350,7 @@ export type Database = {
           comparison_set_id?: string | null
           conversation_id: string
           created_at?: string
-          created_by?: string | null
+          created_by: string
           deleted_at?: string | null
           id?: string
           metadata?: Json
@@ -365,7 +361,6 @@ export type Database = {
           request_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -374,7 +369,7 @@ export type Database = {
           comparison_set_id?: string | null
           conversation_id?: string
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           deleted_at?: string | null
           id?: string
           metadata?: Json
@@ -385,7 +380,6 @@ export type Database = {
           request_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -678,7 +672,7 @@ export type Database = {
           agent_name: string
           breaking_count: number
           created_at: string
-          created_by: string | null
+          created_by: string
           deleted_at: string | null
           detected_at: string
           dismissed_at: string | null
@@ -697,7 +691,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           usage_count: number
-          user_id: string
           version: number
           viewed_at: string | null
           warning_count: number
@@ -707,7 +700,7 @@ export type Database = {
           agent_name: string
           breaking_count?: number
           created_at?: string
-          created_by?: string | null
+          created_by: string
           deleted_at?: string | null
           detected_at?: string
           dismissed_at?: string | null
@@ -726,7 +719,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           usage_count?: number
-          user_id: string
           version?: number
           viewed_at?: string | null
           warning_count?: number
@@ -736,7 +728,7 @@ export type Database = {
           agent_name?: string
           breaking_count?: number
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           deleted_at?: string | null
           detected_at?: string
           dismissed_at?: string | null
@@ -755,7 +747,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           usage_count?: number
-          user_id?: string
           version?: number
           viewed_at?: string | null
           warning_count?: number
@@ -862,7 +853,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           use_latest: boolean
-          user_id: string | null
           value_mappings: Json | null
           variables_panel_style: string
           version: number
@@ -910,7 +900,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
-          user_id?: string | null
           value_mappings?: Json | null
           variables_panel_style?: string
           version?: number
@@ -958,7 +947,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           use_latest?: boolean
-          user_id?: string | null
           value_mappings?: Json | null
           variables_panel_style?: string
           version?: number
@@ -1284,7 +1272,6 @@ export type Database = {
           id: string
           is_archived: boolean
           is_featured: boolean
-          is_public: boolean
           mcp_servers: string[]
           messages: Json
           metadata: Json
@@ -1303,7 +1290,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           use_count: number
-          user_id: string | null
           variable_definitions: Json | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -1319,7 +1305,6 @@ export type Database = {
           id?: string
           is_archived?: boolean
           is_featured?: boolean
-          is_public?: boolean
           mcp_servers?: string[]
           messages?: Json
           metadata?: Json
@@ -1338,7 +1323,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           use_count?: number
-          user_id?: string | null
           variable_definitions?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -1354,7 +1338,6 @@ export type Database = {
           id?: string
           is_archived?: boolean
           is_featured?: boolean
-          is_public?: boolean
           mcp_servers?: string[]
           messages?: Json
           metadata?: Json
@@ -1373,7 +1356,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           use_count?: number
-          user_id?: string | null
           variable_definitions?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -12570,271 +12552,6 @@ export type Database = {
         }
         Relationships: []
       }
-      flashcard_data: {
-        Row: {
-          audio_explanation: string | null
-          back: string
-          created_at: string | null
-          created_by: string | null
-          detailed_explanation: string | null
-          difficulty: string | null
-          example: string | null
-          front: string
-          id: string
-          is_deleted: boolean | null
-          lesson: string | null
-          metadata: Json
-          organization_id: string | null
-          personal_notes: string | null
-          project_id: string | null
-          public: boolean | null
-          shared_with: string[] | null
-          topic: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          audio_explanation?: string | null
-          back: string
-          created_at?: string | null
-          created_by?: string | null
-          detailed_explanation?: string | null
-          difficulty?: string | null
-          example?: string | null
-          front: string
-          id?: string
-          is_deleted?: boolean | null
-          lesson?: string | null
-          metadata?: Json
-          organization_id?: string | null
-          personal_notes?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          audio_explanation?: string | null
-          back?: string
-          created_at?: string | null
-          created_by?: string | null
-          detailed_explanation?: string | null
-          difficulty?: string | null
-          example?: string | null
-          front?: string
-          id?: string
-          is_deleted?: boolean | null
-          lesson?: string | null
-          metadata?: Json
-          organization_id?: string | null
-          personal_notes?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: []
-      }
-      flashcard_history: {
-        Row: {
-          correct_count: number | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          flashcard_id: string | null
-          id: string
-          incorrect_count: number | null
-          metadata: Json
-          organization_id: string
-          review_count: number | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          correct_count?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          flashcard_id?: string | null
-          id?: string
-          incorrect_count?: number | null
-          metadata?: Json
-          organization_id: string
-          review_count?: number | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          correct_count?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          flashcard_id?: string | null
-          id?: string
-          incorrect_count?: number | null
-          metadata?: Json
-          organization_id?: string
-          review_count?: number | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_history_flashcard_id_fkey"
-            columns: ["flashcard_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_data"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      flashcard_images: {
-        Row: {
-          created_at: string | null
-          file_name: string
-          file_path: string
-          flashcard_id: string | null
-          id: string
-          mime_type: string
-          size: number
-        }
-        Insert: {
-          created_at?: string | null
-          file_name: string
-          file_path: string
-          flashcard_id?: string | null
-          id?: string
-          mime_type: string
-          size: number
-        }
-        Update: {
-          created_at?: string | null
-          file_name?: string
-          file_path?: string
-          flashcard_id?: string | null
-          id?: string
-          mime_type?: string
-          size?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_images_flashcard_id_fkey"
-            columns: ["flashcard_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_data"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      flashcard_set_relations: {
-        Row: {
-          flashcard_id: string
-          order: number | null
-          set_id: string
-        }
-        Insert: {
-          flashcard_id: string
-          order?: number | null
-          set_id: string
-        }
-        Update: {
-          flashcard_id?: string
-          order?: number | null
-          set_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flashcard_set_relations_flashcard_id_fkey"
-            columns: ["flashcard_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_data"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "flashcard_set_relations_set_id_fkey"
-            columns: ["set_id"]
-            isOneToOne: false
-            referencedRelation: "flashcard_sets"
-            referencedColumns: ["set_id"]
-          },
-        ]
-      }
-      flashcard_sets: {
-        Row: {
-          audio_overview: string | null
-          created_at: string | null
-          created_by: string | null
-          difficulty: string | null
-          lesson: string | null
-          metadata: Json
-          name: string
-          organization_id: string | null
-          project_id: string | null
-          public: boolean | null
-          set_id: string
-          shared_with: string[] | null
-          topic: string | null
-          updated_at: string | null
-          updated_by: string | null
-          user_id: string
-          version: number
-        }
-        Insert: {
-          audio_overview?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          difficulty?: string | null
-          lesson?: string | null
-          metadata?: Json
-          name: string
-          organization_id?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          set_id?: string
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id: string
-          version?: number
-        }
-        Update: {
-          audio_overview?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          difficulty?: string | null
-          lesson?: string | null
-          metadata?: Json
-          name?: string
-          organization_id?: string | null
-          project_id?: string | null
-          public?: boolean | null
-          set_id?: string
-          shared_with?: string[] | null
-          topic?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          user_id?: string
-          version?: number
-        }
-        Relationships: []
-      }
       game_badge: {
         Row: {
           badge_key: string
@@ -18868,6 +18585,271 @@ export type Database = {
           default_params?: Json | null
           id?: string
           name?: string | null
+        }
+        Relationships: []
+      }
+      education_flashcard_data: {
+        Row: {
+          audio_explanation: string | null
+          back: string
+          created_at: string | null
+          created_by: string | null
+          detailed_explanation: string | null
+          difficulty: string | null
+          example: string | null
+          front: string
+          id: string
+          is_deleted: boolean | null
+          lesson: string | null
+          metadata: Json
+          organization_id: string | null
+          personal_notes: string | null
+          project_id: string | null
+          public: boolean | null
+          shared_with: string[] | null
+          topic: string | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          audio_explanation?: string | null
+          back: string
+          created_at?: string | null
+          created_by?: string | null
+          detailed_explanation?: string | null
+          difficulty?: string | null
+          example?: string | null
+          front: string
+          id?: string
+          is_deleted?: boolean | null
+          lesson?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          personal_notes?: string | null
+          project_id?: string | null
+          public?: boolean | null
+          shared_with?: string[] | null
+          topic?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          audio_explanation?: string | null
+          back?: string
+          created_at?: string | null
+          created_by?: string | null
+          detailed_explanation?: string | null
+          difficulty?: string | null
+          example?: string | null
+          front?: string
+          id?: string
+          is_deleted?: boolean | null
+          lesson?: string | null
+          metadata?: Json
+          organization_id?: string | null
+          personal_notes?: string | null
+          project_id?: string | null
+          public?: boolean | null
+          shared_with?: string[] | null
+          topic?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      education_flashcard_history: {
+        Row: {
+          correct_count: number | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          flashcard_id: string | null
+          id: string
+          incorrect_count: number | null
+          metadata: Json
+          organization_id: string
+          review_count: number | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          correct_count?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          flashcard_id?: string | null
+          id?: string
+          incorrect_count?: number | null
+          metadata?: Json
+          organization_id: string
+          review_count?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          correct_count?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          flashcard_id?: string | null
+          id?: string
+          incorrect_count?: number | null
+          metadata?: Json
+          organization_id?: string
+          review_count?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_history_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "education_flashcard_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      education_flashcard_images: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          flashcard_id: string | null
+          id: string
+          mime_type: string
+          size: number
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          flashcard_id?: string | null
+          id?: string
+          mime_type: string
+          size: number
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          flashcard_id?: string | null
+          id?: string
+          mime_type?: string
+          size?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_images_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "education_flashcard_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      education_flashcard_set_relations: {
+        Row: {
+          flashcard_id: string
+          order: number | null
+          set_id: string
+        }
+        Insert: {
+          flashcard_id: string
+          order?: number | null
+          set_id: string
+        }
+        Update: {
+          flashcard_id?: string
+          order?: number | null
+          set_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_set_relations_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "education_flashcard_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_set_relations_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "education_flashcard_sets"
+            referencedColumns: ["set_id"]
+          },
+        ]
+      }
+      education_flashcard_sets: {
+        Row: {
+          audio_overview: string | null
+          created_at: string | null
+          created_by: string | null
+          difficulty: string | null
+          lesson: string | null
+          metadata: Json
+          name: string
+          organization_id: string | null
+          project_id: string | null
+          public: boolean | null
+          set_id: string
+          shared_with: string[] | null
+          topic: string | null
+          updated_at: string | null
+          updated_by: string | null
+          user_id: string
+          version: number
+        }
+        Insert: {
+          audio_overview?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          difficulty?: string | null
+          lesson?: string | null
+          metadata?: Json
+          name: string
+          organization_id?: string | null
+          project_id?: string | null
+          public?: boolean | null
+          set_id?: string
+          shared_with?: string[] | null
+          topic?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id: string
+          version?: number
+        }
+        Update: {
+          audio_overview?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          difficulty?: string | null
+          lesson?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          project_id?: string | null
+          public?: boolean | null
+          set_id?: string
+          shared_with?: string[] | null
+          topic?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          user_id?: string
+          version?: number
         }
         Relationships: []
       }
@@ -57721,7 +57703,7 @@ export type Database = {
           run_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -57737,7 +57719,7 @@ export type Database = {
           run_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -57753,7 +57735,7 @@ export type Database = {
           run_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [
@@ -57874,7 +57856,7 @@ export type Database = {
           source: string
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           value: Json
           version: number
         }
@@ -57895,7 +57877,7 @@ export type Database = {
           source: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           value: Json
           version?: number
         }
@@ -57916,7 +57898,7 @@ export type Database = {
           source?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           value?: Json
           version?: number
         }
@@ -58335,7 +58317,7 @@ export type Database = {
           surface: string
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
           was_applied: boolean
           was_overridden: boolean
@@ -58356,7 +58338,7 @@ export type Database = {
           surface: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
           was_applied?: boolean
           was_overridden?: boolean
@@ -58377,7 +58359,7 @@ export type Database = {
           surface?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
           was_applied?: boolean
           was_overridden?: boolean
@@ -58717,7 +58699,7 @@ export type Database = {
           trigger_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
@@ -58738,7 +58720,7 @@ export type Database = {
           trigger_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          user_id?: string | null
           version?: number
         }
         Update: {
@@ -58759,7 +58741,7 @@ export type Database = {
           trigger_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: [

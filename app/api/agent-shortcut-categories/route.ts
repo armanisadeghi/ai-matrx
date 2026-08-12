@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Resolve scope FKs via the shared helper (sets user_id/org/project/task_id on payload).
+    // Resolve scope FKs via the shared helper (sets created_by/org/project/task_id on payload).
     const scopePayload: Record<string, unknown> = {};
     const scoped = await applyScopeToInsertPayload({
       body,
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
         description: body.description ?? null,
         is_active: body.is_active !== undefined ? body.is_active : true,
         enabled_features: body.enabled_features ?? null,
-        user_id: scoped.user_id ?? null,
+        user_id: scoped.created_by ?? null,
         project_id: scoped.project_id ?? null,
         task_id: scoped.task_id ?? null,
         legacy_table: "shortcut_categories",

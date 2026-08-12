@@ -43,7 +43,7 @@ export async function POST(
       .select("id")
       .is("deleted_at", null)
       .eq("name", agent.name)
-      .eq("user_id", user.id)
+      .eq("created_by", user.id)
       .single();
 
     const templateName = existing
@@ -74,10 +74,11 @@ export async function POST(
         tool_config: agent.tool_config ?? null,
         context_slots: agent.context_slots ?? [],
         mcp_servers: agent.mcp_servers ?? [],
-        is_public: false,
+        // visibility intentionally omitted → DB default 'internal' (non-public,
+        // same posture as the retired is_public=false)
         is_featured: false,
         use_count: 0,
-        user_id: user.id,
+        created_by: user.id,
         // "My template" → the user's personal org (agent.template org is NOT
         // NULL with no inherit trigger; resolve server-side, never cache).
         organization_id: await ensureOrgIdServer(supabase, undefined),

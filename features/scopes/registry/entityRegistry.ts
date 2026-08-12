@@ -341,9 +341,9 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: Layers,
     labelPlural: "Flashcard Sets",
   },
-  // The row FlashcardPeek actually reads (education.flashcard_data). An
-  // individual card has no standalone route — it is studied through its set.
-  flashcard_data: {
+  // The row FlashcardPeek actually reads (education.fc_set) — the canonical
+  // flashcard-set entity (legacy education.flashcard_data merged 2026-08-12).
+  fc_set: {
     Icon: Layers,
     labelPlural: "Flashcards",
   },

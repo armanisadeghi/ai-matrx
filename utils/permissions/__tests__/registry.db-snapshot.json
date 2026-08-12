@@ -305,7 +305,7 @@
     "display_label": "Flashcard",
     "url_path_template": "/flashcards/{id}",
     "rls_uses_has_permission": true,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "folder",

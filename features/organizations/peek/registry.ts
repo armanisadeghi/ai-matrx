@@ -46,7 +46,7 @@ export const PEEK_REGISTRY: Record<
   workflow: WorkflowPeek,
   message_template: MessageTemplatePeek,
   conversation: ConversationPeek,
-  flashcard_data: FlashcardPeek,
+  fc_set: FlashcardPeek,
   canvas_item: CanvasPeek,
   task: TaskPeek,
   dataset: DatasetPeek,

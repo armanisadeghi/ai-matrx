@@ -351,17 +351,6 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/files/{id}",
     rlsUsesHasPermission: false,
   },
-  flashcard_data: {
-    resourceType: "flashcard_data",
-    tableName: "flashcard_data",
-    schemaName: "education",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "public",
-    displayLabel: "Flashcard",
-    urlPathTemplate: "/flashcards/{id}",
-    rlsUsesHasPermission: true,
-  },
   folder: {
     resourceType: "folder",
     tableName: "folders",

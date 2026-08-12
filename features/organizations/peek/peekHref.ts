@@ -18,7 +18,7 @@
  * every `EntityRef`, and every association row picks it up at once.
  *
  * NOTE the token, not the peek's catalogue key: six peek keys differ from the
- * canonical token (`flashcard`→`flashcard_data`, `quiz`→`quiz_session`,
+ * canonical token (`flashcard`→`fc_set`, `quiz`→`quiz_session`,
  * `canvas`→`canvas_item`, `sandbox`→`sandbox_instance`, `agent_app`→`app`,
  * `picklist`→`structured_list`).
  */
