@@ -96,6 +96,25 @@ runtime, so the agent never carries the raw member tools.
 
 ## Change Log
 
+- **2026-08-12** — **Second assignment, no new targets: a member-alias target was
+  proposed and refused.** Another agent was chipped at this console while the
+  entry below was in flight and scouted `{tool_id, alias}` through
+  `setBundleMemberAlias` as a second write target. It is deliberately NOT
+  adopted, converging on the exclusion already shipped below: a member's
+  `local_alias` is the identifier `bundle_lister` hot-swaps the tool in under,
+  so renaming one breaks call sites mid-run — the same class as renaming a
+  bundle out from under its `bundle:list_<name>` lister, not a copy edit. (The
+  surface intro's "draft member aliases" means helping the admin choose one
+  while ADDING a tool, not rewriting existing members.) Both shipped targets
+  were independently re-verified on `main` against `desktop-web`, an inactive
+  non-system bundle: `bundle_description` staged into the inline box with the
+  `tool.bundle` row untouched (`updated_at` unchanged), `new_bundle_draft`
+  opened the New bundle form pre-filled and Cancel discarded it, and a
+  before/after diff of `tool.bundle` shows 63 rows → 63 rows. Also corrected: a
+  2026-08-11 note in the surfaces FEATURE.md claimed this console fails to load
+  rows — it does not; `tool.bundle` reads fine and the page lists 54 active /
+  63 total.
+
 - **2026-08-12** — **The console is agent-writable, and it emits a live surface
   for the first time.** `BundlesAdminPage` now mounts a `SurfaceRuntimeProvider`
   for `matrx-admin/bundles` over a page-scoped store
