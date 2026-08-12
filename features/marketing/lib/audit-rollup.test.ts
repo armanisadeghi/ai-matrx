@@ -1,4 +1,4 @@
-import { buildSiteAuditRollup } from "./audit-rollup";
+import { buildSiteAuditRollup, buildSiteAuditTrend } from "./audit-rollup";
 import { buildStoredSeoMetrics } from "@/features/marketing/seo/serp/metrics";
 import { buildStoredAuditMetrics } from "@/features/marketing/seo/audit/stored";
 
@@ -39,6 +39,41 @@ function auditFor(
     "client",
   );
 }
+
+describe("buildSiteAuditTrend", () => {
+  it("emits no point for a day whose every page is gone", () => {
+    // iopbm.com's real shape: three capture days on which every page captured
+    // has since disappeared. A 0-page, null-score point puts a hole in the
+    // chart that means nothing, and the SQL twin drops the row before it
+    // groups — so this must too.
+    const GONE = "https://example.com/retired";
+    const points = buildSiteAuditTrend([
+      {
+        id: "s1",
+        capturedDay: "2026-07-21",
+        url: GONE,
+        path: "/retired",
+        contentTypeLast: "html",
+        status: "missing",
+        seo_metrics: null,
+        audit_metrics: auditFor(GONE),
+      },
+      {
+        id: "s2",
+        capturedDay: "2026-07-22",
+        url: GOOD_URL,
+        path: "/blog/clean-post",
+        contentTypeLast: "html",
+        status: "active",
+        seo_metrics: null,
+        audit_metrics: auditFor(GOOD_URL),
+      },
+    ]);
+
+    expect(points.map((p) => p.day)).toEqual(["2026-07-22"]);
+    expect(points[0].totalPages).toBe(1);
+  });
+});
 
 describe("buildSiteAuditRollup", () => {
   it("aggregates verdicts, passes, issues, and worst pages", () => {

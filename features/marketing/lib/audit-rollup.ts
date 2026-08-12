@@ -514,6 +514,13 @@ export function buildSiteAuditTrend(
   const points: AuditTrendPoint[] = [];
   for (const [day, dayRows] of byDay) {
     const rollup = buildSiteAuditRollup(dayRows);
+    // A day whose every snapshot was excluded (all machine resources, all
+    // aliases, or all on pages that are now GONE) contributed no eligible page,
+    // so it is not a day this site has a score for. The SQL twin drops the row
+    // before it ever groups; emitting a 0-page, null-score point here would put
+    // a hole in the chart that means nothing. iopbm.com has three such days —
+    // every page captured then is gone today.
+    if (rollup.totalPages === 0) continue;
     const sectionsTotal = 4 * rollup.auditedPages;
     const sectionsPassed =
       rollup.passes.serp +

@@ -5,10 +5,13 @@
 -- THE BUG. `web.page.status = 'missing'` means the crawler no longer finds the
 -- URL. The rollup did not look at `status` at all, so every gone page's
 -- LAST-KNOWN snapshot metrics kept flowing into the site audit exactly like a
--- live page's: 213 pages on titaniumsuccess.com, 83 on iopbm.com, 57 on
--- allgreenrecycling.com sat in "pages needing attention" faulted for a missing
--- og:title or a short H1. A user who acts on that edits a page that no longer
--- exists — wasted work, and it crowds out findings on pages that are real.
+-- live page's. Gone pages the rollup was scoring, measured the moment before
+-- this applied: 212 on titaniumsuccess.com, 167 on iopbm.com, 121 on
+-- allgreenrecycling.com, 107 on aimatrx.com — sitting in "pages needing
+-- attention" faulted for a missing og:title or a short H1. A user who acts on
+-- that edits a page that no longer exists: wasted work, crowding out findings
+-- on pages that are real. iopbm.com's entire audit was dead pages — 167 gone
+-- against 33 live.
 --
 -- THE DECISION (product, deliberate). Three moves, and the first one alone
 -- would have been a defect:
@@ -46,7 +49,8 @@
 -- features/marketing/lib/audit-rollup.ts::buildSiteAuditRollup. CHANGE ONE,
 -- CHANGE BOTH — parity was re-proven against the live sites after applying
 -- (titaniumsuccess.com, allgreenrecycling.com, iopbm.com, vasaro.com,
--- datadestruction.com): identical rollups on every field.
+-- datadestruction.com): identical rollups on every field over 8,693 registry
+-- rows, and identical trend points over 4,717 snapshots.
 --
 -- THE SHARED PAGE-CLASS RULE IS UNTOUCHED. Both halves stay function CALLS
 -- (web.is_resource_content_type / web.is_machine_resource_url) and the alias
@@ -66,6 +70,13 @@
 --     C.UTF-8, i.e. plain byte order, so `/Hard-Drive-Shredding-San-Diego` sorts
 --     before `/akron-recycling` in SQL and after it in JS. The SQL was right —
 --     the TS reference now compares by code point (audit-rollup.ts::byText).
+--
+--   * buildSiteAuditTrend emitted a point for a capture day whose every
+--     snapshot was excluded (all resources, all aliases, or — now — all on
+--     pages that are gone): 0 pages, null score, a hole in the chart meaning
+--     nothing. The SQL twin drops those rows before it groups, so the day never
+--     existed there. The TS reference now skips them too. iopbm.com has three
+--     such days; every page it captured then is gone today.
 --
 -- FOUND WHILE HERE, AND FIXED: web.site_audit_trend never got the alias skip.
 -- web_audit_rollup_shared_rule_and_alias_skip.sql says it appended the
