@@ -99,6 +99,7 @@ import type {
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 
 /** Compact icon-button used by every cockpit row's edit/delete actions. */
 function RowActionButton({
@@ -698,6 +699,13 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
             ) : null}
             <div className="flex shrink-0 items-center gap-1.5">
               <CopyButtons size="icon" {...brandCopy} />
+              <ShareButton
+                resourceType="web_brand"
+                resourceId={current.id}
+                resourceName={current.name}
+                size="sm"
+                showStatus={false}
+              />
               {pending.data ? (
                 <Button
                   asChild

@@ -249,6 +249,33 @@ Generated `Database["web"]` types are authoritative. `utils/supabase/webDb.ts` s
 
 Brand and site visibility is an access grant, not a display flag: `internal` is the default for organization work and lets organization members view and manage the row; `personal` limits access to the owner plus explicit grants; `public` lets anyone read while organization management rights remain unchanged. Canonical share links are separate token records in `platform.share_links`; creating one never changes visibility, so the legacy enum value `link` is not offered as a Marketing visibility choice.
 
+### Canonical access tree
+
+Marketing access is a downward tree, not a collection of independent table
+exceptions. Sharing any node grants that node and everything structurally below
+it; it never grants a parent or sibling.
+
+```text
+web_brand (Marketing account)
+├── web_site
+│   ├── web_page
+│   │   ├── web_snapshot → body/markdown files
+│   │   ├── web_screenshot → image file + attached notes/files
+│   │   └── page evidence, SEO, findings, plans, links, and resources
+│   └── site crawl, SEO, analytics, planning, and growth descendants
+└── web_property (website and social presences)
+```
+
+The explicit granular share points are `web_brand`, `web_site`,
+`web_property`, `web_page`, `web_snapshot`, and `web_screenshot` (plus already
+shareable lower run/change-set entities). Every other addressable UUID table in
+the Marketing FK tree is registered as an inheriting component. Internal state
+without a UUID resource identity is not a share node. `web.screenshot.file_id`
+is the screenshot image FK; `note/file → web_screenshot` association edges are
+viewer-capped supplemental attachments. Artifact files authorize through their
+nearest screenshot or snapshot, so a page share can open the actual stored
+bytes without also granting the site or brand.
+
 ## Key flows
 
 1. Add site: `NewSiteForm` selects an organization and calls `web.create_site`; canonical triggers stamp base fields, then the UI navigates immediately to the site overview. The overview auto-starts site initialize (`?capture=homepage`), which creates the canonical `site.root_url` page, persists `web.snapshot.head_tags`, and captures responsive homepage screenshots (`desktop_fold` preferred for the hero). Legacy bootstrap may still stamp `web.site.homepage_screenshot_id` (`kind='homepage'`); when that pointer is absent the hero resolves the newest canonical-homepage `desktop_fold`/`mobile_fold` capture (never a host/scheme variant or another page's crawl). Only when no capture exists yet does the hero fall back to the site's public `og_image_url`. Observed meta title and description render from the homepage snapshot once initialize completes; a capture failure never rolls back the valid site and can be retried from the thumbnail control.
@@ -258,7 +285,7 @@ Brand and site visibility is an access grant, not a display flag: `internal` is 
 5. Run a crawl: `/crawls/new` sends the command directly to the scraper with the caller's Supabase JWT, renders the transient NDJSON feed, supports cancellation, and links to the durable session. `useSiteCrawlActivity` restores the newest queued/running session on every site route, subscribes once to the RLS-authorized `web.crawl_session` heartbeat, and catches up the bounded display-safe event feed from `web.crawl_event` after every update/reconnect; disconnected clients poll until Realtime recovers. The site header always shows **Crawling** plus a route back to the active feed. Stored events and reloads come from Supabase, never Python replay.
 6. Triage analysis: `/analysis` pages through `v_priority_queue` and links each projection into a URL-filtered finding register; `/findings/[findingId]` reads lifecycle state, catalog context, first/latest evidence pointers, and paged result history directly from Supabase.
 7. Inspect evidence: site/crawl link workspaces and the screenshot gallery read records directly from Supabase; snapshot bodies, markdown, and screenshots are identified only by canonical `files.files` UUIDs and rendered through `@/features/files` (`fileIdToMediaRef` / `InlineMediaRef`).
-8. Share and configure: `/access` calls canonical IAM grant/list/revoke RPCs for the `web_site` root; `/settings` uses version-checked direct Supabase updates.
+8. Share and configure: `/access` calls canonical IAM grant/list/revoke RPCs for the `web_site` root. The same kernel accepts grants at every explicit share point above and cascades them through the complete registered tree; `/settings` uses version-checked direct Supabase updates.
 9. Monitor execution: batch execution state lives in the canonical `batch.*`
    subsystem and is monitored at `/administration/knowledge/kg-cost`. Marketing
    does not maintain a parallel `web.batch_*` execution spine, and no Marketing
@@ -382,6 +409,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-12 — Codex: **Marketing became one complete downward access tree.** `web_brand` is the Marketing-account root; sites and social/website properties are its children; pages, snapshots, screenshots, files, crawl evidence, SEO, plans, and growth rows inherit below them. Every addressable UUID table found by the recursive live-FK inventory is now either a registered granular share point or a registered inheriting component. The access kernel unions direct grants with every composition parent, never parents/siblings; screenshot/snapshot files authorize through their nearest artifact; screenshot-attached notes/files convey viewer access. Brand and page workspaces now expose the canonical Share control; property/snapshot/screenshot each has an ID-only standalone route and Share control, so a granular grantee never needs parent access merely to land on the resource. Live adversarial proof used All Green Recycling and rolled every temporary grant/association back.
 - 2026-08-12 — Claude: **Findings write targets: the `open` status wrote `reopened`, and the header had no way to undo an acknowledgement.** Two follow-ups to the entry below. (1) `finding_lifecycle_status: "open"` routed through `reopenFinding`, which sets `status: "reopened"` — so undoing an acknowledgement stored the wrong status AND then failed its own landing check, reporting failure for a write that had already mutated the row. The canonical verb is `unacknowledgeFinding`; it was never imported. The path survived verification because the live run covered every value except that one — an enum target is not verified until each member has been written live. (2) The detail header only ever offered "I'm on it", so the `open` value had no user twin: an agent could propose it on a page where the user could neither set nor reverse it. The header now renders "Not on it after all" while a finding is `acknowledged`, using the same canonical verb and the same wording as the shared row menu in `components/analysis/finding-actions.ts` — a builder that currently has **zero consumers**, so its four lifecycle verbs exist in code and nowhere in the product. Re-verified live: suppression + acknowledge applied through two ask dialogs, then `open` landed as `open` with zero captured errors; `resolved` still refuses with the validator's own text and the row untouched.
 
 - 2026-08-11 — Claude: **The findings register is agent-writable, and its two triage verbs now have ONE home.** `matrx-user/marketing-findings` declares 2 `entity`/`ask` write targets on the finding DETAIL route: `finding_suppression` (`{ suppressed: boolean, reason?: string }` — one object, because a suppression and its reason are one act, and lifting is the same decision pointed the other way) and `finding_lifecycle_status` (`acknowledged | open`). Handlers live in the new `components/analysis/FindingWriteTargets.tsx`, registered through the `useSurfaceWriteHandlers` child seam and mounted by `FindingDetail` inside its own provider; they call `suppressFinding` / `unsuppressFinding` / `acknowledgeFinding` / `unacknowledgeFinding` — the exact `data/finding-mutations.ts` functions the "I'm on it" button and the remedy card's suppress dialog already call. **The target set is the ownership line `finding-mutations.ts` already drew:** the analyzer owns detection and never touches suppression; the user owns judgement, and judgement is exactly those two verbs. So the surface's whole write vocabulary is covered and nothing was padded — `resolved` and `reopened` are refused by name (only a passing re-analysis resolves a finding), and severity, category and the immutable `analysis_result` evidence have no write path at all. New `data/finding-lifecycle.ts` is THE vocabulary: the finding-status words + labels (previously re-typed in `AnalysisBadges.tsx` AND again as a literal `Set` in `analysis-service.ts` — both now import it), the user-writable subset, the acknowledge-from statuses, the 500-character reason bound, and the two throwing validators. The manifest interpolates the same constants into its model-facing contract, so the vocabulary an agent is promised, the one the handler accepts, and the one the register's filters render cannot drift. Handlers re-check the row each canonical write RETURNS and throw when the value did not land, read the current row through a ref rather than the render closure (the seam resolves handlers before the confirm dialog, and both dialogs queue when an agent applies both targets in one message), and mirror the page's own transition guards. The LIST route mounts the same surface and registers nothing, so an agent there is offered no write tool. Live-verified with a real Badass Agent run against a throwaway finding created and deleted for the test: both applies persisted (confirmed by SQL) with the badges and the `Suppression:` line updating on screen, a decline left the row untouched, both malformed values came back to the model as the validators' own text with nothing written, and a request to change severity reached no tool at all.

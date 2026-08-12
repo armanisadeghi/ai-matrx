@@ -20,8 +20,16 @@ const AI_WORK_ADMIN_MAP: FeatureAdminMap = {
       url: "/work/conversations",
       label: "Provider conversation inbox",
       description:
-        "Owner-scoped coding sessions with fidelity, canonical conversation actions, and task association.",
+        "Paginated canonical AI Matrx and provider conversations with exact selected binding facts and work associations.",
       filePath: "app/(core)/work/conversations/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/work/connections",
+      label: "Connections and sync",
+      description:
+        "Separate provider account, authorization, client, delivery, managed-runtime, and historical-sync state.",
+      filePath: "app/(core)/work/connections/page.tsx",
       status: "Live",
     },
     {
@@ -44,7 +52,22 @@ const AI_WORK_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "AiWorkHeader",
       filePath: "features/ai-work/components/AiWorkHeader.tsx",
-      description: "Shared responsive Overview / Conversations route switcher.",
+      description:
+        "Shared responsive Overview / Conversations / Connections route switcher.",
+      tier: "internal",
+    },
+    {
+      name: "AiWorkConversationsInbox",
+      filePath: "features/ai-work/components/AiWorkConversationsInbox.tsx",
+      description:
+        "Unified canonical history with selected provider facts and Project/Task/War Room organization.",
+      tier: "internal",
+    },
+    {
+      name: "AiWorkConnections",
+      filePath: "features/ai-work/components/AiWorkConnections.tsx",
+      description:
+        "Truthful connection-state composition and managed Claude capability check.",
       tier: "internal",
     },
     {
