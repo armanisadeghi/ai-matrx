@@ -233,9 +233,15 @@ export default function HtmlPageEditor({
     },
     page_html_content: (value: unknown) => {
       requireLoadedPage("page_html_content");
+      // The inline-tool layer JSON-parses an argument that LOOKS like JSON
+      // before this handler sees it, so a string-typed target can be handed an
+      // object. Saying only "expected a string" is what teaches an agent to
+      // "fix" that by double-encoding — and escaped \n and stray quotes would
+      // be published verbatim at /p/{id}. Name the failure instead, in the same
+      // wording the scratchpad / working-document targets use.
       if (typeof value !== "string" || !value.trim())
         throw new Error(
-          "page_html_content expects a non-empty string containing the complete HTML document.",
+          "page_html_content expects a non-empty string containing the complete HTML document — the raw markup as plain text, not JSON and not JSON-encoded. Do not wrap it in an object and do not escape the newlines.",
         );
       if (/^\s*```/.test(value))
         throw new Error(

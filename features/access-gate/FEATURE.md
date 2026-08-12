@@ -201,6 +201,15 @@ surface means importing them too, never reimplementing the RPC call.
   (`<p>This doesn&apos;t exist…</p>`) is invisible to it — that is why the
   research-topic 404 went unreported for so long. The escaped-apostrophe blind
   spot is fixed; the bare-JSX one is not.
+- **A SWALLOWED error is the sweep's second blind spot — a converted throw
+  means nothing if no render site reads it.** Proven 2026-08-12: `getBrand`
+  threw the canonical `RecordUnavailableError` (token `web_brand`), and
+  `useMarketingSiteSurfaceBase` did `brand.data ?? null` with `brand.error`
+  never read — the sweep counted marketing as ZERO while a denied brand on
+  every site route rendered nothing at all. The fix pattern is a gate at the
+  layout (`MarketingSiteLayoutClient` now gates brand like site). A future
+  sweep pass worth building: for every `useQuery` whose queryFn can throw
+  `recordUnavailable`, assert some consumer reads `.isError`/`.error`.
 
 ## Change Log
 

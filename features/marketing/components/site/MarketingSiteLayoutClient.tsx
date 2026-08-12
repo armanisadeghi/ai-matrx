@@ -39,7 +39,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
-import { useSite, useSiteOptions } from "@/features/marketing/data/hooks";
+import { useBrand, useSite, useSiteOptions } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
 import {
   jsonNumber,
@@ -167,6 +167,14 @@ export function MarketingSiteLayoutClient({
   const brandId = params.brandId;
   const siteId = params.siteId;
   const site = useSite(siteId);
+  // The URL names the brand, and every agent surface under this layout builds
+  // its context from the brand row — so a brand the viewer cannot read is an
+  // access question this route must ANSWER, not swallow. Before 2026-08-12
+  // this read's RecordUnavailableError (token web_brand) was thrown inside
+  // MarketingSiteSurfaceProvider and then discarded: the viewer saw a working
+  // site whose brand silently didn't exist, and the Error Inspector filled
+  // with red nobody acted on. Same gate pattern as the site read below.
+  const brand = useBrand(brandId);
   const options = useSiteOptions();
   const crawlActivity = useSiteCrawlActivity(siteId);
 
@@ -193,6 +201,26 @@ export function MarketingSiteLayoutClient({
           id={siteId}
           error={site.error}
           onRetry={() => void site.refetch()}
+          fallbackHref="/marketing/sites"
+          fallbackLabel="All sites"
+        />
+      </>
+    );
+  }
+
+  if (brand.isError) {
+    // The site read passed but the brand read failed — a real state (the brand
+    // can live in an org the viewer is not a member of, e.g. the 2026-08-12
+    // brand/site org split). Not an error page: the gate names the record,
+    // says who owns it, and offers a one-click access request.
+    return (
+      <>
+        <FallbackHeader />
+        <AccessGate
+          token="web_brand"
+          id={brandId}
+          error={brand.error}
+          onRetry={() => void brand.refetch()}
           fallbackHref="/marketing/sites"
           fallbackLabel="All sites"
         />

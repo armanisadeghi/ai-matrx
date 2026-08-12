@@ -46031,11 +46031,11 @@ export type Database = {
           provider_evidence: Json
           relevance_score: number | null
           resolved_assessment: Json
+          serp_visibility: number | null
           site_id: string
           threat_level: string | null
           tracking_status: string
           updated_at: string
-          visibility: number | null
         }
         Insert: {
           analyzed_at?: string | null
@@ -46060,11 +46060,11 @@ export type Database = {
           provider_evidence?: Json
           relevance_score?: number | null
           resolved_assessment?: Json
+          serp_visibility?: number | null
           site_id: string
           threat_level?: string | null
           tracking_status?: string
           updated_at?: string
-          visibility?: number | null
         }
         Update: {
           analyzed_at?: string | null
@@ -46089,11 +46089,11 @@ export type Database = {
           provider_evidence?: Json
           relevance_score?: number | null
           resolved_assessment?: Json
+          serp_visibility?: number | null
           site_id?: string
           threat_level?: string | null
           tracking_status?: string
           updated_at?: string
-          visibility?: number | null
         }
         Relationships: [
           {
@@ -46127,7 +46127,7 @@ export type Database = {
           rank_score: number | null
           raw_payload_id: string | null
           run_id: string
-          visibility: number | null
+          serp_visibility: number | null
         }
         Insert: {
           average_position?: number | null
@@ -46150,7 +46150,7 @@ export type Database = {
           rank_score?: number | null
           raw_payload_id?: string | null
           run_id: string
-          visibility?: number | null
+          serp_visibility?: number | null
         }
         Update: {
           average_position?: number | null
@@ -46173,7 +46173,7 @@ export type Database = {
           rank_score?: number | null
           raw_payload_id?: string | null
           run_id?: string
-          visibility?: number | null
+          serp_visibility?: number | null
         }
         Relationships: [
           {
@@ -49122,11 +49122,11 @@ export type Database = {
           provider_evidence: Json
           relevance_score: number | null
           resolved_assessment: Json
+          serp_visibility: number | null
           site_id: string
           threat_level: string | null
           tracking_status: string
           updated_at: string
-          visibility: number | null
         }
         SetofOptions: {
           from: "*"
