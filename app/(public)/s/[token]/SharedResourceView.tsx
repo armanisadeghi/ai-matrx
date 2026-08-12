@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import Link from "next/link";
 // DELIBERATE static react-markdown (not the MarkdownCore front door): this is
 // an anonymous share/SEO surface — the markdown body must be in the
@@ -13,9 +13,9 @@ import {
   ExternalLink,
   FileIcon,
   FolderClosed,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PublicHeaderActionsPortal } from "@/components/matrx/PublicHeaderActionsPortal";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import {
   isForkable,
@@ -27,6 +27,7 @@ import {
   AiVisibilityReport,
   parsePublicVisibilityResult,
 } from "@/features/marketing/seo/ai-visibility/AiVisibilityReport";
+import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 
 function str(
   resource: Record<string, unknown> | undefined,
@@ -329,55 +330,38 @@ export function SharedResourceView({
   token: string;
 }) {
   const forkable = isForkable(result.resourceType) && !!result.resourceId;
+  const contentRef = useRef<HTMLDivElement>(null);
+  useClippedContentGuard(contentRef, { label: "Shared resource content" });
+
   return (
-    <div className="min-h-dvh bg-textured flex flex-col">
-      {/* Brand bar — subtle acquisition CTA for logged-out viewers */}
-      <header className="flex items-center justify-between px-4 sm:px-6 h-14 border-b border-border/60 bg-card/40 backdrop-blur">
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-semibold text-foreground"
+    <>
+      <PublicHeaderActionsPortal>
+        {forkable && result.resourceType && result.resourceId && (
+          <DuplicateToEditButton
+            resourceType={result.resourceType}
+            resourceId={result.resourceId}
+            returnPath={`/s/${token}`}
+            shareToken={token}
+          />
+        )}
+        <Button
+          asChild
+          size="sm"
+          variant="outline"
+          className="h-7 px-2 sm:px-3"
         >
-          <Sparkles className="h-5 w-5 text-primary" />
-          AI Matrx
-        </Link>
-        <div className="flex items-center gap-2">
-          {forkable && result.resourceType && result.resourceId && (
-            <DuplicateToEditButton
-              resourceType={result.resourceType}
-              resourceId={result.resourceId}
-              returnPath={`/s/${token}`}
-              shareToken={token}
-            />
-          )}
-          <Button asChild size="sm" variant="outline">
-            <Link href="/sign-up">
-              Create your own
-              <ArrowUpRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
+          <Link href="/sign-up" aria-label="Create your own AI Matrx report">
+            <span className="hidden sm:inline">Create your own</span>
+            <ArrowUpRight className="h-4 w-4 sm:ml-1" />
+          </Link>
+        </Button>
+      </PublicHeaderActionsPortal>
+
+      <div className="h-full overflow-y-auto bg-textured scrollbar-thin">
+        <div ref={contentRef} className="px-4 py-4 sm:px-6 sm:py-6">
+          {renderBody(result, token)}
         </div>
-      </header>
-
-      <main className="flex-1 px-4 sm:px-6 py-8 sm:py-12">
-        {renderBody(result, token)}
-      </main>
-
-      <footer className="px-4 sm:px-6 py-6 border-t border-border/60 text-center">
-        <p className="text-sm text-muted-foreground">
-          Shared with you via{" "}
-          <Link href="/" className="font-medium text-primary hover:underline">
-            AI Matrx
-          </Link>
-          {" — "}
-          <Link
-            href="/sign-up"
-            className="font-medium text-primary hover:underline"
-          >
-            build and share your own
-          </Link>
-          .
-        </p>
-      </footer>
-    </div>
+      </div>
+    </>
   );
 }
