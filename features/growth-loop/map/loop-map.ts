@@ -48,6 +48,25 @@ export interface PipeStatus {
     ref?: string;
 }
 
+/**
+ * The customer-facing face of a stage. Presence of this object is the
+ * "show publicly" flag — a stage without it never renders on /how-it-works.
+ *
+ * Copy rules (our user is a brilliant NON-technical expert):
+ * - No product jargon, no file names, no internal stage names.
+ *   "Realize page shell" is engineer-speak; "Create the pages" is not.
+ * - `plain` is ONE sentence a stranger understands in five seconds.
+ * - Never describe intent. If the stage cannot do it today, do not say it.
+ */
+export interface PublicStageInfo {
+    /** Customer-facing stage name. */
+    title: string;
+    /** One plain-English sentence. */
+    plain: string;
+    /** Lucide icon NAME — this file stays React-free (see FEATURE.md). */
+    icon: string;
+}
+
 export interface LoopStage {
     id: string;
     /** Short label rendered in the node. */
@@ -61,6 +80,8 @@ export interface LoopStage {
     pipes: Record<Pipe, PipeStatus>;
     /** Where a human enters this stage today. */
     entry?: string;
+    /** Present = this stage is shown on the public /how-it-works page. */
+    publicInfo?: PublicStageInfo;
 }
 
 export interface LoopEdge {
@@ -112,6 +133,11 @@ export const STAGES: LoopStage[] = [
         id: "research",
         label: "Research",
         blurb: "Learn everything about a brand, market and keywords, and write it up as one report.",
+        publicInfo: {
+            title: "Learn the market",
+            plain: "We study your business, your competitors, and what people are actually searching for — and write it all up as one report.",
+            icon: "Search",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["research.rs_topic", "research.rs_source", "research.rs_synthesis", "research.rs_document"],
         maturity: "production",
@@ -138,6 +164,11 @@ export const STAGES: LoopStage[] = [
         id: "plan",
         label: "Content plan",
         blurb: "Turn the research into the full list of pages the site should have, as a tree.",
+        publicInfo: {
+            title: "Plan every page",
+            plain: "That research becomes the complete list of pages your site should have, organised the way your visitors actually think.",
+            icon: "ListTree",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["plan.node", "plan.entity", "plan.profile"],
         maturity: "production",
@@ -164,6 +195,11 @@ export const STAGES: LoopStage[] = [
         id: "brief",
         label: "Page brief",
         blurb: "Write the core instructions for each individual page, with its own research behind it.",
+        publicInfo: {
+            title: "Decide what each page says",
+            plain: "Every single page gets its own instructions, with its own research behind it, before a word is written.",
+            icon: "FileText",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["plan.node.brief", "plan.node.attributes"],
         maturity: "production",
@@ -190,6 +226,11 @@ export const STAGES: LoopStage[] = [
         id: "realize",
         label: "Realize page shell",
         blurb: "Create the actual (empty) page in the CMS at the address the plan promised.",
+        publicInfo: {
+            title: "Create the pages",
+            plain: "Each planned page is created for real, at the exact web address the plan promised — nothing gets lost between the plan and the site.",
+            icon: "LayoutTemplate",
+        },
         repos: ["aidream", "db"],
         stores: ["client_pages (CMS project)", "client_pages.plan_node_id"],
         maturity: "near",
@@ -216,6 +257,11 @@ export const STAGES: LoopStage[] = [
         id: "fill",
         label: "Fill page body",
         blurb: "Write the real content of each page from its brief.",
+        publicInfo: {
+            title: "Write the content",
+            plain: "Every page is written from its own instructions, so it says something specific and useful instead of something generic.",
+            icon: "PenLine",
+        },
         repos: ["aidream", "db"],
         stores: ["plan.cms_fill_job", "plan.cms_fill_item", "client_pages.html_content_draft"],
         maturity: "near",
@@ -241,6 +287,11 @@ export const STAGES: LoopStage[] = [
         id: "publish",
         label: "Publish",
         blurb: "Make the page live for the public.",
+        publicInfo: {
+            title: "Put it live",
+            plain: "Nothing becomes public on its own. You look it over, and one click makes it live.",
+            icon: "Send",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["client_pages.is_published", "client_activity_log"],
         maturity: "production",
@@ -266,6 +317,11 @@ export const STAGES: LoopStage[] = [
         id: "serve",
         label: "Live site",
         blurb: "The page is served to real visitors on a real domain.",
+        publicInfo: {
+            title: "Your site, your domain",
+            plain: "Your pages are served to real visitors on your own web address.",
+            icon: "Globe",
+        },
         repos: ["my-matrx"],
         stores: ["client_sites.domain"],
         maturity: "near",
@@ -283,6 +339,11 @@ export const STAGES: LoopStage[] = [
         id: "crawl",
         label: "Crawl",
         blurb: "Our crawler visits the live site and records what is actually there.",
+        publicInfo: {
+            title: "Check what's really there",
+            plain: "We visit your live site the way a search engine does, and record exactly what it finds — not what you hoped it would find.",
+            icon: "ScanSearch",
+        },
         repos: ["aidream", "db"],
         stores: ["web.crawl_session", "web.page", "web.snapshot", "web.link_edge"],
         maturity: "production",
@@ -308,6 +369,11 @@ export const STAGES: LoopStage[] = [
         id: "measure",
         label: "Measure",
         blurb: "Pull in the real numbers: Search Console, analytics, speed, rankings, backlinks.",
+        publicInfo: {
+            title: "Bring in the real numbers",
+            plain: "Where you rank, who visited, how fast the page loads, who links to you — the actual results, all in one place.",
+            icon: "BarChart3",
+        },
         repos: ["aidream", "db"],
         stores: ["seo.search_performance_daily", "seo.web_analytics_daily", "seo.page_performance", "seo.backlink_*"],
         maturity: "production",
@@ -330,6 +396,11 @@ export const STAGES: LoopStage[] = [
         id: "analyze",
         label: "Analyze",
         blurb: "Judge every page against what good looks like, and against how it is actually performing.",
+        publicInfo: {
+            title: "Find what's holding you back",
+            plain: "Every page is checked against what good looks like — and against how it is actually performing out in the world.",
+            icon: "SearchCheck",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["web.analysis_result", "web.finding", "web.snapshot.audit_metrics"],
         maturity: "production",
@@ -356,6 +427,11 @@ export const STAGES: LoopStage[] = [
         id: "suggest",
         label: "Suggest",
         blurb: "Turn what we learned into a one-click suggestion the user can accept.",
+        publicInfo: {
+            title: "Get told what to do next",
+            plain: "What we learn becomes a plain-English suggestion you can accept — not a report you have to decode first.",
+            icon: "Lightbulb",
+        },
         repos: ["ai-matrx", "db"],
         stores: ["platform.assists", "web.finding.status"],
         maturity: "stub",
@@ -381,6 +457,11 @@ export const STAGES: LoopStage[] = [
         id: "writeback",
         label: "Write back",
         blurb: "Push the accepted improvement into the page and back into the plan.",
+        publicInfo: {
+            title: "Improve it, and go again",
+            plain: "An accepted improvement is written back into the page and back into the plan — so the next pass starts from what you just learned.",
+            icon: "RefreshCw",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["client_pages (draft columns)", "plan.node.status_id", "seo metrics_desired"],
         maturity: "near",
@@ -938,6 +1019,56 @@ export function edgeHealth(edge: LoopEdge): PipeState {
     if (states.includes("missing")) return "missing";
     if (states.includes("partial")) return "partial";
     return "live";
+}
+
+// ---------------------------------------------------------------------------
+// PUBLIC VIEW — derived, never hand-written.
+//
+// 🚨 THE HONESTY GATE. The public page at /how-it-works renders capability
+// ONLY from `state === "live"`. "partial" and "missing" produce NOTHING —
+// they can never leak out as a promise. That is deliberate: a marketing page
+// must not claim a capability this map records as unfinished, and the only
+// way to make it claim one is to flip a pipe to "live" here, which rule 1 at
+// the top of this file says requires a `ref` an auditor can open.
+//
+// Consequence, on purpose: a stage with no live pipe simply shows no
+// capability chips. Do not add a fallback.
+// ---------------------------------------------------------------------------
+
+/** How a customer can make a step happen. Derived from a LIVE pipe only. */
+export type PublicCapability = "you" | "ai" | "automatic";
+
+export const PUBLIC_CAPABILITY: Record<PublicCapability, { pipe: Pipe; label: string; short: string }> = {
+    you: { pipe: "human", label: "You can do it yourself", short: "You" },
+    ai: { pipe: "ai", label: "An AI agent can do it for you", short: "AI" },
+    automatic: { pipe: "code", label: "It happens automatically", short: "Automatic" },
+};
+
+export const PUBLIC_CAPABILITIES: PublicCapability[] = ["you", "ai", "automatic"];
+
+export type PublicStage = LoopStage & { publicInfo: PublicStageInfo };
+
+/** The stages cleared for public display, in loop order. */
+export function publicStages(): PublicStage[] {
+    return STAGES.filter((s): s is PublicStage => Boolean(s.publicInfo));
+}
+
+/** Only ways this step can ACTUALLY be run today. Never intent. */
+export function publicCapabilities(stage: LoopStage): PublicCapability[] {
+    return PUBLIC_CAPABILITIES.filter((c) => stage.pipes[PUBLIC_CAPABILITY[c].pipe].state === "live");
+}
+
+/**
+ * Honest headline numbers for the public page: how many public stages you can
+ * run yourself, how many an agent can run, how many run automatically.
+ */
+export function publicStanding(): { stages: number } & Record<PublicCapability, number> {
+    const stages = publicStages();
+    const counts = { stages: stages.length, you: 0, ai: 0, automatic: 0 };
+    for (const stage of stages) {
+        for (const capability of publicCapabilities(stage)) counts[capability] += 1;
+    }
+    return counts;
 }
 
 export function loopScore(): { live: number; partial: number; missing: number; total: number } {
