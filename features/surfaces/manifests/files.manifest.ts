@@ -18,6 +18,78 @@
  * public files, the permanent CDN URL — and that URL is emitted only after
  * `isSignedUrl()` confirms it is not a signed URL in disguise. Any agent or
  * tool needing bytes resolves them from `active_file_id`.
+ *
+ * ---------------------------------------------------------------------------
+ * WRITE HALF (`writeTargets`) — what agents may change here, and what they
+ * may NOT. Handlers: `features/files/components/surfaces/
+ * useFilesSurfaceWriteHandlers.ts`, registered on PageShell's provider.
+ *
+ * ONE MOUNT. `SurfaceRuntimeProvider` for this surface is mounted in exactly
+ * one place — `PageShell.tsx` — so unlike `schedules` / `shapes` / `knowledge`
+ * this is NOT a per-mount posture job. `RowContextMenu.tsx` and
+ * `FileRightClickMenu.tsx` also name `matrx-user/files`, but they pass it to
+ * the context-menu-v3 READ seam (scope/contextData for a right-clicked row);
+ * neither mounts a runtime, so neither registers or needs handlers. The
+ * desktop shell is the whole write surface; the mobile `MobileStack` mounts no
+ * provider at all and stays read-only (same gap the readiness note records).
+ *
+ * THE ONE THAT EARNS THE SURFACE: `active_file_name` / `active_folder_name`.
+ * "Rename these screenshots to something I can find later" is a real
+ * single-message ask, and a rename is a LABEL — the bytes, the location and
+ * who can see them are all untouched. Both go through the same
+ * `validateRenameInput` + `renameFile` / `updateFolder` thunks the Rename
+ * dialog dispatches, so the agent inherits every guard the user gets:
+ * empty/reserved/control characters, dropped or malformed extension, and
+ * sibling collision. `entity` mode, `ask` policy — it persists, so it asks.
+ *
+ * DELIBERATE EXCLUSIONS (stated, not left to omission):
+ *
+ *  1. `selected_file_ids` — NO TARGET. The checkbox selection arms
+ *     `BulkActionsBar`: bulk delete, bulk move, bulk download. Staging a
+ *     selection is loading a gun even though a human still pulls the trigger —
+ *     the exact call the `knowledge` surface made on
+ *     `extraction_selected_row_ids`. An agent that selects the wrong 40 rows
+ *     has pre-built a mistake one click deep. Selection stays human.
+ *  2. `active_file_visibility` / `active_folder_visibility` — NO TARGET.
+ *     Flipping a file to "public" PUBLISHES it: that is a capability and
+ *     permission change, not authoring, and it is not reversible in the sense
+ *     that matters (the bytes were reachable in the interval). `agent-builder`
+ *     and `admin-tool-registry` both drew this line; it holds here.
+ *  3. Move, delete, restore, upload — NO TARGETS. A rename changes a label;
+ *     a move changes where the user's data lives, and delete/restore change
+ *     whether it exists. `moveFile` / `moveAny` / soft-delete stay human.
+ *  4. `details_level`, `column_filters`, `visible_columns` — NO TARGETS.
+ *     `details_level` has no on-screen control at all (URL-sync only), so an
+ *     agent could put the table in a state the user cannot click back.
+ *     `column_filters` / `visible_columns` are open-ended objects whose
+ *     vocabulary is not exposed in scope as an enumerable list — per the
+ *     vocabulary rule, no enumerable vocabulary means no target. `view_mode`
+ *     narrowly DOES earn one, but only over `VIEW_MODE_VALUES` (list | grid):
+ *     "columns" is in the `ViewMode` type with no renderer and no button.
+ *  5. `visible_files`, `visible_folders`, `visible_file_count`,
+ *     `visible_folder_count`, `selected_count`, `recent_uploads`,
+ *     `upload_in_progress`, `active_upload_count`, `upload_progress_percent`,
+ *     and every `active_file_*` fact other than the name — READ PROJECTIONS.
+ *     They are computed from the store and the upload orchestrator; there is
+ *     no write path behind them and inventing one would be a parallel path,
+ *     not a target.
+ *
+ * `auto` VS `ask` (the `knowledge` rule, reused verbatim): `auto` iff the write
+ * is ephemeral client-only view state, instantly visible, undone by one control
+ * already on screen, and costs no server request and no user position. So
+ * `search_query`, `chip_filter`, `kind_filter`, `list_sort` and `view_mode` are
+ * `auto` — each maps 1:1 onto a control sitting in the header, none touches the
+ * server, and clearing is one click. `active_folder_id` and `active_file_id`
+ * are `ask` even though they are also `ui`: activation MOVES the user (and, for
+ * a real folder, fires `loadFolderContents` and rewrites the URL), which fails
+ * both the no-server-request and the no-user-position halves of the bar. The
+ * two renames are `entity` and persist, so they ask.
+ *
+ * MID-RUN REFUSAL: both rename handlers refuse LOUDLY (throw) when
+ * `tree_status !== "loaded"` or an upload is in flight — the sibling-collision
+ * check is only as good as the rows in the store, and writing against a
+ * half-loaded listing can create the exact duplicate name the dialog exists to
+ * prevent.
  */
 
 import type {
@@ -25,6 +97,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -548,6 +621,122 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+const writeTargets: SurfaceWriteTarget[] = [
+  // ── Rename (entity — persists immediately) ────────────────────────────
+  {
+    name: "active_file_name",
+    label: "Active file name",
+    description:
+      "Renames the file currently open in the preview pane, immediately, through the same path as the Rename dialog. Value: the COMPLETE new filename INCLUDING its extension (e.g. \"q3-budget-review.pdf\" — not \"q3-budget-review\"). Rejected, with the reason returned to you, when: the name is empty, contains '/' '\\' or control characters, ends with '.', is unchanged, drops or malforms the original extension, or collides with a file or folder already in the same folder. Also refused when no file is open, when the files tree has not finished loading, and while an upload is in flight. Read active_file_name first to see what you are replacing.",
+    valueType: "string",
+    updatesValue: "active_file_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "active_file",
+    sortOrder: 345,
+  },
+  {
+    name: "active_folder_name",
+    label: "Active folder name",
+    description:
+      "Renames the folder the user has drilled into, immediately, through the same path as the Rename dialog. Value: the new folder name as a plain string. Same rejections as active_file_name minus the extension rules: empty, '/' '\\' or control characters, trailing '.', unchanged, or a name already used by a sibling file or folder. Refused at the section root (no active folder), while the tree is still loading, and while an upload is in flight. Renames the folder only — nothing moves and no child is touched.",
+    valueType: "string",
+    updatesValue: "active_folder_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "browser_location",
+    sortOrder: 315,
+  },
+
+  // ── List query and view (ui — ephemeral, mirrors an on-screen control) ─
+  {
+    name: "search_query",
+    label: "Search query",
+    description:
+      'Sets the tree-wide search box, exactly as typing in it does. Value: any string; "" clears it. While non-empty the visible rows span the WHOLE tree rather than the active folder — the folder itself is not changed, and clearing restores the folder view. Applied without asking: it is client-only, instantly visible, and the search box on screen undoes it.',
+    valueType: "string",
+    updatesValue: "search_query",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "list_query",
+    sortOrder: 440,
+  },
+  {
+    name: "chip_filter",
+    label: "Filter chip",
+    description:
+      'Sets the sticky filter chip above the file table. Value: exactly "recents" or "starred", or null to clear it (those two are the only chips rendered). Applied without asking — the chip is one click away from being toggled back off.',
+    valueType: "string",
+    updatesValue: "chip_filter",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "list_query",
+    sortOrder: 445,
+  },
+  {
+    name: "kind_filter",
+    label: "Kind filter",
+    description:
+      'Sets whether the list shows both, folders only, or files only. Value: exactly "all", "folders", or "files" — the three buttons of the on-screen segmented control. Applied without asking.',
+    valueType: "string",
+    updatesValue: "kind_filter",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "list_query",
+    sortOrder: 450,
+  },
+  {
+    name: "list_sort",
+    label: "List sort",
+    description:
+      'Sorts the list, exactly as clicking a column header does. Value: an OBJECT `{ "sort_by": …, "sort_direction": … }` — both keys required, because a column click always sets both. sort_by is one of: name | type | extension | mime | path | owner | size | version | updated_at | created_at (the sortable columns; Access and the action columns cannot be sorted). sort_direction is "asc" or "desc". Folders always group ahead of files regardless of the key. Applied without asking.',
+    valueType: "object",
+    updatesValue: "sort_by",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "list_query",
+    sortOrder: 460,
+  },
+  {
+    name: "view_mode",
+    label: "View mode",
+    description:
+      'Switches how rows are rendered. Value: exactly "list" or "grid" — the two buttons of the on-screen toggle. "columns" appears in the read value\'s vocabulary but has no renderer and is REFUSED. Applied without asking.',
+    valueType: "string",
+    updatesValue: "view_mode",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "list_query",
+    sortOrder: 470,
+  },
+
+  // ── Navigation (ui, but it moves the user — so it asks) ───────────────
+  {
+    name: "active_folder_id",
+    label: "Active folder ID",
+    description:
+      "Navigates the user into a folder — the same activation a folder click performs (loads its contents and rewrites the URL, so Back works). Value: the UUID of a folder taken from visible_folders, or null to return to the section root. Refused for an id that is not in the loaded listing or belongs to a deleted folder. Use this to take the user to the folder you are talking about; it changes only where they are standing, never any file.",
+    valueType: "string",
+    updatesValue: "active_folder_id",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "browser_location",
+    sortOrder: 310,
+  },
+  {
+    name: "active_file_id",
+    label: "Active file ID",
+    description:
+      "Opens a file in the right-hand preview pane — the same activation a row click performs. Value: the UUID of a file taken from visible_files, or null to close the preview pane. Refused for an id that is not in the loaded listing or belongs to a deleted file. Opening a file does not modify it.",
+    valueType: "string",
+    updatesValue: "active_file_id",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "active_file",
+    sortOrder: 340,
+  },
+];
+
 export const filesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/files",
   readiness: "partial",
@@ -584,6 +773,7 @@ preview pane.
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 export interface FilesFileSummary {
