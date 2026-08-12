@@ -29,6 +29,12 @@ One RLS-backed permissions system that makes any resource type shareable with us
 - `tabs/ShareWithOrgTab.tsx` — org picker (constrained to caller's orgs)
 - `tabs/PublicAccessTab.tsx` — toggle + link copy for `is_public = true`
 
+**Native sharing** (`features/sharing/hooks/useShare.tsx`)
+
+- `useShare()` opens the platform share sheet, falls back to clipboard, then an
+  accessible manual-copy dialog. It is the reusable hook for public acquisition
+  surfaces; the podcast import is a compatibility re-export.
+
 **Hooks** (`utils/permissions/hooks.ts`)
 
 - `useSharing(resourceType, resourceId, enabled)` — full CRUD used inside `ShareModal`
@@ -300,6 +306,11 @@ Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) 
   - Public renderer (`/s/[token]`) extended: markdown (note/content_template), code, flashcard, and a content-aware generic that renders `content` for any allowlisted type.
 - `2026-07-26` — Removed `utils/permissions/index.ts` barrel; import from `@/utils/permissions/<module>` directly.
 - `2026-07-26` — Removed `features/sharing/index.ts` barrel; all consumers import directly from `@/features/sharing/components/*` or `@/utils/permissions/*`.
+- `2026-08-12` — Enabled safe link sharing for `seo_collection_run` with the
+  allowlist `id, operation, status, result, created_at, completed_at`; AI
+  Visibility runs receive the bespoke `/s/[token]` report renderer and social
+  card. Extracted the podcast-native share behavior into
+  `features/sharing/hooks/useShare.tsx` for every public surface.
 - `2026-07-07` — **No-login share links + DM-on-share + full registry reconciliation.** Three connected additions:
   1. **Canonical no-login link sharing** (`migrations/share_links_canonical_system.sql`). New `platform.share_links` (token, resource_type, resource_id, permission_level, expires_at, max_uses, use_count, is_active, created_by). The token IS the authorization: anon-callable `resolve_share_token(p_token)` (SECURITY DEFINER, granted to `anon`) validates the token, resolves the registry row, and returns the resource JSON — deliberately bypassing `iam.has_access` (which refuses anon). It does NOT touch the resource's `visibility` (that would leak to logged-in org members via `has_access`); it strips `embedding`/`search_tsv`/`search_vector`. Owner RPCs: `create_share_link` / `list_share_links` / `revoke_share_link`. RLS: owner-only direct table access; anon reaches it ONLY through the RPC. FE: `utils/permissions/shareLinks.ts` + `ShareLinkPanel` (in the Public tab) + public route `app/(public)/s/[token]/` (server resolve → `SharedResourceView` dispatcher: note renderer via `BasicMarkdownContent`, generic `EntityCard`-style fallback for any type, + a "Create your own" acquisition CTA). Verified live: anon resolves a note token and reads content, embedding stripped.
   2. **In-app DM on share.** `shareWithUser` now also fires a fire-and-forget DM (lazy `sendDirectActionMessage`) carrying a `resource_shared` `action_data` kind → `ResourceSharedCard` (message-action registry) renders a clickable `EntityCard` ("X shared a Note with you", opens the resource). Replaces the deleted note "accept a shared link" flow (grants are immediate via RLS; the DM is the notification). `ShareWithUserOptions.resourceName` threads the title through `useSharing`.

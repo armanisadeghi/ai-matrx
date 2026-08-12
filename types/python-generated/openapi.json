@@ -589,7 +589,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationWarmResponse"
+                }
               }
             }
           },
@@ -630,7 +632,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationWarmResponse"
+                }
               }
             }
           },
@@ -12215,9 +12219,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Analyze Pages Batch Route Seo Pages Analyze Batch Post"
+                  "$ref": "#/components/schemas/BatchSubmitSummary"
                 }
               }
             }
@@ -12615,6 +12617,91 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/endpoint-families/apply": {
+      "post": {
+        "tags": [
+          "SEO Endpoint Families"
+        ],
+        "summary": "Apply Family",
+        "description": "Accept one endpoint-family assist: these URLs are machine addresses, not\npages. Writes the site rule; the whole family leaves page counts and the\naudit immediately, and so does anything found under it later.",
+        "operationId": "apply_family_seo_endpoint_families_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyEndpointFamilyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplyEndpointFamilyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/endpoint-families/{rule_id}/undo": {
+      "post": {
+        "tags": [
+          "SEO Endpoint Families"
+        ],
+        "summary": "Undo Family",
+        "description": "Undo a reclassification — the family is counted as pages again.",
+        "operationId": "undo_family_seo_endpoint_families__rule_id__undo_post",
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Rule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplyEndpointFamilyResult"
+                }
               }
             }
           },
@@ -13628,6 +13715,50 @@
         }
       }
     },
+    "/content-plan/sites/{site_id}/templates": {
+      "get": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Templates Route",
+        "description": "The site's PAGE TEMPLATE library — what a realized page will look like.\n\nBuiltins plus anything the site's org shadows, each reporting its source.\nAdding one is a `plan.profile.template_map.templates` jsonb edit; this route\nis how a human sees the result without a deploy.",
+        "operationId": "templates_route_content_plan_sites__site_id__templates_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateLibraryResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/content-plan/sites/{site_id}/cms-starter-kit": {
       "post": {
         "tags": [
@@ -14072,6 +14203,46 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RobotsCheckBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/public/ai-visibility": {
+      "post": {
+        "tags": [
+          "SEO Public Tools"
+        ],
+        "summary": "Public Ai Visibility",
+        "description": "Create a live, shareable AI Visibility prospect report.",
+        "operationId": "public_ai_visibility_seo_public_ai_visibility_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicAiVisibilityBody"
               }
             }
           },
@@ -17997,6 +18168,24 @@
             "description": "Filter to a single source_feature"
           },
           {
+            "name": "origin_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter to a single origin_class (matrx_connect ORIGIN_CLASSES + 'unknown' for pre-provenance rows)",
+              "title": "Origin Class"
+            },
+            "description": "Filter to a single origin_class (matrx_connect ORIGIN_CLASSES + 'unknown' for pre-provenance rows)"
+          },
+          {
             "name": "user_id",
             "in": "query",
             "required": false,
@@ -20908,6 +21097,151 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/topics/{topic_id}/refresh": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Refresh Topic Now",
+        "description": "Durably queue a pipeline pass and dispatch it immediately.\n\nThe difference from `POST /topics/{id}/run` is ownership of the run's\nlifetime: `/run` streams the pass on the caller's connection, so a browser\nthat navigates away is holding the only handle to it. This enqueues the pass\non `rs_topic.next_refresh_at` FIRST and returns at once — closing the tab\ncannot lose it, and a process death before dispatch is recovered by the\n`research_refresh_dispatch` system task. The pass itself is the identical\n`run_pipeline` service call.",
+        "operationId": "refresh_topic_now_research_topics__topic_id__refresh_post",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshNowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchRefreshState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Get Topic Refresh State",
+        "description": "Is a pass running, when is the next one, and what did the last one do.",
+        "operationId": "get_topic_refresh_state_research_topics__topic_id__refresh_get",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchRefreshState"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/topics/{topic_id}/refresh-schedule": {
+      "put": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Set Topic Refresh Schedule",
+        "description": "Turn unattended refresh on (hours between passes) or off (`0`/`null`).",
+        "operationId": "set_topic_refresh_schedule_research_topics__topic_id__refresh_schedule_put",
+        "parameters": [
+          {
+            "name": "topic_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Topic Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshScheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchRefreshState"
+                }
               }
             }
           },
@@ -48420,6 +48754,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store"
@@ -49083,6 +49433,22 @@
             ],
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "store": {
             "type": "boolean",
@@ -51225,6 +51591,28 @@
             "title": "Target Cited",
             "default": false
           },
+          "target_recommendation_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Recommendation Rank"
+          },
+          "target_recommendation_subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Recommendation Subject"
+          },
           "citation_count": {
             "type": "integer",
             "title": "Citation Count",
@@ -51267,6 +51655,21 @@
             "type": "string",
             "title": "Site Id"
           },
+          "brand_name": {
+            "type": "string",
+            "title": "Brand Name"
+          },
+          "website_url": {
+            "type": "string",
+            "title": "Website Url"
+          },
+          "brand_aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Brand Aliases"
+          },
           "query": {
             "type": "string",
             "title": "Query"
@@ -51286,18 +51689,121 @@
             "title": "Providers"
           },
           "summary": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Summary"
+            "$ref": "#/components/schemas/AiVisibilitySummary"
+          },
+          "share_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Path"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
           "site_id",
+          "brand_name",
+          "website_url",
           "query"
         ],
         "title": "AiVisibilityResult"
+      },
+      "AiVisibilitySummary": {
+        "properties": {
+          "providers_completed": {
+            "type": "integer",
+            "title": "Providers Completed",
+            "default": 0
+          },
+          "providers_failed": {
+            "type": "integer",
+            "title": "Providers Failed",
+            "default": 0
+          },
+          "target_mentions": {
+            "type": "integer",
+            "title": "Target Mentions",
+            "default": 0
+          },
+          "target_citations": {
+            "type": "integer",
+            "title": "Target Citations",
+            "default": 0
+          },
+          "top_cited_domains": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Top Cited Domains"
+          },
+          "top_decision_signals": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Top Decision Signals"
+          },
+          "cross_provider_recommendations": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Cross Provider Recommendations"
+          },
+          "influential_unverified_claims": {
+            "items": {
+              "$ref": "#/components/schemas/InfluentialUnverifiedClaim"
+            },
+            "type": "array",
+            "title": "Influential Unverified Claims"
+          },
+          "citation_eligibility_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Citation Eligibility Actions"
+          }
+        },
+        "type": "object",
+        "title": "AiVisibilitySummary",
+        "description": "The cross-provider verdict for one query."
       },
       "AidreamCollectionCreateRequest": {
         "properties": {
@@ -52744,6 +53250,123 @@
           "text"
         ],
         "title": "AppendDocumentRequest"
+      },
+      "ApplyEndpointFamilyRequest": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "path_prefix": {
+            "type": "string",
+            "title": "Path Prefix"
+          },
+          "query_param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Param"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "detector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detector"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "dedupe_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dedupe Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "path_prefix",
+          "reason"
+        ],
+        "title": "ApplyEndpointFamilyRequest",
+        "description": "The assist action's `body`, echoed back by the client on accept."
+      },
+      "ApplyEndpointFamilyResult": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "path_prefix": {
+            "type": "string",
+            "title": "Path Prefix"
+          },
+          "query_param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query Param"
+          },
+          "pages_reclassified": {
+            "type": "integer",
+            "title": "Pages Reclassified",
+            "default": 0
+          },
+          "already_active": {
+            "type": "boolean",
+            "title": "Already Active",
+            "default": false
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule_id",
+          "site_id",
+          "path_prefix"
+        ],
+        "title": "ApplyEndpointFamilyResult"
       },
       "ApplyTagsRequest": {
         "properties": {
@@ -55244,6 +55867,47 @@
         ],
         "title": "BatchScrapeResponse"
       },
+      "BatchSubmitSummary": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "requested": {
+            "type": "integer",
+            "title": "Requested"
+          },
+          "enqueued": {
+            "type": "integer",
+            "title": "Enqueued"
+          },
+          "skipped_unchanged": {
+            "type": "integer",
+            "title": "Skipped Unchanged",
+            "default": 0
+          },
+          "skipped_no_content": {
+            "type": "integer",
+            "title": "Skipped No Content",
+            "default": 0
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "requested",
+          "enqueued"
+        ],
+        "title": "BatchSubmitSummary"
+      },
       "BboxInput": {
         "properties": {
           "x0": {
@@ -56284,6 +56948,56 @@
         ],
         "title": "Body_upload_vision_master_media_upload_post"
       },
+      "BridgeAccountIdentity": {
+        "properties": {
+          "provider_account_key": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Provider Account Key"
+          },
+          "provider_account_key_version": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ],
+            "title": "Provider Account Key Version",
+            "default": 2
+          },
+          "provider_account_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account Fingerprint"
+          },
+          "provider_account_label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider_account_key"
+        ],
+        "title": "BridgeAccountIdentity",
+        "description": "Opaque, display-safe provider-account provenance. Never authorization.\n\n``provider_account_key`` version 2 is the canonical contract: a deterministic\nSHA-256 of a fixed public platform namespace plus the provider's stable\naccount fields, so the same provider account produces the same key on every\nmachine. Version 1 (absent field) is the retired per-installation HMAC;\nv1 keys are never comparable across machines or against v2 keys.\n``provider_account_fingerprint`` is the first 12 hex chars of the key.\n``provider_account_label`` is a short display-safe label (masked email or an\norg-id prefix) — never a raw email, credential, or token."
+      },
       "BridgeAction": {
         "type": "string",
         "enum": [
@@ -57136,6 +57850,132 @@
           "provider"
         ],
         "title": "BridgeResponse"
+      },
+      "BridgeSourceMetadata": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "const": "claude_local_jsonl",
+            "title": "Source Kind"
+          },
+          "provider_native_session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Provider Native Session Id"
+          },
+          "provider_account_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account Key"
+          },
+          "provider_account_key_version": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ],
+            "title": "Provider Account Key Version",
+            "default": 1
+          },
+          "provider_account_fingerprint": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account Fingerprint"
+          },
+          "provider_account_label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Account Label"
+          },
+          "importer_version": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Importer Version"
+          },
+          "client_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Version"
+          },
+          "transcript_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Transcript Sha256"
+          },
+          "transcript_bytes": {
+            "type": "integer",
+            "maximum": 268435456.0,
+            "minimum": 0.0,
+            "title": "Transcript Bytes"
+          },
+          "transcript_entry_count": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Transcript Entry Count"
+          },
+          "transcript_mtime_ns": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Transcript Mtime Ns"
+          },
+          "source_complete": {
+            "type": "boolean",
+            "title": "Source Complete"
+          },
+          "corrupt_line_count": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Corrupt Line Count",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind",
+          "provider_native_session_id",
+          "importer_version",
+          "transcript_sha256",
+          "transcript_bytes",
+          "transcript_entry_count",
+          "transcript_mtime_ns",
+          "source_complete"
+        ],
+        "title": "BridgeSourceMetadata",
+        "description": "Bounded, non-authoritative provenance for an explicit local import."
       },
       "BriefRunHistoryResult": {
         "properties": {
@@ -58924,6 +59764,66 @@
         ],
         "title": "CancelRunResponse"
       },
+      "CapturedLink": {
+        "properties": {
+          "target_url": {
+            "type": "string",
+            "title": "Target Url"
+          },
+          "anchor_text": {
+            "type": "string",
+            "title": "Anchor Text",
+            "default": ""
+          },
+          "text_source": {
+            "type": "string",
+            "enum": [
+              "anchor",
+              "image_alt",
+              ""
+            ],
+            "title": "Text Source",
+            "default": ""
+          },
+          "rel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rel"
+          },
+          "nofollow": {
+            "type": "boolean",
+            "title": "Nofollow",
+            "default": false
+          },
+          "link_type": {
+            "type": "string",
+            "enum": [
+              "internal",
+              "subdomain",
+              "external"
+            ],
+            "title": "Link Type",
+            "default": "external"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region",
+            "default": "body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_url"
+        ],
+        "title": "CapturedLink",
+        "description": "One anchor on the captured page pointing at the requested target.\n\nKey names match ``LinkExtractor.extract_anchors`` / ``seo_audit.LinkItem``\n/ the ``crawl_links`` rows, so every consumer reads one vocabulary."
+      },
       "CartesianPlan": {
         "properties": {
           "strategy": {
@@ -60688,6 +61588,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "target_instance_id": {
             "anyOf": [
               {
@@ -62089,6 +63005,21 @@
             "type": "boolean",
             "title": "Native Fork"
           },
+          "bash_available": {
+            "type": "boolean",
+            "title": "Bash Available"
+          },
+          "bash_unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bash Unavailable Reason"
+          },
           "reason": {
             "anyOf": [
               {
@@ -62106,7 +63037,8 @@
         "required": [
           "available",
           "native_resume",
-          "native_fork"
+          "native_fork",
+          "bash_available"
         ],
         "title": "ClaudeManagedCapabilitiesResponse"
       },
@@ -62704,6 +63636,28 @@
               }
             ],
             "title": "Error Code"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template"
+          },
+          "template_matched_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Matched By"
           }
         },
         "additionalProperties": false,
@@ -64365,6 +65319,26 @@
             "type": "array",
             "maxItems": 1000,
             "title": "Entries"
+          },
+          "source_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeSourceMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "account_identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeAccountIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "writer_runtime_id": {
             "anyOf": [
@@ -66465,6 +67439,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store",
@@ -66968,6 +67958,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store",
@@ -67394,6 +68400,29 @@
         "type": "object",
         "title": "ConversationRecord",
         "description": "Conversation row as returned by ``CxConversation.to_dict()``.\n\nORM ``to_dict`` projections evolve with the schema (status / metadata /\nflags), so ``extra=\"allow\"`` keeps the wire shape backward-compatible.\n``user_id`` mirrors ``created_by`` for clients not yet on the cutover."
+      },
+      "ConversationWarmResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "cached",
+              "already_cached"
+            ],
+            "title": "Status"
+          },
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "conversation_id"
+        ],
+        "title": "ConversationWarmResponse",
+        "description": "Whether the warm call populated the cache or found it already hot."
       },
       "CoordinatedRowsPlan": {
         "properties": {
@@ -68821,6 +69850,14 @@
             },
             "type": "array",
             "title": "Source Feature Patterns"
+          },
+          "origin_classes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Origin Classes",
+            "description": "matrx_connect ORIGIN_CLASSES + 'unknown' (DB backfill for pre-provenance rows). Valid filter values for origin_class."
           }
         },
         "additionalProperties": false,
@@ -68879,6 +69916,14 @@
             "type": "array",
             "title": "Source Feature",
             "description": "Distinct (source_feature, count). Drives the searchable feature filter."
+          },
+          "origin_class": {
+            "items": {
+              "$ref": "#/components/schemas/CxExplorerFacetEntry"
+            },
+            "type": "array",
+            "title": "Origin Class",
+            "description": "Distinct (origin_class, count) — the witnessed trust axis (matrx_connect ORIGIN_CLASSES + 'unknown' for pre-provenance rows). Drives the origin filter."
           }
         },
         "additionalProperties": false,
@@ -68887,7 +69932,8 @@
           "totals",
           "status",
           "source_app",
-          "source_feature"
+          "source_feature",
+          "origin_class"
         ],
         "title": "CxExplorerFacets"
       },
@@ -79981,6 +81027,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store",
@@ -82586,6 +83648,30 @@
           "errors"
         ],
         "title": "IndexRepositoryResponse"
+      },
+      "InfluentialUnverifiedClaim": {
+        "properties": {
+          "engine": {
+            "type": "string",
+            "title": "Engine"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject",
+            "default": ""
+          },
+          "claim": {
+            "type": "string",
+            "title": "Claim",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "engine"
+        ],
+        "title": "InfluentialUnverifiedClaim",
+        "description": "A decision-driving claim an assistant repeated without verifying it."
       },
       "IngestReport": {
         "properties": {
@@ -94014,8 +95100,7 @@
           },
           "links_to_target": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/CapturedLink"
             },
             "type": "array",
             "title": "Links To Target"
@@ -97418,6 +98503,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store",
@@ -97835,6 +98936,22 @@
             ],
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "store": {
             "type": "boolean",
@@ -98976,6 +100093,22 @@
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
           },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
+          },
           "store": {
             "type": "boolean",
             "title": "Store"
@@ -99640,6 +100773,105 @@
           "submitted_at"
         ],
         "title": "ProviderTaskEvidenceOut"
+      },
+      "PublicAiVisibilityBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "brand_name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Brand Name"
+          },
+          "website_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 4,
+            "title": "Website Url"
+          },
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Aliases"
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Query"
+          },
+          "country_iso": {
+            "type": "string",
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "Country Iso",
+            "default": "US"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "brand_name",
+          "website_url",
+          "query"
+        ],
+        "title": "PublicAiVisibilityBody",
+        "description": "A prospect identity and the exact buyer question to test."
       },
       "PublicWorkflowRecord": {
         "properties": {
@@ -101824,6 +103056,108 @@
         ],
         "title": "RefreshNodeTypesResponse"
       },
+      "RefreshNowRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "default": "catch_up"
+          }
+        },
+        "type": "object",
+        "title": "RefreshNowRequest",
+        "description": "`catch_up` finishes what is unfinished; `refresh` re-opens discovery for\nkeywords whose search has aged out first."
+      },
+      "RefreshScheduleRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "interval_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval Hours"
+          }
+        },
+        "type": "object",
+        "title": "RefreshScheduleRequest",
+        "description": "`interval_hours=None` (or 0) turns unattended refresh off."
+      },
       "RegenerateAssetRequest": {
         "properties": {
           "asset_kind": {
@@ -103946,6 +105280,256 @@
         "type": "object",
         "title": "RerunFromRequest"
       },
+      "ResearchRefreshState": {
+        "properties": {
+          "topic_id": {
+            "type": "string",
+            "title": "Topic Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "is_running": {
+            "type": "boolean",
+            "title": "Is Running"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "refresh_interval_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Interval Hours"
+          },
+          "next_refresh_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Refresh At"
+          },
+          "last_refresh_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Refresh At"
+          },
+          "last_refresh_outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Refresh Outcome"
+          },
+          "last_refresh_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Refresh Error"
+          },
+          "last_refresh_trigger": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Refresh Trigger"
+          },
+          "consecutive_refresh_failures": {
+            "type": "integer",
+            "title": "Consecutive Refresh Failures",
+            "default": 0
+          },
+          "is_claimed": {
+            "type": "boolean",
+            "title": "Is Claimed",
+            "default": false
+          },
+          "keywords_total": {
+            "type": "integer",
+            "title": "Keywords Total",
+            "default": 0
+          },
+          "keywords_never_searched": {
+            "type": "integer",
+            "title": "Keywords Never Searched",
+            "default": 0
+          },
+          "latest_document_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Document Version"
+          },
+          "latest_document_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Document At"
+          },
+          "bounds": {
+            "$ref": "#/components/schemas/ResearchRunBounds"
+          },
+          "execution": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Execution",
+            "description": "Latest runtime-spine execution for this topic (id/status/timestamps)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "topic_id",
+          "name",
+          "status",
+          "is_running",
+          "bounds"
+        ],
+        "title": "ResearchRefreshState",
+        "description": "Everything a caller needs to answer \"is this topic running, and did the\nlast unattended attempt work?\" without reading four tables itself."
+      },
+      "ResearchRunBounds": {
+        "properties": {
+          "keywords_processed": {
+            "type": "integer",
+            "title": "Keywords Processed",
+            "description": "At most `max_keywords` keywords take part."
+          },
+          "searches": {
+            "type": "integer",
+            "title": "Searches",
+            "description": "One discovery pass per processed keyword, at most."
+          },
+          "pages_scraped": {
+            "type": "integer",
+            "title": "Pages Scraped",
+            "description": "max_keywords x scrapes_per_keyword."
+          },
+          "videos_captured": {
+            "type": "integer",
+            "title": "Videos Captured",
+            "description": "max_keywords x videos_per_keyword."
+          },
+          "analysis_llm_calls": {
+            "type": "integer",
+            "title": "Analysis Llm Calls",
+            "description": "max_keywords x analyses_per_keyword."
+          },
+          "synthesis_llm_calls": {
+            "type": "integer",
+            "title": "Synthesis Llm Calls",
+            "description": "max_keyword_syntheses + max_topic_syntheses."
+          },
+          "document_llm_calls": {
+            "type": "integer",
+            "title": "Document Llm Calls",
+            "description": "max_documents."
+          },
+          "tag_llm_calls": {
+            "type": "integer",
+            "title": "Tag Llm Calls",
+            "description": "max_tag_consolidations + max_auto_tag_calls."
+          },
+          "total_llm_calls": {
+            "type": "integer",
+            "title": "Total Llm Calls",
+            "description": "Sum of every LLM-calling phase above."
+          },
+          "within_automated_limits": {
+            "type": "boolean",
+            "title": "Within Automated Limits"
+          },
+          "limit_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "keywords_processed",
+          "searches",
+          "pages_scraped",
+          "videos_captured",
+          "analysis_llm_calls",
+          "synthesis_llm_calls",
+          "document_llm_calls",
+          "tag_llm_calls",
+          "total_llm_calls",
+          "within_automated_limits"
+        ],
+        "title": "ResearchRunBounds",
+        "description": "The worst case one pipeline pass on this topic can cost, derived from the\ntopic's own quota ladder — every phase of the pipeline is count-capped, so\nthese are hard ceilings, not guesses."
+      },
       "ResearchTopicSummary": {
         "properties": {
           "id": {
@@ -104849,6 +106433,22 @@
             ],
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "store": {
             "type": "boolean",
@@ -116378,6 +117978,72 @@
         ],
         "title": "TemplateCreate"
       },
+      "TemplateLibraryResult": {
+        "properties": {
+          "web_site_id": {
+            "type": "string",
+            "title": "Web Site Id"
+          },
+          "templates": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateOut"
+            },
+            "type": "array",
+            "title": "Templates"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "web_site_id"
+        ],
+        "title": "TemplateLibraryResult",
+        "description": "The site's whole page-template library."
+      },
+      "TemplateOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/TemplateSectionOut"
+            },
+            "type": "array",
+            "title": "Sections"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "description",
+          "source"
+        ],
+        "title": "TemplateOut",
+        "description": "Wire projection of one template, with the key that selects it."
+      },
       "TemplateRecord": {
         "properties": {
           "id": {
@@ -116451,6 +118117,41 @@
           "name"
         ],
         "title": "TemplateRecord"
+      },
+      "TemplateSectionOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "heading": {
+            "type": "string",
+            "title": "Heading"
+          },
+          "heading_level": {
+            "type": "integer",
+            "title": "Heading Level"
+          },
+          "guidance": {
+            "type": "string",
+            "title": "Guidance"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "kind",
+          "heading",
+          "heading_level",
+          "guidance"
+        ],
+        "title": "TemplateSectionOut",
+        "description": "Wire projection of one section (discovery reads / the API)."
       },
       "TestNodeRequest": {
         "properties": {
@@ -116823,6 +118524,22 @@
             ],
             "title": "Source Feature",
             "description": "Stable feature slug within the source application."
+          },
+          "initiation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "auto"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initiation",
+            "description": "How the client initiated this request: 'user' for a direct human action, 'auto' for client-code automation. Omit for API callers."
           },
           "store": {
             "type": "boolean",

@@ -15,7 +15,7 @@ import {
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import type { PcShow, PcEpisode } from "../../types";
-import { useShare } from "../../hooks/useShare";
+import { useShare } from "@/features/sharing/hooks/useShare";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 
 interface PodcastShowPageProps {

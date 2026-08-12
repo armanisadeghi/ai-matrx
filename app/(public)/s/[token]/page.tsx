@@ -18,7 +18,9 @@ async function resolve(token: string) {
   return resolveShareToken(token, supabase as never);
 }
 
-function resourceTitle(resource: Record<string, unknown> | undefined): string | null {
+function resourceTitle(
+  resource: Record<string, unknown> | undefined,
+): string | null {
   if (!resource) return null;
   for (const k of ["label", "title", "name", "display_label"]) {
     const v = resource[k];
@@ -27,13 +29,52 @@ function resourceTitle(resource: Record<string, unknown> | undefined): string | 
   return null;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+function aiVisibilityMeta(resource: Record<string, unknown> | undefined): {
+  title: string;
+  description: string;
+} | null {
+  const value = resource?.["result"];
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const report = value as Record<string, unknown>;
+  if (report.result_kind !== "ai_visibility.analyze") return null;
+  const brand =
+    typeof report.brand_name === "string" ? report.brand_name : "this brand";
+  const query =
+    typeof report.query === "string" ? report.query : "a real buyer question";
+  return {
+    title: `${brand} AI Visibility Report`,
+    description: `See how ChatGPT, Claude, Gemini, and Perplexity answer “${query}” — including brand position, mentions, citations, and decision signals.`,
+  };
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { token } = await params;
   const result = await resolve(token);
   if (!result.success) {
     return { title: "Shared link · AI Matrx", robots: { index: false } };
   }
-  const title = resourceTitle(result.resource) ?? result.displayLabel ?? "Shared item";
+  const reportMeta = aiVisibilityMeta(result.resource);
+  if (reportMeta) {
+    return {
+      title: `${reportMeta.title} · AI Matrx`,
+      description: reportMeta.description,
+      robots: { index: false },
+      openGraph: {
+        title: reportMeta.title,
+        description: reportMeta.description,
+        type: "article",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: reportMeta.title,
+        description: reportMeta.description,
+      },
+    };
+  }
+  const title =
+    resourceTitle(result.resource) ?? result.displayLabel ?? "Shared item";
   return {
     title: `${title} · AI Matrx`,
     description: `A ${result.displayLabel ?? "resource"} shared with you on AI Matrx.`,

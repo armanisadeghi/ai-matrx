@@ -113,6 +113,12 @@ function readProviderResult(value: unknown): AiVisibilityProviderResult | null {
     answer_text: stringValue(value.answer_text) ?? "",
     target_mentioned: booleanValue(value.target_mentioned),
     target_cited: booleanValue(value.target_cited),
+    target_recommendation_rank:
+      typeof value.target_recommendation_rank === "number"
+        ? value.target_recommendation_rank
+        : null,
+    target_recommendation_subject:
+      stringValue(value.target_recommendation_subject) ?? null,
     citation_count: numberValue(value.citation_count),
     analysis: isJsonObject(value.analysis) ? value.analysis : undefined,
     error: stringValue(value.error) ?? null,
@@ -147,10 +153,18 @@ function readAiVisibilityResult(value: unknown): AiVisibilityResult | null {
   return {
     result_kind: "ai_visibility.analyze",
     site_id: siteId,
+    brand_name: stringValue(value.brand_name) ?? "Brand",
+    website_url: stringValue(value.website_url) ?? "",
+    brand_aliases: Array.isArray(value.brand_aliases)
+      ? value.brand_aliases.filter(
+          (alias): alias is string => typeof alias === "string",
+        )
+      : [],
     query,
     engines,
     providers,
     summary: isJsonObject(value.summary) ? value.summary : undefined,
+    share_path: stringValue(value.share_path) ?? null,
   };
 }
 

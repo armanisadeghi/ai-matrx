@@ -27,7 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { podcastService } from "@/features/podcasts/service";
-import { useShare } from "@/features/podcasts/hooks/useShare";
+import { useShare } from "@/features/sharing/hooks/useShare";
 import type { PcDisplayMode } from "@/features/podcasts/types";
 import { episodeHref } from "../constants";
 

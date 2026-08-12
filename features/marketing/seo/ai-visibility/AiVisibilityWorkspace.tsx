@@ -34,6 +34,7 @@ import {
 import type { MarketingSite } from "@/features/marketing/types";
 import { markdownToPlainText } from "@/lib/markdown/plain-text";
 import { cn } from "@/lib/utils";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 
 import {
   AI_VISIBILITY_ENGINES,
@@ -708,9 +709,20 @@ export function AiVisibilityWorkspace({
               </div>
             </div>
           </div>
-          <Button asChild size="sm" variant="outline">
-            <Link href={sitePath}>Open {site.name}</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            {latestCommandId ? (
+              <ShareButton
+                resourceType="seo_collection_run"
+                resourceId={latestCommandId}
+                resourceName={`${site.name} AI Visibility Report`}
+                size="sm"
+                showStatus={false}
+              />
+            ) : null}
+            <Button asChild size="sm" variant="outline">
+              <Link href={sitePath}>Open {site.name}</Link>
+            </Button>
+          </div>
         </div>
 
         <div className="mt-2.5 grid gap-2 lg:grid-cols-[minmax(0,1fr)_15rem]">
