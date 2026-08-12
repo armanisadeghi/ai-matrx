@@ -26,6 +26,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 
+import type { LiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 
@@ -49,6 +50,8 @@ export interface OpenLiveRunWindowOptions {
    */
   width?: number | string;
   height?: number | string;
+  /** Stable row-based progress for non-token work; replaces the transcript. */
+  progress?: LiveRunProgressState | null;
 }
 
 export interface LiveRunWindowHandle {
@@ -80,6 +83,7 @@ export function openLiveRunWindowAction(
       // apply — an explicit null would be passed through as a size.
       width: opts.width,
       height: opts.height,
+      progress: opts.progress ?? null,
     },
   });
 }
@@ -101,15 +105,18 @@ export function useOpenLiveRunWindow() {
           current = { ...current, ...patch };
           push();
         },
-        close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId })),
+        close: () =>
+          dispatch(closeOverlay({ overlayId: OVERLAY_ID, instanceId })),
       };
     },
     [dispatch],
   );
 }
 
-export interface FloatingLiveRunOptions
-  extends Omit<OpenLiveRunWindowOptions, "pending" | "instanceId"> {
+export interface FloatingLiveRunOptions extends Omit<
+  OpenLiveRunWindowOptions,
+  "pending" | "instanceId"
+> {
   /** True while the run is in flight. The window opens on the false→true edge. */
   active: boolean;
   /** Stable per-subject id so re-running reuses ONE window instead of stacking. */
@@ -139,8 +146,16 @@ export interface FloatingLiveRunOptions
 export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
   const open = useOpenLiveRunWindow();
   const handleRef = useRef<LiveRunWindowHandle | null>(null);
-  const { active, instanceId, conversationId, requestId, label, width, height } =
-    opts;
+  const {
+    active,
+    instanceId,
+    conversationId,
+    requestId,
+    label,
+    width,
+    height,
+    progress,
+  } = opts;
 
   useEffect(() => {
     if (!active) return;
@@ -151,6 +166,7 @@ export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
       conversationId,
       requestId,
       label,
+      progress,
       // `pending` only until a stream handle exists to bind.
       pending: !requestId && !conversationId,
     });
@@ -163,8 +179,8 @@ export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
     label,
     width,
     height,
+    progress,
   ]);
-
 }
 
 /**
@@ -176,7 +192,16 @@ export function LiveRunWindowController(
 ): null {
   const open = useOpenLiveRunWindow();
   const handleRef = useRef<LiveRunWindowHandle | null>(null);
-  const { instanceId, conversationId, requestId, label, pending, width, height } = props;
+  const {
+    instanceId,
+    conversationId,
+    requestId,
+    label,
+    pending,
+    width,
+    height,
+    progress,
+  } = props;
 
   useEffect(() => {
     const handle = open({ instanceId });
@@ -195,8 +220,9 @@ export function LiveRunWindowController(
       pending,
       width,
       height,
+      progress,
     });
-  }, [conversationId, requestId, label, pending, width, height]);
+  }, [conversationId, requestId, label, pending, width, height, progress]);
 
   return null;
 }

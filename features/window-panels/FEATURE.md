@@ -44,9 +44,9 @@ lib/redux/slices/
 
 Arman's ruling, 2026-08-11. Two halves, both absolute:
 
-**1. Never a top-of-page block.** Inserting a live-run block above the page's content shifts everything down the instant a run starts and puts the model's output above the thing the user is editing. **Banned on every page, no size threshold.** The canonical surface is the floating [`windows/agents/LiveRunWindow.tsx`](windows/agents/LiveRunWindow.tsx) — opened via `useOpenLiveRunWindow()` / `<LiveRunWindowController>` ([`features/overlays/openers/liveRunWindow.tsx`](../overlays/openers/liveRunWindow.tsx)). Its body is [`LiveRunDisplay`](../agents/components/live-run/LiveRunDisplay.tsx), a thin binding to the canonical pipeline, so a run emitting a registered content-IR kind renders as that kind's COMPONENT token-by-token, for free.
+**1. Never a top-of-page block.** Inserting a live-run block above the page's content shifts everything down the instant a run starts and puts the model's output above the thing the user is editing. **Banned on every page, no size threshold.** The canonical surface is the floating [`windows/agents/LiveRunWindow.tsx`](windows/agents/LiveRunWindow.tsx) — opened via `useOpenLiveRunWindow()` / `<LiveRunWindowController>` ([`features/overlays/openers/liveRunWindow.tsx`](../overlays/openers/liveRunWindow.tsx)). Token output renders through [`LiveRunDisplay`](../agents/components/live-run/LiveRunDisplay.tsx). Non-token pipelines pass `progress` and render [`LiveRunProgress`](../agents/components/live-run/LiveRunProgress.tsx): stable rows update in place; event narration is banned.
 
-**THE ONE EXCEPTION — inline `LiveRunDisplay`, and it is earned, not assumed.** A surface may render the window's *internals* inline only when ALL of these hold: the UI around it is purpose-built, more beautiful, and more specialized than the generic window; and it **guarantees zero page shift** — in practice, the content sits at the BOTTOM and the page only grows downward. This requires designing an entire interface around the kind. **Very few surfaces will ever qualify, and a coding agent's default output is nowhere near the bar.** When in doubt, float it.
+**THE ONE EXCEPTION — inline `LiveRunDisplay`, and it is earned, not assumed.** A surface may render the window's _internals_ inline only when ALL of these hold: the UI around it is purpose-built, more beautiful, and more specialized than the generic window; and it **guarantees zero page shift** — in practice, the content sits at the BOTTOM and the page only grows downward. This requires designing an entire interface around the kind. **Very few surfaces will ever qualify, and a coding agent's default output is nowhere near the bar.** When in doubt, float it.
 
 **2. Sizing is derived, never eyeballed.** Kind components are visually tuned against the `/chat` reading column, so the window matches it: **~720px of usable width** (760 outer − 38 chrome) and **80vh** tall. A narrower box reflows tables and makes a kind look broken in the window while looking right in chat. Both constants live at the top of `LiveRunWindow.tsx` with the arithmetic. Per-kind `width`/`height` overrides exist and are legitimate — a three-line kind should not open at 80vh, a wide table may need more than the chat column — but **only after watching that kind render and seeing the default be wrong.** Never hardcode a smaller default to make one screenshot fit.
 
@@ -55,6 +55,11 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 ---
 
 ## Change Log
+
+- 2026-08-12 — **Non-token work updates stable live rows.** `LiveRunWindow`
+  accepts validated `LiveRunProgressState`; `LiveRunProgress` replaces append-only
+  status narration with in-place waiting/running/completed/failed rows and active
+  indicators. AI Visibility is the first consumer.
 
 - 2026-08-11 — **`useFloatingLiveRun` is the migration off an inline live-run
   block, and a floating run window NEVER auto-closes.** The three page-shifting

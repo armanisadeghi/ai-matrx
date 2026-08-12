@@ -68,6 +68,7 @@ import type {
 } from "@/features/rag/components/search/ragAiCopy";
 import { isJsonObject } from "@/types/json";
 import { isSiteCommandMode } from "@/features/marketing/crawler/site-commands";
+import { parseLiveRunProgressState } from "@/features/agents/components/live-run/LiveRunProgress";
 
 const AdminIndicator = lazyOverlay(
   () => import("@/components/admin/controls/AdminIndicator"),
@@ -4474,6 +4475,7 @@ export default function OverlayController() {
             }
             label={typeof data?.label === "string" ? data.label : null}
             pending={data?.pending === true}
+            progress={parseLiveRunProgressState(data?.progress)}
             // Undefined when unset so the window's chat-matched size defaults
             // apply; a per-kind override arrives as a number or "70vh".
             width={

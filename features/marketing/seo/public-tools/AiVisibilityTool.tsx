@@ -13,6 +13,10 @@ import {
 } from "@/features/overlays/openers/liveRunWindow";
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import type {
+  LiveRunProgressItem,
+  LiveRunProgressState,
+} from "@/features/agents/components/live-run/LiveRunProgress";
 import { isJsonObject, type JsonObject } from "@/types/json";
 
 import {
@@ -21,29 +25,33 @@ import {
   type PublicVisibilityResult,
 } from "../ai-visibility/AiVisibilityReport";
 
-const STAGES: Record<string, string> = {
-  "seo.ai_visibility_started": "Starting the four-engine comparison",
-  "seo.ai_visibility_provider_started": "Sending the buyer question",
-  "seo.ai_visibility_provider_waiting":
-    "Waiting for the live, web-grounded answer",
-  "seo.ai_visibility_answer_received":
-    "Answer received — checking brand visibility",
-  "seo.ai_visibility_source_started": "Opening a cited source",
-  "seo.ai_visibility_source_completed": "Source captured",
-  "seo.ai_visibility_analysis_started": "Tracing claims and decision signals",
-  "seo.ai_visibility_analysis_completed": "Provider analysis complete",
-  "seo.ai_visibility_synthesis_completed":
-    "Building the cross-provider verdict",
-  "seo.public_ai_visibility_report_published":
-    "Publishing the shareable report",
-  "seo.ai_visibility_completed": "Report complete",
-};
+const ENGINES = [
+  ["chat_gpt", "ChatGPT"],
+  ["claude", "Claude"],
+  ["gemini", "Gemini"],
+  ["perplexity", "Perplexity"],
+] as const;
+
+function initialProgress(): LiveRunProgressState {
+  return {
+    title: "Checking AI recommendations",
+    description:
+      "Each engine updates here as its response and analysis complete.",
+    items: ENGINES.map(([id, label]) => ({
+      id,
+      label,
+      status: "waiting",
+      detail: "Waiting",
+    })),
+  };
+}
 
 export function AiVisibilityTool() {
   const dispatch = useAppDispatch();
   const openLiveRunWindow = useOpenLiveRunWindow();
   const liveWindow = useRef<LiveRunWindowHandle | null>(null);
   const liveRequestId = useRef<string | null>(null);
+  const liveProgress = useRef<LiveRunProgressState>(initialProgress());
   const [brandName, setBrandName] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [aliases, setAliases] = useState("");
@@ -54,17 +62,47 @@ export function AiVisibilityTool() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PublicVisibilityResult | null>(null);
 
+  const updateEngine = useCallback(
+    (engine: string, patch: Partial<LiveRunProgressItem>) => {
+      liveProgress.current = {
+        ...liveProgress.current,
+        items: liveProgress.current.items.map((item) =>
+          item.id === engine ? { ...item, ...patch } : item,
+        ),
+      };
+      liveWindow.current?.update({ progress: liveProgress.current });
+    },
+    [],
+  );
+
+  const failProgress = useCallback((message: string) => {
+    liveProgress.current = {
+      ...liveProgress.current,
+      title: "Report could not run",
+      description: message,
+      items: liveProgress.current.items.map((item) =>
+        item.status === "completed" || item.status === "failed"
+          ? item
+          : { ...item, status: "failed", detail: "Not completed" },
+      ),
+    };
+    liveWindow.current?.update({ progress: liveProgress.current });
+  }, []);
+
   const run = useCallback(async () => {
     if (running || !brandName.trim() || !websiteUrl.trim() || !query.trim())
       return;
     setRunning(true);
     setError(null);
     setResult(null);
-    setStage("Preparing the live comparison");
+    setStage("Starting the comparison");
+    liveProgress.current = initialProgress();
     liveWindow.current = openLiveRunWindow({
       instanceId: "public-ai-visibility",
-      label: "Preparing the live AI visibility report",
+      label: "AI visibility analysis",
       pending: true,
+      progress: liveProgress.current,
+      height: "70vh",
     });
     const abortController = new AbortController();
     let finalResult: PublicVisibilityResult | null = null;
@@ -78,13 +116,14 @@ export function AiVisibilityTool() {
         onEvent: (event) => {
           if (event.event === "error") {
             const data: JsonObject = isJsonObject(event.data) ? event.data : {};
-            setError(
+            const message =
               typeof data["user_message"] === "string"
                 ? data["user_message"]
                 : typeof data["message"] === "string"
                   ? data["message"]
-                  : "The report stopped before it completed.",
-            );
+                  : "The report stopped before it completed.";
+            setError(message);
+            failProgress(message);
             return;
           }
           if (event.event !== "data" || !isJsonObject(event.data)) return;
@@ -92,13 +131,69 @@ export function AiVisibilityTool() {
             typeof event.data.kind === "string" ? event.data.kind : null;
           if (!kind) return;
           const engine =
-            typeof event.data.engine === "string"
-              ? `${event.data.engine.replaceAll("_", " ")}: `
-              : "";
-          const nextStage = STAGES[kind];
-          if (nextStage) {
-            setStage(nextStage);
-            liveWindow.current?.update({ label: `${engine}${nextStage}` });
+            typeof event.data.engine === "string" ? event.data.engine : null;
+          if (engine && kind === "seo.ai_visibility_provider_started") {
+            updateEngine(engine, {
+              status: "running",
+              detail: "Requesting response",
+            });
+          } else if (engine && kind === "seo.ai_visibility_provider_waiting") {
+            updateEngine(engine, {
+              status: "running",
+              detail: "Retrieving the live response",
+            });
+          } else if (engine && kind === "seo.ai_visibility_answer_received") {
+            const citations =
+              typeof event.data.citation_count === "number"
+                ? event.data.citation_count
+                : 0;
+            const mentioned = event.data.target_mentioned === true;
+            updateEngine(engine, {
+              status: "running",
+              detail: `Response received · ${citations} citation${citations === 1 ? "" : "s"} · Brand ${mentioned ? "mentioned" : "not mentioned"}`,
+              preview:
+                typeof event.data.answer_text === "string"
+                  ? event.data.answer_text
+                  : undefined,
+            });
+          } else if (engine && kind === "seo.ai_visibility_analysis_started") {
+            updateEngine(engine, {
+              status: "running",
+              detail: "Analyzing recommendations and evidence",
+            });
+          } else if (
+            engine &&
+            kind === "seo.ai_visibility_analysis_completed"
+          ) {
+            const analysis = isJsonObject(event.data.analysis)
+              ? event.data.analysis
+              : {};
+            const claims = Array.isArray(analysis.claims)
+              ? analysis.claims.length
+              : 0;
+            const signals = Array.isArray(analysis.decision_signals)
+              ? analysis.decision_signals.length
+              : 0;
+            updateEngine(engine, {
+              status: "completed",
+              detail: `Complete · ${claims} claim${claims === 1 ? "" : "s"} · ${signals} decision signal${signals === 1 ? "" : "s"}`,
+            });
+          } else if (
+            engine &&
+            (kind === "seo.ai_visibility_provider_failed" ||
+              kind === "seo.ai_visibility_analysis_failed")
+          ) {
+            updateEngine(engine, {
+              status: "failed",
+              detail:
+                typeof event.data.message === "string"
+                  ? event.data.message
+                  : "This engine did not complete",
+            });
+          } else if (kind === "seo.ai_visibility_synthesis_completed") {
+            setStage("Preparing the report");
+          } else if (kind === "seo.public_ai_visibility_report_published") {
+            setStage("Report ready");
           }
           if (kind === "seo.ai_visibility_completed") {
             const parsed = parsePublicVisibilityResult(event.data.result);
@@ -136,7 +231,9 @@ export function AiVisibilityTool() {
       if (!finalResult)
         throw new Error("The stream ended before the durable report arrived.");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      const message = caught instanceof Error ? caught.message : String(caught);
+      setError(message);
+      failProgress(message);
     } finally {
       setRunning(false);
     }
@@ -145,9 +242,11 @@ export function AiVisibilityTool() {
     brandName,
     city,
     dispatch,
+    failProgress,
     openLiveRunWindow,
     query,
     running,
+    updateEngine,
     websiteUrl,
   ]);
 
@@ -225,6 +324,8 @@ export function AiVisibilityTool() {
                   label: stage ?? "AI visibility analysis",
                   requestId: liveRequestId.current,
                   pending: !liveRequestId.current,
+                  progress: liveProgress.current,
+                  height: "70vh",
                 });
                 return;
               }
@@ -240,9 +341,7 @@ export function AiVisibilityTool() {
           </Button>
         </div>
         {running && stage ? (
-          <p className="mt-3 text-xs text-primary">
-            {stage}… Results appear as each engine returns.
-          </p>
+          <p className="mt-3 text-xs text-primary">{stage}</p>
         ) : null}
         {error ? (
           <div className="mt-4 flex gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">

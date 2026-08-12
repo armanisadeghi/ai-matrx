@@ -17,10 +17,11 @@
 
 ## Invariants
 
-- **The live window is the progress surface.** Public and internal runs adopt
-  the foreign stream through `adoptForeignStream`; Content IR appears there as
-  tokens/events arrive. Provider cards update at `answer_received`; no blocking
-  spinner owns a long-running run.
+- **The live window is the progress surface.** Public runs adopt the foreign
+  stream through `adoptForeignStream` and pass one `LiveRunProgressState` to the
+  canonical window. The four engine rows update in place from waiting → running
+  → completed/failed, show answer evidence when received, and never append
+  implementation narration. Internal agent output still uses Content IR.
 - **The durable run is the report.** `seo.collection_run.result` is the only
   report payload. Do not add a public report table or a second token system.
 - **Aliases are identity data.** Mention and recommendation position come from
@@ -36,6 +37,8 @@
 
 ## Change log
 
+- 2026-08-12 — Replaced the public run's append-only Content IR status transcript
+  with four stable, actively updating engine rows in `LiveRunWindow`.
 - 2026-08-12 — Fixed the internal share action’s generic status probe: a
   link-only `seo.collection_run` has no public-state column, so it now skips the
   row query and relies on the canonical link-sharing capability.
