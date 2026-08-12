@@ -13,6 +13,24 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D171 — `content_role` has two writable authorities and 13 live disagreements (2026-08-11)
+
+The false-red `youtube_search` incident (D141) exposed core ambiguity beyond
+the fixed null-classification bug. The same five-value role is independently
+stored and edited in `platform.entity_types` and
+`platform.shareable_resource_registry`, with no invariant joining them. Live
+audit: 324 active entity types (37 classified, 287 NULL), 69 active shareable
+rows, 68 overlapping active tokens, and 13 role disagreements. `data_store` is
+the clearest semantic conflict (`source` in entity types, `container` in
+sharing), so blind synchronization in either direction is unsafe.
+
+The evidence, consumer risks, decision branches, and recommended migration
+sequence are in `features/admin/relationships/FEATURE.md` § “Deferred core audit
+— `content_role` is carrying ambiguous authority.” Product decision required:
+one concept with `platform.entity_types` as sole authority, or two explicitly
+named axes. Do not make NULL illegal, bulk-default rows, or add downgrade rules
+before that decision.
+
 ### D167 — no research output can be SAVED: `rs_topic_append_output` is blocked by the RLS update policy (2026-08-11)
 
 **Every Outputs Studio generator is affected** — blog, slides, podcast, SEO —
