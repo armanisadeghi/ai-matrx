@@ -25,6 +25,7 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
@@ -224,11 +225,22 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_working_directory",
     label: "Working directory",
     description:
-      "Server-tracked cwd of the interactive terminal on the detail page (defaults to /home/agent). Empty on the list page.",
+      "Directory the terminal prompt shows and that the next command runs in (defaults to /home/agent). The server echoes the real cwd back after every command, so a `cd` the user ran is reflected here. Empty on the list page.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 30,
     sortOrder: 500,
+    group: "shell_session",
+  },
+  {
+    name: "staged_command",
+    label: "Staged command",
+    description:
+      "What is currently typed into the terminal's command input on the detail page but NOT yet run — the box the user presses Enter on. Usually empty, because running a command clears the box. Empty on the list page.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 60,
+    sortOrder: 505,
     group: "shell_session",
   },
   {
@@ -292,6 +304,89 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write targets — the agent COMPOSES, the human RUNS.
+ *
+ * Both targets stage into the terminal's input row on `/sandbox/[id]` and
+ * stop there. That boundary is the whole design, not a limitation we plan to
+ * relax:
+ *
+ * There is deliberately NO `run_command` / `submit` / `execute` target, and
+ * no handler here may reach `handleExec`. A sandbox shell is arbitrary code
+ * execution on a live machine — `rm -rf`, an outbound curl, a package
+ * install — and the writeback seam's `ask` confirm is a one-line dialog, not
+ * an informed review of what a command will do. The judgment bar puts
+ * anything destructive on the human side of the line, and "destructive" is
+ * unknowable in advance for a shell string. Staging is the opposite: the
+ * command lands in the box in plain sight, the user reads it, and pressing
+ * Enter is the consent. Nothing an agent applies here changes the machine.
+ *
+ * This is why the `tasks` surface's `save_task` action target does NOT
+ * generalize to a `run_command` here. `save_task` persists a draft the user
+ * has already been shown, into a row they own, and every field of it is
+ * reversible by editing and saving again. A shell command is neither
+ * previewed-by-its-value nor reversible — the blast radius is the container
+ * and anything it can reach. Same seam, different bar.
+ *
+ * Terminal output, command history, and the executing flag are OUTPUT and
+ * status, never targets. Stop / Extend / Delete stay human — they are header
+ * actions against the live machine, and delete is destructive by definition.
+ *
+ * ── THE COUNTER-ARGUMENT, recorded because it is strong ─────────────────
+ * A parallel assessment of this surface RULED IT OUT, on a point worth
+ * keeping in front of whoever touches this next: unlike
+ * `matrx-admin/database`'s `sql_query` — the precedent for letting an agent
+ * draft an inert command — this prompt is a SINGLE-LINE input where **Enter
+ * runs**, it carries `autoFocus`, and the terminal body re-focuses it on any
+ * click. So a staged command can sit in an already-focused live shell one
+ * reflexive keystroke from executing, where the SQL workbench needs a
+ * deliberate, separately-located Execute press. That objection landed a real
+ * defect: this page's `command_input` handler used to call
+ * `inputRef.current?.focus()` after staging, which manufactured exactly that
+ * hazard. It no longer does — see the comment at that handler.
+ *
+ * Where this manifest comes down, having taken the point: the `ask` confirm
+ * is itself the deliberate, separately-located gate. The user reads a dialog
+ * naming the target and the description above, and clicks Apply; the command
+ * then sits visible and unfocused, and running it costs a click plus Enter.
+ * Nothing an agent applies here changes the machine, and a wrong command is
+ * cleared by selecting the box and typing over it.
+ *
+ * KNOWN GAP, honestly: the input has no staged-vs-typed affordance, so an
+ * agent-written command is visually indistinguishable from one the user
+ * typed. The ask dialog is the only signal that it arrived from an agent.
+ * Giving the input a "staged by <agent>" marker that clears on first
+ * keystroke is the obvious next increment and would close the last real
+ * objection above; it is deliberately NOT bundled here, because it is a UI
+ * change that would need its own live verification.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "command_input",
+    label: "Terminal command",
+    description:
+      "STAGES one shell command into the sandbox terminal's input box — it is typed in for the user, it is NOT run. The user reads it in the box and presses Enter (or Send) themselves; nothing executes until they do, and there is no target that executes it. Value: a plain text string, NOT JSON and NOT JSON-encoded — send cat /etc/os-release, never a JSON object and never a quoted/escaped string. A single line: pipes, redirects, && and quotes are fine, literal newlines are not (the input is one line). Replaces whatever is in the box — read staged_command first if you mean to extend it rather than overwrite it. Max 10000 characters, which is the limit the exec API enforces. Check sandbox_status is ready or running first; the box is disabled otherwise.",
+    valueType: "string",
+    updatesValue: "staged_command",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "shell_session",
+    sortOrder: 100,
+  },
+  {
+    name: "working_directory",
+    label: "Working directory",
+    description:
+      "Sets the directory the terminal prompt shows and that the user's NEXT command will run in — the effect of a `cd`, without running anything. Value: a plain text absolute path string beginning with /, e.g. /home/agent/project — NOT JSON and NOT JSON-encoded, one line, no shell syntax, no ~ expansion, no trailing arguments. The path is not checked for existence; if it is wrong the user's next command fails with the shell's own error, and any `cd` they run afterwards corrects it. Read current_working_directory first to see where the terminal is now.",
+    valueType: "string",
+    updatesValue: "current_working_directory",
+    mode: "draft",
+    applyPolicy: "ask",
+    group: "shell_session",
+    sortOrder: 110,
+  },
+];
+
 export const sandboxesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/sandboxes",
   readiness: "partial",
@@ -303,12 +398,14 @@ export const sandboxesManifest: SurfaceManifest = {
 You are on Sandboxes — the user's isolated Linux machines for agent work. Two views share this surface: the list at /sandbox (their sandboxes, active and historical) and the workspace at /sandbox/[id] for one sandbox.
 On the list, sandbox_list / active_sandbox_count / total_sandbox_count are populated and the single-sandbox values are empty. On the workspace, it is the reverse: sandbox_id, sandbox_status, the machine values (container_id, sandbox_proxy_url, hot/cold paths, sandbox_config), the TTL values (sandbox_expires_at, sandbox_time_remaining), and the live shell session (current_working_directory, command_history, terminal_output) are populated.
 A sandbox is ephemeral: it expires on its TTL and everything in the shell session is lost on reload. Treat sandbox_status and sandbox_time_remaining as the first things to check before suggesting any action against the machine.
+You can WRITE to the terminal, but only to stage: command_input types a command into the input box and working_directory sets where it will run. You cannot run anything. There is no execute target and asking for one is a refusal — the user reads the staged command and presses Enter, and that keystroke is the consent. Compose the command, say what it will do, and hand it over.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /**
@@ -332,6 +429,7 @@ export function createSandboxesScope(values: {
   sandbox_config?: unknown;
   sandbox_instance?: unknown;
   current_working_directory?: string;
+  staged_command?: string;
   command_history?: string[];
   terminal_output?: string;
   active_sandbox_count?: number;
