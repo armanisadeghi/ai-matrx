@@ -219,6 +219,30 @@
       "default": null,
       "title": "Label"
      },
+     "meta_description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Meta Description"
+     },
+     "meta_title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "title": "Meta Title"
+     },
      "needs_reviewer": {
       "anyOf": [
        {
@@ -482,6 +506,32 @@
         "description": "Human page title, e.g. 'What is platelet-rich plasma?'",
         "title": "Label",
         "type": "string"
+       },
+       "meta_description": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "description": "Planned SEO description for the realized page.",
+        "title": "Meta Description"
+       },
+       "meta_title": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "description": "Planned SEO title for the realized page.",
+        "title": "Meta Title"
        },
        "needs_reviewer": {
         "default": false,
@@ -4110,6 +4160,130 @@
    "delete": "planned",
    "family": "System",
    "identity_fields": [],
+   "label": "Access Request",
+   "noun": "access_request",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "decision_note": {
+       "default": null,
+       "title": "Decision Note"
+      },
+      "message": {
+       "default": null,
+       "title": "Message"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "requested_level": {
+       "default": "viewer",
+       "title": "Requested Level"
+      },
+      "resource_id": {
+       "title": "Resource Id"
+      },
+      "resource_type": {
+       "title": "Resource Type"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      }
+     },
+     "required": [
+      "resource_type",
+      "resource_id"
+     ],
+     "title": "CreateAccessRequestItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteAccessRequestItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "decision_note": {
+       "default": null,
+       "title": "Decision Note"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "message": {
+       "default": null,
+       "title": "Message"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "requested_level": {
+       "default": null,
+       "title": "Requested Level"
+      },
+      "resource_id": {
+       "default": null,
+       "title": "Resource Id"
+      },
+      "resource_type": {
+       "default": null,
+       "title": "Resource Type"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateAccessRequestItem",
+     "type": "object"
+    }
+   },
+   "table": "iam.access_requests",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "System",
+   "identity_fields": [],
    "label": "Share Link",
    "noun": "share_link",
    "reference": "no",
@@ -5018,6 +5192,10 @@
        "default": null,
        "title": "Decided By"
       },
+      "decision_note": {
+       "default": null,
+       "title": "Decision Note"
+      },
       "dedupe_key": {
        "default": null,
        "title": "Dedupe Key"
@@ -5030,9 +5208,25 @@
        "default": null,
        "title": "Entity Type"
       },
+      "evidence": {
+       "default": null,
+       "title": "Evidence"
+      },
       "expires_at": {
        "default": null,
        "title": "Expires At"
+      },
+      "first_seen_at": {
+       "default": null,
+       "title": "First Seen At"
+      },
+      "is_starred": {
+       "default": false,
+       "title": "Is Starred"
+      },
+      "occurrences": {
+       "default": 1,
+       "title": "Occurrences"
       },
       "priority": {
        "default": 0,
@@ -5041,6 +5235,10 @@
       "reasoning": {
        "default": null,
        "title": "Reasoning"
+      },
+      "resolved_at": {
+       "default": null,
+       "title": "Resolved At"
       },
       "result": {
        "default": null,
@@ -5067,6 +5265,10 @@
       },
       "title": {
        "title": "Title"
+      },
+      "viewed_at": {
+       "default": null,
+       "title": "Viewed At"
       }
      },
      "required": [
@@ -5114,6 +5316,10 @@
        "default": null,
        "title": "Decided By"
       },
+      "decision_note": {
+       "default": null,
+       "title": "Decision Note"
+      },
       "dedupe_key": {
        "default": null,
        "title": "Dedupe Key"
@@ -5126,13 +5332,29 @@
        "default": null,
        "title": "Entity Type"
       },
+      "evidence": {
+       "default": null,
+       "title": "Evidence"
+      },
       "expires_at": {
        "default": null,
        "title": "Expires At"
       },
+      "first_seen_at": {
+       "default": null,
+       "title": "First Seen At"
+      },
       "id": {
        "title": "Id",
        "type": "string"
+      },
+      "is_starred": {
+       "default": null,
+       "title": "Is Starred"
+      },
+      "occurrences": {
+       "default": null,
+       "title": "Occurrences"
       },
       "priority": {
        "default": null,
@@ -5141,6 +5363,10 @@
       "reasoning": {
        "default": null,
        "title": "Reasoning"
+      },
+      "resolved_at": {
+       "default": null,
+       "title": "Resolved At"
       },
       "result": {
        "default": null,
@@ -5169,6 +5395,10 @@
       "title": {
        "default": null,
        "title": "Title"
+      },
+      "viewed_at": {
+       "default": null,
+       "title": "Viewed At"
       }
      },
      "required": [
@@ -5313,6 +5543,20 @@
    "table": "research.rs_context_bundle",
    "title_column": "name",
    "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "seo",
+   "identity_fields": [],
+   "label": "SEO Change",
+   "noun": "seo_change_set",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.change_set",
+   "title_column": "title",
+   "update": "no",
    "view": "no"
   },
   {
@@ -8272,217 +8516,11 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
-   "label": "Auto Ingest Batch",
-   "noun": "auto_ingest_batch",
+   "label": "Batch Cost Event",
+   "noun": "batch_cost_event",
    "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "batch_id": {
-       "default": null,
-       "title": "Batch Id"
-      },
-      "completed_at": {
-       "default": null,
-       "title": "Completed At"
-      },
-      "cost_recorded_at": {
-       "default": null,
-       "title": "Cost Recorded At"
-      },
-      "cost_usd": {
-       "default": null,
-       "title": "Cost Usd"
-      },
-      "custom_id": {
-       "title": "Custom Id"
-      },
-      "error": {
-       "default": null,
-       "title": "Error"
-      },
-      "est_cost_usd": {
-       "default": 0,
-       "title": "Est Cost Usd"
-      },
-      "kind": {
-       "title": "Kind"
-      },
-      "last_polled_at": {
-       "default": null,
-       "title": "Last Polled At"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "next_poll_at": {
-       "title": "Next Poll At"
-      },
-      "poll_count": {
-       "default": 0,
-       "title": "Poll Count"
-      },
-      "provider": {
-       "title": "Provider"
-      },
-      "purpose": {
-       "default": "auto_ingest",
-       "title": "Purpose"
-      },
-      "response_uri": {
-       "default": null,
-       "title": "Response Uri"
-      },
-      "source_id": {
-       "default": null,
-       "title": "Source Id"
-      },
-      "source_kind": {
-       "default": null,
-       "title": "Source Kind"
-      },
-      "status": {
-       "default": "pending",
-       "title": "Status"
-      },
-      "submitted_at": {
-       "title": "Submitted At"
-      },
-      "tokens_in": {
-       "default": null,
-       "title": "Tokens In"
-      },
-      "tokens_out": {
-       "default": null,
-       "title": "Tokens Out"
-      }
-     },
-     "required": [
-      "custom_id",
-      "provider",
-      "kind",
-      "submitted_at",
-      "next_poll_at"
-     ],
-     "title": "CreateAutoIngestBatchItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteAutoIngestBatchItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "batch_id": {
-       "default": null,
-       "title": "Batch Id"
-      },
-      "completed_at": {
-       "default": null,
-       "title": "Completed At"
-      },
-      "cost_recorded_at": {
-       "default": null,
-       "title": "Cost Recorded At"
-      },
-      "cost_usd": {
-       "default": null,
-       "title": "Cost Usd"
-      },
-      "custom_id": {
-       "default": null,
-       "title": "Custom Id"
-      },
-      "error": {
-       "default": null,
-       "title": "Error"
-      },
-      "est_cost_usd": {
-       "default": null,
-       "title": "Est Cost Usd"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "kind": {
-       "default": null,
-       "title": "Kind"
-      },
-      "last_polled_at": {
-       "default": null,
-       "title": "Last Polled At"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "next_poll_at": {
-       "default": null,
-       "title": "Next Poll At"
-      },
-      "poll_count": {
-       "default": null,
-       "title": "Poll Count"
-      },
-      "provider": {
-       "default": null,
-       "title": "Provider"
-      },
-      "purpose": {
-       "default": null,
-       "title": "Purpose"
-      },
-      "response_uri": {
-       "default": null,
-       "title": "Response Uri"
-      },
-      "source_id": {
-       "default": null,
-       "title": "Source Id"
-      },
-      "source_kind": {
-       "default": null,
-       "title": "Source Kind"
-      },
-      "status": {
-       "default": null,
-       "title": "Status"
-      },
-      "submitted_at": {
-       "default": null,
-       "title": "Submitted At"
-      },
-      "tokens_in": {
-       "default": null,
-       "title": "Tokens In"
-      },
-      "tokens_out": {
-       "default": null,
-       "title": "Tokens Out"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateAutoIngestBatchItem",
-     "type": "object"
-    }
-   },
-   "table": "auto_ingest_batch",
+   "schemas": null,
+   "table": "batch.cost_event",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -8492,73 +8530,25 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
-   "label": "Auto Ingest Cost Event",
-   "noun": "auto_ingest_cost_event",
+   "label": "Provider Batch",
+   "noun": "batch_provider_batch",
    "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "cost_usd": {
-       "title": "Cost Usd"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "source": {
-       "default": null,
-       "title": "Source"
-      }
-     },
-     "required": [
-      "cost_usd"
-     ],
-     "title": "CreateAutoIngestCostEventItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteAutoIngestCostEventItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "cost_usd": {
-       "default": null,
-       "title": "Cost Usd"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "source": {
-       "default": null,
-       "title": "Source"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateAutoIngestCostEventItem",
-     "type": "object"
-    }
-   },
-   "table": "auto_ingest_cost_event",
+   "schemas": null,
+   "table": "batch.provider_batch",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Batch Work Item",
+   "noun": "batch_work_item",
+   "reference": "no",
+   "schemas": null,
+   "table": "batch.work_item",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -10112,6 +10102,216 @@
    "title_column": "name",
    "update": "planned",
    "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Coding Session",
+   "noun": "coding_session",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "capabilities": {
+       "default": {},
+       "title": "Capabilities"
+      },
+      "conversation_id": {
+       "title": "Conversation Id"
+      },
+      "ended_at": {
+       "default": null,
+       "title": "Ended At"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "fidelity": {
+       "title": "Fidelity"
+      },
+      "last_seen_at": {
+       "title": "Last Seen At"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "origin": {
+       "title": "Origin"
+      },
+      "provider": {
+       "title": "Provider"
+      },
+      "provider_project_key": {
+       "default": null,
+       "title": "Provider Project Key"
+      },
+      "provider_session_id": {
+       "title": "Provider Session Id"
+      },
+      "retention_expires_at": {
+       "default": null,
+       "title": "Retention Expires At"
+      },
+      "runtime_kind": {
+       "default": null,
+       "title": "Runtime Kind"
+      },
+      "runtime_ref": {
+       "default": null,
+       "title": "Runtime Ref"
+      },
+      "status": {
+       "default": "active",
+       "title": "Status"
+      },
+      "workspace_fingerprint": {
+       "default": null,
+       "title": "Workspace Fingerprint"
+      },
+      "writer_lease_expires_at": {
+       "default": null,
+       "title": "Writer Lease Expires At"
+      },
+      "writer_runtime_id": {
+       "default": null,
+       "title": "Writer Runtime Id"
+      }
+     },
+     "required": [
+      "conversation_id",
+      "provider",
+      "provider_session_id",
+      "fidelity",
+      "origin",
+      "last_seen_at"
+     ],
+     "title": "CreateCodingSessionItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteCodingSessionItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "capabilities": {
+       "default": null,
+       "title": "Capabilities"
+      },
+      "conversation_id": {
+       "default": null,
+       "title": "Conversation Id"
+      },
+      "ended_at": {
+       "default": null,
+       "title": "Ended At"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "fidelity": {
+       "default": null,
+       "title": "Fidelity"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "last_seen_at": {
+       "default": null,
+       "title": "Last Seen At"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "origin": {
+       "default": null,
+       "title": "Origin"
+      },
+      "provider": {
+       "default": null,
+       "title": "Provider"
+      },
+      "provider_project_key": {
+       "default": null,
+       "title": "Provider Project Key"
+      },
+      "provider_session_id": {
+       "default": null,
+       "title": "Provider Session Id"
+      },
+      "retention_expires_at": {
+       "default": null,
+       "title": "Retention Expires At"
+      },
+      "runtime_kind": {
+       "default": null,
+       "title": "Runtime Kind"
+      },
+      "runtime_ref": {
+       "default": null,
+       "title": "Runtime Ref"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "workspace_fingerprint": {
+       "default": null,
+       "title": "Workspace Fingerprint"
+      },
+      "writer_lease_expires_at": {
+       "default": null,
+       "title": "Writer Lease Expires At"
+      },
+      "writer_runtime_id": {
+       "default": null,
+       "title": "Writer Runtime Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateCodingSessionItem",
+     "type": "object"
+    }
+   },
+   "table": "chat.coding_session",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Coding Session Entry",
+   "noun": "coding_session_entry",
+   "reference": "no",
+   "schemas": null,
+   "table": "chat.coding_session_entry",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
   },
   {
    "create": "planned",
@@ -14021,6 +14221,154 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
+   "identity_fields": [],
+   "label": "Growth Loop Run",
+   "noun": "growth_loop_run",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "current_stage": {
+       "default": "research",
+       "title": "Current Stage"
+      },
+      "cycle": {
+       "default": 1,
+       "title": "Cycle"
+      },
+      "ended_at": {
+       "default": null,
+       "title": "Ended At"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "event_seq": {
+       "default": 0,
+       "title": "Event Seq"
+      },
+      "label": {
+       "default": null,
+       "title": "Label"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "pipe_policy": {
+       "default": {},
+       "title": "Pipe Policy"
+      },
+      "site_id": {
+       "title": "Site Id"
+      },
+      "started_at": {
+       "title": "Started At"
+      },
+      "status": {
+       "default": "active",
+       "title": "Status"
+      },
+      "wf_run_id": {
+       "default": null,
+       "title": "Wf Run Id"
+      }
+     },
+     "required": [
+      "site_id",
+      "started_at"
+     ],
+     "title": "CreateGrowthLoopRunItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteGrowthLoopRunItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "current_stage": {
+       "default": null,
+       "title": "Current Stage"
+      },
+      "cycle": {
+       "default": null,
+       "title": "Cycle"
+      },
+      "ended_at": {
+       "default": null,
+       "title": "Ended At"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "event_seq": {
+       "default": null,
+       "title": "Event Seq"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "label": {
+       "default": null,
+       "title": "Label"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "pipe_policy": {
+       "default": null,
+       "title": "Pipe Policy"
+      },
+      "site_id": {
+       "default": null,
+       "title": "Site Id"
+      },
+      "started_at": {
+       "default": null,
+       "title": "Started At"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "wf_run_id": {
+       "default": null,
+       "title": "Wf Run Id"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateGrowthLoopRunItem",
+     "type": "object"
+    }
+   },
+   "table": "growth.loop_run",
+   "title_column": "label",
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
    "identity_fields": [
     "id"
    ],
@@ -14114,6 +14462,212 @@
    "title_column": "title",
    "update": "planned",
    "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Hindsight Enrollment",
+   "noun": "hindsight_enrollment",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "display_name": {
+       "title": "Display Name"
+      },
+      "example_watermark_at": {
+       "title": "Example Watermark At"
+      },
+      "goal": {
+       "default": null,
+       "title": "Goal"
+      },
+      "last_review_at": {
+       "default": null,
+       "title": "Last Review At"
+      },
+      "lens_config": {
+       "default": {},
+       "title": "Lens Config"
+      },
+      "max_examples_per_review": {
+       "default": 25,
+       "title": "Max Examples Per Review"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "next_eligible_at": {
+       "default": null,
+       "title": "Next Eligible At"
+      },
+      "review_every_n": {
+       "default": 10,
+       "title": "Review Every N"
+      },
+      "status": {
+       "default": "active",
+       "title": "Status"
+      },
+      "subject_id": {
+       "default": null,
+       "title": "Subject Id"
+      },
+      "subject_kind": {
+       "title": "Subject Kind"
+      },
+      "subject_ref": {
+       "default": null,
+       "title": "Subject Ref"
+      },
+      "subject_selector": {
+       "default": {},
+       "title": "Subject Selector"
+      }
+     },
+     "required": [
+      "subject_kind",
+      "display_name",
+      "example_watermark_at"
+     ],
+     "title": "CreateHindsightEnrollmentItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteHindsightEnrollmentItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "display_name": {
+       "default": null,
+       "title": "Display Name"
+      },
+      "example_watermark_at": {
+       "default": null,
+       "title": "Example Watermark At"
+      },
+      "goal": {
+       "default": null,
+       "title": "Goal"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "last_review_at": {
+       "default": null,
+       "title": "Last Review At"
+      },
+      "lens_config": {
+       "default": null,
+       "title": "Lens Config"
+      },
+      "max_examples_per_review": {
+       "default": null,
+       "title": "Max Examples Per Review"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "next_eligible_at": {
+       "default": null,
+       "title": "Next Eligible At"
+      },
+      "review_every_n": {
+       "default": null,
+       "title": "Review Every N"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "subject_id": {
+       "default": null,
+       "title": "Subject Id"
+      },
+      "subject_kind": {
+       "default": null,
+       "title": "Subject Kind"
+      },
+      "subject_ref": {
+       "default": null,
+       "title": "Subject Ref"
+      },
+      "subject_selector": {
+       "default": null,
+       "title": "Subject Selector"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateHindsightEnrollmentItem",
+     "type": "object"
+    }
+   },
+   "table": "hindsight.enrollment",
+   "title_column": "display_name",
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Hindsight Finding",
+   "noun": "hindsight_finding",
+   "reference": "no",
+   "schemas": null,
+   "table": "hindsight.finding",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Hindsight Replay",
+   "noun": "hindsight_replay",
+   "reference": "no",
+   "schemas": null,
+   "table": "hindsight.replay",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Hindsight Review",
+   "noun": "hindsight_review",
+   "reference": "no",
+   "schemas": null,
+   "table": "hindsight.review",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
   },
   {
    "create": "planned",
@@ -17510,6 +18064,14 @@
       "label": {
        "title": "Label"
       },
+      "meta_description": {
+       "default": null,
+       "title": "Meta Description"
+      },
+      "meta_title": {
+       "default": null,
+       "title": "Meta Title"
+      },
       "metadata": {
        "default": {},
        "title": "Metadata"
@@ -17609,6 +18171,14 @@
       "label": {
        "default": null,
        "title": "Label"
+      },
+      "meta_description": {
+       "default": null,
+       "title": "Meta Description"
+      },
+      "meta_title": {
+       "default": null,
+       "title": "Meta Title"
       },
       "metadata": {
        "default": null,
@@ -18727,6 +19297,10 @@
        "default": "semi",
        "title": "Autonomy Level"
       },
+      "consecutive_refresh_failures": {
+       "default": 0,
+       "title": "Consecutive Refresh Failures"
+      },
       "default_search_params": {
        "default": {},
        "title": "Default Search Params"
@@ -18750,6 +19324,22 @@
       "intent_key": {
        "default": null,
        "title": "Intent Key"
+      },
+      "last_refresh_at": {
+       "default": null,
+       "title": "Last Refresh At"
+      },
+      "last_refresh_error": {
+       "default": null,
+       "title": "Last Refresh Error"
+      },
+      "last_refresh_outcome": {
+       "default": null,
+       "title": "Last Refresh Outcome"
+      },
+      "last_refresh_trigger": {
+       "default": null,
+       "title": "Last Refresh Trigger"
       },
       "max_auto_tag_calls": {
        "default": 0,
@@ -18783,9 +19373,25 @@
        "default": "Untitled Research",
        "title": "Name"
       },
+      "next_refresh_at": {
+       "default": null,
+       "title": "Next Refresh At"
+      },
       "outputs": {
        "default": {},
        "title": "Outputs"
+      },
+      "refresh_claim_expires_at": {
+       "default": null,
+       "title": "Refresh Claim Expires At"
+      },
+      "refresh_claim_token": {
+       "default": null,
+       "title": "Refresh Claim Token"
+      },
+      "refresh_interval_hours": {
+       "default": null,
+       "title": "Refresh Interval Hours"
       },
       "scrapes_per_keyword": {
        "default": 5,
@@ -18844,6 +19450,10 @@
        "default": null,
        "title": "Autonomy Level"
       },
+      "consecutive_refresh_failures": {
+       "default": null,
+       "title": "Consecutive Refresh Failures"
+      },
       "default_search_params": {
        "default": null,
        "title": "Default Search Params"
@@ -18871,6 +19481,22 @@
       "intent_key": {
        "default": null,
        "title": "Intent Key"
+      },
+      "last_refresh_at": {
+       "default": null,
+       "title": "Last Refresh At"
+      },
+      "last_refresh_error": {
+       "default": null,
+       "title": "Last Refresh Error"
+      },
+      "last_refresh_outcome": {
+       "default": null,
+       "title": "Last Refresh Outcome"
+      },
+      "last_refresh_trigger": {
+       "default": null,
+       "title": "Last Refresh Trigger"
       },
       "max_auto_tag_calls": {
        "default": null,
@@ -18904,9 +19530,25 @@
        "default": null,
        "title": "Name"
       },
+      "next_refresh_at": {
+       "default": null,
+       "title": "Next Refresh At"
+      },
       "outputs": {
        "default": null,
        "title": "Outputs"
+      },
+      "refresh_claim_expires_at": {
+       "default": null,
+       "title": "Refresh Claim Expires At"
+      },
+      "refresh_claim_token": {
+       "default": null,
+       "title": "Refresh Claim Token"
+      },
+      "refresh_interval_hours": {
+       "default": null,
+       "title": "Refresh Interval Hours"
       },
       "scrapes_per_keyword": {
        "default": null,
@@ -26104,34 +26746,6 @@
    "view": "planned"
   },
   {
-   "create": "no",
-   "delete": "no",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Batch Item",
-   "noun": "web_batch_item",
-   "reference": "no",
-   "schemas": null,
-   "table": "web.batch_item",
-   "title_column": null,
-   "update": "no",
-   "view": "no"
-  },
-  {
-   "create": "no",
-   "delete": "no",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Batch Job",
-   "noun": "web_batch_job",
-   "reference": "no",
-   "schemas": null,
-   "table": "web.batch_job",
-   "title_column": null,
-   "update": "no",
-   "view": "no"
-  },
-  {
    "create": "planned",
    "delete": "planned",
    "family": "Other",
@@ -26424,6 +27038,20 @@
    "title_column": "name",
    "update": "planned",
    "view": "planned"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Site Endpoint Rule",
+   "noun": "web_site_endpoint_rule",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.site_endpoint_rule",
+   "title_column": "path_prefix",
+   "update": "no",
+   "view": "no"
   },
   {
    "create": "no",

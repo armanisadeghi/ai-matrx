@@ -8,7 +8,7 @@
  * site…) — shown verbatim inside a friendly toast, never masked.
  */
 import { useMemo, useState } from "react";
-import { Loader2, PenLine, Sparkles, Trash2 } from "lucide-react";
+import { BookOpenCheck, Loader2, PenLine, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -34,6 +34,9 @@ import { extractErrorMessage } from "@/utils/errors";
 import { NODE_TYPE_LABELS } from "../constants";
 import {
   useDeletePlanNode,
+  useKeywordLabels,
+  usePlanNodeEdgeMutation,
+  usePlanNodeEdges,
   usePlanNodes,
   useReparentPlanNode,
   useUpdatePlanNode,
@@ -42,6 +45,8 @@ import type { PlanDeepenController } from "../hooks/useContentPlanAi";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import {
   PLAN_NODE_TYPES,
+  PLAN_NODE_SECONDARY_KEYWORD_ROLE,
+  SEO_KEYWORD_TOKEN,
   TECHNICAL_DEPTHS,
   type PlanEntityRow,
   type PlanNodeRow,
@@ -58,9 +63,12 @@ import {
 } from "../hooks/useBriefWriter";
 import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
 import type { CmsPageMapEntry } from "../setup/bridge";
-import { KeywordPicker } from "./KeywordPicker";
 import { useNodeReality } from "../hooks/useNodeReality";
 import { NodeRealityCard } from "./NodeRealityCard";
+import { NodeSeoIntentEditor } from "./NodeSeoIntentEditor";
+import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
+import { useResolvedKeyword } from "@/features/marketing/seo/keyword/hooks";
+import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
 
 /** Stable empty map — a fresh `new Map()` per render would churn the card. */
 const EMPTY_CMS_PAGES: ReadonlyMap<string, CmsPageMapEntry> = new Map();
@@ -126,8 +134,11 @@ export function NodePanel({
       slug: draft.slug !== undefined ? draft.slug : node.slug,
       node_type: (draft.node_type ?? node.node_type) as PlanNodeType,
       page_type_id:
-        draft.page_type_id !== undefined ? draft.page_type_id : node.page_type_id,
-      status_id: draft.status_id !== undefined ? draft.status_id : node.status_id,
+        draft.page_type_id !== undefined
+          ? draft.page_type_id
+          : node.page_type_id,
+      status_id:
+        draft.status_id !== undefined ? draft.status_id : node.status_id,
       priority: draft.priority !== undefined ? draft.priority : node.priority,
       technical_depth: (draft.technical_depth !== undefined
         ? draft.technical_depth
@@ -137,6 +148,12 @@ export function NodePanel({
         draft.primary_keyword_id !== undefined
           ? draft.primary_keyword_id
           : node.primary_keyword_id,
+      meta_title:
+        draft.meta_title !== undefined ? draft.meta_title : node.meta_title,
+      meta_description:
+        draft.meta_description !== undefined
+          ? draft.meta_description
+          : node.meta_description,
       brief: draft.brief ?? node.brief,
       attributes: draft.attributes ?? node.attributes,
     }),
@@ -144,6 +161,38 @@ export function NodePanel({
   );
 
   const dirty = Object.keys(draft).length > 0;
+
+  const nodeEdges = usePlanNodeEdges(node.id);
+  const edgeMutation = usePlanNodeEdgeMutation(node.id);
+  const supportingEdges = (nodeEdges.data ?? []).filter(
+    (edge) =>
+      edge.direction === "outgoing" &&
+      edge.otherType === SEO_KEYWORD_TOKEN &&
+      edge.role === PLAN_NODE_SECONDARY_KEYWORD_ROLE,
+  );
+  const keywordIds = [
+    ...(current.primary_keyword_id ? [current.primary_keyword_id] : []),
+    ...supportingEdges.map((edge) => edge.otherId),
+  ];
+  const keywordLabels = useKeywordLabels(keywordIds);
+  const phraseById = new Map(
+    (keywordLabels.data ?? []).map((row) => [row.id, row.phrase]),
+  );
+  const primaryKeyword = current.primary_keyword_id
+    ? (phraseById.get(current.primary_keyword_id) ?? null)
+    : null;
+  const resolvedPrimary = useResolvedKeyword(primaryKeyword);
+  const primaryKeywordBrief = primaryKeyword
+    ? buildKeywordBrief({
+        phrase: primaryKeyword,
+        keyword: resolvedPrimary.data?.keyword ?? null,
+        market: resolvedPrimary.data?.market ?? null,
+      })
+    : null;
+  const supportingKeywords = supportingEdges.map((edge) => ({
+    id: edge.otherId,
+    phrase: phraseById.get(edge.otherId) ?? null,
+  }));
 
   /**
    * Does this page still lack a target keyword?
@@ -171,7 +220,9 @@ export function NodePanel({
           toast.success("Node saved.");
         },
         onError: (error) =>
-          toast.error(`Could not save this node: ${extractErrorMessage(error)}`),
+          toast.error(
+            `Could not save this node: ${extractErrorMessage(error)}`,
+          ),
       },
     );
   };
@@ -212,6 +263,20 @@ export function NodePanel({
       node_priority: current.priority ?? undefined,
       node_technical_depth: current.technical_depth ?? undefined,
       node_primary_keyword_id: current.primary_keyword_id ?? undefined,
+      node_primary_keyword: primaryKeyword ?? undefined,
+      node_primary_keyword_data: primaryKeywordBrief?.data,
+      node_supporting_keywords: supportingKeywords,
+      node_meta_title: current.meta_title ?? undefined,
+      node_meta_description: current.meta_description ?? undefined,
+      node_meta_tags: {
+        meta_title: current.meta_title ?? null,
+        meta_description: current.meta_description ?? null,
+      },
+      node_keyword_plan: {
+        primary_keyword: primaryKeyword,
+        primary_keyword_data: primaryKeywordBrief?.data ?? null,
+        supporting_keywords: supportingKeywords,
+      },
       node_brief: current.brief ?? undefined,
       node_attributes:
         current.attributes &&
@@ -315,13 +380,79 @@ export function NodePanel({
       }
       stage({ needs_reviewer: value });
     },
-    node_primary_keyword_id: (value) =>
-      stage({
-        primary_keyword_id: expectStringOrNull(
-          value,
-          "node_primary_keyword_id",
+    node_primary_keyword: async (value) => {
+      const obj = expectObject(value, "node_primary_keyword");
+      const phrase = expectString(obj.keyword, "node_primary_keyword.keyword");
+      stage({ primary_keyword_id: await ensureKeywordId(phrase) });
+    },
+    node_supporting_keywords: async (value) => {
+      const phrases = expectStringArrayProperty(
+        value,
+        "keywords",
+        "node_supporting_keywords",
+      );
+      const ids = await Promise.all(
+        phrases.map((phrase) => ensureKeywordId(phrase)),
+      );
+      await Promise.all(
+        ids.map((keywordId) =>
+          edgeMutation.mutateAsync({
+            kind: "add-secondary-keyword",
+            keywordId,
+          }),
         ),
-      }),
+      );
+    },
+    node_remove_supporting_keywords: async (value) => {
+      const phrases = expectStringArrayProperty(
+        value,
+        "keywords",
+        "node_remove_supporting_keywords",
+      );
+      const normalized = new Set(
+        phrases.map((phrase) => phrase.trim().toLocaleLowerCase()),
+      );
+      const matches = supportingKeywords.filter(
+        (entry) =>
+          entry.phrase &&
+          normalized.has(entry.phrase.trim().toLocaleLowerCase()),
+      );
+      if (matches.length !== normalized.size) {
+        throw new Error(
+          "node_remove_supporting_keywords includes a phrase that is not attached to this page.",
+        );
+      }
+      await Promise.all(
+        matches.map((entry) =>
+          edgeMutation.mutateAsync({
+            kind: "remove-secondary-keyword",
+            keywordId: entry.id,
+          }),
+        ),
+      );
+    },
+    node_meta_tags: (value) => {
+      const obj = expectObject(value, "node_meta_tags");
+      const patch: PlanNodeUpdate = {};
+      if (Object.hasOwn(obj, "meta_title")) {
+        patch.meta_title = expectNullableString(
+          obj.meta_title,
+          "node_meta_tags.meta_title",
+        );
+      }
+      if (Object.hasOwn(obj, "meta_description")) {
+        patch.meta_description = expectNullableString(
+          obj.meta_description,
+          "node_meta_tags.meta_description",
+        );
+      }
+      if (!("meta_title" in patch) && !("meta_description" in patch)) {
+        throw new Error(
+          "node_meta_tags requires meta_title and/or meta_description.",
+        );
+      }
+      stage(patch);
+    },
     // The SAME operation the "Use this brief" button on the rendered brief
     // runs — one path, whether a human clicks it or an agent applies it.
     accept_brief_draft: async () => {
@@ -360,94 +491,96 @@ export function NodePanel({
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
     >
-    <div
-      data-surface-value="selected_node"
-      className="flex h-full flex-col bg-background"
-    >
-      <div className="flex flex-wrap items-start justify-end gap-2 border-b border-border px-4 py-2.5">
-        {!hosted ? (
-          <div className="min-w-0 flex-1">
-            <p className="break-words text-sm font-semibold leading-snug text-foreground">
-              {node.label}
-            </p>
-            <p className="break-all font-mono text-xs text-muted-foreground">
-              {node.route ?? "(no route yet)"}
-            </p>
-            {node.pillar_label || node.cluster_label ? (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {[
-                  node.pillar_label ? `Pillar: ${node.pillar_label}` : null,
-                  node.cluster_label ? `Cluster: ${node.cluster_label}` : null,
-                  `Depth ${node.depth}`,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
+      <div
+        data-surface-value="selected_node"
+        className="flex h-full flex-col bg-background"
+      >
+        <div className="flex flex-wrap items-start justify-end gap-2 border-b border-border px-4 py-2.5">
+          {!hosted ? (
+            <div className="min-w-0 flex-1">
+              <p className="break-words text-sm font-semibold leading-snug text-foreground">
+                {node.label}
               </p>
-            ) : null}
-          </div>
-        ) : null}
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 gap-1.5 px-2 text-xs"
-          disabled={briefWriter.busy || deepening || keywordGap}
-          title={
-            keywordGap
-              ? "This page needs a target search term first — pick one under Targeting, or use Deepen to research the page and choose its term together"
-              : briefWriter.busy
-                ? "Drafting…"
-                : "AI: draft this page's brief against its SIBLINGS — saved to this page for you to review, then applied when you accept it"
-          }
-          onClick={() => void briefWriter.start()}
-        >
-          {briefWriter.busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <PenLine className="h-3.5 w-3.5" />
-          )}
-          Draft brief
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 gap-1.5 px-2 text-xs"
-          disabled={deepening}
-          title={
-            deepeningThisNode
-              ? (deepen.run.stage ?? "Deepening…")
-              : deepening
-                ? "Another node is being deepened — one run at a time"
-                : "AI: research this page and write its brief + sources (saves immediately)"
-          }
-          onClick={() => void deepen.start(node.id)}
-        >
-          {deepeningThisNode ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Sparkles className="h-3.5 w-3.5" />
-          )}
-          {deepeningThisNode ? "Deepening…" : "Deepen"}
-        </Button>
-        <Button
-          size="sm"
-          className="h-7"
-          disabled={!dirty || update.isPending}
-          onClick={save}
-        >
-          {update.isPending ? "Saving…" : "Save"}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-          aria-label="Delete node"
-          onClick={() => setConfirmDelete(true)}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
+              <p className="break-all font-mono text-xs text-muted-foreground">
+                {node.route ?? "(no route yet)"}
+              </p>
+              {node.pillar_label || node.cluster_label ? (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {[
+                    node.pillar_label ? `Pillar: ${node.pillar_label}` : null,
+                    node.cluster_label
+                      ? `Cluster: ${node.cluster_label}`
+                      : null,
+                    `Depth ${node.depth}`,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1.5 px-2 text-xs"
+            disabled={briefWriter.busy || deepening || keywordGap}
+            title={
+              keywordGap
+                ? "This page needs a target search term first — pick one under Targeting, or use Deepen to research the page and choose its term together"
+                : briefWriter.busy
+                  ? "Drafting…"
+                  : "AI: draft this page's brief against its SIBLINGS — saved to this page for you to review, then applied when you accept it"
+            }
+            onClick={() => void briefWriter.start()}
+          >
+            {briefWriter.busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <PenLine className="h-3.5 w-3.5" />
+            )}
+            Draft brief
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1.5 px-2 text-xs"
+            disabled={deepening}
+            title={
+              deepeningThisNode
+                ? (deepen.run.stage ?? "Deepening…")
+                : deepening
+                  ? "Another node is being deepened — one run at a time"
+                  : "AI: research this page and write its brief + sources (saves immediately)"
+            }
+            onClick={() => void deepen.start(node.id)}
+          >
+            {deepeningThisNode ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <BookOpenCheck className="h-3.5 w-3.5" />
+            )}
+            {deepeningThisNode ? "Deepening…" : "Deepen"}
+          </Button>
+          <Button
+            size="sm"
+            className="h-7"
+            disabled={!dirty || update.isPending}
+            onClick={save}
+          >
+            {update.isPending ? "Saving…" : "Save"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+            aria-label="Delete node"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
 
-      {/* Live AI output renders in a FLOATING window, never as a block bolted
+        {/* Live AI output renders in a FLOATING window, never as a block bolted
           onto the top of this panel. A block there shifts every field below it
           the instant a run starts and puts the model's output above the thing
           the user is editing. The window floats, so the panel never moves and
@@ -455,258 +588,303 @@ export function NodePanel({
           body is the canonical pipeline, a run whose output is a registered
           content-IR kind renders as that kind's COMPONENT, token by token,
           instead of a wall of raw JSON. */}
-      {briefWriter.run.status === "running" || briefWriter.run.requestId ? (
-        <LiveRunWindowController
-          instanceId={`brief:${node.id}`}
-          requestId={briefWriter.run.requestId ?? null}
-          label="Drafting brief"
-          pending={briefWriter.busy && !briefWriter.run.requestId}
-          // Measured, not guessed: a finished `page_brief` (angle + ~9 points
-          // + must-not-cover + concerns) fills ~90% of the viewport. At the
-          // 80vh default it scrolls for no reason; taller than this and the
-          // window stops being a floating panel over the page.
-          height="90vh"
-        />
-      ) : null}
-      {deepen.nodeId === node.id &&
-      (deepeningThisNode || deepen.run.requestId) ? (
-        <LiveRunWindowController
-          instanceId={`deepen:${node.id}`}
-          requestId={deepen.run.requestId ?? null}
-          label={
-            deepen.run.stage
-              ? `Deepening — ${deepen.run.stage}`
-              : "Deepening — brief + sources"
-          }
-          pending={deepeningThisNode && !deepen.run.requestId}
-        />
-      ) : null}
+        {briefWriter.run.status === "running" || briefWriter.run.requestId ? (
+          <LiveRunWindowController
+            instanceId={`brief:${node.id}`}
+            requestId={briefWriter.run.requestId ?? null}
+            label="Drafting brief"
+            pending={briefWriter.busy && !briefWriter.run.requestId}
+            // Measured, not guessed: a finished `page_brief` (angle + ~9 points
+            // + must-not-cover + concerns) fills ~90% of the viewport. At the
+            // 80vh default it scrolls for no reason; taller than this and the
+            // window stops being a floating panel over the page.
+            height="90vh"
+          />
+        ) : null}
+        {deepen.nodeId === node.id &&
+        (deepeningThisNode || deepen.run.requestId) ? (
+          <LiveRunWindowController
+            instanceId={`deepen:${node.id}`}
+            requestId={deepen.run.requestId ?? null}
+            label={
+              deepen.run.stage
+                ? `Deepening — ${deepen.run.stage}`
+                : "Deepening — brief + sources"
+            }
+            pending={deepeningThisNode && !deepen.run.requestId}
+          />
+        ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-4">
-        <PanelSection title="Page">
-        <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-          <div className="col-span-2">
-            <Label className="mb-1 block text-xs font-medium">Label</Label>
-            <Input
-              value={current.label}
-              onChange={(event) =>
-                setDraft((d) => ({ ...d, label: event.target.value }))
-              }
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="mb-1 block text-xs font-medium">Slug (kebab-case)</Label>
-            <Input
-              value={current.slug ?? ""}
-              placeholder={current.node_type === "home" ? "(home — none)" : "my-page-slug"}
-              onChange={(event) =>
-                setDraft((d) => ({
-                  ...d,
-                  slug: event.target.value.trim() === "" ? null : event.target.value.trim(),
-                }))
-              }
-              className="h-8 font-mono"
-            />
-          </div>
-          <div>
-            <Label className="mb-1 block text-xs font-medium">Node type</Label>
-            <Select
-              value={current.node_type}
-              onValueChange={(next) =>
-                setDraft((d) => ({ ...d, node_type: next as PlanNodeType }))
-              }
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PLAN_NODE_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {NODE_TYPE_LABELS[type]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-1 block text-xs font-medium">Page type</Label>
-            <CategorySelect
-              dimension={CATEGORY_DIMENSIONS.planPageType}
-              value={current.page_type_id}
-              onChange={(id) => setDraft((d) => ({ ...d, page_type_id: id }))}
-              placeholder="Page type"
-            />
-          </div>
-          <div data-surface-value="status_options">
-            <Label className="mb-1 block text-xs font-medium">Status</Label>
-            <CategorySelect
-              dimension={CATEGORY_DIMENSIONS.planStatus}
-              value={current.status_id}
-              onChange={(id) => setDraft((d) => ({ ...d, status_id: id }))}
-              placeholder="Status"
-            />
-          </div>
-          <div>
-            <Label className="mb-1 block text-xs font-medium">Priority (1 = highest)</Label>
-            <Select
-              value={current.priority == null ? "none" : String(current.priority)}
-              onValueChange={(next) =>
-                setDraft((d) => ({
-                  ...d,
-                  priority: next === "none" ? null : Number(next),
-                }))
-              }
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">
-                  <span className="text-muted-foreground">None</span>
-                </SelectItem>
-                <SelectItem value="1">1 — must have</SelectItem>
-                <SelectItem value="2">2 — should have</SelectItem>
-                <SelectItem value="3">3 — nice to have</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-1 block text-xs font-medium">Technical depth</Label>
-            <Select
-              value={current.technical_depth ?? "none"}
-              onValueChange={(next) =>
-                setDraft((d) => ({
-                  ...d,
-                  technical_depth:
-                    next === "none" ? null : (next as TechnicalDepth),
-                }))
-              }
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">
-                  <span className="text-muted-foreground">None</span>
-                </SelectItem>
-                {TECHNICAL_DEPTHS.map((depth) => (
-                  <SelectItem key={depth} value={depth}>
-                    {depth}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end gap-2 pb-1">
-            <Checkbox
-              id={`needs-reviewer-${node.id}`}
-              checked={current.needs_reviewer}
-              onCheckedChange={(checked) =>
-                setDraft((d) => ({ ...d, needs_reviewer: checked === true }))
-              }
-            />
-            <Label htmlFor={`needs-reviewer-${node.id}`} className="text-xs font-medium">
-              Needs reviewer (E-E-A-T)
-            </Label>
-          </div>
-        </div>
-        </PanelSection>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-4">
+            <PanelSection title="Page">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+                <div className="col-span-2">
+                  <Label className="mb-1 block text-xs font-medium">
+                    Label
+                  </Label>
+                  <Input
+                    value={current.label}
+                    onChange={(event) =>
+                      setDraft((d) => ({ ...d, label: event.target.value }))
+                    }
+                    className="h-8"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1 block text-xs font-medium">
+                    Slug (kebab-case)
+                  </Label>
+                  <Input
+                    value={current.slug ?? ""}
+                    placeholder={
+                      current.node_type === "home"
+                        ? "(home — none)"
+                        : "my-page-slug"
+                    }
+                    onChange={(event) =>
+                      setDraft((d) => ({
+                        ...d,
+                        slug:
+                          event.target.value.trim() === ""
+                            ? null
+                            : event.target.value.trim(),
+                      }))
+                    }
+                    className="h-8 font-mono"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1 block text-xs font-medium">
+                    Node type
+                  </Label>
+                  <Select
+                    value={current.node_type}
+                    onValueChange={(next) =>
+                      setDraft((d) => ({
+                        ...d,
+                        node_type: next as PlanNodeType,
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PLAN_NODE_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {NODE_TYPE_LABELS[type]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="mb-1 block text-xs font-medium">
+                    Page type
+                  </Label>
+                  <CategorySelect
+                    dimension={CATEGORY_DIMENSIONS.planPageType}
+                    value={current.page_type_id}
+                    onChange={(id) =>
+                      setDraft((d) => ({ ...d, page_type_id: id }))
+                    }
+                    placeholder="Page type"
+                  />
+                </div>
+                <div data-surface-value="status_options">
+                  <Label className="mb-1 block text-xs font-medium">
+                    Status
+                  </Label>
+                  <CategorySelect
+                    dimension={CATEGORY_DIMENSIONS.planStatus}
+                    value={current.status_id}
+                    onChange={(id) =>
+                      setDraft((d) => ({ ...d, status_id: id }))
+                    }
+                    placeholder="Status"
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1 block text-xs font-medium">
+                    Priority (1 = highest)
+                  </Label>
+                  <Select
+                    value={
+                      current.priority == null
+                        ? "none"
+                        : String(current.priority)
+                    }
+                    onValueChange={(next) =>
+                      setDraft((d) => ({
+                        ...d,
+                        priority: next === "none" ? null : Number(next),
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">None</span>
+                      </SelectItem>
+                      <SelectItem value="1">1 — must have</SelectItem>
+                      <SelectItem value="2">2 — should have</SelectItem>
+                      <SelectItem value="3">3 — nice to have</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="mb-1 block text-xs font-medium">
+                    Technical depth
+                  </Label>
+                  <Select
+                    value={current.technical_depth ?? "none"}
+                    onValueChange={(next) =>
+                      setDraft((d) => ({
+                        ...d,
+                        technical_depth:
+                          next === "none" ? null : (next as TechnicalDepth),
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">None</span>
+                      </SelectItem>
+                      {TECHNICAL_DEPTHS.map((depth) => (
+                        <SelectItem key={depth} value={depth}>
+                          {depth}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end gap-2 pb-1">
+                  <Checkbox
+                    id={`needs-reviewer-${node.id}`}
+                    checked={current.needs_reviewer}
+                    onCheckedChange={(checked) =>
+                      setDraft((d) => ({
+                        ...d,
+                        needs_reviewer: checked === true,
+                      }))
+                    }
+                  />
+                  <Label
+                    htmlFor={`needs-reviewer-${node.id}`}
+                    className="text-xs font-medium"
+                  >
+                    Needs reviewer (E-E-A-T)
+                  </Label>
+                </div>
+              </div>
+            </PanelSection>
 
-        <PanelSection title="Placement">
-          <MoveNodeControl node={node} siteId={siteId} />
-        </PanelSection>
+            <PanelSection title="Placement">
+              <MoveNodeControl node={node} siteId={siteId} />
+            </PanelSection>
 
-        {/* ALWAYS rendered — "this page does not exist yet" is the state that
+            {/* ALWAYS rendered — "this page does not exist yet" is the state that
           most needs an answer, and the old conditional card showed nothing at
           all for it. See NodeRealityCard. */}
-        <PanelSection title="The real page">
-          <NodeRealityCard
-            node={node}
-            cmsPage={cmsPage ?? null}
-            cmsSiteId={cmsSiteId ?? null}
-            reality={reality}
-          />
-        </PanelSection>
+            <PanelSection title="The real page">
+              <NodeRealityCard
+                node={node}
+                cmsPage={cmsPage ?? null}
+                cmsSiteId={cmsSiteId ?? null}
+                reality={reality}
+              />
+            </PanelSection>
 
-        <PanelSection title="Targeting">
-          <div>
-            <Label className="mb-1 block text-xs font-medium">
-              Primary keyword
-            </Label>
-            <KeywordPicker
-              siteId={siteId}
-              organizationId={node.organization_id}
-              value={current.primary_keyword_id}
-              onChange={(keywordId) =>
-                setDraft((d) => ({ ...d, primary_keyword_id: keywordId }))
-              }
-            />
-            {/* THE GAP, WHERE THE FIX IS. A page with no target term cannot be
+            <PanelSection title="Targeting">
+              <div>
+                <NodeSeoIntentEditor
+                  nodeId={node.id}
+                  siteId={siteId}
+                  organizationId={node.organization_id}
+                  primaryKeywordId={current.primary_keyword_id}
+                  metaTitle={current.meta_title ?? ""}
+                  metaDescription={current.meta_description ?? ""}
+                  onPrimaryKeywordChange={(primary_keyword_id) =>
+                    stage({ primary_keyword_id })
+                  }
+                  onMetaTitleChange={(meta_title) =>
+                    stage({ meta_title: meta_title.trim() ? meta_title : null })
+                  }
+                  onMetaDescriptionChange={(meta_description) =>
+                    stage({
+                      meta_description: meta_description.trim()
+                        ? meta_description
+                        : null,
+                    })
+                  }
+                />
+                {/* THE GAP, WHERE THE FIX IS. A page with no target term cannot be
                 briefed or written, and every downstream agent used to discover
                 that only after a paid run. The picker above is the fix, so the
                 notice sits on it — never in a summary count somewhere else. */}
-            {keywordGap ? (
-              <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-500">
-                {keywordStaged ? (
-                  <>
-                    Press <span className="font-medium">Save</span> to apply
-                    this keyword — then this page can be briefed and written.
-                  </>
-                ) : (
-                  <>
-                    This page has no target search term yet, so nothing tells it
-                    apart from its sibling pages — and briefs and drafts
-                    can&apos;t be written without one. Pick one above, or use{" "}
-                    <span className="font-medium">Deepen</span> to research this
-                    page and choose its term together.
-                  </>
-                )}
-              </p>
-            ) : null}
+                {keywordGap ? (
+                  <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-500">
+                    {keywordStaged ? (
+                      <>
+                        Press <span className="font-medium">Save</span> to apply
+                        this keyword — then this page can be briefed and
+                        written.
+                      </>
+                    ) : (
+                      <>
+                        This page has no target search term yet, so nothing
+                        tells it apart from its sibling pages — and briefs and
+                        drafts can&apos;t be written without one. Pick one
+                        above, or use{" "}
+                        <span className="font-medium">Deepen</span> to research
+                        this page and choose its term together.
+                      </>
+                    )}
+                  </p>
+                ) : null}
+              </div>
+            </PanelSection>
+
+            <PanelSection title="Brief">
+              <BriefEditor
+                lines={current.brief ?? []}
+                onChange={(next) => stage({ brief: next })}
+                draft={briefDraft}
+                draftPending={draftPending}
+                onAccept={() => void briefWriter.accept()}
+                accepting={briefWriter.accepting}
+                runs={briefWriter.runs}
+                runsLoading={briefWriter.runsLoading}
+                runsError={briefWriter.runsError}
+                onRestore={(runId) => void briefWriter.restore(runId)}
+                restoringRunId={briefWriter.restoringRunId}
+              />
+            </PanelSection>
+
+            <AttributesEditor
+              value={current.attributes}
+              profiles={profiles}
+              onChange={(attributes) => setDraft((d) => ({ ...d, attributes }))}
+            />
+
+            <NodeAssociations nodeId={node.id} entities={entities} />
           </div>
-        </PanelSection>
-
-        <PanelSection title="Brief">
-          <BriefEditor
-            lines={current.brief ?? []}
-            onChange={(next) => stage({ brief: next })}
-            draft={briefDraft}
-            draftPending={draftPending}
-            onAccept={() => void briefWriter.accept()}
-            accepting={briefWriter.accepting}
-            runs={briefWriter.runs}
-            runsLoading={briefWriter.runsLoading}
-            runsError={briefWriter.runsError}
-            onRestore={(runId) => void briefWriter.restore(runId)}
-            restoringRunId={briefWriter.restoringRunId}
-          />
-        </PanelSection>
-
-        <AttributesEditor
-          value={current.attributes}
-          profiles={profiles}
-          onChange={(attributes) => setDraft((d) => ({ ...d, attributes }))}
-        />
-
-        <NodeAssociations
-          nodeId={node.id}
-          siteId={siteId}
-          organizationId={node.organization_id}
-          entities={entities}
-        />
         </div>
-      </div>
 
-      <ConfirmDialogSection
-        node={node}
-        confirmDelete={confirmDelete}
-        setConfirmDelete={setConfirmDelete}
-        remove={remove}
-        onDeleted={onDeleted}
-      />
-    </div>
+        <ConfirmDialogSection
+          node={node}
+          confirmDelete={confirmDelete}
+          setConfirmDelete={setConfirmDelete}
+          remove={remove}
+          onDeleted={onDeleted}
+        />
+      </div>
     </SurfaceRuntimeProvider>
   );
 }
@@ -722,6 +900,38 @@ function expectString(value: unknown, what: string): string {
 function expectStringOrNull(value: unknown, what: string): string | null {
   if (value === null) return null;
   return expectString(value, `${what} (when not null)`);
+}
+
+function expectObject(value: unknown, what: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${what} must be an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function expectNullableString(value: unknown, what: string): string | null {
+  if (value === null) return null;
+  if (typeof value !== "string") {
+    throw new Error(`${what} must be a string or null`);
+  }
+  return value.trim() || null;
+}
+
+function expectStringArrayProperty(
+  value: unknown,
+  property: string,
+  what: string,
+): string[] {
+  const obj = expectObject(value, what);
+  const raw = obj[property];
+  if (
+    !Array.isArray(raw) ||
+    raw.length === 0 ||
+    raw.some((entry) => typeof entry !== "string" || !entry.trim())
+  ) {
+    throw new Error(`${what}.${property} must be a non-empty string array`);
+  }
+  return [...new Set(raw.map((entry) => entry.trim()))];
 }
 
 /**

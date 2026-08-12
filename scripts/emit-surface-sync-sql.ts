@@ -8,7 +8,8 @@
  *      (run it FIRST — seed missing rows before applying the upserts).
  *   2. An upsert for every SurfaceValue (incl. auto_context).
  *   3. An upsert for every SurfaceAgentRole.
- *   4. Per-surface ui_surface updates for url_pattern / intro /
+ *   4. An upsert for every SurfaceWriteTarget.
+ *   5. Per-surface ui_surface updates for url_pattern / intro /
  *      parent_surface_name — only for fields the manifest actually declares
  *      (code-first ownership never clears a DB-authored value the manifest
  *      doesn't claim).
@@ -77,6 +78,7 @@ function main() {
 
   const valueRows: string[] = [];
   const roleRows: string[] = [];
+  const writeTargetRows: string[] = [];
   const surfaceUpdates: string[] = [];
 
   for (const m of manifests) {
@@ -100,6 +102,17 @@ function main() {
         }, ${r.maxAgents ?? 1}, ${r.allowCustom ?? true}, ${sqlString(
           r.autoRun ?? "user-choice",
         )}, ${r.sortOrder ?? 1000})`,
+      );
+    }
+    for (const t of m.writeTargets ?? []) {
+      writeTargetRows.push(
+        `(${sqlString(m.surfaceName)}, ${sqlString(t.name)}, ${sqlString(
+          t.label,
+        )}, ${sqlString(t.description)}, ${sqlString(t.valueType)}, ${sqlString(
+          t.mode,
+        )}, ${sqlStringOrNull(t.updatesValue)}, ${sqlString(
+          t.group ?? "general",
+        )}, ${t.sortOrder ?? 1000}, ${sqlString(t.applyPolicy ?? "manual")})`,
       );
     }
 
@@ -154,6 +167,17 @@ function main() {
     console.log(roleRows.join(",\n"));
     console.log(
       `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, kind = EXCLUDED.kind, default_agent_id = EXCLUDED.default_agent_id, max_agents = EXCLUDED.max_agents, allow_custom = EXCLUDED.allow_custom, auto_run = EXCLUDED.auto_run, sort_order = EXCLUDED.sort_order, updated_at = now();`,
+    );
+  }
+  if (writeTargetRows.length > 0) {
+    console.log("");
+    console.log("-- Upsert all manifest write targets");
+    console.log(
+      `INSERT INTO ui.ui_surface_write_target (surface_name, name, label, description, value_type, mode, updates_value, group_key, sort_order, apply_policy) VALUES`,
+    );
+    console.log(writeTargetRows.join(",\n"));
+    console.log(
+      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, value_type = EXCLUDED.value_type, mode = EXCLUDED.mode, updates_value = EXCLUDED.updates_value, group_key = EXCLUDED.group_key, sort_order = EXCLUDED.sort_order, apply_policy = EXCLUDED.apply_policy, updated_at = now();`,
     );
   }
   if (surfaceUpdates.length > 0) {

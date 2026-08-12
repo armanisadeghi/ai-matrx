@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -460,9 +461,14 @@ function ChangeComposer({
               />
             </Field>
             <Field label="Target keyword (optional)">
-              <Input
+              <KeywordInput
                 value={draft.keywordPhrase}
-                onChange={(event) => set("keywordPhrase", event.target.value)}
+                onChange={(value) => set("keywordPhrase", value)}
+                scope={{
+                  siteId: site.id,
+                  organizationId: site.organization_id,
+                  pageId: draft.pageId || undefined,
+                }}
                 placeholder="emergency dentist seattle"
               />
             </Field>

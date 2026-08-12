@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * The node's association edges: topics (role `topic`), secondary keywords
- * (role `secondary_keyword`) and entity attachments (`about`/`cites`/
+ * The node's non-keyword association edges: topics (role `topic`) and entity
+ * attachments (`about`/`cites`/
  * `embeds`/`authored_by`/`reviewed_by`, reviews carrying the `plan_review`
  * payload). All writes funnel through the canonical association chokepoint
  * via data/associations.ts; every failure is toasted verbatim.
@@ -29,7 +29,6 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 import {
-  useKeywordLabels,
   usePlanNodeEdges,
   usePlanNodeEdgeMutation,
   useSeoTopics,
@@ -37,14 +36,11 @@ import {
 import {
   PLAN_ENTITY_TOKEN,
   PLAN_NODE_ENTITY_ROLES,
-  PLAN_NODE_SECONDARY_KEYWORD_ROLE,
   PLAN_NODE_TOPIC_ROLE,
-  SEO_KEYWORD_TOKEN,
   SEO_TOPIC_TOKEN,
   type PlanEntityRow,
   type PlanNodeEntityRole,
 } from "../types";
-import { KeywordPicker } from "./KeywordPicker";
 
 const ROLE_LABELS: Record<PlanNodeEntityRole, string> = {
   about: "About",
@@ -56,13 +52,9 @@ const ROLE_LABELS: Record<PlanNodeEntityRole, string> = {
 
 export function NodeAssociations({
   nodeId,
-  siteId,
-  organizationId,
   entities,
 }: {
   nodeId: string;
-  siteId: string;
-  organizationId: string;
   entities: PlanEntityRow[];
 }) {
   const edges = usePlanNodeEdges(nodeId);
@@ -80,12 +72,6 @@ export function NodeAssociations({
       edge.direction === "outgoing" &&
       edge.otherType === SEO_TOPIC_TOKEN &&
       edge.role === PLAN_NODE_TOPIC_ROLE,
-  );
-  const keywordEdges = outgoing.filter(
-    (edge) =>
-      edge.direction === "outgoing" &&
-      edge.otherType === SEO_KEYWORD_TOKEN &&
-      edge.role === PLAN_NODE_SECONDARY_KEYWORD_ROLE,
   );
   const entityEdges = outgoing.filter(
     (edge) =>
@@ -113,15 +99,6 @@ export function NodeAssociations({
         onAdd={(topicId) => run({ kind: "add-topic", topicId })}
         onRemove={(topicId) => run({ kind: "remove-topic", topicId })}
       />
-      <SecondaryKeywordSection
-        siteId={siteId}
-        organizationId={organizationId}
-        keywordEdges={keywordEdges}
-        onAdd={(keywordId) => run({ kind: "add-secondary-keyword", keywordId })}
-        onRemove={(keywordId) =>
-          run({ kind: "remove-secondary-keyword", keywordId })
-        }
-      />
       <EntitySection
         entityEdges={entityEdges}
         entityById={entityById}
@@ -148,16 +125,12 @@ export function NodeAssociations({
 // Narrow the canonical edge shape (never re-declare it locally).
 type Edge = Pick<AssociationEdge, "otherId" | "label" | "role">;
 
-function Chip({
-  text,
-  onRemove,
-}: {
-  text: string;
-  onRemove: () => void;
-}) {
+function Chip({ text, onRemove }: { text: string; onRemove: () => void }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs text-foreground">
-      <span className="max-w-48 truncate" title={text}>{text}</span>
+      <span className="max-w-48 truncate" title={text}>
+        {text}
+      </span>
       <button
         type="button"
         aria-label={`Remove ${text}`}
@@ -250,61 +223,18 @@ function TopicSection({
       </div>
       <div className="flex flex-wrap gap-1">
         {topicEdges.length === 0 ? (
-          <span className="text-xs text-muted-foreground">No topics tagged.</span>
+          <span className="text-xs text-muted-foreground">
+            No topics tagged.
+          </span>
         ) : (
           topicEdges.map((edge) => (
             <Chip
               key={edge.otherId}
-              text={topicNameById.get(edge.otherId) ?? edge.label ?? edge.otherId.slice(0, 8)}
-              onRemove={() => onRemove(edge.otherId)}
-            />
-          ))
-        )}
-      </div>
-    </section>
-  );
-}
-
-function SecondaryKeywordSection({
-  siteId,
-  organizationId,
-  keywordEdges,
-  onAdd,
-  onRemove,
-}: {
-  siteId: string;
-  organizationId: string;
-  keywordEdges: Edge[];
-  onAdd: (keywordId: string) => void;
-  onRemove: (keywordId: string) => void;
-}) {
-  const labels = useKeywordLabels(keywordEdges.map((edge) => edge.otherId));
-  const phraseById = new Map(
-    (labels.data ?? []).map((row) => [row.id, row.phrase]),
-  );
-  return (
-    <section>
-      <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-foreground">
-        Secondary keywords
-      </h4>
-      <KeywordPicker
-        siteId={siteId}
-        organizationId={organizationId}
-        value={null}
-        clearable={false}
-        placeholder="Attach secondary keyword…"
-        onChange={(keywordId) => {
-          if (keywordId) onAdd(keywordId);
-        }}
-      />
-      <div className="mt-1.5 flex flex-wrap gap-1">
-        {keywordEdges.length === 0 ? (
-          <span className="text-xs text-muted-foreground">None attached.</span>
-        ) : (
-          keywordEdges.map((edge) => (
-            <Chip
-              key={edge.otherId}
-              text={phraseById.get(edge.otherId) ?? edge.otherId.slice(0, 8)}
+              text={
+                topicNameById.get(edge.otherId) ??
+                edge.label ??
+                edge.otherId.slice(0, 8)
+              }
               onRemove={() => onRemove(edge.otherId)}
             />
           ))
@@ -429,7 +359,12 @@ function EntitySection({
           className="h-7 text-xs"
           disabled={!entityId || (role === "reviewed_by" && !reviewDate)}
           onClick={() => {
-            onAttach(entityId, role, reviewDate || undefined, notes || undefined);
+            onAttach(
+              entityId,
+              role,
+              reviewDate || undefined,
+              notes || undefined,
+            );
             setEntityId("");
             setReviewDate("");
             setNotes("");

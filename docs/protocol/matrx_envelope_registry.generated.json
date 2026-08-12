@@ -275,6 +275,30 @@
                   "default": null,
                   "title": "Label"
                 },
+                "meta_description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Meta Description"
+                },
+                "meta_title": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Meta Title"
+                },
                 "needs_reviewer": {
                   "anyOf": [
                     {
@@ -563,6 +587,32 @@
                 "description": "Human page title, e.g. 'What is platelet-rich plasma?'",
                 "title": "Label",
                 "type": "string"
+              },
+              "meta_description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Planned SEO description for the realized page.",
+                "title": "Meta Description"
+              },
+              "meta_title": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Planned SEO title for the realized page.",
+                "title": "Meta Title"
               },
               "needs_reviewer": {
                 "default": false,
@@ -1762,6 +1812,10 @@
                   "default": "semi",
                   "title": "Autonomy Level"
                 },
+                "consecutive_refresh_failures": {
+                  "default": 0,
+                  "title": "Consecutive Refresh Failures"
+                },
                 "default_search_params": {
                   "default": {},
                   "title": "Default Search Params"
@@ -1785,6 +1839,22 @@
                 "intent_key": {
                   "default": null,
                   "title": "Intent Key"
+                },
+                "last_refresh_at": {
+                  "default": null,
+                  "title": "Last Refresh At"
+                },
+                "last_refresh_error": {
+                  "default": null,
+                  "title": "Last Refresh Error"
+                },
+                "last_refresh_outcome": {
+                  "default": null,
+                  "title": "Last Refresh Outcome"
+                },
+                "last_refresh_trigger": {
+                  "default": null,
+                  "title": "Last Refresh Trigger"
                 },
                 "max_auto_tag_calls": {
                   "default": 0,
@@ -1818,9 +1888,25 @@
                   "default": "Untitled Research",
                   "title": "Name"
                 },
+                "next_refresh_at": {
+                  "default": null,
+                  "title": "Next Refresh At"
+                },
                 "outputs": {
                   "default": {},
                   "title": "Outputs"
+                },
+                "refresh_claim_expires_at": {
+                  "default": null,
+                  "title": "Refresh Claim Expires At"
+                },
+                "refresh_claim_token": {
+                  "default": null,
+                  "title": "Refresh Claim Token"
+                },
+                "refresh_interval_hours": {
+                  "default": null,
+                  "title": "Refresh Interval Hours"
                 },
                 "scrapes_per_keyword": {
                   "default": 5,
@@ -1942,6 +2028,14 @@
                   "default": null,
                   "title": "Assignee Id"
                 },
+                "completed_at": {
+                  "default": null,
+                  "title": "Completed At"
+                },
+                "dedupe_key": {
+                  "default": null,
+                  "title": "Dedupe Key"
+                },
                 "description": {
                   "default": null,
                   "title": "Description"
@@ -1950,9 +2044,17 @@
                   "default": null,
                   "title": "Due Date"
                 },
+                "due_time": {
+                  "default": null,
+                  "title": "Due Time"
+                },
                 "metadata": {
                   "default": {},
                   "title": "Metadata"
+                },
+                "origin": {
+                  "default": "user",
+                  "title": "Origin"
                 },
                 "parent_task_id": {
                   "default": null,
@@ -1966,13 +2068,45 @@
                   "default": null,
                   "title": "Project Id"
                 },
+                "recurrence_rule": {
+                  "default": null,
+                  "title": "Recurrence Rule"
+                },
+                "reminders": {
+                  "default": [],
+                  "title": "Reminders"
+                },
                 "settings": {
                   "default": {},
                   "title": "Settings"
                 },
+                "source_id": {
+                  "default": null,
+                  "title": "Source Id"
+                },
+                "source_label": {
+                  "default": null,
+                  "title": "Source Label"
+                },
+                "source_type": {
+                  "default": null,
+                  "title": "Source Type"
+                },
+                "source_url": {
+                  "default": null,
+                  "title": "Source Url"
+                },
+                "start_date": {
+                  "default": null,
+                  "title": "Start Date"
+                },
                 "status": {
                   "default": "incomplete",
                   "title": "Status"
+                },
+                "timezone": {
+                  "default": null,
+                  "title": "Timezone"
                 },
                 "title": {
                   "title": "Title"
@@ -3383,6 +3517,30 @@
                   "default": null,
                   "title": "Label"
                 },
+                "meta_description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Meta Description"
+                },
+                "meta_title": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Meta Title"
+                },
                 "needs_reviewer": {
                   "anyOf": [
                     {
@@ -3671,6 +3829,32 @@
                 "description": "Human page title, e.g. 'What is platelet-rich plasma?'",
                 "title": "Label",
                 "type": "string"
+              },
+              "meta_description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Planned SEO description for the realized page.",
+                "title": "Meta Description"
+              },
+              "meta_title": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "description": "Planned SEO title for the realized page.",
+                "title": "Meta Title"
               },
               "needs_reviewer": {
                 "default": false,
@@ -4861,6 +5045,10 @@
                   "default": null,
                   "title": "Autonomy Level"
                 },
+                "consecutive_refresh_failures": {
+                  "default": null,
+                  "title": "Consecutive Refresh Failures"
+                },
                 "default_search_params": {
                   "default": null,
                   "title": "Default Search Params"
@@ -4888,6 +5076,22 @@
                 "intent_key": {
                   "default": null,
                   "title": "Intent Key"
+                },
+                "last_refresh_at": {
+                  "default": null,
+                  "title": "Last Refresh At"
+                },
+                "last_refresh_error": {
+                  "default": null,
+                  "title": "Last Refresh Error"
+                },
+                "last_refresh_outcome": {
+                  "default": null,
+                  "title": "Last Refresh Outcome"
+                },
+                "last_refresh_trigger": {
+                  "default": null,
+                  "title": "Last Refresh Trigger"
                 },
                 "max_auto_tag_calls": {
                   "default": null,
@@ -4921,9 +5125,25 @@
                   "default": null,
                   "title": "Name"
                 },
+                "next_refresh_at": {
+                  "default": null,
+                  "title": "Next Refresh At"
+                },
                 "outputs": {
                   "default": null,
                   "title": "Outputs"
+                },
+                "refresh_claim_expires_at": {
+                  "default": null,
+                  "title": "Refresh Claim Expires At"
+                },
+                "refresh_claim_token": {
+                  "default": null,
+                  "title": "Refresh Claim Token"
+                },
+                "refresh_interval_hours": {
+                  "default": null,
+                  "title": "Refresh Interval Hours"
                 },
                 "scrapes_per_keyword": {
                   "default": null,
@@ -5055,6 +5275,14 @@
                   "default": null,
                   "title": "Assignee Id"
                 },
+                "completed_at": {
+                  "default": null,
+                  "title": "Completed At"
+                },
+                "dedupe_key": {
+                  "default": null,
+                  "title": "Dedupe Key"
+                },
                 "description": {
                   "default": null,
                   "title": "Description"
@@ -5063,6 +5291,10 @@
                   "default": null,
                   "title": "Due Date"
                 },
+                "due_time": {
+                  "default": null,
+                  "title": "Due Time"
+                },
                 "id": {
                   "title": "Id",
                   "type": "string"
@@ -5070,6 +5302,10 @@
                 "metadata": {
                   "default": null,
                   "title": "Metadata"
+                },
+                "origin": {
+                  "default": null,
+                  "title": "Origin"
                 },
                 "parent_task_id": {
                   "default": null,
@@ -5083,13 +5319,45 @@
                   "default": null,
                   "title": "Project Id"
                 },
+                "recurrence_rule": {
+                  "default": null,
+                  "title": "Recurrence Rule"
+                },
+                "reminders": {
+                  "default": null,
+                  "title": "Reminders"
+                },
                 "settings": {
                   "default": null,
                   "title": "Settings"
                 },
+                "source_id": {
+                  "default": null,
+                  "title": "Source Id"
+                },
+                "source_label": {
+                  "default": null,
+                  "title": "Source Label"
+                },
+                "source_type": {
+                  "default": null,
+                  "title": "Source Type"
+                },
+                "source_url": {
+                  "default": null,
+                  "title": "Source Url"
+                },
+                "start_date": {
+                  "default": null,
+                  "title": "Start Date"
+                },
                 "status": {
                   "default": null,
                   "title": "Status"
+                },
+                "timezone": {
+                  "default": null,
+                  "title": "Timezone"
                 },
                 "title": {
                   "default": null,
@@ -7869,7 +8137,7 @@
     },
     {
       "category": "pure",
-      "doc": "Pointer to one Content Block (CMS) (content_blocks) row by id (RLS-scoped, read-only).",
+      "doc": "Pointer to one Content Block (skill.render_definition) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
       "purposes": [
@@ -8154,102 +8422,6 @@
         "type": "object"
       },
       "type": "content_ir_kind_instance"
-    },
-    {
-      "category": "pure",
-      "doc": "Pointer to one Content Template (CMS) (content_template) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "kind": "reference",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "kind": {
-            "const": "reference",
-            "type": "string"
-          },
-          "matrx_version": {
-            "const": 1,
-            "type": "integer"
-          },
-          "type": {
-            "const": "content_template",
-            "type": "string"
-          }
-        },
-        "required": [
-          "matrx_version",
-          "kind",
-          "type",
-          "items"
-        ],
-        "type": "object"
-      },
-      "type": "content_template"
     },
     {
       "category": "pure",
@@ -9789,6 +9961,102 @@
         "type": "object"
       },
       "type": "document_page"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one Expertise Pack (platform.expertise_pack) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "expertise_pack",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "expertise_pack"
     },
     {
       "category": "pure",
@@ -11522,6 +11790,102 @@
         "type": "object"
       },
       "type": "message"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one Message Template (message_template) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "message_template",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "message_template"
     },
     {
       "category": "pure",

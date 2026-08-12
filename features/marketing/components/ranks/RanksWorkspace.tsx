@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { KeywordInput } from "@/features/marketing/seo/keyword/KeywordInput";
 import {
   Select,
   SelectContent,
@@ -217,7 +218,11 @@ function PositionCell({ item }: { item: RankPortfolioItem }) {
 
 function AddTargetForm({
   onAdd,
+  siteId,
+  organizationId,
 }: {
+  siteId: string;
+  organizationId: string;
   onAdd: (input: {
     keyword: string;
     provider: RankProvider;
@@ -274,14 +279,24 @@ function AddTargetForm({
         <span className="text-[11px] font-medium text-muted-foreground">
           {mode.search_type === "ai_answer" ? "Prompt to track" : "Keyword"}
         </span>
-        <Input
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="e.g. botox cost"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void submit();
-          }}
-        />
+        {mode.search_type === "ai_answer" ? (
+          <Input
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="Ask the question people use with AI"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void submit();
+            }}
+          />
+        ) : (
+          <KeywordInput
+            value={keyword}
+            onChange={setKeyword}
+            onSubmit={() => void submit()}
+            scope={{ siteId, organizationId }}
+            placeholder="e.g. botox cost"
+          />
+        )}
       </div>
       <div className="grid min-w-0 gap-1">
         <span className="text-[11px] font-medium text-muted-foreground">
@@ -817,7 +832,11 @@ export function RanksWorkspace() {
           </div>
         }
       >
-        <AddTargetForm onAdd={async (input) => void (await addTarget(input))} />
+        <AddTargetForm
+          siteId={site.id}
+          organizationId={site.organization_id}
+          onAdd={async (input) => void (await addTarget(input))}
+        />
         <div className="overflow-x-auto" data-surface-value="rank_portfolio">
           <Table>
             <TableHeader>

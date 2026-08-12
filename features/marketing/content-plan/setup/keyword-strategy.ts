@@ -19,7 +19,7 @@
  *    page feeds, and the planned internal links with their anchor text. This
  *    is the part no single-page tool can reconstruct.
  */
-import { ensureKeywordId } from "@/features/marketing/data/page-keywords";
+import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { addNodeSecondaryKeyword } from "../data/associations";
@@ -164,10 +164,16 @@ export function readNodeKeywordStrategy(
   node: PlanNodeRow,
 ): NodeKeywordStrategy | null {
   const attributes = node.attributes;
-  if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) {
+  if (
+    !attributes ||
+    typeof attributes !== "object" ||
+    Array.isArray(attributes)
+  ) {
     return null;
   }
-  const raw = (attributes as Record<string, unknown>)[KEYWORD_STRATEGY_ATTR_KEY];
+  const raw = (attributes as Record<string, unknown>)[
+    KEYWORD_STRATEGY_ATTR_KEY
+  ];
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   return raw as NodeKeywordStrategy;
 }

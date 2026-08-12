@@ -58,6 +58,9 @@ export interface KeywordInputProps {
   /** Submit the settled phrase (normally Enter). Highlighted suggestions are
    * selected first; pressing Enter again submits the selected phrase. */
   onSubmit?: (phrase: string) => void;
+  /** Called immediately when a dropdown suggestion is chosen. ID-bound
+   * adapters use this to persist the same selection without a second Enter. */
+  onSelect?: (phrase: string) => void;
   /** Hide resolution chips for compact, repeat-entry surfaces such as batches. */
   showDetails?: boolean;
 }
@@ -73,6 +76,7 @@ export function KeywordInput({
   className,
   showIntelButton = true,
   onSubmit,
+  onSelect,
   showDetails = true,
 }: KeywordInputProps) {
   const openKeywordWindow = useOpenKeywordWindow();
@@ -119,13 +123,13 @@ export function KeywordInput({
   const knownKeyword = resolved.data?.keyword ?? null;
   const market = resolved.data?.market ?? null;
   const settled =
-    normalizeKeywordPhrase(debounced) === normalizedValue &&
-    resolved.isSuccess;
+    normalizeKeywordPhrase(debounced) === normalizedValue && resolved.isSuccess;
 
   const pick = (phrase: string) => {
     onChange(phrase);
     setDebounced(phrase);
     setHighlight(-1);
+    onSelect?.(phrase);
   };
 
   const openIntel = () => {
@@ -176,16 +180,16 @@ export function KeywordInput({
           }}
         />
         {showIntelButton ? (
-        <button
-          type="button"
-          onClick={openIntel}
-          disabled={disabled || !value.trim()}
-          aria-label="Open Keyword Intelligence"
-          title="Open Keyword Intelligence — market data, relationships, rankings, SERP"
-          className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <BrainCircuit className="h-4 w-4" />
-        </button>
+          <button
+            type="button"
+            onClick={openIntel}
+            disabled={disabled || !value.trim()}
+            aria-label="Open Keyword Intelligence"
+            title="Open Keyword Intelligence — market data, relationships, rankings, SERP"
+            className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <BrainCircuit className="h-4 w-4" />
+          </button>
         ) : null}
       </div>
 
@@ -253,10 +257,7 @@ export function KeywordInput({
               Checking keyword library…
             </span>
           ) : knownKeyword ? (
-            <KeywordDataChips
-              market={market}
-              showSparkline={false}
-            />
+            <KeywordDataChips market={market} showSparkline={false} />
           ) : settled && showIntelButton ? (
             <button
               type="button"

@@ -78,6 +78,8 @@ function nodeDetail(node: PlanNodeRow): Record<string, unknown> {
     technical_depth: node.technical_depth,
     needs_reviewer: node.needs_reviewer,
     primary_keyword_id: node.primary_keyword_id,
+    meta_title: node.meta_title,
+    meta_description: node.meta_description,
     brief: node.brief,
     attributes: node.attributes,
     // Trigger-owned derived cache — read-only evidence.

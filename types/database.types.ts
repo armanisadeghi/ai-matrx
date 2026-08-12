@@ -27892,6 +27892,8 @@ export type Database = {
           depth: number
           id: string
           label: string
+          meta_description: string | null
+          meta_title: string | null
           metadata: Json
           needs_reviewer: boolean
           node_type: string
@@ -27921,6 +27923,8 @@ export type Database = {
           depth?: number
           id?: string
           label: string
+          meta_description?: string | null
+          meta_title?: string | null
           metadata?: Json
           needs_reviewer?: boolean
           node_type: string
@@ -27950,6 +27954,8 @@ export type Database = {
           depth?: number
           id?: string
           label?: string
+          meta_description?: string | null
+          meta_title?: string | null
           metadata?: Json
           needs_reviewer?: boolean
           node_type?: string

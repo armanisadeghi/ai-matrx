@@ -23,6 +23,7 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { SEO_KEYWORD_TOKEN } from "@/features/marketing/content-plan/types";
 import type { KeywordWithMarket } from "@/features/marketing/seo/keyword-research/types";
 import {
+  ensureKeywordId,
   normalizeKeywordPhrase,
   pickKeywordMarket,
 } from "@/features/marketing/seo/keyword/data";
@@ -49,7 +50,8 @@ export async function listPageKeywordEdges(
     await associationsService.listForEntity(WEB_PAGE_TOKEN, pageId),
   );
   return data.edges.filter(
-    (edge) => edge.direction === "incoming" && edge.otherType === SEO_KEYWORD_TOKEN,
+    (edge) =>
+      edge.direction === "incoming" && edge.otherType === SEO_KEYWORD_TOKEN,
   );
 }
 
@@ -69,39 +71,6 @@ export async function fetchKeywordsByIds(
     .abortSignal(signal ?? new AbortController().signal);
   if (response.error) throw response.error;
   return (response.data ?? []) as KeywordWithMarket[];
-}
-
-/**
- * Ensure a library row exists for a phrase → its id. Idempotent; reuses the
- * canonical server-side upsert (normalized-phrase dedupe lives THERE).
- */
-export async function ensureKeywordId(phrase: string): Promise<string> {
-  const trimmed = phrase.trim();
-  if (!trimmed) throw new Error("Cannot attach an empty keyword phrase.");
-  await requireAuthenticatedSupabaseSession(supabase);
-  const response = await supabase
-    .schema("seo")
-    .rpc("fn_upsert_keyword", { p_phrase: trimmed, p_language: "en" });
-  if (response.error) throw response.error;
-  const row = response.data as {
-    o_id?: string | null;
-    o_created?: boolean | null;
-  } | null;
-  if (!row?.o_id) {
-    throw new Error(`Keyword upsert returned no id for "${trimmed}".`);
-  }
-  if (!row.o_created) {
-    // Explicit hand-entry resurrects an archived library row: archive is
-    // durable against pipeline re-saves (fn_upsert_keyword returns the
-    // archived identity row without reviving it), but a user typing the
-    // phrase IS the intent to use it. fn_restore_keywords is idempotent —
-    // it only touches rows whose deleted_at is set.
-    const restore = await supabase
-      .schema("seo")
-      .rpc("fn_restore_keywords", { p_keyword_ids: [row.o_id] });
-    if (restore.error) throw restore.error;
-  }
-  return row.o_id;
 }
 
 export async function addPageSupportingKeyword(

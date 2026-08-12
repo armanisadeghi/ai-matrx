@@ -16,6 +16,8 @@ function planNode(
     depth: 0,
     id,
     label: id,
+    meta_description: null,
+    meta_title: null,
     metadata: {},
     needs_reviewer: false,
     node_type: nodeType,
