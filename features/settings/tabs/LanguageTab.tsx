@@ -6,24 +6,7 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { useSetting } from "../hooks/useSetting";
-
-const languageOptions = [
-  { value: "en", label: "English" },
-  { value: "es", label: "Spanish" },
-  { value: "fr", label: "French" },
-  { value: "de", label: "German" },
-  { value: "it", label: "Italian" },
-  { value: "pt", label: "Portuguese" },
-  { value: "zh", label: "Chinese" },
-  { value: "ja", label: "Japanese" },
-  { value: "ko", label: "Korean" },
-  { value: "ru", label: "Russian" },
-  { value: "hi", label: "Hindi" },
-  { value: "nl", label: "Dutch" },
-  { value: "pl", label: "Polish" },
-  { value: "sv", label: "Swedish" },
-  { value: "tr", label: "Turkish" },
-];
+import { LANGUAGE_OPTIONS } from "../agent-writable-settings";
 
 /**
  * Language defaults. Right now there's no single "app language" slice — each
@@ -60,21 +43,21 @@ export default function LanguageTab() {
           description="Speech-to-text recognition language."
           value={voiceLang}
           onValueChange={setVoiceLang}
-          options={languageOptions}
+          options={LANGUAGE_OPTIONS}
         />
         <SettingsSelect
           label="Text generation"
           description="Default language for generated text."
           value={textLang}
           onValueChange={setTextLang}
-          options={languageOptions}
+          options={LANGUAGE_OPTIONS}
         />
         <SettingsSelect
           label="Flashcards"
           description="Default language for study content."
           value={flashcardLang}
           onValueChange={setFlashcardLang}
-          options={languageOptions}
+          options={LANGUAGE_OPTIONS}
           last
         />
       </SettingsSection>

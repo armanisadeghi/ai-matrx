@@ -68,6 +68,7 @@ import {
   StatusBadge,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { SiteIdentityMark } from "@/features/marketing/components/shared/SiteConnectionChips";
+import { CrawlScheduleSummary } from "@/features/marketing/components/crawls/CrawlScheduleSummary";
 import {
   initializeSite,
   initializeStepFromEvent,
@@ -756,6 +757,10 @@ function SiteHero({
                     </span>
                   ) : null}
                 </Link>
+                <CrawlScheduleSummary
+                  siteId={site.id}
+                  href={`${sitePath}/crawls/new`}
+                />
                 <Link
                   href={`${sitePath}/integrations`}
                   className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"

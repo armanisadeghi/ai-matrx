@@ -9,7 +9,10 @@ import {
 import { selectAllTasks } from "@/features/agent-context/redux/tasksSlice";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { QUICK_TASKS_SURFACE_NAME } from "@/features/surfaces/manifests/quick-tasks.manifest";
+import {
+  QUICK_TASKS_SURFACE_NAME,
+  type QuickTasksTaskDraft,
+} from "@/features/surfaces/manifests/quick-tasks.manifest";
 import { TASK_PRIORITIES } from "@/features/tasks/constants/priority";
 import { Input } from "@/components/ui/input";
 import { ProInput } from "@/components/official/ProInput";
@@ -246,7 +249,17 @@ export function QuickTasksSidebar() {
   );
 }
 
-export function QuickTasksMain() {
+interface QuickTasksMainProps {
+  /**
+   * Ref the hosting window hands down for `TaskDetailsPanel` to publish its
+   * LIVE (unsaved) edit state into — the window emits it as
+   * `selected_task_draft`, the read twin of the `panel_task_*` write targets.
+   * The panel owns that state; the window only reads the ref in `getScope`.
+   */
+  surfaceDraftRef?: React.MutableRefObject<QuickTasksTaskDraft | null>;
+}
+
+export function QuickTasksMain({ surfaceDraftRef }: QuickTasksMainProps = {}) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const selectedTaskId = useAppSelector(selectQuickTasksSelectedTaskId);
@@ -411,6 +424,7 @@ export function QuickTasksMain() {
         task={selectedTask}
         titleLayout="stacked"
         writeSurfaceName={QUICK_TASKS_SURFACE_NAME}
+        surfaceDraftRef={surfaceDraftRef}
         onClose={() => dispatch(setQuickTasksSelectedTaskId(null))}
       />
     </div>

@@ -32,6 +32,8 @@ import {
   Upload,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import {
   downloadFile,
   exportFilename,
@@ -61,7 +63,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { extractErrorMessage } from "@/utils/errors";
-import { cn } from "@/styles/themes/utils";
 import {
   getGscClassReviewAll,
   importGscKeywordClasses,
@@ -70,9 +71,6 @@ import {
   type GscClassReviewQuery,
 } from "@/features/marketing/search-console/data-classification";
 import type { GscDateRange } from "@/features/marketing/search-console/types";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
 
 const TEMPLATE_ROWS = [
   {
@@ -102,7 +100,9 @@ const STATUS_META: Record<string, { label: string; tone: string }> = {
   missing_notes: { label: "Mismatch needs notes", tone: "text-destructive" },
 };
 
-function parseImportRows(records: Record<string, string>[]): GscClassImportRow[] {
+function parseImportRows(
+  records: Record<string, string>[],
+): GscClassImportRow[] {
   return records
     .map((record) => {
       const lower: Record<string, string> = {};
@@ -135,7 +135,9 @@ export function ImportExportMenu({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [diff, setDiff] = useState<GscClassImportResultRow[] | null>(null);
-  const [pendingRows, setPendingRows] = useState<GscClassImportRow[] | null>(null);
+  const [pendingRows, setPendingRows] = useState<GscClassImportRow[] | null>(
+    null,
+  );
   const [workbookPick, setWorkbookPick] = useState<
     { id: string; name: string }[] | null
   >(null);
@@ -221,12 +223,18 @@ export function ImportExportMenu({
   const sendToWorkbook = async () => {
     try {
       const result = await fetchAll("workbook");
-      const { pushTableToWorkbook } = await import(
-        "@/features/data-tables/export-targets"
-      );
+      const { pushTableToWorkbook } =
+        await import("@/features/data-tables/export-targets");
       const push = await pushTableToWorkbook({
         name: `Keyword classes — ${siteDomain}`,
-        headers: ["keyword", "class", "notes", "source", "impressions_28d", "clicks_28d"],
+        headers: [
+          "keyword",
+          "class",
+          "notes",
+          "source",
+          "impressions_28d",
+          "clicks_28d",
+        ],
         rows: result.rows.map((row) => [
           row.query,
           row.traffic_class ?? "",
@@ -257,9 +265,8 @@ export function ImportExportMenu({
   const openWorkbookPicker = async () => {
     setBusy("workbook-list");
     try {
-      const { listAccessibleWorkbooks } = await import(
-        "@/features/data-tables/workbook-service"
-      );
+      const { listAccessibleWorkbooks } =
+        await import("@/features/data-tables/workbook-service");
       const result = await listAccessibleWorkbooks();
       if (!result.success) {
         throw new Error(result.error);
@@ -321,7 +328,9 @@ export function ImportExportMenu({
       const applied = result.filter(
         (row) => row.status === "change" || row.status === "cleared",
       ).length;
-      toast.success(`Applied ${applied.toLocaleString()} classification changes`);
+      toast.success(
+        `Applied ${applied.toLocaleString()} classification changes`,
+      );
       setDiff(null);
       setPendingRows(null);
       onApplied();
@@ -337,6 +346,52 @@ export function ImportExportMenu({
     return acc;
   }, {});
   const applicable = (counts.change ?? 0) + (counts.cleared ?? 0);
+  const diffColumns: MatrxColumnDef<GscClassImportResultRow>[] = [
+    {
+      id: "query",
+      accessorKey: "query",
+      header: "Keyword",
+      filter: "text",
+      cellKind: "text",
+      cell: (row) => (
+        <span className="block max-w-72 truncate" title={row.query}>
+          {row.query}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: "Status",
+      filter: "select",
+      cell: (row) => {
+        const meta = STATUS_META[row.status] ?? {
+          label: row.status,
+          tone: "text-muted-foreground",
+        };
+        return <span className={meta.tone}>{meta.label}</span>;
+      },
+    },
+    {
+      id: "current_class",
+      accessorKey: "current_class",
+      header: "Current",
+      filter: "select",
+      cell: (row) => row.current_class ?? "—",
+    },
+    {
+      id: "new_class",
+      accessorKey: "new_class",
+      header: "New",
+      filter: "select",
+      cell: (row) =>
+        row.status === "cleared"
+          ? "machine decides"
+          : row.status === "change"
+            ? row.new_class
+            : "—",
+    },
+  ];
 
   return (
     <>
@@ -369,10 +424,16 @@ export function ImportExportMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
-          <DropdownMenuItem className="gap-2 text-xs" onSelect={() => void exportCsv()}>
+          <DropdownMenuItem
+            className="gap-2 text-xs"
+            onSelect={() => void exportCsv()}
+          >
             <Download className="h-3.5 w-3.5" /> Export CSV (current filters)
           </DropdownMenuItem>
-          <DropdownMenuItem className="gap-2 text-xs" onSelect={downloadTemplate}>
+          <DropdownMenuItem
+            className="gap-2 text-xs"
+            onSelect={downloadTemplate}
+          >
             <Download className="h-3.5 w-3.5" /> Download import template
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -382,7 +443,10 @@ export function ImportExportMenu({
             <FileUp className="h-3.5 w-3.5" /> Import CSV…
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="gap-2 text-xs" onSelect={() => void sendToWorkbook()}>
+          <DropdownMenuItem
+            className="gap-2 text-xs"
+            onSelect={() => void sendToWorkbook()}
+          >
             <Table2 className="h-3.5 w-3.5" /> Send to workbook
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -416,14 +480,22 @@ export function ImportExportMenu({
             </SelectTrigger>
             <SelectContent>
               {(workbookPick ?? []).map((workbook) => (
-                <SelectItem key={workbook.id} value={workbook.id} className="text-xs">
+                <SelectItem
+                  key={workbook.id}
+                  value={workbook.id}
+                  className="text-xs"
+                >
                   {workbook.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setWorkbookPick(null)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setWorkbookPick(null)}
+            >
               Cancel
             </Button>
             <Button
@@ -466,50 +538,21 @@ export function ImportExportMenu({
               . Nothing applies until you confirm.
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-80 overflow-y-auto rounded-md border border-border">
-            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-              <thead className="sticky top-0 bg-muted/80 text-left">
-                <tr>
-                  <th className="px-2 py-1 font-medium">Keyword</th>
-                  <th className="px-2 py-1 font-medium">Status</th>
-                  <th className="px-2 py-1 font-medium">Current → New</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(diff ?? []).slice(0, 500).map((row, index) => {
-                  const meta = STATUS_META[row.status] ?? {
-                    label: row.status,
-                    tone: "text-muted-foreground",
-                  };
-                  return (
-                    <tr key={`${row.query}-${index}`} className="border-t border-border">
-                      <td className="sm:max-w-64 sm:truncate px-2 py-1" title={row.query}>
-                        {row.query}
-                      </td>
-                      <td className={cn("px-2 py-1", meta.tone)}>{meta.label}</td>
-                      <td className="px-2 py-1 text-muted-foreground">
-                        {row.current_class ?? "—"}
-                        {row.status === "change" || row.status === "cleared" ? (
-                          <>
-                            {" → "}
-                            <span className="font-medium text-foreground">
-                              {row.status === "cleared"
-                                ? "machine decides"
-                                : row.new_class}
-                            </span>
-                          </>
-                        ) : null}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {(diff?.length ?? 0) > 500 ? (
-              <p className="px-2 py-1 text-[11px] text-muted-foreground">
-                Showing the first 500 of {diff?.length.toLocaleString()} rows.
-              </p>
-            ) : null}
+          <div className="rounded-md border border-border p-2">
+            <MatrxDataTable
+              data={diff ?? []}
+              columns={diffColumns}
+              getRowId={(row) =>
+                `${row.query}:${row.status}:${row.new_class ?? ""}`
+              }
+              pageSize={25}
+              pageSizeOptions={[10, 25, 50, 100]}
+              emptyState={{
+                title: "No import rows",
+                description:
+                  "The imported file did not produce any reviewable rows.",
+              }}
+            />
           </div>
           <DialogFooter>
             <Button

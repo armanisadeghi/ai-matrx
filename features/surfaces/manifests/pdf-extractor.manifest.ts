@@ -538,8 +538,16 @@ const writeTargets: SurfaceWriteTarget[] = [
   },
 ];
 
+/**
+ * THE canonical surface name, exported for the same reason
+ * `PDF_EXTRACTOR_WRITE_TARGETS` above is: the studio shell that MOUNTS the
+ * provider and the two panels that list this surface's bound agents each used
+ * to carry their own re-typed copy of the string. One export, one spelling.
+ */
+export const PDF_EXTRACTOR_SURFACE_NAME = "matrx-user/pdf-extractor";
+
 export const pdfExtractorManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/pdf-extractor",
+  surfaceName: PDF_EXTRACTOR_SURFACE_NAME,
   readiness: "verified",
   label: "PDF Extractor",
   urlPattern: "/tools/pdf-extractor/[documentId]",

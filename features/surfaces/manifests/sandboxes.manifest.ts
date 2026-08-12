@@ -18,6 +18,77 @@
  * are therefore NOT declared — declaring a value nothing emits is worse than
  * omitting it. Lifting that panel's `fsRoot` / `selectedFile` / `fileContent`
  * to the page is the work that unlocks a `file_tree` + `open_file_*` group.
+ *
+ * ── NO `writeTargets`, DELIBERATELY (2026-08-12) ─────────────────────────
+ * Assessed against the `surface-write-targets` judgment bar and RULED OUT.
+ * Do not re-assign this surface; the reasoning is recorded here so the next
+ * agent does not re-derive it.
+ *
+ * **`sandbox_config` is EVIDENCE, not a form.** This is the value that makes
+ * the surface look writable, so it is the one to be precise about. It is
+ * `instance.config` — a column on the `sandbox_instances` row fetched from
+ * `GET /api/sandbox/[id]` and re-polled every 10s. The detail page renders it
+ * through `<pre>{JSON.stringify(instance.config, null, 2)}</pre>` in the
+ * "Configuration" card (and again in the admin panel). There is no setter, no
+ * form, no dirty state and no PATCH route: it is the read-back of what the
+ * orchestrator was handed at create time. The config a user actually composes
+ * lives somewhere else entirely — `useSandboxCreate` on the `/sandbox` LIST
+ * mount — and is not a declared surface value at all. Re-writing it after the
+ * fact would also be meaningless: the container is already built from it.
+ *
+ * **Per-mount posture — both mounts earn nothing.**
+ * - `/sandbox` (list) owns fetched instance evidence, browse state
+ *   (`historyOpen`, `selectedHistoryIds`) and the create-dialog form. Its only
+ *   write paths are `createInstance` / `stopInstance` / `deleteInstance(s)` —
+ *   spend or destruction, both human. The create form has ZERO authored
+ *   fields: `tier` is a two-option toggle, `template` an enum from the fetched
+ *   catalog, `template_version` derived from the template, `resources` three
+ *   hosted-only numbers, TTL a 1/2/4/8h preset — all already defaulted to the
+ *   user's last-used choice from Redux prefs. Those are the skill's own
+ *   "pure-mechanical toggles nobody would ask an agent to flip", they exist
+ *   only while the modal is open, and the very next act is Create Sandbox.
+ *   Staging a machine-start config is driving the start by proxy.
+ *   (The `CrawlsTable` posture in `marketing-crawls`: a list over immutable
+ *   evidence registers nothing.)
+ * - `/sandbox/[id]` (detail) owns the polled `instance` (every declared value
+ *   bar the shell ones is a projection of it), the shell session, and dialog
+ *   toggles. Its write paths are `handleExec`, `handleStop`, `handleExtend`,
+ *   `handleDelete` — all excluded below.
+ *
+ * **Excluded by settled campaign precedent, said explicitly rather than by
+ * omission:**
+ * 1. Starting / stopping / extending / destroying a sandbox. It spends real
+ *    compute and wall-clock; the human press stays the gate
+ *    (`podcast-studio`, `image-generate`, `marketing-crawls`).
+ * 2. Running commands. `command_history` and `terminal_output` are the RECORD
+ *    of what a machine actually did — the input-vs-output line `voice-pad`
+ *    drew around transcripts — and executing arbitrary shell is the most
+ *    dangerous act on this surface.
+ * 3. `container_id`, `sandbox_proxy_url`, hot/cold paths, heartbeat, expiry,
+ *    status, and both ids: infrastructure identity and execution evidence.
+ *
+ * **The one genuine candidate, and why it still fails: `commandInput`.**
+ * It is technically inert — `handleExec` fires only on Enter or the Send
+ * button — which looks like `matrx-admin/database`'s `sql_query`, the
+ * precedent that lets an agent DRAFT SQL because a textarea full of text is
+ * inert characters. The analogy breaks on the GATE, which is the whole basis
+ * of that precedent. `sql_query` stages into a multi-line workbench whose
+ * execution needs a deliberate, separately-located **Execute** press.
+ * `commandInput` is a single-line prompt with `autoFocus` that the terminal
+ * body re-focuses on any click, where **Enter runs it** — so a staged command
+ * sits in an already-focused shell prompt and the most reflexive keystroke
+ * there is executes arbitrary shell on a live machine. It also has no
+ * staged-vs-typed affordance: unlike the SQL workbench, a command in the
+ * prompt is indistinguishable from one the user typed. "The human press stays
+ * the gate" would hold only in the most literal sense.
+ * Even granting it, that is ONE target on a surface whose every other value is
+ * execution evidence or infrastructure identity — below the skill's ~2 floor,
+ * exactly the `matrx-user/messages` and `matrx-user/canvas` outcome.
+ *
+ * The `SandboxDiagnosticsPanel` was checked too and changes nothing: its only
+ * inputs are `fsRootPath`, `envFilter`, `envView`, `logSource`, `logTail` —
+ * browse/view state over a read-only inspector — `fileContent` is display-only
+ * with no write-file path behind it, and Reset is destructive.
  */
 
 import type {

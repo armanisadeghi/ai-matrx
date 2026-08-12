@@ -273,6 +273,76 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
+- **2026-08-12** — Added the third Convert write target, `image_description`,
+  and the read twin that was blocking it. The manifest previously listed
+  per-file names and AI metadata under "not writable" for two reasons; only
+  one of them held up. There genuinely was no read twin — `source_files`
+  carried `metadata_status` and nothing else — so a write could not be
+  verified from a read value. That is now fixed rather than waived:
+  `source_files` carries `alt_text` / `caption` / `title` / `description` /
+  `keywords` / `dominant_colors` on every entry, empty until something writes
+  them, so an agent reads what is there before writing what is missing. The
+  other reason — that the `image-studio-describe-01` shortcut already writes
+  this metadata — argued the opposite way once examined: pressing that
+  shortcut is a COMMIT (it spends a model call and uploads a preview into the
+  user's library), while writing the text is not, so the shortcut's existence
+  is a reason to give an agent the direct path, not to withhold it.
+  The target takes `{ file, alt_text?, caption?, title?, description?,
+  keywords?, filename_base? }` and lands through the same
+  `updateImageMetadata` the Metadata panel's own inputs call. `file` is how it
+  addresses a row: studio sources are browser-local `File` objects with no
+  durable id until save, so it matches the `name` / `filename_base` the
+  surface already reports, case-insensitively, and throws listing the real
+  filenames on a miss or a tie. That resolution reads `filesRef.current`,
+  assigned during render rather than in the existing sync effect, because the
+  identifying strings change WITHOUT the file count changing — a
+  `filename_base` write renames the very string the next call in the same
+  turn matches on, and the seam resolves every handler closure before the
+  first dialog is confirmed.
+  Validation lives in
+  [`lib/image-studio-write-targets.ts`](./lib/image-studio-write-targets.ts)
+  rather than inline beside the other two handlers: it is the only rule here
+  that has to RESOLVE a row before it can check anything, and keeping it
+  outside React is what makes the throw land synchronously where the
+  writeback seam converts it into an error envelope the agent can correct
+  from. `dominant_colors` is rejected BY NAME even though it sits in the same
+  `ImageMetadata` object — those hex codes are measured off the pixels by a
+  model that can see the image, so writing them from the surface scope would
+  be inventing values.
+- **2026-08-12** — Added a THIRD Convert write target, `filename_base`: a
+  partial map that renames the filename base of one or more source images
+  through the same `setFilenameBase(fileId, base)` a file card's inline rename
+  field calls. The base is load-bearing twice — it is the slug of every variant
+  an image produces AND the per-image subfolder `saveAll` writes into — and the
+  shell already blocks the first Generate with a rename banner whenever files
+  still carry auto-derived names like `img-4821`, so this answers a nag the page
+  itself raises. Source files are browser-local `File` objects with no durable
+  id, so the map is keyed by whatever coordinate the agent saw in `source_files`
+  — 1-based POSITION, the original `name`, or the current `filename_base` — and
+  the handler resolves that back to the real internal id, refusing a key that
+  matches no image or more than one rather than guessing. The WHOLE map is
+  validated before the first rename lands (the `workbook_sheet_names` shape), and
+  collisions are checked against the RESULT of applying it, so swapping two
+  images' bases is legal while ending up with two images sharing a base is
+  refused — their variants would overwrite each other on save. Bases are
+  rejected rather than coerced: `slugifyFilename` silently falls back to
+  `"image"` for input with no alphanumerics and truncates at 60, so the handler
+  checks the un-truncated slug and throws on both, and refuses any `"."` because
+  the slugifier would strip a trailing `.v2` as an extension. `slugify-filename.ts`
+  now exports `FILENAME_BASE_MAX_CHARS` beside the function that applies it, and
+  the manifest interpolates that same constant into its contract prose. Live
+  state is read through a new `filesRef` for the reason the 2026-08-11 entry
+  documents — the writeback seam resolves every handler closure BEFORE the user
+  confirms, so a rename staged against a render-snapshot file list could hit the
+  wrong image — and the handler refuses while a conversion or a save is in
+  flight, because the base is already baked into the variants and the folder in
+  motion. Live-verified with a real Badass Agent run; see
+  `features/surfaces/FEATURE.md` for the full transcript of what was checked.
+  `matrx-user/image-edit` was re-assessed at the same time and its WRITE
+  DOCTRINE stands unchanged — the AI edit prompt cannot be a target while
+  `IMAGE_STUDIO_BACKEND_CAPABILITIES.promptEdit` is `false`, because the popover
+  it would write into never renders.
+
 - **2026-08-11** — Hardened the Convert write targets: the crop anchor's
   fit gate is now ENFORCED, not just documented. `conversion_settings` accepted
   `resize_position` under any fit, but `CropControls` renders the anchor picker

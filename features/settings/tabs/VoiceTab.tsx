@@ -10,30 +10,13 @@ import { SettingsSubHeader } from "@/components/official/settings/layout/Setting
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { useSetting } from "../hooks/useSetting";
 import { availableVoices } from "@/lib/cartesia/voices";
+import { LANGUAGE_OPTIONS } from "../agent-writable-settings";
 
 const voiceOptions = availableVoices.map((v) => ({
   value: v.id,
   label: v.name,
   description: v.description,
 }));
-
-const languageOptions = [
-  { value: "en", label: "English" },
-  { value: "de", label: "German" },
-  { value: "es", label: "Spanish" },
-  { value: "fr", label: "French" },
-  { value: "ja", label: "Japanese" },
-  { value: "pt", label: "Portuguese" },
-  { value: "zh", label: "Chinese" },
-  { value: "hi", label: "Hindi" },
-  { value: "it", label: "Italian" },
-  { value: "ko", label: "Korean" },
-  { value: "nl", label: "Dutch" },
-  { value: "pl", label: "Polish" },
-  { value: "ru", label: "Russian" },
-  { value: "sv", label: "Swedish" },
-  { value: "tr", label: "Turkish" },
-];
 
 export default function VoiceTab() {
   const [voice, setVoice] = useSetting<string>("userPreferences.voice.voice");
@@ -75,7 +58,7 @@ export default function VoiceTab() {
           label="Language"
           value={language}
           onValueChange={setLanguage}
-          options={languageOptions}
+          options={LANGUAGE_OPTIONS}
         />
         <SettingsSlider
           label="Speech speed"

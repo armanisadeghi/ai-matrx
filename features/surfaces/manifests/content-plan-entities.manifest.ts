@@ -71,6 +71,23 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 200,
     group: "entity_editor",
   },
+  {
+    name: "source_type_options",
+    label: "Source type options",
+    description:
+      "The `plan_source_type` categories the editor's Source type picker offers, as {id, name}. THE vocabulary for a source_type_id write — an id absent from this list is refused, so match on the name and send the id. Empty while the category dimension loads.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 400,
+    sortOrder: 120,
+    group: "entity_roster",
+    // Auto-attached on purpose, unlike most option lists: it is small, and it
+    // is the ONLY way an agent can produce a valid `source_type_id`. Left to
+    // "look it up if you need it" the write target is unusable — a live run
+    // with a generic binding came back `context_not_attached` and the agent
+    // correctly refused to guess a UUID.
+    autoContext: true,
+  },
 ];
 
 /**
@@ -91,9 +108,16 @@ const surfaceSpecific: SurfaceValue[] = [
  *  - DELETION (the row's trash button) — destructive stays human.
  *  - node↔entity ATTACHMENT (author / reviewer / citation edges) — those live
  *    on the NODE surfaces by design; this surface maintains the roster only.
- *  - `source_type_id` — a `plan_source_type` category UUID with no options
- *    exposed to agents as a read value (same reason `content-plan-node` keeps
- *    `node_primary_keyword_id` manual). The user picks it in the dialog.
+ *
+ * `source_type_id` WAS excluded for the reason `content-plan-node` still keeps
+ * `node_primary_keyword_id` manual — a category UUID with no options exposed,
+ * so an agent had no legitimate way to produce a valid one. That is now fixed
+ * at the source rather than by loosening the check: `source_type_options`
+ * publishes the picker's real vocabulary (the same `useCategories` read the
+ * `CategorySelect` renders from), and the handler refuses any id absent from
+ * it — including while the dimension is still loading, when a dangling FK
+ * could not be told apart from a real one. Declaring the options is the fix
+ * for the node surface's holdout too.
  *
  * All targets are `applyPolicy: "ask"`. Handlers are registered by
  * `EntityManager.tsx` via `useSurfaceWriteHandlers`.
@@ -103,13 +127,25 @@ const writeTargets: SurfaceWriteTarget[] = [
     name: "entity_draft",
     label: "Entity editor draft",
     description:
-      "Stages values into the OPEN entity editor dialog — the same staging buffer the user's own typing fills. NOTHING is saved: the user reviews the dialog and presses Save/Create (or `save_entity_draft`). Object with optional keys `label` (non-empty string — the entity's display name, e.g. \"Dr. Jane Smith, MD, FACC\") and `entity_type` (exactly one of: person | source | media | org); provide at least one. Read `entity_editor_draft` for what is staged now. Fails when no entity editor is open — the user has to open New/Edit first. Source type is not settable here.",
+      "Stages values into the OPEN entity editor dialog — the same staging buffer the user's own typing fills. NOTHING is saved: the user reviews the dialog and presses Save/Create (or `save_entity_draft`). Object with optional keys `label` (non-empty string — the entity's display name, e.g. \"Dr. Jane Smith, MD, FACC\"), `entity_type` (exactly one of: person | source | media | org), and `source_type_id` (a category UUID from `source_type_options` — match on its name — or null to clear); provide at least one. Read `entity_editor_draft` for what is staged now. Fails when no entity editor is open — open one with `open_entity_editor` first.",
     valueType: "object",
     updatesValue: "entity_editor_draft",
     mode: "draft",
     applyPolicy: "ask",
     group: "entity_editor",
     sortOrder: 100,
+  },
+  {
+    name: "open_entity_editor",
+    label: "Open entity editor",
+    description:
+      "Opens the New/Edit entity dialog — the same as the user clicking a row's pencil, or New entity. Value is an entity UUID from `entities_detail` to edit that entity, or null to open a blank New entity dialog. UI state only: nothing is written to the plan, and the staged draft it seeds is not saved until the user presses Save/Create (or `save_entity_draft`). Call this before `entity_draft`, which needs an open editor. Opening a different entity REPLACES any draft currently staged, so read `entity_editor_draft` first if one is open.",
+    valueType: "string",
+    updatesValue: "entity_editor_draft",
+    mode: "ui",
+    applyPolicy: "auto",
+    group: "entity_editor",
+    sortOrder: 90,
   },
   {
     name: "save_entity_draft",
@@ -142,14 +178,14 @@ export const contentPlanEntitiesManifest: SurfaceManifest = {
   label: "Content Plan Entities",
   readiness: "partial",
   readinessNote:
-    "Emitter wired in EntityManager; per-entity attributes not audited field-by-field; entity_curator bound to the Content Plan Entity Curator (manifest + ui.ui_surface_agent_role synced 2026-07-30). Write half live-verified with a real agent run 2026-08-10 (entity_draft / save_entity_draft / add_entities); writeTargets are not yet mirrored to ui.ui_surface_write_target.",
+    "Emitter wired in EntityManager; per-entity attributes not audited field-by-field; entity_curator bound to the Content Plan Entity Curator (manifest + ui.ui_surface_agent_role synced 2026-07-30). Write half live-verified with real agent runs 2026-08-10 (entity_draft / save_entity_draft / add_entities, then open_entity_editor + the source_type_id key); writeTargets are not yet mirrored to ui.ui_surface_write_target.",
   urlPattern: "/marketing/content-plan/[siteId]?view=entities",
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
 You are on the E-E-A-T entity manager of the content plan: the people, sources, media, and organizations behind the site's content (plan.entity rows). The user maintains the roster here; nodes elsewhere attach these entities as author/reviewer/citation via association edges.
 Read entities_detail for the full roster and entity_counts_by_type for the shape of it. The inherited plan_tree tells you what content exists — useful for spotting coverage gaps (e.g. medical articles with no reviewer-qualified person registered).
 Suggestions belong to the roster: who is missing, whose credentials matter for this vertical, which sources are weak. Node-to-entity attachment happens on the node surfaces, not here.
-You can also ACT on the roster: add_entities creates the missing people/sources outright, and entity_draft stages a label/type into the entity dialog the user has open (save_entity_draft saves it). You cannot delete an entity, change its source type, or attach one to a node — those stay with the user or with the node surfaces.
+You can also ACT on the roster: add_entities creates the missing people/sources outright; open_entity_editor opens the dialog for a given entity (or a blank one); entity_draft stages a label, type, or source type into the dialog the user is looking at; save_entity_draft saves it. Source type ids must come from source_type_options — match on the name and send the id, never invent one. You cannot delete an entity or attach one to a node — the first stays with the user, the second lives on the node surfaces.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -179,6 +215,7 @@ export function createContentPlanEntitiesScope(values: {
   entities_detail?: Array<Record<string, unknown>>;
   entity_counts_by_type?: Record<string, number>;
   entity_editor_draft?: Record<string, unknown>;
+  source_type_options?: Array<Record<string, unknown>>;
   site_id?: string;
   site_domain?: string;
   selection?: string;

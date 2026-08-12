@@ -19,17 +19,15 @@ import type {
   MarketingFinding,
   PriorityQueueRow,
 } from "@/features/marketing/data/analysis-types";
+import { FINDING_STATUS_VALUES } from "@/features/marketing/data/finding-lifecycle";
 import { assertFound } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import type { Json } from "@/types/database.types";
 
-const FINDING_STATUS = new Set([
-  "open",
-  "acknowledged",
-  "resolved",
-  "reopened",
-]);
+// One vocabulary, three readers: this filter validator, the badge/filter
+// options, and the surface's `finding_lifecycle_status` write target.
+const FINDING_STATUS = new Set<string>(FINDING_STATUS_VALUES);
 const RESULT_STATUS = new Set(["pass", "warn", "fail", "error", "n_a"]);
 const SEVERITY = new Set(["info", "low", "med", "high", "critical"]);
 const SUBJECT_TYPE = new Set(["site", "page", "snapshot"]);

@@ -84,6 +84,7 @@ import { marketingReputationManifest } from "./marketing-reputation.manifest";
 import { marketingRanksManifest } from "./marketing-ranks.manifest";
 import { marketingRanksHubManifest } from "./marketing-ranks-hub.manifest";
 import { marketingCoverageManifest } from "./marketing-coverage.manifest";
+import { marketingCompetitorsManifest } from "./marketing-competitors.manifest";
 import { marketingSitemapsManifest } from "./marketing-sitemaps.manifest";
 import { marketingDiscoveryManifest } from "./marketing-discovery.manifest";
 import { marketingIntegrationsManifest } from "./marketing-integrations.manifest";
@@ -235,6 +236,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingRanksManifest,
   marketingRanksHubManifest,
   marketingCoverageManifest,
+  marketingCompetitorsManifest,
   marketingSitemapsManifest,
   marketingDiscoveryManifest,
   marketingIntegrationsManifest,

@@ -14,17 +14,15 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   BrainCircuit,
-  ChevronDown,
-  ChevronRight,
   Loader2,
   MoreVertical,
   RefreshCw,
-  Search,
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { Checkbox } from "@/components/ui/checkbox";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
@@ -39,6 +37,7 @@ import {
   restoreKeywords,
 } from "../data/queries";
 import KeywordResearchLauncher from "./KeywordResearchLauncher";
+import { parseLibrarySearchWrite } from "../keyword-research-write";
 import {
   KEYWORD_CLUSTER_WRITE_MODES,
   isKeywordClusterWriteMode,
@@ -57,10 +56,6 @@ import {
   formatCpc,
   formatSearchVolume,
 } from "./KeywordMetrics";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE,
-} from "@/components/official/mobile-table/mobileTable";
 
 const EDGE_TYPE_LABELS: Record<string, string> = {
   refines: "Refines",
@@ -79,7 +74,9 @@ function usMarket(row: KeywordWithMarket): KeywordMarketRow | null {
 
 /** Oldest-first, capped at the last 12 months — the shape the sparkline reads. */
 function monthlyPoints(market: KeywordMarketRow | null): MonthlySearchPoint[] {
-  return normalizeMonthlySearches(market?.monthly_searches).slice(0, 12).reverse();
+  return normalizeMonthlySearches(market?.monthly_searches)
+    .slice(0, 12)
+    .reverse();
 }
 
 function TrajectoryBadge({ value }: { value: string | null }) {
@@ -168,7 +165,9 @@ function KeywordDetail({
       })
       .catch((edgeError) => {
         if (!cancelled) {
-          setError(edgeError instanceof Error ? edgeError.message : String(edgeError));
+          setError(
+            edgeError instanceof Error ? edgeError.message : String(edgeError),
+          );
         }
       });
     return () => {
@@ -185,7 +184,10 @@ function KeywordDetail({
         {points.length > 0 ? (
           <div className="flex items-end gap-1">
             {points.map((point) => (
-              <div key={`${point.year}-${point.month}`} className="flex flex-col items-center gap-1">
+              <div
+                key={`${point.year}-${point.month}`}
+                className="flex flex-col items-center gap-1"
+              >
                 <div
                   className="w-4 rounded-sm bg-primary/70"
                   style={{
@@ -200,13 +202,18 @@ function KeywordDetail({
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">No market data fetched yet.</p>
+          <p className="text-xs text-muted-foreground">
+            No market data fetched yet.
+          </p>
         )}
         {market && (
           <p className="mt-2 text-[11px] text-muted-foreground">
-            Bids {market.low_top_of_page_bid ?? "—"}–{market.high_top_of_page_bid ?? "—"} · growth{" "}
-            {market.growth_rate !== null ? `${(Number(market.growth_rate) * 100).toFixed(0)}%` : "—"} ·
-            fetched{" "}
+            Bids {market.low_top_of_page_bid ?? "—"}–
+            {market.high_top_of_page_bid ?? "—"} · growth{" "}
+            {market.growth_rate !== null
+              ? `${(Number(market.growth_rate) * 100).toFixed(0)}%`
+              : "—"}{" "}
+            · fetched{" "}
             {market.metrics_fetched_at
               ? new Date(market.metrics_fetched_at).toLocaleDateString()
               : "never"}
@@ -248,7 +255,6 @@ export default function KeywordResearchWorkbench() {
     reloadKeywords,
   } = useKeywordResearch();
   const openKeywordIntel = useOpenKeywordWindow();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(
     new Set(),
@@ -258,6 +264,18 @@ export default function KeywordResearchWorkbench() {
   // state: getScope reads it at trigger time, so the agent still sees the live
   // value while a keystroke in the launcher never re-renders the table below.
   const stagedKeywordRef = useRef("");
+  // The live cluster, for `cluster_scope`'s append branch. Refs for the same
+  // reason the emitter uses one, plus a sharper one: the writeback seam
+  // resolves every handler closure BEFORE the user confirms the first ask
+  // dialog, so an append that read the cluster off its render closure could
+  // extend a LIST THAT IS NO LONGER ON SCREEN — scoping the explorer to
+  // phrases the user never saw. Deciding WHERE a value lands must read live.
+  const clusterPhrasesRef = useRef(clusterPhrases);
+  const clusterPrimaryKeywordRef = useRef(clusterPrimaryKeyword);
+  useEffect(() => {
+    clusterPhrasesRef.current = clusterPhrases;
+    clusterPrimaryKeywordRef.current = clusterPrimaryKeyword;
+  }, [clusterPhrases, clusterPrimaryKeyword]);
   // Provenance: keyword ids with at least one live ai_research edge —
   // research-discovered vs hand-added. Null until the batched read lands.
   const [researchIds, setResearchIds] = useState<ReadonlySet<string> | null>(
@@ -269,7 +287,9 @@ export default function KeywordResearchWorkbench() {
     return keywords
       .filter((row) => !cluster || cluster.has(row.normalized_phrase))
       .sort(
-        (a, b) => (usMarket(b)?.search_volume ?? -1) - (usMarket(a)?.search_volume ?? -1),
+        (a, b) =>
+          (usMarket(b)?.search_volume ?? -1) -
+          (usMarket(a)?.search_volume ?? -1),
       );
   }, [keywords, clusterPhrases]);
 
@@ -277,11 +297,14 @@ export default function KeywordResearchWorkbench() {
     () => sorted.map((row) => row.id).join(","),
     [sorted],
   );
+  const visibleSelectedIds = useMemo(() => {
+    const visible = new Set(visibleIdsKey ? visibleIdsKey.split(",") : []);
+    return [...selectedIds].filter((id) => visible.has(id));
+  }, [selectedIds, visibleIdsKey]);
 
   useEffect(() => {
     const ids = visibleIdsKey ? visibleIdsKey.split(",") : [];
     if (ids.length === 0) {
-      setResearchIds(new Set());
       return;
     }
     const controller = new AbortController();
@@ -300,43 +323,12 @@ export default function KeywordResearchWorkbench() {
     return () => controller.abort();
   }, [visibleIdsKey]);
 
-  // Selection survives only within the visible set — rows that scroll out of
-  // the current search/cluster drop out so bulk archive never acts blind.
-  useEffect(() => {
-    const visible = new Set(visibleIdsKey ? visibleIdsKey.split(",") : []);
-    setSelectedIds((current) => {
-      const next = [...current].filter((id) => visible.has(id));
-      return next.length === current.size ? current : new Set(next);
-    });
-  }, [visibleIdsKey]);
-
-  const toggleSelected = useCallback((id: string, checked: boolean) => {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (checked) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-  }, []);
-
-  const allVisibleSelected =
-    sorted.length > 0 && sorted.every((row) => selectedIds.has(row.id));
-
-  const toggleSelectAll = useCallback(
-    (checked: boolean) => {
-      setSelectedIds(checked ? new Set(sorted.map((row) => row.id)) : new Set());
-    },
-    [sorted],
-  );
-
   /** Archive library rows (bulk or single) with confirm + undo. */
   const archiveRows = useCallback(
     async (rows: { id: string; phrase: string }[]) => {
       if (rows.length === 0 || archiving) return;
       const label =
-        rows.length === 1
-          ? `“${rows[0].phrase}”`
-          : `${rows.length} keywords`;
+        rows.length === 1 ? `“${rows[0].phrase}”` : `${rows.length} keywords`;
       const confirmed = await confirm({
         title: `Archive ${label} from the library?`,
         description:
@@ -362,7 +354,9 @@ export default function KeywordResearchWorkbench() {
                 void restoreKeywords(ids)
                   .then((restored) => {
                     reloadKeywords();
-                    toast.success(`Restored ${restored} keyword${restored === 1 ? "" : "s"}`);
+                    toast.success(
+                      `Restored ${restored} keyword${restored === 1 ? "" : "s"}`,
+                    );
                   })
                   .catch((error) => {
                     toast.error("Could not restore keywords", {
@@ -384,14 +378,6 @@ export default function KeywordResearchWorkbench() {
     [archiving, reloadKeywords],
   );
 
-  const selectedRows = useMemo(
-    () =>
-      sorted
-        .filter((row) => selectedIds.has(row.id))
-        .map((row) => ({ id: row.id, phrase: row.phrase })),
-    [sorted, selectedIds],
-  );
-
   const handleRefreshAll = useCallback(async () => {
     const phrases = sorted.map((row) => row.phrase);
     if (phrases.length === 0) return;
@@ -400,7 +386,9 @@ export default function KeywordResearchWorkbench() {
       await refreshVolume(phrases.slice(0, 1000), false);
       toast.success("Volume refresh complete");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Volume refresh failed");
+      toast.error(
+        error instanceof Error ? error.message : "Volume refresh failed",
+      );
     } finally {
       setRefreshing(false);
     }
@@ -426,17 +414,7 @@ export default function KeywordResearchWorkbench() {
    */
   const getWriteHandlers = () => ({
     library_search: (value: unknown) => {
-      if (typeof value !== "string") {
-        throw new Error(
-          `library_search expects a string (empty string clears the filter), got ${Array.isArray(value) ? "array" : typeof value}.`,
-        );
-      }
-      if (/[\r\n]/.test(value)) {
-        throw new Error(
-          "library_search is a single-line filter box — newlines are not accepted.",
-        );
-      }
-      setSearch(value);
+      setSearch(parseLibrarySearchWrite(value));
     },
     cluster_scope: (value: unknown) => {
       if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -483,16 +461,161 @@ export default function KeywordResearchWorkbench() {
       const label = (patch.primary_keyword as string | undefined)?.trim();
       // Appending onto an existing cluster inherits its name; every other
       // case is naming a NEW cluster, so the label is required.
-      const appendTo = patch.mode === "append" ? clusterPhrases : null;
-      const nextLabel = label ?? (appendTo ? clusterPrimaryKeyword : null);
+      const appendTo =
+        patch.mode === "append" ? clusterPhrasesRef.current : null;
+      const nextLabel =
+        label ?? (appendTo ? clusterPrimaryKeywordRef.current : null);
       if (!nextLabel) {
         throw new Error(
           "cluster_scope: primary_keyword is required — there is no cluster on screen to append to, so this write names a new one.",
         );
       }
+      setSelectedIds(new Set());
       setCluster(nextLabel, [...(appendTo ?? []), ...phrases]);
     },
   });
+  const columns: MatrxColumnDef<KeywordWithMarket>[] = [
+    {
+      id: "phrase",
+      accessorKey: "phrase",
+      header: "Keyword",
+      filter: "text",
+      cellKind: "text",
+      cell: (row) => (
+        <button
+          type="button"
+          className="font-medium text-foreground hover:underline"
+          onClick={() => openKeywordIntel({ phrase: row.phrase })}
+        >
+          {row.phrase}
+        </button>
+      ),
+    },
+    {
+      id: "source",
+      accessorFn: (row) =>
+        researchIds === null
+          ? "unknown"
+          : researchIds.has(row.id)
+            ? "research"
+            : "manual",
+      header: "Source",
+      filter: "select",
+      cell: (row) => (
+        <KeywordSourceChip
+          discovered={researchIds === null ? null : researchIds.has(row.id)}
+        />
+      ),
+    },
+    {
+      id: "volume",
+      accessorFn: (row) => usMarket(row)?.search_volume ?? null,
+      header: "Volume",
+      filter: "number",
+      align: "right",
+      cell: (row) => formatSearchVolume(usMarket(row)?.search_volume),
+    },
+    {
+      id: "trend",
+      accessorFn: (row) => usMarket(row)?.growth_rate ?? null,
+      header: "Trend",
+      filter: "number",
+      cell: (row) => (
+        <KeywordTrendSparkline points={monthlyPoints(usMarket(row))} />
+      ),
+    },
+    {
+      id: "competition",
+      accessorFn: (row) => usMarket(row)?.competition_index ?? null,
+      header: "Competition",
+      filter: "number",
+      cell: (row) => {
+        const market = usMarket(row);
+        return (
+          <KeywordCompetitionBadge
+            competition={market?.competition}
+            competitionIndex={market?.competition_index}
+          />
+        );
+      },
+    },
+    {
+      id: "cpc",
+      accessorFn: (row) => usMarket(row)?.cpc ?? null,
+      header: "CPC",
+      filter: "number",
+      align: "right",
+      cell: (row) => formatCpc(usMarket(row)?.cpc),
+    },
+    {
+      id: "trajectory",
+      accessorFn: (row) => usMarket(row)?.demand_trajectory ?? null,
+      header: "Trajectory",
+      filter: "select",
+      cell: (row) => (
+        <TrajectoryBadge value={usMarket(row)?.demand_trajectory ?? null} />
+      ),
+    },
+    {
+      id: "intent_class",
+      accessorKey: "intent_class",
+      header: "Intent",
+      filter: "select",
+      cell: (row) => <KeywordIntentChip intentClass={row.intent_class} />,
+    },
+  ];
+  const toolbar = {
+    searchValue: search,
+    onSearchChange: (value: string) => {
+      setSelectedIds(new Set());
+      setSearch(value);
+    },
+    searchPlaceholder: "Filter keywords",
+    leading:
+      clusterPhrases && clusterPrimaryKeyword ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 px-2.5 py-1 text-xs text-foreground">
+          Cluster: “{clusterPrimaryKeyword}” · {sorted.length}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedIds(new Set());
+              clearCluster();
+            }}
+            aria-label="Show the full keyword library"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      ) : (
+        <span className="text-xs text-muted-foreground">
+          {loading ? "Loading…" : `${sorted.length} keywords in the library`}
+        </span>
+      ),
+    actions: (
+      <div className="flex items-center gap-2">
+        {volumeStage ? (
+          <span className="text-xs text-muted-foreground">{volumeStage}</span>
+        ) : null}
+        {clusterPhrases ? (
+          <button
+            type="button"
+            onClick={() => void handleRefreshAll()}
+            disabled={refreshing || sorted.length === 0}
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+            title="Fetch market data for this cluster’s stale or missing keywords"
+          >
+            {refreshing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Refresh volume
+          </button>
+        ) : null}
+      </div>
+    ),
+  };
 
   return (
     <SurfaceRuntimeProvider
@@ -500,172 +623,127 @@ export default function KeywordResearchWorkbench() {
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
     >
-    <div
-      className="flex h-full flex-col overflow-hidden"
-      style={{ paddingTop: "var(--shell-header-h)" }}
-    >
-      {/* Research launcher — the canonical shared component (also hosted by
+      <div
+        className="flex h-full flex-col overflow-hidden"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
+        {/* Research launcher — the canonical shared component (also hosted by
           KeywordResearchWindow, opened from anywhere). */}
-      <div className="border-b border-border px-4 py-3">
-        <KeywordResearchLauncher
-          run={run}
-          runResearch={runResearch}
-          // This page mounts the surface, so the launcher services its
-          // `research_input_keyword` target here (the window mount does not).
-          writeTargetSurfaceName="matrx-user/keyword-research"
-          // THE FLOATING LAW: the keyword table lives directly under this bar,
-          // so the run streams in the floating LiveRunWindow. An inline feed
-          // pushed the table the user is reading down the page on every run.
-          liveFeed="floating"
-          onKeywordChange={(keyword) => {
-            stagedKeywordRef.current = keyword;
-          }}
-        />
-      </div>
-
-      {/* Explorer toolbar */}
-      <div className="flex items-center gap-2 border-b border-border px-4 py-2">
-        <div className="relative w-64">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Filter keywords"
-            className="h-8 w-full rounded-md border border-border bg-background pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            style={{ fontSize: "16px" }}
+        <div className="border-b border-border px-4 py-3">
+          <KeywordResearchLauncher
+            run={run}
+            runResearch={runResearch}
+            // This page mounts the surface, so the launcher services its
+            // `research_input_keyword` target here (the window mount does not).
+            writeTargetSurfaceName="matrx-user/keyword-research"
+            // THE FLOATING LAW: the keyword table lives directly under this bar,
+            // so the run streams in the floating LiveRunWindow. An inline feed
+            // pushed the table the user is reading down the page on every run.
+            liveFeed="floating"
+            onKeywordChange={(keyword) => {
+              stagedKeywordRef.current = keyword;
+            }}
           />
         </div>
-        {clusterPhrases && clusterPrimaryKeyword ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 px-2.5 py-1 text-xs text-foreground">
-            Cluster: “{clusterPrimaryKeyword}” · {sorted.length}
-            <button
-              type="button"
-              onClick={clearCluster}
-              aria-label="Show the full keyword library"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground">
-            {loading ? "Loading…" : `${sorted.length} keywords in the library`}
-          </span>
-        )}
-        {selectedRows.length > 0 && (
-          <span className="inline-flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void archiveRows(selectedRows)}
-              disabled={archiving}
-              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
-              title="Soft-archive the selected keywords from the library (undoable)"
-            >
-              {archiving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Archive className="h-3.5 w-3.5" />
-              )}
-              Archive {selectedRows.length} selected
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedIds(new Set())}
-              className="text-xs text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Clear selection
-            </button>
-          </span>
-        )}
-        <div className="flex-1" />
-        {volumeStage && (
-          <span className="text-xs text-muted-foreground">{volumeStage}</span>
-        )}
-        {clusterPhrases && (
-        <button
-          type="button"
-          onClick={() => void handleRefreshAll()}
-          disabled={refreshing || sorted.length === 0}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
-          title="Fetch market data for THIS cluster\u2019s stale/missing keywords only (30-day policy; paid provider call)"
-        >
-          {refreshing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
-          Refresh volume
-        </button>
-        )}
-      </div>
 
-      {/* Table */}
-      <div className="min-h-0 flex-1 overflow-auto">
-        {loadError ? (
-          <p className="px-4 py-6 text-sm text-destructive">{loadError}</p>
-        ) : sorted.length === 0 && !loading ? (
-          <div className="px-4 py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              No keywords yet. Research a primary keyword above to seed the universe.
-            </p>
-          </div>
-        ) : (
-          <table className={cn("border-collapse text-sm", MOBILE_TABLE)}>
-            <thead className="sticky top-0 z-10 bg-background">
-              <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="w-8 px-2 py-2">
-                  <Checkbox
-                    checked={allVisibleSelected}
-                    onCheckedChange={(checked) =>
-                      toggleSelectAll(checked === true)
+        <div className="min-h-0 flex-1 overflow-auto p-3">
+          {loadError ? (
+            <p className="px-4 py-6 text-sm text-destructive">{loadError}</p>
+          ) : (
+            <MatrxDataTable
+              data={sorted}
+              columns={columns}
+              getRowId={(row) => row.id}
+              isLoading={loading}
+              toolbar={toolbar}
+              pageSize={25}
+              pageSizeOptions={[10, 25, 50, 100]}
+              selection={{
+                selectedIds: visibleSelectedIds,
+                onSelectedIdsChange: (ids) => setSelectedIds(new Set(ids)),
+                noun: "keyword",
+                actions: (selected) => (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void archiveRows(
+                        selected.map((row) => ({
+                          id: row.id,
+                          phrase: row.phrase,
+                        })),
+                      )
                     }
-                    aria-label="Select all visible keywords"
-                    className="h-3.5 w-3.5"
-                  />
-                </th>
-                <th className="w-8 px-2 py-2" aria-label="Expand" />
-                <th className="px-2 py-2 font-semibold">Keyword</th>
-                <th className="px-2 py-2 font-semibold">Source</th>
-                <th className="px-2 py-2 text-right font-semibold">Volume</th>
-                <th className="px-2 py-2 font-semibold">Trend</th>
-                <th className="px-2 py-2 font-semibold">Competition</th>
-                <th className="px-2 py-2 text-right font-semibold">CPC</th>
-                <th className="px-2 py-2 font-semibold">Trajectory</th>
-                <th className="px-2 py-2 font-semibold">Intent</th>
-                <th className="w-10 px-2 py-2" aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((row) => {
-                const market = usMarket(row);
-                const expanded = expandedId === row.id;
+                    disabled={archiving}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+                  >
+                    {archiving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Archive className="h-3.5 w-3.5" />
+                    )}
+                    Archive selected
+                  </button>
+                ),
+              }}
+              detail={{
+                title: (row) => row.phrase,
+                render: (row) => (
+                  <KeywordDetail row={row} loadEdges={loadEdges} />
+                ),
+              }}
+              rowActions={(row) => {
+                const menuConfig = (): ItemMenuConfig => ({
+                  header: { title: row.phrase },
+                  sections: [
+                    {
+                      items: [
+                        {
+                          id: "intel",
+                          label: "Keyword Intelligence",
+                          icon: BrainCircuit,
+                          onSelect: () => {
+                            openKeywordIntel({ phrase: row.phrase });
+                          },
+                        },
+                      ],
+                    },
+                    {
+                      items: [
+                        {
+                          id: "archive",
+                          label: "Archive from library",
+                          icon: Archive,
+                          tone: "destructive",
+                          onSelect: () =>
+                            void archiveRows([
+                              { id: row.id, phrase: row.phrase },
+                            ]),
+                        },
+                      ],
+                    },
+                  ],
+                });
                 return (
-                  <FragmentRow
-                    key={row.id}
-                    row={row}
-                    market={market}
-                    expanded={expanded}
-                    onToggle={() => setExpandedId(expanded ? null : row.id)}
-                    loadEdges={loadEdges}
-                    selected={selectedIds.has(row.id)}
-                    onSelectedChange={(checked) =>
-                      toggleSelected(row.id, checked)
-                    }
-                    researchDiscovered={
-                      researchIds === null ? null : researchIds.has(row.id)
-                    }
-                    onArchive={() =>
-                      void archiveRows([{ id: row.id, phrase: row.phrase }])
-                    }
-                    onOpenIntel={() => openKeywordIntel({ phrase: row.phrase })}
-                  />
+                  <ItemMenu config={menuConfig}>
+                    <button
+                      type="button"
+                      aria-label={`Options for ${row.phrase}`}
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </button>
+                  </ItemMenu>
                 );
-              })}
-            </tbody>
-          </table>
-        )}
+              }}
+              emptyState={{
+                title: "No keywords yet",
+                description:
+                  "Research a primary keyword above to seed the universe.",
+              }}
+            />
+          )}
+        </div>
       </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }
@@ -685,130 +763,5 @@ function KeywordSourceChip({ discovered }: { discovered: boolean | null }) {
     <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
       Manual
     </span>
-  );
-}
-
-function FragmentRow({
-  row,
-  market,
-  expanded,
-  onToggle,
-  loadEdges,
-  selected,
-  onSelectedChange,
-  researchDiscovered,
-  onArchive,
-  onOpenIntel,
-}: {
-  row: KeywordWithMarket;
-  market: KeywordMarketRow | null;
-  expanded: boolean;
-  onToggle: () => void;
-  loadEdges: (keywordId: string) => Promise<KeywordEdgeView[]>;
-  selected: boolean;
-  onSelectedChange: (checked: boolean) => void;
-  researchDiscovered: boolean | null;
-  onArchive: () => void;
-  onOpenIntel: () => void;
-}) {
-  const menuConfig = (): ItemMenuConfig => ({
-    header: { title: row.phrase },
-    sections: [
-      {
-        items: [
-          {
-            id: "intel",
-            label: "Keyword Intelligence",
-            icon: BrainCircuit,
-            onSelect: onOpenIntel,
-          },
-        ],
-      },
-      {
-        items: [
-          {
-            id: "archive",
-            label: "Archive from library",
-            icon: Archive,
-            tone: "destructive",
-            onSelect: onArchive,
-          },
-        ],
-      },
-    ],
-  });
-
-  return (
-    <>
-      <tr
-        className="cursor-pointer border-b border-border/60 transition-colors hover:bg-accent/50"
-        onClick={onToggle}
-      >
-        <td
-          className="px-2 py-1.5"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <Checkbox
-            checked={selected}
-            onCheckedChange={(checked) => onSelectedChange(checked === true)}
-            aria-label={`Select ${row.phrase}`}
-            className="h-3.5 w-3.5"
-          />
-        </td>
-        <td className="px-2 py-1.5 text-muted-foreground">
-          {expanded ? (
-            <ChevronDown className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5" />
-          )}
-        </td>
-        <td className="px-2 py-1.5 font-medium text-foreground">{row.phrase}</td>
-        <td className="px-2 py-1.5">
-          <KeywordSourceChip discovered={researchDiscovered} />
-        </td>
-        <td className="px-2 py-1.5 text-right tabular-nums text-foreground">
-          {formatSearchVolume(market?.search_volume)}
-        </td>
-        <td className="px-2 py-1.5">
-          <KeywordTrendSparkline points={monthlyPoints(market)} />
-        </td>
-        <td className="px-2 py-1.5">
-          <KeywordCompetitionBadge
-            competition={market?.competition}
-            competitionIndex={market?.competition_index}
-          />
-        </td>
-        <td className="px-2 py-1.5 text-right tabular-nums text-foreground">
-          {formatCpc(market?.cpc)}
-        </td>
-        <td className="px-2 py-1.5">
-          <TrajectoryBadge value={market?.demand_trajectory ?? null} />
-        </td>
-        <td className="px-2 py-1.5">
-          <KeywordIntentChip intentClass={row.intent_class} />
-        </td>
-        <td
-          className="px-2 py-1.5"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <ItemMenu config={menuConfig}>
-            <button
-              type="button"
-              aria-label={`Options for ${row.phrase}`}
-              className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <MoreVertical className="h-3.5 w-3.5" />
-            </button>
-          </ItemMenu>
-        </td>
-      </tr>
-      {expanded && (
-        <tr>
-          <td colSpan={11} className="p-0">
-            <KeywordDetail row={row} loadEdges={loadEdges} />
-          </td>
-        </tr>
-      )}
-    </>
   );
 }

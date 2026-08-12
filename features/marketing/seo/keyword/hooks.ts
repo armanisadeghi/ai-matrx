@@ -12,7 +12,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
-import { listKeywordEdges, listKeywordsWithMarket } from "@/features/marketing/seo/keyword-research/data/queries";
+import {
+  listKeywordEdges,
+  listKeywordsWithMarket,
+} from "@/features/marketing/seo/keyword-research/data/queries";
 import { extractErrorMessage } from "@/utils/errors";
 
 import {
@@ -37,15 +40,14 @@ export const seoKeywordKeys = {
   pageQueries: (pageId: string) =>
     [...seoKeywordKeys.all, "page-queries", pageId] as const,
   pageSearchTotals: (pageId: string, days: number | null) =>
-    [...seoKeywordKeys.all, "page-search-totals", pageId, days ?? "all"] as const,
-  pageQueryStats: (pageId: string, days: number | null, limit: number) =>
     [
       ...seoKeywordKeys.all,
-      "page-query-stats",
+      "page-search-totals",
       pageId,
       days ?? "all",
-      limit,
     ] as const,
+  pageQueryStats: (pageId: string, days: number | null) =>
+    [...seoKeywordKeys.all, "page-query-stats", pageId, days ?? "all"] as const,
 };
 
 /** Resolve a (caller-debounced) phrase against the keyword plane. */
@@ -117,23 +119,22 @@ export function usePageSearchTotals(
 ) {
   return useQuery({
     queryKey: seoKeywordKeys.pageSearchTotals(pageId ?? "", days),
-    queryFn: ({ signal }) => getPageSearchTotals(pageId as string, days, signal),
+    queryFn: ({ signal }) =>
+      getPageSearchTotals(pageId as string, days, signal),
     enabled: Boolean(pageId),
     staleTime: 5 * 60_000,
   });
 }
 
-/** Range-aware per-query breakdown for one page (higher limit than the
- * top-queries evidence list; carries a loud truncation flag). */
+/** Complete range-aware per-query breakdown for one page; the raw fact read
+ * remains bounded and carries a loud truncation flag. */
 export function usePageQueryStats(
   pageId: string | null | undefined,
   days: number | null,
-  limit = 50,
 ) {
   return useQuery({
-    queryKey: seoKeywordKeys.pageQueryStats(pageId ?? "", days, limit),
-    queryFn: ({ signal }) =>
-      listPageQueryStats(pageId as string, days, limit, signal),
+    queryKey: seoKeywordKeys.pageQueryStats(pageId ?? "", days),
+    queryFn: ({ signal }) => listPageQueryStats(pageId as string, days, signal),
     enabled: Boolean(pageId),
     staleTime: 5 * 60_000,
   });

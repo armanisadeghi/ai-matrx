@@ -12,6 +12,8 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LineChart, Loader2, RefreshCw } from "lucide-react";
 
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
@@ -30,10 +32,13 @@ import {
   syncSiteAnalytics,
   type WebAnalyticsDailyRow,
 } from "@/features/marketing/analytics/data";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+
+interface AnalyticsDay {
+  date: string;
+  sessions: number;
+  users: number;
+  engagedSessions: number;
+}
 
 function integer(value: number): string {
   return Intl.NumberFormat().format(Math.round(value));
@@ -99,13 +104,46 @@ export function SiteAnalyticsCard({
   }
   const days = [...byDay.entries()]
     .sort(([a], [b]) => (a < b ? 1 : -1))
-    .slice(0, 14)
-    .map(([date, dayRows]) => ({
+    .map(([date, dayRows]): AnalyticsDay => ({
       date,
       sessions: dayRows.reduce((sum, r) => sum + r.sessions, 0),
       users: dayRows.reduce((sum, r) => sum + r.users, 0),
       engagedSessions: dayRows.reduce((sum, r) => sum + r.engaged_sessions, 0),
     }));
+  const columns: MatrxColumnDef<AnalyticsDay>[] = [
+    {
+      id: "date",
+      accessorKey: "date",
+      header: "Date",
+      filter: "text",
+      cellKind: "text",
+      cell: (day) => <span className="font-mono">{day.date}</span>,
+    },
+    {
+      id: "sessions",
+      accessorKey: "sessions",
+      header: "Sessions",
+      filter: "number",
+      align: "right",
+      cell: (day) => integer(day.sessions),
+    },
+    {
+      id: "users",
+      accessorKey: "users",
+      header: "Users",
+      filter: "number",
+      align: "right",
+      cell: (day) => integer(day.users),
+    },
+    {
+      id: "engagedSessions",
+      accessorKey: "engagedSessions",
+      header: "Engaged sessions",
+      filter: "number",
+      align: "right",
+      cell: (day) => integer(day.engagedSessions),
+    },
+  ];
 
   const analyticsCopy = webCopy({
     kind: "web-site-analytics",
@@ -117,12 +155,10 @@ export function SiteAnalyticsCard({
     lines: [
       ["GA4", ga4Enabled ? "connected" : "not connected"],
       ["Stored rows", rows?.length ?? 0],
-      ...days.map(
-        (day): [string, string] => [
-          day.date,
-          `${integer(day.sessions)} sessions · ${integer(day.users)} users · ${integer(day.engagedSessions)} engaged`,
-        ],
-      ),
+      ...days.map((day): [string, string] => [
+        day.date,
+        `${integer(day.sessions)} sessions · ${integer(day.users)} users · ${integer(day.engagedSessions)} engaged`,
+      ]),
     ],
     attributes: {
       site_id: siteId,
@@ -178,46 +214,20 @@ export function SiteAnalyticsCard({
         {loading && !rows ? (
           <div className="h-20 animate-pulse rounded-md border border-border bg-muted/40" />
         ) : null}
-        {!loading && rows && rows.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            {ga4Enabled
-              ? "No GA4 evidence stored yet — run a sync to populate the last 28 days."
-              : "Connect a Google Analytics 4 property in site integrations, then sync to populate daily sessions/users/engagement."}
-          </p>
-        ) : null}
-        {days.length ? (
-          <div className="overflow-x-auto">
-            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-              <thead>
-                <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                  <th className="py-1.5 pr-3 font-medium">Date</th>
-                  <th className="py-1.5 pr-3 font-medium text-right">
-                    Sessions
-                  </th>
-                  <th className="py-1.5 pr-3 font-medium text-right">Users</th>
-                  <th className="py-1.5 pr-3 font-medium text-right">
-                    Engaged sessions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {days.map((day) => (
-                  <tr key={day.date}>
-                    <td className="py-1.5 pr-3 font-mono">{day.date}</td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">
-                      {integer(day.sessions)}
-                    </td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">
-                      {integer(day.users)}
-                    </td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">
-                      {integer(day.engagedSessions)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {!loading ? (
+          <MatrxDataTable
+            data={days}
+            columns={columns}
+            getRowId={(day) => day.date}
+            pageSize={10}
+            pageSizeOptions={[10, 25, 50, 100]}
+            emptyState={{
+              title: "No Google Analytics evidence",
+              description: ga4Enabled
+                ? "Run a sync to populate persisted daily evidence."
+                : "Connect a Google Analytics 4 property, then run a sync.",
+            }}
+          />
         ) : null}
       </div>
     </section>

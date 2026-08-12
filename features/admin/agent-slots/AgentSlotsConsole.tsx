@@ -8,7 +8,13 @@
  * System-of-record: common-docs/systems/agent-slots/FEATURE.md.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Copy,
   GitBranch,
@@ -42,15 +48,22 @@ import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeC
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   AGENT_SLOTS_SURFACE_NAME,
+  AGENT_SLOTS_WRITE_TARGETS,
   createAgentSlotsScope,
+  type AgentSlotContract,
   type AgentSlotDetail,
+  type AgentSlotExemplar,
+  type AgentSlotExemplarDraft,
   type AgentSlotOverrideSummary,
   type AgentSlotSummary,
   type AgentSlotsHealthSummary,
 } from "@/features/surfaces/manifests/agent-slots.manifest";
 import { onSlotCacheInvalidated } from "@/features/agents/slots/service";
+import { parseSlotContract } from "@/features/agents/slots/overrides";
+import { readSlotBenchSnapshot } from "./bench-draft";
 import { SlotOverridePanel } from "@/features/agents/slots/components/SlotOverridePanel";
 import { SlotResolutionRibbon } from "@/features/agents/slots/components/SlotResolutionRibbon";
 import { SlotTestBench } from "./SlotTestBench";
@@ -1159,6 +1172,35 @@ export function AgentSlotsConsole() {
             };
           })
         : undefined;
+    // The slot's stored contract — the vocabulary an exemplar's `variables`
+    // object has to fill. Parsed with the SAME helper the override editor's
+    // contract check uses, never a re-read of the raw Json.
+    let contract: AgentSlotContract | undefined;
+    if (selectedRow) {
+      const parsed = parseSlotContract(selectedRow.slot.contract);
+      contract = {
+        required_variables: parsed.requiredVariables,
+        required_context_slots: parsed.requiredContextSlots,
+      };
+    }
+    // Bench state lives in SlotTestBench (a grandchild, mounted only while a
+    // slot workbench is open) and is published up through bench-draft.ts.
+    // Cross-check the slot id so a snapshot from a bench that has not caught
+    // up with the selection is never reported as this slot's.
+    const bench = readSlotBenchSnapshot();
+    const liveBench =
+      bench && selectedRow && bench.slotId === selectedRow.id ? bench : null;
+    const exemplars: AgentSlotExemplar[] | undefined = liveBench
+      ? liveBench.exemplars
+      : undefined;
+    const exemplarDraft: AgentSlotExemplarDraft | undefined = liveBench
+      ? {
+          open: liveBench.open,
+          label: liveBench.label,
+          variables: liveBench.variables,
+          user_input: liveBench.user_input,
+        }
+      : undefined;
     return createAgentSlotsScope({
       slot_count: rows.length,
       slots_summary: summaries,
@@ -1170,9 +1212,78 @@ export function AgentSlotsConsole() {
         selectedRow && data ? toSlotDetail(selectedRow, data) : undefined,
       selected_slot_health: selectedRow?.health,
       selected_slot_overrides: overrides,
+      selected_slot_contract: contract,
+      selected_slot_exemplars: exemplars,
+      slot_exemplar_draft: exemplarDraft,
       selection: window.getSelection()?.toString() || undefined,
     });
   };
+
+  // ── Surface write handlers — the console's layer ──────────────────────────
+  //
+  // `select_slot` is implemented HERE because this component owns `selectedId`
+  // AND mounts the provider (the `getWriteHandlers` half of the seam).
+  // `slot_exemplar_draft` gets a base REFUSAL here and its live implementation
+  // in `SlotTestBench` via `useSurfaceWriteHandlers`, which `resolveHandlers`
+  // merges OVER this layer whenever a slot workbench is open. These entries
+  // only ever run when no bench is mounted, and their whole job is to say so
+  // instead of letting the seam report a generic "declared target with no
+  // live handler".
+  //
+  // Rows and the current selection are read through refs, not the render
+  // closure: the writeback seam resolves every staged handler BEFORE the user
+  // confirms the first dialog, so a handler that validates against its
+  // render-time snapshot can act on stale data by the time Apply is pressed.
+  // Both are reassigned from the wrapper's `ref` callback below — the same
+  // live-ref idiom `UserTableViewer` uses, and the only one that stays fresh
+  // every render without touching a ref during render.
+  const rowsRef = useRef<SlotRow[]>(rows);
+  const selectedIdRef = useRef<string | null>(selectedId);
+
+  const getAgentSlotsWriteHandlers = (): SurfaceWriteHandlers => ({
+    [AGENT_SLOTS_WRITE_TARGETS.selectSlot]: (value: unknown) => {
+      if (typeof value !== "string" || value.trim() === "") {
+        throw new Error(
+          "select_slot takes a non-empty string — a slot's `id` (UUID) or its `slot_key`, both of which are in `slots_summary`.",
+        );
+      }
+      const key = value.trim();
+      const liveRows = rowsRef.current;
+      const match =
+        liveRows.find((r) => r.id === key) ??
+        liveRows.find((r) => r.slotKey === key) ??
+        null;
+      if (!match) {
+        const known = liveRows.map((r) => r.slotKey).join(", ");
+        throw new Error(
+          `No loaded slot matches "${key}". Pass a slot id (UUID) or slot_key from \`slots_summary\`.` +
+            (known ? ` Loaded slot_keys: ${known}.` : ""),
+        );
+      }
+      if (match.id === selectedIdRef.current) return;
+      // Dirty-draft guard: opening another slot remounts the workbench and
+      // throws away an exemplar the admin (or a previous write) has staged
+      // but not saved. Refuse loudly rather than silently discard it.
+      const bench = readSlotBenchSnapshot();
+      if (
+        bench &&
+        bench.slotId === selectedIdRef.current &&
+        (bench.label.trim() !== "" ||
+          bench.user_input.trim() !== "" ||
+          bench.variables.trim().replace(/\s+/g, "") !== "{}")
+      ) {
+        throw new Error(
+          "An unsaved exemplar draft is staged on the slot that is currently open. Opening another slot would discard it — the admin has to press \"Save exemplar\" or clear the form first.",
+        );
+      }
+      setSelectedId(match.id);
+    },
+    [AGENT_SLOTS_WRITE_TARGETS.exemplarDraft]: () => {
+      throw new Error(
+        "No slot workbench is open, so there is no exemplar composer to stage into. Open a slot first with `select_slot` — and do it in an EARLIER turn: handlers are resolved before any of them are applied, so an exemplar sent alongside the very first select_slot still lands here.",
+      );
+    },
+  });
 
   const columns = useMemo((): MatrxColumnDef<SlotRow>[] => {
     return [
@@ -1377,9 +1488,17 @@ export function AgentSlotsConsole() {
     <SurfaceRuntimeProvider
       surfaceName={AGENT_SLOTS_SURFACE_NAME}
       getScope={getSurfaceScope}
+      getWriteHandlers={getAgentSlotsWriteHandlers}
       isEditable={false}
     >
-      <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+      <div
+        ref={(node) => {
+          if (!node) return;
+          rowsRef.current = rows;
+          selectedIdRef.current = selectedId;
+        }}
+        className="flex h-full min-h-0 flex-col gap-3 p-4"
+      >
         <div className="min-h-0 flex-1" data-surface-value="slots_summary">
           <MatrxDataTable
             data={rows}

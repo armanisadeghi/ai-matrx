@@ -124,6 +124,7 @@ interface Report {
   parallelSlices: Finding[]; // `createSlice(` in unexpected paths (ESLint catches imports, this catches usage)
   frozenUrlCaptures: Finding[]; // capturing Asset.primary_url (freeze a URL that rots) without the file_id
   frozenDetectorEdits: Finding[]; // edits to the frozen content-detection literal sets (Shape System)
+  marketingRawTables: Finding[]; // Marketing owns one table system: MatrxDataTable
 }
 
 const COMPONENT_FILE_RE = /(?:^|\/)[A-Z][A-Za-z0-9]+\.tsx$/;
@@ -141,6 +142,18 @@ const PRIMARY_URL_CAPTURE_RE = /\.primary_url\b/;
 // The file subsystem legitimately defines/maps primary_url; exempt it.
 const FILE_INFRA_RE =
   /^(features\/files\/|components\/official\/Image(Asset|Crop))/;
+const MARKETING_TSX_RE = /^features\/marketing\/.*\.tsx$/;
+const MARKETING_RAW_TABLE_PATTERNS = [
+  { pattern: /<table\b/i, detail: "raw JSX <table>" },
+  {
+    pattern: /["']@\/components\/ui\/table["']/,
+    detail: "components/ui/table import",
+  },
+  {
+    pattern: /["']@\/components\/official\/mobile-table\/mobileTable["']/,
+    detail: "mobile-table helper import",
+  },
+] as const;
 
 // ─── Frozen detector sets (Shape System) ────────────────────────────────────
 // The literal content-detection lists below are FROZEN until Phase 7 of the
@@ -163,7 +176,9 @@ interface FrozenLiteral {
 
 function setLiteralExtractor(name: string): (content: string) => string | null {
   return (content) =>
-    new RegExp(`const ${name} = new Set\\(\\[([\\s\\S]*?)\\]\\)`).exec(content)?.[1] ?? null;
+    new RegExp(`const ${name} = new Set\\(\\[([\\s\\S]*?)\\]\\)`).exec(
+      content,
+    )?.[1] ?? null;
 }
 
 // Extraction regexes mirror scripts/shape/check-shapes.ts (the detector census).
@@ -173,15 +188,21 @@ const FROZEN_DETECTOR_FILES: Record<string, FrozenLiteral[]> = {
       {
         name: "JSON_BLOCK_PATTERNS",
         extract: (c) =>
-          /const JSON_BLOCK_PATTERNS = \{([\s\S]*?)\n\} as const;/.exec(c)?.[1] ?? null,
+          /const JSON_BLOCK_PATTERNS = \{([\s\S]*?)\n\} as const;/.exec(
+            c,
+          )?.[1] ?? null,
       },
       {
         name: "ATTRIBUTE_XML_BLOCKS",
-        extract: (c) => /const ATTRIBUTE_XML_BLOCKS = \[([\s\S]*?)\]/.exec(c)?.[1] ?? null,
+        extract: (c) =>
+          /const ATTRIBUTE_XML_BLOCKS = \[([\s\S]*?)\]/.exec(c)?.[1] ?? null,
       },
     ],
   "features/agents/redux/execution-system/utils/stream-block-accumulator.ts": [
-    { name: "SIMPLE_XML_TAGS", extract: setLiteralExtractor("SIMPLE_XML_TAGS") },
+    {
+      name: "SIMPLE_XML_TAGS",
+      extract: setLiteralExtractor("SIMPLE_XML_TAGS"),
+    },
     { name: "ATTR_XML_TAGS", extract: setLiteralExtractor("ATTR_XML_TAGS") },
   ],
 };
@@ -204,7 +225,10 @@ let mergeBaseCache: string | null = null;
 
 /** Before/after content of a file for the diff being scanned (staged: HEAD →
  * index; branch: merge-base → HEAD — the same sides listChangedFiles diffs). */
-function fileVersions(args: Args, file: string): { before: string; after: string } {
+function fileVersions(
+  args: Args,
+  file: string,
+): { before: string; after: string } {
   if (args.mode === "staged") {
     return {
       before: tryGit(`git show HEAD:"${file}"`) ?? "",
@@ -237,6 +261,19 @@ function scanFrozenDetectors(args: Args, file: string, report: Report): void {
       report.frozenDetectorEdits.push({
         file,
         detail: `\`${literal.name}\` changed — ${FROZEN_DETECTOR_MESSAGE}`,
+      });
+    }
+  }
+}
+
+function scanMarketingTables(args: Args, file: string, report: Report): void {
+  if (!MARKETING_TSX_RE.test(file)) return;
+  const { after } = fileVersions(args, file);
+  for (const { pattern, detail } of MARKETING_RAW_TABLE_PATTERNS) {
+    if (pattern.test(after)) {
+      report.marketingRawTables.push({
+        file,
+        detail: `${detail} — use components/official/matrx-data-table`,
       });
     }
   }
@@ -322,6 +359,7 @@ function scan(args: Args, files: ChangedFile[]): Report {
     parallelSlices: [],
     frozenUrlCaptures: [],
     frozenDetectorEdits: [],
+    marketingRawTables: [],
   };
 
   for (const { status, path: file } of files) {
@@ -329,6 +367,7 @@ function scan(args: Args, files: ChangedFile[]): Report {
     if (status === "D") continue;
 
     scanFrozenDetectors(args, file, report);
+    scanMarketingTables(args, file, report);
 
     // Whole-file scans for ADDED files
     if (status === "A") {
@@ -411,7 +450,8 @@ function hasAnyFindings(r: Report): boolean {
       r.coercions.length +
       r.parallelSlices.length +
       r.frozenUrlCaptures.length +
-      r.frozenDetectorEdits.length >
+      r.frozenDetectorEdits.length +
+      r.marketingRawTables.length >
     0
   );
 }
@@ -449,7 +489,8 @@ function main() {
     report.coercions.length +
     report.parallelSlices.length +
     report.frozenUrlCaptures.length +
-    report.frozenDetectorEdits.length;
+    report.frozenDetectorEdits.length +
+    report.marketingRawTables.length;
 
   process.stdout.write(
     `\n${WARN_TAG}Doctrine: ${total} new primitive(s)/flag(s) — confirm none duplicate an existing one.\n\n`,
@@ -462,6 +503,7 @@ function main() {
   section("Slices", report.parallelSlices);
   section("Frozen URLs", report.frozenUrlCaptures);
   section("Frozen sets", report.frozenDetectorEdits);
+  section("Mkt tables", report.marketingRawTables);
 
   if (args.strict) {
     process.stdout.write(

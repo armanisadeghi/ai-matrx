@@ -539,12 +539,11 @@ export interface PageQueryStatsResult {
  * `dimension_profile='query_page'` GSC rows aggregated per query
  * (clicks/impressions summed, impression-weighted position), strongest
  * first. Same aggregation as `listPageTopQueries`, but with a selectable
- * range, a higher limit, and a loud truncation flag.
+ * range, the complete aggregated result, and a loud raw-read truncation flag.
  */
 export async function listPageQueryStats(
   pageId: string,
   days: number | null,
-  limit = 50,
   signal?: AbortSignal,
 ): Promise<PageQueryStatsResult> {
   const { rows, truncated } = await fetchGscDailyRows(pageId, days, 10, signal);
@@ -574,8 +573,7 @@ export async function listPageQueryStats(
       position:
         entry.impressions > 0 ? entry.positionWeight / entry.impressions : null,
     }))
-    .sort((a, b) => b.clicks - a.clicks || b.impressions - a.impressions)
-    .slice(0, limit);
+    .sort((a, b) => b.clicks - a.clicks || b.impressions - a.impressions);
   return { stats, truncated };
 }
 

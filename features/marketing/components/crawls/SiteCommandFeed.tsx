@@ -67,6 +67,45 @@ function counterEntries(
   return entries;
 }
 
+function formatSeconds(seconds: number): string {
+  if (seconds < 60) return `${seconds < 10 ? seconds.toFixed(1) : Math.round(seconds)}s`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m ${Math.round(seconds % 60)}s`;
+}
+
+/**
+ * Seconds spent per named phase, slowest first. The analysis worker fills
+ * `summary.timings` as each evidence loader / check / write phase completes,
+ * so a slow run names its own hot spot in this panel instead of leaving the
+ * user staring at a quiet counter grid. Live streams carry the summary at the
+ * top level; a rejoined run reads the session's stored stats, where analysis
+ * nests it under `analysis`.
+ */
+function timingEntries(
+  summary: Record<string, unknown> | null,
+): { key: string; label: string; value: string }[] {
+  if (!summary) return [];
+  const nested = summary.analysis;
+  const timings =
+    summary.timings ??
+    (nested && typeof nested === "object"
+      ? (nested as Record<string, unknown>).timings
+      : undefined);
+  if (!timings || typeof timings !== "object" || Array.isArray(timings)) return [];
+  return Object.entries(timings as Record<string, unknown>)
+    .flatMap(([key, value]) =>
+      typeof value === "number" && Number.isFinite(value) && value > 0
+        ? [{ key, seconds: value }]
+        : [],
+    )
+    .sort((a, b) => b.seconds - a.seconds)
+    .map(({ key, seconds }) => ({
+      key,
+      label: humanizeKey(key),
+      value: formatSeconds(seconds),
+    }));
+}
+
 /**
  * The scraper hands failures through verbatim — which is right, the cause has
  * to reach the user — but a raw upstream crash arrives wearing ANSI colour
@@ -112,6 +151,7 @@ export function SiteCommandFeed({
     return () => clearInterval(timer);
   }, [active]);
   const counters = counterEntries(run.summary);
+  const timings = timingEntries(run.summary);
   const rows: { key: string; sequence: number | null; event: PresentedCrawlEvent }[] =
     [];
   for (let index = run.events.length - 1; index >= 0; index -= 1) {
@@ -206,6 +246,26 @@ export function SiteCommandFeed({
               </p>
             </div>
           ))}
+        </div>
+      ) : null}
+
+      {timings.length ? (
+        <div className="shrink-0 border-b border-border/60 bg-muted/10 px-3 py-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Phase timings
+          </p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+            {timings.map((timing, index) => (
+              <span key={timing.key} className="whitespace-nowrap">
+                {index > 0 ? " · " : null}
+                {/* The slowest phase is the headline — it is why the run took
+                    this long. */}
+                <span className={index === 0 ? "font-medium text-foreground" : undefined}>
+                  {timing.label} {timing.value}
+                </span>
+              </span>
+            ))}
+          </p>
         </div>
       ) : null}
 

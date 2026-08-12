@@ -10,6 +10,7 @@ import {
   FileSearch,
   Loader2,
   RefreshCw,
+  Undo2,
 } from "lucide-react";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -44,11 +45,13 @@ import { resultReasoning } from "@/features/marketing/data/analysis-service";
 import {
   acknowledgeFinding,
   suppressFinding,
+  unacknowledgeFinding,
   unsuppressFinding,
 } from "@/features/marketing/data/finding-mutations";
 import type { MarketingAnalysisResult } from "@/features/marketing/data/analysis-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { FindingRemedyCard } from "@/features/marketing/components/analysis/FindingRemedyCard";
+import { FindingWriteTargets } from "@/features/marketing/components/analysis/FindingWriteTargets";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -405,6 +408,13 @@ export function FindingDetail({ findingId }: { findingId: string }) {
         });
       }}
     >
+    {/* The write half of this surface — handlers only, no markup. Mounted on
+        the DETAIL route only, so the list view offers agents no write tool. */}
+    <FindingWriteTargets
+      siteId={site.id}
+      finding={finding}
+      onWritten={afterFindingWrite}
+    />
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <section className="shrink-0 overflow-hidden rounded-lg border border-border bg-card">
         <div className="flex min-w-0 flex-col gap-2 p-3 sm:flex-row sm:items-start sm:justify-between">
@@ -465,6 +475,31 @@ export function FindingDetail({ findingId }: { findingId: string }) {
               >
                 <CheckCheck className="h-3.5 w-3.5" />
                 I&rsquo;m on it
+              </Button>
+            ) : null}
+            {finding.status === "acknowledged" ? (
+              // The USER TWIN of `finding_lifecycle_status: "open"`. The target
+              // lets an agent propose undoing an acknowledgement, and the same
+              // verb is in the shared row menu (`finding-actions.ts`), but the
+              // detail route offered no way to do it — a write the user can
+              // see land and cannot reverse where they are standing.
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0 gap-1.5"
+                onClick={() => {
+                  void unacknowledgeFinding(site.id, finding.id)
+                    .then(afterFindingWrite)
+                    .then(() => toast.success("Back to open"))
+                    .catch((error: unknown) =>
+                      toast.error("Could not change this finding", {
+                        description: extractErrorMessage(error),
+                      }),
+                    );
+                }}
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Not on it after all
               </Button>
             ) : null}
             {data.page ? (

@@ -1,5 +1,9 @@
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
+import type {
+  CompetitorTrackingStatus,
+  OpportunityStatus,
+} from "./autopsy-controls";
 
 export type CompetitorRow = Database["seo"]["Tables"]["competitor"]["Row"];
 export type CompetitorOpportunityRow =
@@ -68,7 +72,7 @@ export async function loadCompetitorWorkspace(siteId: string): Promise<{
 
 export async function updateCompetitorTracking(
   competitorId: string,
-  status: "candidate" | "tracking" | "ignored",
+  status: CompetitorTrackingStatus,
 ): Promise<void> {
   const { error } = await supabase.schema("seo").rpc(
     "update_competitor_tracking",
@@ -83,7 +87,7 @@ export async function updateCompetitorTracking(
 
 export async function updateOpportunityStatus(
   opportunityId: string,
-  status: "open" | "accepted" | "in_progress" | "completed" | "dismissed",
+  status: OpportunityStatus,
 ): Promise<void> {
   const { error } = await supabase.schema("seo").rpc(
     "update_competitor_opportunity_status",

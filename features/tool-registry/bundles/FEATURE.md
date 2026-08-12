@@ -96,6 +96,28 @@ runtime, so the agent never carries the raw member tools.
 
 ## Change Log
 
+- **2026-08-12** — **The console is agent-writable, and it emits a live surface
+  for the first time.** `BundlesAdminPage` now mounts a `SurfaceRuntimeProvider`
+  for `matrx-admin/bundles` over a page-scoped store
+  (`components/BundlesSurfaceRuntime.tsx`) that the list, the detail panel and
+  the New bundle dialog publish into — the surface had been manifest-only, so
+  an agent bound here was offered no write tool at all. Two ask-policy DRAFT
+  targets: `new_bundle_draft` (`{name?, description?}`, which OPENS the create
+  form when it is closed, because that form is a Radix modal and an admin
+  cannot open it and then reach the floating chat) and `bundle_description`
+  (the selected bundle's description; it refuses rather than picking a row for
+  you). Nothing saves — the admin still presses Create / Save.
+  A bundle's NAME is refused on an EXISTING row: it is `UNIQUE`, the lister
+  tool is named `bundle:list_<name>`, and `updateBundle` patches only the
+  bundle row, so a rename leaves every agent calling the old lister name.
+  Member aliases, membership, the Active/System toggles and the metadata JSON
+  are capability, not copy, and stay human. `NAME_RE` moved out of
+  `NewBundleDialog` into `bundlesVocabulary.ts` so the rule a human is
+  validated against, the rule an agent's write is checked against, and the rule
+  the manifest advertises are one definition. `NewBundleDialog`'s
+  `DialogContent` gained `onInteractOutside={preventDefault}` — dismissing the
+  surface-write confirm counted as an outside interaction and would have closed
+  the form, discarding the value just staged.
 - **2026-06-21** — **Lister enforcement** (`migrations/tool_bundle_lister_enforcement.sql`).
   Fixed the root bug: `create_bundle_with_lister` only *linked* a pre-existing
   lister (and the admin UI passed none), so every bundle made in the dashboard

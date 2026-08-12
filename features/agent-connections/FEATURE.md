@@ -14,6 +14,8 @@
 
 Agent Connections is the registry surface for what agents can reach — and the home of the one content-block store. The broader external-integrations story (MCP protocol, OAuth, credential storage) belongs to `features/api-integrations/` and `features/agents/services/mcp-oauth/`.
 
+Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md) — read it before building conversation browsing, provider launch, saved requests, skills, associations, or automation for this integration.
+
 ---
 
 ## The `skl` store — canonical content-block / render-definition state
@@ -150,6 +152,8 @@ Fidelity is a verdict, never an inference: `event_mirror` says native resume is 
 
 ## Change log
 
+- `2026-08-11` — Linked the canonical AI Work Hub plan that turns the existing Coding Platforms,
+  chat, skills, projects, tasks, war rooms, and schedules primitives into one user-facing workflow.
 - `2026-08-11` — The Skills vertical is **agent-writable**: `matrx-user/connections-skills` gained 5 ask-policy `mode:"draft"` targets over the skill editor (label, description, type, body, trigger patterns), with handlers in `features/skills/components/SkillDetailEditor.tsx`. `SkillsSection` now passes that editor `surfaceName` + `onDraftSnapshot` and spreads the returned draft into `getScope`, so the manifest's new `skill_draft_*` values report the STAGED form while `selected_skill_summary` keeps reporting the saved registry row. Nothing else in the vertical changed — the browser, ingest panel and category tree register no handlers and offer an agent no write tool. See `features/surfaces/FEATURE.md` (2026-08-11).
 - `2026-08-09` — Repurposed the Plugins placeholder as the live Coding Platforms bridge: direct owner-scoped `chat.coding_session` health/history, Claude-first detection/install truth, four-provider vocabulary, explicit event-mirror/native-ledger verdicts, retryable stale reads, and canonical conversation open/new-tab/peek/share/fork actions. Registered Claude Code, Codex, Cursor, and VS Code in conversation provenance filters; raw entry payloads remain owner-only and unread by the browser.
 - `2026-08-09` — Adversarial review closed four truthfulness gaps before release: the personal history now declares its owner predicate, initial load says “Checking” rather than “Storage reachable,” the 100-row ceiling is disclosed, invalid timestamps fail visibly, and canonical actions read canonical conversation/UES state instead of provider-binding fields or hard-coded defaults. Non-row Rename and orphan-producing Delete are suppressed on this surface.

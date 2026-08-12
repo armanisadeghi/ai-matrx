@@ -8,13 +8,22 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { useSetting } from "../hooks/useSetting";
+import {
+  ACCENT_THEME_OPTIONS,
+  DASHBOARD_LAYOUT_OPTIONS,
+  HEADER_LAYOUT_OPTIONS,
+  SIDEBAR_LAYOUT_OPTIONS,
+  THEME_MODE_OPTIONS,
+  WINDOW_MODE_OPTIONS,
+  type ThemeMode,
+} from "../agent-writable-settings";
 
 /**
  * Appearance — theme mode (theme slice, boot-critical) + display module
  * (userPreferences, warm-cache). Two persistence tiers in one tab.
  */
 export default function AppearanceTab() {
-  const [mode, setMode] = useSetting<"light" | "dark">("theme.mode");
+  const [mode, setMode] = useSetting<ThemeMode>("theme.mode");
   const [theme, setTheme] = useSetting<string>("userPreferences.display.theme");
   const [darkMode, setDarkMode] = useSetting<boolean>(
     "userPreferences.display.darkMode",
@@ -41,15 +50,12 @@ export default function AppearanceTab() {
       />
 
       <SettingsSection title="Theme" icon={Sun}>
-        <SettingsSegmented<"light" | "dark">
+        <SettingsSegmented<ThemeMode>
           label="Color mode"
           description="Applies before first paint — synced across tabs."
           value={mode}
           onValueChange={setMode}
-          options={[
-            { value: "light", label: "Light" },
-            { value: "dark", label: "Dark" },
-          ]}
+          options={THEME_MODE_OPTIONS}
         />
         <SettingsSwitch
           label="Dark mode (legacy flag)"
@@ -63,13 +69,7 @@ export default function AppearanceTab() {
           description="Custom color scheme overlays."
           value={theme}
           onValueChange={setTheme}
-          options={[
-            { value: "default", label: "Default" },
-            { value: "night", label: "Night" },
-            { value: "forest", label: "Forest" },
-            { value: "ocean", label: "Ocean" },
-            { value: "sunset", label: "Sunset" },
-          ]}
+          options={ACCENT_THEME_OPTIONS}
           last
         />
       </SettingsSection>
@@ -79,45 +79,25 @@ export default function AppearanceTab() {
           label="Dashboard layout"
           value={dashboardLayout}
           onValueChange={setDashboardLayout}
-          options={[
-            { value: "default", label: "Default" },
-            { value: "compact", label: "Compact" },
-            { value: "spacious", label: "Spacious" },
-            { value: "grid", label: "Grid" },
-          ]}
+          options={DASHBOARD_LAYOUT_OPTIONS}
         />
         <SettingsSelect
           label="Sidebar"
           value={sidebarLayout}
           onValueChange={setSidebarLayout}
-          options={[
-            { value: "default", label: "Default" },
-            { value: "collapsed", label: "Auto-collapse" },
-            { value: "expanded", label: "Always expanded" },
-            { value: "floating", label: "Floating" },
-          ]}
+          options={SIDEBAR_LAYOUT_OPTIONS}
         />
         <SettingsSelect
           label="Header"
           value={headerLayout}
           onValueChange={setHeaderLayout}
-          options={[
-            { value: "default", label: "Default" },
-            { value: "compact", label: "Compact" },
-            { value: "minimal", label: "Minimal" },
-            { value: "expanded", label: "Expanded" },
-          ]}
+          options={HEADER_LAYOUT_OPTIONS}
         />
         <SettingsSelect
           label="Window mode"
           value={windowMode}
           onValueChange={setWindowMode}
-          options={[
-            { value: "default", label: "Default" },
-            { value: "fullscreen", label: "Fullscreen" },
-            { value: "windowed", label: "Windowed" },
-            { value: "minimal", label: "Minimal" },
-          ]}
+          options={WINDOW_MODE_OPTIONS}
           last
         />
       </SettingsSection>

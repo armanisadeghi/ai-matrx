@@ -59,7 +59,7 @@ import { SurfaceBoundAgentsList } from "@/features/surfaces/components/bind/Surf
 import { useSurfaceBoundAgents } from "@/features/surfaces/hooks/useSurfaceBoundAgents";
 import { useFile } from "@/features/files/handler/hooks/useFile";
 
-const PDF_EXTRACTOR_SURFACE = "matrx-user/pdf-extractor";
+import { PDF_EXTRACTOR_SURFACE_NAME as PDF_EXTRACTOR_SURFACE } from "@/features/surfaces/manifests/pdf-extractor.manifest";
 
 // ─── Sub-tab type for per-extraction view ────────────────────────────────────
 

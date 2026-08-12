@@ -54,12 +54,50 @@ import {
   type UiSurfaceRow,
   type ToolExecutorRow,
 } from "@/features/tool-registry/lookups/services/lookups.service";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_LOOKUPS_SURFACE_NAME } from "@/features/surfaces/manifests/admin-lookups.manifest";
+import { LOOKUP_NAME_RULES } from "@/features/tool-registry/lookups/lookupsVocabulary";
+import {
+  LookupsSurfaceStoreProvider,
+  useLookupEditorRegistration,
+  useLookupsScopeBuilder,
+  useLookupsWriteHandlers,
+  usePublishLookupsTab,
+  usePublishOpenCreate,
+  usePublishToolExecutors,
+  usePublishUiClients,
+  usePublishUiSurfaces,
+} from "./LookupsSurfaceRuntime";
 
 type TabKey = "clients" | "surfaces" | "executors";
 
+/**
+ * Surface mount. The store provider wraps everything so the three CRUD
+ * children can publish into it, and `SurfaceRuntimeProvider` reads that same
+ * store for both the live scope and the `lookup_draft` handler — see
+ * `LookupsSurfaceRuntime.tsx` for why the state is threaded this way.
+ */
 export function LookupsAdminPage() {
-  const [tab, setTab] = useState<TabKey>("clients");
   return (
+    <LookupsSurfaceStoreProvider>
+      <LookupsAdminPageInner />
+    </LookupsSurfaceStoreProvider>
+  );
+}
+
+function LookupsAdminPageInner() {
+  const [tab, setTab] = useState<TabKey>("clients");
+  const getScope = useLookupsScopeBuilder();
+  const getWriteHandlers = useLookupsWriteHandlers();
+  usePublishLookupsTab(tab);
+
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_LOOKUPS_SURFACE_NAME}
+      getScope={getScope}
+      getWriteHandlers={getWriteHandlers}
+      isEditable
+    >
     <div className="min-h-dvh flex flex-col">
       <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3 bg-background">
         <DbIcon className="h-4 w-4 text-muted-foreground" />
@@ -99,10 +137,22 @@ export function LookupsAdminPage() {
         </div>
       </Tabs>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
 // ─── Generic helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Keep an unsaved row form open when something outside it is interacted with.
+ *
+ * Not cosmetic. The surface-write confirm dialog for `lookup_draft` opens as a
+ * layer ABOVE the row dialog, and dismissing that confirm counted as an
+ * interaction OUTSIDE this one — which closed the form and discarded the value
+ * the agent had just staged into it (caught in live verification, edit path).
+ * Escape, Cancel and the X still close normally.
+ */
+const keepOpenOnOutsideInteraction = (event: Event) => event.preventDefault();
 
 function ToolbarCard({
   title,
@@ -178,6 +228,8 @@ function UiClientCrud() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<UiClientRow | null>(null);
   const [creating, setCreating] = useState(false);
+  usePublishUiClients(rows);
+  usePublishOpenCreate("clients", () => setCreating(true));
 
   const load = async () => {
     setLoading(true);
@@ -305,8 +357,19 @@ function UiClientDialog({
   const [isActive, setIsActive] = useState(row?.is_active ?? true);
   const [busy, setBusy] = useState(false);
 
-  const NAME_RE = /^[a-z][a-z0-9-]*$/;
-  const nameValid = NAME_RE.test(name);
+  const nameValid = LOOKUP_NAME_RULES.clients.pattern.test(name);
+
+  // Registers this dialog as the live editor for the clients tab, so
+  // `lookup_draft` can stage through these exact setters while it is open.
+  useLookupEditorRegistration({
+    tab: "clients",
+    isEdit,
+    name,
+    description,
+    busy,
+    setName,
+    setDescription,
+  });
 
   const submit = async () => {
     if (!nameValid) {
@@ -332,7 +395,10 @@ function UiClientDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onInteractOutside={keepOpenOnOutsideInteraction}
+      >
         <DialogHeader>
           <DialogTitle>{isEdit ? `Edit ${row.name}` : "New UI Client"}</DialogTitle>
         </DialogHeader>
@@ -430,6 +496,8 @@ function UiSurfaceCrud() {
 
   const visible =
     filterClient === "__all__" ? rows : rows.filter((r) => r.client_name === filterClient);
+  usePublishUiSurfaces(rows, visible.length, filterClient);
+  usePublishOpenCreate("surfaces", () => setCreating(true));
 
   const onToggleActive = async (row: UiSurfaceRow, next: boolean) => {
     try {
@@ -578,8 +646,20 @@ function UiSurfaceDialog({
   const [busy, setBusy] = useState(false);
 
   const fullName = `${clientName}/${localPart}`;
-  const LOCAL_RE = /^[a-z0-9-]+$/;
-  const localValid = LOCAL_RE.test(localPart);
+  const localValid = LOOKUP_NAME_RULES.surfaces.pattern.test(localPart);
+
+  // The editable "name" on this tab is the LOCAL part only — the client
+  // prefix is its own select and the PK is composed as `<client>/<local>`,
+  // which is exactly what LOOKUP_NAME_RULES.surfaces documents.
+  useLookupEditorRegistration({
+    tab: "surfaces",
+    isEdit,
+    name: localPart,
+    description,
+    busy,
+    setName: setLocalPart,
+    setDescription,
+  });
 
   const submit = async () => {
     if (!clientName || !localValid) {
@@ -606,7 +686,10 @@ function UiSurfaceDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onInteractOutside={keepOpenOnOutsideInteraction}
+      >
         <DialogHeader>
           <DialogTitle>{isEdit ? `Edit ${row.name}` : "New UI Surface"}</DialogTitle>
         </DialogHeader>
@@ -697,6 +780,8 @@ function ToolExecutorCrud() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<ToolExecutorRow | null>(null);
   const [creating, setCreating] = useState(false);
+  usePublishToolExecutors(rows);
+  usePublishOpenCreate("executors", () => setCreating(true));
 
   const load = async () => {
     setLoading(true);
@@ -829,8 +914,17 @@ function ToolExecutorDialog({
   const [busy, setBusy] = useState(false);
   const [jsonErr, setJsonErr] = useState<string | null>(null);
 
-  const NAME_RE = /^[a-z][a-z0-9._-]*$/;
-  const nameValid = NAME_RE.test(name);
+  const nameValid = LOOKUP_NAME_RULES.executors.pattern.test(name);
+
+  useLookupEditorRegistration({
+    tab: "executors",
+    isEdit,
+    name,
+    description,
+    busy,
+    setName,
+    setDescription,
+  });
 
   const parentChoices = allRows.filter((r) => r.name !== name);
 
@@ -871,7 +965,10 @@ function ToolExecutorDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent
+        className="sm:max-w-2xl"
+        onInteractOutside={keepOpenOnOutsideInteraction}
+      >
         <DialogHeader>
           <DialogTitle>{isEdit ? `Edit ${row.name}` : "New Tool Executor"}</DialogTitle>
         </DialogHeader>

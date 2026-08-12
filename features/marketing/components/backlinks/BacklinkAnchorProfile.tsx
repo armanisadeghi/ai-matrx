@@ -10,6 +10,8 @@
 
 import { useState } from "react";
 import { ShieldCheck, TriangleAlert } from "lucide-react";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteLayoutClient";
 import { useBacklinkAnchorsFull } from "@/features/marketing/data/backlinks-hooks";
@@ -26,14 +28,10 @@ import {
   classifyAnchor,
   type AnchorClassKey,
   type AnchorClassifierContext,
+  type AnchorProfileEntry,
   type AnchorProfileRow,
   type AnchorProfileWarning,
 } from "@/features/marketing/components/backlinks/lib/anchors";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
-
-const DRILL_LIMIT = 25;
 
 /** Chart-token swatch per class — topical (the risk class) gets chart-1. */
 const CLASS_BAR_CLASSES: Record<AnchorClassKey, string> = {
@@ -99,8 +97,112 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
             row.backlinks > 0 && classifyAnchor(row.anchor, ctx) === drillClass,
         )
         .sort((a, b) => b.backlinks - a.backlinks)
-        .slice(0, DRILL_LIMIT)
     : [];
+  const profileColumns: MatrxColumnDef<AnchorProfileEntry>[] = [
+    {
+      id: "label",
+      accessorKey: "label",
+      header: "Kind of wording",
+      filter: "text",
+      cellKind: "text",
+      cell: (entry) => (
+        <span className="flex items-center gap-1.5">
+          <span
+            className={cn(
+              "h-2.5 w-2.5 shrink-0 rounded-sm",
+              CLASS_BAR_CLASSES[entry.key],
+            )}
+          />
+          <span
+            className={cn(
+              "text-foreground",
+              entry.key === "topical" && "font-medium",
+            )}
+          >
+            {entry.label}
+          </span>
+        </span>
+      ),
+    },
+    {
+      id: "description",
+      accessorFn: (entry) =>
+        ANCHOR_CLASSES.find((item) => item.key === entry.key)?.description ??
+        "",
+      header: "What it means",
+      filter: "text",
+      sortable: false,
+    },
+    {
+      id: "backlinks",
+      accessorKey: "backlinks",
+      header: "Backlinks",
+      filter: "number",
+      align: "right",
+      cell: (entry) => entry.backlinks.toLocaleString(),
+    },
+    {
+      id: "share",
+      accessorKey: "share",
+      header: "Share of links",
+      filter: "number",
+      align: "right",
+      cell: (entry) => pct(entry.share),
+    },
+    {
+      id: "anchorCount",
+      accessorKey: "anchorCount",
+      header: "Different phrases",
+      filter: "number",
+      align: "right",
+      cell: (entry) => entry.anchorCount.toLocaleString(),
+    },
+  ];
+  const concentratedColumns: MatrxColumnDef<
+    (typeof profile.concentrated)[number]
+  >[] = [
+    {
+      id: "anchor",
+      accessorKey: "anchor",
+      header: "Link wording",
+      filter: "text",
+      cellKind: "text",
+    },
+    {
+      id: "backlinks",
+      accessorKey: "backlinks",
+      header: "Backlinks",
+      filter: "number",
+      align: "right",
+      cell: (item) => item.backlinks.toLocaleString(),
+    },
+    {
+      id: "share",
+      accessorKey: "share",
+      header: "Share of links",
+      filter: "number",
+      align: "right",
+      cell: (item) => pct(item.share),
+    },
+  ];
+  const drillColumns: MatrxColumnDef<AnchorProfileRow>[] = [
+    {
+      id: "anchor",
+      accessorKey: "anchor",
+      header: "Link wording",
+      filter: "text",
+      cellKind: "text",
+      cell: (row) => row.anchor || "(no wording)",
+    },
+    {
+      id: "backlinks",
+      accessorKey: "backlinks",
+      header: "Backlinks",
+      filter: "number",
+      align: "right",
+      cell: (row) => row.backlinks.toLocaleString(),
+    },
+  ];
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto pb-2">
@@ -131,114 +233,29 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
                 />
               ))}
           </div>
-          <div className="overflow-x-auto">
-            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="py-1 pr-3 font-medium">Kind of wording</th>
-                  <th className="py-1 pr-3 font-medium">What it means</th>
-                  <th className="py-1 pr-3 text-right font-medium">
-                    Backlinks
-                  </th>
-                  <th className="py-1 pr-3 text-right font-medium">
-                    Share of links
-                  </th>
-                  <th className="py-1 text-right font-medium">
-                    Different phrases
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {profile.entries.map((entry) => {
-                  const meta = ANCHOR_CLASSES.find(
-                    (cls) => cls.key === entry.key,
-                  );
-                  const selected = drillClass === entry.key;
-                  return (
-                    <tr
-                      key={entry.key}
-                      className={cn(
-                        "cursor-pointer border-b border-border/60 transition-colors last:border-b-0 hover:bg-accent/60",
-                        selected && "bg-accent",
-                      )}
-                      onClick={() =>
-                        setDrillClass(selected ? null : entry.key)
-                      }
-                    >
-                      <td className="py-1.5 pr-3">
-                        <span className="flex items-center gap-1.5">
-                          <span
-                            className={cn(
-                              "h-2.5 w-2.5 shrink-0 rounded-sm",
-                              CLASS_BAR_CLASSES[entry.key],
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              "text-foreground",
-                              entry.key === "topical" && "font-medium",
-                            )}
-                          >
-                            {entry.label}
-                          </span>
-                        </span>
-                      </td>
-                      <td className="py-1.5 pr-3 text-muted-foreground">
-                        {meta?.description}
-                      </td>
-                      <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">
-                        {entry.backlinks.toLocaleString()}
-                      </td>
-                      <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">
-                        {pct(entry.share)}
-                      </td>
-                      <td className="py-1.5 text-right tabular-nums text-muted-foreground">
-                        {entry.anchorCount.toLocaleString()}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <MatrxDataTable
+            data={profile.entries}
+            columns={profileColumns}
+            getRowId={(entry) => entry.key}
+            pageSize={10}
+            selectedId={drillClass}
+            onRowOpen={(entry) =>
+              setDrillClass((current) =>
+                current === entry.key ? null : entry.key,
+              )
+            }
+          />
         </div>
       </SectionCard>
 
       {profile.concentrated.length > 0 ? (
         <SectionCard title="Phrases used on an unusually large share of links">
-          <div className="overflow-x-auto">
-            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="py-1 pr-3 font-medium">Link wording</th>
-                  <th className="py-1 pr-3 text-right font-medium">
-                    Backlinks
-                  </th>
-                  <th className="py-1 text-right font-medium">
-                    Share of links
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {profile.concentrated.map((item) => (
-                  <tr
-                    key={item.anchor}
-                    className="border-b border-border/60 last:border-b-0"
-                  >
-                    <td className="sm:max-w-md sm:truncate py-1.5 pr-3 text-foreground">
-                      {item.anchor}
-                    </td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">
-                      {item.backlinks.toLocaleString()}
-                    </td>
-                    <td className="py-1.5 text-right tabular-nums text-foreground">
-                      {pct(item.share)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <MatrxDataTable
+            data={profile.concentrated}
+            columns={concentratedColumns}
+            getRowId={(item) => item.anchor}
+            pageSize={10}
+          />
         </SectionCard>
       ) : null}
 
@@ -247,37 +264,23 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
           title={`Most-used wording: ${drillMeta.label.toLowerCase()}`}
           action={{ label: "Clear", onClick: () => setDrillClass(null) }}
         >
-          {drillRows.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No links use this kind of wording.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-                <tbody>
-                  {drillRows.map((row) => (
-                    <tr
-                      key={row.anchor ?? "(empty)"}
-                      className="border-b border-border/60 last:border-b-0"
-                    >
-                      <td className="sm:max-w-md sm:truncate py-1 pr-3 text-foreground">
-                        {row.anchor || "(no wording)"}
-                      </td>
-                      <td className="py-1 text-right tabular-nums text-muted-foreground">
-                        {row.backlinks.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <MatrxDataTable
+            data={drillRows}
+            columns={drillColumns}
+            getRowId={(row) => row.anchor ?? "(empty)"}
+            pageSize={10}
+            pageSizeOptions={[10, 25, 50, 100]}
+            emptyState={{
+              title: "No matching link wording",
+              description: "No links use this kind of wording.",
+            }}
+          />
         </SectionCard>
       ) : null}
 
       <p className="text-[11px] text-muted-foreground">
-        Based on our last check — the {rows.length} most-used phrases, by
-        number of links.
+        Based on our last check — the {rows.length} most-used phrases, by number
+        of links.
       </p>
     </div>
   );

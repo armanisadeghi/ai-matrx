@@ -9,8 +9,15 @@
  */
 
 import { lazy, Suspense, useState } from "react";
-import { Lightbulb, Loader2 } from "lucide-react";
+import { Clock, Lightbulb, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { isLowConfidence, SNOOZE_WINDOWS } from "../constants";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAssistRunner } from "../runtime/useAssistRunner";
@@ -37,8 +44,8 @@ export function AssistCard({
   /** Close the containing popover (after an action, or "Not now"). */
   onClose: () => void;
 }) {
-  const { acceptAssist, dismissAssist } = useAssistRunner();
-  const [busy, setBusy] = useState<"run" | "dismiss" | null>(null);
+  const { acceptAssist, dismissAssist, snoozeAssist } = useAssistRunner();
+  const [busy, setBusy] = useState<"run" | "dismiss" | "snooze" | null>(null);
   const descriptor = describeAssistAction(assist.action);
 
   const run = async () => {
@@ -52,6 +59,18 @@ export function AssistCard({
       }
       // Failures already toast + capture inside the runner; keep the card
       // open so the user still has the context.
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const snooze = async (window: (typeof SNOOZE_WINDOWS)[number]["key"]) => {
+    if (busy) return;
+    setBusy("snooze");
+    try {
+      await snoozeAssist(assist, window);
+      toast.success("Snoozed — this will come back on its own");
+      onClose();
     } finally {
       setBusy(null);
     }
@@ -80,6 +99,11 @@ export function AssistCard({
             {SOURCE_LABEL[assist.sourceKind]}
             {typeof assist.confidence === "number" &&
               ` · ${Math.round(assist.confidence * 100)}% confident`}
+            {isLowConfidence(assist.confidence) && (
+              <span className="ml-1 text-amber-600 dark:text-amber-500">
+                · low confidence, worth a second look
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -141,6 +165,36 @@ export function AssistCard({
           >
             Not now
           </Button>
+          {assist.id && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy !== null}
+                  className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                >
+                  {busy === "snooze" ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Clock className="h-3 w-3" />
+                  )}
+                  Later
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {SNOOZE_WINDOWS.map((window) => (
+                  <DropdownMenuItem
+                    key={window.key}
+                    onSelect={() => void snooze(window.key)}
+                    className="text-xs"
+                  >
+                    {window.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {assist.id && (
             <Button
               size="sm"

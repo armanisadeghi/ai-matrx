@@ -19,7 +19,7 @@ describe("validateSqlQueryWrite", () => {
   });
 
   it("stages DDL/DML text — inert until the admin presses Execute", () => {
-    const sql = "ALTER TABLE public.notes ADD COLUMN archived boolean";
+    const sql = "ALTER TABLE workbench.notes ADD COLUMN archived boolean";
     expect(validateSqlQueryWrite(sql)).toBe(sql);
   });
 
