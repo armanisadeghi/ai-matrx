@@ -2,6 +2,7 @@ import Link from "next/link";
 import { siteConfig } from "@/config/extras/site";
 
 const FOOTER_LINKS = [
+  { href: "/how-it-works", label: "How It Works" },
   { href: "/privacy-policy", label: "Privacy Policy" },
   { href: "/terms-of-service", label: "Terms of Service" },
   { href: "/contact", label: "Contact" },

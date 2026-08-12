@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
@@ -98,7 +100,9 @@ export function MatrxDataTable<T>({
   edit,
   selectedId: controlledSelectedId,
   onSelectedIdChange,
+  selection,
   rowActions,
+  rowWrapper,
   emptyState,
   pageSize: defaultPageSize = 25,
   pageSizeOptions = [10, 25, 50, 100],
@@ -108,7 +112,9 @@ export function MatrxDataTable<T>({
   mobile = "scroll",
   onRowOpen,
 }: MatrxDataTableProps<T>) {
-  const mobileScroll = mobile !== "plain";
+  // Two sticky leading cells would overlap, and a frozen checkbox identifies
+  // nothing — selection and the mobile frozen identity column are exclusive.
+  const mobileScroll = mobile !== "plain" && !selection;
   const controlledQuery = query?.mode === "controlled" ? query : null;
   const emitControlledQueryChange = useCallback(
     (
@@ -503,6 +509,73 @@ export function MatrxDataTable<T>({
   };
 
   const showActionsCol = windowEnabled || Boolean(rowActions) || showRowCopy;
+
+  // ── Multi-row selection ───────────────────────────────────────────────────
+  // Controlled by the consumer (see MatrxDataTableSelectionConfig). Everything
+  // here derives from `selection.selectedIds` — the table keeps no shadow copy
+  // that could disagree with the surface after a re-fetch.
+  const selectedIdSet = useMemo(
+    () => new Set(selection?.selectedIds ?? []),
+    [selection?.selectedIds],
+  );
+  const selectableRows = paginated.filter(
+    (row) => selection?.isRowSelectable?.(row) ?? true,
+  );
+  const selectedOnPage = selectableRows.filter((row) =>
+    selectedIdSet.has(getRowId(row)),
+  );
+  const allOnPageSelected =
+    selectableRows.length > 0 && selectedOnPage.length === selectableRows.length;
+  const someOnPageSelected =
+    selectedOnPage.length > 0 && !allOnPageSelected;
+  const selectedRows = useMemo(
+    () => data.filter((row) => selectedIdSet.has(getRowId(row))),
+    [data, selectedIdSet, getRowId],
+  );
+  // Anchor for shift-click range selection — the thing that makes clearing 40
+  // rows of noise one gesture instead of forty.
+  const lastToggledIndex = useRef<number | null>(null);
+
+  const setSelectedIds = (next: Set<string>) =>
+    selection?.onSelectedIdsChange([...next]);
+
+  const toggleRowSelected = (index: number, shiftKey: boolean) => {
+    if (!selection) return;
+    const row = paginated[index];
+    if (!row) return;
+    const id = getRowId(row);
+    const next = new Set(selectedIdSet);
+    const turningOn = !next.has(id);
+    const anchor = lastToggledIndex.current;
+    const from = shiftKey && anchor !== null ? Math.min(anchor, index) : index;
+    const to = shiftKey && anchor !== null ? Math.max(anchor, index) : index;
+    for (let i = from; i <= to; i += 1) {
+      const target = paginated[i];
+      if (!target) continue;
+      if (!(selection.isRowSelectable?.(target) ?? true)) continue;
+      const targetId = getRowId(target);
+      if (turningOn) next.add(targetId);
+      else next.delete(targetId);
+    }
+    lastToggledIndex.current = index;
+    setSelectedIds(next);
+  };
+
+  const toggleAllOnPage = () => {
+    if (!selection) return;
+    const next = new Set(selectedIdSet);
+    for (const row of selectableRows) {
+      const id = getRowId(row);
+      if (allOnPageSelected) next.delete(id);
+      else next.add(id);
+    }
+    lastToggledIndex.current = null;
+    setSelectedIds(next);
+  };
+
+  const selectionNoun = selection?.noun ?? "row";
+  const selectionCount = selection?.selectedIds.length ?? 0;
+  const leadingCols = selection ? 1 : 0;
   const renderedFacets = controlledQuery
     ? toolbar?.facets?.map((facet) =>
         facet.type === "button-group"
@@ -701,6 +774,33 @@ export function MatrxDataTable<T>({
         </div>
       )}
 
+      {/* Bulk bar — present only while rows are checked, so the toolbar's
+          normal actions never compete with a selection that isn't there. */}
+      {selection && selectionCount > 0 ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5">
+          <span className="text-xs font-medium text-foreground">
+            {selectionCount.toLocaleString()} {selectionNoun}
+            {selectionCount === 1 ? "" : "s"} selected
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => {
+              lastToggledIndex.current = null;
+              selection.onSelectedIdsChange([]);
+            }}
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear
+          </Button>
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            {selection.actions?.(selectedRows, selection.selectedIds)}
+          </div>
+        </div>
+      ) : null}
+
       {/* Table */}
       <div className="relative min-h-0 flex-1">
         <div
@@ -738,6 +838,26 @@ export function MatrxDataTable<T>({
           <table className="table w-max min-w-full max-w-none caption-bottom overflow-visible text-sm sm:w-full sm:min-w-0 sm:max-w-full">
             <thead className="sticky top-0 z-10 border-b border-border bg-muted/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur-sm">
               <tr>
+                {selection ? (
+                  <th className="h-9 w-9 px-2 text-left align-middle">
+                    <Checkbox
+                      checked={
+                        allOnPageSelected
+                          ? true
+                          : someOnPageSelected
+                            ? "indeterminate"
+                            : false
+                      }
+                      disabled={selectableRows.length === 0}
+                      onCheckedChange={toggleAllOnPage}
+                      aria-label={
+                        allOnPageSelected
+                          ? "Clear selection on this page"
+                          : "Select every row on this page"
+                      }
+                    />
+                  </th>
+                ) : null}
                 {visibleColumns.map((col, colIdx) => {
                   const id = columnId(col);
                   const meta = filterMeta.get(id);
@@ -812,6 +932,11 @@ export function MatrxDataTable<T>({
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={`sk-${i}`} className="border-b border-border/60">
+                    {selection ? (
+                      <td className="px-2 py-2">
+                        <Skeleton className="h-3.5 w-3.5" />
+                      </td>
+                    ) : null}
                     {visibleColumns.map((col) => (
                       <td key={columnId(col)} className="px-2 py-2">
                         <Skeleton className="h-5 w-full" />
@@ -827,7 +952,11 @@ export function MatrxDataTable<T>({
               ) : paginated.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={visibleColumns.length + (showActionsCol ? 1 : 0)}
+                    colSpan={
+                      visibleColumns.length +
+                      leadingCols +
+                      (showActionsCol ? 1 : 0)
+                    }
                     className="px-4 py-12 text-center"
                   >
                     <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
@@ -850,7 +979,8 @@ export function MatrxDataTable<T>({
                   const isSelected = selectedId === id;
                   const rowEdits = edits[id];
                   const displayRow = applyRowEdits(row, rowEdits);
-                  return (
+                  const isChecked = selectedIdSet.has(id);
+                  const rowNode = (
                     <tr
                       key={id}
                       data-row-id={id}
@@ -872,12 +1002,34 @@ export function MatrxDataTable<T>({
                         (detailEnabled || Boolean(onRowOpen)) &&
                           "cursor-pointer sm:hover:bg-muted/50",
                         isSelected && "bg-muted",
+                        isChecked && "bg-primary/5",
                         zebra &&
                           index % 2 === 1 &&
                           !isSelected &&
+                          !isChecked &&
                           "sm:bg-muted/20",
                       )}
                     >
+                      {selection ? (
+                        <td
+                          className="px-2 py-1.5 align-middle"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={isChecked}
+                            disabled={
+                              !(selection.isRowSelectable?.(row) ?? true)
+                            }
+                            aria-label={`Select this ${selectionNoun}`}
+                            // Radix hands the checkbox's own click through here;
+                            // shift-range needs the native event's modifier, so
+                            // the row toggles from onClick, not onCheckedChange.
+                            onClick={(e) =>
+                              toggleRowSelected(index, e.shiftKey)
+                            }
+                          />
+                        </td>
+                      ) : null}
                       {visibleColumns.map((col, colIdx) => {
                         const field = col.accessorKey
                           ? String(col.accessorKey)
@@ -1001,6 +1153,14 @@ export function MatrxDataTable<T>({
                         </td>
                       )}
                     </tr>
+                  );
+                  // The seam that keeps a surface from forking the table for a
+                  // right-click menu / drag handle / drop target. The wrapper
+                  // must emit the <tr> unchanged (Radix `asChild` does).
+                  return rowWrapper ? (
+                    <Fragment key={id}>{rowWrapper(row, rowNode)}</Fragment>
+                  ) : (
+                    rowNode
                   );
                 })
               )}

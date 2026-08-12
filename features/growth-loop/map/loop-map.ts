@@ -14,6 +14,13 @@
  * RULES FOR EDITING THIS FILE
  * 1. Status here must reflect LIVE CODE, never intent. Every `state` other than
  *    "missing" carries a `ref` an auditor can open and verify.
+ * 1b. 🚨 "LIVE" MEANS SHIPPED — on origin/main and deployed. Code sitting in a
+ *    working tree, however finished, is NOT live; that is what `status:
+ *    "in-progress"` is for, and the gap's `detail` must say so. This rule exists
+ *    because it was broken: the 2026-08-12 audit found ~10 gaps fully built on
+ *    one laptop, several with their MIGRATIONS ALREADY APPLIED to the live
+ *    database, while production ran none of the code. A map that counted those
+ *    as done would have been worse than no map.
  * 2. This file is the ONLY place statuses live. common-docs points here; it must
  *    never restate a status (that is how mirrors rot).
  * 3. Filling a gap = flipping its pipe state here in the SAME change as the code.
@@ -41,6 +48,25 @@ export interface PipeStatus {
     ref?: string;
 }
 
+/**
+ * The customer-facing face of a stage. Presence of this object is the
+ * "show publicly" flag — a stage without it never renders on /how-it-works.
+ *
+ * Copy rules (our user is a brilliant NON-technical expert):
+ * - No product jargon, no file names, no internal stage names.
+ *   "Realize page shell" is engineer-speak; "Create the pages" is not.
+ * - `plain` is ONE sentence a stranger understands in five seconds.
+ * - Never describe intent. If the stage cannot do it today, do not say it.
+ */
+export interface PublicStageInfo {
+    /** Customer-facing stage name. */
+    title: string;
+    /** One plain-English sentence. */
+    plain: string;
+    /** Lucide icon NAME — this file stays React-free (see FEATURE.md). */
+    icon: string;
+}
+
 export interface LoopStage {
     id: string;
     /** Short label rendered in the node. */
@@ -54,6 +80,8 @@ export interface LoopStage {
     pipes: Record<Pipe, PipeStatus>;
     /** Where a human enters this stage today. */
     entry?: string;
+    /** Present = this stage is shown on the public /how-it-works page. */
+    publicInfo?: PublicStageInfo;
 }
 
 export interface LoopEdge {
@@ -105,6 +133,11 @@ export const STAGES: LoopStage[] = [
         id: "research",
         label: "Research",
         blurb: "Learn everything about a brand, market and keywords, and write it up as one report.",
+        publicInfo: {
+            title: "Learn the market",
+            plain: "We study your business, your competitors, and what people are actually searching for — and write it all up as one report.",
+            icon: "Search",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["research.rs_topic", "research.rs_source", "research.rs_synthesis", "research.rs_document"],
         maturity: "production",
@@ -131,6 +164,11 @@ export const STAGES: LoopStage[] = [
         id: "plan",
         label: "Content plan",
         blurb: "Turn the research into the full list of pages the site should have, as a tree.",
+        publicInfo: {
+            title: "Plan every page",
+            plain: "That research becomes the complete list of pages your site should have, organised the way your visitors actually think.",
+            icon: "ListTree",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["plan.node", "plan.entity", "plan.profile"],
         maturity: "production",
@@ -157,6 +195,11 @@ export const STAGES: LoopStage[] = [
         id: "brief",
         label: "Page brief",
         blurb: "Write the core instructions for each individual page, with its own research behind it.",
+        publicInfo: {
+            title: "Decide what each page says",
+            plain: "Every single page gets its own instructions, with its own research behind it, before a word is written.",
+            icon: "FileText",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["plan.node.brief", "plan.node.attributes"],
         maturity: "production",
@@ -183,6 +226,11 @@ export const STAGES: LoopStage[] = [
         id: "realize",
         label: "Realize page shell",
         blurb: "Create the actual (empty) page in the CMS at the address the plan promised.",
+        publicInfo: {
+            title: "Create the pages",
+            plain: "Each planned page is created for real, at the exact web address the plan promised — nothing gets lost between the plan and the site.",
+            icon: "LayoutTemplate",
+        },
         repos: ["aidream", "db"],
         stores: ["client_pages (CMS project)", "client_pages.plan_node_id"],
         maturity: "near",
@@ -209,6 +257,11 @@ export const STAGES: LoopStage[] = [
         id: "fill",
         label: "Fill page body",
         blurb: "Write the real content of each page from its brief.",
+        publicInfo: {
+            title: "Write the content",
+            plain: "Every page is written from its own instructions, so it says something specific and useful instead of something generic.",
+            icon: "PenLine",
+        },
         repos: ["aidream", "db"],
         stores: ["plan.cms_fill_job", "plan.cms_fill_item", "client_pages.html_content_draft"],
         maturity: "near",
@@ -234,6 +287,11 @@ export const STAGES: LoopStage[] = [
         id: "publish",
         label: "Publish",
         blurb: "Make the page live for the public.",
+        publicInfo: {
+            title: "Put it live",
+            plain: "Nothing becomes public on its own. You look it over, and one click makes it live.",
+            icon: "Send",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["client_pages.is_published", "client_activity_log"],
         maturity: "production",
@@ -259,6 +317,11 @@ export const STAGES: LoopStage[] = [
         id: "serve",
         label: "Live site",
         blurb: "The page is served to real visitors on a real domain.",
+        publicInfo: {
+            title: "Your site, your domain",
+            plain: "Your pages are served to real visitors on your own web address.",
+            icon: "Globe",
+        },
         repos: ["my-matrx"],
         stores: ["client_sites.domain"],
         maturity: "near",
@@ -276,6 +339,11 @@ export const STAGES: LoopStage[] = [
         id: "crawl",
         label: "Crawl",
         blurb: "Our crawler visits the live site and records what is actually there.",
+        publicInfo: {
+            title: "Check what's really there",
+            plain: "We visit your live site the way a search engine does, and record exactly what it finds — not what you hoped it would find.",
+            icon: "ScanSearch",
+        },
         repos: ["aidream", "db"],
         stores: ["web.crawl_session", "web.page", "web.snapshot", "web.link_edge"],
         maturity: "production",
@@ -283,8 +351,8 @@ export const STAGES: LoopStage[] = [
         pipes: {
             code: {
                 state: "partial",
-                note: "web.crawl_schedule table exists but has NO dispatcher and NO writer; the only scheduled crawl dispatcher drives the LEGACY scraper schema instead.",
-                ref: "aidream/packages/matrx-scraper/matrx_scraper/db/models_web.py",
+                note: "One crawl world as of 2026-08-10 (G-CRAWL-DUAL): the legacy scraper.crawl_* store is in graveyard and the every-minute dispatcher drives web.crawl_schedule. Still partial only because the schedule WRITER side is G-CRAWL-SCHEDULE's remaining work.",
+                ref: "aidream/packages/matrx-scraper/matrx_scraper/web_crawl/schedules.py#dispatch_due_crawl_schedules",
             },
             human: {
                 state: "live",
@@ -301,6 +369,11 @@ export const STAGES: LoopStage[] = [
         id: "measure",
         label: "Measure",
         blurb: "Pull in the real numbers: Search Console, analytics, speed, rankings, backlinks.",
+        publicInfo: {
+            title: "Bring in the real numbers",
+            plain: "Where you rank, who visited, how fast the page loads, who links to you — the actual results, all in one place.",
+            icon: "BarChart3",
+        },
         repos: ["aidream", "db"],
         stores: ["seo.search_performance_daily", "seo.web_analytics_daily", "seo.page_performance", "seo.backlink_*"],
         maturity: "production",
@@ -323,6 +396,11 @@ export const STAGES: LoopStage[] = [
         id: "analyze",
         label: "Analyze",
         blurb: "Judge every page against what good looks like, and against how it is actually performing.",
+        publicInfo: {
+            title: "Find what's holding you back",
+            plain: "Every page is checked against what good looks like — and against how it is actually performing out in the world.",
+            icon: "SearchCheck",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["web.analysis_result", "web.finding", "web.snapshot.audit_metrics"],
         maturity: "production",
@@ -349,6 +427,11 @@ export const STAGES: LoopStage[] = [
         id: "suggest",
         label: "Suggest",
         blurb: "Turn what we learned into a one-click suggestion the user can accept.",
+        publicInfo: {
+            title: "Get told what to do next",
+            plain: "What we learn becomes a plain-English suggestion you can accept — not a report you have to decode first.",
+            icon: "Lightbulb",
+        },
         repos: ["ai-matrx", "db"],
         stores: ["platform.assists", "web.finding.status"],
         maturity: "stub",
@@ -374,6 +457,11 @@ export const STAGES: LoopStage[] = [
         id: "writeback",
         label: "Write back",
         blurb: "Push the accepted improvement into the page and back into the plan.",
+        publicInfo: {
+            title: "Improve it, and go again",
+            plain: "An accepted improvement is written back into the page and back into the plan — so the next pass starts from what you just learned.",
+            icon: "RefreshCw",
+        },
         repos: ["ai-matrx", "aidream", "db"],
         stores: ["client_pages (draft columns)", "plan.node.status_id", "seo metrics_desired"],
         maturity: "near",
@@ -635,66 +723,68 @@ export const GAPS: LoopGap[] = [
         id: "G-PUBLISH-CRAWL",
         title: "Publishing a page tells nobody",
         severity: "blocker",
-        status: "open",
+        status: "in-progress",
         at: "serve->crawl",
         breaks: ["code", "ai"],
         detail:
-            "cms publish() fans out only to the plan-status advance. No crawl is enqueued, no web.page anchor is created, nothing is invalidated. The loop is cut in half here: everything downstream waits for a human to remember to press Crawl.",
+            "BUILT BUT UNSHIPPED. aidream/services/web_announce/ (announce_cms_page_published: upserts the web.page anchor, enqueues a single-page capture) is called from cms/pages.py publish and backstopped by the cms_publish_crawl_reconcile task. All of it exists ONLY in the local aidream working tree — origin/main still has publish fanning out to advance_plan_status_for_published_page alone. Migration 0257 IS applied live and its scheduler task sits enabled=false / 0 runs, correctly gated until the handler deploys.",
         lane: "L1",
     },
     {
         id: "G-CRAWL-SCHEDULE",
-        title: "web.crawl_schedule has no dispatcher and no writer",
-        severity: "blocker",
-        status: "open",
+        title: "No UI can set a site's crawl cadence",
+        severity: "major",
+        status: "in-progress",
         at: "crawl",
-        breaks: ["code"],
+        breaks: ["human"],
         detail:
-            "The table exists with cadence/scope/next_run_at, but the only scheduled crawl dispatcher drives the LEGACY scraper schema. Marketing crawls are manual-only, so nothing re-measures a site on its own.",
+            "The DISPATCHER half is done and live: web_crawl_schedule_dispatch is registered on origin and the live task has run 41,230 times (5,061 failed — worth its own look). The WRITER half is built but unshipped and does not compile: crawl-schedule-service.ts, crawl-schedule-hooks.ts and CrawlScheduleCard.tsx are untracked and reference a CrawlSchedule type that features/marketing/types never exports. The live web.crawl_schedule table is still empty, so the dispatcher has nothing to dispatch.",
         lane: "L1",
     },
     {
         id: "G-SITEMAP",
         title: "Live sites emit no sitemap.xml and no robots.txt",
         severity: "major",
-        status: "open",
+        status: "in-progress",
         at: "publish->serve",
         breaks: ["code"],
         detail:
-            "The renderer serves pages but publishes no discovery surface, and nothing pings IndexNow or Search Console on publish. We are an SEO product whose own CMS does not tell search engines a page exists.",
+            "BUILT BUT UNSHIPPED. my-matrx has lib/render/sitemap.js + discovery.js and sitemap.xml.js / robots.txt.js for both the platform and custom-domain surfaces, with proxy.js updated — every one of those files is UNTRACKED in git, so production serves none of it. Still genuinely absent even locally: any IndexNow or Search Console submit ping on publish.",
         lane: "L1",
     },
     {
         id: "G-COLLECTIONS",
         title: "Collections render client-side only — invisible to crawlers",
         severity: "major",
-        status: "open",
+        status: "in-progress",
         at: "serve",
         breaks: ["code"],
-        detail: "Collection items are fetched in the browser, so neither Google nor our own crawler sees them. Content we generated cannot be measured.",
+        detail:
+            "BUILT BUT UNSHIPPED. my-matrx clientSiteRenderer.js now expands collection bindings server-side (findCollectionBindings / loadBoundCollections / expandCollectionBindings) with lib/collections/* helpers and a 205-line render test. The renderer edit is uncommitted and the helper files are untracked; production still renders collections in the browser.",
         lane: "L1",
     },
     {
         id: "G-FINDING-ASSIST",
-        title: "Findings never become suggestions",
-        severity: "blocker",
-        status: "open",
+        title: "Findings never reach the assists ledger",
+        severity: "major",
+        status: "in-progress",
         at: "analyze->suggest",
         breaks: ["code", "ai"],
         detail:
-            "The 15-check catalogue writes web.finding rows that no producer ever turns into a platform.assists chip. Exactly one SEO assist producer exists (Search Console). The analysis is real and the user is never offered it.",
+            "BUILT BUT UNSHIPPED. features/marketing/findings-assists-producer.ts (251 lines) is the missing ledger producer and is untracked. What IS shipped stops short: finding-remedies.ts registers 18 remedies and FindingRemedyCard renders them through makeEphemeralAssist, which deliberately writes no platform.assists row — so today they never reach the dock, never dedupe, and a dismissal never sticks.",
         lane: "L2",
     },
     {
         id: "G-FINDING-TRACK",
         title: "A user cannot act on a finding",
         severity: "major",
-        status: "open",
+        status: "closed",
         at: "suggest",
         breaks: ["human"],
         detail:
-            "web.finding has a full status model (open / acknowledged / resolved / reopened / suppressed) but the frontend never writes it. There is no acknowledge, no suppress, no 'I fixed this'.",
+            "CLOSED. features/marketing/data/finding-mutations.ts ships acknowledge / unacknowledge / resolve / reopen / suppress / unsuppress, bulk verbs, and whole-check suppression, wired into FindingDetail and the findings table.",
         lane: "L2",
+        evidence: "ai-matrx/features/marketing/data/finding-mutations.ts",
     },
     {
         id: "G-FINDING-FIX",
@@ -704,29 +794,29 @@ export const GAPS: LoopGap[] = [
         at: "suggest->writeback",
         breaks: ["code", "ai"],
         detail:
-            "Write-back machinery is mature and safe, but it can only be started from a human card or a chip. Accepting a finding does not draft a fix, and there is no purpose-built SEO fix agent to hand it to.",
+            "A purpose-built fixer slot was written — aidream/services/seo/finding_fix.py declares seo.finding_fixer — but it is local-only AND orphaned: zero importers, no router, no endpoint, and the seed script its own docstring names does not exist, so no agent is bound to the slot. Of the 18 shipped remedies, 17 are copy-able manual instructions and one launches seo.page_analyzer (an analyzer, in chat). No deterministic finding-to-draft writer exists; push-to-cms still has exactly one caller, the manual page card.",
         lane: "L2",
     },
     {
         id: "G-SUGGEST-FORK",
         title: "Three parallel suggestion systems",
         severity: "major",
-        status: "open",
+        status: "in-progress",
         at: "suggest",
         breaks: ["code", "human", "ai"],
         detail:
-            "platform.assists (the intended universal vehicle), web.finding (its own status enum), and kg-suggestions (its own tables + accept RPCs) all model 'here is something you could do'. Plus a dead extend.wbx_seo_audit. Pick one vehicle before building more producers.",
+            "ABSORB STARTED, UNSHIPPED. migrations/platform_assists_absorb_capabilities.sql plus an assists manager surface (features/assists/manager/, app/(core)/assists/) and edits to assists types/service/runner are all untracked — the capability-absorption step the doctrine requires before any collapse. Nothing has been retired yet, which is correct order. Still missing: the written capability inventory in features/assists/FEATURE.md, whose docs are also stale (they claim three action kinds; the code has four).",
         lane: "L2",
     },
     {
         id: "G-TEMPLATE",
         title: "Realized pages are empty — template_map is never read",
         severity: "major",
-        status: "open",
+        status: "in-progress",
         at: "brief->realize",
         breaks: ["code"],
         detail:
-            "plan.profile.template_map carries the concept/variant library, but realize creates a blank draft with only a page type. 'Template pages' as a concept does not exist in code; every page waits on an LLM to author it from scratch.",
+            "BUILT BUT UNSHIPPED. aidream/services/content_plan/templates.py adds a third library layer over plan.profile.template_map with a real resolution chain, cms_reconciler scaffolds html_content/css_content on create, and cms_fill treats a scaffold as unfilled and strips leaked markers. templates.py is untracked and the reconciler/fill edits are uncommitted, so origin still realizes empty drafts.",
         lane: "L3",
     },
     {
@@ -737,82 +827,85 @@ export const GAPS: LoopGap[] = [
         at: "crawl->measure",
         breaks: ["code"],
         detail:
-            "web.page is a clean anchor for every metric, but client_pages reaches it only by comparing route text (separate Supabase projects, no FK). One route change or one trailing-slash difference silently orphans a page's whole history.",
+            "Half solved. plan.node -> client_pages is durable via client_pages.plan_node_id (written only through page_service.set_plan_link, consumed by useCmsPageMap). But web.page -> client_pages is still route-string matching in push-to-cms.ts, there is no web_page_id anywhere, and URL normalisation remains a hand-maintained twin (ai-matrx page-url.ts vs matrx-scraper url.py) with no shared package and no parity test.",
         lane: "L3",
     },
     {
         id: "G-STALENESS",
         title: "Nothing ever marks a page as needing an update",
         severity: "major",
-        status: "open",
+        status: "closed",
         at: "writeback->plan",
         breaks: ["code", "ai"],
         detail:
-            "plan.profile.cadences exists and performance data exists, but no job compares them. plan_status can move forward to published and never comes back for another pass.",
+            "CLOSED AND RUNNING. services/content_plan/signals.py flips published/live-verified nodes to needs-update on two lanes — cadence (plan.profile.cadences review_days) and a 28-day-over-28-day GSC click decline. Registered as plan_signal_sweep, seeded daily by migration 0252, and live-verified: 17 runs, 0 failures.",
         lane: "L4",
+        evidence: "aidream/aidream/services/content_plan/signals.py",
     },
     {
         id: "G-PLAN-STATUS",
         title: "plan_status has no enforced state machine",
-        severity: "minor",
-        status: "open",
+        severity: "major",
+        status: "in-progress",
         at: "writeback->plan",
         breaks: ["code"],
-        detail: "Transitions are loose by an earlier deliberate decision, pending the CMS handoff. That handoff now exists, so this is newly decidable.",
+        detail:
+            "SPLIT STATE — THE DB IS AHEAD OF THE CODE. Migrations 0326/0327/0328 ARE APPLIED LIVE, so plan._status_flow_guard is enforcing transitions in production right now. The aidream service half that cooperates with it (the audited override_reason escape hatch in content_plan/service.py) is NOT on origin. Deployed code therefore meets a trigger it does not know about; an illegal transition raises where it previously succeeded. Severity raised from minor for that reason.",
         lane: "L4",
     },
     {
         id: "G-RECONCILE-UI",
-        title: "Plan-vs-reality is manual and unsurfaced",
+        title: "Plan-vs-reality is manual and half-surfaced",
         severity: "minor",
-        status: "open",
+        status: "in-progress",
         at: "analyze->plan",
         breaks: ["code", "human", "ai"],
-        detail: "The reality overlay must be run by hand and its badges do not appear in the plan table or pillar map, so drift between plan and live site is invisible until someone goes looking.",
+        detail:
+            "Improved and shipped: reality badges now reach the pillar map and both plan trees. A fuller replacement (usePlanDrift.ts, 261 lines) is untracked AND does not compile — it calls a two-argument function with one argument and reads isLoading/sync off a hook that returns neither. Still true on origin: usePlanReality is manual-run only (enabled:false), PlanNodesTable has no reality reference, and the server reconciler has no scheduled task.",
         lane: "L4",
     },
     {
         id: "G-RESEARCH-TRIGGER",
         title: "Research cannot be started by code or by an agent",
         severity: "major",
-        status: "open",
+        status: "in-progress",
         at: "research",
         breaks: ["code", "ai"],
         detail:
-            "Every research run begins with a human click. There is no scheduled refresh and no agent tool that starts one, so the first stage of the loop can never run unattended — which alone makes 'click one thing and have the whole thing done' impossible.",
+            "BUILT BUT UNSHIPPED. Both missing pipes were written: aidream/tools/research_tool.py exposes research_run(action='start') and research_refresh_dispatch is registered for the scheduled lane, with migrations 0323/0324/0325 applied live. Every one of those code files is untracked locally and absent from origin, so neither pipe works in production.",
         lane: "L5",
     },
     {
         id: "G-PIPE-SELECTOR",
         title: "No 'one step, three pipes' primitive",
         severity: "blocker",
-        status: "open",
+        status: "in-progress",
         at: "plan",
         breaks: ["code", "human", "ai"],
         detail:
-            "The workflow engine has code nodes, an agent node and a human_input node — but they are three DIFFERENT node types, not one step with a swappable executor. Nothing lets an owner say 'this decision: me, or the agent, or ask me and fall back to the agent'.",
+            "BUILT BUT UNSHIPPED, AND FORKED. packages/matrx-graph/nodes/pipe/ now defines StepContract, PipeBindings{code,human,ai}, select_pipe and a registered pipe.step executor validating all three legs against one schema — the right shape. Three problems: it is local-only; its AI leg is dead at runtime because set_ai_pipe_runner is called nowhere outside a test; and a SECOND, competing selector (services/growth_loop/pipes.py resolve_pipe with its own Pipe/PipePolicy) exists whose docstring still claims the node does not exist. Nothing was migrated onto pipe.step. Two pipe vocabularies is worse than one gap.",
         lane: "L5",
     },
     {
         id: "G-HUMAN-TIMEOUT",
         title: "No timed human-to-AI escalation",
         severity: "major",
-        status: "open",
+        status: "in-progress",
         at: "plan",
         breaks: ["human", "ai"],
         detail:
-            "human_input blocks forever; assists expire but never escalate. Arman's 'ask the user, and if they don't answer in N minutes ask the AI' has no implementation anywhere on the platform.",
+            "DECLARED EVERYWHERE, ENFORCED NOWHERE. EscalationPolicy exists, human_input and pipe.step accept an escalation config and freeze an absolute deadline onto the interrupt payload, and services/human_decisions/ implements the fallback decider, notifier and caps. But decide_for_absent_human, notify_decision_pending and close_decision_notice have zero callers, no sweeper task is registered, and the scheduler never reads the escalation key. An unanswered human_input still blocks forever. All local-only.",
         lane: "L5",
     },
     {
         id: "G-ORCHESTRATOR",
         title: "No end-to-end run object",
         severity: "blocker",
-        status: "open",
+        status: "in-progress",
         at: "research",
         breaks: ["code", "human", "ai"],
         detail:
-            "Each stage has its own run tracking (workflow.run, sch_run, cx_request, cms_fill_job) but nothing represents 'this brand's loop, stage 7 of 12'. There is no single thing to click, watch, resume, or show a customer.",
+            "SCHEMA LIVE, CODE UNSHIPPED, NOTHING DRIVES IT. growth.loop_run / loop_stage_run / loop_event exist in the live database (migrations 0323/0324 applied), and services/growth_loop/ implements start_loop / enter_stage / complete_stage / block_stage with the correct twelve stages and non-linear returns. But the code is local-only, api/routers/growth_loop.py is NOT mounted in app.py, no stage service writes to the tables, and no frontend reads them. Recent workflow child-run work is intra-workflow topology and does not address this.",
         lane: "L6",
     },
     {
@@ -823,18 +916,20 @@ export const GAPS: LoopGap[] = [
         at: "plan",
         breaks: ["ai"],
         detail:
-            "Per-stage agents are good and many. What is missing is the overseeing agent Arman described — one that owns several adjacent steps, decides when each is done, and hands off. subgraph.call is the mechanism; no such agent is defined.",
+            "The general primitive now EXISTS and is shipped: agent_sets supervisor mode exposes each set member as a tool of an orchestrator agent. What is still missing is the specific thing — no declared slot supervises loop stages, judges stage completion, or hands off; growth_loop completion is caller-asserted through the API, never agent-judged.",
         lane: "L6",
     },
     {
         id: "G-CRAWL-DUAL",
         title: "Two crawl worlds",
         severity: "minor",
-        status: "open",
+        status: "closed",
         at: "crawl",
         breaks: ["code"],
-        detail: "The modern web.* crawler and the legacy scraper.* crawler both exist; the scheduled dispatcher serves the legacy one. Retire or bridge before adding scheduling on top.",
+        detail:
+            "CLOSED on the backend: the legacy scraper world is gone from origin — scraper_admin.py deleted, services/scraper/ emptied, api/routers/scraper.py reduced to a re-export of matrx_scraper, and the registered dispatcher drives the modern web.crawl_schedule. Frontend residue is tracked separately (permissions registry + generated types still expose the dead scraper schema).",
         lane: "L1",
+        evidence: "aidream/aidream/services/scraper_client/__init__.py",
     },
     {
         id: "G-MEASURE-SCHEDULE",
@@ -843,7 +938,8 @@ export const GAPS: LoopGap[] = [
         status: "open",
         at: "measure",
         breaks: ["code"],
-        detail: "GSC, backlinks, ranks, and PageSpeed coverage are scheduled. GA4 is still on-demand only, so that portion of the measurement picture is as stale as the last click.",
+        detail:
+            "PageSpeed is solved and live (seo_pagespeed_coverage, resumable ten-minute coverage on origin; 49 runs / 13 failed on the live scheduler — the failure rate deserves a look). GA4 is not: ga4_schedule.py and its registration are local-only, and although migration 0322 is applied, the seeded task sits enabled=false / 0 runs awaiting the handler. Separately, SitePerformanceWorkspace reads an automation field this checkout's backend does not return.",
         lane: "L1",
     },
 ];
@@ -923,6 +1019,56 @@ export function edgeHealth(edge: LoopEdge): PipeState {
     if (states.includes("missing")) return "missing";
     if (states.includes("partial")) return "partial";
     return "live";
+}
+
+// ---------------------------------------------------------------------------
+// PUBLIC VIEW — derived, never hand-written.
+//
+// 🚨 THE HONESTY GATE. The public page at /how-it-works renders capability
+// ONLY from `state === "live"`. "partial" and "missing" produce NOTHING —
+// they can never leak out as a promise. That is deliberate: a marketing page
+// must not claim a capability this map records as unfinished, and the only
+// way to make it claim one is to flip a pipe to "live" here, which rule 1 at
+// the top of this file says requires a `ref` an auditor can open.
+//
+// Consequence, on purpose: a stage with no live pipe simply shows no
+// capability chips. Do not add a fallback.
+// ---------------------------------------------------------------------------
+
+/** How a customer can make a step happen. Derived from a LIVE pipe only. */
+export type PublicCapability = "you" | "ai" | "automatic";
+
+export const PUBLIC_CAPABILITY: Record<PublicCapability, { pipe: Pipe; label: string; short: string }> = {
+    you: { pipe: "human", label: "You can do it yourself", short: "You" },
+    ai: { pipe: "ai", label: "An AI agent can do it for you", short: "AI" },
+    automatic: { pipe: "code", label: "It happens automatically", short: "Automatic" },
+};
+
+export const PUBLIC_CAPABILITIES: PublicCapability[] = ["you", "ai", "automatic"];
+
+export type PublicStage = LoopStage & { publicInfo: PublicStageInfo };
+
+/** The stages cleared for public display, in loop order. */
+export function publicStages(): PublicStage[] {
+    return STAGES.filter((s): s is PublicStage => Boolean(s.publicInfo));
+}
+
+/** Only ways this step can ACTUALLY be run today. Never intent. */
+export function publicCapabilities(stage: LoopStage): PublicCapability[] {
+    return PUBLIC_CAPABILITIES.filter((c) => stage.pipes[PUBLIC_CAPABILITY[c].pipe].state === "live");
+}
+
+/**
+ * Honest headline numbers for the public page: how many public stages you can
+ * run yourself, how many an agent can run, how many run automatically.
+ */
+export function publicStanding(): { stages: number } & Record<PublicCapability, number> {
+    const stages = publicStages();
+    const counts = { stages: stages.length, you: 0, ai: 0, automatic: 0 };
+    for (const stage of stages) {
+        for (const capability of publicCapabilities(stage)) counts[capability] += 1;
+    }
+    return counts;
 }
 
 export function loopScore(): { live: number; partial: number; missing: number; total: number } {

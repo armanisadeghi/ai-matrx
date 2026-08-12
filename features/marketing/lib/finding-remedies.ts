@@ -159,6 +159,17 @@ function aiRemedy(
   };
 }
 
+/**
+ * The one extra sentence that makes a metadata remedy end-to-end REAL instead
+ * of advice: the `seo` tool's meta actions render through the SERP renderer
+ * (`renderers/seo-shared/SerpToolInline`), which carries `ApplyMetaToPage` —
+ * one click writes the winner to the page's desired metadata via
+ * `updatePageIntent`. Chat proposals that never reach the page were the
+ * dead end this closes.
+ */
+const APPLY_ASK =
+  "Run the `seo` tool (`check_titles` / `check_descriptions`, whichever this finding is about) on this page's URL with your proposals so they render as SERP previews — from there the user can apply the winner to the page in one click.";
+
 type RemedyBuilder = (ctx: FindingRemedyContext) => FindingRemedy;
 
 /**
@@ -173,28 +184,28 @@ const REMEDIES: Record<string, RemedyBuilder> = {
       ctx,
       "Write a title for this page",
       "The SEO agent reads the page and drafts a headline for search results. You approve it before anything changes.",
-      "This page has no title for search results. Read the page, then propose 3 title options (50-60 characters) with a one-line reason for each, and say which you recommend.",
+      `This page has no title for search results. Read the page, then propose 3 title options (50-60 characters) with a one-line reason for each, and say which you recommend. ${APPLY_ASK}`,
     ),
   title_length: (ctx) =>
     aiRemedy(
       ctx,
       "Rewrite the title to fit",
       "The SEO agent rewrites the headline so search engines show all of it. You approve it before anything changes.",
-      "This page's search-results title is the wrong length. Propose 3 replacement titles (50-60 characters) that keep the same meaning and lead with what people search for, and say which you recommend.",
+      `This page's search-results title is the wrong length. Propose 3 replacement titles (50-60 characters) that keep the same meaning and lead with what people search for, and say which you recommend. ${APPLY_ASK}`,
     ),
   meta_description_presence: (ctx) =>
     aiRemedy(
       ctx,
       "Write the search snippet",
       "The SEO agent drafts the two-line description shown under your link in Google. You approve it before anything changes.",
-      "This page has no meta description, so Google invents the snippet. Read the page and propose 3 meta descriptions (140-155 characters) that give someone a reason to click, and say which you recommend.",
+      `This page has no meta description, so Google invents the snippet. Read the page and propose 3 meta descriptions (140-155 characters) that give someone a reason to click, and say which you recommend. ${APPLY_ASK}`,
     ),
   meta_description_length: (ctx) =>
     aiRemedy(
       ctx,
       "Rewrite the search snippet",
       "The SEO agent rewrites the description so it fits the space Google gives it. You approve it before anything changes.",
-      "This page's meta description is the wrong length. Propose 3 replacements (140-155 characters) that keep the promise of the page and read naturally, and say which you recommend.",
+      `This page's meta description is the wrong length. Propose 3 replacements (140-155 characters) that keep the promise of the page and read naturally, and say which you recommend. ${APPLY_ASK}`,
     ),
 
   // ── Content: the AI drafts, the owner publishes ──────────────────────────
@@ -438,3 +449,36 @@ export function resolveFindingRemedy(
 export function registeredRemedyKeys(): string[] {
   return Object.keys(REMEDIES).sort();
 }
+
+/**
+ * Item keys whose REGISTERED remedy is a real one-click AI action — the exact
+ * set the findings assist producer is allowed to chip.
+ *
+ * Derived from `REMEDIES`, never hand-maintained: registering a new `ai`
+ * remedy above is all it takes for that check to start producing chips, and a
+ * `manual` remedy (a robots tag, a redirect, a hosting fix) can never leak
+ * into a chip whose button would have nothing to run. The generic fallback is
+ * deliberately excluded — "ask the agent what this means" is a fine card on a
+ * finding the user opened, and noise as an unsolicited chip.
+ *
+ * Pure: the builders take a context but touch nothing but it, so a probe
+ * context is enough to read a remedy's kind.
+ */
+export function aiRemedyItemKeys(): string[] {
+  return Object.entries(REMEDIES)
+    .filter(([itemKey, build]) => build({ itemKey }).kind === "ai")
+    .map(([itemKey]) => itemKey)
+    .sort();
+}
+
+/**
+ * Checks whose AI remedy ends in a write the user can apply to the page in
+ * one click (`ApplyMetaToPage` → `updatePageIntent`). Ranked first by the
+ * assist producer — cheapest, safest, most complete path we own today.
+ */
+export const APPLIABLE_METADATA_KEYS: readonly string[] = [
+  "title_presence",
+  "title_length",
+  "meta_description_presence",
+  "meta_description_length",
+];
