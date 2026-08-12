@@ -57,6 +57,10 @@ import {
   Clock,
   Table,
   ArrowRight,
+  Plus,
+  Trash2,
+  Pencil,
+  Check,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import IconButton from "@/components/official/IconButton";
@@ -68,7 +72,11 @@ import {
   getPedigreeLayout,
 } from "./layout-utils";
 import { getOrgChartRoleIcon, formatDiagramType } from "./ui-utils";
-import type { DiagramData, DiagramNode } from "./parseDiagramJSON";
+import type {
+  DiagramData,
+  DiagramEdge,
+  DiagramNode,
+} from "./parseDiagramJSON";
 import {
   PrintOptionsDialog,
   usePrintOptions,
@@ -628,6 +636,9 @@ const DiagramFlow: React.FC<{
   setBackgroundVariant: (v: BackgroundVariant) => void;
   onExportImage: () => void;
   onNodeClick?: (node: DiagramNode) => void;
+  /** Authoring mode is ON. Only ever true when `onDiagramChange` is wired. */
+  editing?: boolean;
+  onDiagramChange?: (next: DiagramData) => void;
 }> = ({
   diagram,
   showMiniMap,
@@ -636,6 +647,8 @@ const DiagramFlow: React.FC<{
   setBackgroundVariant,
   onExportImage,
   onNodeClick,
+  editing = false,
+  onDiagramChange,
 }) => {
   const { fitView, getNodes, getEdges } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
@@ -648,10 +661,167 @@ const DiagramFlow: React.FC<{
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges],
+  // ── Authoring mode ────────────────────────────────────────────────────────
+  // The ONE diagram renderer also authors. A second React Flow canvas whose
+  // only difference was "the user can type in it" would be a duplicate of
+  // everything below (layouts, export, print, legend, node kinds), so editing
+  // is a mode HERE and every consumer that passes `onDiagramChange` gets it.
+  // Every mutation ends in `commit()` — the single place RF state is folded
+  // back into the canonical `DiagramData` the caller persists.
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+
+  const commit = useCallback(
+    (rfNodes: Node[], rfEdges: Edge[]) => {
+      if (!onDiagramChange) return;
+      const priorNodes = new Map(diagram.nodes.map((n) => [n.id, n]));
+      const priorEdges = new Map(diagram.edges.map((e) => [e.id, e]));
+
+      const nodes: DiagramNode[] = rfNodes.map((rf) => {
+        const data = rf.data as Record<string, unknown>;
+        return {
+          ...(priorNodes.get(rf.id) ?? { id: rf.id, label: rf.id }),
+          id: rf.id,
+          label: typeof data.label === "string" ? data.label : rf.id,
+          description:
+            typeof data.description === "string" && data.description !== ""
+              ? data.description
+              : undefined,
+          position: { x: rf.position.x, y: rf.position.y },
+        };
+      });
+
+      const edges: DiagramEdge[] = rfEdges.map((rf) => ({
+        ...(priorEdges.get(rf.id) ?? {
+          id: rf.id,
+          source: rf.source,
+          target: rf.target,
+        }),
+        id: rf.id,
+        source: rf.source,
+        target: rf.target,
+        label: typeof rf.label === "string" && rf.label !== "" ? rf.label : undefined,
+      }));
+
+      onDiagramChange({ ...diagram, nodes, edges });
+    },
+    [diagram, onDiagramChange],
   );
+
+  const onConnect = useCallback(
+    (params: Connection) =>
+      setEdges((eds) => {
+        // A hand-drawn arrow needs a stable id of its own: addEdge's generated
+        // ids are positional and would churn on every reload.
+        const next = addEdge(
+          { ...params, id: `e-${crypto.randomUUID().slice(0, 8)}` },
+          eds,
+        );
+        commit(getNodes(), next);
+        return next;
+      }),
+    [setEdges, commit, getNodes],
+  );
+
+  /** Add a box near the middle of what the user is currently looking at. */
+  const addBox = useCallback(() => {
+    const id = `n-${crypto.randomUUID().slice(0, 8)}`;
+    const existing = getNodes();
+    const anchor = existing[existing.length - 1]?.position ?? { x: 0, y: 0 };
+    const newNode: Node = {
+      id,
+      type: getReactFlowNodeType(diagram.type, { id, label: "New box" }),
+      position: { x: anchor.x + 60, y: anchor.y + 140 },
+      data: { label: "New box", diagramType: diagram.type },
+    };
+    setNodes((ns) => {
+      const next = [...ns, newNode];
+      commit(next, getEdges());
+      return next;
+    });
+    setSelectedNodeId(id);
+    setSelectedEdgeId(null);
+  }, [getNodes, getEdges, setNodes, commit, diagram.type]);
+
+  /** Rename / re-describe the selected box, live. */
+  const patchSelectedNode = useCallback(
+    (patch: { label?: string; description?: string }) => {
+      if (!selectedNodeId) return;
+      setNodes((ns) => {
+        const next = ns.map((n) =>
+          n.id === selectedNodeId ? { ...n, data: { ...n.data, ...patch } } : n,
+        );
+        commit(next, getEdges());
+        return next;
+      });
+    },
+    [selectedNodeId, setNodes, getEdges, commit],
+  );
+
+  const deleteSelectedNode = useCallback(() => {
+    if (!selectedNodeId) return;
+    const nextNodes = getNodes().filter((n) => n.id !== selectedNodeId);
+    // An arrow with no box on one end is not a thing the user can see or fix,
+    // so it goes with the box rather than becoming an invisible orphan.
+    const nextEdges = getEdges().filter(
+      (e) => e.source !== selectedNodeId && e.target !== selectedNodeId,
+    );
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    setSelectedNodeId(null);
+    commit(nextNodes, nextEdges);
+  }, [selectedNodeId, getNodes, getEdges, setNodes, setEdges, commit]);
+
+  const patchSelectedEdge = useCallback(
+    (label: string) => {
+      if (!selectedEdgeId) return;
+      setEdges((es) => {
+        const next = es.map((e) =>
+          e.id === selectedEdgeId ? { ...e, label } : e,
+        );
+        commit(getNodes(), next);
+        return next;
+      });
+    },
+    [selectedEdgeId, setEdges, getNodes, commit],
+  );
+
+  const deleteSelectedEdge = useCallback(() => {
+    if (!selectedEdgeId) return;
+    const nextEdges = getEdges().filter((e) => e.id !== selectedEdgeId);
+    setEdges(nextEdges);
+    setSelectedEdgeId(null);
+    commit(getNodes(), nextEdges);
+  }, [selectedEdgeId, getEdges, setEdges, getNodes, commit]);
+
+  const handleEditNodeClick = useCallback((_e: React.MouseEvent, node: Node) => {
+    setSelectedEdgeId(null);
+    setSelectedNodeId(node.id);
+  }, []);
+
+  const handleEditEdgeClick = useCallback((_e: React.MouseEvent, edge: Edge) => {
+    setSelectedNodeId(null);
+    setSelectedEdgeId(edge.id);
+  }, []);
+
+  const handlePaneClick = useCallback(() => {
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+  }, []);
+
+  /** Dragging a box IS an edit — positions are the map's layout. */
+  const handleNodeDragStop = useCallback(() => {
+    commit(getNodes(), getEdges());
+  }, [commit, getNodes, getEdges]);
+
+  // Derived from RENDER state, not getNodes(): the ref-backed getters do not
+  // re-render, so the panel's inputs would lag a keystroke behind.
+  const selectedNode = editing
+    ? nodes.find((n) => n.id === selectedNodeId)
+    : undefined;
+  const selectedEdge = editing
+    ? edges.find((e) => e.id === selectedEdgeId)
+    : undefined;
 
   // Opt-in node-click bridge (e.g. mind-map node → source card / Ask tutor).
   // Only wired when a consumer passes `onNodeClick`; other consumers are
@@ -784,9 +954,13 @@ const DiagramFlow: React.FC<{
     }
 
     setNodes(result.nodes);
+    // Authoring: the tidy-up IS an edit, so it becomes part of the document
+    // rather than a view-only rearrangement that vanishes on reload.
+    commit(result.nodes, result.edges ?? currentEdges);
     fitViewAfterLayout();
     hasAutoLayoutApplied.current = true;
   }, [
+    commit,
     getNodes,
     getEdges,
     diagram.type,
@@ -800,9 +974,10 @@ const DiagramFlow: React.FC<{
   const applyRadialLayout = useCallback(() => {
     const { nodes: laid } = getRadialLayout(getNodes(), getEdges());
     setNodes(laid);
+    commit(laid, getEdges());
     fitViewAfterLayout();
     hasAutoLayoutApplied.current = true;
-  }, [getNodes, getEdges, setNodes, fitViewAfterLayout]);
+  }, [getNodes, getEdges, setNodes, commit, fitViewAfterLayout]);
 
   const resetLayout = useCallback(() => {
     setNodes(buildReactFlowNodes(diagram));
@@ -812,14 +987,32 @@ const DiagramFlow: React.FC<{
   }, [diagram, setNodes, setEdges, fitViewAfterLayout]);
 
   // Re-run auto layout when diagram data changes.
+  //
+  // NOT while authoring. In edit mode the caller feeds `diagram` back on every
+  // keystroke and every drag, so re-arming auto-layout here would re-position
+  // the whole map out from under the user the instant they renamed a box —
+  // their layout IS the document. The initial layout still runs once (the
+  // nodesInitialized effect below), which is what a freshly drafted map needs.
   useEffect(() => {
+    if (onDiagramChange) return;
     hasAutoLayoutApplied.current = false;
-  }, [diagram]);
+  }, [diagram, onDiagramChange]);
 
   // Wait for ReactFlow to measure nodes, then force the same auto layout as the toolbar button.
   useEffect(() => {
     if (!nodesInitialized || hasAutoLayoutApplied.current) return undefined;
     if (getNodes().length <= 1) return undefined;
+    // An AUTHORED map already has positions — they are the user's arrangement,
+    // saved deliberately. Auto-laying it out on open would silently discard
+    // the work every time they came back to it.
+    if (
+      onDiagramChange &&
+      diagram.nodes.length > 0 &&
+      diagram.nodes.every((n) => n.position)
+    ) {
+      hasAutoLayoutApplied.current = true;
+      return undefined;
+    }
 
     autoLayoutFrameRef.current = requestAnimationFrame(() => {
       autoLayoutFrameRef.current = requestAnimationFrame(() => {
@@ -834,7 +1027,7 @@ const DiagramFlow: React.FC<{
         autoLayoutFrameRef.current = null;
       }
     };
-  }, [nodesInitialized, applyAutoLayout, getNodes, diagram]);
+  }, [nodesInitialized, applyAutoLayout, getNodes, diagram, onDiagramChange]);
 
   return (
     <ReactFlow
@@ -843,11 +1036,16 @@ const DiagramFlow: React.FC<{
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
-      onNodeClick={onNodeClick ? handleNodeClick : undefined}
+      onNodeClick={
+        editing ? handleEditNodeClick : onNodeClick ? handleNodeClick : undefined
+      }
+      onEdgeClick={editing ? handleEditEdgeClick : undefined}
+      onPaneClick={editing ? handlePaneClick : undefined}
+      onNodeDragStop={editing ? handleNodeDragStop : undefined}
       nodeTypes={nodeTypes}
       fitView={false}
       proOptions={{ hideAttribution: true }}
-      className={`bg-gray-50 dark:bg-gray-900 ${onNodeClick ? "[&_.react-flow__node]:cursor-pointer" : ""}`}
+      className={`bg-gray-50 dark:bg-gray-900 ${onNodeClick || editing ? "[&_.react-flow__node]:cursor-pointer" : ""}`}
     >
       <Background
         variant={backgroundVariant}
@@ -881,6 +1079,100 @@ const DiagramFlow: React.FC<{
           }}
           maskColor="rgba(0,0,0,0.1)"
         />
+      )}
+
+      {/* Authoring panel — plain language only. No "node", no "edge", no
+          "graph": the person building this is an expert in their own field
+          and a total novice at diagram tools. */}
+      {editing && (
+        <Panel
+          position="top-left"
+          className="w-[248px] rounded-lg border border-border bg-card p-2.5 shadow-lg"
+        >
+          <button
+            type="button"
+            onClick={addBox}
+            className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add a box
+          </button>
+
+          {!selectedNode && !selectedEdge && (
+            <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
+              Click a box to rename it. Drag a box to move it. To draw an arrow,
+              drag from the small dot on one box onto another box.
+            </p>
+          )}
+
+          {selectedNode && (
+            <div className="mt-2.5 space-y-2">
+              <label className="block text-[11px] font-medium text-foreground">
+                Name
+                <input
+                  value={
+                    typeof selectedNode.data.label === "string"
+                      ? selectedNode.data.label
+                      : ""
+                  }
+                  onChange={(e) => patchSelectedNode({ label: e.target.value })}
+                  className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
+                  placeholder="What is this step?"
+                />
+              </label>
+              <label className="block text-[11px] font-medium text-foreground">
+                Notes <span className="text-muted-foreground">(optional)</span>
+                <textarea
+                  value={
+                    typeof selectedNode.data.description === "string"
+                      ? selectedNode.data.description
+                      : ""
+                  }
+                  onChange={(e) =>
+                    patchSelectedNode({ description: e.target.value })
+                  }
+                  rows={2}
+                  className="mt-1 w-full resize-none rounded border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
+                  placeholder="A short line of detail"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={deleteSelectedNode}
+                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-destructive/40 px-2 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Remove this box
+              </button>
+            </div>
+          )}
+
+          {selectedEdge && (
+            <div className="mt-2.5 space-y-2">
+              <label className="block text-[11px] font-medium text-foreground">
+                Arrow label
+                <input
+                  value={
+                    typeof selectedEdge.label === "string"
+                      ? selectedEdge.label
+                      : ""
+                  }
+                  onChange={(e) => patchSelectedEdge(e.target.value)}
+                  className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary"
+                  placeholder="e.g. sends to"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={deleteSelectedEdge}
+                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-destructive/40 px-2 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Remove this arrow
+              </button>
+            </div>
+          )}
+        </Panel>
       )}
 
       <Panel
@@ -1144,14 +1436,27 @@ interface InteractiveDiagramBlockProps {
    * "Ask tutor about this" affordance.
    */
   onNodeClick?: (node: DiagramNode) => void;
+  /**
+   * Opt-in AUTHORING. When set, the block offers an Edit toggle and calls this
+   * with the whole updated diagram on every change (rename, add, delete, draw
+   * an arrow, drag a box, tidy up). The caller owns persistence.
+   *
+   * This is why there is no second "map editor" canvas in the repo: the one
+   * renderer that already knows every node kind, layout, export and print path
+   * is also the one that edits. Consumer: features/canvas/maps.
+   */
+  onDiagramChange?: (next: DiagramData) => void;
 }
 
 const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
   diagram,
   taskId,
   onNodeClick,
+  onDiagramChange,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const canEdit = Boolean(onDiagramChange);
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [backgroundVariant, setBackgroundVariant] = useState<BackgroundVariant>(
     BackgroundVariant.Dots,
@@ -1279,6 +1584,20 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                 </h3>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
+                {canEdit && (
+                  <IconButton
+                    icon={editing ? Check : Pencil}
+                    tooltip={editing ? "Done editing" : "Edit this map"}
+                    onClick={() => setEditing((v) => !v)}
+                    size="sm"
+                    className={
+                      editing
+                        ? "bg-emerald-500 dark:bg-emerald-600 text-white hover:bg-emerald-600 dark:hover:bg-emerald-700"
+                        : undefined
+                    }
+                    variant={editing ? undefined : "outline"}
+                  />
+                )}
                 <IconButton
                   icon={Printer}
                   tooltip="Print / Save as PDF"
@@ -1337,6 +1656,20 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                   </div>
 
                   <div className="flex items-center gap-1 flex-shrink-0">
+                    {canEdit && (
+                      <IconButton
+                        icon={editing ? Check : Pencil}
+                        tooltip={editing ? "Done editing" : "Edit this map"}
+                        onClick={() => setEditing((v) => !v)}
+                        size="sm"
+                        className={
+                          editing
+                            ? "bg-emerald-500 dark:bg-emerald-600 text-white hover:bg-emerald-600 dark:hover:bg-emerald-700"
+                            : undefined
+                        }
+                        variant={editing ? undefined : "outline"}
+                      />
+                    )}
                     <IconButton
                       icon={Printer}
                       tooltip="Print / Save as PDF"
@@ -1393,6 +1726,8 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                   setBackgroundVariant={setBackgroundVariant}
                   onExportImage={handleExportImage}
                   onNodeClick={onNodeClick}
+                  editing={canEdit && editing}
+                  onDiagramChange={onDiagramChange}
                 />
               </ReactFlowProvider>
             </div>
