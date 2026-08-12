@@ -1,18 +1,17 @@
 import { Badge } from "@/components/ui/badge";
 
+// The finding-status vocabulary lives in the pure lifecycle module — these
+// filter options, the query layer's status validator, and the surface's
+// `finding_lifecycle_status` write target all read that ONE list (see
+// `finding-lifecycle.ts`). Re-exported so existing importers are unaffected.
+export { FINDING_STATUS_OPTIONS } from "@/features/marketing/data/finding-lifecycle";
+
 export const SEVERITY_OPTIONS = [
   { value: "critical", label: "Critical" },
   { value: "high", label: "High" },
   { value: "med", label: "Medium" },
   { value: "low", label: "Low" },
   { value: "info", label: "Info" },
-];
-
-export const FINDING_STATUS_OPTIONS = [
-  { value: "open", label: "Open" },
-  { value: "acknowledged", label: "Acknowledged" },
-  { value: "reopened", label: "Reopened" },
-  { value: "resolved", label: "Resolved" },
 ];
 
 export const SUBJECT_TYPE_OPTIONS = [

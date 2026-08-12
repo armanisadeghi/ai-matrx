@@ -49,6 +49,7 @@ import {
 import type { MarketingAnalysisResult } from "@/features/marketing/data/analysis-types";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { FindingRemedyCard } from "@/features/marketing/components/analysis/FindingRemedyCard";
+import { FindingWriteTargets } from "@/features/marketing/components/analysis/FindingWriteTargets";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -405,6 +406,13 @@ export function FindingDetail({ findingId }: { findingId: string }) {
         });
       }}
     >
+    {/* The write half of this surface — handlers only, no markup. Mounted on
+        the DETAIL route only, so the list view offers agents no write tool. */}
+    <FindingWriteTargets
+      siteId={site.id}
+      finding={finding}
+      onWritten={afterFindingWrite}
+    />
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-hidden bg-textured p-3 sm:p-4">
       <section className="shrink-0 overflow-hidden rounded-lg border border-border bg-card">
         <div className="flex min-w-0 flex-col gap-2 p-3 sm:flex-row sm:items-start sm:justify-between">
