@@ -435,6 +435,15 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/marketing/brands/[brandId]/sites/[siteId]/ai-visibility/[view]",
+      label: "Site AI visibility evidence",
+      description:
+        "Full-page claims, sources, decision signals, or provider history for a site's AI visibility runs.",
+      filePath:
+        "app/(core)/marketing/brands/[brandId]/sites/[siteId]/ai-visibility/[view]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/marketing/sites/[siteId]/access",
       label: "Site access",
       description: "Organization and user grants at the site access root.",

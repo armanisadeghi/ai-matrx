@@ -5,6 +5,10 @@ import { makeAssertData } from "@/utils/errors";
 
 const assertData = makeAssertData("reach this site's AI visibility evidence");
 
+export function aiVisibilityEvidenceKey(siteId: string) {
+  return ["marketing", "ai-visibility", siteId] as const;
+}
+
 /** Read one site's durable answer evidence directly from the shared database. */
 export async function listAiVisibilityEvidence(
   siteId: string,

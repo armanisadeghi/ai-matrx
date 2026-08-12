@@ -194,6 +194,7 @@ import { patchAgentConversationMetadata } from "@/features/agents/redux/conversa
 import { upsertAgentConversationFromExecutionAction } from "@/features/agents/redux/conversation-list/record-conversation-from-execution";
 import { StreamProfiler } from "@/utils/stream-profiler";
 import { sanitizeInboundEnvelopeMetadata } from "@/features/content-ir/redux/render-block-envelope";
+import { progressDataRenderBlock } from "@/features/content-ir/redux/progress-data-block";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
 import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
@@ -866,12 +867,33 @@ export async function processStream({
 
         dispatch(appendDataPayload({ requestId, data: d }));
 
+        // Durable pipelines use typed data events for their own state while
+        // optionally attaching a canonical Content IR value for the user.
+        // Promote that value HERE, at the one stream chokepoint, so every
+        // adopted run renders it in MarkdownStream/LiveRunDisplay. Without
+        // this branch it falls through as `unknown_data_event`: provider cards
+        // update, but the WindowPanel has no useful renderable progress.
+        const progressBlock = progressDataRenderBlock(
+          d,
+          totalEvents,
+          renderBlockEvents,
+        );
+        if (progressBlock) {
+          blockAccumulator.breakTextBlock(dispatch);
+          dataRenderBlockId = progressBlock.blockId;
+          dispatch(upsertRenderBlock({ requestId, block: progressBlock }));
+        }
+
         // Output-directive receipts — a lightweight toast when the server
         // applies (or fails to apply) an `output_directive` envelope after the
         // response is delivered. v1 is a toast (no new slice); the full data is
         // already on the timeline via appendDataPayload above. Discriminated by
         // `kind` (`directive_apply.*`), distinct from the `d.type` chain below.
-        if (isDirectiveApplyEvent(d)) {
+        if (progressBlock) {
+          // The canonical progress block above is the visual representation.
+          // The ordinary data payload and timeline entry are still retained
+          // for the feature's typed state and diagnostics.
+        } else if (isDirectiveApplyEvent(d)) {
           if (d.kind === "directive_apply.completed") {
             const failedSuffix = d.failed > 0 ? `, ${d.failed} failed` : "";
             const message = `Applied ${d.type}: ${d.applied} created${failedSuffix}`;
