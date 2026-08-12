@@ -81,6 +81,8 @@ interface Props {
   /** The in-progress selection. */
   draft: Set<string>;
   busy: boolean;
+  /** The resource form embeds the same picker inside its own save flow. */
+  showActions?: boolean;
   onToggleColumn: (column: string) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -91,6 +93,7 @@ export function SharePolicyColumnEditor({
   savedColumns,
   draft,
   busy,
+  showActions = true,
   onToggleColumn,
   onSave,
   onCancel,
@@ -110,8 +113,8 @@ export function SharePolicyColumnEditor({
         <span>
           Checked columns are visible to <strong>anyone with the link</strong> —
           never expose secrets, PII, or storage locations. Columns that look
-          sensitive are flagged with a lock. Default is deny: only what you check
-          is exposed.
+          sensitive are flagged with a lock. Default is deny: only what you
+          check is exposed.
         </span>
       </div>
 
@@ -151,7 +154,11 @@ export function SharePolicyColumnEditor({
         })}
       </div>
 
-      <div className="flex items-center justify-between border-t border-border pt-3">
+      <div
+        className={`flex items-center justify-between ${
+          showActions ? "border-t border-border pt-3" : ""
+        }`}
+      >
         <span className="text-xs text-muted-foreground">
           {selectedCount} of {allColumns.length} columns selected
           {dirty && (
@@ -160,15 +167,22 @@ export function SharePolicyColumnEditor({
             </span>
           )}
         </span>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={onSave} disabled={busy || !dirty}>
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            Save exposed columns
-          </Button>
-        </div>
+        {showActions ? (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onCancel}
+              disabled={busy}
+            >
+              Cancel
+            </Button>
+            <Button size="sm" onClick={onSave} disabled={busy || !dirty}>
+              {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              Save exposed columns
+            </Button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

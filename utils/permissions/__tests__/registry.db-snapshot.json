@@ -55,7 +55,7 @@
     "is_active": true
   },
   {
-    "resource_type": "auto_ingest_batch",
+    "resource_type": "batch_provider_batch",
     "table_name": "auto_ingest_batch",
     "id_column": "id",
     "owner_column": "user_id",
@@ -121,6 +121,17 @@
     "is_active": true
   },
   {
+    "resource_type": "context_item",
+    "table_name": "context_items",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": "visibility",
+    "display_label": "Context Item",
+    "url_path_template": "",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
     "resource_type": "conversation",
     "table_name": "conversation",
     "id_column": "id",
@@ -172,6 +183,17 @@
     "is_public_column": null,
     "display_label": "Direct Conversation",
     "url_path_template": "/messages/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "expertise_pack",
+    "table_name": "expertise_pack",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Expertise Pack",
+    "url_path_template": "/expertise/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -293,6 +315,17 @@
     "is_public_column": null,
     "display_label": "Folder",
     "url_path_template": "/files/folder/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "growth_loop_run",
+    "table_name": "loop_run",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Growth Loop Run",
+    "url_path_template": "/marketing/growth-loop/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -484,46 +517,13 @@
     "is_active": true
   },
   {
-    "resource_type": "scraper_preset",
-    "table_name": "crawl_presets",
+    "resource_type": "seo_change_set",
+    "table_name": "change_set",
     "id_column": "id",
     "owner_column": "created_by",
-    "is_public_column": "is_public",
-    "display_label": "Crawl preset",
-    "url_path_template": "/scraper?tab=presets",
-    "rls_uses_has_permission": false,
-    "is_active": true
-  },
-  {
-    "resource_type": "scraper_run",
-    "table_name": "crawl_runs",
-    "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
-    "display_label": "Crawl run",
-    "url_path_template": "/scraper?tab=overview&run_id={id}",
-    "rls_uses_has_permission": false,
-    "is_active": true
-  },
-  {
-    "resource_type": "scraper_schedule",
-    "table_name": "crawl_schedules",
-    "id_column": "id",
-    "owner_column": "created_by",
-    "is_public_column": "is_public",
-    "display_label": "Crawl schedule",
-    "url_path_template": "/scraper?tab=schedules",
-    "rls_uses_has_permission": false,
-    "is_active": true
-  },
-  {
-    "resource_type": "scraper_site",
-    "table_name": "sites",
-    "id_column": "id",
-    "owner_column": "owner_user_id",
-    "is_public_column": "is_public",
-    "display_label": "Tracked website",
-    "url_path_template": "/websites?site_id={id}",
+    "is_public_column": null,
+    "display_label": "SEO Change",
+    "url_path_template": "/marketing/changes/{id}",
     "rls_uses_has_permission": false,
     "is_active": true
   },
@@ -671,6 +671,28 @@
     "is_active": true
   },
   {
+    "resource_type": "web_brand",
+    "table_name": "brand",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Brand",
+    "url_path_template": "/marketing/brands/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "web_page",
+    "table_name": "page",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Canonical Page",
+    "url_path_template": "/marketing/pages/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "web_site",
     "table_name": "site",
     "id_column": "id",
@@ -733,7 +755,18 @@
     "is_public_column": null,
     "display_label": "Workflow Run",
     "url_path_template": "/runs/{id}",
-    "rls_uses_has_permission": false,
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "workflow_template",
+    "table_name": "template",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Workflow Template",
+    "url_path_template": "/workflows/templates/{id}",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -744,7 +777,7 @@
     "is_public_column": null,
     "display_label": "Workflow Trigger",
     "url_path_template": "/workflows/{id}/triggers/{id}",
-    "rls_uses_has_permission": false,
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
