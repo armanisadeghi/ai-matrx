@@ -23,6 +23,19 @@ warned either of us, and nothing failed loudly.
 - **aidream:** the podcast session ran `git stash` in the shared tree while another agent
   had uncommitted work there, sweeping four of that agent's files into its stash. Popped
   and recovered intact, and disclosed — but only because they noticed.
+- **A third face, same afternoon: an autostash that nobody owns and is now a TRAP.** My
+  `pull --rebase` autostashed 18 files belonging to *three other sessions* (content-plan,
+  transcript-studio, overlays, research, and a `types/python-generated` regeneration), and
+  the pop only partially reapplied — leaving the tree mid-edit and 500ing on every route
+  for everyone. Nothing was lost: the owning sessions had committed, and I verified their
+  commits are ancestors of `origin/main`. **But the entry is still sitting there as
+  `stash@{1}: autostash`, and it is now actively harmful** — its `stream-events.ts` is
+  3,320 lines SHORTER than HEAD, so anyone who pops it during housekeeping silently
+  reverts a regeneration and re-breaks the build. I deliberately did NOT drop it (it is
+  not my work to destroy) and did not apply it (it would regress). It needs an owner's
+  glance and then a `git stash drop stash@{1}`.
+  *That is the shape of the problem: the safe action and the tidy action are different
+  actions, and no tool tells you which is which.*
 
 **Why it can't be fixed by being careful.** `git stash`, `git checkout --`, `git reset`,
 and `git pull --rebase` are all routine, all destructive to *someone else's* uncommitted
