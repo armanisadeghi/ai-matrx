@@ -727,7 +727,7 @@ export const GAPS: LoopGap[] = [
         at: "serve->crawl",
         breaks: ["code", "ai"],
         detail:
-            "BUILT BUT UNSHIPPED. aidream/services/web_announce/ (announce_cms_page_published: upserts the web.page anchor, enqueues a single-page capture) is called from cms/pages.py publish and backstopped by the cms_publish_crawl_reconcile task. All of it exists ONLY in the local aidream working tree — origin/main still has publish fanning out to advance_plan_status_for_published_page alone. Migration 0257 IS applied live and its scheduler task sits enabled=false / 0 runs, correctly gated until the handler deploys.",
+            "COMMITTED, NOT DEPLOYED. aidream/services/web_announce/ is on origin/main and called from cms/pages.py publish. But the DEPLOYED server is 13 commits behind and does not contain it, and the live cms_publish_crawl_reconcile task is still enabled=false / 0 runs, correctly gated on its handler. Deploying aidream closes this.",
         lane: "L1",
     },
     {
@@ -745,12 +745,13 @@ export const GAPS: LoopGap[] = [
         id: "G-SITEMAP",
         title: "Live sites emit no sitemap.xml and no robots.txt",
         severity: "major",
-        status: "in-progress",
+        status: "closed",
         at: "publish->serve",
         breaks: ["code"],
         detail:
-            "BUILT BUT UNSHIPPED. my-matrx has lib/render/sitemap.js + discovery.js and sitemap.xml.js / robots.txt.js for both the platform and custom-domain surfaces, with proxy.js updated — every one of those files is UNTRACKED in git, so production serves none of it. Still genuinely absent even locally: any IndexNow or Search Console submit ping on publish.",
+            "CLOSED AND LIVE-VERIFIED 2026-08-12: https://www.mymatrx.com/c/prp-injection-md/sitemap.xml returns 200 and robots.txt serves a correct per-host Sitemap line. STILL ABSENT and deliberately not claimed closed here: any IndexNow or Search Console submit ping on publish — that is a new gap if wanted, not this one.",
         lane: "L1",
+        evidence: "my-matrx/lib/render/sitemap.js",
     },
     {
         id: "G-COLLECTIONS",
@@ -817,7 +818,7 @@ export const GAPS: LoopGap[] = [
         at: "brief->realize",
         breaks: ["code"],
         detail:
-            "BUILT BUT UNSHIPPED. aidream/services/content_plan/templates.py adds a third library layer over plan.profile.template_map with a real resolution chain, cms_reconciler scaffolds html_content/css_content on create, and cms_fill treats a scaffold as unfilled and strips leaked markers. templates.py is untracked and the reconciler/fill edits are uncommitted, so origin still realizes empty drafts.",
+            "COMMITTED, NOT DEPLOYED. aidream/services/content_plan/templates.py is on origin — a library layer over plan.profile.template_map with a real resolution chain; cms_reconciler scaffolds html_content/css_content on create and cms_fill treats a scaffold as unfilled. Verified 2026-08-12: the deployed server does NOT contain it, so production still realizes empty drafts.",
         lane: "L3",
     },
     {
@@ -873,7 +874,7 @@ export const GAPS: LoopGap[] = [
         at: "research",
         breaks: ["code", "ai"],
         detail:
-            "BUILT BUT UNSHIPPED. Both missing pipes were written: aidream/tools/research_tool.py exposes research_run(action='start') and research_refresh_dispatch is registered for the scheduled lane, with migrations 0323/0324/0325 applied live. Every one of those code files is untracked locally and absent from origin, so neither pipe works in production.",
+            "COMMITTED, NOT DEPLOYED. Both pipes are on origin: aidream/tools/research_tool.py exposes research_run(action='start'), and research_refresh_dispatch is registered for the scheduled lane with migrations 0323/0324/0325 applied live. The live Research refresh dispatch task is still enabled=false / 0 runs because the deployed server predates the handler.",
         lane: "L5",
     },
     {
@@ -884,7 +885,7 @@ export const GAPS: LoopGap[] = [
         at: "plan",
         breaks: ["code", "human", "ai"],
         detail:
-            "BUILT BUT UNSHIPPED, AND FORKED. packages/matrx-graph/nodes/pipe/ now defines StepContract, PipeBindings{code,human,ai}, select_pipe and a registered pipe.step executor validating all three legs against one schema — the right shape. Three problems: it is local-only; its AI leg is dead at runtime because set_ai_pipe_runner is called nowhere outside a test; and a SECOND, competing selector (services/growth_loop/pipes.py resolve_pipe with its own Pipe/PipePolicy) exists whose docstring still claims the node does not exist. Nothing was migrated onto pipe.step. Two pipe vocabularies is worse than one gap.",
+            "ON ORIGIN, STILL FORKED AND STILL HALF-DEAD. packages/matrx-graph/nodes/pipe/ defines StepContract, PipeBindings{code,human,ai}, select_pipe and a registered pipe.step executor validating all three legs against one schema — the right shape. Re-verified 2026-08-12: set_ai_pipe_runner is still called only inside matrx-graph itself, never wired by an aidream host, so the AI leg still fails with no_ai_pipe_runner; the competing services/growth_loop/pipes.py resolve_pipe still exists; nothing was migrated onto pipe.step.",
         lane: "L5",
     },
     {
@@ -895,7 +896,7 @@ export const GAPS: LoopGap[] = [
         at: "plan",
         breaks: ["human", "ai"],
         detail:
-            "DECLARED EVERYWHERE, ENFORCED NOWHERE. EscalationPolicy exists, human_input and pipe.step accept an escalation config and freeze an absolute deadline onto the interrupt payload, and services/human_decisions/ implements the fallback decider, notifier and caps. But decide_for_absent_human, notify_decision_pending and close_decision_notice have zero callers, no sweeper task is registered, and the scheduler never reads the escalation key. An unanswered human_input still blocks forever. All local-only.",
+            "ON ORIGIN, STILL ENFORCED NOWHERE. EscalationPolicy exists, human_input and pipe.step accept an escalation config and freeze an absolute deadline, and services/human_decisions/ implements the fallback decider, notifier and caps. Re-verified 2026-08-12: decide_for_absent_human still has NO caller outside its own module, no sweeper task is registered, and the scheduler never reads the escalation key. An unanswered human_input still blocks forever.",
         lane: "L5",
     },
     {
@@ -906,7 +907,7 @@ export const GAPS: LoopGap[] = [
         at: "research",
         breaks: ["code", "human", "ai"],
         detail:
-            "SCHEMA LIVE, CODE UNSHIPPED, NOTHING DRIVES IT. growth.loop_run / loop_stage_run / loop_event exist in the live database (migrations 0323/0324 applied), and services/growth_loop/ implements start_loop / enter_stage / complete_stage / block_stage with the correct twelve stages and non-linear returns. But the code is local-only, api/routers/growth_loop.py is NOT mounted in app.py, no stage service writes to the tables, and no frontend reads them. Recent workflow child-run work is intra-workflow topology and does not address this.",
+            "SCHEMA LIVE, CODE ON ORIGIN, NOTHING DRIVES IT. growth.loop_run / loop_stage_run / loop_event exist live and services/growth_loop/ implements start_loop / enter_stage / complete_stage / block_stage with the correct twelve stages. Re-verified 2026-08-12: api/routers/growth_loop.py is STILL NOT MOUNTED in app.py (zero references), no stage service writes to the tables, no frontend reads them. Committing it changed nothing about it being dead.",
         lane: "L6",
     },
     {
@@ -936,7 +937,7 @@ export const GAPS: LoopGap[] = [
         id: "G-MEASURE-SCHEDULE",
         title: "GA4 never refreshes itself",
         severity: "minor",
-        status: "open",
+        status: "in-progress",
         at: "measure",
         breaks: ["code"],
         detail:
