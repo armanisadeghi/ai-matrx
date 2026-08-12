@@ -34,6 +34,7 @@ import { scheduleHref } from "@/features/scheduling/constants/routes";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { RunStatus, Surface } from "@/features/scheduling/types";
 import { SURFACE_VALUES } from "@/features/scheduling/constants/surfaces";
+import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 
 const STATUSES: RunStatus[] = [
   "queued",
@@ -51,6 +52,14 @@ export default function AdminRunsPage() {
   const [fetching, setFetching] = useState(false);
   const [status, setStatus] = useState<"__all__" | RunStatus>("__all__");
   const [surface, setSurface] = useState<"__all__" | Surface>("__all__");
+
+  // The pickers' "__all__" sentinel is emitted as "any" — the vocabulary the
+  // manifest declares and the word the UI actually shows ("Any status").
+  useAdminSchedulingScopeSlice("runs", () => ({
+    run_status_filter: status === "__all__" ? "any" : status,
+    run_surface_filter: surface === "__all__" ? "any" : surface,
+    run_row_count: rows.length,
+  }));
 
   const load = useCallback(async () => {
     setFetching(true);

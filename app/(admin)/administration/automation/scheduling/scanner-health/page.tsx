@@ -21,11 +21,35 @@ import { cn } from "@/lib/utils";
 import { getStatus } from "@/features/scheduling/service/schedulerClient";
 import type { ScannerStatusResponse } from "@/features/scheduling/service/schedulerApi.types";
 import { humanizeRelative } from "@/features/scheduling/utils/triggerHumanize";
+import {
+  definedOnly,
+  useAdminSchedulingScopeSlice,
+} from "@/features/scheduling/lib/admin-scheduling-scope";
 
 export default function ScannerHealthPage() {
   const [status, setStatus] = useState<ScannerStatusResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Everything the poll returns, plus why the poll failed if it did. The
+  // scanner's OWN error and an unreachable backend are different facts, so
+  // they are different values.
+  useAdminSchedulingScopeSlice("scanner_health", () =>
+    definedOnly({
+      scanner_running: status?.running,
+      scanner_started_at: status?.started_at ?? undefined,
+      scanner_last_tick_at: status?.last_tick_at ?? undefined,
+      scanner_last_tick_duration_ms: status?.last_tick_duration_ms ?? undefined,
+      scanner_last_tick_claimed: status?.last_tick_claimed,
+      scanner_last_tick_manual_claimed: status?.last_tick_manual_claimed,
+      scanner_last_tick_expired_sweeps: status?.last_tick_expired_sweeps,
+      scanner_total_runs_dispatched: status?.total_runs_dispatched,
+      scanner_in_flight_count: status?.in_flight_count,
+      scanner_consecutive_errors: status?.consecutive_errors,
+      scanner_error_message: status?.error_message ?? undefined,
+      scanner_unreachable_error: error ?? undefined,
+    }),
+  );
 
   const load = async () => {
     setLoading(true);

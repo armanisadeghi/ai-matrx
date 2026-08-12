@@ -18,6 +18,9 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_SCHEDULING_SURFACE_NAME } from "@/features/surfaces/manifests/admin-scheduling.manifest";
+import { buildAdminSchedulingScope } from "@/features/scheduling/lib/admin-scheduling-scope";
 
 const NAV_ITEMS = [
   {
@@ -78,7 +81,16 @@ export function SchedulingAdminLayoutClient({
     startTransition(() => router.push(href));
   };
 
+  // The shell is the only component mounted on all seven tabs, so it owns the
+  // surface's outer runtime. `active_tab` comes from the pathname here; each
+  // tab publishes its own values into the module store the builder reads. The
+  // Cron tester nests its own provider inside this one and wins there by
+  // depth — see features/scheduling/lib/admin-scheduling-scope.ts.
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_SCHEDULING_SURFACE_NAME}
+      getScope={() => buildAdminSchedulingScope(pathname)}
+    >
     <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <div className="border-b border-border px-4 bg-card flex items-center gap-2">
         <Link
@@ -121,5 +133,6 @@ export function SchedulingAdminLayoutClient({
       </div>
       <div className="flex-1 overflow-hidden">{children}</div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

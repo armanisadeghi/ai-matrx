@@ -1,12 +1,15 @@
 // features/scheduling/lib/cron-tester-surface.ts
 //
 // Surface wiring for the admin Cron tester
-// (`/administration/automation/scheduling/cron-tester`) — the FIRST and so far
-// only `SurfaceRuntimeProvider` mount on the `matrx-admin/scheduling` surface.
+// (`/administration/automation/scheduling/cron-tester`) — the surface's FIRST
+// `SurfaceRuntimeProvider` mount, and still the only one carrying write
+// targets. The shell now mounts an outer provider for the other six tabs
+// (`admin-scheduling-scope.ts`); this one nests INSIDE it and wins on this tab
+// by depth, so the richer cron scope below is what a run here sees.
 //
 // Two pieces live here rather than in the page so the page stays a page:
-//   - the scope builder, which emits `active_tab` + the manifest's five
-//     `cron_*` values, and
+//   - the scope builder, which emits `active_tab` + the manifest's `cron_*`
+//     values, and
 //   - the write handlers behind the surface's two declared targets
 //     (`cron_expression`, `cron_timezone`).
 //
@@ -53,12 +56,15 @@ export interface CronTesterState {
   tz: string;
   validationError: string | null;
   fires: string[];
+  /** The cronstrue reading rendered under the input; null when unavailable. */
+  human: string | null;
 }
 
 /**
- * Emits what the Cron tester tab actually shows. `cron_validation_error` is
- * omitted when the expression is valid — the manifest declares it absent in
- * that case, and emitting an empty string would be a read lie.
+ * Emits what the Cron tester tab actually shows. `cron_validation_error` and
+ * `cron_expression_human` are omitted when they are not on screen — the
+ * manifest declares each absent in that case, and emitting an empty string
+ * would be a read lie.
  */
 export function buildCronTesterScope(
   state: CronTesterState,
@@ -70,6 +76,7 @@ export function buildCronTesterScope(
     ...(state.validationError
       ? { cron_validation_error: state.validationError }
       : {}),
+    ...(state.human ? { cron_expression_human: state.human } : {}),
     cron_next_fires: state.fires,
   });
 }
@@ -121,6 +128,20 @@ export function createCronTesterWriteHandlers(args: {
       if (!next) {
         throw new Error(
           `cron_expression cannot be empty — it expects a 5-field cron expression such as "0 9 * * 1-5" (minute hour day-of-month month day-of-week). ${PLAIN_STRING_RULE}`,
+        );
+      }
+      // ARITY IS CHECKED HERE, AND NOWHERE ELSE IN THIS HANDLER. `validateCron`
+      // delegates to cron-parser, which accepts 4 and 6 fields too — it reads a
+      // 6th as a leading SECONDS field. So "0 9 * * 1-5 *" parses CLEAN and
+      // previews Jan 1 at 00:09 instead of weekdays at 9am, and the agent reads
+      // that confident, wrong preview back as confirmation. The description
+      // promises 5 fields; this is what enforces it. Every other rule (ranges,
+      // steps, names) stays with the real validator below rather than being
+      // re-typed here.
+      const fieldCount = next.split(/\s+/).filter(Boolean).length;
+      if (fieldCount !== 5) {
+        throw new Error(
+          `cron_expression expects exactly 5 space-separated fields in the order "minute hour day-of-month month day-of-week"; "${next}" has ${fieldCount}. There is no seconds field and no @daily-style macros — weekdays at 9:00 AM is "0 9 * * 1-5". ${PLAIN_STRING_RULE}`,
         );
       }
       // The page's own validator, in the page's own timezone — the value that
