@@ -127,6 +127,7 @@ import { SetupShapeColumn } from "./SetupShapeColumn";
 import { SetupWorkOrderColumn } from "./SetupWorkOrderColumn";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
 
 /** The status every generated node starts in (same default aidream uses). */
 const DEFAULT_STATUS_SLUG = "planned";
@@ -423,10 +424,16 @@ export function SetupView() {
       .catch((error) => {
         if (cancelled) return;
         // Loud, and STILL enable autosave (baseline = current defaults) —
-        // a failed seed read must not silently disable persistence.
-        toast.error(
-          `Could not load the saved setup draft: ${extractErrorMessage(error)}`,
-        );
+        // a failed seed read must not silently disable persistence. The one
+        // case that is NOT a draft problem is a site this session cannot
+        // read: the gate above is already saying so, and a second toast
+        // repeating it (once in PostgREST's words) is noise on top of an
+        // answer the user already has.
+        if (!isRecordUnavailableError(error)) {
+          toast.error(
+            `Could not load the saved setup draft: ${extractErrorMessage(error)}`,
+          );
+        }
         setSeed({ siteId, serialized: null });
       });
     return () => {
