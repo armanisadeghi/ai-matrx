@@ -19,10 +19,13 @@
  * omitting it. Lifting that panel's `fsRoot` / `selectedFile` / `fileContent`
  * to the page is the work that unlocks a `file_tree` + `open_file_*` group.
  *
- * ── NO `writeTargets`, DELIBERATELY (2026-08-12) ─────────────────────────
- * Assessed against the `surface-write-targets` judgment bar and RULED OUT.
- * Do not re-assign this surface; the reasoning is recorded here so the next
- * agent does not re-derive it.
+ * ── WHAT IS NOT WRITABLE HERE, AND WHY (2026-08-12) ──────────────────────
+ * Two ask-policy STAGING targets on the terminal are declared below; this
+ * section is the other half of that ruling — the exclusions, kept because
+ * they are the reasoning the next agent would otherwise re-derive. It began
+ * as a parallel assessment that ruled the whole surface out; that conclusion
+ * was reconciled (see the `writeTargets` docblock), but its analysis of what
+ * this surface does NOT earn stands unchanged and is the settled posture.
  *
  * **`sandbox_config` is EVIDENCE, not a form.** This is the value that makes
  * the surface look writable, so it is the one to be precise about. It is
@@ -36,7 +39,8 @@
  * mount — and is not a declared surface value at all. Re-writing it after the
  * fact would also be meaningless: the container is already built from it.
  *
- * **Per-mount posture — both mounts earn nothing.**
+ * **Per-mount posture — the LIST mount earns nothing; the detail mount earns
+ * staging and nothing else.**
  * - `/sandbox` (list) owns fetched instance evidence, browse state
  *   (`historyOpen`, `selectedHistoryIds`) and the create-dialog form. Its only
  *   write paths are `createInstance` / `stopInstance` / `deleteInstance(s)` —
@@ -52,8 +56,11 @@
  *   evidence registers nothing.)
  * - `/sandbox/[id]` (detail) owns the polled `instance` (every declared value
  *   bar the shell ones is a projection of it), the shell session, and dialog
- *   toggles. Its write paths are `handleExec`, `handleStop`, `handleExtend`,
- *   `handleDelete` — all excluded below.
+ *   toggles. Its EXECUTING write paths — `handleExec`, `handleStop`,
+ *   `handleExtend`, `handleDelete` — are all excluded below, and no declared
+ *   target may reach any of them. What it does earn is the two STAGING
+ *   targets in the `writeTargets` block: the command box and the prompt's
+ *   working directory, neither of which touches the machine.
  *
  * **Excluded by settled campaign precedent, said explicitly rather than by
  * omission:**
@@ -67,23 +74,19 @@
  * 3. `container_id`, `sandbox_proxy_url`, hot/cold paths, heartbeat, expiry,
  *    status, and both ids: infrastructure identity and execution evidence.
  *
- * **The one genuine candidate, and why it still fails: `commandInput`.**
- * It is technically inert — `handleExec` fires only on Enter or the Send
- * button — which looks like `matrx-admin/database`'s `sql_query`, the
- * precedent that lets an agent DRAFT SQL because a textarea full of text is
- * inert characters. The analogy breaks on the GATE, which is the whole basis
- * of that precedent. `sql_query` stages into a multi-line workbench whose
- * execution needs a deliberate, separately-located **Execute** press.
- * `commandInput` is a single-line prompt with `autoFocus` that the terminal
- * body re-focuses on any click, where **Enter runs it** — so a staged command
- * sits in an already-focused shell prompt and the most reflexive keystroke
- * there is executes arbitrary shell on a live machine. It also has no
- * staged-vs-typed affordance: unlike the SQL workbench, a command in the
- * prompt is indistinguishable from one the user typed. "The human press stays
- * the gate" would hold only in the most literal sense.
- * Even granting it, that is ONE target on a surface whose every other value is
- * execution evidence or infrastructure identity — below the skill's ~2 floor,
- * exactly the `matrx-user/messages` and `matrx-user/canvas` outcome.
+ * **`commandInput` is NOT on this list, and that was the contested call.**
+ * The parallel assessment placed it here — inert characters, but in a
+ * single-line prompt where Enter RUNS, so a weaker gate than the
+ * `matrx-admin/database` `sql_query` precedent it would lean on, and only ONE
+ * target once execution is excluded, under the skill's ~2 floor. Both halves
+ * of that were answered rather than overruled, and the full argument lives in
+ * the `writeTargets` docblock: the focus defect it correctly identified is
+ * fixed, the staged-vs-typed affordance it correctly demanded is now built,
+ * and the count is two — `working_directory` became declarable once
+ * `handleExec` started sending the DISPLAYED cwd, which is a second authored
+ * field, not a re-slice of the first. What survives from that assessment is
+ * everything above and the hard line below: staging is the ceiling, and there
+ * is no execute target at any price.
  *
  * The `SandboxDiagnosticsPanel` was checked too and changes nothing: its only
  * inputs are `fsRootPath`, `envFilter`, `envView`, `logSource`, `logTail` —
@@ -403,33 +406,56 @@ const surfaceSpecific: SurfaceValue[] = [
  * status, never targets. Stop / Extend / Delete stay human — they are header
  * actions against the live machine, and delete is destructive by definition.
  *
- * ── THE COUNTER-ARGUMENT, recorded because it is strong ─────────────────
- * A parallel assessment of this surface RULED IT OUT, on a point worth
- * keeping in front of whoever touches this next: unlike
- * `matrx-admin/database`'s `sql_query` — the precedent for letting an agent
- * draft an inert command — this prompt is a SINGLE-LINE input where **Enter
- * runs**, it carries `autoFocus`, and the terminal body re-focuses it on any
- * click. So a staged command can sit in an already-focused live shell one
- * reflexive keystroke from executing, where the SQL workbench needs a
- * deliberate, separately-located Execute press. That objection landed a real
- * defect: this page's `command_input` handler used to call
- * `inputRef.current?.focus()` after staging, which manufactured exactly that
- * hazard. It no longer does — see the comment at that handler.
+ * ── THE COUNTER-ARGUMENT, and how it was settled (2026-08-12) ───────────
+ * TWO agents assessed this surface in parallel and reached OPPOSITE
+ * conclusions: one shipped these targets, one ruled the surface out entirely
+ * and wrote a "no writeTargets, do not re-assign" block into this same file.
+ * Both landed. For a while this manifest said both things at once — the exact
+ * docs-contradict-code hazard the campaign has been bitten by repeatedly.
+ * This block is the reconciliation, and the ruling-out argument is recorded
+ * here rather than deleted, because it was RIGHT about two things and both
+ * are now fixed rather than argued away.
  *
- * Where this manifest comes down, having taken the point: the `ask` confirm
- * is itself the deliberate, separately-located gate. The user reads a dialog
- * naming the target and the description above, and clicks Apply; the command
- * then sits visible and unfocused, and running it costs a click plus Enter.
+ * Its point: unlike `matrx-admin/database`'s `sql_query` — the precedent for
+ * letting an agent draft an inert command — this prompt is a SINGLE-LINE
+ * input where **Enter runs**, it carries `autoFocus`, and the terminal body
+ * re-focuses it on any click. So a staged command can sit in an
+ * already-focused live shell one reflexive keystroke from executing, where
+ * the SQL workbench needs a deliberate, separately-located Execute press.
+ *
+ * **Both concrete objections are closed in code, not in prose:**
+ * 1. THE FOCUS DEFECT (real, and this page had it). The `command_input`
+ *    handler used to call `inputRef.current?.focus()` after staging, which
+ *    manufactured exactly that already-focused-prompt hazard. It no longer
+ *    does — see the comment at that handler. Verified live: the active
+ *    element after an apply is `BODY`, not the prompt.
+ * 2. THE STAGED-VS-TYPED AFFORDANCE (also real; was a KNOWN GAP here and is
+ *    now built). The input carries a "staged by agent · not run" marker
+ *    whenever a value arrived through one of these targets, and it clears on
+ *    the user's very first keystroke, on history recall, and on exec — so an
+ *    agent-written command is no longer indistinguishable from a typed one,
+ *    and the marker cannot outlive the value it describes.
+ *
+ * With those closed, the gate is: read the `ask` dialog naming the target and
+ * its contract → click Apply → the command sits VISIBLE, UNFOCUSED and
+ * MARKED → deliberately click into the prompt → Enter. That is one act longer
+ * than the `sql_query` precedent it was measured against (ask confirm, then
+ * one Execute press), so the gate objection no longer separates them.
  * Nothing an agent applies here changes the machine, and a wrong command is
- * cleared by selecting the box and typing over it.
+ * cleared by typing over it.
  *
- * KNOWN GAP, honestly: the input has no staged-vs-typed affordance, so an
- * agent-written command is visually indistinguishable from one the user
- * typed. The ask dialog is the only signal that it arrived from an agent.
- * Giving the input a "staged by <agent>" marker that clears on first
- * keystroke is the obvious next increment and would close the last real
- * objection above; it is deliberately NOT bundled here, because it is a UI
- * change that would need its own live verification.
+ * The floor objection ("one target, under ~2") also resolves on the count:
+ * `working_directory` is a genuine second authored field, declarable because
+ * `handleExec` now sends the DISPLAYED cwd. And `voice-pad` is the campaign's
+ * own precedent that a single authored buffer earns targets when composing it
+ * is the surface's whole purpose — which is what a terminal is.
+ *
+ * HONEST RESIDUE: the marker says "agent", not WHICH agent. Handlers receive
+ * `(value)` only — the seam's `actorLabel` reaches the ask dialog, not the
+ * handler — and widening that shared signature for one surface's badge is
+ * plumbing this skill explicitly does not add. The ask dialog names the actor
+ * at the moment of consent; the marker's job is staged-vs-typed, and it does
+ * that.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {

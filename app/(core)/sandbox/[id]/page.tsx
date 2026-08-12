@@ -83,6 +83,14 @@ export default function SandboxDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const remaining = useTimeRemaining(instance?.expires_at, "second");
   const [cwd, setCwd] = useState(DEFAULT_CWD);
+  // Staged-vs-typed affordance for the surface write targets. An agent-staged
+  // command must not be indistinguishable from one the user typed — that was
+  // the last live objection to making this terminal agent-writable at all (see
+  // the `writeTargets` docblock in sandboxes.manifest.ts). These flags are set
+  // ONLY by the write handlers and are cleared the moment the value stops
+  // being the agent's: first keystroke, history recall, or exec.
+  const [agentStagedCommand, setAgentStagedCommand] = useState(false);
+  const [agentStagedCwd, setAgentStagedCwd] = useState(false);
   const [copied, setCopied] = useState(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const [adminActionsOpen, setAdminActionsOpen] = useState(false);
@@ -136,6 +144,8 @@ export default function SandboxDetailPage() {
 
     const cmd = commandInput.trim();
     setCommandInput("");
+    // The user just ran it: whoever composed it, the box is theirs again.
+    setAgentStagedCommand(false);
     setCommandHistory((prev) => [...prev, cmd]);
     setHistoryIndex(-1);
     setTerminalHistory((prev) => [
@@ -171,6 +181,9 @@ export default function SandboxDetailPage() {
       // Server tracks CWD — update prompt from response
       if (result.cwd) {
         setCwd(result.cwd);
+        // The shell has now spoken for the cwd, so it is no longer an
+        // agent-staged proposal even if an agent set the value we just sent.
+        setAgentStagedCwd(false);
       }
 
       if (result.stdout) {
@@ -255,6 +268,9 @@ export default function SandboxDetailPage() {
             : historyIndex;
         setHistoryIndex(newIndex);
         setCommandInput(commandHistory[commandHistory.length - 1 - newIndex]);
+        // History recall replaces the value without an onChange, so the marker
+        // has to be dropped here or it would describe a command it did not stage.
+        setAgentStagedCommand(false);
       }
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -266,6 +282,7 @@ export default function SandboxDetailPage() {
         setHistoryIndex(-1);
         setCommandInput("");
       }
+      setAgentStagedCommand(false);
     }
   };
 
@@ -461,6 +478,9 @@ export default function SandboxDetailPage() {
         );
       setCommandInput(cmd);
       setHistoryIndex(-1);
+      // Mark it as staged, so the box does not present an agent's command as
+      // something the user typed. Cleared on their first keystroke.
+      setAgentStagedCommand(true);
       // Deliberately NOT focusing the input. This prompt is `autoFocus` and the
       // terminal body re-focuses it on any click, and Enter RUNS — so focusing
       // it here would leave the caret sitting in a live shell one reflexive
@@ -490,6 +510,10 @@ export default function SandboxDetailPage() {
           `This sandbox is ${effectiveStatus}, so the terminal is read-only and the working directory cannot be changed.`,
         );
       setCwd(next);
+      // Same affordance for the prompt's directory: an agent-set cwd governs
+      // where the user's next command runs, so it must not read as one they
+      // `cd`'d into. Cleared when the shell reports its own cwd after an exec.
+      setAgentStagedCwd(true);
     },
   });
 
@@ -700,8 +724,19 @@ export default function SandboxDetailPage() {
                 </span>
                 <span className="text-zinc-500 font-mono text-xs">:</span>
                 <span
-                  className="text-blue-400 font-mono text-xs pr-1 shrink-0 max-w-[200px] truncate"
-                  title={cwd}
+                  className={
+                    agentStagedCwd
+                      ? "text-amber-400 font-mono text-xs pr-1 shrink-0 max-w-[200px] truncate underline decoration-dotted decoration-amber-500/60"
+                      : "text-blue-400 font-mono text-xs pr-1 shrink-0 max-w-[200px] truncate"
+                  }
+                  data-testid={
+                    agentStagedCwd ? "agent-staged-cwd-marker" : undefined
+                  }
+                  title={
+                    agentStagedCwd
+                      ? `${cwd} — set by an agent, not by a cd you ran. Your next command runs here. It reverts to the shell's own directory after the next command.`
+                      : cwd
+                  }
                 >
                   {cwd.startsWith("/home/agent")
                     ? "~" + cwd.slice("/home/agent".length)
@@ -714,7 +749,12 @@ export default function SandboxDetailPage() {
                   ref={inputRef}
                   type="text"
                   value={commandInput}
-                  onChange={(e) => setCommandInput(e.target.value)}
+                  onChange={(e) => {
+                    setCommandInput(e.target.value);
+                    // First keystroke and the command is the user's, not the
+                    // agent's — drop the marker.
+                    setAgentStagedCommand(false);
+                  }}
                   onKeyDown={handleKeyDown}
                   disabled={!isActive || executing}
                   placeholder={
@@ -723,6 +763,15 @@ export default function SandboxDetailPage() {
                   className="flex-1 bg-transparent text-zinc-200 font-mono text-sm py-3 px-2 outline-none placeholder:text-zinc-600 disabled:opacity-50"
                   autoFocus
                 />
+                {agentStagedCommand && (
+                  <span
+                    data-testid="agent-staged-command-marker"
+                    title="An agent typed this command into the box. Nothing has run — read it, then press Enter yourself if you want it. Editing it clears this marker."
+                    className="shrink-0 mr-1 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-mono text-[10px] uppercase tracking-wide"
+                  >
+                    staged by agent · not run
+                  </span>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
