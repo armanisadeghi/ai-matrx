@@ -44,7 +44,9 @@ import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayloa
 import { webCopy, webLocation } from "@/features/marketing/lib/copy-payloads";
 import {
   auditCoverageStatement,
+  goneTrafficLabel,
   humanAuditSnapshot,
+  humanGonePageRow,
   humanIssueRow,
   humanWorstPageRow,
 } from "@/features/marketing/components/audit/format";
@@ -53,6 +55,7 @@ import type {
   AuditPageRollup,
   AuditSection,
   AuditTrendPoint,
+  GonePageRollup,
   SiteAuditRollup,
 } from "@/features/marketing/lib/audit-rollup";
 import { cn } from "@/lib/utils";
@@ -71,6 +74,7 @@ import { cn } from "@/lib/utils";
  */
 const TOP_ISSUE_PREVIEW = 14;
 const WORST_PAGE_PREVIEW = 10;
+const GONE_PAGE_PREVIEW = 10;
 
 /** Ranks-style header toggle between the ranked preview and the full list. */
 function ShowAllToggle({
@@ -265,6 +269,70 @@ function WorstPageRow({
   );
 }
 
+/**
+ * One gone page. The verdict is stated, not implied: the page is gone, and the
+ * traffic it was still earning is the reason to care. Both the row and the
+ * count above it are doors — the row opens the page workspace (restore it, or
+ * redirect it), the count opens the whole filtered list.
+ */
+function GonePageRow({
+  page,
+  href,
+  location,
+}: {
+  page: GonePageRollup;
+  href: string;
+  location: string;
+}) {
+  const clicks = page.gscClicks28d ?? 0;
+  const impressions = page.gscImpressions28d ?? 0;
+  const costly = clicks > 0 || impressions > 0;
+  return (
+    <div className="group/row flex min-w-0 items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/40">
+      <Link href={href} className="flex min-w-0 flex-1 items-center gap-3">
+        <span
+          className={cn(
+            "h-2 w-2 shrink-0 rounded-full",
+            costly ? "bg-destructive" : "bg-muted-foreground/40",
+          )}
+        />
+        <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
+          {page.path}
+        </span>
+        <span
+          className={cn(
+            "shrink-0 font-mono text-[11px] tabular-nums",
+            costly ? "text-destructive" : "text-muted-foreground",
+          )}
+        >
+          {goneTrafficLabel(page)}
+        </span>
+      </Link>
+      <span className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/row:opacity-100">
+        <CopyButtons
+          size="xs"
+          label={page.path}
+          human={() => humanGonePageRow(page)}
+          json={() => page}
+          agent={() => ({
+            kind: "web-audit-gone-page",
+            location,
+            description:
+              "One page the crawler no longer finds, with the search traffic it was still earning.",
+            data: page,
+            summary: humanGonePageRow(page),
+            attributes: {
+              page_id: page.pageId,
+              gsc_clicks_28d: page.gscClicks28d,
+              gsc_impressions_28d: page.gscImpressions28d,
+            },
+          })}
+        />
+      </span>
+    </div>
+  );
+}
+
 function AuditBody({
   rollup,
   sitePath,
@@ -282,6 +350,14 @@ function AuditBody({
   const pageLocation = webLocation(`Site audit — ${siteDomain}`);
   const [showAllIssues, setShowAllIssues] = useState(false);
   const [showAllWorstPages, setShowAllWorstPages] = useState(false);
+  const [showAllGonePages, setShowAllGonePages] = useState(false);
+  const visibleGonePages = showAllGonePages
+    ? rollup.gonePageDetails
+    : rollup.gonePageDetails.slice(0, GONE_PAGE_PREVIEW);
+  // THE COUNT IS A DOOR: `?coverage=gone` is the same URL-owned filter the
+  // coverage matrix tiles use, so every gone page is reachable in the pages
+  // table with its full toolset (sort, export, dismiss, open).
+  const gonePagesHref = `${sitePath}/pages?coverage=gone`;
   const visibleIssues = showAllIssues
     ? rollup.topIssues
     : rollup.topIssues.slice(0, TOP_ISSUE_PREVIEW);
@@ -307,6 +383,15 @@ function AuditBody({
       indexability: page.indexabilityVerdict ?? "",
       page_id: page.pageId,
     }));
+  const gonePageCsvRows = () =>
+    rollup.gonePageDetails.map((page) => ({
+      path: page.path,
+      url: page.url,
+      gsc_clicks_28d: page.gscClicks28d ?? "",
+      gsc_impressions_28d: page.gscImpressions28d ?? "",
+      last_seen: page.lastSeen ?? "",
+      page_id: page.pageId,
+    }));
 
   const copy = webCopy({
     kind: "web-site-audit-rollup",
@@ -319,6 +404,7 @@ function AuditBody({
       ["Pages", rollup.totalPages],
       ["Audited", rollup.auditedPages],
       ["Non-HTML resources", rollup.nonHtmlResources],
+      ["Gone", rollup.gonePages],
       ["Indexable", rollup.verdicts.indexable],
       ["Needs review", rollup.verdicts.check],
       ["Blocked", rollup.verdicts.blocked],
@@ -384,6 +470,26 @@ function AuditBody({
       attributes: {
         count: rollup.worstPages.length,
         shown: visibleWorstPages.length,
+      },
+    }),
+  };
+
+  const gonePagesCopy = {
+    label: "Pages that are gone",
+    human: () =>
+      rollup.gonePageDetails.length
+        ? rollup.gonePageDetails
+            .map((p) => `- ${humanGonePageRow(p)}`)
+            .join("\n\n")
+        : "Every page in the registry is still reachable.",
+    agent: () => ({
+      kind: "web-audit-gone-pages",
+      location: pageLocation,
+      description: `All ${rollup.gonePageDetails.length} pages on ${siteDomain} that the crawler no longer finds, ranked by the Google Search traffic they were earning. These are excluded from every HTML-quality finding: their stored metrics describe documents that no longer resolve. The fix is to restore or redirect them, never to edit them.`,
+      data: rollup.gonePageDetails,
+      attributes: {
+        count: rollup.gonePageDetails.length,
+        shown: visibleGonePages.length,
       },
     }),
   };
@@ -454,6 +560,24 @@ function AuditBody({
               level === "compact" ? WORST_PAGE_PREVIEW : 3,
             ),
     },
+    {
+      id: "gone_pages",
+      title: "Pages that are gone",
+      description: `All ${rollup.gonePageDetails.length} pages the crawler no longer finds, costliest first by search traffic.`,
+      cuttable: true,
+      levelLabels: {
+        full: `All ${rollup.gonePageDetails.length} (raw)`,
+        compact: `Top ${GONE_PAGE_PREVIEW}`,
+        brief: "Top 3",
+      },
+      build: (level) =>
+        level === "full"
+          ? rollup.gonePageDetails
+          : rollup.gonePageDetails.slice(
+              0,
+              level === "compact" ? GONE_PAGE_PREVIEW : 3,
+            ),
+    },
   ];
 
   const pageFullData = (): Record<string, unknown> => {
@@ -512,6 +636,7 @@ function AuditBody({
                 jsonExportItem(pageFullData, "Page data (.json)"),
                 csvExportItem(issueCsvRows, "CSV (all issues)"),
                 csvExportItem(worstPageCsvRows, "CSV (pages with findings)"),
+                csvExportItem(gonePageCsvRows, "CSV (gone pages)"),
               ]}
             />
             <AgentCopyGroomerLauncher config={groomerConfig} />
@@ -520,7 +645,7 @@ function AuditBody({
 
         <section
           data-surface-value="audit_rollup"
-          className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-3 lg:grid-cols-6"
+          className="grid grid-cols-2 overflow-hidden rounded-lg border border-border bg-card sm:grid-cols-4 lg:grid-cols-7"
         >
           <MetricCell
             anchor="pages_total"
@@ -586,6 +711,16 @@ function AuditBody({
               rollup.uncomputedPages,
               "Never crawled / pre-stamping",
             )}
+          />
+          {/* A COUNT IS A DOOR — this one opens the pages table filtered to
+              exactly these pages, where they can be restored or redirected. */}
+          <MetricCell
+            anchor="pages_gone"
+            label="Gone"
+            value={rollup.gonePages}
+            tone={rollup.gonePages ? "bad" : "default"}
+            detail="No longer found"
+            href={gonePagesHref}
           />
         </section>
 
@@ -746,6 +881,71 @@ function AuditBody({
           </SectionCard>
         </div>
 
+        {/* GONE PAGES ARE A FINDING, NOT A FOOTNOTE. They are held out of every
+            HTML-quality check above — scoring an og:title on a URL that no
+            longer resolves sends the user to edit a 404 — so this section is
+            where they are reported, ranked by the search traffic they were
+            still earning. Never render this as a quiet exclusion note. */}
+        {rollup.gonePages > 0 ? (
+          <SectionCard
+            anchor="gone_pages"
+            title={`Pages that are gone (${rollup.gonePages.toLocaleString()})`}
+            copy={gonePagesCopy}
+            headerExtra={
+              <>
+                <Link
+                  href={gonePagesHref}
+                  className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  open in pages
+                </Link>
+                <ShowAllToggle
+                  total={rollup.gonePageDetails.length}
+                  preview={GONE_PAGE_PREVIEW}
+                  showingAll={showAllGonePages}
+                  onToggle={() => setShowAllGonePages((current) => !current)}
+                />
+                <ExportMenu
+                  label={`audit-gone-pages-${siteDomain}`}
+                  items={[
+                    jsonExportItem(
+                      () => rollup.gonePageDetails,
+                      "JSON (all gone pages)",
+                    ),
+                    csvExportItem(gonePageCsvRows, "CSV (all gone pages)"),
+                  ]}
+                />
+              </>
+            }
+          >
+            <p className="flex items-start gap-2 border-b border-border px-3 py-2 text-[11px] text-muted-foreground">
+              <OctagonAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+              <span>
+                The crawler no longer finds these URLs. Their last-known metrics
+                are excluded from the findings above — editing them would change
+                a page that no longer exists. Restore the page or redirect the
+                URL. The ones with search traffic are costing you visits right
+                now.
+              </span>
+            </p>
+            <div
+              className={cn(
+                "divide-y divide-border",
+                showAllGonePages && "max-h-[28rem] overflow-y-auto",
+              )}
+            >
+              {visibleGonePages.map((page) => (
+                <GonePageRow
+                  key={page.pageId}
+                  page={page}
+                  href={pagePath(page.pageId)}
+                  location={pageLocation}
+                />
+              ))}
+            </div>
+          </SectionCard>
+        ) : null}
+
         {rollup.uncomputedPages > 0 ? (
           <p className="text-[11px] text-muted-foreground">
             {rollup.uncomputedPages} page
@@ -797,6 +997,8 @@ export function AuditWorkspace() {
           pages_audited: data.auditedPages,
           pages_uncomputed: data.uncomputedPages,
           non_html_resources: data.nonHtmlResources,
+          pages_gone: data.gonePages,
+          gone_pages: data.gonePageDetails.map((page) => ({ ...page })),
           indexability_verdicts: { ...data.verdicts },
           section_passes: { ...data.passes },
           top_issues: data.topIssues.map((issue) => ({ ...issue })),

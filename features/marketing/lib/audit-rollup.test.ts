@@ -78,6 +78,7 @@ describe("buildSiteAuditRollup", () => {
     ]);
 
     expect(rollup.totalPages).toBe(3);
+    expect(rollup.gonePages).toBe(0);
     expect(rollup.nonHtmlResources).toBe(0);
     expect(rollup.auditedPages).toBe(2);
     expect(rollup.uncomputedPages).toBe(1);
@@ -291,6 +292,150 @@ describe("buildSiteAuditRollup", () => {
         issue.samples.some((sample) => sample.path.startsWith("/wp-json")),
       ),
     ).toBe(false);
+  });
+
+  it("sets gone pages aside from HTML-quality findings and ranks them by GSC traffic", () => {
+    // A page the crawler no longer finds still carries its LAST-KNOWN metrics.
+    // Faulting it for a missing og:title sends the user to edit a 404. The
+    // finding is that it is gone — ranked by what it was earning.
+    const GONE_EARNING = "https://example.com/services/still-ranking";
+    const GONE_QUIET = "https://example.com/old/nobody-visits";
+    const GONE_IMPRESSIONS_ONLY = "https://example.com/blog/seen-not-clicked";
+
+    const rollup = buildSiteAuditRollup([
+      {
+        id: "live",
+        url: GOOD_URL,
+        path: "/blog/clean-post",
+        contentTypeLast: "html",
+        status: "active",
+        seo_metrics: null,
+        audit_metrics: auditFor(GOOD_URL, { title: null }),
+      },
+      {
+        id: "quiet",
+        url: GONE_QUIET,
+        path: "/old/nobody-visits",
+        contentTypeLast: "html",
+        status: "missing",
+        // Never in GSC at all — housekeeping, not lost traffic.
+        gscClicks28d: null,
+        gscImpressions28d: null,
+        lastSeen: "2026-03-02T00:00:00Z",
+        seo_metrics: null,
+        audit_metrics: auditFor(GONE_QUIET, { title: null }),
+      },
+      {
+        id: "earning",
+        url: GONE_EARNING,
+        path: "/services/still-ranking",
+        contentTypeLast: "html",
+        status: "missing",
+        gscClicks28d: 41,
+        gscImpressions28d: 900,
+        lastSeen: "2026-08-01T00:00:00Z",
+        seo_metrics: null,
+        audit_metrics: auditFor(GONE_EARNING, { title: null }),
+      },
+      {
+        id: "impressions-only",
+        url: GONE_IMPRESSIONS_ONLY,
+        path: "/blog/seen-not-clicked",
+        contentTypeLast: "html",
+        status: "missing",
+        gscClicks28d: 0,
+        gscImpressions28d: 320,
+        lastSeen: "2026-07-15T00:00:00Z",
+        seo_metrics: null,
+        audit_metrics: auditFor(GONE_IMPRESSIONS_ONLY, { title: null }),
+      },
+    ]);
+
+    // Only the live page is an auditable page.
+    expect(rollup.totalPages).toBe(1);
+    expect(rollup.auditedPages).toBe(1);
+    expect(rollup.uncomputedPages).toBe(0);
+    expect(rollup.gonePages).toBe(3);
+
+    // The gone pages' last-known HTML faults reach nothing: the missing
+    // og:title is counted once (the live page), never four times.
+    const social = rollup.topIssues.find((i) => i.section === "social");
+    expect(social?.count).toBe(1);
+    expect(rollup.worstPages.map((p) => p.pageId)).toEqual(["live"]);
+    // And no gone page contributed a verdict or a pass.
+    expect(rollup.verdicts.indexable).toBe(1);
+    expect(rollup.passes.url).toBe(1);
+
+    // Costliest first: clicks, then impressions, then no-GSC housekeeping.
+    expect(rollup.gonePageDetails.map((p) => p.pageId)).toEqual([
+      "earning",
+      "impressions-only",
+      "quiet",
+    ]);
+    expect(rollup.gonePageDetails[0]).toEqual({
+      pageId: "earning",
+      path: "/services/still-ranking",
+      url: GONE_EARNING,
+      gscClicks28d: 41,
+      gscImpressions28d: 900,
+      lastSeen: "2026-08-01T00:00:00Z",
+    });
+    expect(rollup.gonePageDetails[2].gscClicks28d).toBeNull();
+  });
+
+  it("classifies a gone machine resource as a resource, not as lost traffic", () => {
+    // A /wp-json endpoint disappearing is a crawler detail, not an SEO
+    // finding — resource classification runs BEFORE the gone check.
+    const rollup = buildSiteAuditRollup([
+      {
+        id: "gone-endpoint",
+        url: "https://example.com/wp-json/wp/v2/posts/9",
+        path: "/wp-json/wp/v2/posts/9",
+        contentTypeLast: null,
+        status: "missing",
+        seo_metrics: null,
+        audit_metrics: null,
+      },
+    ]);
+
+    expect(rollup.nonHtmlResources).toBe(1);
+    expect(rollup.gonePages).toBe(0);
+    expect(rollup.gonePageDetails).toEqual([]);
+    expect(rollup.totalPages).toBe(0);
+  });
+
+  it("breaks ordering ties the way Postgres does — byte order, then page id", () => {
+    // The SQL twin orders in the database's C.UTF-8 collation (byte order) and
+    // ends on a unique key. localeCompare would put /akron first; two pages
+    // sharing a path would come back in arbitrary order. Both cost real parity
+    // diffs against live sites before this was pinned.
+    const page = (id: string, path: string, url: string) => ({
+      id,
+      url,
+      path,
+      contentTypeLast: "html",
+      status: "active",
+      seo_metrics: null,
+      audit_metrics: auditFor(url, { title: null }),
+    });
+
+    // All four carry exactly one URL-quality warning (uppercase / underscore /
+    // query), so only the path tie-break can order them.
+    const rollup = buildSiteAuditRollup([
+      page("b", "/akron_recycling", "https://example.com/akron_recycling"),
+      page("a", "/Hard-Drive-Shredding", "https://example.com/Hard-Drive-Shredding"),
+      // Same path, different URL — every other sort key ties.
+      page("d", "/dup", "https://example.com/dup?b=2"),
+      page("c", "/dup", "https://example.com/dup?a=1"),
+    ]);
+
+    // Uppercase sorts first (byte order), and the tied paths sort by page id.
+    expect(rollup.worstPages.map((p) => p.pageId)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
   });
 
   it("counts an alias URL once, not twice", () => {

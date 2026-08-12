@@ -48,4 +48,9 @@ export const COVERAGE_FILTER_COPY: Record<
     label: "In sitemaps, invisible to Google",
     description: "Advertised to Google but never reported in search results",
   },
+  gone: {
+    label: "Gone",
+    description:
+      "The crawler no longer finds these URLs — restore the page or redirect it",
+  },
 };
