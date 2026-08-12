@@ -29751,10 +29751,14 @@ export type Database = {
         Row: {
           asset_kind: string
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error: Json | null
           id: string
           is_manual: boolean
+          metadata: Json
           model_alias: string | null
+          organization_id: string
           prompt: string | null
           run_id: string
           slot: number
@@ -29762,15 +29766,21 @@ export type Database = {
           status: string
           superseded_by: string | null
           updated_at: string
+          updated_by: string | null
           url: string | null
+          version: number
         }
         Insert: {
           asset_kind: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           id?: string
           is_manual?: boolean
+          metadata?: Json
           model_alias?: string | null
+          organization_id: string
           prompt?: string | null
           run_id: string
           slot: number
@@ -29778,15 +29788,21 @@ export type Database = {
           status?: string
           superseded_by?: string | null
           updated_at?: string
+          updated_by?: string | null
           url?: string | null
+          version?: number
         }
         Update: {
           asset_kind?: string
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           id?: string
           is_manual?: boolean
+          metadata?: Json
           model_alias?: string | null
+          organization_id?: string
           prompt?: string | null
           run_id?: string
           slot?: number
@@ -29794,7 +29810,9 @@ export type Database = {
           status?: string
           superseded_by?: string | null
           updated_at?: string
+          updated_by?: string | null
           url?: string | null
+          version?: number
         }
         Relationships: [
           {
