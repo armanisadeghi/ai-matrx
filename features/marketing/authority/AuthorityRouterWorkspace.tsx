@@ -17,6 +17,8 @@ import {
   X,
 } from "lucide-react";
 
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,7 +41,11 @@ import {
   validateAuthorityGuidance,
 } from "./authority-write-targets";
 import { AuthorityFlowMap } from "./AuthorityFlowMap";
-import type { AuthorityRecommendation, AuthorityRouterResult } from "./types";
+import type {
+  AuthorityPage,
+  AuthorityRecommendation,
+  AuthorityRouterResult,
+} from "./types";
 import { useAuthorityRouter } from "./useAuthorityRouter";
 
 type View = "map" | "routes" | "evidence";
@@ -546,66 +552,107 @@ function EvidenceTable({
       b.active_backlinks * 4 -
       ((a.link_score ?? 0) + a.active_backlinks * 4),
   );
+  const columns: MatrxColumnDef<AuthorityPage>[] = [
+    {
+      id: "path",
+      accessorKey: "path",
+      header: "Page",
+      filter: "text",
+      cellKind: "text",
+      entityToken: "web_page",
+      href: (page) => `${sitePath}/pages/${page.page_id}`,
+      cell: (page) => (
+        <div className="flex min-w-48 items-center gap-1.5">
+          <span className="truncate font-mono font-medium">
+            {page.path || pathOf(page.url)}
+          </span>
+          <a
+            href={page.url}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 text-muted-foreground hover:text-primary"
+            aria-label={`Open ${page.url} live`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      ),
+    },
+    {
+      id: "role",
+      accessorKey: "role",
+      header: "Role",
+      filter: "select",
+      cell: (page) => <span className="capitalize">{page.role}</span>,
+    },
+    {
+      id: "target_keyword",
+      accessorKey: "target_keyword",
+      header: "Target keyword",
+      filter: "text",
+      cellKind: "text",
+      cell: (page) => page.target_keyword || "Unmapped",
+    },
+    {
+      id: "link_score",
+      accessorKey: "link_score",
+      header: "Link Score",
+      filter: "number",
+      align: "right",
+      cell: (page) => page.link_score?.toFixed(1) ?? "—",
+    },
+    {
+      id: "active_backlinks",
+      accessorKey: "active_backlinks",
+      header: "Backlinks",
+      filter: "number",
+      align: "right",
+    },
+    {
+      id: "inbound_links",
+      accessorKey: "inbound_links",
+      header: "Inbound",
+      filter: "number",
+      align: "right",
+    },
+    {
+      id: "outbound_links",
+      accessorKey: "outbound_links",
+      header: "Outbound",
+      filter: "number",
+      align: "right",
+    },
+    {
+      id: "clicks",
+      accessorKey: "clicks",
+      header: "GSC clicks",
+      filter: "number",
+      align: "right",
+      cell: (page) => page.clicks.toLocaleString(),
+    },
+    {
+      id: "average_position",
+      accessorKey: "average_position",
+      header: "Avg. position",
+      filter: "number",
+      align: "right",
+      cell: (page) => page.average_position?.toFixed(1) ?? "—",
+    },
+  ];
   return (
-    <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="border-b bg-muted/40 text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2">Page</th>
-              <th className="px-3 py-2">Role / keyword</th>
-              <th className="px-3 py-2 text-right">Link Score</th>
-              <th className="px-3 py-2 text-right">Backlinks</th>
-              <th className="px-3 py-2 text-right">In / out</th>
-              <th className="px-3 py-2 text-right">GSC</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((page) => (
-              <tr key={page.page_id} className="border-b last:border-0">
-                <td className="px-3 py-2">
-                  <Link
-                    href={`${sitePath}/pages/${page.page_id}`}
-                    className="font-mono font-medium hover:text-primary"
-                  >
-                    {page.path || pathOf(page.url)}
-                  </Link>
-                  <a
-                    href={page.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-1.5 text-muted-foreground hover:text-primary"
-                    aria-label="Open live page"
-                  >
-                    <ExternalLink className="inline h-3 w-3" />
-                  </a>
-                </td>
-                <td className="px-3 py-2">
-                  <p>{page.role}</p>
-                  <p className="text-muted-foreground">
-                    {page.target_keyword || "Unmapped"}
-                  </p>
-                </td>
-                <td className="px-3 py-2 text-right font-medium">
-                  {page.link_score?.toFixed(1) ?? "—"}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  {page.active_backlinks}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  {page.inbound_links} / {page.outbound_links}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <p>{page.clicks.toLocaleString()} clicks</p>
-                  <p className="text-muted-foreground">
-                    pos. {page.average_position?.toFixed(1) ?? "—"}
-                  </p>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="overflow-hidden rounded-xl border bg-card p-3">
+      <MatrxDataTable
+        data={rows}
+        columns={columns}
+        getRowId={(page) => page.page_id}
+        pageSize={25}
+        pageSizeOptions={[10, 25, 50, 100]}
+        emptyState={{
+          title: "No authority evidence",
+          description: "Run the authority analysis to populate this table.",
+        }}
+      />
     </div>
   );
 }

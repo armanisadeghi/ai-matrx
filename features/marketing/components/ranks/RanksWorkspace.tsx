@@ -18,6 +18,8 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,14 +32,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -45,7 +39,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
-import { cn } from "@/lib/utils";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
@@ -88,6 +81,7 @@ import type {
   RankProvider,
   RankTargetHistoryPoint,
   SerpLandscape,
+  SerpLandscapeResult,
 } from "./types";
 
 /** Wire value for one `track_keywords` entry (see the manifest's contract). */
@@ -111,8 +105,7 @@ function toAddTargetInput(raw: unknown, index: number): AddRankTargetInput {
     );
   }
   const entry = raw as Partial<TrackKeywordsEntry>;
-  const keyword =
-    typeof entry.keyword === "string" ? entry.keyword.trim() : "";
+  const keyword = typeof entry.keyword === "string" ? entry.keyword.trim() : "";
   if (!keyword) {
     throw new Error(
       `track_keywords: entry ${index + 1} needs a non-empty keyword.`,
@@ -363,12 +356,78 @@ function HistoryDialog({
   onClose: () => void;
 }) {
   const { points, landscape, loading, error } = useRankTargetHistory(targetId);
-  const [showAllLandscape, setShowAllLandscape] = useState(false);
   const location = `Marketing — Rank history for "${keyword}" (${siteDomain})`;
   const landscapeResults = landscape?.results ?? [];
-  const visibleLandscape = showAllLandscape
-    ? landscapeResults
-    : landscapeResults.slice(0, 30);
+  const historyColumns: MatrxColumnDef<RankTargetHistoryPoint>[] = [
+    {
+      id: "observed_at",
+      accessorKey: "observed_at",
+      header: "Observed",
+      filter: "text",
+      cell: (point) => formatDate(point.observed_at),
+    },
+    {
+      id: "organic_rank",
+      accessorKey: "organic_rank",
+      header: "Position",
+      filter: "number",
+      align: "right",
+      cell: (point) =>
+        point.organic_rank === null ? "not ranked" : `#${point.organic_rank}`,
+    },
+    {
+      id: "matched_url",
+      accessorKey: "matched_url",
+      header: "Matched URL",
+      filter: "text",
+      cellKind: "text",
+      cell: (point) => (
+        <span
+          className="block max-w-72 truncate"
+          title={point.matched_url ?? undefined}
+        >
+          {point.matched_url ?? "—"}
+        </span>
+      ),
+    },
+  ];
+  const landscapeColumns: MatrxColumnDef<SerpLandscapeResult>[] = [
+    {
+      id: "absolute_rank",
+      accessorKey: "absolute_rank",
+      header: "Rank",
+      filter: "number",
+      align: "right",
+    },
+    {
+      id: "domain",
+      accessorKey: "domain",
+      header: "Domain",
+      filter: "text",
+      cellKind: "text",
+    },
+    {
+      id: "title",
+      accessorKey: "title",
+      header: "Title",
+      filter: "text",
+      cellKind: "text",
+      cell: (result) => (
+        <span
+          className="block max-w-80 truncate"
+          title={result.title ?? result.url ?? undefined}
+        >
+          {result.title ?? result.url ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "result_type",
+      accessorKey: "result_type",
+      header: "Type",
+      filter: "select",
+    },
+  ];
 
   // Surface emitter feed — keep the workspace scope honest about what this
   // drill-in has actually loaded and how much of it is on screen.
@@ -376,18 +435,11 @@ function HistoryDialog({
     onSnapshot({
       points,
       landscape,
-      visibleCount: visibleLandscape.length,
-      showingAll: showAllLandscape,
+      visibleCount: landscapeResults.length,
+      showingAll: true,
       error,
     });
-  }, [
-    onSnapshot,
-    points,
-    landscape,
-    visibleLandscape.length,
-    showAllLandscape,
-    error,
-  ]);
+  }, [onSnapshot, points, landscape, landscapeResults.length, error]);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -429,44 +481,18 @@ function HistoryDialog({
         ) : (
           <div className="grid gap-4">
             <RankSparkline points={points} />
-            <div className="max-h-40 overflow-y-auto rounded-md border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Observed</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead>Matched URL</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {points.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={3}
-                        className="text-center text-xs text-muted-foreground"
-                      >
-                        No observations yet — run a check.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    [...points].reverse().map((point) => (
-                      <TableRow key={point.observed_at}>
-                        <TableCell className="text-xs">
-                          {formatDate(point.observed_at)}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          {point.organic_rank === null
-                            ? "not ranked"
-                            : `#${point.organic_rank}`}
-                        </TableCell>
-                        <TableCell className="max-w-[280px] truncate text-xs text-muted-foreground">
-                          {point.matched_url ?? "—"}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+            <div className="rounded-md border border-border p-2">
+              <MatrxDataTable
+                data={[...points].reverse()}
+                columns={historyColumns}
+                getRowId={(point) => point.observed_at}
+                pageSize={10}
+                pageSizeOptions={[10, 25, 50, 100]}
+                emptyState={{
+                  title: "No rank observations",
+                  description: "Run a check to create the first observation.",
+                }}
+              />
             </div>
             {landscape && landscape.results.length > 0 ? (
               <div>
@@ -475,72 +501,34 @@ function HistoryDialog({
                     Competitive SERP landscape (
                     {formatDate(landscape.observed_at)})
                   </p>
-                  {landscapeResults.length > 30 ? (
-                    <button
-                      type="button"
-                      className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                      onClick={() => setShowAllLandscape((current) => !current)}
-                    >
-                      {showAllLandscape
-                        ? "top 30"
-                        : `all ${landscapeResults.length}`}
-                    </button>
-                  ) : null}
                 </div>
-                <div
-                  className={cn(
-                    "overflow-y-auto rounded-md border border-border",
-                    showAllLandscape ? "max-h-96" : "max-h-56",
-                  )}
-                >
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10">#</TableHead>
-                        <TableHead>Domain</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead className="w-8" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {visibleLandscape.map((result) => (
-                        <TableRow
-                          key={result.absolute_rank}
-                          className="group/serp"
-                        >
-                          <TableCell className="text-xs">
-                            {result.absolute_rank}
-                          </TableCell>
-                          <TableCell className="max-w-[160px] truncate text-xs">
-                            {result.domain ?? "—"}
-                          </TableCell>
-                          <TableCell className="max-w-[300px] truncate text-xs text-muted-foreground">
-                            {result.title ?? result.url ?? "—"}
-                          </TableCell>
-                          <TableCell>
-                            <CopyButtons
-                              size="xs"
-                              className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/serp:opacity-100"
-                              label={`SERP result #${result.absolute_rank}`}
-                              human={() => humanLandscapeResult(result)}
-                              json={() => result}
-                              agent={() => ({
-                                kind: "rank-serp-result",
-                                location,
-                                description: `One competitive SERP landscape result for "${keyword}".`,
-                                data: result,
-                                summary: humanLandscapeResult(result),
-                                attributes: {
-                                  absolute_rank: result.absolute_rank,
-                                  domain: result.domain ?? undefined,
-                                },
-                              })}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="rounded-md border border-border p-2">
+                  <MatrxDataTable
+                    data={landscapeResults}
+                    columns={landscapeColumns}
+                    getRowId={(result) => String(result.absolute_rank)}
+                    pageSize={10}
+                    pageSizeOptions={[10, 25, 50, 100]}
+                    rowActions={(result) => (
+                      <CopyButtons
+                        size="xs"
+                        label={`SERP result #${result.absolute_rank}`}
+                        human={() => humanLandscapeResult(result)}
+                        json={() => result}
+                        agent={() => ({
+                          kind: "rank-serp-result",
+                          location,
+                          description: `One competitive SERP landscape result for "${keyword}".`,
+                          data: result,
+                          summary: humanLandscapeResult(result),
+                          attributes: {
+                            absolute_rank: result.absolute_rank,
+                            domain: result.domain ?? undefined,
+                          },
+                        })}
+                      />
+                    )}
+                  />
                 </div>
               </div>
             ) : null}
@@ -552,7 +540,9 @@ function HistoryDialog({
 }
 
 /** Rollup emitted as the `portfolio_summary` surface value. */
-function summarizePortfolio(rows: RankPortfolioItem[]): Record<string, unknown> {
+function summarizePortfolio(
+  rows: RankPortfolioItem[],
+): Record<string, unknown> {
   const ranked = rows.filter((item) => item.latest_position !== null);
   const bests = rows
     .map((item) => item.best_position)
@@ -566,7 +556,10 @@ function summarizePortfolio(rows: RankPortfolioItem[]): Record<string, unknown> 
       ranked.length === 0
         ? null
         : Math.round(
-            (ranked.reduce((sum, item) => sum + (item.latest_position ?? 0), 0) /
+            (ranked.reduce(
+              (sum, item) => sum + (item.latest_position ?? 0),
+              0,
+            ) /
               ranked.length) *
               10,
           ) / 10,
@@ -770,6 +763,85 @@ export function RanksWorkspace() {
     summary: humanRankPortfolio(rows),
     sections: groomerSections(),
   });
+  const portfolioColumns: MatrxColumnDef<RankPortfolioItem>[] = [
+    {
+      id: "keyword",
+      accessorKey: "keyword",
+      header: "Keyword",
+      filter: "text",
+      cellKind: "text",
+      cell: (item) => (
+        <button
+          type="button"
+          className="text-sm font-medium text-foreground hover:underline"
+          onClick={() => setHistoryTarget(item)}
+        >
+          {item.keyword}
+        </button>
+      ),
+    },
+    {
+      id: "latest_position",
+      accessorKey: "latest_position",
+      header: "Position",
+      filter: "number",
+      align: "right",
+      cell: (item) => <PositionCell item={item} />,
+    },
+    {
+      id: "movement",
+      accessorKey: "movement",
+      header: "Movement",
+      filter: "number",
+      align: "right",
+      cell: (item) => <MovementBadge movement={item.movement} />,
+    },
+    {
+      id: "best_position",
+      accessorKey: "best_position",
+      header: "Best",
+      filter: "number",
+      align: "right",
+      cell: (item) =>
+        item.best_position === null ? "—" : `#${item.best_position}`,
+    },
+    {
+      id: "group",
+      accessorKey: "group",
+      header: "Group",
+      filter: "select",
+      cellKind: "text",
+      cell: (item) => item.group ?? "—",
+    },
+    {
+      id: "provider",
+      accessorKey: "provider",
+      header: "Provider",
+      filter: "select",
+      cell: (item) => item.provider.replaceAll("_", " "),
+    },
+    {
+      id: "is_active",
+      accessorKey: "is_active",
+      header: "Active",
+      filter: "boolean",
+      cell: (item) => (
+        <Switch
+          checked={item.is_active}
+          aria-label={`${item.is_active ? "Disable" : "Enable"} ${item.keyword}`}
+          onCheckedChange={async (checked) => {
+            try {
+              await updateTarget(item.target_id, { is_active: checked });
+            } catch (err) {
+              toast.error("Could not update rank target", {
+                description: extractErrorMessage(err),
+              });
+            }
+          }}
+        />
+      ),
+    },
+  ];
 
   return withSurface(
     <div className="grid gap-4 p-4" data-surface-value="portfolio_summary">
@@ -818,132 +890,75 @@ export function RanksWorkspace() {
         }
       >
         <AddTargetForm onAdd={async (input) => void (await addTarget(input))} />
-        <div className="overflow-x-auto" data-surface-value="rank_portfolio">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Keyword</TableHead>
-                <TableHead>Position</TableHead>
-                <TableHead>Movement</TableHead>
-                <TableHead>Best</TableHead>
-                <TableHead>Group</TableHead>
-                <TableHead>Active</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center text-xs text-muted-foreground"
+        <div className="mt-3" data-surface-value="rank_portfolio">
+          <MatrxDataTable
+            data={rows}
+            columns={portfolioColumns}
+            getRowId={(item) => item.target_id}
+            pageSize={25}
+            pageSizeOptions={[10, 25, 50, 100]}
+            emptyState={{
+              title: "No tracked keywords",
+              description: "Add a keyword above to start rank tracking.",
+            }}
+            rowActions={(item) => {
+              const state = checking[item.target_id];
+              return (
+                <div className="flex justify-end gap-1">
+                  <CopyButtons
+                    size="icon"
+                    label={item.keyword}
+                    human={() => humanRankPortfolioItem(item)}
+                    json={() => item}
+                    agent={() => ({
+                      kind: "rank-portfolio-item",
+                      location: pageLocation,
+                      description: `One tracked rank target for ${site.domain}.`,
+                      data: item,
+                      summary: humanRankPortfolioItem(item),
+                      attributes: {
+                        keyword: item.keyword,
+                        is_active: item.is_active,
+                      },
+                    })}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1 px-2 text-xs"
+                    disabled={state?.status === "running"}
+                    onClick={() => void run(item.target_id)}
+                    title={state?.stage}
                   >
-                    No keywords tracked yet — add one above.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((item) => {
-                  const state = checking[item.target_id];
-                  return (
-                    <TableRow key={item.target_id}>
-                      <TableCell>
-                        <button
-                          type="button"
-                          className="text-sm font-medium text-foreground hover:underline"
-                          onClick={() => setHistoryTarget(item)}
-                        >
-                          {item.keyword}
-                        </button>
-                      </TableCell>
-                      <TableCell>
-                        <PositionCell item={item} />
-                      </TableCell>
-                      <TableCell>
-                        <MovementBadge movement={item.movement} />
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {item.best_position === null
-                          ? "—"
-                          : `#${item.best_position}`}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {item.group ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Switch
-                          checked={item.is_active}
-                          onCheckedChange={async (checked) => {
-                            try {
-                              await updateTarget(item.target_id, {
-                                is_active: checked,
-                              });
-                            } catch (err) {
-                              toast.error("Could not update rank target", {
-                                description: extractErrorMessage(err),
-                              });
-                            }
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <CopyButtons
-                            size="icon"
-                            label={item.keyword}
-                            human={() => humanRankPortfolioItem(item)}
-                            json={() => item}
-                            agent={() => ({
-                              kind: "rank-portfolio-item",
-                              location: pageLocation,
-                              description: `One tracked rank target for ${site.domain}.`,
-                              data: item,
-                              summary: humanRankPortfolioItem(item),
-                              attributes: {
-                                keyword: item.keyword,
-                                is_active: item.is_active,
-                              },
-                            })}
-                          />
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 gap-1 px-2 text-xs"
-                            disabled={state?.status === "running"}
-                            onClick={() => void run(item.target_id)}
-                            title={state?.stage}
-                          >
-                            {state?.status === "running" ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <RefreshCw className="h-3 w-3" />
-                            )}
-                            Check now
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                            onClick={async () => {
-                              try {
-                                await removeTarget(item.target_id);
-                                toast.success(`Removed "${item.keyword}"`);
-                              } catch (err) {
-                                toast.error("Could not remove rank target", {
-                                  description: extractErrorMessage(err),
-                                });
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+                    {state?.status === "running" ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3" />
+                    )}
+                    Check now
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                    aria-label={`Remove ${item.keyword}`}
+                    onClick={async () => {
+                      try {
+                        await removeTarget(item.target_id);
+                        toast.success(`Removed "${item.keyword}"`);
+                      } catch (err) {
+                        toast.error("Could not remove rank target", {
+                          description: extractErrorMessage(err),
+                        });
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              );
+            }}
+          />
         </div>
       </SectionCard>
       {historyTarget ? (

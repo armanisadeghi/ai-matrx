@@ -308,10 +308,10 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   // surface value. These share react-query caches with the cards (same keys).
   const draftContent = usePageContent(site.id, pageId);
   const findingsRows = usePageOpenFindings(site.id, pageId, 10);
-  // Per-query GSC breakdown at the pane's default range/limit (28d, 50 rows)
+  // Complete per-query GSC breakdown at the pane's default range (28d)
   // — same query key the Search Console pane uses at its initial range, so
   // this shares the cache instead of duplicating the fetch once mounted.
-  const queryStats = usePageQueryStats(pageId, 28, 50);
+  const queryStats = usePageQueryStats(pageId, 28);
   const outboundLinks = usePageOutboundLinks(
     site.id,
     pageId,

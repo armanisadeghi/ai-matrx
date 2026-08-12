@@ -15,7 +15,10 @@ import { useOpenKeywordClassificationWindow } from "@/features/overlays/openers/
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/styles/themes/utils";
-import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   GscDeltaSpan,
@@ -32,6 +35,7 @@ import {
 } from "@/features/marketing/search-console/hooks/useGscQuery";
 import type {
   GscClassMoverRow,
+  GscClassSummaryRow,
   GscJuiceRow,
   GscResolvedPeriods,
   GscShiftRow,
@@ -41,9 +45,6 @@ import {
   GSC_TRAFFIC_CLASSES,
   formatCount,
 } from "@/features/marketing/search-console/types";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
 
 function num(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
@@ -163,7 +164,10 @@ export function QualityView({
       cell: (row) => (
         <span className="text-xs tabular-nums">
           {num(row.clicks)}
-          <span className="text-muted-foreground"> / {num(row.cmp_clicks)}</span>
+          <span className="text-muted-foreground">
+            {" "}
+            / {num(row.cmp_clicks)}
+          </span>
         </span>
       ),
     },
@@ -192,6 +196,66 @@ export function QualityView({
       ),
     },
   ];
+  const summaryColumns: MatrxColumnDef<GscClassSummaryRow>[] = [
+    {
+      id: "traffic_class",
+      accessorKey: "traffic_class",
+      header: "Class",
+      filter: "select",
+      cell: (row) => <ClassChip trafficClass={row.traffic_class} />,
+    },
+    {
+      id: "clicks",
+      accessorKey: "clicks",
+      header: "Clicks",
+      filter: "number",
+      align: "right",
+      cell: (row) => num(row.clicks),
+    },
+    {
+      id: "click_delta",
+      accessorFn: (row) => row.clicks - (row.cmp_clicks ?? 0),
+      header: "Click change",
+      filter: "number",
+      align: "right",
+      cell: (row) => deltaSpan(row.clicks, row.cmp_clicks ?? 0),
+    },
+    {
+      id: "click_share",
+      accessorFn: (row) => (totals.clicks > 0 ? row.clicks / totals.clicks : 0),
+      header: "Click share",
+      filter: "number",
+      align: "right",
+      cell: (row) =>
+        totals.clicks > 0
+          ? `${((row.clicks / totals.clicks) * 100).toFixed(0)}%`
+          : "—",
+    },
+    {
+      id: "impressions",
+      accessorKey: "impressions",
+      header: "Impressions",
+      filter: "number",
+      align: "right",
+      cell: (row) => num(row.impressions),
+    },
+    {
+      id: "impression_delta",
+      accessorFn: (row) => row.impressions - (row.cmp_impressions ?? 0),
+      header: "Impression change",
+      filter: "number",
+      align: "right",
+      cell: (row) => deltaSpan(row.impressions, row.cmp_impressions ?? 0),
+    },
+    {
+      id: "queries",
+      accessorKey: "queries",
+      header: "Queries",
+      filter: "number",
+      align: "right",
+      cell: (row) => num(row.queries),
+    },
+  ];
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto pr-0.5">
@@ -212,117 +276,47 @@ export function QualityView({
           <Tags className="h-3 w-3" /> Classify in panel
         </button>
       </div>
-      <div className="shrink-0 overflow-hidden rounded-md border border-border">
-        <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-          <thead className="bg-muted/60 text-left">
-            <tr>
-              <th className="px-2 py-1.5 font-medium">Class</th>
-              <th className="px-2 py-1.5 text-right font-medium">Clicks</th>
-              <th className="px-2 py-1.5 text-right font-medium">Δ</th>
-              <th className="px-2 py-1.5 text-right font-medium">Share</th>
-              <th className="px-2 py-1.5 text-right font-medium">
-                Impressions
-              </th>
-              <th className="px-2 py-1.5 text-right font-medium">Δ</th>
-              <th className="px-2 py-1.5 text-right font-medium">Queries</th>
-              <th className="px-2 py-1.5" />
-            </tr>
-          </thead>
-          <tbody>
-            {summaryRows.map((row) => (
-              <tr
-                key={row.traffic_class}
-                className={cn(
-                  "cursor-pointer border-t border-border hover:bg-accent/50",
-                  trafficClass === row.traffic_class && "bg-accent/60",
-                )}
-                onClick={() =>
-                  setTrafficClass(
-                    trafficClass === row.traffic_class
-                      ? null
-                      : (row.traffic_class as GscTrafficClass),
-                  )
-                }
-              >
-                <td className="px-2 py-1.5">
-                  <ClassChip trafficClass={row.traffic_class} />
-                </td>
-                <td className="px-2 py-1.5 text-right font-semibold tabular-nums">
-                  {num(row.clicks)}
-                </td>
-                <td className="px-2 py-1.5 text-right">
-                  {deltaSpan(row.clicks, row.cmp_clicks ?? 0)}
-                </td>
-                <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
-                  {totals.clicks > 0
-                    ? `${((row.clicks / totals.clicks) * 100).toFixed(0)}%`
-                    : "—"}
-                </td>
-                <td className="px-2 py-1.5 text-right tabular-nums">
-                  {num(row.impressions)}
-                </td>
-                <td className="px-2 py-1.5 text-right">
-                  {deltaSpan(row.impressions, row.cmp_impressions ?? 0)}
-                </td>
-                <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
-                  {num(row.queries)}
-                </td>
-                <td className="px-2 py-1.5 text-right">
-                  {/* The classification review queue — the legacy /sites
-                      shim resolves the brand and keeps the query intact. */}
-                  <Link
-                    href={`/marketing/sites/${siteId}/keywords?view=classification&f_traffic_class=select:${row.traffic_class}`}
-                    className="whitespace-nowrap text-[11px] text-primary hover:underline"
-                    onClick={(event) => event.stopPropagation()}
-                    title={
-                      row.traffic_class === "unclassified"
-                        ? "Open the classification queue — every unclassified keyword, biggest impressions first"
-                        : `Review and override ${row.traffic_class} keywords`
-                    }
-                  >
-                    {row.traffic_class === "unclassified"
-                      ? "Classify →"
-                      : "Review →"}
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {summaryRows.length > 0 ? (
-              <tr className="border-t border-border bg-muted/40 font-medium">
-                <td className="px-2 py-1.5 text-muted-foreground">Total</td>
-                <td className="px-2 py-1.5 text-right font-semibold tabular-nums">
-                  {num(totals.clicks)}
-                </td>
-                <td className="px-2 py-1.5 text-right">
-                  {deltaSpan(totals.clicks, totals.cmp)}
-                </td>
-                <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
-                  100%
-                </td>
-                <td className="px-2 py-1.5 text-right tabular-nums">
-                  {num(totals.impressions)}
-                </td>
-                <td className="px-2 py-1.5 text-right">
-                  {deltaSpan(totals.impressions, totals.cmpImpressions)}
-                </td>
-                <td className="px-2 py-1.5 text-right tabular-nums text-muted-foreground">
-                  {num(totals.queries)}
-                </td>
-                <td className="px-2 py-1.5" />
-              </tr>
-            ) : null}
-            {summaryRows.length === 0 && !summary.isLoading ? (
-              <tr>
-                <td
-                  colSpan={8}
-                  className="px-2 py-4 text-center text-muted-foreground"
-                >
-                  No data {describeGscWindow(periods.current)}.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+      <div className="shrink-0 overflow-hidden rounded-md border border-border p-2">
+        <MatrxDataTable
+          data={summaryRows}
+          columns={summaryColumns}
+          getRowId={(row) => row.traffic_class}
+          isLoading={summary.isLoading}
+          pageSize={10}
+          selectedId={trafficClass}
+          onRowOpen={(row) =>
+            setTrafficClass((current) =>
+              current === row.traffic_class
+                ? null
+                : (row.traffic_class as GscTrafficClass),
+            )
+          }
+          rowActions={(row) => (
+            <Link
+              href={`/marketing/sites/${siteId}/keywords?view=classification&f_traffic_class=select:${row.traffic_class}`}
+              className="whitespace-nowrap text-[11px] text-primary hover:underline"
+              title={
+                row.traffic_class === "unclassified"
+                  ? "Open the classification queue — every unclassified keyword, biggest impressions first"
+                  : `Review and override ${row.traffic_class} keywords`
+              }
+            >
+              {row.traffic_class === "unclassified" ? "Classify →" : "Review →"}
+            </Link>
+          )}
+          emptyState={{
+            title: "No traffic-class data",
+            description: `No data ${describeGscWindow(periods.current)}.`,
+          }}
+        />
+        {summaryRows.length > 0 ? (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Total: {num(totals.clicks)} clicks (
+            {deltaSpan(totals.clicks, totals.cmp)}) · {num(totals.impressions)}{" "}
+            impressions ({deltaSpan(totals.impressions, totals.cmpImpressions)})
+            · {num(totals.queries)} queries
+          </p>
+        ) : null}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         <div className="flex items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
@@ -541,8 +535,7 @@ export function ShiftsView({
           tab-level GscPeriodStrip — ONE place. */}
       {total > rows.length ? (
         <p className="shrink-0 text-xs text-muted-foreground">
-          Showing the top {rows.length} of {formatCount(total)} shifted
-          queries.
+          Showing the top {rows.length} of {formatCount(total)} shifted queries.
         </p>
       ) : null}
       <MatrxDataTable<GscShiftRow>

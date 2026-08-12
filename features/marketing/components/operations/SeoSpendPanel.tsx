@@ -10,6 +10,8 @@
  */
 
 import { AlertTriangle, CircleDollarSign, Loader2 } from "lucide-react";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -17,12 +19,9 @@ import { SeoSpendChart } from "@/features/marketing/components/operations/SeoSpe
 import { formatRuntimeCost } from "@/features/marketing/data/operations-format";
 import {
   useSeoSpendSummary,
+  type SeoBudgetRejectionRow,
   type SeoProviderSpendRow,
 } from "@/features/marketing/data/spend";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
 
 function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
   const pct = Math.max(0, Math.min(100, row.pct_used));
@@ -63,18 +62,82 @@ export function SeoSpendPanel() {
   const spend = useSeoSpendSummary();
 
   if (spend.isError) {
-    return <QueryError error={spend.error} onRetry={() => void spend.refetch()} />;
+    return (
+      <QueryError error={spend.error} onRetry={() => void spend.refetch()} />
+    );
   }
   if (spend.isLoading || !spend.data) {
     return (
       <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading SEO provider spend…
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading SEO provider
+        spend…
       </div>
     );
   }
 
   const data = spend.data;
-  const paidThisMonth = data.this_month.filter((row) => row.effective_cost > 0 || row.run_count > 0);
+  const paidThisMonth = data.this_month.filter(
+    (row) => row.effective_cost > 0 || row.run_count > 0,
+  );
+  const rejectionColumns: MatrxColumnDef<SeoBudgetRejectionRow>[] = [
+    {
+      id: "provider",
+      accessorKey: "provider",
+      header: "Provider",
+      filter: "select",
+      cell: (row) => (
+        <span className="capitalize">{row.provider.replaceAll("_", " ")}</span>
+      ),
+    },
+    {
+      id: "ceiling",
+      accessorKey: "ceiling",
+      header: "Ceiling",
+      filter: "select",
+      cell: (row) => (
+        <Badge variant="destructive" className="text-[9px]">
+          {row.ceiling ?? "budget exceeded"}
+        </Badge>
+      ),
+    },
+    {
+      id: "spent_usd",
+      accessorKey: "spent_usd",
+      header: "Spent",
+      filter: "number",
+      align: "right",
+      cell: (row) =>
+        row.spent_usd === null ? "—" : formatRuntimeCost(row.spent_usd),
+    },
+    {
+      id: "limit_usd",
+      accessorKey: "limit_usd",
+      header: "Limit",
+      filter: "number",
+      align: "right",
+      cell: (row) =>
+        row.limit_usd === null ? "—" : formatRuntimeCost(row.limit_usd),
+    },
+    {
+      id: "occurred_at",
+      accessorKey: "occurred_at",
+      header: "When",
+      filter: "text",
+      cell: (row) =>
+        new Date(row.occurred_at).toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }),
+    },
+    {
+      id: "run_id",
+      accessorKey: "run_id",
+      header: "Run",
+      filter: "text",
+      cellKind: "uuid",
+      fk: { forbidden: true },
+    },
+  ];
 
   return (
     <div className="grid h-full grid-rows-[auto_auto_1fr] gap-3 overflow-y-auto p-1">
@@ -95,7 +158,8 @@ export function SeoSpendPanel() {
         </div>
         {paidThisMonth.length === 0 ? (
           <div className="flex items-center gap-2 rounded-md border border-dashed border-border p-4 text-xs text-muted-foreground">
-            <CircleDollarSign className="h-4 w-4" /> No SEO provider spend recorded this month.
+            <CircleDollarSign className="h-4 w-4" /> No SEO provider spend
+            recorded this month.
           </div>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -105,8 +169,10 @@ export function SeoSpendPanel() {
           </div>
         )}
         <p className="mt-2 text-[10px] text-muted-foreground">
-          Org·provider monthly ceiling {formatRuntimeCost(data.org_provider_monthly_ceiling_usd)} ·
-          platform-wide monthly ceiling {formatRuntimeCost(data.global_provider_monthly_ceiling_usd)} per
+          Org·provider monthly ceiling{" "}
+          {formatRuntimeCost(data.org_provider_monthly_ceiling_usd)} ·
+          platform-wide monthly ceiling{" "}
+          {formatRuntimeCost(data.global_provider_monthly_ceiling_usd)} per
           provider (placeholder values, pending final ruling).
         </p>
       </section>
@@ -120,60 +186,21 @@ export function SeoSpendPanel() {
 
       <section className="rounded-lg border border-border bg-card p-3">
         <h2 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> Recent budget rejections
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" /> Recent budget
+          rejections
         </h2>
-        {data.recent_budget_rejections.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            No runs were rejected for exceeding a spend ceiling in the last 30 days.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-              <thead>
-                <tr className="border-b border-border text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-                  <th className="py-1.5 pr-3 font-medium">Provider</th>
-                  <th className="py-1.5 pr-3 font-medium">Ceiling</th>
-                  <th className="py-1.5 pr-3 font-medium text-right">Spent / limit</th>
-                  <th className="py-1.5 pr-3 font-medium">When</th>
-                  <th className="py-1.5 pr-3 font-medium">Run</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {data.recent_budget_rejections.map((rejection) => (
-                  <tr key={rejection.run_id}>
-                    <td className="py-1.5 pr-3 capitalize">{rejection.provider}</td>
-                    <td className="py-1.5 pr-3">
-                      <Badge variant="destructive" className="text-[9px]">
-                        {rejection.ceiling ?? "budget exceeded"}
-                      </Badge>
-                    </td>
-                    <td className="py-1.5 pr-3 text-right font-mono tabular-nums">
-                      {rejection.spent_usd !== null
-                        ? formatRuntimeCost(rejection.spent_usd)
-                        : "—"}{" "}
-                      /{" "}
-                      {rejection.limit_usd !== null
-                        ? formatRuntimeCost(rejection.limit_usd)
-                        : "—"}
-                    </td>
-                    <td className="py-1.5 pr-3 text-muted-foreground">
-                      {new Date(rejection.occurred_at).toLocaleString(undefined, {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </td>
-                    <td
-                      className="py-1.5 pr-3 font-mono text-[10px] text-muted-foreground"
-                      title={rejection.run_id}
-                    >
-                      {rejection.run_id.slice(0, 8)}…
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <MatrxDataTable
+          data={data.recent_budget_rejections}
+          columns={rejectionColumns}
+          getRowId={(row) => row.run_id}
+          pageSize={10}
+          pageSizeOptions={[10, 25, 50, 100]}
+          emptyState={{
+            title: "No recent budget rejections",
+            description:
+              "No runs were rejected for exceeding a spend ceiling in the last 30 days.",
+          }}
+        />
       </section>
     </div>
   );
