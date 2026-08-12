@@ -74,6 +74,21 @@ export interface UseAgentConsumerReturn {
   /** Add tag to inclusion set; if already present, remove (toggle). */
   toggleTag: (tag: string) => void;
 
+  /**
+   * Replace the WHOLE category inclusion set in one dispatch.
+   *
+   * Prefer this over looping `toggleCategory` whenever more than one value
+   * changes. Each `toggleCategory` call computes its next array from the
+   * `includedCats` captured in the CURRENT render, so two toggles fired in the
+   * same tick both start from the same snapshot and the second one's patch
+   * overwrites the first — a "Clear filter" click with three categories active
+   * removes only one. One dispatch of the final set cannot drift that way.
+   */
+  setIncludedCats: (next: string[]) => void;
+
+  /** Replace the WHOLE tag inclusion set in one dispatch. See setIncludedCats. */
+  setIncludedTags: (next: string[]) => void;
+
   toggleFavoritesFirst: () => void;
 
   /** Advance "owned" list page by 1. */
@@ -201,6 +216,22 @@ export function useAgentConsumer(
     [consumerId, consumer.includedTags, dispatch],
   );
 
+  const setIncludedCats = useCallback(
+    (next: string[]) =>
+      dispatch(
+        setAgentConsumerFilter({ consumerId, patch: { includedCats: next } }),
+      ),
+    [consumerId, dispatch],
+  );
+
+  const setIncludedTags = useCallback(
+    (next: string[]) =>
+      dispatch(
+        setAgentConsumerFilter({ consumerId, patch: { includedTags: next } }),
+      ),
+    [consumerId, dispatch],
+  );
+
   const toggleFavoritesFirst = useCallback(
     () =>
       dispatch(
@@ -301,6 +332,8 @@ export function useAgentConsumer(
     setAccessFilter,
     toggleCategory,
     toggleTag,
+    setIncludedCats,
+    setIncludedTags,
     toggleFavoritesFirst,
     loadMoreList,
     loadMoreShared,

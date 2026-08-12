@@ -1,12 +1,23 @@
 /**
  * Surface manifest — Agents Hub (`matrx-user/agents`).
  *
- * Drives `/agents` — the authenticated gallery at `/agents/all`
- * (`AgentsGrid`, `features/agents/components/agent-listings/AgentsGrid.tsx`),
- * the app's gold-standard list page. The user browses their own and shared
- * agents, searches (names/tags or deep prompt search), filters by category /
- * tag / favorites / archived, sorts, and steps into an agent (view / build /
- * run / versions) or creates a new one.
+ * The user browses their own and shared agents, searches (names/tags or deep
+ * prompt search), filters by category / tag / favorites / archived, sorts, and
+ * steps into an agent (view / build / run / versions) or creates a new one.
+ *
+ * WHERE THIS ACTUALLY MOUNTS — read before verifying anything here.
+ * `surfaceFromPathname` maps the whole `/agents` prefix to this surface, but
+ * the ONLY component that mounts `SurfaceRuntimeProvider` for it is
+ * `AgentsGrid` (`features/agents/components/agent-listings/AgentsGrid.tsx`),
+ * and `AgentsGrid` renders on **`/agents/classic`** alone. `/agents/all` —
+ * where `/agents` redirects an authenticated user — has been the
+ * `lib/entity-list` browse shell (`features/agents/browse/AgentBrowsePage`)
+ * since that migration, and it mounts NO runtime. So on `/agents/all` the
+ * header popover still names this surface (route mapping), while the live
+ * values and the write tool come from the mounted stack and are therefore
+ * absent. Verified live 2026-08-12. Adopting the emitter on `AgentBrowsePage`
+ * is a `surface-authoring` job, not a write-target one; until then, verify on
+ * `/agents/classic`.
  *
  * A list surface guarantees a different kind of context than a record
  * surface: no single entity is "open" here. What IS always present is the
@@ -21,7 +32,10 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { SORT_OPTIONS } from "@/features/agents/components/agent-listings/core/types";
+import { AGENT_NONE_SENTINEL } from "@/features/agents/redux/agent-consumers/slice";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const AGENTS_HUB_SURFACE_NAME = "matrx-user/agents";
@@ -300,21 +314,78 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * ONE composite target, not nine micro-targets.
+ *
+ * Every field below is part of a single user thought — "show only my archived
+ * research agents, most recent first" is four fields in one breath — and the
+ * `filters` read value is already exactly this object, so the evidence loop is
+ * read `filters`, write `catalog_filters`. Bundling them buys three things a
+ * per-field split cannot:
+ *
+ *  1. ONE confirm dialog for a multi-field narrowing instead of up to nine.
+ *  2. Atomic validation. One bad category rejects the WHOLE call, so a filter
+ *     can never half-apply — the state the scout demanded for the arrays, got
+ *     for free across every field.
+ *  3. Immunity to both write-ordering and stale-closure hazards by
+ *     construction: one call, one store read, one dispatch. There is no
+ *     replace/append pair here and no second target to race.
+ *
+ * The trade, stated plainly because the user lives with it: they accept or
+ * decline the object whole.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "catalog_filters",
+    label: "Catalog filters",
+    description:
+      "Narrows or re-sorts the agent gallery the user is looking at — the same controls behind the Filter panel, the search box, and the ownership tabs. " +
+      "Value is an OBJECT containing ONLY the keys you want to change; every key is optional and each one you send REPLACES that filter outright. " +
+      'Keys: `search_query` (string; matches agent names and tags, or prompt text too when `deep_search` is on; "" clears it), ' +
+      "`deep_search` (boolean; true also searches INSIDE agent prompts, server-side), " +
+      '`ownership_tab` ("mine" | "shared" | "all" — which slice of the library; "shared" is rejected when nothing is shared with the user, because the tab is not rendered then), ' +
+      "`sort_by` (" +
+      SORT_OPTIONS.map((o) => `"${o.value}"`).join(" | ") +
+      "), " +
+      "`included_categories` and `included_tags` (arrays; the WHOLE set — include everything you want active, pass [] to clear, and an empty set means no filter rather than no results), " +
+      '`favorites_filter` ("all" | "yes" | "no"), ' +
+      '`archived_filter` ("active" | "archived" | "both"), ' +
+      "`favorites_first` (boolean; pins favorites to the top). " +
+      "Every category and tag you send must appear in the `available_categories` / `available_tags` you were given (plus " +
+      `"${AGENT_NONE_SENTINEL}"` +
+      " for the Uncategorized/Untagged chip) — an invented or misspelled one REJECTS the entire call and changes nothing, so no filter half-applies. " +
+      "This ONLY changes what is on screen: nothing is saved, and `archived_filter` means SHOW archived agents — it does not archive anything. " +
+      "Send all your changes in ONE call; a second call replaces the keys it names, in an order you do not control. " +
+      "Note that `visible_agents` and every count go STALE the moment this lands — they describe the list from before your write, so re-read them rather than telling the user what is now on screen.",
+    valueType: "object",
+    updatesValue: "filters",
+    mode: "ui",
+    applyPolicy: "ask",
+    group: "filters",
+    sortOrder: 430,
+  },
+];
+
 export const agentsHubManifest: SurfaceManifest = {
   surfaceName: AGENTS_HUB_SURFACE_NAME,
   readiness: "verified",
+  readinessNote:
+    "Values and the catalog_filters write target are live-verified against a real agent run — but ONLY on /agents/classic, the single route that renders AgentsGrid. /agents/all (where /agents redirects) is the lib/entity-list browse shell and mounts no runtime, so it resolves this surface by route while offering neither live values nor the write tool. Adopting the emitter on AgentBrowsePage is open (surface-authoring).",
   label: "Agents Hub",
   urlPattern: "/agents",
   intro: `<surface_intro>
 You are on the Agents Hub — the gallery where the user browses, searches, and filters their AI agent library before stepping into one agent (view / build / run / versions) or creating a new one. No single agent is "open" here; the context is the catalog view itself.
 Read visible_agents for what the user is currently looking at (already narrowed by every active filter), and the filters group to understand HOW it was narrowed — ownership_tab splits the user's OWN agents from agents SHARED WITH them, and has_active_filters tells you whether the view is a subset of the full library. available_categories / available_tags are the vocabularies the library actually uses.
 The focus group is transient: peeked_agent_id/name appear only while a sneak-peek preview panel is open, and version_lookup only when the user searched a raw version UUID. When list_loading is true, every catalog value is empty — say so rather than concluding the user has no agents.
+YOU CAN SHAPE THIS VIEW, NOT ACT ON THE AGENTS IN IT. One target is writable — catalog_filters — and it carries every filter, the search box, the ownership tab and the sort as ONE object, so put all your changes in a single call. Finding the agents someone described is the real work here: narrow with included_categories / included_tags (only values from available_categories / available_tags), or search prompt text with search_query + deep_search. Everything that CHANGES an agent — favoriting, archiving, deleting, duplicating, publishing, sharing — is deliberately not writable, so hand the narrowed list back and let the user press the button. archived_filter shows archived agents; it never archives one.
+After a filter lands, visible_agents and every count describe the PREVIOUS view — they were captured when this run started. Do not report what is now on screen from that stale snapshot.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 /** One agent entry as emitted in the `visible_agents` surface value. */
