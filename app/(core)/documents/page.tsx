@@ -158,6 +158,18 @@ export default function DocumentsLandingPage() {
   // ---- Agent-context surface (matrx-user/documents, library view) ---------
   // Plain function (React Compiler memoizes; never useCallback) so it reads
   // the live list state at Run time rather than a stale closure.
+  //
+  // This mount registers NO write handlers, on purpose. The surface HAS
+  // agent-writable targets, but both of them address a single open document,
+  // and a write target carries one value with no entity selector — on a roster
+  // of N documents "set the description" has no subject. The only mutations
+  // this route offers are create (a creation action, not a field write),
+  // import (needs a `File` an agent cannot supply) and delete (destructive,
+  // human-only), so read-only is the correct posture here rather than an
+  // oversight. `listAgentWritableTargets()` offers a target only where its
+  // mount registered a handler, so the document route's targets stay invisible
+  // from the library. See the `writeTargets` doc block in
+  // features/surfaces/manifests/documents.manifest.ts.
   const getLibraryScope = () => {
     const captured = captureDomSelection();
     return buildApplicationScopeFromMenuContext({

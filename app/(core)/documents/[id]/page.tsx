@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useRef, useState, use } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
@@ -16,6 +16,7 @@ import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import {
   getDocument,
   renameDocument,
+  updateDocumentDescription,
 } from "@/features/data-tables/document-service";
 import {
   isServiceFailure,
@@ -26,6 +27,11 @@ import {
   DOCUMENTS_SURFACE_NAME,
 } from "@/features/data-tables/agent-context/buildDocumentsContextData";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  DOCUMENT_NAME_MAX_LENGTH,
+  validateDocumentDescription,
+  validateDocumentName,
+} from "@/features/data-tables/agent-context/documentWriteValidation";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { captureDomSelection } from "@/features/context-menu-v3/utils/selection-tracking";
 
@@ -64,6 +70,29 @@ export default function DocumentPage({
   // vanishes. Gate the mount on this flag so `editable` is stable from frame 1.
   const [permsResolved, setPermsResolved] = useState(false);
 
+  // The live document row, advanced SYNCHRONOUSLY as each write lands.
+  // `applySurfaceWrite` resolves a target's handler BEFORE it awaits that
+  // target's confirm dialog, so when an agent stages BOTH targets in one turn
+  // every closure is captured up front — a handler reading `doc` off its render
+  // closure would guard against a snapshot taken before the previous target
+  // applied, and would report the pre-write name back to the agent. Rendering
+  // still reads `doc`; only the write paths read this.
+  const docRef = useRef<DocumentRow | null>(null);
+  /** Same staleness argument as `docRef`, for the permission gate. */
+  const canEditRef = useRef(false);
+
+  /** The ONE place that advances the row — keeps state and the ref in step. */
+  const commitDocument = (next: DocumentRow) => {
+    docRef.current = next;
+    setDoc(next);
+  };
+
+  /** Same, for the edit gate. */
+  const applyCanEdit = (next: boolean) => {
+    canEditRef.current = next;
+    setCanEdit(next);
+  };
+
   useEffect(() => {
     let active = true;
     (async () => {
@@ -73,7 +102,7 @@ export default function DocumentPage({
         setError(res.error);
         return;
       }
-      setDoc(res.data);
+      commitDocument(res.data);
       setRenameDraft(res.data.document_name);
 
       const { data: userData } = await supabase.auth.getUser();
@@ -83,14 +112,14 @@ export default function DocumentPage({
       // Editor gate: owner ALWAYS edits; non-owner edits when has_permission
       // returns true for level=editor. Matches the workbook permission flow.
       if (userId && userId === res.data.user_id) {
-        setCanEdit(true);
+        applyCanEdit(true);
       } else {
         const { data: perm } = await supabase.rpc("has_permission", {
           p_resource_type: "udt_document",
           p_resource_id: id,
           p_required_permission: "editor",
         });
-        setCanEdit(perm === true);
+        applyCanEdit(perm === true);
       }
       setPermsResolved(true);
     })();
@@ -102,17 +131,70 @@ export default function DocumentPage({
   const isOwner =
     doc !== null && currentUserId !== null && doc.user_id === currentUserId;
 
-  const commitRename = async () => {
-    if (!doc || renameDraft === doc.document_name) return;
+  const applyRename = async (name: string) => {
+    const current = docRef.current;
+    if (!current || name === current.document_name) return;
     setRenameSaving(true);
-    const res = await renameDocument(id, renameDraft);
+    const res = await renameDocument(id, name);
     setRenameSaving(false);
-    if (!isServiceFailure(res)) {
-      setDoc(res.data);
-    } else {
-      setRenameDraft(doc.document_name);
+    if (isServiceFailure(res)) {
+      setRenameDraft(current.document_name);
+      throw new Error(res.error);
     }
+    commitDocument(res.data);
+    setRenameDraft(res.data.document_name);
   };
+
+  const commitRename = () => {
+    // The field has already reverted to the persisted name on failure, and a
+    // blur is trivially retryable — swallow here so an unhandled rejection
+    // never escapes the event handler. Agent writes go through the handler
+    // below instead, where the throw becomes an error envelope the agent reads.
+    void applyRename(renameDraft).catch(() => {});
+  };
+
+  // Write half of `matrx-user/documents` for the DOCUMENT route. Both targets
+  // are the human-authored fields of the `udt_documents` row; the library route
+  // registers nothing at all, and the document BODY belongs to Univer and is
+  // not declared (see the manifest's `writeTargets` doc block for the per-mount
+  // and ruled-out rationale). Both persist immediately through
+  // `document-service` — never a direct table write — and both validate then
+  // THROW on a bad shape, which the writeback seam turns into an error envelope
+  // the agent reads. Fresh closures per call (getWriteHandlers contract), and
+  // every read of the row goes through `docRef` because the seam resolves these
+  // closures before the first confirm resolves.
+  //
+  // Shape validation lives in the PURE `documentWriteValidation` module rather
+  // than inline here: it keeps the bounds in one place (the manifest
+  // interpolates the same constants into the prose the model reads) and it
+  // throws SYNCHRONOUSLY, before any state is touched, so a bad shape can never
+  // half-apply.
+  const assertWritable = (whatItBlocks: string) => {
+    // `canEdit` goes through the ref for the same reason `doc` does — the seam
+    // resolves these closures before the first confirm returns, so a render
+    // snapshot can be stale by the time the user clicks Apply.
+    if (!docRef.current)
+      throw new Error("The document has not finished loading yet.");
+    if (!canEditRef.current)
+      throw new Error(
+        `This document is open in viewer-only mode — the user does not have edit permission, so ${whatItBlocks}.`,
+      );
+  };
+
+  const getSurfaceWriteHandlers = () => ({
+    document_name: async (value: unknown) => {
+      const next = validateDocumentName(value);
+      assertWritable("it cannot be renamed");
+      await applyRename(next);
+    },
+    document_description: async (value: unknown) => {
+      const next = validateDocumentDescription(value);
+      assertWritable("its description cannot be changed");
+      const res = await updateDocumentDescription(id, next);
+      if (isServiceFailure(res)) throw new Error(res.error);
+      commitDocument(res.data);
+    },
+  });
 
   if (error) {
     return (
@@ -152,6 +234,7 @@ export default function DocumentPage({
     <SurfaceRuntimeProvider
       surfaceName={DOCUMENTS_SURFACE_NAME}
       getScope={getDocumentScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
       isEditable={canEdit}
     >
       <RouteHeader
@@ -171,6 +254,13 @@ export default function DocumentPage({
               }}
               className="h-7 min-w-0 max-w-[45vw] sm:max-w-xs text-sm font-medium border-0 bg-transparent shadow-none focus-visible:ring-1 px-1.5"
               disabled={!doc || !canEdit}
+              // Same bound the write handler enforces and the manifest quotes,
+              // from the same module — the agent path and the human path
+              // cannot disagree about how long a title may be. Without it the
+              // field happily takes a pasted 300-character title, the blur
+              // commit gets a 400 from `varchar(255)`, and `commitRename`
+              // swallows it: the title reverts with nothing explaining why.
+              maxLength={DOCUMENT_NAME_MAX_LENGTH}
               placeholder="Document name"
             />
             {renameSaving && (

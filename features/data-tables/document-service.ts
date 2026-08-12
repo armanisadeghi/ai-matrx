@@ -117,6 +117,36 @@ export async function renameDocument(
   return { success: true, data: data as DocumentRow };
 }
 
+/**
+ * Rewrite the document's description. Sibling of `renameDocument` — the two
+ * human-authored fields on `udt_documents` each get a named setter so callers
+ * never hand-roll a `.from("udt_documents").update(...)`. Pass `null` (or an
+ * empty string) to clear it.
+ *
+ * Added when the documents surface became agent-writable: the
+ * `document_description` write target on `/documents/[id]` is its caller, the
+ * same way `updateWorkbookDescription` serves `workbook_description`. Keeping
+ * the pair symmetric is this file's standing contract with `workbook-service`
+ * (see the module header).
+ */
+export async function updateDocumentDescription(
+  documentId: string,
+  description: string | null,
+): Promise<ServiceResult<DocumentRow>> {
+  const { data, error } = await supabase
+    .schema("workbench")
+    .from("udt_documents")
+    .update({
+      description: description && description.length > 0 ? description : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", documentId)
+    .select("*")
+    .single();
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: data as DocumentRow };
+}
+
 export async function deleteDocument(
   documentId: string,
 ): Promise<ServiceResult<true>> {
