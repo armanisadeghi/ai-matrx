@@ -10,7 +10,7 @@
  * 3. Reproduce what a specific user and/or organization binding resolves.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -47,6 +47,17 @@ import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { isJsonObject, toJsonRecord } from "@/types/json";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  AGENT_SLOTS_SURFACE_NAME,
+  AGENT_SLOTS_WRITE_TARGETS,
+} from "@/features/surfaces/manifests/agent-slots.manifest";
+import {
+  clearSlotBenchSnapshot,
+  nextSlotBenchId,
+  publishSlotBenchSnapshot,
+  readSlotBenchOwner,
+} from "./bench-draft";
 import {
   createSlotExemplar,
   deleteSlotExemplar,
@@ -753,6 +764,132 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
       toast.error(`Failed to save exemplar: ${describeError(error)}`);
     }
   }
+
+  // ── Surface seam: publish the composer upward, accept writes into it ──────
+  //
+  // This component owns the exemplar composer, so the LIVE handler for
+  // `slot_exemplar_draft` is registered here rather than on the console's
+  // provider — `resolveHandlers` merges it over the console's base refusal
+  // layer for exactly as long as a slot workbench is open. The console reads
+  // the snapshot below inside `getScope()` to emit `slot_exemplar_draft` and
+  // `selected_slot_exemplars`, the read twins of that target.
+  // Lazy state, not a ref: the id is stable for this bench's whole life and is
+  // read inside a handler, and a ref cannot be initialized during render.
+  const [benchId] = useState(nextSlotBenchId);
+
+  const exemplarSnapshots = useMemo(
+    () =>
+      exemplars.map((row) => ({
+        id: row.id,
+        label: row.label,
+        variables: isJsonObject(row.variables) ? row.variables : null,
+        user_input: row.user_input,
+      })),
+    [exemplars],
+  );
+
+  useEffect(() => {
+    publishSlotBenchSnapshot(benchId, {
+      slotId: slot.id,
+      open: adding,
+      label: newLabel,
+      variables: newVariables,
+      user_input: newUserInput,
+      exemplars: exemplarSnapshots,
+    });
+  });
+
+  useEffect(() => () => clearSlotBenchSnapshot(benchId), [benchId]);
+
+  useSurfaceWriteHandlers(AGENT_SLOTS_SURFACE_NAME, {
+    // Validate-then-apply: a test case is composed of three interdependent
+    // fields, so NOTHING is staged until the whole object has passed. A throw
+    // here becomes an error envelope the agent reads verbatim, which is why
+    // each message names the legal shape rather than just saying "invalid".
+    [AGENT_SLOTS_WRITE_TARGETS.exemplarDraft]: (value: unknown) => {
+      // Am I still the composer on screen? Handlers are resolved before the
+      // first confirm dialog, so a write staged alongside a `select_slot` that
+      // applied first would otherwise land in THIS bench's setters after the
+      // workbench had already remounted for another slot.
+      if (readSlotBenchOwner() !== benchId) {
+        throw new Error(
+          "The workbench moved to a different slot after this write was staged, so this exemplar composer is no longer on screen. Re-read `selected_slot_id` and send the exemplar again for the slot that is actually open.",
+        );
+      }
+      if (typeof value !== "object" || value === null || Array.isArray(value)) {
+        throw new Error(
+          "slot_exemplar_draft takes an object with at least one of { label, variables, user_input }.",
+        );
+      }
+      const input = value as Record<string, unknown>;
+      const known = ["label", "variables", "user_input"];
+      const unknownKeys = Object.keys(input).filter((k) => !known.includes(k));
+      if (unknownKeys.length > 0) {
+        throw new Error(
+          `slot_exemplar_draft does not accept ${unknownKeys.join(", ")}. Accepted keys: ${known.join(", ")}.`,
+        );
+      }
+      if (Object.keys(input).length === 0) {
+        throw new Error(
+          `slot_exemplar_draft needs at least one of ${known.join(", ")} — an empty object changes nothing.`,
+        );
+      }
+
+      let nextLabel: string | undefined;
+      let nextVariables: string | undefined;
+      let nextUserInput: string | undefined;
+
+      if ("label" in input) {
+        const label = input.label;
+        if (typeof label !== "string" || label.trim() === "") {
+          throw new Error(
+            "label must be a non-empty string — a short name saying what this test case exercises.",
+          );
+        }
+        nextLabel = label.trim();
+      }
+
+      if ("variables" in input) {
+        const variables = input.variables;
+        // An OBJECT, not a JSON string: the inline-tool layer parses a
+        // JSON-looking argument before it ever reaches here, so accepting a
+        // string would train the agent into double-encoding. The textarea's
+        // string form is ours to produce.
+        if (
+          typeof variables !== "object" ||
+          variables === null ||
+          Array.isArray(variables)
+        ) {
+          throw new Error(
+            "variables must be a JSON OBJECT of the slot's declared inputs (send `{}` for a slot whose contract declares none) — not a string, and not an array.",
+          );
+        }
+        if (!isJsonObject(variables)) {
+          throw new Error(
+            "variables must contain only JSON values (strings, numbers, booleans, null, arrays, objects).",
+          );
+        }
+        nextVariables = JSON.stringify(variables, null, 2);
+      }
+
+      if ("user_input" in input) {
+        const userInput = input.user_input;
+        if (typeof userInput !== "string") {
+          throw new Error(
+            "user_input must be a string — the end-user message this exemplar replays. Use an empty string for slots driven purely by variables.",
+          );
+        }
+        nextUserInput = userInput;
+      }
+
+      // Everything validated — now stage it, and expand the composer so the
+      // admin actually sees what landed.
+      setAdding(true);
+      if (nextLabel !== undefined) setNewLabel(nextLabel);
+      if (nextVariables !== undefined) setNewVariables(nextVariables);
+      if (nextUserInput !== undefined) setNewUserInput(nextUserInput);
+    },
+  });
 
   async function removeExemplar(exemplarId: string) {
     try {
