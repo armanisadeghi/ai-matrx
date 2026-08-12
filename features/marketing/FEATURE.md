@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-08-11
+**Last updated:** 2026-08-12
 
 ## Internal Authority Router
 
@@ -99,13 +99,19 @@ exact buyer question and chooses ChatGPT, Claude, Gemini, and/or Perplexity. Wor
 goes directly to aidream's streamed durable command; saved evidence reads directly
 from Supabase.
 
-- The stream is adopted with `adoptForeignStream` and rendered only through
-  `MarkdownStream`. The server emits balanced `structured_info` `__kind` values for
-  provider answers, source captures, specialist verdicts, and synthesis; this surface
-  never hand-parses or hand-routes model output.
+- The stream is adopted with `adoptForeignStream` and opens the stable
+  `LiveRunWindow` **before** a request id exists. The server's `structured_info`
+  Content IR and specialist tokens render there; the page never inserts a shifting live
+  block or shows a loading spinner. “Watch live progress” reopens the same window.
 - Four provider cards reveal answers as soon as they land, independently of the slower
-  citation capture and specialist stages. A session-stored run id rejoins after refresh;
-  the durable `seo.collection_run.result` snapshot recovers completed work.
+  citation capture and specialist stages. Each bounded preview opens the complete answer
+  in a side panel. A session-stored run id rejoins after refresh; the durable
+  `seo.collection_run.result` snapshot recovers completed work.
+- **Claims and decision signals require no second button.** They are projections of the
+  specialist artifact produced automatically after a provider answer and cited-source
+  capture. Sources are the exact URLs the provider cited, enriched with the captured page
+  evidence and the specialist's explanation of what each source supported. Empty analysis
+  is shown as incomplete, never implied to be a successful zero-result run.
 - `MatrxDataTable` owns local sort/filter/pagination for claims, cited sources,
   decision signals, and history. “Unverified but influential” is an explicit critical
   claim state, not hidden in prose. Cited URLs always open the real source in a new tab.

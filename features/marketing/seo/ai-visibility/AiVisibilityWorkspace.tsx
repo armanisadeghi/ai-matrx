@@ -4,9 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
-  CheckCircle2,
   ExternalLink,
-  Loader2,
   MessageSquareQuote,
   PanelRightOpen,
   Play,
@@ -17,7 +15,6 @@ import {
 } from "lucide-react";
 
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -136,9 +133,7 @@ function ProviderCard({
               {analysisReady ? "Analyzed" : "Analysis incomplete"}
             </Badge>
           ) : running ? (
-            <Badge variant="outline" className="gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" /> Waiting
-            </Badge>
+            <Badge variant="outline">Waiting for answer</Badge>
           ) : (
             <Badge variant="outline">No saved answer</Badge>
           )}
@@ -162,8 +157,7 @@ function ProviderCard({
           // Provider answers ARE markdown. Rendered as raw text they put
           // literal `**asterisks**` on screen. BasicMarkdownContent is the
           // canonical renderer for stored markdown and is already in this
-          // route's graph (LiveRunDisplay → MarkdownStream), so this costs no
-          // extra bundle weight. Bounded + faded rather than line-clamped:
+          // canonical markdown renderer. Bounded + faded rather than line-clamped:
           // line-clamp cannot clamp the block children markdown produces.
           <div className="relative max-h-32 overflow-hidden text-xs leading-relaxed text-foreground/90">
             <BasicMarkdownContent content={answer} showCopyButton={false} />
@@ -227,7 +221,7 @@ export function AiVisibilityWorkspace({
   site: MarketingSite;
   sitePath: string;
 }) {
-  const { evidence, run, analyze } = useAiVisibility(
+  const { evidence, run, analyze, watchProgress } = useAiVisibility(
     site.id,
     site.organization_id,
   );
@@ -596,24 +590,28 @@ export function AiVisibilityWorkspace({
           <Button
             className="ml-auto gap-2"
             disabled={
-              running || query.trim().length < 2 || engines.length === 0
+              !running && (query.trim().length < 2 || engines.length === 0)
             }
-            onClick={() =>
+            onClick={() => {
+              if (running) {
+                watchProgress();
+                return;
+              }
               void analyze({
                 query,
                 engines,
                 country_iso: countryIso || "US",
                 city: city.trim() || null,
                 force_refresh: forceRefresh,
-              })
-            }
+              });
+            }}
           >
             {running ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <PanelRightOpen className="h-4 w-4" />
             ) : (
               <Play className="h-4 w-4" />
             )}
-            {running ? "Analyzing live" : "Analyze this query"}
+            {running ? "Watch live progress" : "Analyze this query"}
           </Button>
         </div>
         <p className="mt-2 text-[10px] text-muted-foreground">
@@ -623,41 +621,10 @@ export function AiVisibilityWorkspace({
         </p>
       </section>
 
-      {run.status !== "idle" ? (
-        <section className="rounded-xl border border-primary/20 bg-card p-3 shadow-sm">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-medium">
-              {running ? (
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              ) : run.status === "done" ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              ) : (
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-              )}
-              {run.stage ?? "Working"}
-            </div>
-            {run.runId ? (
-              <span className="text-[10px] text-muted-foreground">
-                Durable run saved
-              </span>
-            ) : null}
-          </div>
-          {run.requestId ? (
-            <LiveRunDisplay
-              requestId={run.requestId}
-              pending={running}
-              label={run.stage ?? "AI visibility analysis"}
-              bodyClassName="max-h-80"
-            />
-          ) : (
-            <p className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
-              Evidence cards will appear here as each provider answer, source
-              capture, and specialist verdict lands.
-            </p>
-          )}
-          {run.error ? (
-            <p className="mt-2 text-xs text-destructive">{run.error}</p>
-          ) : null}
+      {run.status === "error" && run.error ? (
+        <section className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{run.error}</p>
         </section>
       ) : null}
 
