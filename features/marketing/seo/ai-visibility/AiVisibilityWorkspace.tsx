@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+  ArrowLeft,
   AlertTriangle,
   ExternalLink,
+  Maximize2,
   MessageSquareQuote,
   PanelRightOpen,
   Play,
@@ -42,6 +44,11 @@ import {
   type AiVisibilitySignal,
 } from "./types";
 import { useAiVisibility } from "./useAiVisibility";
+import {
+  AI_VISIBILITY_EVIDENCE_VIEWS,
+  isAiVisibilityEvidenceView,
+  type AiVisibilityEvidenceView,
+} from "./evidence-views";
 
 interface ClaimRow extends AiVisibilityClaim {
   engine: string;
@@ -112,15 +119,15 @@ function ProviderCard({
   const analysisReady =
     hasAnalysis(live?.analysis) || hasAnalysis(response?.analysis);
   return (
-    <article className="flex min-h-44 flex-col rounded-xl border border-border bg-card shadow-sm">
-      <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5">
+    <article className="flex min-h-36 flex-col rounded-xl border border-border bg-card shadow-sm">
+      <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <MessageSquareQuote className="h-4 w-4" />
           </span>
           <div>
             <h3 className="text-sm font-semibold">{title}</h3>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {live?.modelName ?? response?.model_name ?? "Answer engine"}
             </p>
           </div>
@@ -152,14 +159,14 @@ function ProviderCard({
           ) : null}
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-3 p-3">
+      <div className="flex flex-1 flex-col gap-2 p-2.5">
         {answer ? (
           // Provider answers ARE markdown. Rendered as raw text they put
           // literal `**asterisks**` on screen. BasicMarkdownContent is the
           // canonical renderer for stored markdown and is already in this
           // canonical markdown renderer. Bounded + faded rather than line-clamped:
           // line-clamp cannot clamp the block children markdown produces.
-          <div className="relative max-h-32 overflow-hidden text-xs leading-relaxed text-foreground/90">
+          <div className="relative max-h-24 overflow-hidden text-xs leading-relaxed text-foreground/90">
             <BasicMarkdownContent content={answer} showCopyButton={false} />
             <div
               aria-hidden
@@ -187,9 +194,7 @@ function ProviderCard({
             >
               {mentioned ? "Yes" : "No"}
             </p>
-            <p className="text-[9px] uppercase text-muted-foreground">
-              Mentioned
-            </p>
+            <p className="text-xs uppercase text-muted-foreground">Mentioned</p>
           </div>
           <div>
             <p
@@ -200,13 +205,11 @@ function ProviderCard({
             >
               {cited ? "Yes" : "No"}
             </p>
-            <p className="text-[9px] uppercase text-muted-foreground">Cited</p>
+            <p className="text-xs uppercase text-muted-foreground">Cited</p>
           </div>
           <div>
             <p className="text-xs font-semibold tabular-nums">{citations}</p>
-            <p className="text-[9px] uppercase text-muted-foreground">
-              Sources
-            </p>
+            <p className="text-xs uppercase text-muted-foreground">Sources</p>
           </div>
         </div>
       </div>
@@ -217,18 +220,26 @@ function ProviderCard({
 export function AiVisibilityWorkspace({
   site,
   sitePath,
+  evidenceView,
 }: {
   site: MarketingSite;
   sitePath: string;
+  evidenceView?: AiVisibilityEvidenceView;
 }) {
-  const { evidence, run, analyze, watchProgress } = useAiVisibility(
-    site.id,
-    site.organization_id,
-  );
+  const {
+    evidence,
+    evidenceRefreshError,
+    retryEvidence,
+    run,
+    analyze,
+    watchProgress,
+  } = useAiVisibility(site.id, site.organization_id);
   const [query, setQuery] = useState("");
   const [countryIso, setCountryIso] = useState("US");
   const [city, setCity] = useState("");
   const [forceRefresh, setForceRefresh] = useState(false);
+  const [activeEvidenceView, setActiveEvidenceView] =
+    useState<AiVisibilityEvidenceView>(evidenceView ?? "claims");
   const [openAnswer, setOpenAnswer] = useState<{
     engine: AiVisibilityEngine;
     answer: string;
@@ -503,15 +514,188 @@ export function AiVisibilityWorkspace({
   const latestCited = latestResponses.filter((row) => row.target_cited).length;
   const latestProviderCount =
     latestResponses.length || AI_VISIBILITY_ENGINES.length;
+  const compactComposer = responses.length > 0 || run.status !== "idle";
+
+  const renderEvidenceTable = (view: AiVisibilityEvidenceView) => {
+    if (view === "claims") {
+      return (
+        <MatrxDataTable
+          data={claimRows}
+          columns={claimColumns}
+          getRowId={(row) => row.id}
+          isLoading={evidence.isLoading}
+          pageSize={25}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search claims, wording, or subjects…",
+          }}
+          detail={{
+            title: (row) => row.subject,
+            description: (row) =>
+              `${engineLabel(row.engine)} · ${row.verification_status}`,
+          }}
+          emptyState={{
+            icon: <ShieldAlert className="h-8 w-8 text-muted-foreground" />,
+            title: "No analyzed claims yet",
+            description:
+              "Run an exact query to see which facts, caveats, and unsupported claims influenced each answer.",
+          }}
+        />
+      );
+    }
+    if (view === "sources") {
+      return (
+        <MatrxDataTable
+          data={citationRows}
+          columns={citationColumns}
+          getRowId={(row) => row.id}
+          isLoading={evidence.isLoading}
+          pageSize={25}
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Search cited pages and domains…",
+          }}
+          detail={{
+            title: (row) => row.title || row.domain || row.url,
+            description: (row) =>
+              `${engineLabel(row.engine)} · citation #${row.ordinal}`,
+            headerActions: (row) => (
+              <Button asChild size="sm" variant="outline">
+                <a href={row.url} target="_blank" rel="noreferrer">
+                  Open source
+                </a>
+              </Button>
+            ),
+          }}
+          emptyState={{
+            icon: <SearchCheck className="h-8 w-8 text-muted-foreground" />,
+            title: "No citation sources yet",
+            description:
+              "Sources appear as providers cite them; every eligible page is captured through the shared crawl cache.",
+          }}
+        />
+      );
+    }
+    if (view === "signals") {
+      return (
+        <MatrxDataTable
+          data={signalRows}
+          columns={signalColumns}
+          getRowId={(row) => row.id}
+          isLoading={evidence.isLoading}
+          pageSize={25}
+          toolbar={{
+            search: true,
+            searchPlaceholder:
+              "Search authority, evidence, language, rankings…",
+          }}
+          detail={{
+            title: (row) => row.signal,
+            description: (row) =>
+              `${engineLabel(row.engine)} · ${row.category}`,
+          }}
+          emptyState={{
+            icon: <ScanSearch className="h-8 w-8 text-muted-foreground" />,
+            title: "No decision signals yet",
+            description:
+              "The specialist identifies the evidence, wording, authority, familiarity, rankings, and other signals behind each answer.",
+          }}
+        />
+      );
+    }
+    return (
+      <MatrxDataTable
+        data={responses}
+        columns={responseColumns}
+        getRowId={(row) => row.id}
+        isLoading={evidence.isLoading}
+        pageSize={25}
+        toolbar={{
+          search: true,
+          searchPlaceholder: "Search prior exact queries…",
+        }}
+        detail={{
+          title: (row) => row.query,
+          description: (row) =>
+            `${engineLabel(row.engine)} · ${formatDate(row.observed_at)}`,
+        }}
+        emptyState={{
+          icon: (
+            <MessageSquareQuote className="h-8 w-8 text-muted-foreground" />
+          ),
+          title: "No saved analyses",
+          description:
+            "Your first completed query will be stored here with every provider answer and evidence record.",
+        }}
+      />
+    );
+  };
+
+  if (evidenceView) {
+    return (
+      <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured p-3 sm:p-4">
+        <header className="mb-2 flex shrink-0 flex-wrap items-center gap-2 border-b border-border pb-2">
+          <Button asChild size="sm" variant="ghost" className="gap-1.5">
+            <Link href={`${sitePath}/ai-visibility`}>
+              <ArrowLeft className="h-3.5 w-3.5" /> AI Visibility
+            </Link>
+          </Button>
+          <div className="h-5 w-px bg-border" aria-hidden />
+          <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+            {AI_VISIBILITY_EVIDENCE_VIEWS.map((view) => (
+              <Button
+                key={view.id}
+                asChild
+                size="sm"
+                variant={view.id === evidenceView ? "secondary" : "ghost"}
+              >
+                <Link href={`${sitePath}/ai-visibility/${view.id}`}>
+                  {view.label}
+                </Link>
+              </Button>
+            ))}
+          </nav>
+          <span className="text-xs text-muted-foreground">
+            {site.name} · full-page evidence
+          </span>
+        </header>
+        {evidence.isError ? (
+          <div className="mb-2 shrink-0">
+            <InlineQueryError
+              what="saved AI visibility evidence"
+              error={evidence.error}
+              onRetry={() => void evidence.refetch()}
+            />
+          </div>
+        ) : null}
+        {evidenceRefreshError ? (
+          <div className="mb-2 flex shrink-0 items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+            <span className="flex-1">{evidenceRefreshError}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void retryEvidence()}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : null}
+        <section className="min-h-0 flex-1">
+          {renderEvidenceTable(evidenceView)}
+        </section>
+      </main>
+    );
+  }
 
   return (
-    <main className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-textured p-3 sm:p-4">
-      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+    <main className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto bg-textured p-3">
+      <section className="rounded-xl border border-border bg-card p-3 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <ScanSearch className="h-5 w-5" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <ScanSearch className="h-4 w-4" />
               </span>
               <div>
                 <h1 className="text-base font-semibold">
@@ -529,14 +713,14 @@ export function AiVisibilityWorkspace({
           </Button>
         </div>
 
-        <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_15rem]">
+        <div className="mt-2.5 grid gap-2 lg:grid-cols-[minmax(0,1fr)_15rem]">
           <ProTextarea
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Enter the exact question a buyer would ask an AI assistant…"
             autoGrow
-            minHeight={84}
-            maxHeight={180}
+            minHeight={compactComposer ? 48 : 72}
+            maxHeight={compactComposer ? 96 : 144}
             enableCleanup={false}
             enableTextStats={false}
           />
@@ -563,7 +747,7 @@ export function AiVisibilityWorkspace({
             })}
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <Input
             value={countryIso}
             onChange={(event) =>
@@ -614,7 +798,7 @@ export function AiVisibilityWorkspace({
             {running ? "Watch live progress" : "Analyze this query"}
           </Button>
         </div>
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-1.5 text-xs text-muted-foreground">
           Saved provider answers are reused when fresh. Cited pages use the
           shared crawl cache, and only completed answers reach the specialist
           agent.
@@ -628,7 +812,7 @@ export function AiVisibilityWorkspace({
         </section>
       ) : null}
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         {AI_VISIBILITY_ENGINES.map((engine) => (
           <ProviderCard
             key={engine.id}
@@ -653,34 +837,34 @@ export function AiVisibilityWorkspace({
         ))}
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-3">
-          <p className="text-[10px] uppercase text-muted-foreground">
+      <section className="grid gap-2 sm:grid-cols-3">
+        <div className="rounded-xl border border-border bg-card p-2.5">
+          <p className="text-xs uppercase text-muted-foreground">
             Latest citation coverage
           </p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
+          <p className="text-lg font-semibold tabular-nums">
             {latestCited}/{latestProviderCount}
           </p>
           <p className="text-xs text-muted-foreground">
             providers cited this managed site
           </p>
         </div>
-        <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-3">
-          <p className="text-[10px] uppercase text-muted-foreground">
+        <div className="rounded-xl border border-destructive/25 bg-destructive/5 p-2.5">
+          <p className="text-xs uppercase text-muted-foreground">
             Critical claim posture
           </p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums text-destructive">
+          <p className="text-lg font-semibold tabular-nums text-destructive">
             {unverifiedCount}
           </p>
           <p className="text-xs text-muted-foreground">
             unverified claims still influencing answers
           </p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-3">
-          <p className="text-[10px] uppercase text-muted-foreground">
+        <div className="rounded-xl border border-border bg-card p-2.5">
+          <p className="text-xs uppercase text-muted-foreground">
             Evidence captured
           </p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
+          <p className="text-lg font-semibold tabular-nums">
             {citationRows.length}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -695,6 +879,20 @@ export function AiVisibilityWorkspace({
           error={evidence.error}
           onRetry={() => void evidence.refetch()}
         />
+      ) : null}
+
+      {evidenceRefreshError ? (
+        <section className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+          <span className="flex-1">{evidenceRefreshError}</span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void retryEvidence()}
+          >
+            Retry
+          </Button>
+        </section>
       ) : null}
 
       {latestIncompleteCount > 0 ? (
@@ -714,126 +912,36 @@ export function AiVisibilityWorkspace({
         </section>
       ) : null}
 
-      <Tabs defaultValue="claims" className="flex min-h-[520px] flex-col">
-        <TabsList className="w-fit max-w-full justify-start overflow-x-auto">
-          <TabsTrigger value="claims" className="gap-1.5">
-            <ShieldAlert className="h-3.5 w-3.5" /> Claims
-          </TabsTrigger>
-          <TabsTrigger value="sources" className="gap-1.5">
-            <SearchCheck className="h-3.5 w-3.5" /> Sources
-          </TabsTrigger>
-          <TabsTrigger value="signals" className="gap-1.5">
-            <ScanSearch className="h-3.5 w-3.5" /> Decision signals
-          </TabsTrigger>
-          <TabsTrigger value="history" className="gap-1.5">
-            <RefreshCw className="h-3.5 w-3.5" /> History
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="claims" className="min-h-0 flex-1">
-          <MatrxDataTable
-            data={claimRows}
-            columns={claimColumns}
-            getRowId={(row) => row.id}
-            isLoading={evidence.isLoading}
-            pageSize={25}
-            toolbar={{
-              search: true,
-              searchPlaceholder: "Search claims, wording, or subjects…",
-            }}
-            detail={{
-              title: (row) => row.subject,
-              description: (row) =>
-                `${engineLabel(row.engine)} · ${row.verification_status}`,
-            }}
-            emptyState={{
-              icon: <ShieldAlert className="h-8 w-8 text-muted-foreground" />,
-              title: "No analyzed claims yet",
-              description:
-                "Run an exact query to see which facts, caveats, and unsupported claims influenced each answer.",
-            }}
-          />
-        </TabsContent>
-        <TabsContent value="sources" className="min-h-0 flex-1">
-          <MatrxDataTable
-            data={citationRows}
-            columns={citationColumns}
-            getRowId={(row) => row.id}
-            isLoading={evidence.isLoading}
-            pageSize={25}
-            toolbar={{
-              search: true,
-              searchPlaceholder: "Search cited pages and domains…",
-            }}
-            detail={{
-              title: (row) => row.title || row.domain || row.url,
-              description: (row) =>
-                `${engineLabel(row.engine)} · citation #${row.ordinal}`,
-              headerActions: (row) => (
-                <Button asChild size="sm" variant="outline">
-                  <a href={row.url} target="_blank" rel="noreferrer">
-                    Open source
-                  </a>
-                </Button>
-              ),
-            }}
-            emptyState={{
-              icon: <SearchCheck className="h-8 w-8 text-muted-foreground" />,
-              title: "No citation sources yet",
-              description:
-                "Sources appear as providers cite them; every eligible page is captured through the shared crawl cache.",
-            }}
-          />
-        </TabsContent>
-        <TabsContent value="signals" className="min-h-0 flex-1">
-          <MatrxDataTable
-            data={signalRows}
-            columns={signalColumns}
-            getRowId={(row) => row.id}
-            isLoading={evidence.isLoading}
-            pageSize={25}
-            toolbar={{
-              search: true,
-              searchPlaceholder:
-                "Search authority, evidence, language, rankings…",
-            }}
-            detail={{
-              title: (row) => row.signal,
-              description: (row) =>
-                `${engineLabel(row.engine)} · ${row.category}`,
-            }}
-            emptyState={{
-              icon: <ScanSearch className="h-8 w-8 text-muted-foreground" />,
-              title: "No decision signals yet",
-              description:
-                "The specialist identifies the evidence, wording, authority, familiarity, rankings, and other signals behind each answer.",
-            }}
-          />
-        </TabsContent>
-        <TabsContent value="history" className="min-h-0 flex-1">
-          <MatrxDataTable
-            data={responses}
-            columns={responseColumns}
-            getRowId={(row) => row.id}
-            isLoading={evidence.isLoading}
-            pageSize={25}
-            toolbar={{
-              search: true,
-              searchPlaceholder: "Search prior exact queries…",
-            }}
-            detail={{
-              title: (row) => row.query,
-              description: (row) =>
-                `${engineLabel(row.engine)} · ${formatDate(row.observed_at)}`,
-            }}
-            emptyState={{
-              icon: (
-                <MessageSquareQuote className="h-8 w-8 text-muted-foreground" />
-              ),
-              title: "No saved analyses",
-              description:
-                "Your first completed query will be stored here with every provider answer and evidence record.",
-            }}
-          />
+      <Tabs
+        value={activeEvidenceView}
+        onValueChange={(value) => {
+          if (isAiVisibilityEvidenceView(value)) setActiveEvidenceView(value);
+        }}
+        className="flex min-h-[560px] flex-col"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <TabsList className="w-fit max-w-full justify-start overflow-x-auto">
+            <TabsTrigger value="claims" className="gap-1.5">
+              <ShieldAlert className="h-3.5 w-3.5" /> Claims
+            </TabsTrigger>
+            <TabsTrigger value="sources" className="gap-1.5">
+              <SearchCheck className="h-3.5 w-3.5" /> Sources
+            </TabsTrigger>
+            <TabsTrigger value="signals" className="gap-1.5">
+              <ScanSearch className="h-3.5 w-3.5" /> Decision signals
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-1.5">
+              <RefreshCw className="h-3.5 w-3.5" /> History
+            </TabsTrigger>
+          </TabsList>
+          <Button asChild size="sm" variant="outline" className="gap-1.5">
+            <Link href={`${sitePath}/ai-visibility/${activeEvidenceView}`}>
+              <Maximize2 className="h-3.5 w-3.5" /> Open full page
+            </Link>
+          </Button>
+        </div>
+        <TabsContent value={activeEvidenceView} className="min-h-0 flex-1">
+          {renderEvidenceTable(activeEvidenceView)}
         </TabsContent>
       </Tabs>
 

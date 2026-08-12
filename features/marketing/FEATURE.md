@@ -101,8 +101,11 @@ from Supabase.
 
 - The stream is adopted with `adoptForeignStream` and opens the stable
   `LiveRunWindow` **before** a request id exists. The server's `structured_info`
-  Content IR and specialist tokens render there; the page never inserts a shifting live
-  block or shows a loading spinner. “Watch live progress” reopens the same window.
+  Content IR and specialist tokens render there; ordinary progress `data` events that
+  carry `content_ir` are promoted by the shared stream processor into canonical render
+  blocks, not parsed by this feature. The window label names the provider and live stage.
+  The page never inserts a shifting live block or shows a loading spinner. “Watch live
+  progress” reopens the same window.
 - Four provider cards reveal answers as soon as they land, independently of the slower
   citation capture and specialist stages. Each bounded preview opens the complete answer
   in a side panel. A session-stored run id rejoins after refresh; the durable
@@ -114,10 +117,15 @@ from Supabase.
   is shown as incomplete, never implied to be a successful zero-result run.
 - `MatrxDataTable` owns local sort/filter/pagination for claims, cited sources,
   decision signals, and history. “Unverified but influential” is an explicit critical
-  claim state, not hidden in prose. Cited URLs always open the real source in a new tab.
+  claim state, not hidden in prose. Each table also has a dedicated full-height route at
+  `.../ai-visibility/[claims|sources|signals|history]`; the compact overview links to the
+  active table's page. Cited URLs always open the real source in a new tab.
 - The browser never writes server-owned evidence. It reads
   `seo.ai_visibility_response/claim/citation/signal` under RLS; the Python brain owns
   provider calls, crawl-cache reuse, specialist analysis, cost accounting, and writes.
+  Each answer and completed specialist event triggers a deduplicated durable reread that
+  replaces the React Query cache; terminal completion awaits the same reread. A refresh
+  failure is visible and retryable, never disguised as an empty analysis.
 
 ### Guest vs. authed
 
@@ -409,6 +417,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-12 — Codex: AI Visibility progress-bearing `data.content_ir` now enters the canonical render-block pipeline, so the existing `LiveRunWindow` shows provider/stage updates while cards stream. Evidence cache replacement occurs at answer, analysis, and terminal milestones with a visible Retry failure path; the overview is vertically denser; claims, sources, decision signals, and history each have a full-height route reusing the same `MatrxDataTable` definitions.
 - 2026-08-12 — Claude: **The Marketing HUB became agent-writable — on the sites view only, and the four mounts that write nothing are the decision worth reading.** `matrx-user/marketing` now declares one ask-policy DRAFT target, `site_editor_draft` (`{site, name?, description?}`), handled on `SitesPortfolio`'s provider and staged through the site editor dialog's own `setDraft`, so the human still presses "Save site" and the existing version-guarded `updateSiteIdentity` runs. The contract is pure and unit-tested (`lib/site-write-targets.ts`, 17 tests); the manifest interpolates its length constants into the model-facing description so the advertised contract is the enforced one. Because the editor is a Radix MODAL — a user cannot open it and then reach the chat composer — the handler OPENS it on the site the user named, resolving the row from the loaded list (exact id / domain / name, then a unique partial) and refusing unknown or ambiguous selectors with the loaded rows listed; it refuses outright when an editor is already open on a DIFFERENT site rather than discarding unsaved work, and the dialog now prevents outside-interaction dismissal so answering a write confirm cannot throw the staged copy away. New read value `site_editor` publishes what is staged; `visible_sites` finally emits the `description` it had always advertised. **`BrandsPortfolio` deliberately registers NOTHING**: its editor writes `{name, industry, description}`, but `matrx-user/marketing-brand` already ships `brand_identity` over industry/description and declares the brand name human-owned — a second target set over the same fields would be a defect, so the brand cockpit stays the one place brand copy is written. Connections (credentials and property ids), Cost (a report) and the pillar map register nothing either. Not writable on a site: domain / root URL, owning brand, organization, logo / favicon / OG image URLs, status, visibility, delete, and creation. Live-verified with real Badass Agent runs (staging only, nothing saved): per-target confirm carrying the description verbatim, both fields landing in the real inputs, domain-change and delete requests refused, a clean decline, and three forced-invalid values returned as the handler's own throws with nothing staged.
 - 2026-08-12 — Codex: **Marketing became one complete downward access tree.** `web_brand` is the Marketing-account root; sites and social/website properties are its children; pages, snapshots, screenshots, files, crawl evidence, SEO, plans, and growth rows inherit below them. Every addressable UUID table found by the recursive live-FK inventory is now either a registered granular share point or a registered inheriting component. The access kernel unions direct grants with every composition parent, never parents/siblings; screenshot/snapshot files authorize through their nearest artifact; screenshot-attached notes/files convey viewer access. Brand and page workspaces now expose the canonical Share control; property/snapshot/screenshot each has an ID-only standalone route and Share control, so a granular grantee never needs parent access merely to land on the resource. Live adversarial proof used All Green Recycling and rolled every temporary grant/association back.
 - 2026-08-12 — Claude: **Findings write targets: the `open` status wrote `reopened`, and the header had no way to undo an acknowledgement.** Two follow-ups to the entry below. (1) `finding_lifecycle_status: "open"` routed through `reopenFinding`, which sets `status: "reopened"` — so undoing an acknowledgement stored the wrong status AND then failed its own landing check, reporting failure for a write that had already mutated the row. The canonical verb is `unacknowledgeFinding`; it was never imported. The path survived verification because the live run covered every value except that one — an enum target is not verified until each member has been written live. (2) The detail header only ever offered "I'm on it", so the `open` value had no user twin: an agent could propose it on a page where the user could neither set nor reverse it. The header now renders "Not on it after all" while a finding is `acknowledged`, using the same canonical verb and the same wording as the shared row menu in `components/analysis/finding-actions.ts` — a builder that currently has **zero consumers**, so its four lifecycle verbs exist in code and nowhere in the product. Re-verified live: suppression + acknowledge applied through two ask dialogs, then `open` landed as `open` with zero captured errors; `resolved` still refuses with the validator's own text and the row untouched.

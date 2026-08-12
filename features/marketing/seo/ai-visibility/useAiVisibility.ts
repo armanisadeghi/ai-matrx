@@ -20,7 +20,7 @@ import {
 } from "@/features/overlays/openers/liveRunWindow";
 import { isJsonObject, type JsonObject } from "@/types/json";
 
-import { listAiVisibilityEvidence } from "./data";
+import { aiVisibilityEvidenceKey, listAiVisibilityEvidence } from "./data";
 import type {
   AiVisibilityAnalyzeBody,
   AiVisibilityEngine,
@@ -185,7 +185,7 @@ export function useAiVisibility(siteId: string, organizationId: string) {
   const dispatch = useAppDispatch();
   const openLiveRunWindow = useOpenLiveRunWindow();
   const queryClient = useQueryClient();
-  const evidenceKey = ["marketing", "ai-visibility", siteId] as const;
+  const evidenceKey = aiVisibilityEvidenceKey(siteId);
   const evidence = useQuery({
     queryKey: evidenceKey,
     queryFn: ({ signal }) => listAiVisibilityEvidence(siteId, signal),
@@ -195,9 +195,33 @@ export function useAiVisibility(siteId: string, organizationId: string) {
     status: "idle",
     answers: {},
   });
+  const [evidenceRefreshError, setEvidenceRefreshError] = useState<
+    string | null
+  >(null);
   const adoptedRequestId = useRef<string | null>(null);
   const liveWindow = useRef<LiveRunWindowHandle | null>(null);
+  const evidenceRefresh = useRef<Promise<void> | null>(null);
   const windowInstanceId = `ai-visibility:${siteId}`;
+
+  const refreshEvidence = (): Promise<void> => {
+    if (evidenceRefresh.current) return evidenceRefresh.current;
+    const refresh = listAiVisibilityEvidence(siteId).then((latest) => {
+      queryClient.setQueryData(evidenceKey, latest);
+      setEvidenceRefreshError(null);
+    });
+    evidenceRefresh.current = refresh.finally(() => {
+      evidenceRefresh.current = null;
+    });
+    return evidenceRefresh.current;
+  };
+
+  const refreshEvidenceInBackground = (): void => {
+    void refreshEvidence().catch(() => {
+      setEvidenceRefreshError(
+        "New evidence was saved, but this page could not refresh it yet.",
+      );
+    });
+  };
 
   const openProgressWindow = (
     label: string,
@@ -295,6 +319,11 @@ export function useAiVisibility(siteId: string, organizationId: string) {
             }
           }
           const engine = engineValue(data.engine);
+          const stage = STAGES[kind];
+          if (stage) {
+            const provider = engine ? `${engine.replaceAll("_", " ")}: ` : "";
+            liveWindow.current?.update({ label: `${provider}${stage}` });
+          }
           if (engine && kind === "seo.ai_visibility_answer_received") {
             const answer: AiVisibilityLiveAnswer = {
               engine,
@@ -309,6 +338,10 @@ export function useAiVisibility(siteId: string, organizationId: string) {
               ...current,
               answers: { ...current.answers, [engine]: answer },
             }));
+            // The response and citations are already durable when this event
+            // fires. Refresh the shared cache immediately so Sources and
+            // History do not wait for the whole multi-provider run.
+            refreshEvidenceInBackground();
           }
           if (engine && kind === "seo.ai_visibility_analysis_completed") {
             setRun((current) => {
@@ -329,6 +362,10 @@ export function useAiVisibility(siteId: string, organizationId: string) {
                 },
               };
             });
+            // Claims/signals were committed before this event. Replace the
+            // query cache with a fresh durable read instead of merely marking
+            // it stale and hoping React Query schedules a later refetch.
+            refreshEvidenceInBackground();
           }
           if (engine && kind.endsWith("_failed")) {
             setRun((current) => ({
@@ -447,7 +484,20 @@ export function useAiVisibility(siteId: string, organizationId: string) {
       return;
     }
     storeRun(null);
-    await queryClient.invalidateQueries({ queryKey: evidenceKey });
+    try {
+      await refreshEvidence();
+    } catch {
+      setEvidenceRefreshError(
+        "The completed analysis was saved, but this page could not refresh its evidence.",
+      );
+      setRun((current) => ({
+        ...current,
+        status: "error",
+        stage: "Analysis saved; results could not refresh",
+        error:
+          "The analysis was saved, but this page could not refresh its evidence. Use Retry below to load the completed claims and sources.",
+      }));
+    }
   };
 
   const analyze = async (body: AiVisibilityAnalyzeBody) => {
@@ -488,5 +538,12 @@ export function useAiVisibility(siteId: string, organizationId: string) {
     openProgressWindow(run.stage ?? "AI visibility analysis", run.requestId);
   };
 
-  return { evidence, run, analyze, watchProgress };
+  return {
+    evidence,
+    evidenceRefreshError,
+    retryEvidence: refreshEvidence,
+    run,
+    analyze,
+    watchProgress,
+  };
 }
