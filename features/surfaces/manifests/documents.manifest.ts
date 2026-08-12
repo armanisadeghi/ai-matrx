@@ -39,7 +39,12 @@ import type {
   SurfaceScopePayload,
   SurfaceValue,
   SurfaceValueGroup,
+  SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import {
+  DOCUMENT_DESCRIPTION_MAX_LENGTH,
+  DOCUMENT_NAME_MAX_LENGTH,
+} from "@/features/data-tables/agent-context/documentWriteValidation";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -336,6 +341,134 @@ const surfaceSpecific: SurfaceValue[] = [
   },
 ];
 
+/**
+ * Write half of the 360 loop. This surface spans TWO provider mounts and, like
+ * its mirror `matrx-user/workbooks`, they get DIFFERENT postures on purpose:
+ * one manifest, one target list, but `listAgentWritableTargets()` only offers a
+ * target where that mount actually registered a handler, so per-mount
+ * registration is what splits them.
+ *
+ * **The library route (`app/(core)/documents/page.tsx`) registers NOTHING —
+ * deliberately.** It is a roster of N documents with no open record, and a
+ * write target carries ONE value with no entity selector: "set the
+ * description" there has no addressable subject. Its only mutations are create
+ * (a creation action, not a field write), import (needs a `File` an agent
+ * cannot supply) and delete (destructive, human-only). Read-only is the correct
+ * posture for that mount, not an oversight. This matches the deliberate
+ * per-mount split already shipped on `workbooks`, `schedules`, `shapes`,
+ * `marketing-crawls` and `tool-registry`.
+ *
+ * **The editor route (`app/(core)/documents/[id]/page.tsx`) owns both targets**
+ * — `document_name` and `document_description`, the pair of human-authored
+ * fields on `udt_documents`. They are SEPARATE targets rather than one
+ * composite object because they are independent decisions edited in different
+ * places: the name is the always-visible header field a user retitles on its
+ * own, while the description is the library blurb, set at import/create and
+ * otherwise rarely touched. Nothing in this app edits the two together, so a
+ * composite would force an agent to resend a field it was not asked to change.
+ * (Contrast `page_meta_tags`, one object because the meta pair IS authored in
+ * one gesture.)
+ *
+ * Both persist immediately through the canonical `document-service` setters
+ * (`renameDocument` / `updateDocumentDescription`) — never a direct
+ * `.from("udt_documents")` write. `updateDocumentDescription` was added by this
+ * adoption, exactly as `updateWorkbookDescription` was added by the workbooks
+ * one; keeping the two services symmetric is `document-service`'s standing
+ * contract.
+ *
+ * **`mode: "entity"` is a truth claim here, not a shortcut.** This route has no
+ * Save bar for metadata: the header rename field commits on blur/Enter and the
+ * description has no inline editor at all. `draft`'s confirm prose — "staged
+ * for you to review — nothing is saved until you save" — would be a LIE in a
+ * dialog with nothing to save, and a staged name would sit in an input the user
+ * may never focus and be lost on navigation. The write must land or not happen
+ * at all. Same reasoning as `workbook_name`, `schedule_title`, `mermaid-editor`
+ * and `scratchpad`. (The editor's own Save button belongs to the Univer
+ * snapshot — the document BODY — which is a different thing entirely and is not
+ * declared on this surface.)
+ *
+ * Both are `applyPolicy: "ask"` — a document is the user's own writing, so
+ * every agent-originated change is confirmed in place.
+ *
+ * BOUNDS LIVE IN ONE PLACE. `DOCUMENT_NAME_MAX_LENGTH` /
+ * `DOCUMENT_DESCRIPTION_MAX_LENGTH` come from the pure
+ * `features/data-tables/agent-context/documentWriteValidation.ts`, which the
+ * page handlers also call — the numbers below are interpolated from those same
+ * constants, so the contract the model reads cannot drift from the rule the
+ * handler enforces. The name bound is 255 because that is the REAL
+ * `varchar(255)` on `workbench.udt_documents.document_name` (verified against
+ * `information_schema`); an earlier hand-typed 200 in this description was
+ * both narrower than the column and duplicated in the handler, which is
+ * exactly the drift this indirection removes.
+ *
+ * Deliberately NOT agent-writable on this surface:
+ *   - `document_summary` — it LOOKS like the jackpot target ("summarize this
+ *     document") and it is not. There is no summary column on `udt_documents`;
+ *     this value is the composite READ-TWIN of the identity group
+ *     (`{ id, name, description, source, version, is_public, created_at,
+ *     updated_at, owner_id, organization_id, original_file_id }`). Writing it
+ *     would mean writing eleven other fields at once, nine of which are on the
+ *     NO list below. It is the evidence loop, not a write path: it moves on its
+ *     own when `document_name` / `document_description` land. An agent that
+ *     wants to summarize the document writes that prose INTO
+ *     `document_description`.
+ *   - `document_id`, `document_owner_id`, `document_organization_id` —
+ *     identity and ownership. Re-pointing a document at another owner or org is
+ *     not authoring; it is a permissions move with its own human gesture.
+ *   - `document_version` — the monotonic concurrency counter. Writing it would
+ *     forge the very fact other code trusts to detect a conflicting edit; the
+ *     `scratchpad` adopter refused its `document_version` for the same reason.
+ *     It is a fact ABOUT the row, not content in it.
+ *   - `document_source`, `document_original_file_id` — provenance. Where a
+ *     document CAME from ("imported_docx", and the durable file id of the
+ *     bytes) is a historical fact the import flow recorded. An agent rewriting
+ *     it would be falsifying the record, and `original_file_id` is the ONLY
+ *     reference to those bytes (see the FILE DOCTRINE note at the top).
+ *   - `document_created_at`, `document_updated_at` — timestamps, maintained by
+ *     the service on every write. An agent setting them by hand desynchronizes
+ *     them from the writes they describe.
+ *   - `documents_view` — which of the two views a human is looking at is the
+ *     human's, and it is derived from the route besides.
+ *   - `document_is_public`, `document_can_edit`, `document_is_owner` — sharing
+ *     and permissions. Flipping a document public is a disclosure decision;
+ *     `workbooks` ruled out its twin for the same reason.
+ *   - the library values (`library_*`, `visible_documents`) — the search box,
+ *     sort and view mode are the human's browsing state, and they belong to the
+ *     mount that registers nothing anyway.
+ *   - the document BODY, its save status and collab presence — the Univer
+ *     editor owns the document model and nothing lifts it to the route, so it
+ *     is not even a declared READ value (see the manifest header). A target
+ *     whose handler cannot reach a canonical write path is a loud runtime
+ *     defect by design; this one has no path to reach.
+ *   - deleting a document — destructive, stays human.
+ */
+const writeTargets: SurfaceWriteTarget[] = [
+  {
+    name: "document_name",
+    label: "Document name",
+    description:
+      `Renames the document open at /documents/[id] and saves it immediately through the canonical rename path; the header name field updates in place. Plain text string on a SINGLE line, not JSON and not JSON-encoded, 1-${DOCUMENT_NAME_MAX_LENGTH} characters, replacing the whole name — read document_name first if you mean to extend it rather than replace it. Renames only the document; it does not touch a single word of the document's body text. Refused while the document is still loading, and when the user only has viewer access.`,
+    valueType: "string",
+    updatesValue: "document_name",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "document_identity",
+    sortOrder: 315,
+  },
+  {
+    name: "document_description",
+    label: "Document description",
+    description:
+      `Rewrites the open document's description and saves it immediately through the canonical update path — this is the blurb shown under the document's name in the /documents library (it is NOT rendered on the editor page itself), and the natural home for a short summary of what the document contains. Plain text string, not JSON and not JSON-encoded, up to ${DOCUMENT_DESCRIPTION_MAX_LENGTH} characters; replaces the FULL text, so read document_description first if you mean to extend it, and pass an empty string to clear it. Writing it does not change the document's body. Refused while the document is still loading, and when the user only has viewer access.`,
+    valueType: "string",
+    updatesValue: "document_description",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "document_identity",
+    sortOrder: 320,
+  },
+];
+
 export const documentsManifest: SurfaceManifest = {
   surfaceName: "matrx-user/documents",
   readiness: "partial",
@@ -371,6 +504,7 @@ this surface never emits a URL of any kind.
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  writeTargets,
 };
 
 export interface DocumentSummaryValue {

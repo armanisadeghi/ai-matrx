@@ -513,6 +513,55 @@ Decide before agent-heavy workloads land.
   Live-verified end to end on a throwaway table; SQL confirmed a single-cell
   write left every other field byte-identical and the untouched rows at version
   1. Full rationale and the declined fields in `features/surfaces/FEATURE.md`.
+- 2026-08-12 — claude: **The document rename FIELD now enforces the same bound
+  the write target does (`maxLength={DOCUMENT_NAME_MAX_LENGTH}`).** Additive
+  follow-on to the bounds module below, closing the third leg of its own
+  contract: the constant was already enforced in the handler and interpolated
+  into the manifest prose, but the human's control applied no limit at all.
+  Reproduced on `/documents/[id]` before the fix: pasting a 300-character title
+  into the header and tabbing away sent it straight to Postgres, came back a
+  **400** against `varchar(255)`, and — because `commitRename` deliberately
+  swallows service failures so a blur cannot throw — the title silently
+  reverted with nothing on screen to say why. With `maxLength` the field clamps
+  at 255, the commit succeeds, and the value survives a reload. Verified live
+  both ways (before: silent revert; after: clamped and persisted). The agent
+  path was already correct — this only closes the human one.
+- 2026-08-11 — claude: **Document write-target bounds moved into a pure module;
+  the name limit was wrong (200 → 255).** New
+  `agent-context/documentWriteValidation.ts` owns `DOCUMENT_NAME_MAX_LENGTH`
+  (255 — the REAL `varchar(255)` on `udt_documents.document_name`, verified
+  against `information_schema`) and `DOCUMENT_DESCRIPTION_MAX_LENGTH` (2000,
+  matching the workbooks sibling). The page handlers call its validators and
+  the surface manifest interpolates the same constants into the prose the model
+  reads, so the advertised contract and the enforced rule cannot drift. Before
+  this, 200 was hand-typed in the handler AND again in the manifest text, and
+  the surface refused titles the column accepts. Validation also moved out of
+  the async handler bodies so a bad shape throws synchronously, ahead of any
+  state change, and `canEdit` joined `docRef` behind a ref because the
+  permission gate was still reading a render closure the writeback seam
+  resolves early. Live re-verified after the change (see
+  `features/surfaces/FEATURE.md`).
+- 2026-08-11 — claude: **Documents surface is agent-writable (2 ask-policy write
+  targets on the `/documents/[id]` route only).** `document_name` and
+  `document_description` — the two human-authored columns on `udt_documents` —
+  persist immediately through `document-service`: the existing `renameDocument`
+  plus a new `updateDocumentDescription` sibling, so neither handler hand-rolls
+  a `.from("udt_documents")` write. Adding that setter keeps this file's
+  standing contract with `workbook-service`, whose `updateWorkbookDescription`
+  landed the same way one day earlier; the two services stay field-for-field
+  symmetric. `commitRename` was refactored into one `applyRename(name)` shared
+  by the header field's blur/Enter commit and the write handler, so an agent
+  rename takes exactly the user's path — the blur caller still swallows,
+  the agent caller throws into an error envelope. Handlers read the row through
+  a ref advanced synchronously as each write lands, because the writeback seam
+  resolves every handler before the first confirm resolves. `mode: "entity"`
+  because this route has no Save bar. The `/documents` library route registers
+  no handlers on purpose (no addressable subject on a roster). Deliberately not
+  writable: `version` (concurrency counter), owner/org ids, `source` /
+  `original_file_id` (provenance), timestamps, `is_public`, and the Univer-owned
+  document body. Live-verified with a real agent run; manifest docblock in
+  `features/surfaces/manifests/documents.manifest.ts` carries the full
+  ruled-out reasoning.
 - 2026-08-10 — claude: **Workbooks surface is agent-writable (3 ask-policy write
   targets on the `/workbooks/[id]` route only).** `workbook_name` and
   `workbook_description` persist immediately through `workbook-service` — the
