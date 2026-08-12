@@ -153,13 +153,14 @@ surface means importing them too, never reimplementing the RPC call.
 ## Open
 
 - **The sweep.** `pnpm check:access-errors` (advisory, in the release gates)
-  measures it: **410 human-facing surfaces** still guess (was 543 on
-  2026-08-11) — 97 hand over raw PostgREST text, 282 assert a deletion they
-  cannot know, 31 assert a permission.
-  Ranked worst-feature-first; `--write` refreshes `scripts/access-errors/report.json`.
-  Marketing's record surfaces and `app/(core)` are converted; education /
-  files+rag were converted alongside. What remains is concentrated in `lib`,
-  `features/agents`, and `features/scope-system`.
+  measures it. **543 → 395** as the conversion waves landed: education, files,
+  rag and every `app/(core)` route are at ZERO. What remains is two buckets:
+  `features/marketing` (41 — real record surfaces: "Brand not found", "Crawl
+  not found"; a focused session owns this) and `lib` (59, of which ~45 are
+  `lib/redux/app-builder/**`, the gated applets subsystem — developer-facing
+  thunk errors with interpolated ids, NOT user-facing access copy; triage
+  before converting, and consider excluding the subsystem outright if it stays
+  gated).
 - **The inbox has no live-count door outside its own header.** The page badges
   both boxes, but nothing in the shell tells an owner a request is waiting the
   way the message icon does for unread DMs — today the DM carries that signal.

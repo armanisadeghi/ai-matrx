@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-11",
-  "total": 410,
+  "generatedAt": "2026-08-12",
+  "total": 395,
   "byKind": {
-    "raw-supabase-message": 97,
-    "claims-deleted": 282,
-    "claims-denied": 31
+    "raw-supabase-message": 96,
+    "claims-deleted": 273,
+    "claims-denied": 26
   },
   "byFeature": {
-    "lib": 65,
+    "lib": 59,
     "features/marketing": 41,
     "features/agents": 34,
     "features/scope-system": 16,
@@ -16,47 +16,47 @@
     "features/applet": 13,
     "components": 11,
     "features/notes": 11,
-    "features/organizations": 11,
     "features/skills": 11,
+    "features/organizations": 10,
     "features/code-editor": 9,
     "features/legal": 9,
-    "features/surfaces": 9,
     "features/admin": 8,
     "features/kg-suggestions": 8,
-    "features/scopes": 8,
+    "features/surfaces": 8,
     "app/(public)": 7,
     "features/industries": 7,
     "features/canvas": 6,
     "features/content-ir": 6,
     "features/message-templates": 6,
+    "features/scopes": 6,
     "features/secrets": 6,
-    "features/voice-agent": 6,
     "app/(transitional)": 5,
     "features/code": 5,
     "features/data-tables": 4,
-    "features/pdf-extractor": 4,
     "features/sharing": 4,
     "features/text-diff": 4,
     "features/tool-call-visualization": 4,
+    "features/voice-agent": 4,
     "app/(admin)": 3,
-    "app/oauth": 3,
     "features/audio": 3,
     "features/flashcards": 3,
-    "features/projects": 3,
+    "features/pdf-extractor": 3,
     "features/agent-apps": 2,
     "features/agent-connections": 2,
     "features/agent-context": 2,
     "features/entitlements": 2,
     "features/expertise": 2,
+    "features/growth-loop": 2,
     "features/image-studio": 2,
     "features/page-extraction": 2,
     "features/podcasts": 2,
+    "features/projects": 2,
     "features/transcript-studio": 2,
     "features/war-room": 2,
+    "app/oauth": 1,
     "features/agent-comparison": 1,
     "features/agent-shortcuts": 1,
     "features/context-menu-v3": 1,
-    "features/growth-loop": 1,
     "features/pdf": 1,
     "features/recipes": 1,
     "features/research": 1,
@@ -235,21 +235,9 @@
     },
     {
       "file": "app/oauth/consent/ConsentClient.tsx",
-      "line": 157,
-      "kind": "claims-denied",
-      "snippet": "msg.includes(\"unauthorized request origin\") ||"
-    },
-    {
-      "file": "app/oauth/consent/ConsentClient.tsx",
       "line": 161,
       "kind": "claims-denied",
       "snippet": "title: \"Origin not authorized\","
-    },
-    {
-      "file": "app/oauth/consent/ConsentClient.tsx",
-      "line": 171,
-      "kind": "claims-deleted",
-      "snippet": "if (msg.includes(\"expired\") || msg.includes(\"not found\") || status === 404) {"
     },
     {
       "file": "components/debug/ResourceDebugIndicator.tsx",
@@ -1027,9 +1015,15 @@
     },
     {
       "file": "features/growth-loop/map/loop-map.ts",
-      "line": 729,
+      "line": 798,
       "kind": "claims-deleted",
-      "snippet": "\"plan.profile.template_map carries the concept/variant library, but realize creates a blank draft with only a page type. 'Template pages' as a concept does not "
+      "snippet": "\"A purpose-built fixer slot was written — aidream/services/seo/finding_fix.py declares seo.finding_fixer — but it is local-only AND orphaned: zero importers, no"
+    },
+    {
+      "file": "features/growth-loop/map/loop-map.ts",
+      "line": 887,
+      "kind": "claims-deleted",
+      "snippet": "\"BUILT BUT UNSHIPPED, AND FORKED. packages/matrx-graph/nodes/pipe/ now defines StepContract, PipeBindings{code,human,ai}, select_pipe and a registered pipe.step"
     },
     {
       "file": "features/image-studio/hooks/useBase64Decoder.ts",
@@ -1375,7 +1369,7 @@
     },
     {
       "file": "features/marketing/lib/finding-remedies.ts",
-      "line": 274,
+      "line": 285,
       "kind": "claims-deleted",
       "snippet": "`${pageLabel(ctx)} returns a \"not found\" error.`,"
     },
@@ -1596,12 +1590,6 @@
       "snippet": "{error || \"This organization doesn't exist or has been removed.\"}"
     },
     {
-      "file": "features/organizations/service.ts",
-      "line": 397,
-      "kind": "claims-deleted",
-      "snippet": "err.message.includes(\"does not exist\")"
-    },
-    {
       "file": "features/page-extraction/api/jobs.ts",
       "line": 77,
       "kind": "claims-deleted",
@@ -1612,12 +1600,6 @@
       "line": 247,
       "kind": "claims-deleted",
       "snippet": "if (!job) throw new Error(\"Dataset not found\");"
-    },
-    {
-      "file": "features/pdf-extractor/state/thunks.ts",
-      "line": 62,
-      "kind": "claims-deleted",
-      "snippet": "if (rpcError.message?.includes(\"document not found\")) {"
     },
     {
       "file": "features/pdf-extractor/state/thunks.ts",
@@ -1666,12 +1648,6 @@
       "line": 36,
       "kind": "claims-deleted",
       "snippet": "throw new Error(\"Project not found\");"
-    },
-    {
-      "file": "features/projects/service.ts",
-      "line": 373,
-      "kind": "claims-deleted",
-      "snippet": "if (err?.code === \"42P01\" || err?.message?.includes(\"does not exist\"))"
     },
     {
       "file": "features/recipes/recipe-source/RecipeSelectionList.tsx",
@@ -1795,12 +1771,6 @@
     },
     {
       "file": "features/scopes/service/rpcResult.ts",
-      "line": 54,
-      "kind": "claims-deleted",
-      "snippet": "if (code === \"PGRST116\") return { code: \"not_found\", message: \"Not found\" };"
-    },
-    {
-      "file": "features/scopes/service/rpcResult.ts",
       "line": 56,
       "kind": "claims-denied",
       "snippet": "return { code: \"forbidden_org\", message: \"Permission denied\" };"
@@ -1810,12 +1780,6 @@
       "line": 516,
       "kind": "claims-deleted",
       "snippet": "if (!scope) return err(\"not_found\", \"Scope not found\");"
-    },
-    {
-      "file": "features/scopes/service/scopesService.ts",
-      "line": 1019,
-      "kind": "claims-denied",
-      "snippet": "code === \"unauthorized\""
     },
     {
       "file": "features/scopes/service/scopesService.ts",
@@ -1992,12 +1956,6 @@
       "snippet": "\"Inherited from PDF Extractor's scope picker, which does not exist in the scanner — always empty here.\","
     },
     {
-      "file": "features/surfaces/manifests/scraper.manifest.ts",
-      "line": 414,
-      "kind": "claims-deleted",
-      "snippet": "`Stages WHAT the workspace will scrape and in which mode. Value is a partial patch object: { mode?: ${SCRAPE_MODE_ENUM_TEXT}, url?: string, keyword?: string } —"
-    },
-    {
       "file": "features/surfaces/manifests/settings.manifest.ts",
       "line": 62,
       "kind": "claims-deleted",
@@ -2100,22 +2058,10 @@
       "snippet": "toast.error(\"Microphone access denied\", {"
     },
     {
-      "file": "features/voice-agent/components/VoiceAgentSurface.tsx",
-      "line": 207,
-      "kind": "claims-denied",
-      "snippet": "} else if (code === \"token-unauthorized\" || code === \"unauthorized\") {"
-    },
-    {
       "file": "features/voice-agent/transport/tokenManager.ts",
       "line": 23,
       "kind": "claims-denied",
       "snippet": "code: \"fetch-failed\" | \"unauthorized\" | \"service-unavailable\" | \"malformed\";"
-    },
-    {
-      "file": "features/voice-agent/transport/tokenManager.ts",
-      "line": 94,
-      "kind": "claims-denied",
-      "snippet": "if (code === \"unauthorized\" || code === \"service-unavailable\") {"
     },
     {
       "file": "features/voice-agent/transport/tokenManager.ts",
@@ -2134,42 +2080,6 @@
       "line": 144,
       "kind": "claims-deleted",
       "snippet": "throw new Error(`[war-room] updateSession: room ${id} not found`);"
-    },
-    {
-      "file": "lib/cartesia/accessToken.ts",
-      "line": 107,
-      "kind": "claims-denied",
-      "snippet": "m.includes(\"unauthorized\") ||"
-    },
-    {
-      "file": "lib/idb/store-manager.ts",
-      "line": 76,
-      "kind": "claims-deleted",
-      "snippet": "if (!existing) throw new Error('Record not found');"
-    },
-    {
-      "file": "lib/idb/stores/audio-store.ts",
-      "line": 152,
-      "kind": "claims-deleted",
-      "snippet": "if (!recordingResult.data) return { data: null, error: new Error('Recording not found') };"
-    },
-    {
-      "file": "lib/integrity/checks.ts",
-      "line": 167,
-      "kind": "claims-deleted",
-      "snippet": "\"row that does not exist (or was hard-deleted). Breaks tree rendering.\","
-    },
-    {
-      "file": "lib/integrity/checks.ts",
-      "line": 236,
-      "kind": "claims-deleted",
-      "snippet": "\"docproc.processed_documents row that does not exist. The PDF surface \" +"
-    },
-    {
-      "file": "lib/integrity/server.ts",
-      "line": 25,
-      "kind": "raw-supabase-message",
-      "snippet": "if (error) throw new Error(error.message);"
     },
     {
       "file": "lib/redux/app-builder/service/customAppService.ts",

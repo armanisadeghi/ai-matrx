@@ -86,7 +86,25 @@ const ALLOW = [
   // original `^app/api/` rule missed exactly those.
   /(^|\/)route\.(ts|tsx|js|jsx)$/,
   /(^|\/)route\.dev\.(ts|tsx|js|jsx)$/,
+  // Browser-local stores. IndexedDB has no RLS, no owner and no organization,
+  // so "record not found" there is a FACT the code verified — not a guess
+  // about someone else's permissions.
+  /^lib\/idb\//,
+  // The integrity and diagnostic catalogs DESCRIBE broken rows to an operator.
+  // Those strings are findings in a report, not copy shown to a person who hit
+  // a wall.
+  /^lib\/integrity\//,
+  /^lib\/diagnostics\//,
 ];
+
+/**
+ * A line that COMPARES against an error string is not a line that SHOWS one.
+ * `m.includes("unauthorized")` is error HANDLING — frequently the good kind —
+ * and flagging it teaches the next reader to ignore this report, which is the
+ * one outcome that would make the whole sweep worthless.
+ */
+const MATCHING =
+  /\.(includes|match|test|startsWith|endsWith|indexOf|search)\s*\(|[=!]==\s*["'`]|case\s+["'`]/;
 
 function listFiles(): string[] {
   const out = execSync(
@@ -111,6 +129,7 @@ function scan(): Finding[] {
       // A comment explaining the class is not an instance of it.
       const trimmed = text.trim();
       if (trimmed.startsWith("*") || trimmed.startsWith("//")) return;
+      if (MATCHING.test(text)) return;
       for (const rule of RULES) {
         if (rule.re.test(text)) {
           findings.push({
