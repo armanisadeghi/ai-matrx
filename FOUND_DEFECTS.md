@@ -15,21 +15,9 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ### D171 — `content_role` has two writable authorities and 13 live disagreements (2026-08-11)
 
-The false-red `youtube_search` incident (D141) exposed core ambiguity beyond
-the fixed null-classification bug. The same five-value role is independently
-stored and edited in `platform.entity_types` and
-`platform.shareable_resource_registry`, with no invariant joining them. Live
-audit: 324 active entity types (37 classified, 287 NULL), 69 active shareable
-rows, 68 overlapping active tokens, and 13 role disagreements. `data_store` is
-the clearest semantic conflict (`source` in entity types, `container` in
-sharing), so blind synchronization in either direction is unsafe.
-
-The evidence, consumer risks, decision branches, and recommended migration
-sequence are in `features/admin/relationships/FEATURE.md` § “Deferred core audit
-— `content_role` is carrying ambiguous authority.” Product decision required:
-one concept with `platform.entity_types` as sole authority, or two explicitly
-named axes. Do not make NULL illegal, bulk-default rows, or add downgrade rules
-before that decision.
+Cross-repo system-of-record:
+`/Users/armanisadeghi/code/common-docs/systems/entity-content-role/FEATURE.md` —
+read it before changing either role field or its consumers in any repo.
 
 ### D167 — no research output can be SAVED: `rs_topic_append_output` is blocked by the RLS update policy (2026-08-11)
 
@@ -684,21 +672,6 @@ appearance of every list on mobile; (b) a long-press / tap-and-hold affordance;
 or (c) the row's `…` menu carries peek on touch and `EntityRef` stays
 hover-only. (c) is probably right for tables and wrong for prose references.
 Whatever is chosen, `opacity-0` should stop reserving layout.
-
-### D141 — FIXED 2026-08-11 — the entity registry's content_role alarm screamed for most tokens
-
-`getEntityInfo` (`features/scopes/registry/entityRegistry.ts`) used to `console.error` a
-"loud recovery" banner whenever `platform.entity_types.content_role` was not one of the five
-roles, including NULL. In production `console.error` is captured into the Error Inspector,
-so normal token-label resolution became a red application incident even though the caller
-continued successfully with the intended `destination` fallback.
-
-Live schema evidence settled the decision: the column is nullable, has no default, and its
-CHECK constraint explicitly accepts NULL; 287 active rows were NULL on 2026-08-11. NULL is
-therefore the expected "not classified as a knowledge resource" state. `getEntityInfo` now
-keeps the generic `destination` fallback silently for NULL and emits a production error only
-for a non-null value outside the five-value vocabulary. Focused coverage uses the originally
-captured `youtube_search` token plus classified `web_page`.
 
 ### D139 — CRM scope counts fire `3 + N_orgs` round trips per keystroke (2026-08-09)
 

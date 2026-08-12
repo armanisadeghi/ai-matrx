@@ -196,68 +196,6 @@ used by the per-row **Link policy** side panel).
   unblock is an `admin_association_edges(...)` SECURITY DEFINER RPC + an Edges
   destination — tracked in `docs/handoffs/no-dead-ends-sweep.md`.
 
-## Deferred core audit — `content_role` is carrying ambiguous authority
-
-This is intentionally an unresolved design decision, not something papered
-over by the 2026-08-11 runtime fix. The immediate incident was a false alarm:
-`platform.entity_types.content_role IS NULL` is valid and means the token is not
-classified as a knowledge resource. The shared resolver nevertheless treated
-NULL as invalid, substituted `destination`, and emitted `console.error`; global
-production capture promoted that expected fallback into a red incident. The
-resolver now alarms only on invalid **non-NULL** values.
-
-The audit exposed a deeper recurring-failure class:
-
-- The same five-value vocabulary is independently stored on
-  `platform.entity_types.content_role` and
-  `platform.shareable_resource_registry.content_role`. Both admin tabs edit
-  their own copy. There is no database constraint, generated guard, or release
-  check requiring them to agree.
-- Live evidence on 2026-08-11: 324 active entity types; 37 have an entity role
-  and 287 are NULL. There are 69 active shareable rows, 68 of which overlap an
-  active entity token; **13 overlapping rows disagree**. Examples prove this is
-  not merely missing backfill: `data_store` is `source` in `entity_types` but
-  `container` in the shareable registry; `web_site` is NULL in `entity_types`
-  but `container` in sharing; `udt_document` is `hybrid` in `entity_types` but
-  NULL in sharing.
-- `content_role` therefore has at least three observable jobs today: membership
-  in curated attach/resource surfaces; visual grouping inside those surfaces;
-  and classification of shareable organization modules. Those may be one
-  concept with drift, or two concepts given the same name. The 13 disagreements
-  must be classified before consolidating data.
-- `EntityInfo.contentRole` is non-null even though its source is nullable.
-  `getEntityInfo` converts NULL to `destination` to keep generic consumers
-  total. That erases “explicitly an output” versus “unclassified but this caller
-  demanded a bucket.” Curated callers correctly use `curatedTokens()` to exclude
-  NULL; generic callers can accidentally treat the fallback as real metadata.
-- A dedicated `unclassified` enum value would make absence explicit, but would
-  **not** resolve duplicate authorities or decide whether every entity belongs
-  on resource surfaces. Making the column NOT NULL and bulk-defaulting 287 rows
-  to `destination` would encode false meaning and is specifically unsafe.
-
-### Recommended investigation when this resumes
-
-1. Define each axis without mentioning a table: “knowledge resource role” and
-   “shareable module role.” If the definitions differ, split and rename the
-   fields. If identical, choose `platform.entity_types` as the sole authority
-   and remove the sharing copy.
-2. Review the 13 live disagreements against their real consumers. Start with
-   `data_store`, where `source` and `container` may both be defensible depending
-   on which axis is intended.
-3. Preserve nullability until classification completeness becomes an explicit
-   product invariant. Carry `ContentRole | null` as truth in TypeScript and make
-   grouping-only call sites choose an explicit fallback; do not hide that choice
-   inside the general registry resolver.
-4. Add a live drift guard before migration: equality across stores if this is
-   one concept, or a guard against cross-use after deliberately splitting it.
-5. Backfill, remove the obsolete editor/column, regenerate metadata, then test
-   curated pickers, association lists, project references, war-room resources,
-   organization modules, and shareable-registry flows.
-
-Tracked as `FOUND_DEFECTS.md` D171. Do not “fix” recurrence with Error Inspector
-downgrades, route-specific defaults, blind role backfills, or by making NULL
-illegal before the semantic decision.
-
 ## Related features
 
 - Reachability rollout doc: `docs/db_changes/REACHABILITY-ROLLOUT.md`.
@@ -287,15 +225,6 @@ illegal before the semantic decision.
 
 ## Change log
 
-- **2026-08-11** — Documented the deferred `content_role` core audit: two live
-  writable authorities, 13 disagreements, nullable truth erased by a generic
-  fallback, decision options, and the safe investigation/migration sequence
-  (tracked as D171).
-- **2026-08-11** — Entity-registry resolution now honors the live
-  `platform.entity_types` contract: nullable `content_role` means the token is
-  not classified as a knowledge resource, so generic consumers retain their
-  `destination` fallback without emitting a production error. A non-null value
-  outside the five-value vocabulary remains a loud corruption alarm.
 - **2026-08-09** — No-dead-ends sweep. Exposure Audit: resource name →
   `EntityRef`, owner → `AdminUserRef`, organization → `EntityRef`, `resource_id`
   → per-row `fk.token`, and the "N context" signal now links to the Reachability
