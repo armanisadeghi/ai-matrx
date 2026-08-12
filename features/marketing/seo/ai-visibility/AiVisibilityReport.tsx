@@ -405,15 +405,18 @@ export function AiVisibilityReport({
                             asChild
                             size="sm"
                             variant="outline"
+                            className="max-w-full"
                           >
                             <a
                               href={sourceUrl}
                               target="_blank"
                               rel="noreferrer"
                             >
-                              {field(item, "title", "cited_for") ||
-                                hostname(sourceUrl)}
-                              <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                              <span className="truncate">
+                                {field(item, "title", "cited_for") ||
+                                  hostname(sourceUrl)}
+                              </span>
+                              <ExternalLink className="ml-1.5 h-3.5 w-3.5 shrink-0" />
                             </a>
                           </Button>
                         );
