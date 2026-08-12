@@ -22,8 +22,17 @@ export default async function EntityTypesAdminPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <EntityTypesClient entityTypes={entityTypes ?? []} />
-      <ChooserBucketsManager />
+      <Suspense
+        fallback={
+          <div className="p-4 text-sm text-muted-foreground">
+            Loading entity types…
+          </div>
+        }
+      >
+        <EntityTypesClient entityTypes={entityTypes ?? []} />
+        <ChooserBucketsManager />
+      </Suspense>
     </div>
   );
 }
+import { Suspense } from "react";

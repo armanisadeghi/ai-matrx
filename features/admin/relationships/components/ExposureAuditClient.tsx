@@ -13,10 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
-import type {
-  MatrxColumnDef,
-  MatrxDataTableQueryState,
-} from "@/components/official/matrx-data-table/types";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,10 +29,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import type {
-  ExposureAuditRow,
-  ExposureAuditSummary,
-} from "../types";
+import type { ExposureAuditRow, ExposureAuditSummary } from "../types";
+import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
+import {
+  booleanUrlCodec,
+  enumUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 type ResourceFilter = "all" | "file" | "note";
 type ExposureFilter =
@@ -47,18 +47,8 @@ type ExposureFilter =
   | "personal"
   | "all_exposed";
 
-const INITIAL_QUERY: MatrxDataTableQueryState = {
-  page: 1,
-  pageSize: 50,
-  search: "",
-  anyOf: "",
-  columnFilters: {},
-  sort: null,
-};
-
 const VISIBILITY_STYLES: Record<string, string> = {
-  public:
-    "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+  public: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300",
   internal:
     "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
   link: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
@@ -87,10 +77,7 @@ function countSummary(
 
 function sumSummary(
   summaries: ExposureAuditSummary[],
-  key:
-    | "active_share_link_count"
-    | "active_grant_count"
-    | "contextual_count",
+  key: "active_share_link_count" | "active_grant_count" | "contextual_count",
 ): number {
   return summaries.reduce((total, row) => total + row[key], 0);
 }
@@ -322,12 +309,31 @@ const COLUMNS: MatrxColumnDef<ExposureAuditRow>[] = [
 export function ExposureAuditClient() {
   const [summaries, setSummaries] = useState<ExposureAuditSummary[]>([]);
   const [rows, setRows] = useState<ExposureAuditRow[]>([]);
-  const [resourceFilter, setResourceFilter] =
-    useState<ResourceFilter>("all");
-  const [exposureFilter, setExposureFilter] =
-    useState<ExposureFilter>("public");
-  const [includeDeleted, setIncludeDeleted] = useState(false);
-  const [query, setQuery] = useState<MatrxDataTableQueryState>(INITIAL_QUERY);
+  const [resourceFilter, setResourceFilter] = useUrlState(
+    "resource",
+    enumUrlCodec<ResourceFilter>(["all", "file", "note"], "all"),
+  );
+  const [exposureFilter, setExposureFilter] = useUrlState(
+    "exposure",
+    enumUrlCodec<ExposureFilter>(
+      [
+        "public",
+        "internal",
+        "link",
+        "shared",
+        "contextual",
+        "personal",
+        "all_exposed",
+      ],
+      "public",
+    ),
+  );
+  const [includeDeleted, setIncludeDeleted] = useUrlState(
+    "deleted",
+    booleanUrlCodec(false),
+  );
+  const table = useTableUrlState({ defaultPageSize: 50 });
+  const query = table.queryState;
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -409,7 +415,7 @@ export function ExposureAuditClient() {
 
   function selectExposure(next: ExposureFilter) {
     setExposureFilter(next);
-    setQuery((current) => ({ ...current, page: 1 }));
+    table.onStateChange({ ...table.state, page: 1 });
   }
 
   const publicCount = countSummary(summaries, "public");
@@ -514,7 +520,7 @@ export function ExposureAuditClient() {
           value={resourceFilter}
           onValueChange={(value: ResourceFilter) => {
             setResourceFilter(value);
-            setQuery((current) => ({ ...current, page: 1 }));
+            table.onStateChange({ ...table.state, page: 1 });
           }}
         >
           <SelectTrigger className="h-11 w-36 sm:h-8">
@@ -548,7 +554,7 @@ export function ExposureAuditClient() {
             checked={includeDeleted}
             onCheckedChange={(checked) => {
               setIncludeDeleted(checked === true);
-              setQuery((current) => ({ ...current, page: 1 }));
+              table.onStateChange({ ...table.state, page: 1 });
             }}
           />
           Include deleted
@@ -564,9 +570,9 @@ export function ExposureAuditClient() {
           isFetching={isFetching}
           query={{
             mode: "controlled",
-            state: query,
+            state: table.state,
             totalItems: total,
-            onStateChange: setQuery,
+            onStateChange: table.onStateChange,
           }}
           toolbar={{ searchPlaceholder: "Search name, path, folder, or UUID…" }}
           zebra

@@ -234,6 +234,14 @@ export function useSqlFunctions({
     }));
   }, []);
 
+  const replaceFilter = useCallback((next: SqlFunctionFilter) => {
+    setFilter(next);
+  }, []);
+
+  const replaceSort = useCallback((next: SqlFunctionSort) => {
+    setSort(next);
+  }, []);
+
   // Initial fetch
   useEffect(() => {
     if (!initialData) {
@@ -263,5 +271,7 @@ export function useSqlFunctions({
     selectFunction,
     updateFilter,
     updateSort,
+    replaceFilter,
+    replaceSort,
   };
 }

@@ -19,22 +19,28 @@
  * - `onStateChange` — hand to the table verbatim.
  *
  * URL params (all omitted at their defaults, so a pristine table has a clean
- * URL): `p` page, `ps` pageSize, `q` search, `sort` "<id>.<asc|desc>",
- * `f` JSON-encoded columnFilters. Written with `history.replaceState` — no
- * server round-trip, no scroll jump, no history spam per keystroke.
+ * URL): `p` page, `ps` pageSize, `q` search, `match` search match mode,
+ * `any` any-of search, `sort` "<id>.<asc|desc>", `f` JSON-encoded column
+ * filters, and `lf` JSON-encoded layered filters. User changes push native
+ * history entries without a server round-trip, so Back/Forward restores the
+ * exact table view instead of only restoring the route.
  *
  * This is deliberately VIEW-QUERY state (search, filters, page) — ephemeral,
  * shareable via link, never persisted. View STYLE (density, columns, view)
  * belongs to `useListViewPrefs` (lib/list-views), a different axis.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   ColumnFiltersState,
   MatrxDataTableQueryState,
   SortState,
 } from "@/components/official/matrx-data-table/types";
+import type { LayeredFilterRule } from "@/components/official/matrx-data-table/layered-filters";
+import {
+  commitUrlParams,
+  useUrlSearchParams,
+} from "@/lib/url-state/useUrlState";
 
 export interface UseTableUrlStateOptions {
   /** Initial sort when the URL carries none. Default: none. */
@@ -70,17 +76,27 @@ function parseSort(raw: string | null): SortState | null {
   return { id: raw.slice(0, at), direction };
 }
 
-function parseFilters(raw: string | null): ColumnFiltersState {
-  if (!raw) return {};
+function parseObject<T extends object>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return parsed as ColumnFiltersState;
+      return parsed as T;
     }
   } catch {
     // A hand-mangled URL is not an error state — fall through to empty.
   }
-  return {};
+  return fallback;
+}
+
+function parseLayeredFilters(raw: string | null): LayeredFilterRule[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as LayeredFilterRule[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 function positiveInt(raw: string | null, fallback: number): number {
@@ -101,19 +117,37 @@ export function useTableUrlState(
     (name: string) => (paramPrefix ? `${paramPrefix}.${name}` : name),
     [paramPrefix],
   );
+  const defaultSortId = defaultSort?.id;
+  const defaultSortDirection = defaultSort?.direction;
 
-  const searchParams = useSearchParams();
-  // Hydrate ONCE from the URL the page loaded with; after that, state is the
-  // source of truth and the URL is a mirror (back/forward still works because
-  // replaceState keeps the entry current).
-  const [state, setState] = useState<MatrxDataTableQueryState>(() => ({
-    page: positiveInt(searchParams.get(key("p")), 1),
-    pageSize: positiveInt(searchParams.get(key("ps")), defaultPageSize),
-    search: searchParams.get(key("q")) ?? "",
-    anyOf: "",
-    columnFilters: parseFilters(searchParams.get(key("f"))),
-    sort: parseSort(searchParams.get(key("sort"))) ?? defaultSort,
-  }));
+  const searchParams = useUrlSearchParams();
+  const readState = useCallback(
+    (params: Pick<URLSearchParams, "get">): MatrxDataTableQueryState => {
+      const initialSort =
+        defaultSortId && defaultSortDirection
+          ? { id: defaultSortId, direction: defaultSortDirection }
+          : null;
+      return {
+        page: positiveInt(params.get(key("p")), 1),
+        pageSize: positiveInt(params.get(key("ps")), defaultPageSize),
+        search: params.get(key("q")) ?? "",
+        searchMatchMode:
+          params.get(key("match")) === "whole_words"
+            ? "whole_words"
+            : "contains",
+        anyOf: params.get(key("any")) ?? "",
+        layeredFilters: parseLayeredFilters(params.get(key("lf"))),
+        columnFilters: parseObject<ColumnFiltersState>(
+          params.get(key("f")),
+          {},
+        ),
+        sort: parseSort(params.get(key("sort"))) ?? initialSort,
+      };
+    },
+    [defaultPageSize, defaultSortDirection, defaultSortId, key],
+  );
+
+  const state = readState(searchParams);
 
   const [debouncedSearch, setDebouncedSearch] = useState(state.search);
   useEffect(() => {
@@ -125,51 +159,90 @@ export function useTableUrlState(
     return () => window.clearTimeout(timer);
   }, [state.search, debouncedSearch, searchDebounceMs]);
 
-  // Mirror to the URL without a server round-trip or history spam.
-  const defaults = useRef({ defaultSort, defaultPageSize });
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const setOrDelete = (name: string, value: string | null) => {
-      if (value === null || value === "") params.delete(name);
-      else params.set(name, value);
-    };
-    const { defaultSort: dSort, defaultPageSize: dSize } = defaults.current;
-    setOrDelete(key("p"), state.page > 1 ? String(state.page) : null);
-    setOrDelete(key("ps"), state.pageSize !== dSize ? String(state.pageSize) : null);
-    setOrDelete(key("q"), state.search || null);
-    const sortToken = state.sort ? `${state.sort.id}.${state.sort.direction}` : null;
-    const defaultToken = dSort ? `${dSort.id}.${dSort.direction}` : null;
-    setOrDelete(key("sort"), sortToken !== defaultToken ? sortToken : null);
-    const activeFilters = Object.fromEntries(
-      Object.entries(state.columnFilters).filter(([, v]) => v !== undefined),
-    );
-    setOrDelete(
-      key("f"),
-      Object.keys(activeFilters).length > 0 ? JSON.stringify(activeFilters) : null,
-    );
-    const query = params.toString();
-    const next = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
-    if (next !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
-      window.history.replaceState(window.history.state, "", next);
-    }
-  }, [state, key]);
+  const writeState = useCallback(
+    (nextState: MatrxDataTableQueryState) => {
+      const params = new URLSearchParams(window.location.search);
+      const setOrDelete = (name: string, value: string | null) => {
+        if (value === null || value === "") params.delete(name);
+        else params.set(name, value);
+      };
+      setOrDelete(key("p"), nextState.page > 1 ? String(nextState.page) : null);
+      setOrDelete(
+        key("ps"),
+        nextState.pageSize !== defaultPageSize
+          ? String(nextState.pageSize)
+          : null,
+      );
+      setOrDelete(key("q"), nextState.search || null);
+      setOrDelete(
+        key("match"),
+        nextState.searchMatchMode === "whole_words" ? "whole_words" : null,
+      );
+      setOrDelete(key("any"), nextState.anyOf || null);
+      const sortToken = nextState.sort
+        ? `${nextState.sort.id}.${nextState.sort.direction}`
+        : null;
+      const defaultToken =
+        defaultSortId && defaultSortDirection
+          ? `${defaultSortId}.${defaultSortDirection}`
+          : null;
+      setOrDelete(key("sort"), sortToken !== defaultToken ? sortToken : null);
+      const activeFilters = Object.fromEntries(
+        Object.entries(nextState.columnFilters).filter(
+          ([, v]) => v !== undefined,
+        ),
+      );
+      setOrDelete(
+        key("lf"),
+        nextState.layeredFilters && nextState.layeredFilters.length > 0
+          ? JSON.stringify(nextState.layeredFilters)
+          : null,
+      );
+      setOrDelete(
+        key("f"),
+        Object.keys(activeFilters).length > 0
+          ? JSON.stringify(activeFilters)
+          : null,
+      );
+      const nextParams = new URLSearchParams(params);
+      const currentParams = new URLSearchParams(window.location.search);
+      const patch: Record<string, string | null> = {};
+      for (const name of ["p", "ps", "q", "match", "any", "sort", "lf", "f"]) {
+        const parameter = key(name);
+        const nextValue = nextParams.get(parameter);
+        if (currentParams.get(parameter) !== nextValue)
+          patch[parameter] = nextValue;
+      }
+      commitUrlParams(patch, "push");
+    },
+    [defaultPageSize, defaultSortDirection, defaultSortId, key],
+  );
 
-  const onStateChange = useCallback((next: MatrxDataTableQueryState) => {
-    setState(next);
-  }, []);
+  const onStateChange = useCallback(
+    (next: MatrxDataTableQueryState) => {
+      writeState(next);
+    },
+    [writeState],
+  );
 
   const reset = useCallback(() => {
-    const { defaultSort: dSort, defaultPageSize: dSize } = defaults.current;
-    setState({
+    const dSort =
+      defaultSortId && defaultSortDirection
+        ? { id: defaultSortId, direction: defaultSortDirection }
+        : null;
+    const next: MatrxDataTableQueryState = {
       page: 1,
-      pageSize: dSize,
+      pageSize: defaultPageSize,
       search: "",
+      searchMatchMode: "contains",
       anyOf: "",
+      layeredFilters: [],
       columnFilters: {},
       sort: dSort,
-    });
+    };
+    writeState(next);
     setDebouncedSearch("");
-  }, []);
+  }, [defaultPageSize, defaultSortDirection, defaultSortId, writeState]);
 
   const queryState = useMemo<MatrxDataTableQueryState>(
     () =>

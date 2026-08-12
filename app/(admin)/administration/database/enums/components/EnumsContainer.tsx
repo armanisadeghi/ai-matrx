@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useEnums } from "@/lib/hooks/useEnums";
 import {
   DatabaseEnum,
@@ -33,6 +33,15 @@ import EnumDetail, {
 } from "../../sql-functions/components/EnumDetail";
 import EnumForm from "../../sql-functions/components/EnumForm";
 import { DEFAULT_DATABASE_SCHEMA } from "../../config";
+import {
+  booleanUrlCodec,
+  enumUrlCodec,
+  jsonUrlCodec,
+  positiveIntegerUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
+import type { EnumFilter, EnumSort } from "@/types/enum-types";
 
 interface EnumsContainerProps {
   initialEnums?: DatabaseEnum[];
@@ -42,15 +51,57 @@ export default function EnumsContainer({
   initialEnums = [],
 }: EnumsContainerProps) {
   // State for pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [activeTab, setActiveTab] = useState<"list" | "create" | "edit">(
-    "list",
+  const [currentPage, setCurrentPage] = useUrlState(
+    "p",
+    positiveIntegerUrlCodec(1),
   );
-  const [customSchemaSearch, setCustomSchemaSearch] = useState(false);
-  const [nameSearch, setNameSearch] = useState("");
+  const [itemsPerPage, setItemsPerPage] = useUrlState(
+    "ps",
+    positiveIntegerUrlCodec(10),
+  );
+  const [activeTab, setActiveTab] = useUrlState(
+    "tab",
+    enumUrlCodec(["list", "create", "edit"] as const, "list"),
+  );
+  const [customSchemaSearch, setCustomSchemaSearch] = useUrlState(
+    "customSchema",
+    booleanUrlCodec(false),
+  );
+  const [nameSearch, setNameSearch] = useUrlState("q", stringUrlCodec());
   // Which detail tab the last "open" asked for (a count-door sends 'usage').
-  const [detailTab, setDetailTab] = useState<EnumDetailTab | undefined>();
+  const [detailTab, setDetailTab] = useUrlState(
+    "detailTab",
+    enumUrlCodec<EnumDetailTab>(["details", "values", "usage"], "details"),
+  );
+  const [urlFilter, setUrlFilter] = useUrlState(
+    "filter",
+    jsonUrlCodec<EnumFilter>(
+      { schema: DEFAULT_DATABASE_SCHEMA },
+      (value): value is EnumFilter =>
+        Boolean(value) && typeof value === "object" && !Array.isArray(value),
+    ),
+  );
+  const [urlSort, setUrlSort] = useUrlState(
+    "sort",
+    jsonUrlCodec<EnumSort>(
+      { field: "name", direction: "asc" },
+      (value): value is EnumSort => {
+        if (!value || typeof value !== "object" || Array.isArray(value))
+          return false;
+        const candidate = value as Record<string, unknown>;
+        return (
+          ["name", "schema", "values_count", "usage_count"].includes(
+            String(candidate.field),
+          ) &&
+          (candidate.direction === "asc" || candidate.direction === "desc")
+        );
+      },
+    ),
+  );
+  const [selectedKey, setSelectedKey] = useUrlState(
+    "selected",
+    stringUrlCodec(),
+  );
 
   // Use the Enums hook
   const {
@@ -67,13 +118,50 @@ export default function EnumsContainer({
     createEnum,
     updateEnum,
     deleteEnum,
-    selectEnum,
-    updateFilter,
-    updateSort,
+    selectEnum: selectEnumInternal,
+    replaceFilter,
+    replaceSort,
   } = useEnums({
     initialData: initialEnums,
-    defaultFilter: { schema: DEFAULT_DATABASE_SCHEMA },
+    defaultFilter: urlFilter,
+    defaultSort: urlSort,
   });
+
+  const filterSnapshot = JSON.stringify(urlFilter);
+  const sortSnapshot = JSON.stringify(urlSort);
+  useEffect(() => replaceFilter(urlFilter), [filterSnapshot, replaceFilter]);
+  useEffect(() => replaceSort(urlSort), [sortSnapshot, replaceSort]);
+  useEffect(() => {
+    const selected =
+      allEnums.find(
+        (enumType) => `${enumType.schema}.${enumType.name}` === selectedKey,
+      ) ?? null;
+    selectEnumInternal(selected);
+  }, [allEnums, selectedKey, selectEnumInternal]);
+
+  const selectEnum = (enumType: DatabaseEnum | null) => {
+    selectEnumInternal(enumType);
+    setSelectedKey(enumType ? `${enumType.schema}.${enumType.name}` : "");
+  };
+
+  const updateUrlFilter = (patch: EnumFilter) => {
+    const next = { ...urlFilter, ...patch };
+    for (const key of Object.keys(next) as Array<keyof EnumFilter>) {
+      if (next[key] === undefined || next[key] === "") delete next[key];
+    }
+    setUrlFilter(next);
+    replaceFilter(next);
+  };
+
+  const updateUrlSort = (field: EnumSort["field"]) => {
+    const next: EnumSort = {
+      field,
+      direction:
+        urlSort.field === field && urlSort.direction === "asc" ? "desc" : "asc",
+    };
+    setUrlSort(next);
+    replaceSort(next);
+  };
 
   const uniqueSchemas = useMemo(() => {
     const schemas = new Set<string>();
@@ -88,7 +176,7 @@ export default function EnumsContainer({
   // Handle form submission for search
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    updateFilter({ name: nameSearch });
+    updateUrlFilter({ name: nameSearch });
   };
 
   // Handle creating a new enum
@@ -123,7 +211,7 @@ export default function EnumsContainer({
   // THE DOOR LAW: `tab` carries the question the user clicked — "12 tables"
   // opens the detail already on Usage, where those tables are listed.
   const handleViewDetails = (enumType: DatabaseEnum, tab?: EnumDetailTab) => {
-    setDetailTab(tab);
+    setDetailTab(tab ?? "details");
     selectEnum(enumType);
   };
 
@@ -149,10 +237,10 @@ export default function EnumsContainer({
   const handleSchemaChange = (value: string) => {
     if (value === "custom") {
       setCustomSchemaSearch(true);
-      updateFilter({ schema: "" });
+      updateUrlFilter({ schema: "" });
     } else {
       setCustomSchemaSearch(false);
-      updateFilter({ schema: value === "all" ? undefined : value });
+      updateUrlFilter({ schema: value === "all" ? undefined : value });
     }
   };
 
@@ -296,7 +384,7 @@ export default function EnumsContainer({
                           placeholder="Enter schema name..."
                           value={filter.schema || ""}
                           onChange={(e) =>
-                            updateFilter({ schema: e.target.value })
+                            updateUrlFilter({ schema: e.target.value })
                           }
                           className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 pr-8"
                         />
@@ -343,7 +431,7 @@ export default function EnumsContainer({
                       placeholder="Filter by enum value..."
                       value={filter.hasValue || ""}
                       onChange={(e) =>
-                        updateFilter({ hasValue: e.target.value })
+                        updateUrlFilter({ hasValue: e.target.value })
                       }
                       className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
                     />
@@ -365,7 +453,7 @@ export default function EnumsContainer({
                   onViewDetails={handleViewDetails}
                   onEditEnum={handleEditEnum}
                   onDeleteEnum={handleDeleteEnum}
-                  onSortChange={updateSort}
+                  onSortChange={updateUrlSort}
                   sortField={sort.field}
                   sortDirection={sort.direction}
                 />
@@ -384,7 +472,7 @@ export default function EnumsContainer({
                           <PaginationItem>
                             <PaginationPrevious
                               onClick={() =>
-                                setCurrentPage((prev) => Math.max(1, prev - 1))
+                                setCurrentPage(Math.max(1, currentPage - 1))
                               }
                               className={`cursor-pointer ${
                                 currentPage === 1
@@ -449,8 +537,8 @@ export default function EnumsContainer({
                           <PaginationItem>
                             <PaginationNext
                               onClick={() =>
-                                setCurrentPage((prev) =>
-                                  Math.min(totalPages, prev + 1),
+                                setCurrentPage(
+                                  Math.min(totalPages, currentPage + 1),
                                 )
                               }
                               className={`cursor-pointer ${

@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/lib/toast";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { UrlStateMatrxDataTable } from "@/lib/data-table/UrlStateMatrxDataTable";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import {
   isUuidValue,
@@ -81,12 +81,7 @@ interface IntegrityRow extends CheckMeta {
 }
 
 type RowStatus =
-  | "not run"
-  | "on-demand"
-  | "skipped"
-  | "check failed"
-  | "issues"
-  | "clean";
+  "not run" | "on-demand" | "skipped" | "check failed" | "issues" | "clean";
 
 function rowStatus(row: IntegrityRow): RowStatus {
   const r = row.result;
@@ -119,12 +114,19 @@ function StatusBadge({ row }: { row: IntegrityRow }) {
   if (status === "on-demand" || status === "skipped" || status === "not run")
     return (
       <Badge variant="outline" className="text-muted-foreground">
-        {status === "on-demand" ? "On-demand" : status === "skipped" ? "Skipped" : "Not run"}
+        {status === "on-demand"
+          ? "On-demand"
+          : status === "skipped"
+            ? "Skipped"
+            : "Not run"}
       </Badge>
     );
   if (status === "check failed")
     return (
-      <Badge variant="outline" className="border-destructive/40 text-destructive">
+      <Badge
+        variant="outline"
+        className="border-destructive/40 text-destructive"
+      >
         Check failed
       </Badge>
     );
@@ -256,7 +258,9 @@ function CheckDetail({ row }: { row: IntegrityRow }) {
         <p className="text-xs italic text-muted-foreground">{r.error}</p>
       ) : r?.error ? (
         <Alert variant="destructive" className="py-2">
-          <AlertDescription className="text-xs font-mono">{r.error}</AlertDescription>
+          <AlertDescription className="text-xs font-mono">
+            {r.error}
+          </AlertDescription>
         </Alert>
       ) : null}
       {row.remediation && (r?.count ?? 0) > 0 && (
@@ -270,8 +274,8 @@ function CheckDetail({ row }: { row: IntegrityRow }) {
           <FindingsTable rows={r.sample} />
           {r.count > r.sample.length && (
             <p className="text-[11px] text-muted-foreground">
-              Showing {r.sample.length} of {r.count} — re-run the CLI
-              (`pnpm check:data-integrity`) for the full set.
+              Showing {r.sample.length} of {r.count} — re-run the CLI (`pnpm
+              check:data-integrity`) for the full set.
             </p>
           )}
         </>
@@ -495,10 +499,9 @@ export default function DataIntegrityPage() {
           <p className="text-xs text-muted-foreground mt-1 max-w-3xl">
             On-demand integrity audit: referential/storage checks, security
             guards, and the repo&apos;s <code>check:*</code> gates. Read-only —
-            nothing here mutates data. Checks live in{" "}
-            <code>lib/integrity</code>; the SQL set also runs via{" "}
-            <code>pnpm check:data-integrity</code>. Repo gates are strictly
-            on-demand — use the per-row run button.
+            nothing here mutates data. Checks live in <code>lib/integrity</code>
+            ; the SQL set also runs via <code>pnpm check:data-integrity</code>.
+            Repo gates are strictly on-demand — use the per-row run button.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -568,7 +571,7 @@ export default function DataIntegrityPage() {
       )}
 
       <div className="min-h-0 flex-1">
-        <MatrxDataTable
+        <UrlStateMatrxDataTable
           data={rows}
           columns={columns}
           getRowId={(r) => r.id}

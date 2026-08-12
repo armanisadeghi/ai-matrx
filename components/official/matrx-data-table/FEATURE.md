@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** shared official primitive (`components/official/`)
-**Last updated:** `2026-08-11`
+**Last updated:** `2026-08-12`
 
 ---
 
@@ -28,6 +28,12 @@ tables (AI Models, relationships, …) can cut over to one contract.
   `query={{ mode: "controlled", state, totalItems, onStateChange }}`; the table
   emits page/page-size/search/filter/sort changes while the feature owns the
   direct database query and returns only the current rows.
+- **Controlled-local mode delegates state, not query execution.** Pass
+  `query={{ mode: "controlled-local", state, onStateChange }}` when the caller
+  owns URL state but the canonical table must still filter, sort, and paginate
+  its complete local dataset. Prefer `UrlStateMatrxDataTable` from
+  `lib/data-table/UrlStateMatrxDataTable.tsx` for the zero-config URL-backed
+  form; use `paramPrefix` when multiple tables share one route.
 - **Controlled search feedback is immediate.** Consumers may debounce the query
   state, but must pass the immediate display state back to the table.
 - **Primary search semantics are explicit when enabled.** Set
@@ -159,6 +165,10 @@ Do not drop these when replacing `AiModelTable`:
 
 ## Change log
 
+- 2026-08-12 — Added controlled-local query state and the shared
+  `UrlStateMatrxDataTable`, allowing local tables to preserve search, match
+  mode, any-of, layered/column filters, sorting, and pagination through copied
+  links, refresh, and browser Back/Forward.
 - 2026-08-11 — Added the shared compact layered-filter builder, URL-safe rule
   codec, local evaluator, controlled-query state, whole-word exclusions,
   numeric comparisons/ranges, ordered chips, drag/keyboard reorder, and one

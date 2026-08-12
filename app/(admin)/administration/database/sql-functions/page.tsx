@@ -1,24 +1,24 @@
-import React from 'react';
-import { getSqlFunctions } from '@/actions/admin/sql-functions';
-import SqlFunctionsContainer from './components/SqlFunctionsContainer';
-import { SqlFunction } from '@/types/sql-functions';
-
+import React from "react";
+import { Suspense } from "react";
+import { getSqlFunctions } from "@/actions/admin/sql-functions";
+import SqlFunctionsContainer from "./components/SqlFunctionsContainer";
+import { SqlFunction } from "@/types/sql-functions";
 
 export const metadata = {
-  title: 'SQL Functions',
-  description: 'Manage database SQL functions',
+  title: "SQL Functions",
+  description: "Manage database SQL functions",
 };
 
 export default async function SQLFunctionsPage() {
   // Fetch SQL functions on the server side
   let functionsData: SqlFunction[] = [];
-  let errorMessage = '';
-  
+  let errorMessage = "";
+
   try {
     functionsData = await getSqlFunctions();
   } catch (error) {
-    console.error('Error fetching SQL functions:', error);
-    errorMessage = 'Failed to load SQL functions. Please try again later.';
+    console.error("Error fetching SQL functions:", error);
+    errorMessage = "Failed to load SQL functions. Please try again later.";
   }
 
   return (
@@ -28,8 +28,16 @@ export default async function SQLFunctionsPage() {
           {errorMessage}
         </div>
       ) : (
-        <SqlFunctionsContainer initialFunctions={functionsData} />
+        <Suspense
+          fallback={
+            <div className="p-4 text-sm text-muted-foreground">
+              Loading SQL functions…
+            </div>
+          }
+        >
+          <SqlFunctionsContainer initialFunctions={functionsData} />
+        </Suspense>
       )}
     </div>
   );
-} 
+}

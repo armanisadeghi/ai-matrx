@@ -206,6 +206,12 @@ export interface MatrxDataTableQueryState {
 export type MatrxDataTableQueryControl =
   | { mode: "local" }
   | {
+      /** Local rows, but every query control is owned by the caller (for URL state). */
+      mode: "controlled-local";
+      state: MatrxDataTableQueryState;
+      onStateChange: (next: MatrxDataTableQueryState) => void;
+    }
+  | {
       mode: "controlled";
       state: MatrxDataTableQueryState;
       /** Total rows matching the controlled query, not just `data.length`. */
@@ -485,7 +491,6 @@ export interface MatrxDataTableProps<T> {
 
   /** Opt-in multi-row checkbox selection + a bulk action bar. */
   selection?: MatrxDataTableSelectionConfig<T>;
-
 
   /** Extra row actions rendered in a trailing Actions column. */
   rowActions?: (row: T, controls: MatrxDataTableRecordControls) => ReactNode;

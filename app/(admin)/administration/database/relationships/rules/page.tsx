@@ -25,7 +25,16 @@ export default async function RelationshipRulesPage({
 
   return (
     <div className="h-full overflow-y-auto">
-      <RelationshipRulesClient rules={rules ?? []} initialEditKey={edit} />
+      <Suspense
+        fallback={
+          <div className="p-4 text-sm text-muted-foreground">
+            Loading relationship rules…
+          </div>
+        }
+      >
+        <RelationshipRulesClient rules={rules ?? []} initialEditKey={edit} />
+      </Suspense>
     </div>
   );
 }
+import { Suspense } from "react";

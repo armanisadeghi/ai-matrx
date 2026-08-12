@@ -18,7 +18,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import dagre from "dagre";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   ArrowDownToLine,
@@ -39,6 +39,11 @@ import {
   Shield,
   Wrench,
 } from "lucide-react";
+import {
+  booleanUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -312,14 +317,27 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
   const [snapshot, setSnapshot] = useState(() =>
     parseAccessPlannerSnapshot(initialSnapshot),
   );
-  const [selectedTableName, setSelectedTableName] = useState(() =>
-    initialSelectedTable(snapshot),
+  const [selectedTableName, setSelectedTableName] = useUrlState(
+    "table",
+    stringUrlCodec(initialSelectedTable(snapshot)),
   );
-  const [search, setSearch] = useState("");
-  const [onlyProblems, setOnlyProblems] = useState(false);
-  const [showPlumbing, setShowPlumbing] = useState(false);
-  const [showPhysicalFks, setShowPhysicalFks] = useState(false);
-  const [showAssociations, setShowAssociations] = useState(false);
+  const [search, setSearch] = useUrlState("q", stringUrlCodec());
+  const [onlyProblems, setOnlyProblems] = useUrlState(
+    "problems",
+    booleanUrlCodec(false),
+  );
+  const [showPlumbing, setShowPlumbing] = useUrlState(
+    "plumbing",
+    booleanUrlCodec(false),
+  );
+  const [showPhysicalFks, setShowPhysicalFks] = useUrlState(
+    "fks",
+    booleanUrlCodec(false),
+  );
+  const [showAssociations, setShowAssociations] = useUrlState(
+    "associations",
+    booleanUrlCodec(false),
+  );
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -347,6 +365,29 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
       : "";
   });
   const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    if (!selectedTable) return;
+    setMode(modeFor(selectedTable));
+    setToken(
+      selectedTable.token ??
+        `${selectedTable.schema_name}_${selectedTable.table_name}`,
+    );
+    setLabel(selectedTable.label ?? titleCase(selectedTable.table_name));
+    const existingParent = snapshot.access_relationships.find(
+      (relationship) => relationship.child_type === selectedTable.token,
+    );
+    setParentChoice(
+      existingParent
+        ? `${existingParent.parent_type}|${existingParent.fk_column}`
+        : "",
+    );
+    setReason(
+      selectedTable.exclusion_reason === null
+        ? ""
+        : selectedTable.exclusion_reason,
+    );
+  }, [selectedTable, snapshot.access_relationships]);
 
   const selectedId = selectedTable
     ? plannerTableId(snapshot.schema, selectedTable.table_name)
@@ -957,9 +998,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                       <CopyButtons
                         size="icon"
                         label={`${selectedTable.schema_name}.${selectedTable.table_name}`}
-                        human={() =>
-                          plannerTableHuman(snapshot, selectedTable)
-                        }
+                        human={() => plannerTableHuman(snapshot, selectedTable)}
                         json={() =>
                           plannerTableDetailData(snapshot, selectedTable)
                         }
@@ -1028,155 +1067,160 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                   </Alert>
                 ) : (
                   <>
-                <section className="space-y-3">
-                  <div>
-                    <h3 className="text-sm font-semibold">Access decision</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Every base table must have exactly one primary role.
-                    </p>
-                  </div>
-                  <div className="grid gap-2">
-                    <ModeCard
-                      mode="root"
-                      active={mode === "root"}
-                      onSelect={setMode}
-                      icon={Shield}
-                      title="Own access"
-                      description="Direct grants; can pass access downward."
-                    />
-                    <ModeCard
-                      mode="nested"
-                      active={mode === "nested"}
-                      onSelect={setMode}
-                      icon={GitBranch}
-                      title="Inherit + share directly"
-                      description="Standalone entity that also inherits from a parent."
-                    />
-                    <ModeCard
-                      mode="component"
-                      active={mode === "component"}
-                      onSelect={setMode}
-                      icon={Boxes}
-                      title="Part of parent"
-                      description="No separate grants; always follows one parent."
-                    />
-                    <ModeCard
-                      mode="infrastructure"
-                      active={mode === "infrastructure"}
-                      onSelect={setMode}
-                      icon={Wrench}
-                      title="Infrastructure"
-                      description="Plumbing, not a user-facing entity."
-                    />
-                  </div>
-                </section>
-
-                {mode === "infrastructure" ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="reason">Why is this not an entity?</Label>
-                    <Textarea
-                      id="reason"
-                      value={reason}
-                      onChange={(event) => setReason(event.target.value)}
-                      placeholder="Example: sweep cursor state; no user-owned identity."
-                    />
-                    {selectedTable.token && (
-                      <p className="text-xs text-destructive">
-                        This is an active entity. Deactivate it in the Entity
-                        registry before classifying it as infrastructure.
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="token">Entity token</Label>
-                        <Input
-                          id="token"
-                          value={token}
-                          onChange={(event) => setToken(event.target.value)}
-                          disabled={Boolean(selectedTable.token)}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="label">Label</Label>
-                        <Input
-                          id="label"
-                          value={label}
-                          onChange={(event) => setLabel(event.target.value)}
-                        />
-                      </div>
-                    </div>
-                    {(mode === "nested" || mode === "component") && (
-                      <div className="space-y-1.5">
-                        <Label>Parent relationship</Label>
-                        <Select
-                          value={parentChoice}
-                          onValueChange={setParentChoice}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a real foreign key…" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {parentOptions.map((option) => (
-                              <SelectItem
-                                key={`${option.conname}:${option.source_columns[0]}`}
-                                value={`${option.target_token}|${option.source_columns[0]}`}
-                              >
-                                {option.target_label ?? option.target_token} via{" "}
-                                {option.source_columns.join(", ")}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {parentOptions.length === 0 && (
-                          <p className="text-xs text-destructive">
-                            No non-plumbing foreign key points to a registered
-                            parent.
-                          </p>
-                        )}
-                        {mode === "nested" && !hasVisibility && (
-                          <p className="text-xs text-destructive">
-                            This table needs a visibility column before it can
-                            inherit and remain directly shareable.
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {(mode === "root" || mode === "nested") &&
-                      !hasOwnershipColumns && (
-                        <p className="text-xs text-destructive">
-                          A table that owns access needs organization_id and
-                          created_by columns first.
+                    <section className="space-y-3">
+                      <div>
+                        <h3 className="text-sm font-semibold">
+                          Access decision
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          Every base table must have exactly one primary role.
                         </p>
-                      )}
-                  </div>
-                )}
+                      </div>
+                      <div className="grid gap-2">
+                        <ModeCard
+                          mode="root"
+                          active={mode === "root"}
+                          onSelect={setMode}
+                          icon={Shield}
+                          title="Own access"
+                          description="Direct grants; can pass access downward."
+                        />
+                        <ModeCard
+                          mode="nested"
+                          active={mode === "nested"}
+                          onSelect={setMode}
+                          icon={GitBranch}
+                          title="Inherit + share directly"
+                          description="Standalone entity that also inherits from a parent."
+                        />
+                        <ModeCard
+                          mode="component"
+                          active={mode === "component"}
+                          onSelect={setMode}
+                          icon={Boxes}
+                          title="Part of parent"
+                          description="No separate grants; always follows one parent."
+                        />
+                        <ModeCard
+                          mode="infrastructure"
+                          active={mode === "infrastructure"}
+                          onSelect={setMode}
+                          icon={Wrench}
+                          title="Infrastructure"
+                          description="Plumbing, not a user-facing entity."
+                        />
+                      </div>
+                    </section>
 
-                {message && (
-                  <Alert
-                    variant={
-                      message.startsWith("Access decision")
-                        ? "default"
-                        : "destructive"
-                    }
-                  >
-                    <AlertDescription>{message}</AlertDescription>
-                  </Alert>
-                )}
-                <Button
-                  className="w-full"
-                  onClick={() => setConfirmOpen(true)}
-                  disabled={decisionBlocked || saving}
-                >
-                  {saving ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="mr-2 h-4 w-4" />
-                  )}
-                  Apply access decision
-                </Button>
+                    {mode === "infrastructure" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="reason">
+                          Why is this not an entity?
+                        </Label>
+                        <Textarea
+                          id="reason"
+                          value={reason}
+                          onChange={(event) => setReason(event.target.value)}
+                          placeholder="Example: sweep cursor state; no user-owned identity."
+                        />
+                        {selectedTable.token && (
+                          <p className="text-xs text-destructive">
+                            This is an active entity. Deactivate it in the
+                            Entity registry before classifying it as
+                            infrastructure.
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="token">Entity token</Label>
+                            <Input
+                              id="token"
+                              value={token}
+                              onChange={(event) => setToken(event.target.value)}
+                              disabled={Boolean(selectedTable.token)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="label">Label</Label>
+                            <Input
+                              id="label"
+                              value={label}
+                              onChange={(event) => setLabel(event.target.value)}
+                            />
+                          </div>
+                        </div>
+                        {(mode === "nested" || mode === "component") && (
+                          <div className="space-y-1.5">
+                            <Label>Parent relationship</Label>
+                            <Select
+                              value={parentChoice}
+                              onValueChange={setParentChoice}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose a real foreign key…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {parentOptions.map((option) => (
+                                  <SelectItem
+                                    key={`${option.conname}:${option.source_columns[0]}`}
+                                    value={`${option.target_token}|${option.source_columns[0]}`}
+                                  >
+                                    {option.target_label ?? option.target_token}{" "}
+                                    via {option.source_columns.join(", ")}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {parentOptions.length === 0 && (
+                              <p className="text-xs text-destructive">
+                                No non-plumbing foreign key points to a
+                                registered parent.
+                              </p>
+                            )}
+                            {mode === "nested" && !hasVisibility && (
+                              <p className="text-xs text-destructive">
+                                This table needs a visibility column before it
+                                can inherit and remain directly shareable.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {(mode === "root" || mode === "nested") &&
+                          !hasOwnershipColumns && (
+                            <p className="text-xs text-destructive">
+                              A table that owns access needs organization_id and
+                              created_by columns first.
+                            </p>
+                          )}
+                      </div>
+                    )}
+
+                    {message && (
+                      <Alert
+                        variant={
+                          message.startsWith("Access decision")
+                            ? "default"
+                            : "destructive"
+                        }
+                      >
+                        <AlertDescription>{message}</AlertDescription>
+                      </Alert>
+                    )}
+                    <Button
+                      className="w-full"
+                      onClick={() => setConfirmOpen(true)}
+                      disabled={decisionBlocked || saving}
+                    >
+                      {saving ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="mr-2 h-4 w-4" />
+                      )}
+                      Apply access decision
+                    </Button>
                   </>
                 )}
 

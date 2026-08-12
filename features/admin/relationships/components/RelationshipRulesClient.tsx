@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
-import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import { UrlStateMatrxDataTable } from "@/lib/data-table/UrlStateMatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { RuleEditorForm } from "./RuleEditorForm";
 import { ConveyPill, DirectionGlyph } from "./shared";
@@ -39,6 +39,11 @@ import type {
   PermissionLevel,
   RelationshipRule,
 } from "../types";
+import {
+  enumUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 
 type RuleFilter = "all" | "conveying" | "known" | "inactive";
 
@@ -67,6 +72,20 @@ const EMPTY_EDITOR: EditorState = {
   original: null,
 };
 
+function ruleToEditor(rule: RelationshipRule): EditorState {
+  return {
+    mode: "edit",
+    sourceType: rule.source_type,
+    targetType: rule.target_type,
+    label: rule.label ?? "",
+    containerSide: rule.container_side as ContainerSide,
+    conveysMax: rule.conveys_max,
+    isActive: rule.is_active,
+    notes: rule.notes ?? "",
+    original: rule,
+  };
+}
+
 interface Props {
   rules: RelationshipRule[];
   /** ?edit=<source:target:label> from the Overview drift panel; consume-once. */
@@ -78,10 +97,18 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [, startTransition] = useTransition();
 
-  const [filter, setFilter] = useState<RuleFilter>("all");
+  const [filter, setFilter] = useUrlState(
+    "facet",
+    enumUrlCodec<RuleFilter>(["all", "conveying", "known", "inactive"], "all"),
+  );
   const [editor, setEditor] = useState<EditorState | null>(null);
   /** Side-panel selection — independent of WindowPanel edit hydration. */
-  const [sidePanelId, setSidePanelId] = useState<string | null>(null);
+  const [sidePanelParam, setSidePanelParam] = useUrlState(
+    "row",
+    stringUrlCodec(),
+  );
+  const sidePanelId = sidePanelParam || null;
+  const setSidePanelId = (id: string | null) => setSidePanelParam(id ?? "");
   const [saving, setSaving] = useState(false);
   /** The rule targeted for deletion — independent of the editor so a row-level
    *  delete doesn't also pop the editor sheet. */
@@ -90,6 +117,12 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
   );
 
   const refresh = () => startTransition(() => router.refresh());
+
+  useEffect(() => {
+    if (!sidePanelId) return;
+    const rule = rules.find((candidate) => ruleKey(candidate) === sidePanelId);
+    if (rule) setEditor(ruleToEditor(rule));
+  }, [rules, sidePanelId]);
 
   // Consume-once deep link: open the side-panel editor for the requested rule,
   // then strip the param so refresh/back doesn't re-trigger it.
@@ -103,9 +136,15 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
     } else {
       toast.error(`Rule not found: ${initialEditKey}`);
     }
-    router.replace("/administration/database/relationships/rules");
-     
-  }, [initialEditKey]);
+    const params = new URLSearchParams(window.location.search);
+    params.delete("edit");
+    const query = params.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `/administration/database/relationships/rules${query ? `?${query}` : ""}`,
+    );
+  }, [initialEditKey, rules]);
 
   // -- derived ---------------------------------------------------------------
 
@@ -340,17 +379,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
   }
 
   function openEdit(rule: RelationshipRule) {
-    setEditor({
-      mode: "edit",
-      sourceType: rule.source_type,
-      targetType: rule.target_type,
-      label: rule.label ?? "",
-      containerSide: rule.container_side as ContainerSide,
-      conveysMax: rule.conveys_max,
-      isActive: rule.is_active,
-      notes: rule.notes ?? "",
-      original: rule,
-    });
+    setEditor(ruleToEditor(rule));
   }
 
   function openEditInSidePanel(rule: RelationshipRule) {
@@ -411,7 +440,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
           ? null
           : cur,
       );
-      setSidePanelId((id) => (id && id === ruleKey(target) ? null : id));
+      if (sidePanelId === ruleKey(target)) setSidePanelId(null);
       refresh();
     } catch (e) {
       toast.error(
@@ -437,7 +466,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
 
       {/* Registry table — MatrxDataTable (sticky, every-column filter/sort) */}
       <div className="min-h-[28rem]">
-        <MatrxDataTable
+        <UrlStateMatrxDataTable
           data={filtered}
           columns={ruleColumns}
           getRowId={ruleKey}

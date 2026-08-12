@@ -115,7 +115,11 @@ export function MatrxDataTable<T>({
   // Two sticky leading cells would overlap, and a frozen checkbox identifies
   // nothing — selection and the mobile frozen identity column are exclusive.
   const mobileScroll = mobile !== "plain" && !selection;
-  const controlledQuery = query?.mode === "controlled" ? query : null;
+  const controlledQuery =
+    query?.mode === "controlled" || query?.mode === "controlled-local"
+      ? query
+      : null;
+  const remoteQuery = query?.mode === "controlled" ? query : null;
   const emitControlledQueryChange = useCallback(
     (
       patch: Partial<MatrxDataTableQueryState>,
@@ -291,13 +295,13 @@ export function MatrxDataTable<T>({
     const meta = new Map<string, QueryFilterMeta>();
     for (const col of visibleColumns) {
       const id = columnId(col);
-      meta.set(id, resolveQueryFilterMeta(col, data, Boolean(controlledQuery)));
+      meta.set(id, resolveQueryFilterMeta(col, data, Boolean(remoteQuery)));
     }
     return meta;
-  }, [visibleColumns, data, controlledQuery]);
+  }, [visibleColumns, data, remoteQuery]);
 
   const processed = useMemo(() => {
-    if (controlledQuery) return data;
+    if (remoteQuery) return data;
     return filterAndSortRows(
       data,
       visibleColumns,
@@ -320,7 +324,7 @@ export function MatrxDataTable<T>({
     anyOfValue,
     layeredFilters,
     searchMatchMode,
-    controlledQuery,
+    remoteQuery,
   ]);
 
   useEffect(() => {
@@ -338,30 +342,24 @@ export function MatrxDataTable<T>({
     controlledQuery,
   ]);
 
-  const totalItems = controlledQuery
-    ? Math.max(0, controlledQuery.totalItems)
+  const totalItems = remoteQuery
+    ? Math.max(0, remoteQuery.totalItems)
     : processed.length;
-  const effectivePageSize = controlledQuery
+  const effectivePageSize = remoteQuery
     ? Math.max(pageSize, 1)
     : defaultPageSize === 0
       ? Math.max(totalItems, 1)
       : pageSize;
   const pageCount = Math.max(1, Math.ceil(totalItems / effectivePageSize));
-  const safePage = controlledQuery
+  const safePage = remoteQuery
     ? safeQueryPage(page, totalItems, effectivePageSize)
     : Math.min(page, pageCount);
   const paginated = useMemo(() => {
-    if (controlledQuery) return processed;
+    if (remoteQuery) return processed;
     if (defaultPageSize === 0) return processed;
     const start = (safePage - 1) * effectivePageSize;
     return processed.slice(start, start + effectivePageSize);
-  }, [
-    processed,
-    safePage,
-    effectivePageSize,
-    defaultPageSize,
-    controlledQuery,
-  ]);
+  }, [processed, safePage, effectivePageSize, defaultPageSize, remoteQuery]);
 
   // A deletion or narrower filter can leave a controlled URL on a page that
   // no longer exists. Emit the clamped page once the new total arrives.
@@ -525,9 +523,9 @@ export function MatrxDataTable<T>({
     selectedIdSet.has(getRowId(row)),
   );
   const allOnPageSelected =
-    selectableRows.length > 0 && selectedOnPage.length === selectableRows.length;
-  const someOnPageSelected =
-    selectedOnPage.length > 0 && !allOnPageSelected;
+    selectableRows.length > 0 &&
+    selectedOnPage.length === selectableRows.length;
+  const someOnPageSelected = selectedOnPage.length > 0 && !allOnPageSelected;
   const selectedRows = useMemo(
     () => data.filter((row) => selectedIdSet.has(getRowId(row))),
     [data, selectedIdSet, getRowId],

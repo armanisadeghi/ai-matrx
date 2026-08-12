@@ -60,10 +60,13 @@ DB — the UI just `router.refresh()`es.
 | Exposure Audit | `exposure-audit/page.tsx` (none)                                                                        | `ExposureAuditClient` — super-admin summary + controlled, paginated file/note exposure inventory                                       |
 | Actions        | `actions/page.tsx` (none)                                                                               | `ActionCatalogClient` (`features/action-catalog/` — see its FEATURE.md; moved from the deleted `/administration/action-catalog` route) |
 
-**Cross-tab deep links are consume-once query params:** the Overview drift panel's
-"Open rule" → `/rules?edit=<ruleKey>` and "Register as shareable" →
-`/sharing?register=<token>`; the target client applies the param once then strips it
-with `router.replace` so refresh/back never re-triggers.
+**Every view is URL-addressable.** Table search, every column filter, sort,
+pagination, toolbar facets, selected detail rows, planner selection/search/display
+toggles, explorer selection/window state, reachability inputs/run state, and
+exposure scope/deleted state live in query params. Native history entries are the
+state transitions, so refresh, copied links, and Back/Forward reproduce the exact
+view. Overview deep links (`?edit=<ruleKey>`, `?register=<token>`) normalize into
+the same durable selected-row params instead of wiping unrelated query state.
 
 ## Data model (all via `public.` SECURITY DEFINER RPCs, each re-checks `is_super_admin()`)
 
@@ -287,6 +290,12 @@ used by the per-row **Link policy** side panel).
 
 ## Change log
 
+- **2026-08-12** — Made the complete Relationships hub URL-addressable. The
+  canonical `useUrlState` / `useTableUrlState` primitives now drive registry
+  table query state, facets, selected side-panel rows, Planner selection and
+  graph toggles, Explorer selection/window state, Reachability run targets, and
+  Exposure Audit scope/search/page state. Browser Back/Forward now rehydrates
+  the controls and open record instead of changing only the address bar.
 - **2026-08-12** — Copy / Copy-for-AI coverage completed across the hub: Access
   Planner (schema snapshot + selected-table detail, builders in
   `access-planner/copy.ts`), Overview status header, Reachability results, and

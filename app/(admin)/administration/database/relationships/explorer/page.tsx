@@ -20,7 +20,16 @@ export default async function RelationshipExplorerPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <RelationshipExplorerClient rules={rules ?? []} />
+      <Suspense
+        fallback={
+          <div className="p-4 text-sm text-muted-foreground">
+            Loading entity explorer…
+          </div>
+        }
+      >
+        <RelationshipExplorerClient rules={rules ?? []} />
+      </Suspense>
     </div>
   );
 }
+import { Suspense } from "react";

@@ -33,11 +33,20 @@ export default async function RelationshipSharingPage({
 
   return (
     <div className="h-full overflow-y-auto">
-      <RelationshipSharingClient
-        registry={registryRes.data ?? []}
-        policies={policiesRes.data ?? []}
-        initialRegisterToken={register}
-      />
+      <Suspense
+        fallback={
+          <div className="p-4 text-sm text-muted-foreground">
+            Loading sharing registry…
+          </div>
+        }
+      >
+        <RelationshipSharingClient
+          registry={registryRes.data ?? []}
+          policies={policiesRes.data ?? []}
+          initialRegisterToken={register}
+        />
+      </Suspense>
     </div>
   );
 }
+import { Suspense } from "react";

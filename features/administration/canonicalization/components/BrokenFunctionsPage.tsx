@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -18,6 +18,7 @@ import {
   keywordTagFilterActive,
 } from "../utils/brokenFunctionKeywordFilter";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
+import { jsonUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
 
 export function BrokenFunctionsPage() {
   const searchParams = useSearchParams();
@@ -25,7 +26,23 @@ export function BrokenFunctionsPage() {
     "broken-functions",
     isBrokenFunctionRow,
   );
-  const [keywordFilter, setKeywordFilter] = useState(EMPTY_KEYWORD_TAG_FILTER);
+  const [keywordFilter, setKeywordFilter] = useUrlState(
+    "keywords",
+    jsonUrlCodec(
+      EMPTY_KEYWORD_TAG_FILTER,
+      (value): value is typeof EMPTY_KEYWORD_TAG_FILTER => {
+        if (!value || typeof value !== "object" || Array.isArray(value))
+          return false;
+        const candidate = value as Record<string, unknown>;
+        return (
+          Array.isArray(candidate.include) &&
+          candidate.include.every((item) => typeof item === "string") &&
+          Array.isArray(candidate.exclude) &&
+          candidate.exclude.every((item) => typeof item === "string")
+        );
+      },
+    ),
+  );
   const toolbar = useCanonicalizationDatasetToolbar(reload);
 
   const fnParam = searchParams.get("fn");
