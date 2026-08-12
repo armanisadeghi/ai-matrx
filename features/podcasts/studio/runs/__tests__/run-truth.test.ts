@@ -3,7 +3,7 @@ import { describe, expect, it } from "@jest/globals";
 import { deriveRecoveryState } from "../recovery";
 import { detailToRunState } from "../mapping";
 import { trueLiveness, trueSummaryLiveness } from "../run-truth";
-import { mergeAncillarySlots } from "../reconcile";
+import { isEpisodeSettled, mergeAncillarySlots } from "../reconcile";
 import type { RunDetail, RunSummary } from "../run-types";
 
 /**
@@ -211,5 +211,57 @@ describe("mergeAncillarySlots", () => {
         "image",
       ),
     ).toBe(existing);
+  });
+});
+
+describe("isEpisodeSettled", () => {
+  const rec = (over: Record<string, unknown>) =>
+    ({
+      run_id: "r1",
+      outcome: "completed",
+      status: "completed",
+      reason: "",
+      essential: { script: "completed", audio: "completed", episode: "completed" },
+      audio_url: "https://cdn/a.mp3",
+      script: "x",
+      episode_id: "e1",
+      episode_slug: null,
+      total_cost_usd: 0,
+      progress: { done: 1, failed: 0, total: 1 },
+      stages: [],
+      ancillary_pending: [],
+      poll_after_seconds: null,
+      ...over,
+    }) as never;
+
+  // The episode row is created under a CAS lease because several callers race
+  // to write it (live pipeline, cron sweep, this client's polling). The losers
+  // briefly see completed + episode pending + no id. That is correct and
+  // self-resolving — but the page must keep observing, because every post-run
+  // tool keys off the episode id.
+  it("is unsettled while the episode row is still being written", () => {
+    expect(
+      isEpisodeSettled(
+        rec({
+          essential: { script: "completed", audio: "completed", episode: "pending" },
+          episode_id: null,
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it("is settled once the id lands, even if the flag lags", () => {
+    expect(
+      isEpisodeSettled(
+        rec({
+          essential: { script: "completed", audio: "completed", episode: "pending" },
+          episode_id: "e1",
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it("is settled on a normal completion", () => {
+    expect(isEpisodeSettled(rec({}))).toBe(true);
   });
 });
