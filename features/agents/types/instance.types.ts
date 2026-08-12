@@ -260,6 +260,24 @@ export interface ExecutionInstance {
   /** Stable UI-surface key (e.g. "agent-runner:<agentId>", "code-editor"). */
   surfaceKey?: string;
   /**
+   * The DB-registered `ui_surface.name` this conversation was LAUNCHED from
+   * (e.g. `matrx-user/quick-note-save`). Distinct from `surfaceKey`, which is
+   * a UI rendering-context string, not a surface the server knows.
+   *
+   * Stamped by `launchAgentExecution` whenever the launch resolved a surface.
+   * `buildToolInjection` prefers it over the route-derived guess so the
+   * server resolves against the surface the run actually belongs to.
+   *
+   * This is the ONLY way an OVERLAY surface can be attributed correctly: its
+   * window renders on top of a mapped route, so `detectActiveSurface()` (which
+   * reads `window.location.pathname`) always reports the ROUTE — on
+   * `/chat/[id]` that is `matrx-user/chat`, never the open window's surface.
+   *
+   * Absent on conversations that never launched from a surface (a plain chat
+   * send), which is what keeps those runs on the route-derived behavior.
+   */
+  surfaceName?: string | null;
+  /**
    * When true, the server persists NOTHING for this conversation. Redux
    * (specifically the messages slice) is the sole source of truth.
    *

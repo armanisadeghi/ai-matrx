@@ -377,10 +377,29 @@ export async function buildToolInjection(
   //   - brake on  → undefined (server attaches nothing; see disableInjection).
   //   - Surface Simulator set (builderAdvancedSettings.surfaceOverride) → mimic
   //     ANY surface; the server can't tell it's simulated — same wire field.
+  //   - the surface this conversation LAUNCHED from, when it had one.
   //   - otherwise → the surface mapped from the current route.
+  //
+  // The launch surface has to outrank the route guess, because
+  // `detectActiveSurface()` reads `window.location.pathname` and an OVERLAY
+  // surface has no pathname of its own — its window renders on top of a mapped
+  // route. The Quick Save Note window opens only from a chat message's
+  // Save as > Note, so it is always over `/chat/[id]`: the route guess reported
+  // `matrx-user/chat` and the window's own surface could never win, which meant
+  // the server resolved every overlay run against the wrong surface.
+  //
+  // Route surfaces are unaffected — there the stamped launch name and the route
+  // guess are the same string. A conversation with no launch surface (a plain
+  // chat send) still falls through to the route, so chat runs keep
+  // `matrx-user/chat` and the UI-first tools it carries.
+  const launchSurface =
+    state.conversations.byConversationId[conversationId]?.surfaceName ?? null;
   const surface = disableInjection
     ? undefined
-    : perConversation?.surfaceOverride || detectActiveSurface() || undefined;
+    : perConversation?.surfaceOverride ||
+      launchSurface ||
+      detectActiveSurface() ||
+      undefined;
 
   if (surface || activeCapabilities.length > 0) {
     client = {

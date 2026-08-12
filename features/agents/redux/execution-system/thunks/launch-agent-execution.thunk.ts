@@ -70,6 +70,7 @@ import {
 import {
   setInstanceStatus,
   setInstanceInitiation,
+  patchConversation,
 } from "../conversations/conversations.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
@@ -980,6 +981,25 @@ export const launchAgentExecution = createAsyncThunk<
   dispatch(
     setInstanceInitiation({ conversationId, initiation: initiation ?? "user" }),
   );
+
+  // ── Surface attribution ───────────────────────────────────────────────────
+  // Stamp the surface this run LAUNCHED from onto the conversation record, so
+  // `buildToolInjection` can send it as `client.surface` instead of guessing
+  // from the route on every turn.
+  //
+  // Only an OVERLAY surface actually changes value here: its window renders on
+  // top of a mapped route, so `detectActiveSurface()` reports the ROUTE
+  // (`matrx-user/chat` under the Quick Save Note window) and the launch's own
+  // surface had no way to win. For a normal route surface the two agree, so
+  // this stamps the same name the route guess would have produced.
+  //
+  // Deliberately NOT stamped when the launch resolved no surface: a plain chat
+  // send keeps the route-derived behavior untouched, which is what keeps
+  // `matrx-user/chat`'s `surface_defaults.always_include_tools` attached to
+  // chat runs.
+  if (surfaceName) {
+    dispatch(patchConversation({ conversationId, surfaceName }));
+  }
 
   const seededUiState = (getState() as RootState).instanceUIState
     .byConversationId[conversationId];
