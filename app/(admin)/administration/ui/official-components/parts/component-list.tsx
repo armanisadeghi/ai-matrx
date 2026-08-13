@@ -671,22 +671,6 @@ export const componentList: ComponentEntry[] = [
     ],
   },
   {
-    id: "multi-applet-selector",
-    name: "Multi Applet Selector",
-    path: "features/applet/builder/components/smart-parts/applets/MultiAppletSelector.tsx",
-    description:
-      "Component for selecting and managing multiple applets with various configuration options",
-    categories: ["selectors", "inputs"],
-    tags: [
-      "applet",
-      "select",
-      "multiple",
-      "management",
-      "configuration",
-      "dropdown",
-    ],
-  },
-  {
     id: "structured-section-card",
     name: "Structured Section Card",
     path: "components/official/StructuredSectionCard.tsx",
@@ -720,23 +704,6 @@ export const componentList: ComponentEntry[] = [
       "window",
       "canonical",
       "matrx",
-    ],
-  },
-  {
-    id: "applet-list-table",
-    name: "Applet List Table",
-    path: "features/applet/builder/modules/applet-builder/AppletListTable.tsx",
-    description:
-      "Flexible applet listing component with various configuration options for different use cases",
-    categories: ["data-display", "interactive", "dashboards"],
-    tags: [
-      "table",
-      "list",
-      "applet",
-      "data",
-      "interactive",
-      "configurable",
-      "selection",
     ],
   },
   {

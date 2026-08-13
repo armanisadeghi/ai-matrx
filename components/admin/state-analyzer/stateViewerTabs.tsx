@@ -127,13 +127,6 @@ const REGISTERED_SLICE_KEYS = new Set<string>([
   "globalCache",
   "ui",
   "conversationList",
-  "componentDefinitions",
-  "appBuilder",
-  "appletBuilder",
-  "containerBuilder",
-  "fieldBuilder",
-  "customAppRuntime",
-  "customAppletRuntime",
   "messaging",
   "adminPreferences",
   "entitySystem",
@@ -594,66 +587,6 @@ export function getStateViewerTabs(
         <GenericSliceViewer
           sliceKey="flashcardChat"
           state={completeState.flashcardChat}
-        />
-      ),
-    },
-    {
-      id: "componentDefinitions",
-      label: "Component Definitions",
-      content: (
-        <GenericSliceViewer
-          sliceKey="componentDefinitions"
-          state={completeState.componentDefinitions}
-        />
-      ),
-    },
-    {
-      id: "appBuilder",
-      label: "App Builder",
-      content: (
-        <GenericSliceViewer
-          sliceKey="appBuilder"
-          state={completeState.appBuilder}
-        />
-      ),
-    },
-    {
-      id: "appletBuilder",
-      label: "Applet Builder",
-      content: (
-        <GenericSliceViewer
-          sliceKey="appletBuilder"
-          state={completeState.appletBuilder}
-        />
-      ),
-    },
-    {
-      id: "containerBuilder",
-      label: "Container Builder",
-      content: (
-        <GenericSliceViewer
-          sliceKey="containerBuilder"
-          state={completeState.containerBuilder}
-        />
-      ),
-    },
-    {
-      id: "fieldBuilder",
-      label: "Field Builder",
-      content: (
-        <GenericSliceViewer
-          sliceKey="fieldBuilder"
-          state={completeState.fieldBuilder}
-        />
-      ),
-    },
-    {
-      id: "customAppRuntime",
-      label: "Custom App Runtime",
-      content: (
-        <GenericSliceViewer
-          sliceKey="customAppRuntime"
-          state={completeState.customAppRuntime}
         />
       ),
     },

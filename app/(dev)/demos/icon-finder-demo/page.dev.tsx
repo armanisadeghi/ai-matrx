@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/demos/icon-finder-demo", {
   titlePrefix: "Icon finder",
   title: "Demo",
   description:
-    "Lazy-loaded demos for Lucide icon-picker, applet IconPicker, IconPickerDialog, and IconInputWithValidation",
+    "Lazy-loaded demos for the Lucide icon-picker and IconInputWithValidation",
   letter: "IF",
 });
 

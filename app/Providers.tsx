@@ -32,7 +32,6 @@ import { ToastProvider } from "@/providers/toast-context";
 import { ModuleHeaderProvider } from "@/providers/ModuleHeaderProvider";
 import { PersistentComponentProvider } from "@/providers/persistance/PersistentComponentProvider";
 import { SelectedImagesProvider } from "@/components/image/context/SelectedImagesProvider";
-import { UniformHeightProvider } from "@/features/applet/runner/layouts/core/UniformHeightWrapper";
 import { ReactQueryProvider } from "@/providers/ReactQueryProvider";
 // ONE audio mount. The entire audio system (recording engine, TTS speaker,
 // playback/session mirrors, device manager, audio modal, crash recovery) sits
@@ -124,7 +123,6 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
               <RefProvider>
                 <TooltipProvider delayDuration={200}>
                   <ModuleHeaderProvider>
-                    <UniformHeightProvider>
                       <SelectedImagesProvider>
                             <RequestRecoveryProvider>
                               {/* ONE audio mount — the whole audio system
@@ -196,7 +194,6 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                               </React.Fragment>
                             </RequestRecoveryProvider>
                       </SelectedImagesProvider>
-                    </UniformHeightProvider>
                   </ModuleHeaderProvider>
                 </TooltipProvider>
               </RefProvider>

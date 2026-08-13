@@ -11,30 +11,6 @@ const LucideFullDemo = dynamic(() => import("./_chunks/lucide-full-demo"), {
   ),
 });
 
-const AppletIconPickerDemo = dynamic(
-  () => import("./_chunks/applet-icon-picker-demo"),
-  {
-    ssr: false,
-    loading: () => (
-      <p className="text-xs text-muted-foreground py-6">
-        Loading applet IconPicker…
-      </p>
-    ),
-  },
-);
-
-const AppletIconDialogDemo = dynamic(
-  () => import("./_chunks/applet-icon-dialog-demo"),
-  {
-    ssr: false,
-    loading: () => (
-      <p className="text-xs text-muted-foreground py-6">
-        Loading IconPickerDialog…
-      </p>
-    ),
-  },
-);
-
 const OfficialIconInputDemo = dynamic(
   () => import("./_chunks/official-icon-input-demo"),
   {
@@ -47,7 +23,7 @@ const OfficialIconInputDemo = dynamic(
   },
 );
 
-type DemoKey = "lucide" | "applet" | "dialog" | "official";
+type DemoKey = "lucide" | "official";
 
 const ROWS: {
   key: DemoKey;
@@ -60,16 +36,6 @@ const ROWS: {
     hint: "@/components/ui/icon-picker — after mount: click the outline button (icon + name, or “Choose Icon”) to open the searchable grid dialog.",
   },
   {
-    key: "applet",
-    label: "Applet IconPicker (curated)",
-    hint: "@/components/ui/IconPicker — appIcon + submitIcon",
-  },
-  {
-    key: "dialog",
-    label: "Applet IconPickerDialog",
-    hint: "features/applet/.../IconPickerDialog.tsx",
-  },
-  {
     key: "official",
     label: "IconInputWithValidation",
     hint: "@/components/official/IconInputWithValidation.dynamic (next/dynamic, no grid)",
@@ -79,8 +45,6 @@ const ROWS: {
 export function IconFinderDemoClient() {
   const [mounted, setMounted] = useState<Record<DemoKey, boolean>>({
     lucide: false,
-    applet: false,
-    dialog: false,
     official: false,
   });
 
@@ -91,8 +55,6 @@ export function IconFinderDemoClient() {
   const unmountAll = useCallback(() => {
     setMounted({
       lucide: false,
-      applet: false,
-      dialog: false,
       official: false,
     });
   }, []);
@@ -175,8 +137,6 @@ export function IconFinderDemoClient() {
 
         <section className="space-y-6">
           {mounted.lucide ? <LucideFullDemo /> : null}
-          {mounted.applet ? <AppletIconPickerDemo /> : null}
-          {mounted.dialog ? <AppletIconDialogDemo /> : null}
           {mounted.official ? <OfficialIconInputDemo /> : null}
         </section>
       </div>
