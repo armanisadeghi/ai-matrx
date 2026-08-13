@@ -1,40 +1,35 @@
 {
-  "generatedAt": "2026-08-12T19:25:44.274Z",
-  "commit": "24a25f61878d6e60310eb4a907df3928afc7eaf6",
+  "generatedAt": "2026-08-13T01:16:55.612Z",
+  "commit": "8e99fec9d6467b47b3e659f9f5a539860a41fff3",
   "totals": {
-    "findings": 126,
-    "high": 77,
-    "medium": 49,
+    "findings": 121,
+    "high": 75,
+    "medium": 46,
     "low": 0,
-    "filesWithFindings": 74,
-    "filesScanned": 6973,
+    "filesWithFindings": 73,
+    "filesScanned": 6982,
     "allowlisted": 0
   },
   "byRule": {
-    "bare-id-text": 71,
-    "unlinked-entity-name": 40,
+    "bare-id-text": 68,
+    "unlinked-entity-name": 39,
     "unlinked-count": 4,
-    "no-doors-in-file": 11
+    "no-doors-in-file": 10
   },
   "worstFiles": [
     {
       "key": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "count": 6,
+      "count": 5,
       "high": 4
     },
     {
       "key": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "count": 6,
+      "count": 5,
       "high": 4
     },
     {
       "key": "components/debug/AgentExecutionDebugPanel.tsx",
       "count": 4,
-      "high": 3
-    },
-    {
-      "key": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "count": 3,
       "high": 3
     },
     {
@@ -188,6 +183,11 @@
       "high": 1
     },
     {
+      "key": "features/agent-comparison/components/MasterInputWindow.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
       "key": "features/agent-connections/components/sections/ResourcesSection.tsx",
       "count": 1,
       "high": 1
@@ -281,13 +281,8 @@
     },
     {
       "key": "components/admin",
-      "count": 15,
+      "count": 13,
       "high": 9
-    },
-    {
-      "key": "features/agent-comparison",
-      "count": 5,
-      "high": 5
     },
     {
       "key": "features/surfaces",
@@ -307,6 +302,11 @@
     {
       "key": "components/debug",
       "count": 5,
+      "high": 3
+    },
+    {
+      "key": "features/agent-comparison",
+      "count": 3,
       "high": 3
     },
     {
@@ -615,7 +615,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "line": 180,
+      "line": 184,
       "column": 18,
       "rule": "bare-id-text",
       "severity": "high",
@@ -627,7 +627,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "line": 338,
+      "line": 354,
       "column": 18,
       "rule": "bare-id-text",
       "severity": "high",
@@ -639,7 +639,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "line": 340,
+      "line": 356,
       "column": 38,
       "rule": "bare-id-text",
       "severity": "high",
@@ -651,7 +651,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "line": 348,
+      "line": 364,
       "column": 18,
       "rule": "bare-id-text",
       "severity": "high",
@@ -663,7 +663,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "line": 185,
+      "line": 189,
       "column": 18,
       "rule": "bare-id-text",
       "severity": "high",
@@ -675,7 +675,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "line": 373,
+      "line": 389,
       "column": 18,
       "rule": "bare-id-text",
       "severity": "high",
@@ -687,7 +687,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "line": 375,
+      "line": 391,
       "column": 38,
       "rule": "bare-id-text",
       "severity": "high",
@@ -699,7 +699,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "line": 380,
+      "line": 396,
       "column": 18,
       "rule": "bare-id-text",
       "severity": "high",
@@ -771,32 +771,8 @@
     },
     {
       "file": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "line": 1,
-      "column": 1,
-      "rule": "no-doors-in-file",
-      "severity": "high",
-      "entity": "(file)",
-      "entityHasRoute": false,
-      "expression": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "feature": "features/agent-comparison",
-      "route": null
-    },
-    {
-      "file": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "line": 281,
-      "column": 12,
-      "rule": "unlinked-entity-name",
-      "severity": "high",
-      "entity": "agent",
-      "entityHasRoute": true,
-      "expression": "agentName",
-      "feature": "features/agent-comparison",
-      "route": null
-    },
-    {
-      "file": "features/agent-comparison/components/MasterInputWindow.tsx",
-      "line": 307,
-      "column": 10,
+      "line": 285,
+      "column": 8,
       "rule": "unlinked-entity-name",
       "severity": "high",
       "entity": "agent",
@@ -963,7 +939,7 @@
     },
     {
       "file": "features/agents/route/AgentViewContent.tsx",
-      "line": 515,
+      "line": 525,
       "column": 47,
       "rule": "bare-id-text",
       "severity": "high",
@@ -1263,7 +1239,7 @@
     },
     {
       "file": "features/surfaces/components/SurfaceDetailPanel.tsx",
-      "line": 473,
+      "line": 478,
       "column": 24,
       "rule": "bare-id-text",
       "severity": "high",
@@ -1575,19 +1551,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "line": 205,
-      "column": 39,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?record",
-      "entityHasRoute": false,
-      "expression": "record.modelId ?? \"null\"",
-      "feature": "components/admin",
-      "route": null
-    },
-    {
-      "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewer.tsx",
-      "line": 336,
+      "line": 352,
       "column": 38,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -1599,19 +1563,7 @@
     },
     {
       "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "line": 204,
-      "column": 39,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?record",
-      "entityHasRoute": false,
-      "expression": "record.modelId ?? \"null\"",
-      "feature": "components/admin",
-      "route": null
-    },
-    {
-      "file": "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx",
-      "line": 371,
+      "line": 387,
       "column": 38,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -1919,18 +1871,6 @@
       "entityHasRoute": false,
       "expression": "a.sourceId",
       "feature": "features/tool-call-visualization",
-      "route": null
-    },
-    {
-      "file": "features/tool-registry/executor-surfaces/components/ExecutorSurfaceDetailPanel.tsx",
-      "line": 383,
-      "column": 14,
-      "rule": "bare-id-text",
-      "severity": "medium",
-      "entity": "?row",
-      "entityHasRoute": false,
-      "expression": "row.tool_id",
-      "feature": "features/tool-registry",
       "route": null
     }
   ],
