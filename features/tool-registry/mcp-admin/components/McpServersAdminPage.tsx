@@ -68,7 +68,16 @@ import {
   type TestFreshness,
   type McpTestResult,
 } from "@/features/tool-registry/mcp-admin/services/mcpAdmin.service";
-import { AddMcpServerDialog } from "@/features/tool-registry/mcp-admin/components/AddMcpServerDialog";
+import {
+  AddMcpServerDialog,
+  MCP_SERVER_CATEGORY_VALUES,
+  type McpServerDraft,
+} from "@/features/tool-registry/mcp-admin/components/AddMcpServerDialog";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_MCP_SERVERS_SURFACE_NAME,
+  createAdminMcpServersScope,
+} from "@/features/surfaces/manifests/admin-mcp-servers.manifest";
 import {
   MCP_SERVER_DEEP_LINK_PARAM,
   toolHref,
@@ -93,12 +102,30 @@ import {
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Servers (/administration/agents/mcp-servers)";
 
+const EMPTY_SERVER_DRAFT: McpServerDraft = {
+  name: "",
+  vendor: "",
+  category: "productivity",
+  description: "",
+};
+
 export function McpServersAdminPage() {
   const [servers, setServers] = useState<McpServerRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  // The Add-server wizard's AUTHORED fields live here, not in the wizard: the
+  // wizard is unmounted while closed, and the `new_server_draft` write target
+  // has to be able to stage into it and to survive a close/reopen. Slug,
+  // transport, auth and the URLs stay inside the wizard — none of them are
+  // agent-writable. See the manifest's `writeTargets` block.
+  const [newServerDraft, setNewServerDraft] =
+    useState<McpServerDraft>(EMPTY_SERVER_DRAFT);
+  const [provisioning, setProvisioning] = useState(false);
+
+  const patchNewServerDraft = (patch: Partial<McpServerDraft>) =>
+    setNewServerDraft((d) => ({ ...d, ...patch }));
 
   // THE DOOR LAW: this console owns its selection in React state, so an MCP
   // server had no address at all — every surface that named one (the tool
@@ -163,7 +190,144 @@ export function McpServersAdminPage() {
   // neutral "pick a server" empty view, which would read as "nothing here".
   const deepLinkUnresolved = Boolean(deepLink) && !selected;
 
+  /**
+   * Live scope for `matrx-admin/mcp-servers` — this surface's FIRST emitter.
+   * Read when the user presses ▶, never on mount.
+   *
+   * The per-tab values the manifest declares (`server_tools`,
+   * `server_configs`, `server_connected_user_count`,
+   * `selected_server_active_tab`, `latest_test_result`) are fetched inside
+   * ToolsTab/ConfigsTab/ConnectionsTab and never travel up here, so they are
+   * omitted rather than guessed — all five are `alwaysAvailable: false`, which
+   * is exactly the declared "not loaded" state. Endpoint URLs and OAuth ids
+   * are left out on purpose, matching `serverMeta`'s sanitized posture.
+   */
+  const buildSurfaceScope = () =>
+    createAdminMcpServersScope({
+      mcp_search: search,
+      mcp_server_count: servers.length,
+      mcp_servers_list: servers.map((s) => ({
+        slug: s.slug,
+        name: s.name,
+        vendor: s.vendor,
+        status: s.status,
+        transport: s.transport,
+        is_official: s.is_official,
+        sync_state: computeFreshness(s).state,
+      })),
+      new_server_draft: { ...newServerDraft },
+      selected_server_slug: selected?.slug,
+      selected_server: selected
+        ? {
+            name: selected.name,
+            vendor: selected.vendor,
+            category: selected.category,
+            transport: selected.transport,
+            auth_strategy: selected.auth_strategy,
+            status: selected.status,
+            docs_url: selected.docs_url,
+            description: selected.description,
+            is_official: selected.is_official,
+            last_synced_at: selected.last_synced_at,
+            last_sync_error: selected.last_sync_error,
+          }
+        : undefined,
+    });
+
+  /**
+   * Surface write handlers — see the manifest's `writeTargets` block for the
+   * judgment call behind the single target and the full exclusion list.
+   *
+   * Fresh closures per call — the `getWriteHandlers` contract.
+   *
+   * Everything lands through `patchNewServerDraft`, the SAME setter the
+   * wizard's own inputs call, so a staged draft and a typed one are
+   * indistinguishable. Nothing here provisions anything: `provisionMcpServer`
+   * stays behind the admin's press of Provision server.
+   */
+  const getSurfaceWriteHandlers = () => ({
+    new_server_draft: (value: unknown) => {
+      if (typeof value !== "object" || value === null || Array.isArray(value))
+        throw new Error(
+          "new_server_draft expects an object: { name?, vendor?, category?, description? }.",
+        );
+      // Refuse rather than edit a form whose provision is already in flight —
+      // that call captured the OLD values, so a mid-provision write would
+      // vanish without explanation.
+      if (provisioning)
+        throw new Error(
+          "A server is already being provisioned. new_server_draft cannot be written while that is in flight — wait for it to finish.",
+        );
+
+      const patch = value as Record<string, unknown>;
+      const allowedKeys = ["name", "vendor", "category", "description"];
+      const unknownKeys = Object.keys(patch).filter(
+        (k) => !allowedKeys.includes(k),
+      );
+      if (unknownKeys.length > 0)
+        throw new Error(
+          `new_server_draft got unsupported key(s): ${unknownKeys.join(", ")}. Allowed keys: ${allowedKeys.join(" | ")}. The slug, endpoint URL, transport, auth strategy, docs/website URLs, the official badge and provisioning itself are not writable — ask the admin.`,
+        );
+      if (Object.keys(patch).length === 0)
+        throw new Error(
+          `new_server_draft needs at least one of: ${allowedKeys.join(" | ")}.`,
+        );
+
+      // Validate EVERY key before applying any of them — a partial apply on a
+      // half-valid object would leave the wizard in a state nobody chose.
+      const staged: Partial<McpServerDraft> = {};
+
+      if ("name" in patch) {
+        if (typeof patch.name !== "string" || !patch.name.trim())
+          throw new Error(
+            "new_server_draft.name expects a non-empty string — the server's display name (e.g. \"Linear\").",
+          );
+        staged.name = patch.name;
+      }
+
+      if ("vendor" in patch) {
+        if (typeof patch.vendor !== "string" || !patch.vendor.trim())
+          throw new Error(
+            "new_server_draft.vendor expects a non-empty string — who publishes the server (e.g. \"Linear Orbit, Inc.\").",
+          );
+        staged.vendor = patch.vendor;
+      }
+
+      if ("category" in patch) {
+        // Checked against the wizard's own vocabulary, never a re-typed list.
+        const match = MCP_SERVER_CATEGORY_VALUES.find(
+          (c) => c === patch.category,
+        );
+        if (!match)
+          throw new Error(
+            `new_server_draft.category expects exactly one of: ${MCP_SERVER_CATEGORY_VALUES.join(" | ")}. Got ${JSON.stringify(patch.category)} — pick one of those, it is not mapped or corrected.`,
+          );
+        staged.category = match;
+      }
+
+      if ("description" in patch) {
+        if (typeof patch.description !== "string")
+          throw new Error(
+            "new_server_draft.description expects a string (empty string clears it) — the short agent-facing summary of what the server provides.",
+          );
+        staged.description = patch.description;
+      }
+
+      // Show the admin what they just agreed to stage — a draft nobody can
+      // see is a write that reports success and does nothing visible. The
+      // wizard is a modal, so an agent-originated write always arrives with it
+      // closed; refusing then would refuse always.
+      setAdding(true);
+      patchNewServerDraft(staged);
+    },
+  });
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_MCP_SERVERS_SURFACE_NAME}
+      getScope={buildSurfaceScope}
+      getWriteHandlers={getSurfaceWriteHandlers}
+    >
     <div className="min-h-dvh flex flex-col">
       <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3 bg-background">
         <Server className="h-4 w-4 text-muted-foreground" />
@@ -346,14 +510,21 @@ export function McpServersAdminPage() {
       {adding && (
         <AddMcpServerDialog
           existingSlugs={new Set(servers.map((s) => s.slug))}
+          draft={newServerDraft}
+          onDraftChange={patchNewServerDraft}
+          busy={provisioning}
+          onBusyChange={setProvisioning}
           onClose={() => setAdding(false)}
           onCreated={(slug) => {
             setAdding(false);
+            // The server exists now — the draft that produced it is spent.
+            setNewServerDraft(EMPTY_SERVER_DRAFT);
             void load().then(() => selectServer(slug));
           }}
         />
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
