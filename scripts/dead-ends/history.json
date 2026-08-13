@@ -151,5 +151,23 @@
     "medium": 49,
     "low": 0,
     "filesWithFindings": 74
+  },
+  {
+    "generatedAt": "2026-08-13T00:51:16.773Z",
+    "commit": "2bbf803937b121618bd1379bf94751d931870aad",
+    "findings": 118,
+    "high": 71,
+    "medium": 47,
+    "low": 0,
+    "filesWithFindings": 70
+  },
+  {
+    "generatedAt": "2026-08-13T01:16:55.612Z",
+    "commit": "8e99fec9d6467b47b3e659f9f5a539860a41fff3",
+    "findings": 121,
+    "high": 75,
+    "medium": 46,
+    "low": 0,
+    "filesWithFindings": 73
   }
 ]
