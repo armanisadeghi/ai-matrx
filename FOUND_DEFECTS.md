@@ -21,6 +21,29 @@ not from here. Add new findings of that class there. Two rules learned the hard 
 and written up in that doc: a migration file on disk changes nothing until it is
 applied live, and `audit.broken_functions` is currently ~97% false positives.
 
+### D184 — `growth.v_loop_state` is exposed to nobody, and would leak every org if it were (2026-08-13)
+
+Found while building the growth loop's human pipe. Two halves, both must land together:
+
+1. **The schema is not reachable.** `growth` is absent from this project's PostgREST
+   exposed-schemas list, so `supabase.schema("growth")` returns `PGRST106` and the client
+   cannot read a loop's state at all. Every read is an aidream round-trip, against this
+   repo's direct-read rule. Tracked as `G-ORCHESTRATOR-READ` in `loop-map.ts`.
+2. **Exposing it as-is would be a data leak.** `growth.v_loop_state` is owned by `postgres`
+   with **no `security_invoker`**, so it runs as its owner and bypasses RLS — any
+   authenticated user would read every organization's loops. Its `web.v_*` siblings all set
+   `security_invoker = true`; this one was missed. And once invoker is on, the stage columns
+   go null for the loop's own creator: `growth.loop_stage_run`'s `std_select` resolves only
+   through `iam.accessible_entity_ids`, with no parent-follows-`loop_run` arm (the pattern
+   `workflow.plan_sample`'s `wf_plan_sample_parent_select` already uses). Overlaps D182 (2),
+   which lists `growth.loop_event` / `loop_stage_run` among the 12 component tables with no
+   `created_by` at all.
+
+**Do not expose `growth` before both are fixed.** Order: `security_invoker` + the parent
+select policy first, verified as a non-owner, then the schema exposure — and note that
+writing a bad schema name into `pgrst.db_schemas` takes the WHOLE API down (project memory
+`project_postgrest_schema_cache_outage`).
+
 ### D182 — Component-RLS remainder: 33 tables still can't `INSERT…RETURNING` as authed (2026-08-13)
 
 Left open by the D181 fix. (1) **21 component tables have `created_by` but no `_stamp_actor` trigger and no default** (`files.file_versions` + 20 `seo.*`: backlink*, serp_snapshot, rank_observation, competitor*, change_event/assessment, page_performance, search_performance_daily, …) — authed `.insert().select()` still 42501s unless the client sends `created_by` explicitly. Fix = attach the canonical trigger trio per table. (2) **12 component `std_select` policies sit on tables with no `created_by` column at all** (`growth.loop_event/loop_stage_run`, `legal.wc_injury/wc_report`, `scheduler.sch_agent_task`, 7 `seo.*` raw-pipeline tables) — needs base-retrofit. All 33 are service_role-written today, so nothing user-facing is known broken. (3) **Product call for Arman:** the component `std_insert` parent-editor arm doesn't force `created_by = auth.uid()`, so a parent-editor can stamp another user as creator, conveying that user owner-read (entity variant does force it).
