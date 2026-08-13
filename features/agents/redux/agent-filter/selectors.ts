@@ -64,10 +64,29 @@ export const makeSelectAgentIdsForFilter = () => {
     [
       (state: RootState, filter: CodeAgentFilter | null | undefined) =>
         selectAgents(state, filter),
+      (_state: RootState, filter: CodeAgentFilter | null | undefined) => filter,
     ],
-    (agents): string[] => agents.map((a) => a.id),
+    (agents, filter): string[] =>
+      conversationHistoryAgentIds(
+        filter,
+        agents.map((agent) => agent.id),
+      ),
   );
 };
+
+/**
+ * `ConversationHistorySidebar` uses an empty agent-id array as the canonical
+ * "all accessible conversations" sentinel. Never expand the All preference
+ * into hundreds of UUIDs: PostgREST serializes `.in(...)` into the URL and a
+ * large agent catalogue can exceed the HTTP request-line limit before the
+ * query reaches Postgres.
+ */
+export function conversationHistoryAgentIds(
+  filter: CodeAgentFilter | null | undefined,
+  matchingAgentIds: string[],
+): string[] {
+  return !filter || filter.mode === "all" ? [] : matchingAgentIds;
+}
 
 /** Describes why a filter produced zero matches (for empty-state messaging). */
 export function describeEmptyFilter(

@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 /**
  * Library source adapters let the `/code` Code Library surface rows from
@@ -172,18 +173,21 @@ export interface LibrarySourceAdapter {
   makeTabId(rowId: string, fieldId?: string): string;
 
   /** List entries the current user is allowed to edit. */
-  list(supabase: SupabaseClient, userId: string | null): Promise<SourceEntry[]>;
+  list(
+    supabase: SupabaseClient<Database>,
+    userId: string | null,
+  ): Promise<SourceEntry[]>;
 
   /** Load a specific (row, field) pair. */
   load(
-    supabase: SupabaseClient,
+    supabase: SupabaseClient<Database>,
     rowId: string,
     fieldId?: string,
   ): Promise<LoadedSourceEntry>;
 
   /** Persist the content back to the source row + column. */
   save(
-    supabase: SupabaseClient,
+    supabase: SupabaseClient<Database>,
     args: SaveSourceArgs,
   ): Promise<SaveSourceResult>;
 
@@ -196,7 +200,7 @@ export interface LibrarySourceAdapter {
    * Rename action when this is missing.
    */
   rename?(
-    supabase: SupabaseClient,
+    supabase: SupabaseClient<Database>,
     args: RenameSourceArgs,
   ): Promise<RenameSourceResult>;
 }

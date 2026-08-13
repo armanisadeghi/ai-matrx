@@ -2,7 +2,7 @@
 
 **Status:** `🟢 green-light for prompt_apps deletion` — 61/61 prompt_apps rows migrated to `aga_apps`. Public dual-path resolver in `/p/[slug]` prefers agent path. User-facing route family mirrors `/agents/[id]`: `/agent-apps`, `/agent-apps/new`, `/agent-apps/[id]` (overview), `/agent-apps/[id]/code`, `/agent-apps/[id]/settings`, `/agent-apps/[id]/versions`, `/agent-apps/[id]/v/[version]`, `/agent-apps/[id]/run`, `/agent-apps/templates`. List page is Redux-driven (consumer namespace + memoized selectors) with 7 filter dimensions and 8 sort options including agent-name. AutoCreate AI flow, admin tabs (Dashboard/Apps/Categories/Executions/Analytics/Rate Limits), `/agents/[id]/apps`, and `/org/[slug]/agent-apps` placeholder all live. Redux thunks wired to real Supabase queries. See [MIGRATION-STATUS.md](MIGRATION-STATUS.md) for the full ledger and remaining manual smoke checklist.
 **Tier:** `1`
-**Last updated:** `2026-08-11`
+**Last updated:** `2026-08-13`
 
 ---
 
@@ -17,7 +17,7 @@ Successor to the legacy `features/prompt-apps/` (still live, deprecated) and `fe
 ## Entry points
 
 **Routes**
-- `app/(authenticated)/apps/` — target surface for agent-apps (scaffolding)
+- `app/(core)/agent-apps/` — list, create, overview, code, settings, versions, run, and templates
 - Migration phases: `features/agents/migration/phases/phase-08-agent-apps-public.md` (public URL variant), `phase-09-admin-agent-apps.md`, `phase-10-applets-capture.md`
 
 **Feature code** (`features/agent-apps/`)
@@ -29,48 +29,27 @@ Successor to the legacy `features/prompt-apps/` (still live, deprecated) and `fe
   a `<span>` and never hand-roll the link (THE DOOR LAW).
 
 **Redux** (canonical slice lives with agents)
-- `features/agents/redux/agent-apps/` — slice, selectors, types, thunks (currently stubbed)
+- `features/agents/redux/agent-apps/` — live slice, selectors, canonical domain types, and direct-Supabase thunks
 
 ---
 
 ## Data model
 
-Provisional type from `features/agents/redux/agent-apps/types.ts`:
-
-```ts
-interface AgentApp {
-  id: string;
-  label: string;
-  description: string | null;
-  iconName: string | null;
-  origin: "template" | "ai_generated" | "custom";
-  templateId: string | null;
-  sourceCode: string | null;
-  primaryAgentId: string | null;
-  primaryAgentVersionId: string | null;
-  useLatest: boolean;                     // pin-by-version default
-  embeddedShortcutIds: string[];
-  scopeMappings: Record<string, string> | null;
-  isActive: boolean;
-  isPublic: boolean;
-  userId: string | null;
-  organizationId: string | null;
-  projectId: string | null;
-  taskId: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-Scope columns follow the same multi-scope model as `AgentShortcut` (see [`../scopes/FEATURE.md`](../scopes/FEATURE.md)).
+`app.definition` is the source of truth. Its generated row is
+`Database["app"]["Tables"]["definition"]["Row"]`; the narrowed runtime domain
+shape is `AgentAppRecord` in [`types.ts`](types.ts). Ownership is `created_by`,
+visibility is `platform.visibility`, code lives in `component_code`, and the
+bound execution identity is `agent_id` plus optional `agent_version_id`.
+Organization/project/task scope columns compose with canonical associations;
+see [`../scopes/FEATURE.md`](../scopes/FEATURE.md).
 
 ---
 
-## Three creation paths (the `origin` enum)
+## Creation paths
 
-1. **`template`** — start from a library of standard scaffolds the user customizes. `templateId` references the source.
-2. **`ai_generated`** — the in-app AI agent builds the App from a user description.
-3. **`custom`** — engineer builds within the framework's structural rules. `sourceCode` holds the rendered component source (transformed via Babel → `new Function()` with allowlisted imports, same pattern as prompt-apps).
+1. **Template** — start from a standard scaffold and customize the canonical row.
+2. **AI-generated** — AutoCreate persists a draft before generating metadata and `component_code`.
+3. **Custom** — author `component_code` within the framework's allowlisted Babel sandbox.
 
 ---
 
@@ -89,7 +68,7 @@ Scope columns follow the same multi-scope model as `AgentShortcut` (see [`../sco
 
 ## Public agent-apps
 
-Some Apps are public (`isPublic: true`). The public URL pattern mirrors today's `/p/[slug]` for prompt-apps; see `phase-08-agent-apps-public.md` for the new target. Public apps:
+Some Apps are public (`visibility = 'public'`). The public URL is `/p/[slug]`; see `phase-08-agent-apps-public.md`. Public apps:
 - Run without authentication
 - Use ephemeral invocation (no DB persistence) — see [`AGENT_INVOCATION_LIFECYCLE`](../agents/docs/AGENT_INVOCATION_LIFECYCLE.md) ephemeral branch
 - Have fingerprint + IP rate limiting (inherited pattern from prompt-apps)
@@ -101,14 +80,14 @@ Some Apps are public (`isPublic: true`). The public URL pattern mirrors today's 
 ### Flow 1 — Engineer creates a custom App
 
 1. Open the App builder (admin or user surface).
-2. Pick `origin: "custom"`. Provide `sourceCode`, `primaryAgentId` + pin a version.
-3. Define `scopeMappings` (UI context → agent variables).
+2. Choose an agent, optionally pin a version, and author `component_code`.
+3. Define variable/context bindings and the app shell.
 4. Embed Shortcuts by ID.
 5. Save → row inserted.
 
 ### Flow 2 — User opens an Agent App
 
-1. Route loads App row. `sourceCode` is Babel-transformed and mounted with scoped imports.
+1. Route loads the App row. `component_code` is Babel-transformed and mounted with scoped imports.
 2. The App's UI renders; user interacts.
 3. App dispatches invocations (directly or through embedded Shortcuts) → `launchConversation` → stream back → artifacts render inline.
 
@@ -145,7 +124,7 @@ Aborts (`AbortError`) intentionally leave the row at `success=NULL` — analytic
 
 The `kind` column was added in [`migrations/aga_executions_visit_run_tracking.sql`](../../migrations/aga_executions_visit_run_tracking.sql). The success-rate trigger now counts only `kind='run' AND success IS NOT NULL` rows so visits and in-flight runs don't pollute `aga_apps.success_rate` / `total_executions`. The rate-limit BEFORE-INSERT trigger has a `WHEN (NEW.kind = 'run')` clause so visits never count against quota.
 
-Why the renderer doesn't write directly via the Supabase JS client: the in-shell `/run` route is for owners testing draft apps, where the public RLS INSERT policies (`status='published'`, `is_public=true`) would block. Routing through a Next.js endpoint that uses the admin client gives one path that works for both surfaces and keeps the secret key off the client.
+Why the renderer doesn't write directly via the Supabase JS client: the in-shell `/run` route is for owners testing draft apps, where public tracking policies would block. Routing through the dedicated Next.js tracking endpoint gives one path that works for draft and public surfaces and keeps the secret key off the client.
 
 The legacy `app/api/public/agent-apps/[slug]/execute/route.ts` (deleted on `2026-05-09`) was the previous home of `aga_executions` writes; the renderer migrated to `launchAgentExecution` on `2026-04-25`, which left a tracking gap from then until this entry. The older prompt-apps pair — `app/api/public/apps/[slug]/execute/route.ts` (`prompt_app_executions` writes) and `app/api/public/apps/response/[taskId]/route.ts` — was **deleted on `2026-08-11`**; neither was relevant to agent-apps and neither had a caller left.
 
@@ -175,7 +154,8 @@ The legacy `app/api/public/agent-apps/[slug]/execute/route.ts` (deleted on `2026
 
 ## Current work / migration state
 
-Thunks stub and throw. Backing DB table not yet created. UI rendering path in build. Track progress in:
+`app.definition`, the public renderer, direct-Supabase Redux thunks, code editor,
+and admin/user route families are live. Remaining migration work is tracked in:
 - `features/agents/migration/phases/phase-08-agent-apps-public.md`
 - `features/agents/migration/phases/phase-09-admin-agent-apps.md`
 - `features/agents/migration/phases/phase-10-applets-capture.md`
@@ -183,6 +163,8 @@ Thunks stub and throw. Backing DB table not yet created. UI rendering path in bu
 ---
 
 ## Change log
+
+- `2026-08-13` — codex: **closed the post-certification editor failures at both real choke points.** The `/agent-apps/[id]/code` library adapter still filtered `app.definition.user_id` after that column was dropped; it now filters the generated-type-checked `created_by` column, and the Redux empty record no longer seeds the retired `user_id` / `is_public` fields. The sibling history 400 was independent: Code Workspace's "All agents" preference expanded 777 active agent UUIDs into a ~29 KB PostgREST `.in(initial_agent_id,…)` URL even though `ConversationHistorySidebar` already defines `agentIds: []` as all accessible conversations. `makeSelectAgentIdsForFilter` now preserves that sentinel for All while retaining concrete IDs for narrowed filters. Regression suites cover both ownership-query and unfiltered-history contracts; no downgrade, retry, or error swallowing was added.
 
 - `2026-08-13` — claude: **`app.definition.user_id` + `is_public` DROPPED — the `app` token is certified (5/5, 0 FAIL / 0 WARN).** Ownership is `created_by`, visibility is the `platform.visibility` enum, everywhere: redux consumer selectors (`matchesTab` ownership, `matchesVisibility` — filter semantics preserved exactly, `personal` = `visibility !== 'public'`), `types.ts` (new `AppVisibility`; both `Omit<>` lists), `format.ts`, the card, overview pill, Settings switch, admin actions, editor, surface runtime, `lib/services/agent-apps-admin-service.ts` (row types, the `scope: "global"` filter, the creator-email map, the update patch), `lib/agents/data.ts`, and all three `/api/agent-apps` routes. Ran as doctrine §8a-1's three states — the DB was bivalent, the new writers were proven RUNNING in production (FE v0.4.545 / SHA `99c464bf`; aidream 0.2.55 / `9ab5a3e5`), and only then did the DROP execute, so no write could ever fail. **Six `public.*` Postgres functions still read the doomed columns** despite a brief that said none did (`agx_usage_scan_core`, `agx_usage_update_to_active`, `check_prompt_app_drift`, `get_aga_public_data`, `get_prompt_app_public_data`, `get_published_app_with_prompt`) — all rewritten and live-smoke-tested; `get_published_app_with_prompt` KEEPS its `user_id` OUTPUT column because that is the client wire contract, sourced from `created_by`. The two anon publish RPCs also gained `deleted_at IS NULL` (0 rows affected; closes a soft-deleted-app exposure). Surface value `app_is_public`(bool) → `app_visibility`(string), manifest + `ui.ui_surface_value` flipped in lockstep — deriving a boolean would have hidden internal-vs-personal from agents. Indexes `status+is_public` / `user_id` replaced by `status+visibility` / `created_by`. Verified in production: `https://www.aimatrx.com/p/lsi-generator` returns 200 and renders the real app. Migrations `app_message_template_repoint_legacy_owner.sql` + `app_message_template_drop_legacy_owner.sql` (both ledgered). **Note for the next reader:** `MANY_TO_MANY_SCOPES.md` and `COMPOSITE_ROADMAP.md` in this folder are pre-cut design docs — their `is_public` / `user_id` SQL describes a shape that no longer exists.
 

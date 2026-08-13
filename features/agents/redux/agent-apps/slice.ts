@@ -1,12 +1,8 @@
-// @ts-nocheck
-
 /**
  * Agent Apps — Redux Slice (scaffold)
  *
- * Mirrors `agent-shortcuts/slice.ts` in structure and behavior. Reducers here
- * are production-ready even though the accompanying thunks are stubbed: any
- * caller that already has an AgentApp payload can populate state without
- * waiting for the backend.
+ * Mirrors `agent-shortcuts/slice.ts` in structure and behavior. The live
+ * Supabase thunks and route hydrators both populate this canonical cache.
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
@@ -14,10 +10,10 @@ import type {
   AgentApp,
   AgentAppRecord,
   AgentAppSliceState,
-  AppFieldSnapshot,
 } from "./types";
 import {
   addField,
+  assignField,
   createFieldFlags,
   fieldFlagsSize,
   hasField,
@@ -42,6 +38,10 @@ function makeEmptyRecord(id: string): AgentAppRecord {
     agent_version_id: null,
     use_latest: true,
 
+    app_kind: "single",
+    shared_context_slots: null,
+    search_tsv: null,
+
     component_code: "",
     component_language: "tsx",
     allowed_imports: [],
@@ -50,11 +50,16 @@ function makeEmptyRecord(id: string): AgentAppRecord {
     layout_config: {},
     styling_config: {},
 
+    shell_kind: "chat",
+    shell_config: {},
+    slot_overrides: {},
+    slot_code: {},
+
     preview_image_url: null,
     favicon_url: null,
 
     status: "draft",
-    is_public: true,
+    visibility: "public",
     is_featured: false,
     is_verified: false,
 
@@ -75,7 +80,7 @@ function makeEmptyRecord(id: string): AgentAppRecord {
 
     metadata: null,
 
-    user_id: null,
+    created_by: null,
     organization_id: null,
     project_id: null,
     task_id: null,
@@ -99,8 +104,7 @@ function mergeAndTrack(
 ): void {
   (Object.keys(partial) as (keyof AgentApp)[]).forEach((key) => {
     if (partial[key] !== undefined) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (record as any)[key] = partial[key];
+      assignField(record, key, partial[key]);
       addField(record._loadedFields, key);
     }
   });
@@ -112,12 +116,9 @@ function applyFieldEdit<K extends keyof AgentApp>(
   value: AgentApp[K],
 ): void {
   if (!hasField(record._dirtyFields, field)) {
-    (record._fieldHistory as AppFieldSnapshot)[field] = record[
-      field
-    ] as AgentApp[K];
+    assignField(record._fieldHistory, field, record[field]);
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (record as any)[field] = value;
+  assignField(record, field, value);
   addField(record._dirtyFields, field);
   record._dirty = true;
 }
@@ -213,8 +214,7 @@ const agentAppSlice = createSlice({
       if (!record || !hasField(record._dirtyFields, field)) return;
       const original = record._fieldHistory[field];
       if (original !== undefined) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (record as any)[field] = original;
+        assignField(record, field, original);
       }
       removeField(record._dirtyFields, field);
       delete record._fieldHistory[field];
@@ -228,8 +228,7 @@ const agentAppSlice = createSlice({
         (field) => {
           const original = record._fieldHistory[field];
           if (original !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (record as any)[field] = original;
+            assignField(record, field, original);
           }
         },
       );
