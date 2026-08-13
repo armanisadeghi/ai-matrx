@@ -477,7 +477,7 @@ Cross-project issue tracker.
 
 - Destructive confirm (inline, with busy state): `<ConfirmDialog />` from `@/components/ui/confirm-dialog`
 - Imperative confirm one-liner: `confirm({...})` from `@/components/dialogs/confirm/ConfirmDialogHost`
-- Success / error / info: `toast.success` / `toast.error` from `sonner`
+- Success / error / info: `toast.success` / `toast.error` / `toast.info` from `@/lib/toast` (captured wrapper; never bare `sonner`)
 - Single-string input: `<TextInputDialog />` from `@/components/dialogs/text-input/TextInputDialog`
 - Clipboard fallback: `<ClipboardFallbackDialog />` from `@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog`
 - Unsaved-changes guard: `<ConfirmDialog />` driven by `beforeunload` / router blocker
