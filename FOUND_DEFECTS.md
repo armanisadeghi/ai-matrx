@@ -178,14 +178,6 @@ SECURITY DEFINER helper can't inline → per-row invocation can exceed the 8s ti
 
 `features/agent-apps/utils/compile-slot.ts::compileSlotComponent` only rewrites `export default`; the documented bare `function Card({data})` form silently falls back to the generic viewer. Workflow Studio already recovers the last PascalCase top-level binding — port it. **Chip fired 2026-08-12.**
 
-### D144 — 14 shadcn wrappers blank their own visible content until hydration (2026-08-09)
-
-`components/ui/*` wrappers gate their Radix Root on `useIsMounted` + `return null` (tooltip, dropdown-menu, tabs, accordion, collapsible, matrx/dialog, dialog, alert-dialog, sheet, popover, menubar, hover-card, navigation-menu, select) — deletes triggers/tab bars/nav from SSR and first paint. Justification is largely false (Radix uses SSR-stable `useId`); precedent: `components/ui/context-menu/context-menu.tsx`. Each wrapper needs a quick check against its own primitive before ungating. **Fix in flight 2026-08-12.**
-
-### D143 — the files-upload eslint ban points every caller at a file that does not exist (2026-08-09)
-
-`eslint.config.mjs:46-53` names `@/features/files/upload/requestUpload`; the real export is `features/files/upload/uploadGuardOpeners.ts:81`, and the glob would ban the suggested path anyway. Two callers permanently red (`features/war-room/components/thread/ThreadNewFileDialog.tsx:34`, `ThreadResourcesTab.tsx:43`). **Fix in flight 2026-08-12.**
-
 ### D142 — on TOUCH, EntityRef offers only one of its four doors (2026-08-09)
 
 The peek/new-tab cluster is hover-revealed (`components/official/entity-ref/EntityRef.tsx`), so on touch devices every EntityRef degrades to Open-only; the in-flow cluster also permanently reserves ~44px per cell. **Product call (Arman):** (a) `alwaysShowActions` on mobile, (b) long-press, or (c) row `…` menu carries peek on touch (probably right for tables, wrong for prose). Either way `opacity-0` should stop reserving layout.
@@ -218,10 +210,6 @@ On a 325-page site the audit tab replaces the whole surface with a generic retry
 
 `platform._gc_entity_associations` fires on UPDATE-to-deleted and hard-deletes all edges. On `web.page` this breaks the documented Dismiss/Restore + scraper-revive contract — edges gone, nothing rebuilds them. Fix: GC on hard DELETE only (readers already filter by the entity's `deleted_at`), or tombstone edges reversibly. Platform-wide trigger, conveyance semantics — **Arman's call**.
 
-### D134 — `agx_list_scoped` org-grant branch: nondeterministic access_level (2026-08-08)
-
-`DISTINCT ON (a.id)` with no ORDER BY; port the transcripts twin's shape (`migrations/trx_list_scoped.sql` org_shared subquery: `ORDER BY a.id, permission_level`). **Fix in flight 2026-08-12.**
-
 ### D133 (remainder) — no product path to move a site between organizations (2026-08-08)
 
 The wording/membership halves are resolved (AccessGate; Arman's rulings on the outsider test account and the aimatrx.com site move). Open gap: moving a site between orgs took a hand-written transaction — a site-settings "Move to organization" action is worth building.
@@ -242,9 +230,9 @@ Client side fixed (terminal-settlement guard in `process-stream.ts`, screams via
 
 All 4 `tool.mcp_user_conn` rows `expired` with null `credential_item_id`; zero `source_kind='mcp_discovered'` tool rows ever — MCP connections have likely never worked in prod (legacy encryption GUC never configured). Fix: one full connect → discover → invoke loop against a real remote MCP server (aidream `/api/mcp-connections/*`), then fix what breaks. Also: OAuth-popup logic hand-copied ×3 (`IntegrationsSettingsPage.tsx`, `AgentToolsManager.tsx` ×2) — consolidate when touched. Twin entry in aidream.
 
-### D127 — Google/MCP docs actively lie: phantom feature dir + mislabeled route group (2026-08-06)
+### D127 (remainder) — decide the fate of `(popup)` (2026-08-06)
 
-`features/api-integrations/FEATURE.md` describes files that don't exist and a deleted execution path; CLAUDE.md calls `(popup)` "OAuth popup chrome" but it's an unused BroadcastChannel demo. Fix: rewrite the FEATURE.md as an index card, correct the CLAUDE.md row, decide whether `(popup)` becomes the branded OAuth-return page (see `docs/handoffs/google-oauth-product-build.md`) or gets deleted.
+Docs fixed 2026-08-12 (FEATURE.md rewritten as an index card; CLAUDE.md row corrected). Open: `(popup)`/`popup-window` is an unused BroadcastChannel demo — **decide (Arman):** make it the branded OAuth-return page (`docs/handoffs/google-oauth-product-build.md`) or delete it.
 
 ### D126 — 22 hand-rolled copies of the headless "launch agent → poll → extract JSON" loop (2026-08-04)
 
@@ -282,10 +270,6 @@ Editor-sharee B attaches owner A's doc to B's conversation and shares it → con
 
 Server announces the persisted invisible steering row via `record_reserved cx_message`; `process-stream`'s `reserveMessage` fallback seeds it with no visibility flag → possible phantom bubble until reload. Fix: carry visibility on reservation metadata (server) or skip the reservation for announced invisible positions. Low frequency — no product UI sends these yet.
 
-### D117 — `content_ir_kind_instance` registry row declares the visibility ENUM in the boolean `is_public_column` slot (2026-07-29)
-
-Set `is_public_column=null` live + TS mirror + snapshot in one commit, then verify ShareModal's Public tab on a kind instance. **Fix in flight 2026-08-12.**
-
 ### D110 — stray Cloudflare Workers build is red on frontend releases (2026-07-27)
 
 `Workers Builds: ai-matrx-admin` fails while Vercel is green; no Cloudflare config exists in the repo. **Decides: Arman** — retire the integration or configure it.
@@ -302,9 +286,9 @@ Set `is_public_column=null` live + TS mirror + snapshot in one commit, then veri
 
 `LegalLanding.tsx` + `CaWcLanding.tsx` hand-duplicate `ModuleLanding`, unregistered, no nudges; `PdRatingsCalculatorLanding.tsx` has zero importers. Migrate + register via the `module-landing-pages` skill; delete the orphan. **Chip fired 2026-08-12.**
 
-### D101 (remainder) — `agx_get_list` has no org scope; ~6 definer readers miss the soft-delete predicate (2026-07-25)
+### D101 (remainder) — `agx_get_list` has no org scope (2026-07-25)
 
-(1) org-teammate agents invisible in `agx_get_list` — belongs with retiring `/agents/all` onto `agx_list_scoped` once `/agents/browse` is ratified. (2) soft-delete predicate missing in `agx_get_shared_with_me`, `agx_get_shared_for_chat`, `get_agents_for_chat`, `agx_get_access_level`, `agx_duplicate_agent`, `agx_get_shortcuts_for_context*`, `agx_get_list_full` builtin arm — **fix in flight 2026-08-12**.
+Org-teammate agents invisible in `agx_get_list` — belongs with retiring `/agents/all` onto `agx_list_scoped` once `/agents/browse` is ratified. (Soft-delete predicates on the definer readers fixed 2026-08-12; `agx_get_access_level`/`agx_duplicate_agent` deliberately still see deleted rows for restore paths.)
 
 ### D100 — three registered catalog entity types are ACL-invisible (2026-07-24)
 
@@ -374,9 +358,9 @@ Past bundles shipped `NEXT_PUBLIC_CARTESIA_API_KEY` and `NEXT_PUBLIC_OPENAI_API_
 
 aidream never writes it; lists/RSS can't show runtimes. Fix at publish time in aidream; backfill needs per-file probing.
 
-### D67 — doctrine says "banned", ESLint says `warn`, with live violations (2026-07-18)
+### D67 (remainder) — doctrine says "banned", ESLint says `warn` (2026-07-18)
 
-Browser dialogs (remaining only in `app/(dev)/demos` + admin official-components displays — **fix in flight 2026-08-12**, then promote `no-alert`/`no-restricted-globals` to error), barrel files (488 warnings), banned lucide brand icons (runtime-missing → 500s; `warn` is wrong). Each: finish cleanup + promote, or soften the doc.
+Browser dialogs DONE 2026-08-12 (repo swept, `no-alert`/`no-restricted-globals`/`no-restricted-properties` promoted to error, proven-zero scan). Remaining: barrel files (488 warnings), banned lucide brand icons (runtime-missing → 500s; `warn` is the wrong severity). Each: finish cleanup + promote, or soften the doc.
 
 ### D60 — chat draft transfer never lands for VARIABLE-INPUT agents (2026-07-17)
 
@@ -424,6 +408,13 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 One line per fix — title, date, pointer. History lives in git. Entries older than ~2 weeks get deleted.
 
+- **D144** — 14 Radix Root wrappers ungated (false SSR-id premise disproven against node_modules; `05d6d53d5`); type-check green. 2026-08-12.
+- **D143** — upload-ban lint message points at the real `uploadGuardOpeners` path; internals stay banned (`460ff2dcc`). 2026-08-12.
+- **D67 (dialogs)** — last browser dialogs replaced; ban rules promoted to error with proven-zero scan (`460ff2dcc`). 2026-08-12.
+- **D134** — `agx_list_scoped` org-grant branch deterministic via ordered subquery (`0441da662`, verified live). 2026-08-12.
+- **D117** — `content_ir_kind_instance.is_public_column` → NULL, live + mirror + snapshot, parity green (`0441da662`). 2026-08-12.
+- **D101 (soft-delete)** — `deleted_at is null` added to the definer readers (`0441da662`, verified live). 2026-08-12.
+- **D127 (docs)** — `features/api-integrations/FEATURE.md` rewritten as an honest index card; CLAUDE.md `(popup)` row corrected. 2026-08-12.
 - **D172** — `acceptPageUrlInput` scheme check made case-insensitive to match the scraper's `_normalise_url` (`5bdf85834`). 2026-08-12.
 - **D166** — kind-activation guard + `set_kind_activation` genuinely exempt the service role; `activate-kinds.ts --apply` goes through the canonical RPC (`content_ir_activation_service_role_fix.sql`, `4f2804efa`). 2026-08-12.
 - **D120** — `chart.tsx` typed against recharts 3.9, `@ts-nocheck` deleted (`409a98d2b`). 2026-08-12.

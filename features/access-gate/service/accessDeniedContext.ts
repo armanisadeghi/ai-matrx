@@ -11,6 +11,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { isUuid } from "@/features/scopes/service/associationGuards";
 import type {
   AccessDeniedAncestor,
   AccessDeniedContext,
@@ -156,6 +157,18 @@ export async function fetchAccessDeniedContext(
   id: string,
 ): Promise<AccessDeniedContext> {
   if (!token || !id) return UNKNOWN;
+
+  // `access_denied_context(p_type, p_id uuid)` — a syntactically invalid uuid
+  // can never match any row, so the honest answer is "missing" (the link is
+  // wrong). Asking the RPC would only 22P02 and degrade to a retry-able
+  // "error", a retry that can never succeed.
+  if (!isUuid(id)) {
+    return {
+      ...UNKNOWN,
+      status: "missing",
+      entity: { token, label: "item", title: null },
+    };
+  }
 
   try {
     const supabase = createClient();

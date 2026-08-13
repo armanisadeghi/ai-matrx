@@ -196,7 +196,7 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 | `(dev)` | **Internal demos / tests / experiments.** Auth-required. Deploys as demos.aimatrx.com. | `/demos/*` | `full` / `user` / `demos` |
 | `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | `full` / `core` / `user` / `slim` |
 | `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |
-| `(popup)` | OAuth popup chrome. | `/popup-window/*` | `full` / `core` / `user` / `slim` |
+| `(popup)` | Unused BroadcastChannel popup demo — NOT used by any OAuth flow (MCP returns via `/api/mcp/oauth/complete`; Google uses the GIS popup). Fate undecided: branded OAuth-return page or delete (FOUND_DEFECTS D127). | `/popup-window/*` | `full` / `core` / `user` / `slim` |
 | `(oauth-review)` | Google OAuth verification review surface — what Google's reviewers open to see each requested scope in use. | `/google-workspace-review` | always |
 
 **`(legacy)` and `(public-demos)` are DELETED** (entity system removed; public demos relocated). Never create files there. `pnpm check:doc-claims` fails if this table and `app/` disagree.

@@ -285,6 +285,20 @@ pending count. Every party named on these surfaces opens (THE DOOR LAW).
 
 ## Change log
 
+- 2026-08-12 — Record-page access hardening (Error Inspector evidence: a
+  non-UUID `/crm/<id>` fired six parallel 22P02s and rendered the raw DB
+  message). `fetchPartyDetail` now guards `isUuid` at the choke point and
+  throws the canonical `recordUnavailable` (zero queries issued);
+  `PartyRecordPage` swapped the hand-written destructive banner + dead
+  null-detail state for `<AccessGate token="party">`, so
+  denied/deleted/missing/anonymous/transient each render their true state
+  (refresh-after-load failures get a non-raw retry notice instead). Also
+  hardened the gate itself for every consumer:
+  `fetchAccessDeniedContext` resolves a syntactically invalid uuid to
+  `missing` without calling the RPC (whose `p_id` is `uuid` — it could only
+  22P02 into a retry-able lie). Browser-verified: `/crm/not-a-uuid` → clean
+  missing state, zero PostgREST requests, one deliberate record-unavailable
+  inspector row; nonexistent uuid → RPC-resolved missing; real record loads.
 - 2026-08-13 — Campaign builder + call queue shipped (Wave 3): `/crm/campaigns`
   console, campaign workspace (status rollup chips filter the roster,
   server-paged member table), enrollment from `/crm` selection (table

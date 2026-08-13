@@ -7,6 +7,7 @@
 // refresh the record page's mutation flows call after any write.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
 import { fetchPartyDetail } from "../service";
 import type { PartyDetail } from "../types";
 
@@ -33,7 +34,11 @@ export function usePartyDetail(partyId: string): UsePartyDetailResult {
     } catch (e) {
       if (generationRef.current !== gen) return;
       const message = e instanceof Error ? e.message : String(e);
-      console.error("[crm] party detail fetch failed:", message);
+      // A RecordUnavailableError is an expected access state — already
+      // captured by recordUnavailable() and rendered by the page's AccessGate.
+      if (!isRecordUnavailableError(e)) {
+        console.error("[crm] party detail fetch failed:", message);
+      }
       setError(message);
     } finally {
       if (generationRef.current === gen) setIsLoading(false);
