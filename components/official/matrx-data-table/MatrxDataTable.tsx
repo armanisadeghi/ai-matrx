@@ -32,6 +32,12 @@ import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import { cn } from "@/lib/utils";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
+import { useTableUrlState } from "@/lib/data-table/useTableUrlState";
+import {
+  jsonUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@/lib/url-state/useUrlState";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ColumnHeaderCell } from "./ColumnHeaderCell";
 import { DataRowInspector } from "./DataRowInspector";
@@ -78,6 +84,14 @@ import type {
   TableSearchMatchMode,
 } from "./types";
 
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
+}
+
+const activeUrlTableIds = new Set<string>();
+
 /**
  * MatrxDataTable — the official canonical data table.
  *
@@ -86,13 +100,113 @@ import type {
  * Copy/Copy-for-AI (row + this view) · inline edit with dirty Save/Cancel pill ·
  * row → SidePanelSurface or WindowPanel · trailing icon → the secondary view.
  */
-export function MatrxDataTable<T>({
+export function MatrxDataTable<T>(props: MatrxDataTableProps<T>) {
+  if (!props.urlState) return <MatrxDataTableCore {...props} />;
+  return <MatrxDataTableWithUrlState {...props} urlState={props.urlState} />;
+}
+
+function MatrxDataTableWithUrlState<T>({
+  urlState,
+  ...props
+}: MatrxDataTableProps<T> & {
+  urlState: NonNullable<MatrxDataTableProps<T>["urlState"]>;
+}) {
+  if (props.query && props.query.mode !== "local") {
+    throw new Error(
+      `MatrxDataTable "${urlState.id}" cannot combine urlState with controlled query mode. Use useTableUrlState({ tableId: "${urlState.id}" }) in the remote query owner.`,
+    );
+  }
+
+  const table = useTableUrlState({
+    tableId: urlState.id,
+    defaultSort: urlState.defaultSort,
+    defaultPageSize: props.pageSize ?? 25,
+    history: urlState.history,
+    textHistory: urlState.textHistory,
+  });
+  useEffect(() => {
+    if (activeUrlTableIds.has(urlState.id)) {
+      throw new Error(
+        `Duplicate MatrxDataTable urlState.id "${urlState.id}" on one page. Give every table a unique stable id.`,
+      );
+    }
+    activeUrlTableIds.add(urlState.id);
+    return () => {
+      activeUrlTableIds.delete(urlState.id);
+    };
+  }, [urlState.id]);
+  const prefix = `table.${urlState.id}`;
+  const [urlSelectedId, setUrlSelectedId] = useUrlState(
+    `${prefix}.row`,
+    stringUrlCodec(),
+  );
+  const [urlWindowRowId, setUrlWindowRowId] = useUrlState(
+    `${prefix}.window`,
+    stringUrlCodec(),
+  );
+  const [urlSelection, setUrlSelection] = useUrlState(
+    `${prefix}.selection`,
+    jsonUrlCodec<string[]>([], isStringArray),
+  );
+  const syncSelectedRow = urlState.selectedRow !== false;
+  const syncWindowRow = urlState.windowRow !== false;
+  const syncSelection = urlState.selection === true && Boolean(props.selection);
+  const selectedId = syncSelectedRow ? urlSelectedId || null : props.selectedId;
+  const windowRowId = syncWindowRow
+    ? urlWindowRowId || null
+    : props.windowRowId;
+  const selection =
+    syncSelection && props.selection
+      ? {
+          ...props.selection,
+          selectedIds: urlSelection,
+          onSelectedIdsChange: (ids: string[]) => {
+            setUrlSelection(ids, { history: urlState.history });
+            props.selection?.onSelectedIdsChange(ids);
+          },
+        }
+      : props.selection;
+
+  return (
+    <MatrxDataTableCore
+      {...props}
+      urlState={urlState}
+      query={{
+        mode: "controlled-local",
+        state: table.state,
+        onStateChange: table.onStateChange,
+      }}
+      selectedId={selectedId}
+      onSelectedIdChange={(id) => {
+        if (syncSelectedRow) {
+          setUrlSelectedId(id === null ? "" : id, {
+            history: urlState.history,
+          });
+        }
+        props.onSelectedIdChange?.(id);
+      }}
+      windowRowId={windowRowId}
+      onWindowRowIdChange={(id) => {
+        if (syncWindowRow) {
+          setUrlWindowRowId(id === null ? "" : id, {
+            history: urlState.history,
+          });
+        }
+        props.onWindowRowIdChange?.(id);
+      }}
+      selection={selection}
+    />
+  );
+}
+
+function MatrxDataTableCore<T>({
   data,
   columns,
   getRowId,
   isLoading = false,
   isFetching = false,
   query,
+  urlState,
   toolbar,
   detail,
   window: windowConfig,
@@ -100,6 +214,8 @@ export function MatrxDataTable<T>({
   edit,
   selectedId: controlledSelectedId,
   onSelectedIdChange,
+  windowRowId: controlledWindowRowId,
+  onWindowRowIdChange,
   selection,
   rowActions,
   rowWrapper,
@@ -258,7 +374,17 @@ export function MatrxDataTable<T>({
     onSelectedIdChange?.(id);
   };
 
-  const [windowRowId, setWindowRowId] = useState<string | null>(null);
+  const [uncontrolledWindowRowId, setUncontrolledWindowRowId] = useState<
+    string | null
+  >(null);
+  const windowRowId =
+    controlledWindowRowId !== undefined
+      ? controlledWindowRowId
+      : uncontrolledWindowRowId;
+  const setWindowRowId = (id: string | null) => {
+    if (controlledWindowRowId === undefined) setUncontrolledWindowRowId(id);
+    onWindowRowIdChange?.(id);
+  };
   const [windowRowSnapshot, setWindowRowSnapshot] = useState<T | null>(null);
   const [edits, setEdits] = useState<CellEditsMap>({});
   const [saving, setSaving] = useState(false);
@@ -591,6 +717,7 @@ export function MatrxDataTable<T>({
   return (
     <div
       ref={rootRef}
+      data-url-state-table={urlState?.id}
       className={cn(
         "flex h-full min-h-0 flex-col gap-2 max-lg:[&_button]:min-h-11 max-lg:[&_button]:min-w-11 max-lg:[&_input]:min-h-11 max-lg:[&_table_a]:inline-flex max-lg:[&_table_a]:min-h-11 max-lg:[&_table_a]:items-center",
         className,
@@ -1270,7 +1397,7 @@ export function MatrxDataTable<T>({
           row={windowRow}
           width={windowConfig?.width}
           height={windowConfig?.height}
-          windowId={`matrx-data-row-${getRowId(windowRow)}`}
+          windowId={`matrx-data-row-${urlState?.id ?? "local"}-${getRowId(windowRow)}`}
           defaultTab={windowConfig?.defaultTab}
           headerActions={
             <div className="flex items-center gap-1">

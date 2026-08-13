@@ -332,7 +332,10 @@ export function ExposureAuditClient() {
     "deleted",
     booleanUrlCodec(false),
   );
-  const table = useTableUrlState({ defaultPageSize: 50 });
+  const table = useTableUrlState({
+    tableId: "exposure-audit",
+    defaultPageSize: 50,
+  });
   const query = table.queryState;
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);

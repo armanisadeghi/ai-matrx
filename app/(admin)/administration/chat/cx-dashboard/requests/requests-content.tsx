@@ -90,7 +90,9 @@ export function RequestsContent({ result }: Props) {
               )}
             </p>
             {r.model_name && (
-              <p className="text-[10px] text-muted-foreground">{r.model_name}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {r.model_name}
+              </p>
             )}
           </div>
         ),
@@ -234,11 +236,16 @@ export function RequestsContent({ result }: Props) {
         cellKind: "fk",
         width: 110,
         fk: {
-          href: (id) =>
-            `/administration/chat/cx-dashboard/conversations/${id}`,
+          href: (id) => `/administration/chat/cx-dashboard/conversations/${id}`,
         },
       },
-      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "uuid",
+        width: 110,
+      },
     ];
   }, []);
 
@@ -266,106 +273,109 @@ export function RequestsContent({ result }: Props) {
       }
       isEditable={false}
     >
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-      <h2 className="text-sm font-semibold">
-        User Requests
-        <span className="ml-2 font-normal text-muted-foreground">
-          {result.total} total
-        </span>
-      </h2>
-
-      <div className="min-h-0 flex-1">
-        <MatrxDataTable
-          data={result.data}
-          columns={columns}
-          getRowId={(r) => r.id}
-          pageSize={0}
-          emptyState={{ title: "No requests match" }}
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Filter fetched page…",
-            facets: [
-              {
-                type: "custom",
-                id: "server-filters",
-                render: () => (
-                  <CxFiltersBar
-                    showSearch={false}
-                    showStatusFilter
-                    statusOptions={["completed", "pending", "error"]}
-                    onRefresh={() => router.refresh()}
-                    onExportCSV={() => exportToCSV(exportData, "user-requests")}
-                    onExportJSON={() =>
-                      exportToJSON(exportData, "user-requests")
-                    }
-                  />
-                ),
-              },
-            ],
-          }}
-          copy={{
-            label: "CX user request",
-            listLabel: "CX user requests (this view)",
-            location: "/administration/chat/cx-dashboard/requests",
-            rowKind: "cx-user-request",
-            listKind: "cx-user-requests",
-            humanRow: (r) =>
-              [
-                `Request: ${r.id}`,
-                `Conversation: ${r.conversation_title ?? "Untitled"} (${r.conversation_id ?? "—"})`,
-                `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
-                `Iterations: ${r.iterations} · Tool calls: ${r.total_tool_calls}`,
-                `Tokens: ${formatTokens(r.total_tokens)} (${formatTokens(r.total_input_tokens)} in / ${formatTokens(r.total_output_tokens)} out)`,
-                `Cost: ${formatCost(Number(r.total_cost))}`,
-                `Duration: ${formatDuration(requestDuration(r))}`,
-                `Created: ${r.created_at}`,
-                ...(r.error ? [`Error: ${r.error}`] : []),
-              ].join("\n"),
-            rowAttributes: (r) => ({ id: r.id, status: r.status }),
-          }}
-          detail={{
-            title: (r) => r.conversation_title ?? "Untitled request",
-          }}
-        />
-      </div>
-
-      {/* Server-side pagination over the full result set (table shows one fetched page) */}
-      {result.total_pages > 1 && (
-        <div className="flex shrink-0 items-center justify-between text-xs text-muted-foreground">
-          <span>
-            Page {result.page} of {result.total_pages}
+      <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+        <h2 className="text-sm font-semibold">
+          User Requests
+          <span className="ml-2 font-normal text-muted-foreground">
+            {result.total} total
           </span>
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              disabled={result.page <= 1}
-              onClick={() => {
-                const params = new URLSearchParams(window.location.search);
-                params.set("page", String(result.page - 1));
-                router.push(`?${params.toString()}`);
-              }}
-            >
-              Prev
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              disabled={result.page >= result.total_pages}
-              onClick={() => {
-                const params = new URLSearchParams(window.location.search);
-                params.set("page", String(result.page + 1));
-                router.push(`?${params.toString()}`);
-              }}
-            >
-              Next
-            </Button>
-          </div>
+        </h2>
+
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable
+            urlState={{ id: "cx-requests" }}
+            data={result.data}
+            columns={columns}
+            getRowId={(r) => r.id}
+            pageSize={0}
+            emptyState={{ title: "No requests match" }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Filter fetched page…",
+              facets: [
+                {
+                  type: "custom",
+                  id: "server-filters",
+                  render: () => (
+                    <CxFiltersBar
+                      showSearch={false}
+                      showStatusFilter
+                      statusOptions={["completed", "pending", "error"]}
+                      onRefresh={() => router.refresh()}
+                      onExportCSV={() =>
+                        exportToCSV(exportData, "user-requests")
+                      }
+                      onExportJSON={() =>
+                        exportToJSON(exportData, "user-requests")
+                      }
+                    />
+                  ),
+                },
+              ],
+            }}
+            copy={{
+              label: "CX user request",
+              listLabel: "CX user requests (this view)",
+              location: "/administration/chat/cx-dashboard/requests",
+              rowKind: "cx-user-request",
+              listKind: "cx-user-requests",
+              humanRow: (r) =>
+                [
+                  `Request: ${r.id}`,
+                  `Conversation: ${r.conversation_title ?? "Untitled"} (${r.conversation_id ?? "—"})`,
+                  `Status: ${r.status}${r.finish_reason ? ` (${r.finish_reason})` : ""}`,
+                  `Iterations: ${r.iterations} · Tool calls: ${r.total_tool_calls}`,
+                  `Tokens: ${formatTokens(r.total_tokens)} (${formatTokens(r.total_input_tokens)} in / ${formatTokens(r.total_output_tokens)} out)`,
+                  `Cost: ${formatCost(Number(r.total_cost))}`,
+                  `Duration: ${formatDuration(requestDuration(r))}`,
+                  `Created: ${r.created_at}`,
+                  ...(r.error ? [`Error: ${r.error}`] : []),
+                ].join("\n"),
+              rowAttributes: (r) => ({ id: r.id, status: r.status }),
+            }}
+            detail={{
+              title: (r) => r.conversation_title ?? "Untitled request",
+            }}
+          />
         </div>
-      )}
-    </div>
+
+        {/* Server-side pagination over the full result set (table shows one fetched page) */}
+        {result.total_pages > 1 && (
+          <div className="flex shrink-0 items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Page {result.page} of {result.total_pages}
+            </span>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={result.page <= 1}
+                onClick={() => {
+                  const params = new URLSearchParams(window.location.search);
+                  params.set("page", String(result.page - 1));
+                  router.push(`?${params.toString()}`);
+                }}
+              >
+                Prev
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={result.page >= result.total_pages}
+                onClick={() => {
+                  const params = new URLSearchParams(window.location.search);
+                  params.set("page", String(result.page + 1));
+                  router.push(`?${params.toString()}`);
+                }}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </SurfaceRuntimeProvider>
   );
 }

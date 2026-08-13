@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Switch } from "@/components/ui/switch";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
-import { UrlStateMatrxDataTable } from "@/lib/data-table/UrlStateMatrxDataTable";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import {
   EntityTypeForm,
@@ -527,7 +527,8 @@ export function EntityTypesClient({ entityTypes }: Props) {
       </div>
 
       <div className="min-h-[28rem]">
-        <UrlStateMatrxDataTable
+        <MatrxDataTable
+          urlState={{ id: "entity-types", selectedRow: false }}
           data={filtered}
           columns={columns}
           getRowId={(r) => r.token}

@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
-import { UrlStateMatrxDataTable } from "@/lib/data-table/UrlStateMatrxDataTable";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import {
   ShareableResourceForm,
@@ -528,7 +528,8 @@ export function ShareableRegistryPanel({
         </Button>
       </div>
       <div className="min-h-[16rem]">
-        <UrlStateMatrxDataTable
+        <MatrxDataTable
+          urlState={{ id: "shareable-resources", selectedRow: false }}
           data={registry}
           columns={columns}
           getRowId={(r) => r.resource_type}

@@ -34,13 +34,19 @@ import {
   fetchAllTasksAdmin,
   type AdminTaskRow,
 } from "@/lib/services/scheduling-admin-service";
-import { humanizeRelative, humanizeTrigger } from "@/features/scheduling/utils/triggerHumanize";
+import {
+  humanizeRelative,
+  humanizeTrigger,
+} from "@/features/scheduling/utils/triggerHumanize";
 import { scheduleHref } from "@/features/scheduling/constants/routes";
 import { useAdminSchedulingScopeSlice } from "@/features/scheduling/lib/admin-scheduling-scope";
 
 function triggerText(r: AdminTaskRow): string {
   return r.trigger
-    ? humanizeTrigger(r.trigger.type, r.trigger.config as Record<string, unknown>)
+    ? humanizeTrigger(
+        r.trigger.type,
+        r.trigger.config as Record<string, unknown>,
+      )
     : "—";
 }
 
@@ -53,7 +59,9 @@ export default function AdminTasksPage() {
   // filter live inside MatrxDataTable and narrow the screen without telling
   // this page, so there is deliberately no `task_search`/`task_enabled_filter`
   // value — the surface cannot promise state it cannot read.
-  useAdminSchedulingScopeSlice("tasks", () => ({ task_row_count: rows.length }));
+  useAdminSchedulingScopeSlice("tasks", () => ({
+    task_row_count: rows.length,
+  }));
 
   const load = useCallback(async () => {
     setFetching(true);
@@ -134,14 +142,18 @@ export default function AdminTasksPage() {
         id: "next_due_at",
         accessorKey: "next_due_at",
         header: "Next",
-        cell: (r) => <span className="text-xs">{humanizeRelative(r.next_due_at)}</span>,
+        cell: (r) => (
+          <span className="text-xs">{humanizeRelative(r.next_due_at)}</span>
+        ),
         width: 120,
       },
       {
         id: "updated_at",
         accessorKey: "updated_at",
         header: "Updated",
-        cell: (r) => <span className="text-xs">{humanizeRelative(r.updated_at)}</span>,
+        cell: (r) => (
+          <span className="text-xs">{humanizeRelative(r.updated_at)}</span>
+        ),
         width: 120,
       },
       {
@@ -151,7 +163,10 @@ export default function AdminTasksPage() {
         filter: "select",
         width: 100,
         cell: (r) => (
-          <Badge variant={r.enabled ? "secondary" : "outline"} className="text-[10px]">
+          <Badge
+            variant={r.enabled ? "secondary" : "outline"}
+            className="text-[10px]"
+          >
             {r.enabled ? "Enabled" : "Paused"}
           </Badge>
         ),
@@ -171,6 +186,7 @@ export default function AdminTasksPage() {
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "scheduling-tasks" }}
           data={rows}
           columns={columns}
           getRowId={(r) => r.id}
@@ -182,7 +198,12 @@ export default function AdminTasksPage() {
             search: true,
             searchPlaceholder: "Search title, owner, trigger…",
             actions: (
-              <Button size="sm" variant="outline" onClick={() => void load()} disabled={fetching}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void load()}
+                disabled={fetching}
+              >
                 {fetching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (

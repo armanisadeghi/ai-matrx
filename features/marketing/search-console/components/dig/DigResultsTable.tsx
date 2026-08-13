@@ -295,6 +295,7 @@ export function DigResultsTable({
     >
       <div className="flex h-full min-h-0 flex-col">
         <MatrxDataTable<GscDigResultRow>
+          urlState={{ id: `gsc-dig-${dimension}` }}
           data={rows}
           columns={columns}
           getRowId={(row) => row.key}

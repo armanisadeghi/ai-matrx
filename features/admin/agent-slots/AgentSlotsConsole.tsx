@@ -412,11 +412,14 @@ function CreateSystemTwinButton({
           if (twinId) {
             // The twin exists — never bury that. Hand the admin its door and
             // reload so the repin can be finished in the editor.
-            toast.error(`System twin created, but the repin failed: ${message}`, {
-              action: toastDoor("agent", twinId, {
-                href: agentHref(twinId, "builtin"),
-              }),
-            });
+            toast.error(
+              `System twin created, but the repin failed: ${message}`,
+              {
+                action: toastDoor("agent", twinId, {
+                  href: agentHref(twinId, "builtin"),
+                }),
+              },
+            );
             onSaved();
           } else {
             toast.error(`Create system twin failed: ${message}`);
@@ -518,8 +521,8 @@ function UnresolvedPinCard({
 
       {result !== null && agent === null && (
         <p className="text-rose-600">
-          The pinned agent no longer exists — the record was deleted. Repin
-          this slot to a system agent below.
+          The pinned agent no longer exists — the record was deleted. Repin this
+          slot to a system agent below.
         </p>
       )}
 
@@ -553,8 +556,8 @@ function UnresolvedPinCard({
             {agent.deletedAt && <Badge variant="secondary">deleted</Badge>}
           </div>
           <p className="text-muted-foreground">
-            A slot default serves every user, so this pin must move to a
-            system agent.
+            A slot default serves every user, so this pin must move to a system
+            agent.
           </p>
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
             {result.systemTwin ? (
@@ -1273,7 +1276,7 @@ export function AgentSlotsConsole() {
           bench.variables.trim().replace(/\s+/g, "") !== "{}")
       ) {
         throw new Error(
-          "An unsaved exemplar draft is staged on the slot that is currently open. Opening another slot would discard it — the admin has to press \"Save exemplar\" or clear the form first.",
+          'An unsaved exemplar draft is staged on the slot that is currently open. Opening another slot would discard it — the admin has to press "Save exemplar" or clear the form first.',
         );
       }
       setSelectedId(match.id);
@@ -1501,6 +1504,7 @@ export function AgentSlotsConsole() {
       >
         <div className="min-h-0 flex-1" data-surface-value="slots_summary">
           <MatrxDataTable
+            urlState={{ id: "agent-slots", selectedRow: false }}
             data={rows}
             columns={columns}
             getRowId={(r) => r.id}

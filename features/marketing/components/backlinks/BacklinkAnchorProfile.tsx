@@ -234,6 +234,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
               ))}
           </div>
           <MatrxDataTable
+            urlState={{ id: "backlink-anchor-profile", selectedRow: false }}
             data={profile.entries}
             columns={profileColumns}
             getRowId={(entry) => entry.key}
@@ -251,6 +252,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
       {profile.concentrated.length > 0 ? (
         <SectionCard title="Phrases used on an unusually large share of links">
           <MatrxDataTable
+            urlState={{ id: "backlink-concentrated-anchors" }}
             data={profile.concentrated}
             columns={concentratedColumns}
             getRowId={(item) => item.anchor}
@@ -265,6 +267,7 @@ export function BacklinkAnchorProfile({ siteId }: { siteId: string }) {
           action={{ label: "Clear", onClick: () => setDrillClass(null) }}
         >
           <MatrxDataTable
+            urlState={{ id: "backlink-anchor-details" }}
             data={drillRows}
             columns={drillColumns}
             getRowId={(row) => row.anchor ?? "(empty)"}

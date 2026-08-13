@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
-import { UrlStateMatrxDataTable } from "@/lib/data-table/UrlStateMatrxDataTable";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { RuleEditorForm } from "./RuleEditorForm";
 import { ConveyPill, DirectionGlyph } from "./shared";
@@ -466,7 +466,8 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
 
       {/* Registry table — MatrxDataTable (sticky, every-column filter/sort) */}
       <div className="min-h-[28rem]">
-        <UrlStateMatrxDataTable
+        <MatrxDataTable
+          urlState={{ id: "relationship-rules", selectedRow: false }}
           data={filtered}
           columns={ruleColumns}
           getRowId={ruleKey}

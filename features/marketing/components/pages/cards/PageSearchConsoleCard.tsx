@@ -262,6 +262,7 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
         </div>
         <div className="p-2">
           <MatrxDataTable
+            urlState={{ id: "page-search-console" }}
             data={rows}
             columns={columns}
             getRowId={(row) => row.query}

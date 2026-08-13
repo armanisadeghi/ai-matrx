@@ -9,11 +9,7 @@
  */
 
 import { useState } from "react";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarCheck,
   MoreHorizontal,
@@ -122,7 +118,9 @@ export function NewPagesTab({
   const markRequested = useMutation({
     mutationFn: (page: TrackedPageRow) => markIndexingRequested(page),
     onSuccess: () => {
-      toast.success("Marked as requested — now we wait for the first impression.");
+      toast.success(
+        "Marked as requested — now we wait for the first impression.",
+      );
       void invalidate();
     },
     onError: (error) =>
@@ -383,9 +381,9 @@ export function NewPagesTab({
     <div className="flex h-full min-h-0 flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] text-muted-foreground">
-          Add a page when you publish it, request indexing in GSC, and watch
-          for the first impression — early numbers live here where top-N
-          lists can&apos;t bury them.
+          Add a page when you publish it, request indexing in GSC, and watch for
+          the first impression — early numbers live here where top-N lists
+          can&apos;t bury them.
         </p>
         <Button
           size="sm"
@@ -406,6 +404,7 @@ export function NewPagesTab({
       ) : (
         <div className="min-h-0 flex-1">
           <MatrxDataTable<LaunchRow>
+            urlState={{ id: "gsc-new-pages" }}
             data={rows}
             columns={columns}
             getRowId={(row) => row.id}

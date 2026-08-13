@@ -36,21 +36,25 @@ import { SNOOZE_WINDOWS, isLowConfidence } from "../constants";
 import { useAssistsQuery } from "./useAssistsQuery";
 import type { Assist, AssistStatus } from "../types";
 
-const STATUS_TABS: Array<{ value: string; label: string; statuses: AssistStatus[] }> =
-  [
-    { value: "pending", label: "Open", statuses: ["pending"] },
-    { value: "accepted", label: "Accepted", statuses: ["accepted"] },
-    { value: "dismissed", label: "Dismissed", statuses: ["dismissed"] },
-    {
-      value: "all",
-      label: "Everything",
-      statuses: ["pending", "accepted", "dismissed", "expired", "superseded"],
-    },
-  ];
+const STATUS_TABS: Array<{
+  value: string;
+  label: string;
+  statuses: AssistStatus[];
+}> = [
+  { value: "pending", label: "Open", statuses: ["pending"] },
+  { value: "accepted", label: "Accepted", statuses: ["accepted"] },
+  { value: "dismissed", label: "Dismissed", statuses: ["dismissed"] },
+  {
+    value: "all",
+    label: "Everything",
+    statuses: ["pending", "accepted", "dismissed", "expired", "superseded"],
+  },
+];
 
 const STATUS_TONE: Record<AssistStatus, string> = {
   pending: "bg-primary/10 text-primary border-primary/20",
-  accepted: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+  accepted:
+    "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
   dismissed: "bg-muted text-muted-foreground border-border",
   expired: "bg-muted text-muted-foreground border-border",
   superseded: "bg-muted text-muted-foreground border-border",
@@ -79,6 +83,7 @@ export function AssistsManager() {
   const [bulkBusy, setBulkBusy] = useState(false);
 
   const table = useTableUrlState({
+    tableId: "assists",
     defaultSort: { id: "created_at", direction: "desc" },
     defaultPageSize: 25,
   });
@@ -225,7 +230,9 @@ export function AssistsManager() {
       const count = await fn();
       toast.success(`${count} assist${count === 1 ? "" : "s"} ${verb}`);
     } catch {
-      toast.error(`Could not ${verb === "dismissed" ? "dismiss" : "snooze"} — try again`);
+      toast.error(
+        `Could not ${verb === "dismissed" ? "dismiss" : "snooze"} — try again`,
+      );
     } finally {
       setBulkBusy(false);
     }
@@ -309,7 +316,9 @@ export function AssistsManager() {
             onClick={refresh}
             disabled={loading}
           >
-            <RefreshCw className={loading ? "h-3 w-3 animate-spin" : "h-3 w-3"} />
+            <RefreshCw
+              className={loading ? "h-3 w-3 animate-spin" : "h-3 w-3"}
+            />
             Refresh
           </Button>
         </div>

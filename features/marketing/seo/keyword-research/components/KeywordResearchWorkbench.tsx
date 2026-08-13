@@ -651,6 +651,7 @@ export default function KeywordResearchWorkbench() {
             <p className="px-4 py-6 text-sm text-destructive">{loadError}</p>
           ) : (
             <MatrxDataTable
+              urlState={{ id: "keyword-research", selection: true }}
               data={sorted}
               columns={columns}
               getRowId={(row) => row.id}

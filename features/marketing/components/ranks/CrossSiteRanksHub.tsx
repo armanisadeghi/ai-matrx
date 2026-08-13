@@ -232,6 +232,7 @@ export function CrossSiteRanksHub() {
           </div>
         ) : (
           <MatrxDataTable<CrossSiteRankRow>
+            urlState={{ id: "cross-site-ranks" }}
             data={rows}
             columns={columns}
             getRowId={(row) => row.target_id}

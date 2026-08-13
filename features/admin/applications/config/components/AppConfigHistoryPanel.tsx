@@ -172,6 +172,7 @@ export function AppConfigHistoryPanel({
       </p>
 
       <MatrxDataTable
+        urlState={{ id: "application-config-history" }}
         data={entries ?? []}
         columns={columns}
         getRowId={(row) => String(row.id)}

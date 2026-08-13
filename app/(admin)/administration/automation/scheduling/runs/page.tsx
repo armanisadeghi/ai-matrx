@@ -130,7 +130,9 @@ export default function AdminRunsPage() {
         id: "finished_at",
         accessorKey: "finished_at",
         header: "Finished",
-        cell: (r) => <span className="text-xs">{humanizeRelative(r.finished_at)}</span>,
+        cell: (r) => (
+          <span className="text-xs">{humanizeRelative(r.finished_at)}</span>
+        ),
         width: 120,
       },
       {
@@ -143,7 +145,13 @@ export default function AdminRunsPage() {
           </span>
         ),
       },
-      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "uuid",
+        width: 110,
+      },
     ];
   }, []);
 
@@ -151,6 +159,7 @@ export default function AdminRunsPage() {
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "scheduling-runs" }}
           data={rows}
           columns={columns}
           getRowId={(r) => r.id}
@@ -167,7 +176,12 @@ export default function AdminRunsPage() {
                 id: "server-filters",
                 render: () => (
                   <div className="flex items-center gap-2">
-                    <Select value={status} onValueChange={(v) => setStatus(v as "__all__" | RunStatus)}>
+                    <Select
+                      value={status}
+                      onValueChange={(v) =>
+                        setStatus(v as "__all__" | RunStatus)
+                      }
+                    >
                       <SelectTrigger className="h-8 w-36">
                         <SelectValue />
                       </SelectTrigger>
@@ -180,7 +194,12 @@ export default function AdminRunsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={surface} onValueChange={(v) => setSurface(v as "__all__" | Surface)}>
+                    <Select
+                      value={surface}
+                      onValueChange={(v) =>
+                        setSurface(v as "__all__" | Surface)
+                      }
+                    >
                       <SelectTrigger className="h-8 w-40">
                         <SelectValue />
                       </SelectTrigger>
@@ -198,7 +217,12 @@ export default function AdminRunsPage() {
               },
             ],
             actions: (
-              <Button size="sm" variant="outline" onClick={() => void load()} disabled={fetching}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void load()}
+                disabled={fetching}
+              >
                 {fetching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (

@@ -911,6 +911,7 @@ export function RanksWorkspace() {
         />
         <div className="mt-3" data-surface-value="rank_portfolio">
           <MatrxDataTable
+            urlState={{ id: "rank-portfolio" }}
             data={rows}
             columns={portfolioColumns}
             getRowId={(item) => item.target_id}

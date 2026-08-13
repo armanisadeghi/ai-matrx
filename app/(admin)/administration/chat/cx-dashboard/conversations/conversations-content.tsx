@@ -137,7 +137,13 @@ export function ConversationsContent({ result }: Props) {
           </span>
         ),
       },
-      { id: "id", accessorKey: "id", header: "ID", cellKind: "uuid", width: 110 },
+      {
+        id: "id",
+        accessorKey: "id",
+        header: "ID",
+        cellKind: "uuid",
+        width: 110,
+      },
     ];
   }, []);
 
@@ -162,104 +168,107 @@ export function ConversationsContent({ result }: Props) {
       }
       isEditable={false}
     >
-    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
-      <h2 className="text-sm font-semibold">
-        Conversations
-        <span className="ml-2 font-normal text-muted-foreground">
-          {result.total} total
-        </span>
-      </h2>
-
-      <div className="min-h-0 flex-1">
-        <MatrxDataTable
-          data={result.data}
-          columns={columns}
-          getRowId={(r) => r.id}
-          pageSize={0}
-          emptyState={{ title: "No conversations match" }}
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Filter fetched page…",
-            facets: [
-              {
-                type: "custom",
-                id: "server-filters",
-                render: () => (
-                  <CxFiltersBar
-                    showSearch
-                    showStatusFilter
-                    statusOptions={["active", "archived"]}
-                    onRefresh={() => router.refresh()}
-                    onExportCSV={() => exportToCSV(exportData, "conversations")}
-                    onExportJSON={() =>
-                      exportToJSON(exportData, "conversations")
-                    }
-                  />
-                ),
-              },
-            ],
-          }}
-          copy={{
-            label: "CX conversation",
-            listLabel: "CX conversations (this view)",
-            location: "/administration/chat/cx-dashboard/conversations",
-            rowKind: "cx-conversation",
-            listKind: "cx-conversations",
-            humanRow: (r) =>
-              [
-                `Title: ${r.title ?? "Untitled"}`,
-                `Status: ${r.status}`,
-                `Messages: ${r.message_count}`,
-                `Model: ${r.model_name ?? "—"} (${r.provider ?? "—"})`,
-                `Parent: ${r.parent_conversation_id ?? "—"}`,
-                `Created: ${r.created_at}`,
-              ].join("\n"),
-            rowAttributes: (r) => ({ id: r.id, status: r.status }),
-          }}
-          detail={{
-            title: (r) => r.title ?? "Untitled conversation",
-            description: (r) => r.description ?? undefined,
-          }}
-        />
-      </div>
-
-      {/* Server-side pagination over the full result set (table shows one fetched page) */}
-      {result.total_pages > 1 && (
-        <div className="flex shrink-0 items-center justify-between text-xs text-muted-foreground">
-          <span>
-            Page {result.page} of {result.total_pages}
+      <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+        <h2 className="text-sm font-semibold">
+          Conversations
+          <span className="ml-2 font-normal text-muted-foreground">
+            {result.total} total
           </span>
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              disabled={result.page <= 1}
-              onClick={() => {
-                const params = new URLSearchParams(window.location.search);
-                params.set("page", String(result.page - 1));
-                router.push(`?${params.toString()}`);
-              }}
-            >
-              Prev
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              disabled={result.page >= result.total_pages}
-              onClick={() => {
-                const params = new URLSearchParams(window.location.search);
-                params.set("page", String(result.page + 1));
-                router.push(`?${params.toString()}`);
-              }}
-            >
-              Next
-            </Button>
-          </div>
+        </h2>
+
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable
+            urlState={{ id: "cx-conversations" }}
+            data={result.data}
+            columns={columns}
+            getRowId={(r) => r.id}
+            pageSize={0}
+            emptyState={{ title: "No conversations match" }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Filter fetched page…",
+              facets: [
+                {
+                  type: "custom",
+                  id: "server-filters",
+                  render: () => (
+                    <CxFiltersBar
+                      showSearch
+                      showStatusFilter
+                      statusOptions={["active", "archived"]}
+                      onRefresh={() => router.refresh()}
+                      onExportCSV={() =>
+                        exportToCSV(exportData, "conversations")
+                      }
+                      onExportJSON={() =>
+                        exportToJSON(exportData, "conversations")
+                      }
+                    />
+                  ),
+                },
+              ],
+            }}
+            copy={{
+              label: "CX conversation",
+              listLabel: "CX conversations (this view)",
+              location: "/administration/chat/cx-dashboard/conversations",
+              rowKind: "cx-conversation",
+              listKind: "cx-conversations",
+              humanRow: (r) =>
+                [
+                  `Title: ${r.title ?? "Untitled"}`,
+                  `Status: ${r.status}`,
+                  `Messages: ${r.message_count}`,
+                  `Model: ${r.model_name ?? "—"} (${r.provider ?? "—"})`,
+                  `Parent: ${r.parent_conversation_id ?? "—"}`,
+                  `Created: ${r.created_at}`,
+                ].join("\n"),
+              rowAttributes: (r) => ({ id: r.id, status: r.status }),
+            }}
+            detail={{
+              title: (r) => r.title ?? "Untitled conversation",
+              description: (r) => r.description ?? undefined,
+            }}
+          />
         </div>
-      )}
-    </div>
+
+        {/* Server-side pagination over the full result set (table shows one fetched page) */}
+        {result.total_pages > 1 && (
+          <div className="flex shrink-0 items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Page {result.page} of {result.total_pages}
+            </span>
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={result.page <= 1}
+                onClick={() => {
+                  const params = new URLSearchParams(window.location.search);
+                  params.set("page", String(result.page - 1));
+                  router.push(`?${params.toString()}`);
+                }}
+              >
+                Prev
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={result.page >= result.total_pages}
+                onClick={() => {
+                  const params = new URLSearchParams(window.location.search);
+                  params.set("page", String(result.page + 1));
+                  router.push(`?${params.toString()}`);
+                }}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </SurfaceRuntimeProvider>
   );
 }

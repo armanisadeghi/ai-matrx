@@ -57,20 +57,19 @@ export function AnnouncementsTableClient() {
     void load();
   }, [load]);
 
-  const toggleActive = useCallback(
-    async (row: SystemAnnouncement) => {
-      const res = await updateAnnouncement(row.id, { is_active: !row.is_active });
-      if (res.success) {
-        setRows((prev) =>
-          prev.map((r) => (r.id === row.id ? { ...r, is_active: !r.is_active } : r)),
-        );
-        toast.success(row.is_active ? "Deactivated" : "Activated");
-      } else {
-        toast.error(res.error ?? "Failed");
-      }
-    },
-    [],
-  );
+  const toggleActive = useCallback(async (row: SystemAnnouncement) => {
+    const res = await updateAnnouncement(row.id, { is_active: !row.is_active });
+    if (res.success) {
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id ? { ...r, is_active: !r.is_active } : r,
+        ),
+      );
+      toast.success(row.is_active ? "Deactivated" : "Activated");
+    } else {
+      toast.error(res.error ?? "Failed");
+    }
+  }, []);
 
   const remove = useCallback(async (row: SystemAnnouncement) => {
     const ok = await confirm({
@@ -97,7 +96,9 @@ export function AnnouncementsTableClient() {
         accessorKey: "message",
         header: "Message",
         cell: (r) => (
-          <span className="line-clamp-2 text-xs text-muted-foreground">{r.message}</span>
+          <span className="line-clamp-2 text-xs text-muted-foreground">
+            {r.message}
+          </span>
         ),
       },
       {
@@ -106,7 +107,10 @@ export function AnnouncementsTableClient() {
         header: "Type",
         filter: "select",
         cell: (r) => (
-          <Badge variant="outline" className={TYPE_CLASS[r.announcement_type] ?? ""}>
+          <Badge
+            variant="outline"
+            className={TYPE_CLASS[r.announcement_type] ?? ""}
+          >
             {r.announcement_type}
           </Badge>
         ),
@@ -118,7 +122,9 @@ export function AnnouncementsTableClient() {
         header: "Active",
         filter: "boolean",
         align: "center",
-        cell: (r) => <span className="text-xs">{r.is_active ? "Yes" : "No"}</span>,
+        cell: (r) => (
+          <span className="text-xs">{r.is_active ? "Yes" : "No"}</span>
+        ),
         width: 80,
       },
       {
@@ -156,6 +162,7 @@ export function AnnouncementsTableClient() {
       ) : null}
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "user-announcements" }}
           data={rows}
           columns={columns}
           getRowId={(r) => r.id}
@@ -163,7 +170,8 @@ export function AnnouncementsTableClient() {
           pageSize={50}
           emptyState={{
             title: "No announcements",
-            description: "Broadcast a message to every user on their next login.",
+            description:
+              "Broadcast a message to every user on their next login.",
             icon: <Megaphone className="h-6 w-6 text-muted-foreground" />,
           }}
           toolbar={{
@@ -183,13 +191,20 @@ export function AnnouncementsTableClient() {
             listKind: "announcements",
             humanRow: (r) =>
               `${r.title} [${r.announcement_type}${r.is_active ? ", active" : ""}]\n${r.message}`,
-            rowAttributes: (r) => ({ id: r.id, type: r.announcement_type, active: r.is_active }),
+            rowAttributes: (r) => ({
+              id: r.id,
+              type: r.announcement_type,
+              active: r.is_active,
+            }),
           }}
           detail={{
             title: (r) => r.title,
             render: (r) => (
               <div className="space-y-3 p-4 text-sm">
-                <Badge variant="outline" className={TYPE_CLASS[r.announcement_type] ?? ""}>
+                <Badge
+                  variant="outline"
+                  className={TYPE_CLASS[r.announcement_type] ?? ""}
+                >
                   {r.announcement_type}
                 </Badge>
                 <p className="whitespace-pre-wrap">{r.message}</p>
@@ -210,7 +225,13 @@ export function AnnouncementsTableClient() {
                 title={row.is_active ? "Deactivate" : "Activate"}
                 onClick={() => void toggleActive(row)}
               >
-                <Power className={row.is_active ? "h-3.5 w-3.5 text-emerald-500" : "h-3.5 w-3.5"} />
+                <Power
+                  className={
+                    row.is_active
+                      ? "h-3.5 w-3.5 text-emerald-500"
+                      : "h-3.5 w-3.5"
+                  }
+                />
               </Button>
               <Button
                 size="icon"

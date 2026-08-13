@@ -102,7 +102,11 @@ export function UsageTableClient() {
         header: "Requests",
         filter: "number",
         align: "right",
-        cell: (r) => <span className="tabular-nums text-sm">{fmtInt.format(r.total_requests)}</span>,
+        cell: (r) => (
+          <span className="tabular-nums text-sm">
+            {fmtInt.format(r.total_requests)}
+          </span>
+        ),
         width: 100,
       },
       {
@@ -111,7 +115,11 @@ export function UsageTableClient() {
         header: "Total tokens",
         filter: "number",
         align: "right",
-        cell: (r) => <span className="tabular-nums text-sm">{fmtInt.format(r.total_tokens)}</span>,
+        cell: (r) => (
+          <span className="tabular-nums text-sm">
+            {fmtInt.format(r.total_tokens)}
+          </span>
+        ),
         width: 130,
       },
       {
@@ -147,7 +155,9 @@ export function UsageTableClient() {
         filter: "number",
         align: "right",
         cell: (r) => (
-          <span className="tabular-nums text-sm font-medium">{fmtCost(r.total_cost)}</span>
+          <span className="tabular-nums text-sm font-medium">
+            {fmtCost(r.total_cost)}
+          </span>
         ),
         width: 100,
       },
@@ -157,7 +167,9 @@ export function UsageTableClient() {
         header: "Models",
         filter: "number",
         align: "right",
-        cell: (r) => <span className="tabular-nums text-sm">{r.distinct_models}</span>,
+        cell: (r) => (
+          <span className="tabular-nums text-sm">{r.distinct_models}</span>
+        ),
         width: 80,
       },
       {
@@ -165,7 +177,9 @@ export function UsageTableClient() {
         accessorKey: "last_activity",
         header: "Last activity",
         cell: (r) => (
-          <span className="text-xs text-muted-foreground">{fmtDate(r.last_activity)}</span>
+          <span className="text-xs text-muted-foreground">
+            {fmtDate(r.last_activity)}
+          </span>
         ),
         width: 160,
       },
@@ -220,12 +234,15 @@ export function UsageTableClient() {
         </div>
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="text-[11px] text-muted-foreground">Total cost</div>
-          <div className="text-lg font-semibold tabular-nums">{fmtCost(totals.cost)}</div>
+          <div className="text-lg font-semibold tabular-nums">
+            {fmtCost(totals.cost)}
+          </div>
         </div>
       </div>
 
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "user-usage" }}
           data={focused}
           columns={columns}
           getRowId={(r) => r.user_id}
@@ -261,7 +278,8 @@ export function UsageTableClient() {
             rowKind: "user-usage",
             listKind: "user-usage",
             rowDescription: "One user's AI usage & cost rollup.",
-            listDescription: "Filtered/sorted per-user usage currently visible.",
+            listDescription:
+              "Filtered/sorted per-user usage currently visible.",
             humanRow: (r) =>
               [
                 `${r.email ?? r.user_id}: ${fmtInt.format(r.total_requests)} requests, ${fmtInt.format(r.total_tokens)} tokens, ${fmtCost(r.total_cost)}`,

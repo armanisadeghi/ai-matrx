@@ -30,7 +30,7 @@
  * belongs to `useListViewPrefs` (lib/list-views), a different axis.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ColumnFiltersState,
   MatrxDataTableQueryState,
@@ -39,21 +39,23 @@ import type {
 import type { LayeredFilterRule } from "@/components/official/matrx-data-table/layered-filters";
 import {
   commitUrlParams,
+  type UrlHistoryMode,
   useUrlSearchParams,
 } from "@/lib/url-state/useUrlState";
 
 export interface UseTableUrlStateOptions {
+  /** Stable table id used in `table.<id>.*` parameters. */
+  tableId: string;
   /** Initial sort when the URL carries none. Default: none. */
   defaultSort?: SortState | null;
   /** Default page size (also the "omit from URL" value). Default 25. */
   defaultPageSize?: number;
   /** Debounce for `queryState.search`, ms. Default 300. */
   searchDebounceMs?: number;
-  /**
-   * Namespace prefix for the URL params (e.g. "a" → "a.p", "a.q") so two
-   * tables can share one page without clobbering each other. Default: none.
-   */
-  paramPrefix?: string;
+  /** Browser history behavior for table transitions. Default: `push`. */
+  history?: UrlHistoryMode;
+  /** Rapid text edits push once, then replace by default. */
+  textHistory?: "session" | UrlHistoryMode;
 }
 
 export interface TableUrlState {
@@ -104,19 +106,28 @@ function positiveInt(raw: string | null, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
+export function tableUrlParamPrefix(tableId: string): string {
+  if (!/^[a-z][a-z0-9-]{0,63}$/.test(tableId)) {
+    throw new Error(
+      `MatrxDataTable urlState.id must match /^[a-z][a-z0-9-]{0,63}$/; received "${tableId}".`,
+    );
+  }
+  return `table.${tableId}`;
+}
+
 export function useTableUrlState(
-  options: UseTableUrlStateOptions = {},
+  options: UseTableUrlStateOptions,
 ): TableUrlState {
   const {
+    tableId,
     defaultSort = null,
     defaultPageSize = 25,
     searchDebounceMs = 300,
-    paramPrefix,
+    history = "push",
+    textHistory = "session",
   } = options;
-  const key = useCallback(
-    (name: string) => (paramPrefix ? `${paramPrefix}.${name}` : name),
-    [paramPrefix],
-  );
+  const prefix = tableUrlParamPrefix(tableId);
+  const key = useCallback((name: string) => `${prefix}.${name}`, [prefix]);
   const defaultSortId = defaultSort?.id;
   const defaultSortDirection = defaultSort?.direction;
 
@@ -148,6 +159,7 @@ export function useTableUrlState(
   );
 
   const state = readState(searchParams);
+  const lastTextWriteAt = useRef(0);
 
   const [debouncedSearch, setDebouncedSearch] = useState(state.search);
   useEffect(() => {
@@ -160,7 +172,7 @@ export function useTableUrlState(
   }, [state.search, debouncedSearch, searchDebounceMs]);
 
   const writeState = useCallback(
-    (nextState: MatrxDataTableQueryState) => {
+    (nextState: MatrxDataTableQueryState, mode: UrlHistoryMode = history) => {
       const params = new URLSearchParams(window.location.search);
       const setOrDelete = (name: string, value: string | null) => {
         if (value === null || value === "") params.delete(name);
@@ -213,16 +225,32 @@ export function useTableUrlState(
         if (currentParams.get(parameter) !== nextValue)
           patch[parameter] = nextValue;
       }
-      commitUrlParams(patch, "push");
+      commitUrlParams(patch, mode);
     },
-    [defaultPageSize, defaultSortDirection, defaultSortId, key],
+    [defaultPageSize, defaultSortDirection, defaultSortId, history, key],
   );
 
   const onStateChange = useCallback(
     (next: MatrxDataTableQueryState) => {
-      writeState(next);
+      const changed = Object.keys(next).filter(
+        (name) =>
+          JSON.stringify(next[name as keyof MatrxDataTableQueryState]) !==
+          JSON.stringify(state[name as keyof MatrxDataTableQueryState]),
+      );
+      const textOnly =
+        changed.length > 0 &&
+        changed.every((name) => name === "search" || name === "anyOf");
+      let mode = history;
+      if (textOnly && textHistory === "replace") mode = "replace";
+      if (textOnly && textHistory === "push") mode = "push";
+      if (textOnly && textHistory === "session") {
+        const now = Date.now();
+        mode = now - lastTextWriteAt.current < 750 ? "replace" : history;
+        lastTextWriteAt.current = now;
+      }
+      writeState(next, mode);
     },
-    [writeState],
+    [history, state, textHistory, writeState],
   );
 
   const reset = useCallback(() => {

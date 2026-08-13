@@ -12,7 +12,14 @@
 // re-checks is_super_admin() server-side.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, Cog, FileText, Loader2, RefreshCw, Webhook } from "lucide-react";
+import {
+  Activity,
+  Cog,
+  FileText,
+  Loader2,
+  RefreshCw,
+  Webhook,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -42,8 +49,13 @@ const FILTERS = [
 ] as const;
 
 function actionColor(action: string): string {
-  if (action.endsWith(".completed") || action.endsWith(".created")) return "text-emerald-500";
-  if (action.endsWith(".failed") || action.endsWith(".revoked") || action.endsWith(".deleted"))
+  if (action.endsWith(".completed") || action.endsWith(".created"))
+    return "text-emerald-500";
+  if (
+    action.endsWith(".failed") ||
+    action.endsWith(".revoked") ||
+    action.endsWith(".deleted")
+  )
     return "text-red-500";
   return "text-foreground";
 }
@@ -60,10 +72,13 @@ export default function AdminEventsPage() {
     setFetching(true);
     try {
       const supabase = createClient();
-      const { data, error: rpcError } = await supabase.rpc("admin_recent_activity", {
-        p_limit: 200,
-        p_action_prefix: prefix ?? undefined,
-      });
+      const { data, error: rpcError } = await supabase.rpc(
+        "admin_recent_activity",
+        {
+          p_limit: 200,
+          p_action_prefix: prefix ?? undefined,
+        },
+      );
       if (rpcError) throw new Error(rpcError.message);
       setRows((data as ActivityRow[]) ?? []);
       setError(null);
@@ -108,7 +123,9 @@ export default function AdminEventsPage() {
         header: "Action",
         filter: "select",
         cell: (r) => (
-          <span className={`whitespace-nowrap font-medium ${actionColor(r.action)}`}>
+          <span
+            className={`whitespace-nowrap font-medium ${actionColor(r.action)}`}
+          >
             {r.action}
           </span>
         ),
@@ -180,6 +197,7 @@ export default function AdminEventsPage() {
 
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "reporting-events" }}
           data={rows}
           columns={columns}
           getRowId={(r) => String(r.id)}
@@ -206,14 +224,23 @@ export default function AdminEventsPage() {
                   icon: <f.icon className="size-3.5" />,
                 })),
                 onChange: (value) =>
-                  setPrefix(FILTERS.find((f) => f.value === value)?.prefix ?? null),
+                  setPrefix(
+                    FILTERS.find((f) => f.value === value)?.prefix ?? null,
+                  ),
               },
             ],
             actions: (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <Switch id="auto" checked={autoRefresh} onCheckedChange={setAutoRefresh} />
-                  <Label htmlFor="auto" className="text-xs text-muted-foreground">
+                  <Switch
+                    id="auto"
+                    checked={autoRefresh}
+                    onCheckedChange={setAutoRefresh}
+                  />
+                  <Label
+                    htmlFor="auto"
+                    className="text-xs text-muted-foreground"
+                  >
                     Auto-refresh (5s)
                   </Label>
                 </div>
@@ -259,7 +286,9 @@ export default function AdminEventsPage() {
                   <span className="text-muted-foreground">Event ID</span>
                   <span className="font-mono">{r.id}</span>
                   <span className="text-muted-foreground">Action</span>
-                  <span className={`font-medium ${actionColor(r.action)}`}>{r.action}</span>
+                  <span className={`font-medium ${actionColor(r.action)}`}>
+                    {r.action}
+                  </span>
                   <span className="text-muted-foreground">Occurred</span>
                   <span>{new Date(r.occurred_at).toLocaleString()}</span>
                   <span className="text-muted-foreground">Entity type</span>
@@ -288,7 +317,9 @@ export default function AdminEventsPage() {
                     )}
                   </span>
                   <span className="text-muted-foreground">Actor</span>
-                  <span className="break-all font-mono">{r.actor_id ?? "—"}</span>
+                  <span className="break-all font-mono">
+                    {r.actor_id ?? "—"}
+                  </span>
                   <span className="text-muted-foreground">Organization</span>
                   {/* `/organizations/[orgId]` resolves a UUID *or* a slug
                       (layout.tsx:22 branches on UUID_RE), so passing the raw
@@ -309,7 +340,9 @@ export default function AdminEventsPage() {
                   </span>
                 </div>
                 <div>
-                  <div className="mb-1 text-xs font-medium text-muted-foreground">Metadata</div>
+                  <div className="mb-1 text-xs font-medium text-muted-foreground">
+                    Metadata
+                  </div>
                   <pre className="max-h-96 overflow-auto rounded-md border border-border bg-muted/30 p-2 font-mono text-xs">
                     {JSON.stringify(r.metadata, null, 2)}
                   </pre>

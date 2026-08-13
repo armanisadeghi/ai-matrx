@@ -180,6 +180,33 @@ export interface SortState {
 }
 
 /**
+ * Opt-in durable URL state for a local table.
+ *
+ * Every table gets an explicit stable id, producing namespaced parameters such
+ * as `table.accounts.q` and `table.accounts.sort`. This prevents collisions
+ * with page-owned parameters and with sibling tables on the same route.
+ */
+export interface MatrxDataTableUrlStateConfig {
+  /** Stable lowercase identifier: letters, numbers, and hyphens; max 64 chars. */
+  id: string;
+  /** Initial sort when the URL carries none. Default: none. */
+  defaultSort?: SortState | null;
+  /** Browser history behavior for table transitions. Default: `push`. */
+  history?: "push" | "replace";
+  /**
+   * History behavior while typing search/any-of text. `session` pushes the
+   * first edit, then replaces rapid keystrokes. Default: `session`.
+   */
+  textHistory?: "session" | "push" | "replace";
+  /** Persist the open side-panel row. Default true. */
+  selectedRow?: boolean;
+  /** Persist the open table-owned window row. Default true. */
+  windowRow?: boolean;
+  /** Persist checkbox selection. Opt-in because large selections lengthen URLs. */
+  selection?: boolean;
+}
+
+/**
  * Complete view state for a remotely queried table page. The table owns none
  * of this state in controlled mode: callers may mirror it to URL search params
  * and use it as part of a direct database-query cache key.
@@ -474,6 +501,12 @@ export interface MatrxDataTableProps<T> {
    * fetches data itself; it only emits state changes to the caller.
    */
   query?: MatrxDataTableQueryControl;
+  /**
+   * Persist local query and record-view state in namespaced URL parameters.
+   * This is intentionally opt-in and cannot be combined with controlled query
+   * mode; remote tables use `useTableUrlState({ tableId })` in their query owner.
+   */
+  urlState?: MatrxDataTableUrlStateConfig;
 
   toolbar?: MatrxDataTableToolbar;
   /** Row click opens the side panel unless `window.openOnRowClick` is true. */
@@ -488,6 +521,10 @@ export interface MatrxDataTableProps<T> {
   /** Controlled selection (selected row id for highlight). */
   selectedId?: string | null;
   onSelectedIdChange?: (id: string | null) => void;
+
+  /** Controlled table-owned window row (normally supplied by URL state). */
+  windowRowId?: string | null;
+  onWindowRowIdChange?: (id: string | null) => void;
 
   /** Opt-in multi-row checkbox selection + a bulk action bar. */
   selection?: MatrxDataTableSelectionConfig<T>;

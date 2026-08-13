@@ -204,6 +204,7 @@ export function CatalogHistoryPanel({
       </p>
 
       <MatrxDataTable
+        urlState={{ id: "application-catalog-history" }}
         data={entries ?? []}
         columns={columns}
         getRowId={(row) => String(row.id)}

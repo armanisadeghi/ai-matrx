@@ -216,6 +216,7 @@ export function SiteAnalyticsCard({
         ) : null}
         {!loading ? (
           <MatrxDataTable
+            urlState={{ id: "site-analytics-daily" }}
             data={days}
             columns={columns}
             getRowId={(day) => day.date}

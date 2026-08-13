@@ -194,19 +194,19 @@ export function AppConfigClient({
         surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
         getScope={getSurfaceScope}
       >
-      <div className="h-full overflow-y-auto p-4">
-        <AppConfigEditor
-          key={view.mode === "edit" ? view.app : "new"}
-          row={row}
-          onBack={() => setView({ mode: "list" })}
-          onSaved={handleSaved}
-          focusCredentialId={
-            view.mode === "edit" && view.app === initialApp
-              ? initialCredentialId
-              : undefined
-          }
-        />
-      </div>
+        <div className="h-full overflow-y-auto p-4">
+          <AppConfigEditor
+            key={view.mode === "edit" ? view.app : "new"}
+            row={row}
+            onBack={() => setView({ mode: "list" })}
+            onSaved={handleSaved}
+            focusCredentialId={
+              view.mode === "edit" && view.app === initialApp
+                ? initialCredentialId
+                : undefined
+            }
+          />
+        </div>
       </SurfaceRuntimeProvider>
     );
   }
@@ -216,75 +216,76 @@ export function AppConfigClient({
       surfaceName={ADMIN_APPLICATIONS_SURFACE_NAME}
       getScope={getSurfaceScope}
     >
-    <div className="flex h-full flex-col gap-3 p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <MonitorCog className="h-5 w-5 text-muted-foreground" />
-        <div>
-          <h1 className="text-base font-semibold">Configuration</h1>
-          <p className="text-xs text-muted-foreground">
-            Remote runtime configuration for shipped clients — one row per
-            application, read by every installed copy in the field.
-          </p>
+      <div className="flex h-full flex-col gap-3 p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <MonitorCog className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <h1 className="text-base font-semibold">Configuration</h1>
+            <p className="text-xs text-muted-foreground">
+              Remote runtime configuration for shipped clients — one row per
+              application, read by every installed copy in the field.
+            </p>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1">
+          <MatrxDataTable
+            urlState={{ id: "application-config" }}
+            data={rows}
+            columns={columns}
+            getRowId={(row) => row.app}
+            pageSize={25}
+            emptyState={{
+              icon: <MonitorCog className="h-5 w-5" />,
+              title: "No configuration rows",
+              description:
+                "Create one with New application — clients fall back to built-in defaults until then.",
+            }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Search application, version…",
+              actions: (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setView({ mode: "new" })}
+                >
+                  <Plus className="mr-1.5 h-4 w-4" /> New application
+                </Button>
+              ),
+            }}
+            onRowOpen={(row) => setView({ mode: "edit", app: row.app })}
+            detail={{ enabled: false }}
+            copy={{
+              label: "Application configuration",
+              listLabel: "Application configurations (this view)",
+              location: `${APPLICATIONS_ADMIN_LOCATION}/configuration`,
+              rowKind: "app_config",
+              listKind: "app_configs",
+              rowDescription:
+                "One remote runtime configuration row for a shipped client.",
+              listDescription:
+                "Filtered/sorted application configuration rows currently visible.",
+              humanRow: (row) =>
+                [
+                  `${row.app} (schema v${row.schema_version})`,
+                  `min_supported_app_version=${row.min_supported_app_version}`,
+                  `updated=${row.updated_at} by=${row.updated_by ?? "?"}`,
+                  JSON.stringify(row.config, null, 2),
+                ].join("\n"),
+              rowAttributes: (row) => ({
+                app: row.app,
+                schema_version: row.schema_version,
+                min_supported_app_version: row.min_supported_app_version,
+              }),
+              listAttributes: (visible, all) => ({
+                visible: visible.length,
+                total: all.length,
+              }),
+            }}
+          />
         </div>
       </div>
-
-      <div className="min-h-0 flex-1">
-        <MatrxDataTable
-          data={rows}
-          columns={columns}
-          getRowId={(row) => row.app}
-          pageSize={25}
-          emptyState={{
-            icon: <MonitorCog className="h-5 w-5" />,
-            title: "No configuration rows",
-            description:
-              "Create one with New application — clients fall back to built-in defaults until then.",
-          }}
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Search application, version…",
-            actions: (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => setView({ mode: "new" })}
-              >
-                <Plus className="mr-1.5 h-4 w-4" /> New application
-              </Button>
-            ),
-          }}
-          onRowOpen={(row) => setView({ mode: "edit", app: row.app })}
-          detail={{ enabled: false }}
-          copy={{
-            label: "Application configuration",
-            listLabel: "Application configurations (this view)",
-            location: `${APPLICATIONS_ADMIN_LOCATION}/configuration`,
-            rowKind: "app_config",
-            listKind: "app_configs",
-            rowDescription:
-              "One remote runtime configuration row for a shipped client.",
-            listDescription:
-              "Filtered/sorted application configuration rows currently visible.",
-            humanRow: (row) =>
-              [
-                `${row.app} (schema v${row.schema_version})`,
-                `min_supported_app_version=${row.min_supported_app_version}`,
-                `updated=${row.updated_at} by=${row.updated_by ?? "?"}`,
-                JSON.stringify(row.config, null, 2),
-              ].join("\n"),
-            rowAttributes: (row) => ({
-              app: row.app,
-              schema_version: row.schema_version,
-              min_supported_app_version: row.min_supported_app_version,
-            }),
-            listAttributes: (visible, all) => ({
-              visible: visible.length,
-              total: all.length,
-            }),
-          }}
-        />
-      </div>
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

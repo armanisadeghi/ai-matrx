@@ -23,13 +23,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/lib/toast";
-import { UrlStateMatrxDataTable } from "@/lib/data-table/UrlStateMatrxDataTable";
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import {
   isUuidValue,
   tokenFromColumnName,
 } from "@/components/official/entity-ref/doors";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { stringUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
 
 type Severity = "error" | "warning" | "info";
 
@@ -290,8 +291,12 @@ export default function DataIntegrityPage() {
   const [error, setError] = useState<string | null>(null);
   const [runningAll, setRunningAll] = useState(false);
   const [runningId, setRunningId] = useState<string | null>(null);
-  // Controlled so the Findings count can open its own check's panel.
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Controlled so the Findings count can open its own check's panel while the
+  // canonical table namespace still owns the durable value.
+  const [selectedId, setSelectedId] = useUrlState(
+    "table.data-integrity.row",
+    stringUrlCodec(),
+  );
 
   const loadChecks = useCallback(async () => {
     setError(null);
@@ -571,12 +576,13 @@ export default function DataIntegrityPage() {
       )}
 
       <div className="min-h-0 flex-1">
-        <UrlStateMatrxDataTable
+        <MatrxDataTable
+          urlState={{ id: "data-integrity", selectedRow: false }}
           data={rows}
           columns={columns}
           getRowId={(r) => r.id}
-          selectedId={selectedId}
-          onSelectedIdChange={setSelectedId}
+          selectedId={selectedId || null}
+          onSelectedIdChange={(id) => setSelectedId(id === null ? "" : id)}
           isLoading={!checks && !error}
           isFetching={runningAll}
           pageSize={50}

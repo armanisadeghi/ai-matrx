@@ -102,21 +102,40 @@ function DriftDashboard() {
     <div className="h-full overflow-y-auto p-6 space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Preferences Drift</h1>
+          <h1 className="text-2xl font-semibold text-foreground">
+            Preferences Drift
+          </h1>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
             Accounts whose stored preferences still carry a retired shape. These
             self-heal on load and via the weekly{" "}
-            <code className="text-xs">heal-user-preferences-drift</code> cron. Open a
-            user from Accounts to see their actual preferences.
+            <code className="text-xs">heal-user-preferences-drift</code> cron.
+            Open a user from Accounts to see their actual preferences.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading || healing}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void load()}
+            disabled={loading || healing}
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
             Refresh
           </Button>
-          <Button size="sm" onClick={() => void heal()} disabled={healing || loading || clean === true}>
-            {healing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />}
+          <Button
+            size="sm"
+            onClick={() => void heal()}
+            disabled={healing || loading || clean === true}
+          >
+            {healing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Wrench className="h-4 w-4" />
+            )}
             Heal now
           </Button>
         </div>
@@ -130,14 +149,21 @@ function DriftDashboard() {
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-4">
-          <div className="text-xs text-muted-foreground">Total preference rows</div>
+          <div className="text-xs text-muted-foreground">
+            Total preference rows
+          </div>
           <div className="mt-1 text-2xl font-semibold text-foreground">
             {report ? report.total : "—"}
           </div>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="text-xs text-muted-foreground">Drifted rows</div>
-          <div className={"mt-1 text-2xl font-semibold " + (clean ? "text-foreground" : "text-amber-500")}>
+          <div
+            className={
+              "mt-1 text-2xl font-semibold " +
+              (clean ? "text-foreground" : "text-amber-500")
+            }
+          >
             {report ? report.drifted : "—"}
           </div>
         </div>
@@ -145,12 +171,16 @@ function DriftDashboard() {
           {clean ? (
             <>
               <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              <span className="text-sm font-medium text-foreground">All clean</span>
+              <span className="text-sm font-medium text-foreground">
+                All clean
+              </span>
             </>
           ) : report ? (
             <>
               <ShieldAlert className="h-5 w-5 text-amber-500" />
-              <span className="text-sm font-medium text-foreground">Drift present</span>
+              <span className="text-sm font-medium text-foreground">
+                Drift present
+              </span>
             </>
           ) : (
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -185,13 +215,18 @@ function DriftDashboard() {
                 </th>
                 <th className="px-3 py-2 font-medium">Organization</th>
                 <th className="px-3 py-2 font-medium">Drifted fields</th>
-                <th className={cn("px-3 py-2 font-medium", MOBILE_TABLE_CELL)}>Updated</th>
+                <th className={cn("px-3 py-2 font-medium", MOBILE_TABLE_CELL)}>
+                  Updated
+                </th>
                 <th className="px-3 py-2 font-medium" />
               </tr>
             </thead>
             <tbody>
               {report.rows.map((r) => (
-                <tr key={`${r.user_id}:${r.organization_id}`} className="border-t border-border">
+                <tr
+                  key={`${r.user_id}:${r.organization_id}`}
+                  className="border-t border-border"
+                >
                   {/* Main added the mobile frozen/wrapping classes; this
                       branch replaced the raw user_id with a door and added the
                       Organization column. Both survive — `font-mono text-xs`
@@ -220,8 +255,15 @@ function DriftDashboard() {
                   <td className="px-3 py-2 text-amber-600 dark:text-amber-400 break-words max-sm:min-w-[11rem]">
                     {r.drifted_fields}
                   </td>
-                  <td className={cn("px-3 py-2 text-muted-foreground", MOBILE_TABLE_CELL)}>
-                    {r.updated_at ? new Date(r.updated_at).toLocaleString() : "—"}
+                  <td
+                    className={cn(
+                      "px-3 py-2 text-muted-foreground",
+                      MOBILE_TABLE_CELL,
+                    )}
+                  >
+                    {r.updated_at
+                      ? new Date(r.updated_at).toLocaleString()
+                      : "—"}
                   </td>
                   <td className="px-3 py-2 text-right">
                     {/* The row names a user whose preferences this same page
@@ -270,7 +312,10 @@ function summarize(value: unknown): string {
 function UserPreferencesView({ userId }: { userId: string }) {
   const router = useRouter();
   const [rows, setRows] = useState<ModuleRow[]>([]);
-  const [meta, setMeta] = useState<{ exists: boolean; updated_at: string | null }>({
+  const [meta, setMeta] = useState<{
+    exists: boolean;
+    updated_at: string | null;
+  }>({
     exists: true,
     updated_at: null,
   });
@@ -281,10 +326,13 @@ function UserPreferencesView({ userId }: { userId: string }) {
     let active = true;
     setLoading(true);
     setError(null);
-    fetch(`/api/admin/users/preferences?userId=${userId}`, { cache: "no-store" })
+    fetch(`/api/admin/users/preferences?userId=${userId}`, {
+      cache: "no-store",
+    })
       .then(async (res) => {
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? "Failed to load preferences");
+        if (!res.ok)
+          throw new Error(json.error ?? "Failed to load preferences");
         if (!active) return;
         const prefs = (json.preferences ?? {}) as Record<string, unknown>;
         setRows(
@@ -294,9 +342,14 @@ function UserPreferencesView({ userId }: { userId: string }) {
             summary: summarize(value),
           })),
         );
-        setMeta({ exists: json.exists !== false, updated_at: json.updated_at ?? null });
+        setMeta({
+          exists: json.exists !== false,
+          updated_at: json.updated_at ?? null,
+        });
       })
-      .catch((e) => active && setError(e instanceof Error ? e.message : "Failed"))
+      .catch(
+        (e) => active && setError(e instanceof Error ? e.message : "Failed"),
+      )
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
@@ -309,7 +362,9 @@ function UserPreferencesView({ userId }: { userId: string }) {
         id: "module",
         accessorKey: "module",
         header: "Module",
-        cell: (r) => <span className="font-mono text-xs font-medium">{r.module}</span>,
+        cell: (r) => (
+          <span className="font-mono text-xs font-medium">{r.module}</span>
+        ),
         width: 200,
       },
       {
@@ -317,7 +372,9 @@ function UserPreferencesView({ userId }: { userId: string }) {
         accessorKey: "summary",
         header: "Value (summary)",
         cell: (r) => (
-          <span className="line-clamp-2 text-xs text-muted-foreground">{r.summary}</span>
+          <span className="line-clamp-2 text-xs text-muted-foreground">
+            {r.summary}
+          </span>
         ),
       },
     ];
@@ -361,6 +418,7 @@ function UserPreferencesView({ userId }: { userId: string }) {
       ) : (
         <div className="min-h-0 flex-1">
           <MatrxDataTable
+            urlState={{ id: "user-preferences" }}
             data={rows}
             columns={columns}
             getRowId={(r) => r.module}
@@ -395,5 +453,9 @@ function UserPreferencesView({ userId }: { userId: string }) {
 
 export function PreferencesTabClient() {
   const focusUser = useSearchParams().get("user");
-  return focusUser ? <UserPreferencesView userId={focusUser} /> : <DriftDashboard />;
+  return focusUser ? (
+    <UserPreferencesView userId={focusUser} />
+  ) : (
+    <DriftDashboard />
+  );
 }

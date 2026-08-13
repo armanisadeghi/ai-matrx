@@ -278,6 +278,7 @@ export function QualityView({
       </div>
       <div className="shrink-0 overflow-hidden rounded-md border border-border p-2">
         <MatrxDataTable
+          urlState={{ id: "gsc-class-summary", selectedRow: false }}
           data={summaryRows}
           columns={summaryColumns}
           getRowId={(row) => row.traffic_class}
@@ -372,6 +373,7 @@ export function QualityView({
           <ErrorPanel error={movers.error} />
         ) : (
           <MatrxDataTable<GscClassMoverRow>
+            urlState={{ id: "gsc-class-movers" }}
             data={moverRows}
             columns={moverColumns}
             getRowId={(row) => row.key}
@@ -539,6 +541,7 @@ export function ShiftsView({
         </p>
       ) : null}
       <MatrxDataTable<GscShiftRow>
+        urlState={{ id: "gsc-class-shifts" }}
         data={rows}
         columns={columns}
         getRowId={(row) => row.query}
@@ -742,6 +745,7 @@ export function JuiceView({
         </p>
       ) : null}
       <MatrxDataTable<GscJuiceRow>
+        urlState={{ id: "gsc-link-juice" }}
         data={rows}
         columns={columns}
         getRowId={(row) => row.key}

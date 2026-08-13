@@ -119,7 +119,8 @@ export function AccountsTableClient() {
 
   const sendAuthLink = useCallback(
     async (row: AdminUserRow, type: "magiclink" | "recovery") => {
-      const noun = type === "magiclink" ? "magic sign-in link" : "password reset link";
+      const noun =
+        type === "magiclink" ? "magic sign-in link" : "password reset link";
       const ok = await confirm({
         title: `Send ${noun}?`,
         description: `Email a ${noun} to ${row.email}. This is a single-use link that lets them sign in / reset without their current password.`,
@@ -130,7 +131,12 @@ export function AccountsTableClient() {
         const res = await fetch("/api/admin/users/auth-link", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: row.id, email: row.email, type, send: true }),
+          body: JSON.stringify({
+            userId: row.id,
+            email: row.email,
+            type,
+            send: true,
+          }),
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? "Failed");
@@ -138,7 +144,8 @@ export function AccountsTableClient() {
           action: json.action_link
             ? {
                 label: "Copy link",
-                onClick: () => void navigator.clipboard.writeText(json.action_link),
+                onClick: () =>
+                  void navigator.clipboard.writeText(json.action_link),
               }
             : undefined,
         });
@@ -149,28 +156,25 @@ export function AccountsTableClient() {
     [],
   );
 
-  const toggleOnboarding = useCallback(
-    async (row: AdminUserRow) => {
-      const next = !row.onboarding_completed;
-      try {
-        const res = await fetch("/api/admin/users", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: row.id, onboardingCompleted: next }),
-        });
-        if (!res.ok) throw new Error((await res.json()).error ?? "Failed");
-        setRows((prev) =>
-          prev.map((r) =>
-            r.id === row.id ? { ...r, onboarding_completed: next } : r,
-          ),
-        );
-        toast.success(next ? "Marked as onboarded" : "Marked as new");
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Failed");
-      }
-    },
-    [],
-  );
+  const toggleOnboarding = useCallback(async (row: AdminUserRow) => {
+    const next = !row.onboarding_completed;
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: row.id, onboardingCompleted: next }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Failed");
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id ? { ...r, onboarding_completed: next } : r,
+        ),
+      );
+      toast.success(next ? "Marked as onboarded" : "Marked as new");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  }, []);
 
   // In-app DM: create/find the direct conversation with the user, then send.
   const [dmTarget, setDmTarget] = useState<AdminUserRow | null>(null);
@@ -184,7 +188,10 @@ export function AccountsTableClient() {
       const convRes = await fetch("/api/messages/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "direct", participant_ids: [dmTarget.id] }),
+        body: JSON.stringify({
+          type: "direct",
+          participant_ids: [dmTarget.id],
+        }),
       });
       const convJson = await convRes.json();
       if (!convRes.ok || !convJson.success)
@@ -198,12 +205,15 @@ export function AccountsTableClient() {
       const msgJson = await msgRes.json();
       if (!msgRes.ok || !msgJson.success)
         throw new Error(msgJson.msg ?? "Could not send message");
-      toast.success(`Message sent to ${dmTarget.display_name ?? dmTarget.email}`, {
-        action: {
-          label: "Open thread",
-          onClick: () => router.push("/messages"),
+      toast.success(
+        `Message sent to ${dmTarget.display_name ?? dmTarget.email}`,
+        {
+          action: {
+            label: "Open thread",
+            onClick: () => router.push("/messages"),
+          },
         },
-      });
+      );
       setDmTarget(null);
       setDmContent("");
     } catch (e) {
@@ -222,9 +232,13 @@ export function AccountsTableClient() {
         cell: (row) => (
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
-              {row.avatar_url ? <AvatarImage src={row.avatar_url} alt="" /> : null}
+              {row.avatar_url ? (
+                <AvatarImage src={row.avatar_url} alt="" />
+              ) : null}
               <AvatarFallback className="text-[10px]">
-                {(row.display_name ?? row.email ?? "?").slice(0, 2).toUpperCase()}
+                {(row.display_name ?? row.email ?? "?")
+                  .slice(0, 2)
+                  .toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <AdminUserRef
@@ -333,7 +347,9 @@ export function AccountsTableClient() {
         filter: "boolean",
         align: "center",
         cell: (row) => (
-          <span className="text-xs">{row.onboarding_completed ? "Yes" : "New"}</span>
+          <span className="text-xs">
+            {row.onboarding_completed ? "Yes" : "New"}
+          </span>
         ),
         width: 90,
       },
@@ -447,6 +463,7 @@ export function AccountsTableClient() {
 
       <div className="min-h-0 flex-1">
         <MatrxDataTable
+          urlState={{ id: "user-accounts" }}
           data={visibleRows}
           columns={columns}
           getRowId={(r) => r.id}
@@ -560,9 +577,7 @@ export function AccountsTableClient() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
-                    router.push(
-                      `/administration/users/email?userId=${row.id}`,
-                    )
+                    router.push(`/administration/users/email?userId=${row.id}`)
                   }
                   disabled={!row.email}
                 >
@@ -604,7 +619,9 @@ export function AccountsTableClient() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => void toggleOnboarding(row)}>
                   <UserCog className="mr-2 h-4 w-4" />
-                  {row.onboarding_completed ? "Mark as new" : "Mark as onboarded"}
+                  {row.onboarding_completed
+                    ? "Mark as new"
+                    : "Mark as onboarded"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -625,8 +642,8 @@ export function AccountsTableClient() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground">
-            Sends a direct message from you into the user&apos;s in-app inbox (the
-            DM system). They see it in Messages.
+            Sends a direct message from you into the user&apos;s in-app inbox
+            (the DM system). They see it in Messages.
           </p>
           <Textarea
             value={dmContent}
@@ -640,7 +657,10 @@ export function AccountsTableClient() {
             <Button variant="ghost" onClick={() => setDmTarget(null)}>
               Cancel
             </Button>
-            <Button onClick={() => void sendDm()} disabled={dmSending || !dmContent.trim()}>
+            <Button
+              onClick={() => void sendDm()}
+              disabled={dmSending || !dmContent.trim()}
+            >
               {dmSending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
