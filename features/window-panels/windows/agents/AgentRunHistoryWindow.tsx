@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -27,10 +33,12 @@ import { ItemRow } from "@/components/official/item/ItemRow";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { AGENT_RUN_HISTORY_SURFACE_NAME } from "@/features/surfaces/manifests/agent-run-history.manifest";
 import {
-  AGENT_RUN_HISTORY_SURFACE_NAME,
-  createAgentRunHistoryScope,
-} from "@/features/surfaces/manifests/agent-run-history.manifest";
+  buildAgentRunHistoryScope,
+  readSelectedRunTranscript,
+  type AgentRunHistorySnapshot,
+} from "./agent-run-history-scope";
 
 const SURFACE_KEY = "agent-run-history-window";
 
@@ -199,11 +207,14 @@ function RunHistorySidebar({
   selectedConversationId,
   onSelect,
   onAgentSelect,
+  onScope,
 }: {
   agentId: string | null;
   selectedConversationId: string | null;
   onSelect: (id: string) => void;
   onAgentSelect: (id: string) => void;
+  /** Publishes this pane's roster fragment to the window's surface emitter. */
+  onScope: (snapshot: AgentRunHistorySnapshot | null) => void;
 }) {
   const dispatch = useAppDispatch();
 
@@ -249,10 +260,48 @@ function RunHistorySidebar({
     [conversations],
   );
 
+  // The roster lives here, the selection lives in the window. Rather than a
+  // second SurfaceRuntimeProvider (which would out-depth the window's and
+  // replace its scope WHOLESALE, silently dropping the selection), this pane
+  // publishes a fragment up into the ref the window holds. One slot per
+  // publisher: this ref is the sidebar's alone.
+  useEffect(() => {
+    if (!canonicalAgentId) {
+      onScope(null);
+      return;
+    }
+    onScope({
+      canonicalAgentId,
+      status,
+      error,
+      fetchedAt: conversationState?.fetchedAt ?? null,
+      conversations,
+      versionGroups: versionGroups.map((g) => ({
+        versionNumber: g.versionNumber,
+        count: g.conversations.length,
+      })),
+    });
+  }, [
+    onScope,
+    canonicalAgentId,
+    status,
+    error,
+    conversationState?.fetchedAt,
+    conversations,
+    versionGroups,
+  ]);
+
+  // Unmounting the sidebar must drop the fragment, or the scope would keep
+  // describing a roster nobody is looking at.
+  useEffect(() => () => onScope(null), [onScope]);
+
   return (
     <div className="h-full min-h-0 flex flex-col">
       {/* Agent picker — always visible */}
-      <div className="px-2 py-1.5 border-b border-border shrink-0">
+      <div
+        className="px-2 py-1.5 border-b border-border shrink-0"
+        data-surface-value="agent_name"
+      >
         <AgentListDropdown
           onSelect={onAgentSelect}
           label={agentName ?? "Select agent…"}
@@ -273,7 +322,10 @@ function RunHistorySidebar({
       )}
 
       {/* Scrollable list */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div
+        className="flex-1 min-h-0 overflow-y-auto"
+        data-surface-value="run_history"
+      >
         {!agentId && (
           <div className="flex flex-col items-center justify-center py-10 px-3 text-center gap-2">
             <Clock className="w-6 h-6 text-muted-foreground opacity-25" />
@@ -335,7 +387,14 @@ function RunHistoryBody({
     );
   }
 
-  return <AgentConversationDisplay conversationId={selectedConversationId} />;
+  return (
+    <div
+      className="h-full min-h-0"
+      data-surface-value="selected_run_transcript"
+    >
+      <AgentConversationDisplay conversationId={selectedConversationId} />
+    </div>
+  );
 }
 
 // ─── Window ───────────────────────────────────────────────────────────────────
@@ -423,67 +482,90 @@ function AgentRunHistoryWindowInner({
   );
 
   const agentName = useAppSelector((state: RootState) =>
-    agentId ? (selectAgentById(state, agentId)?.name ?? "Agent") : null,
+    agentId ? (selectAgentById(state, agentId)?.name ?? null) : null,
   );
 
-  const titleSuffix = agentName ? ` — ${agentName}` : "";
+  const titleSuffix = agentId ? ` — ${agentName ?? "Agent"}` : "";
 
-  // Same canonical-agent resolution `RunHistorySidebar` uses internally — the
-  // window needs the loaded conversation count for the surface scope, and
-  // that state lives in the sidebar's own selector, not lifted state.
-  const canonicalAgentId = useAppSelector((state: RootState) => {
-    if (!agentId) return null;
-    const agent = selectAgentById(state, agentId);
-    return agent?.parentAgentId ?? agent?.id ?? agentId;
-  });
-  const selectConversations = useMemo(
-    () =>
-      canonicalAgentId
-        ? makeSelectAgentConversations(canonicalAgentId, null)
-        : null,
-    [canonicalAgentId],
+  /**
+   * The roster (and the canonical agent id it is fetched under) lives one
+   * level down in `RunHistorySidebar`, and lifting it here would duplicate the
+   * selector subscription. It rides up into this ref instead — `getScope` is
+   * sampled on a poll, so a ref is exactly as fresh as state and costs no
+   * re-render. ONE SLOT PER PUBLISHER: this ref belongs to the sidebar and
+   * nothing else. A second publisher gets its own ref, because siblings mount
+   * and unmount in the same commit and a shared slot would make the winner
+   * depend on effect ordering.
+   */
+  const historyRef = useRef<AgentRunHistorySnapshot | null>(null);
+  const publishHistory = useCallback(
+    (snapshot: AgentRunHistorySnapshot | null) => {
+      historyRef.current = snapshot;
+    },
+    [],
   );
-  const conversationCount = useAppSelector((state) =>
-    selectConversations
-      ? (selectConversations(state)?.conversations.length ?? 0)
-      : 0,
-  );
+
+  /**
+   * Live scope for `matrx-user/agent-run-history`.
+   *
+   * SYNCHRONOUS BY CONTRACT. The Surface Context window polls this every 400ms
+   * while it is open, so nothing in here may fetch — every read below is
+   * already-resolved store state the window rendered from.
+   */
+  const buildSurfaceScope = () => {
+    const state = store.getState() as RootState;
+    const history = historyRef.current;
+    const selectedRow = selectedConversationId
+      ? history?.conversations.find(
+          (c) => c.conversationId === selectedConversationId,
+        )
+      : undefined;
+
+    return buildAgentRunHistoryScope({
+      agentId,
+      agentName,
+      selectedConversationId,
+      history,
+      transcript: readSelectedRunTranscript(
+        state,
+        selectedConversationId,
+        selectedRow?.messageCount,
+      ),
+    });
+  };
 
   return (
-    <WindowPanel
-      id="agent-run-history-window"
-      title={`Run History${titleSuffix}`}
-      onClose={onClose}
-      width={900}
-      height={640}
-      minWidth={520}
-      minHeight={360}
-      overlayId="agentRunHistoryWindow"
-      onCollectData={collectData}
-      sidebar={
-        <RunHistorySidebar
-          agentId={agentId}
-          selectedConversationId={selectedConversationId}
-          onSelect={handleSelect}
-          onAgentSelect={handleAgentSelect}
-        />
-      }
-      sidebarDefaultSize={220}
-      sidebarMinSize={160}
-      defaultSidebarOpen
+    /**
+     * Nested INSIDE the window on purpose. Providers resolve by depth, so this
+     * one out-depths whatever page sits behind the overlay: while the Run
+     * History window is open, ITS scope wins.
+     */
+    <SurfaceRuntimeProvider
+      surfaceName={AGENT_RUN_HISTORY_SURFACE_NAME}
+      getScope={buildSurfaceScope}
     >
-      {/* Nested overlay emitter — while this window is open, its scope
-          out-depths the page's provider (deepest wins). */}
-      <SurfaceRuntimeProvider
-        surfaceName={AGENT_RUN_HISTORY_SURFACE_NAME}
-        getScope={() =>
-          createAgentRunHistoryScope({
-            agent_id: agentId ?? undefined,
-            selected_conversation_id: selectedConversationId ?? undefined,
-            conversation_count: agentId ? conversationCount : undefined,
-          })
+      <WindowPanel
+        id="agent-run-history-window"
+        title={`Run History${titleSuffix}`}
+        onClose={onClose}
+        width={900}
+        height={640}
+        minWidth={520}
+        minHeight={360}
+        overlayId="agentRunHistoryWindow"
+        onCollectData={collectData}
+        sidebar={
+          <RunHistorySidebar
+            agentId={agentId}
+            selectedConversationId={selectedConversationId}
+            onSelect={handleSelect}
+            onAgentSelect={handleAgentSelect}
+            onScope={publishHistory}
+          />
         }
-        isEditable={false}
+        sidebarDefaultSize={220}
+        sidebarMinSize={160}
+        defaultSidebarOpen
       >
         {agentId ? (
           <RunHistoryBody
@@ -504,7 +586,7 @@ function AgentRunHistoryWindowInner({
             </div>
           </div>
         )}
-      </SurfaceRuntimeProvider>
-    </WindowPanel>
+      </WindowPanel>
+    </SurfaceRuntimeProvider>
   );
 }
