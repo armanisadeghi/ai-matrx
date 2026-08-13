@@ -26,6 +26,11 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
 import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  AGENT_RUN_HISTORY_SURFACE_NAME,
+  createAgentRunHistoryScope,
+} from "@/features/surfaces/manifests/agent-run-history.manifest";
 
 const SURFACE_KEY = "agent-run-history-window";
 
@@ -423,6 +428,27 @@ function AgentRunHistoryWindowInner({
 
   const titleSuffix = agentName ? ` — ${agentName}` : "";
 
+  // Same canonical-agent resolution `RunHistorySidebar` uses internally — the
+  // window needs the loaded conversation count for the surface scope, and
+  // that state lives in the sidebar's own selector, not lifted state.
+  const canonicalAgentId = useAppSelector((state: RootState) => {
+    if (!agentId) return null;
+    const agent = selectAgentById(state, agentId);
+    return agent?.parentAgentId ?? agent?.id ?? agentId;
+  });
+  const selectConversations = useMemo(
+    () =>
+      canonicalAgentId
+        ? makeSelectAgentConversations(canonicalAgentId, null)
+        : null,
+    [canonicalAgentId],
+  );
+  const conversationCount = useAppSelector((state) =>
+    selectConversations
+      ? (selectConversations(state)?.conversations.length ?? 0)
+      : 0,
+  );
+
   return (
     <WindowPanel
       id="agent-run-history-window"
@@ -446,25 +472,39 @@ function AgentRunHistoryWindowInner({
       sidebarMinSize={160}
       defaultSidebarOpen
     >
-      {agentId ? (
-        <RunHistoryBody
-          agentId={agentId}
-          selectedConversationId={selectedConversationId}
-        />
-      ) : (
-        <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center text-muted-foreground">
-          <Workflow className="w-12 h-12 opacity-15" />
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-foreground">
-              No agent selected
-            </p>
-            <p className="text-xs opacity-60">
-              Use the sidebar to pick an agent and browse its conversation
-              history.
-            </p>
+      {/* Nested overlay emitter — while this window is open, its scope
+          out-depths the page's provider (deepest wins). */}
+      <SurfaceRuntimeProvider
+        surfaceName={AGENT_RUN_HISTORY_SURFACE_NAME}
+        getScope={() =>
+          createAgentRunHistoryScope({
+            agent_id: agentId ?? undefined,
+            selected_conversation_id: selectedConversationId ?? undefined,
+            conversation_count: agentId ? conversationCount : undefined,
+          })
+        }
+        isEditable={false}
+      >
+        {agentId ? (
+          <RunHistoryBody
+            agentId={agentId}
+            selectedConversationId={selectedConversationId}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center text-muted-foreground">
+            <Workflow className="w-12 h-12 opacity-15" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">
+                No agent selected
+              </p>
+              <p className="text-xs opacity-60">
+                Use the sidebar to pick an agent and browse its conversation
+                history.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </SurfaceRuntimeProvider>
     </WindowPanel>
   );
 }

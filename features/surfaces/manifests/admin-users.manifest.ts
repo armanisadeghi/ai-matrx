@@ -22,10 +22,10 @@
  * are declared or emitted — those are generated server-side per click and
  * shown once in a toast, never placed in surface scope.
  *
- * Emitters: NONE YET. `AccountsTableClient.tsx` has no `SurfaceRuntimeProvider`
- * mount. Values below describe live page state (`useState` in the client
- * component) but nothing currently writes them into an `ApplicationScope`.
- * Wiring an emitter is a follow-up — see readinessNote.
+ * Emitter: `AccountsTableClient` mounts `<SurfaceRuntimeProvider>` around its
+ * whole body, reading the same `rows`/`error` state the table renders from.
+ * `roster_sample` is capped to the first `ROSTER_SAMPLE_LIMIT` (20) rows —
+ * shape inspection, not the whole roster.
  */
 
 import type {
@@ -87,9 +87,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const adminUsersManifest: SurfaceManifest = {
   surfaceName: ADMIN_USERS_SURFACE_NAME,
-  readiness: "stub",
-  readinessNote:
-    "Manifest-only — no emitter wired. AccountsTableClient.tsx loads the roster into React state but does not mount a SurfaceRuntimeProvider or build an ApplicationScope. Values here describe real page state (user_count, roster_sample, roster_load_error) but nothing currently emits them at runtime.",
+  readiness: "partial",
+  readinessNote: "emitter wired, browser verification pending",
   label: "Users & Access — Accounts",
   urlPattern: "/administration/users",
   intro: `<surface_intro>

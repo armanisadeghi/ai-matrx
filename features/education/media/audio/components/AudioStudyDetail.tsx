@@ -34,8 +34,12 @@ import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { useAccess } from "@/utils/permissions/access";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createEducationAudioStudyScope } from "@/features/surfaces/manifests/education-audio-study.manifest";
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
+
+const SURFACE_NAME = "matrx-user/education-audio-study";
 
 const FORMAT_LABEL: Record<string, string> = {
   overview: "Audio overview",
@@ -99,6 +103,30 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
   const router = useRouter();
   const [media, setMedia] = useState<StudyMediaRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isOwner } = useAccess("study_media", mediaId);
+
+  // Read at trigger time, never from stale closure state.
+  const buildScope = () => {
+    if (!media) return createEducationAudioStudyScope({ view: "detail", record_loaded: false });
+    const trust = coerceTrustEnvelope({ trust: media.trust });
+    return createEducationAudioStudyScope({
+      view: "detail",
+      record_loaded: true,
+      audio_id: media.id,
+      audio_title: media.title,
+      audio_format: media.audio_format ?? undefined,
+      audio_status: media.status,
+      audio_is_ready:
+        media.status === "ready" &&
+        Boolean(media.audio_file_id || media.episode_id),
+      audio_is_owner: isOwner,
+      audio_source_kind: media.source_kind ?? undefined,
+      audio_source_title: media.source_title ?? undefined,
+      audio_source_id: media.source_id ?? undefined,
+      audio_confidence: trust?.confidence,
+      audio_citations: trust?.citations,
+    });
+  };
 
   useEffect(() => {
     let active = true;
@@ -145,6 +173,7 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
     Boolean(media.audio_file_id || media.episode_id);
 
   return (
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
       <Header
         media={media}
@@ -158,6 +187,7 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
       )}
       <TrustPanel media={media} />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

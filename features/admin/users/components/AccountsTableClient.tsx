@@ -53,6 +53,14 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_USERS_SURFACE_NAME,
+  createAdminUsersScope,
+} from "@/features/surfaces/manifests/admin-users.manifest";
+
+/** Cap on the roster sample handed to the surface scope — shape inspection, not the whole table. */
+const ROSTER_SAMPLE_LIMIT = 20;
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -423,6 +431,26 @@ export function AccountsTableClient() {
   }
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_USERS_SURFACE_NAME}
+      getScope={() =>
+        createAdminUsersScope({
+          user_count: rows.length,
+          roster_sample: rows.slice(0, ROSTER_SAMPLE_LIMIT).map((r) => ({
+            id: r.id,
+            email: r.email,
+            display_name: r.display_name,
+            admin_level: r.admin_level,
+            providers: r.providers,
+            email_confirmed: r.email_confirmed,
+            onboarding_completed: r.onboarding_completed,
+            organizations: r.organizations,
+          })),
+          roster_load_error: error ?? undefined,
+        })
+      }
+      isEditable={false}
+    >
     <div className="flex h-full flex-col gap-3 p-4">
       {error ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
@@ -672,5 +700,6 @@ export function AccountsTableClient() {
         </DialogContent>
       </Dialog>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

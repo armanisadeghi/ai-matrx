@@ -31,8 +31,15 @@ import type { FcSetRow } from "@/features/flashcards/data/types";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationAudioStudyScope,
+  type AudioDeckOption,
+} from "@/features/surfaces/manifests/education-audio-study.manifest";
 import { useAudioStudyCreate } from "../useAudioStudyCreate";
 import type { EduAudioFormat } from "../../types";
+
+const SURFACE_NAME = "matrx-user/education-audio-study";
 
 type SourceKind = "deck" | "topic";
 
@@ -128,7 +135,31 @@ export function AudioStudyNew() {
     });
   }
 
+  // Read at trigger time, never from stale closure state.
+  const buildScope = () =>
+    createEducationAudioStudyScope({
+      view: "new",
+      request_source_kind: sourceKind,
+      request_deck_id: deckId || undefined,
+      request_topic: topic || undefined,
+      request_format: format,
+      request_host_count: hostCount,
+      request_adaptive: adaptive,
+      generation_request: {
+        source_kind: sourceKind,
+        deck_id: sourceKind === "deck" ? deckId || null : null,
+        topic: sourceKind === "topic" ? topic || null : null,
+        format,
+        host_count: hostCount,
+        adaptive,
+      },
+      available_decks: decks.map(
+        (d): AudioDeckOption => ({ id: d.id, name: d.name }),
+      ),
+    });
+
   return (
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4">
       <div className="flex items-center gap-3">
         <Button
@@ -290,6 +321,7 @@ export function AudioStudyNew() {
       <gen.Paywall />
       <coppa.Gate />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

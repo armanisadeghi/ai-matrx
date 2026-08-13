@@ -2,11 +2,22 @@
  * Surface manifest — AI results / conversation history (`matrx-user/ai-results`).
  *
  * Cross-agent conversation history viewer. The user browses past agent runs
- * across all agents and opens one to inspect its output.
+ * across all agents and opens one to inspect its output. Reachable mount:
+ * the floating `ChatHistoryWindow` (overlay `quickChatHistory`,
+ * `features/window-panels/windows/agents/ChatHistoryWindow.tsx`); the same
+ * data layer also powers the frameless `ChatHistoryWorkspace` embedded in
+ * the Utilities Hub "AI Results" tab, which is not its own overlay/route and
+ * shares this surface's scope.
  *
  * Agents bound here operate on a selected past run — judge it, summarize it,
  * re-run a variation. Complements `matrx-user/agent-run` (a single live run);
  * this is the historical browser.
+ *
+ * Emitter: `ChatHistoryWindowInner` mounts `<SurfaceRuntimeProvider>` around
+ * the main pane, reading the scoped `conversation-history` slice
+ * (`HISTORY_SCOPE = "history-window"`) for the filter/grouping/search state
+ * and the selected conversation's item + last assistant message for the
+ * per-run fields.
  */
 
 import type {
@@ -15,6 +26,8 @@ import type {
   SurfaceValue,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+export const AI_RESULTS_SURFACE_NAME = "matrx-user/ai-results";
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -120,10 +133,14 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 export const aiResultsManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/ai-results",
-  readiness: "stub",
-  readinessNote: "Declared vocabulary only; never audited against the live page, no runtime emitter",
+  surfaceName: AI_RESULTS_SURFACE_NAME,
+  readiness: "partial",
+  readinessNote: "emitter wired, browser verification pending",
+  overlayId: "quickChatHistory",
   label: "AI Results",
+  intro: `<surface_intro>
+You are on AI Results — a cross-agent conversation history browser in a floating window. The sidebar lists past runs across every accessible agent (grouped by date or agent, filterable by agent and search); selecting one shows it read-only in the main pane. selected_conversation_id identifies the open run; last_run_text is its final assistant reply. Agents bound here help the user find, judge, or summarize past runs — they do not operate on a live run.
+</surface_intro>`,
   values: mergeBaselineValues(
     pickBaseline("selection", "content", "context"),
     surfaceSpecific,

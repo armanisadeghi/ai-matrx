@@ -26,8 +26,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationAudioStudyScope,
+  type AudioLibraryEntry,
+} from "@/features/surfaces/manifests/education-audio-study.manifest";
 import { studyMediaService } from "../../service";
 import type { StudyMediaRow } from "../../types";
+
+const SURFACE_NAME = "matrx-user/education-audio-study";
 
 const FORMAT_ICON: Record<string, typeof Headphones> = {
   overview: Radio,
@@ -40,6 +47,27 @@ export function AudioStudyHome() {
   const router = useRouter();
   const [rows, setRows] = useState<StudyMediaRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Read at trigger time, never from stale closure state.
+  const buildScope = () =>
+    createEducationAudioStudyScope({
+      view: "list",
+      library_loaded: !loading,
+      ...(loading
+        ? {}
+        : {
+            audio_count: rows.length,
+            audio_library: rows.map(
+              (r): AudioLibraryEntry => ({
+                id: r.id,
+                title: r.title,
+                format: r.audio_format,
+                source_title: r.source_title,
+                status: r.status,
+              }),
+            ),
+          }),
+    });
 
   useEffect(() => {
     let active = true;
@@ -54,6 +82,7 @@ export function AudioStudyHome() {
   }, []);
 
   return (
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -85,13 +114,14 @@ export function AudioStudyHome() {
       ) : rows.length === 0 ? (
         <EmptyState onNew={() => router.push("/education/audio-study/new")} />
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2" data-surface-value="audio_library">
           {rows.map((row) => (
             <AudioRow key={row.id} row={row} href={`/education/audio-study/${row.id}`} />
           ))}
         </ul>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 

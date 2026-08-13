@@ -28,10 +28,17 @@ import { cn } from "@/lib/utils";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
 import { useEntitlement } from "@/features/entitlements/hooks";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  createEducationGameScope,
+  type GameDeckOption,
+} from "@/features/surfaces/manifests/education-game.manifest";
 import { gameService } from "../../data/gameService";
 import { useCurrentPlayer } from "../../data/useCurrentPlayer";
 import { DEFAULT_ROOM_CONFIG } from "../../types";
 import { ENGAGE_ROUTES } from "../../constants";
+
+const SURFACE_NAME = "matrx-user/education-game";
 
 type Source =
   | { kind: "set"; set: FcSetRow }
@@ -61,6 +68,25 @@ export function HostSetupImpl() {
 
   const maxPlayers = roomSize.limit ?? DEFAULT_ROOM_CONFIG.maxPlayers;
 
+  // Read at trigger time, never from stale closure state.
+  const buildScope = () =>
+    createEducationGameScope({
+      view: "host",
+      host_source_kind: source.kind,
+      host_source_set_id: source.kind === "set" ? source.set.id : undefined,
+      host_source_set_name:
+        source.kind === "set" ? source.set.name : undefined,
+      host_available_sets: sets.map(
+        (s): GameDeckOption => ({
+          id: s.id,
+          name: s.name,
+          isPrivate: s.visibility === "personal",
+        }),
+      ),
+      host_max_players: maxPlayers,
+      host_creating: creating,
+    });
+
   const create = (): void => {
     if (!userId) {
       toast.error("You must be signed in to host");
@@ -87,6 +113,7 @@ export function HostSetupImpl() {
   };
 
   return (
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
     <div className="mx-auto flex h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto p-4">
       <div className="flex items-center gap-2">
         <Button
@@ -204,5 +231,6 @@ export function HostSetupImpl() {
         )}
       </Button>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

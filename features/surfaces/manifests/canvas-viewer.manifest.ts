@@ -7,6 +7,9 @@
  * (`SharedCanvasView`) in the body. Distinct from the `/canvas` route
  * surface (`matrx-user/canvas`) — this window is read-only viewing of a
  * SHARED canvas by token.
+ *
+ * Emitter: `CanvasViewerWindow` mounts `<SurfaceRuntimeProvider>` around the
+ * body, reading the resolver's own `activeToken` / `tokenInput` state.
  */
 
 import type {
@@ -15,6 +18,8 @@ import type {
   SurfaceValue,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+export const CANVAS_VIEWER_SURFACE_NAME = "matrx-user/canvas-viewer";
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -41,10 +46,9 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 export const canvasViewerManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/canvas-viewer",
-  readiness: "stub",
-  readinessNote:
-    "Values authored from a code audit of CanvasViewerWindow; no runtime emitter yet — nothing emits this scope.",
+  surfaceName: CANVAS_VIEWER_SURFACE_NAME,
+  readiness: "partial",
+  readinessNote: "emitter wired, browser verification pending",
   overlayId: "canvasViewerWindow",
   label: "Canvas Viewer",
   intro: `<surface_intro>

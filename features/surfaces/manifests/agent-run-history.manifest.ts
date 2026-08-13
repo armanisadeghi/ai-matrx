@@ -5,6 +5,10 @@
  * `AgentRunHistoryWindow`): pick an agent, browse its past conversations
  * grouped by agent version (newest version first), and open one in the
  * conversation display pane to review or resume it.
+ *
+ * Emitter: `AgentRunHistoryWindowInner` mounts `<SurfaceRuntimeProvider>`
+ * around the main pane, resolving the same canonical-agent conversation
+ * count `RunHistorySidebar` uses internally.
  */
 
 import type {
@@ -13,6 +17,8 @@ import type {
   SurfaceValue,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+
+export const AGENT_RUN_HISTORY_SURFACE_NAME = "matrx-user/agent-run-history";
 
 const surfaceSpecific: SurfaceValue[] = [
   {
@@ -48,10 +54,9 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 export const agentRunHistoryManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/agent-run-history",
-  readiness: "stub",
-  readinessNote:
-    "Values authored from a code audit of AgentRunHistoryWindow; no runtime emitter yet — nothing emits this scope.",
+  surfaceName: AGENT_RUN_HISTORY_SURFACE_NAME,
+  readiness: "partial",
+  readinessNote: "emitter wired, browser verification pending",
   overlayId: "agentRunHistoryWindow",
   label: "Agent Run History",
   intro: `<surface_intro>

@@ -21,6 +21,11 @@ import {
 } from "@/components/official/ImageAssetUploader";
 import { emitImageUploaderEvent } from "./callbacks";
 import type { AssetPreset } from "@/features/files/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+    IMAGE_UPLOADER_SURFACE_NAME,
+    createImageUploaderScope,
+} from "@/features/surfaces/manifests/image-uploader.manifest";
 
 export interface ImageUploaderWindowProps {
     isOpen: boolean;
@@ -134,27 +139,46 @@ export default function ImageUploaderWindow({
                 </button>
             }
         >
-            <div className="flex flex-col gap-3 p-4 overflow-auto h-full">
-                {description && (
-                    <p className="text-xs text-muted-foreground">{description}</p>
-                )}
-                <ImageAssetUploader
-                    onComplete={handleComplete}
-                    preset={preset}
-                    folder={folder}
-                    currentUrl={currentUrl ?? null}
-                    allowUrlPaste={allowUrlPaste}
-                    label={title ?? "Image"}
-                />
-                {result && (
-                    <div className="rounded-lg bg-muted/30 border border-border p-3 text-xs">
-                        <p className="font-medium mb-1">Primary URL</p>
-                        <p className="font-mono text-[11px] break-all text-muted-foreground">
-                            {result.primary_url}
-                        </p>
-                    </div>
-                )}
-            </div>
+            {/* Nested overlay emitter — while this window is open, its scope
+                out-depths the page's provider (deepest wins). */}
+            <SurfaceRuntimeProvider
+                surfaceName={IMAGE_UPLOADER_SURFACE_NAME}
+                getScope={() =>
+                    createImageUploaderScope({
+                        preset,
+                        allow_url_paste: allowUrlPaste,
+                        has_upload_result: result !== null,
+                        target_folder: folder ?? undefined,
+                        uploader_title: title ?? undefined,
+                        uploader_description: description ?? undefined,
+                        current_url: currentUrl ?? undefined,
+                        result_primary_url: result?.primary_url ?? undefined,
+                    })
+                }
+                isEditable={false}
+            >
+                <div className="flex flex-col gap-3 p-4 overflow-auto h-full">
+                    {description && (
+                        <p className="text-xs text-muted-foreground">{description}</p>
+                    )}
+                    <ImageAssetUploader
+                        onComplete={handleComplete}
+                        preset={preset}
+                        folder={folder}
+                        currentUrl={currentUrl ?? null}
+                        allowUrlPaste={allowUrlPaste}
+                        label={title ?? "Image"}
+                    />
+                    {result && (
+                        <div className="rounded-lg bg-muted/30 border border-border p-3 text-xs">
+                            <p className="font-medium mb-1">Primary URL</p>
+                            <p className="font-mono text-[11px] break-all text-muted-foreground">
+                                {result.primary_url}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </SurfaceRuntimeProvider>
         </WindowPanel>
     );
 }

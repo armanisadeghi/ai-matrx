@@ -7,7 +7,10 @@
  * to collect an image (file upload or URL paste), gets the resulting asset
  * variant URLs back via a callback group, and the window closes. Purely an
  * asset-intake widget — no text/content concept, so generic baselines are
- * skipped. Emitter not wired yet.
+ * skipped.
+ *
+ * Emitter: `ImageUploaderWindow` mounts `<SurfaceRuntimeProvider>` around
+ * the uploader body — live opener config + upload result at trigger time.
  */
 
 import type {
@@ -130,8 +133,8 @@ const surfaceSpecific: SurfaceValue[] = [
 
 export const imageUploaderManifest: SurfaceManifest = {
   surfaceName: IMAGE_UPLOADER_SURFACE_NAME,
-  readiness: "stub",
-  readinessNote: "Manifest from window-component audit; emitter not wired",
+  readiness: "partial",
+  readinessNote: "emitter wired, browser verification pending",
   overlayId: "imageUploaderWindow",
   label: "Image Uploader",
   intro: `<surface_intro>
