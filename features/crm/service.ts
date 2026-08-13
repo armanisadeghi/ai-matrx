@@ -14,6 +14,8 @@
 //      indexes cannot be DEFERRABLE).
 
 import { supabase } from "@/utils/supabase/client";
+import { isUuid } from "@/features/scopes/service/associationGuards";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   AddressInsert,
   DedupScanResult,
@@ -412,6 +414,20 @@ export async function purgeParty(id: string): Promise<void> {
 // ── Record detail ───────────────────────────────────────────────────────────
 
 export async function fetchPartyDetail(partyId: string): Promise<PartyDetail> {
+  // `party.id` is a uuid PK, so a non-UUID id can never match — without this
+  // guard it fires SIX parallel 22P02 PostgREST errors (one per query below).
+  // Resolve it to the same "missing" outcome as an empty read; the record
+  // page's AccessGate says the rest.
+  if (!isUuid(partyId)) {
+    throw recordUnavailable({
+      entity: "record",
+      reason: "unknown",
+      recordId: partyId,
+      token: "party",
+      relation: "crm.party",
+    });
+  }
+
   const crm = supabase.schema("crm");
 
   const [party, points, addresses, affiliations, members, interactions] =

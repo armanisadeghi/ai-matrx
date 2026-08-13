@@ -19,6 +19,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { usePartyDetail } from "../../hooks/usePartyDetail";
@@ -117,13 +118,31 @@ export function PartyRecordPage({ partyId }: Props) {
         className="h-full overflow-y-auto bg-textured px-3 pb-6"
         style={{ paddingTop: "calc(var(--shell-header-h) + 0.5rem)" }}
       >
-        {error && (
-          <div className="mx-auto max-w-3xl rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </div>
+        {/* No record to show: denied / deleted / missing / signed-out /
+            transient each render their TRUE state — never a raw DB message. */}
+        {!isLoading && !party && (
+          <AccessGate
+            token="party"
+            id={partyId}
+            error={error ?? undefined}
+            onRetry={() => void refresh()}
+            fallbackHref="/crm"
+            fallbackLabel="All records"
+          />
         )}
 
         {isLoading && !detail && <RecordSkeleton />}
+
+        {/* Record on screen but a refresh failed — say so (no raw DB text)
+            with a retry, instead of silently showing stale data. */}
+        {party && error && (
+          <div className="mx-auto mb-3 flex max-w-3xl items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
+            <span>This record couldn&apos;t be refreshed just now.</span>
+            <Button variant="outline" size="sm" onClick={() => void refresh()}>
+              Retry
+            </Button>
+          </div>
+        )}
 
         {detail && party && (
           <div
