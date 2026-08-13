@@ -41,7 +41,17 @@ export type AssistAction =
       /** Composed intent pre-filled into the composer (pre-fill only). */
       draftText?: string;
     }
-  | { kind: "navigate"; href: string }
+  | {
+      kind: "navigate";
+      href: string;
+      /**
+       * Optional intentional-action copy for a route that carries a named,
+       * explicit UI intent (for example, start one bounded review batch).
+       */
+      label?: string;
+      confirm?: string;
+      receipt?: string;
+    }
   | {
       /**
        * Call a server endpoint that performs a durable, named domain write.
@@ -181,7 +191,13 @@ function narrowAction(value: Json): AssistAction | null {
   const obj = value as Record<string, Json | undefined>;
   const kind = obj.kind;
   if (kind === "navigate" && typeof obj.href === "string") {
-    return { kind, href: obj.href };
+    return {
+      kind,
+      href: obj.href,
+      label: typeof obj.label === "string" ? obj.label : undefined,
+      confirm: typeof obj.confirm === "string" ? obj.confirm : undefined,
+      receipt: typeof obj.receipt === "string" ? obj.receipt : undefined,
+    };
   }
   if (kind === "server_action" && typeof obj.endpoint === "string") {
     return {

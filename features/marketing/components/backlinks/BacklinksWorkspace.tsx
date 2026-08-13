@@ -81,6 +81,7 @@ import { BacklinkObservationTable } from "@/features/marketing/components/backli
 import { BacklinkDimensionTable } from "@/features/marketing/components/backlinks/BacklinkDimensionTable";
 import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/BacklinkInsightsTab";
 import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
+import { BacklinksAssistStrip } from "@/features/marketing/components/backlinks/BacklinksAssistStrip";
 import { ReferringDomainIntelligenceTable } from "@/features/marketing/components/backlinks/ReferringDomainIntelligenceTable";
 import {
   BACKLINK_REFRESH_PROFILES,
@@ -437,6 +438,7 @@ export function BacklinksWorkspace() {
   // Remount key for the receipt card so each completed refresh re-opens it.
   const [receiptRun, setReceiptRun] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const handledReviewRequest = useRef<string | null>(null);
   const savedSchedule = parseSiteIntegrations(site.integrations).dataForSeo;
   const [schedule, setSchedule] = useState(savedSchedule);
   const [savingSchedule, setSavingSchedule] = useState(false);
@@ -498,6 +500,31 @@ export function BacklinksWorkspace() {
       );
     });
   };
+
+  /** A review-backlog assist is a named route intent, so it works from the
+   * page strip and the ambient dock. Consume it once, remove it from the URL,
+   * then run the exact same bounded controller as the toolbar button. */
+  useEffect(() => {
+    const request = searchParams.get("reviewRequest");
+    const requestedBatch = Number(searchParams.get("reviewBatch"));
+    if (!request || handledReviewRequest.current === request) return;
+    if (![1, 5, 10, 25].includes(requestedBatch)) return;
+    handledReviewRequest.current = request;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("reviewRequest");
+    params.delete("reviewBatch");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
+    if (analysisDisabled) {
+      toast.error(
+        "Reviewing pages is unavailable right now. The backlog was not changed.",
+      );
+      return;
+    }
+    void analyzeNext(requestedBatch);
+  }, [searchParams, pathname, router, analysisDisabled, analyzeNext]);
 
   /**
    * THE one write path for the refresh schedule — the user's Save click and
@@ -1173,6 +1200,20 @@ export function BacklinksWorkspace() {
             </Button>
           </div>
         </div>
+
+        {data ? (
+          <BacklinksAssistStrip
+            siteId={site.id}
+            siteLabel={site.domain}
+            sitePath={sitePath}
+            brandNames={[site.name]}
+            data={data}
+            trend={trend.data ?? []}
+            rows={backlinks.data?.rows ?? []}
+            reviewEnabled={!analysisDisabled}
+            ready={!trend.isLoading && !backlinks.isLoading}
+          />
+        ) : null}
 
         {/* "Review next N" runs on every tab — its aggregate progress belongs
             under the toolbar, not only inside an opened record. */}
