@@ -115,5 +115,15 @@ export function resolveStageEntry(
   }
 
   const resolved = path.replace("[siteId]", subject.siteId);
-  return resolved.includes("[") ? null : resolved;
+  if (!resolved.includes("[")) return resolved;
+
+  // The template needs an id we do not have yet — the research stage's
+  // `[topicId]` is the case, and it is the FIRST stage every loop opens on, so
+  // "no link" would leave the user with nowhere to go on the one step they are
+  // actually being asked to do. Drop the unresolvable segments and land on the
+  // list that owns them (`/research/topics/[topicId]` → `/research/topics`),
+  // where the user creates the record the template wanted. Never a link
+  // containing a literal `[bracket]`.
+  const trimmed = resolved.slice(0, resolved.indexOf("[")).replace(/\/+$/, "");
+  return trimmed.length > 1 && !trimmed.includes("[") ? trimmed : null;
 }
