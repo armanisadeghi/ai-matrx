@@ -141,7 +141,13 @@ export async function promoteTranscriptToStudio(
     .schema("transcripts")
     .from("studio_sessions")
     .insert({
-      user_id: userId,
+      // Canonical owner column: `studio_sessions` has `created_by`, never
+      // `user_id` — inserting the latter is a PostgREST 42703. The org is
+      // left to `trg_inherit_org`, which reads it off the parent transcript
+      // (`transcript_id` is always set on this path and
+      // `transcripts.transcripts.organization_id` is NOT NULL), so unlike
+      // `createSession` this insert never has to resolve one itself.
+      created_by: userId,
       transcript_id: transcript.id,
       title: transcript.title || NEW_SESSION_DEFAULT_TITLE,
       module_id: DEFAULT_MODULE_ID,
