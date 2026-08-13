@@ -163,8 +163,8 @@ export interface OrgResourceEntry {
   /**
    * Public-schema table used for the org-owned count
    * (`where organization_id = orgId`) and the contribute item query
-   * (`where user_id = me`). Null = no directly-queryable public table (e.g. it
-   * lives in another schema); only shared grants are counted.
+   * (owner column resolved from the canonical entity registry). Null = no
+   * directly-queryable public table; only shared grants are counted.
    */
   table: string | null;
   /**
@@ -492,7 +492,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     description: "Quizzes built from your knowledge.",
     table: "quiz_sessions",
     hasOrgColumn: true,
-    shareKey: "quiz_sessions",
+    shareKey: "quiz_session",
     titleColumn: "title",
     orgRoute: null,
     scopeable: true,

@@ -20,6 +20,7 @@ import type { ResourceType } from "@/utils/permissions/registry";
 import { listOrgSharedIdsForTable } from "@/utils/permissions/orgModeration";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { OrgResourceEntry } from "../resource-catalogue";
 
 export interface MyItem {
@@ -53,8 +54,9 @@ export function useOrgContributableItems(
   const [sharingId, setSharingId] = React.useState<string | null>(null);
   const [reloadTick, setReloadTick] = React.useState(0);
 
+  const entityInfo = entry?.token ? tryGetEntityInfo(entry.token) : null;
   const contributable = Boolean(
-    entry && entry.shareKey && entry.table && entry.titleColumn,
+    entry?.shareKey && entityInfo?.table && entityInfo.titleColumn,
   );
 
   React.useEffect(() => {
@@ -63,16 +65,16 @@ export function useOrgContributableItems(
       !entry ||
       !userId ||
       !contributable ||
-      !entry.table ||
-      !entry.titleColumn ||
+      !entityInfo ||
+      !entityInfo.titleColumn ||
       !entry.shareKey
     ) {
       setItems([]);
       setAlreadyShared(new Set());
       return undefined;
     }
-    const table = entry.table;
-    const titleCol = entry.titleColumn;
+    const table = entityInfo.table;
+    const titleCol = entityInfo.titleColumn;
     const shareKey = entry.shareKey;
     let cancelled = false;
     (async () => {
@@ -80,13 +82,15 @@ export function useOrgContributableItems(
       setItems([]);
       setJustShared(new Set());
       try {
-        const db = (
-          entry.schemaName ? supabase.schema(entry.schemaName as "files") : supabase
-        ) as typeof supabase;
+        // entityInfo is generated from platform.entity_types; this assertion
+        // joins that runtime registry to the schemas in generated DB types.
+        const db = supabase.schema(
+          entityInfo.schema as Parameters<typeof supabase.schema>[0],
+        );
         let q = db
           .from(table as never)
           .select(`id, ${titleCol}`)
-          .eq("user_id", userId)
+          .eq(entityInfo.ownerColumn as never, userId)
           .limit(200);
         if (entry.archivedColumn) {
           q = q.eq(entry.archivedColumn as never, false);
@@ -121,7 +125,8 @@ export function useOrgContributableItems(
     return () => {
       cancelled = true;
     };
-    // entry?.key is the stable identity of the catalogue entry.
+    // entry?.key is the stable identity of the catalogue entry; entityInfo is
+    // deterministically derived from that entry's generated registry token.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId, entry?.key, userId, contributable, reloadTick]);
 
@@ -130,8 +135,7 @@ export function useOrgContributableItems(
     setSharingId(item.id);
     try {
       const result = await shareWithOrg({
-        // shareKey is the canonical table name; the share RPC resolver accepts
-        // canonical names directly (catalogue keys on the broader DB registry).
+        // shareKey is the canonical entity/shareable-resource token.
         resourceType: entry.shareKey as ResourceType,
         resourceId: item.id,
         organizationId: orgId,
