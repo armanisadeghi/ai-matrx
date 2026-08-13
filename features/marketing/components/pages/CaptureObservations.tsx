@@ -36,6 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
@@ -232,10 +233,19 @@ function CaptureObservationsDialog({
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90dvh] flex-col gap-3 overflow-hidden sm:max-w-6xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm capitalize">
-            <MessageSquareText className="h-4 w-4" />
-            {kind} capture observations
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-2 pr-8">
+            <DialogTitle className="flex items-center gap-2 text-sm capitalize">
+              <MessageSquareText className="h-4 w-4" />
+              {kind} capture observations
+            </DialogTitle>
+            <ShareButton
+              resourceType="web_screenshot"
+              resourceId={screenshot.id}
+              resourceName={captureLabel}
+              size="sm"
+              showStatus={false}
+            />
+          </div>
           <DialogDescription className="truncate text-xs">
             {page.url} · as of {formatDate(screenshot.captured_at)}
           </DialogDescription>

@@ -17,6 +17,7 @@ import {
 } from "@/features/marketing/components/shared/MarketingUi";
 import { SnapshotArtifacts } from "@/features/marketing/components/pages/SnapshotArtifacts";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
 
 export function SnapshotDetail({
   pageId,
@@ -94,6 +95,13 @@ export function SnapshotDetail({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
+            <ShareButton
+              resourceType="web_snapshot"
+              resourceId={row.id}
+              resourceName={row.final_url || `Snapshot ${row.id.slice(0, 8)}`}
+              size="sm"
+              showStatus={false}
+            />
             <CopyButtons size="icon" {...snapshotCopy} />
             <Button asChild variant="outline" size="sm" className="h-8">
               <Link
