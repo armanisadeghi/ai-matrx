@@ -1,0 +1,4 @@
+interface:
+  display_name: "Real Loading States"
+  short_description: "Repair bare loading text safely"
+  default_prompt: "Use $real-loading-states to detect, repair, and certify bare loading states."
