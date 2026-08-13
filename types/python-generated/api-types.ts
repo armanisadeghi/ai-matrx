@@ -5577,6 +5577,245 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/growth-loop/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start
+         * @description Start (or return) the loop for a site. Idempotent per live loop.
+         */
+        post: operations["start_growth_loop_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/runs/{loop_run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * State
+         * @description THE observable: which stage, what is blocking it, how to continue.
+         */
+        get: operations["state_growth_loop_runs__loop_run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/sites/{site_id}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Site Runs */
+        get: operations["site_runs_growth_loop_sites__site_id__runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/runs/{loop_run_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** History */
+        get: operations["history_growth_loop_runs__loop_run_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/runs/{loop_run_id}/stages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open Stage
+         * @description Open a stage attempt; the pipe policy decides who carries it.
+         */
+        post: operations["open_stage_growth_loop_runs__loop_run_id__stages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/stages/{stage_run_id}/ref": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Point At Stage Run
+         * @description Point the attempt at the stage's OWN run row. Never copy its state here.
+         */
+        put: operations["point_at_stage_run_growth_loop_stages__stage_run_id__ref_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/stages/block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Block */
+        post: operations["block_growth_loop_stages_block_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/stages/{stage_run_id}/unblock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unblock */
+        post: operations["unblock_growth_loop_stages__stage_run_id__unblock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/stages/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete
+         * @description Resolve a stage and move on. `next_stage` is how the loop cycles.
+         */
+        post: operations["complete_growth_loop_stages_complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/stages/fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fail */
+        post: operations["fail_growth_loop_stages_fail_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/stages/{stage_run_id}/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Skip */
+        post: operations["skip_growth_loop_stages__stage_run_id__skip_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/runs/{loop_run_id}/control": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Control */
+        post: operations["control_growth_loop_runs__loop_run_id__control_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/growth-loop/runs/{loop_run_id}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reconcile
+         * @description Re-derive the loop's coarse status from its stage attempts (boot sweep).
+         */
+        post: operations["reconcile_growth_loop_runs__loop_run_id__reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/public/structured-data/validate": {
         parameters: {
             query?: never;
@@ -20817,6 +21056,54 @@ export interface components {
             /** Resource Ref */
             resource_ref: string;
         };
+        /** BlockStageRequest */
+        BlockStageRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Stage Run Id */
+            stage_run_id: string;
+            blocker: components["schemas"]["Blocker"];
+        };
+        /**
+         * Blocker
+         * @description What is blocking a stage, and how to continue.
+         */
+        Blocker: {
+            kind: components["schemas"]["BlockerKind"];
+            /** Detail */
+            detail: string;
+            /** Since */
+            since?: string | null;
+            /** Assist Id */
+            assist_id?: string | null;
+            /** Resume Hint */
+            resume_hint?: string | null;
+            /** Escalate At */
+            escalate_at?: string | null;
+            escalate_to_pipe?: components["schemas"]["Pipe"] | null;
+        };
+        /**
+         * BlockerKind
+         * @description Why a stage attempt is sitting still.
+         *
+         *     This is the answer to "what is blocking it" — the question the loop object
+         *     exists to make answerable. Mirrors the ``blocker_kind`` CHECK constraint.
+         * @enum {string}
+         */
+        BlockerKind: "human_decision" | "approval" | "rate_limit" | "quota" | "external_data" | "schedule" | "upstream_failure" | "dependency" | "manual_hold";
         /** Body_add_attachment_vault_items__item_id__attachments_post */
         Body_add_attachment_vault_items__item_id__attachments_post: {
             /** File */
@@ -24435,6 +24722,31 @@ export interface components {
              */
             variant_count?: number;
         };
+        /** CompleteStageRequest */
+        CompleteStageRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Stage Run Id */
+            stage_run_id: string;
+            /** Outcome */
+            outcome?: {
+                [key: string]: unknown;
+            } | null;
+            next_stage?: components["schemas"]["LoopStage"] | null;
+        };
         /** ComponentRead */
         ComponentRead: {
             /** Id */
@@ -27883,6 +28195,27 @@ export interface components {
             /** Display Name */
             display_name?: string | null;
         };
+        /** EnterStageRequest */
+        EnterStageRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            stage: components["schemas"]["LoopStage"];
+            pipe?: components["schemas"]["Pipe"] | null;
+            ref?: components["schemas"]["StageRef"] | null;
+        };
         /** EntitiesPage */
         EntitiesPage: {
             /** Items */
@@ -28763,6 +29096,30 @@ export interface components {
             text: string;
             /** Pages */
             pages: components["schemas"]["ExtractedTextPageOut"][];
+        };
+        /** FailStageRequest */
+        FailStageRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Stage Run Id */
+            stage_run_id: string;
+            /** Error */
+            error: {
+                [key: string]: unknown;
+            };
         };
         /** FailureAnalyticsResponse */
         FailureAnalyticsResponse: {
@@ -33134,6 +33491,134 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** LoopControlRequest */
+        LoopControlRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "pause" | "resume" | "complete" | "cancel";
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * LoopEventType
+         * @description The loop's own narrative vocabulary — NOT a mirror of workflow events.
+         * @enum {string}
+         */
+        LoopEventType: "loop_started" | "stage_entered" | "stage_blocked" | "stage_unblocked" | "stage_escalated" | "stage_completed" | "stage_failed" | "stage_skipped" | "cycle_advanced" | "loop_paused" | "loop_resumed" | "loop_completed" | "loop_cancelled" | "wf_run_attached" | "wf_run_detached";
+        /** LoopEventView */
+        LoopEventView: {
+            /** Id */
+            id: string;
+            /** Seq */
+            seq: number;
+            event_type: components["schemas"]["LoopEventType"];
+            /** Cycle */
+            cycle: number | null;
+            stage: components["schemas"]["LoopStage"] | null;
+            /** Stage Run Id */
+            stage_run_id: string | null;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** LoopHistoryView */
+        LoopHistoryView: {
+            /** Loop Run Id */
+            loop_run_id: string;
+            /** Events */
+            events: components["schemas"]["LoopEventView"][];
+            /** Next After Seq */
+            next_after_seq: number;
+        };
+        /**
+         * LoopStage
+         * @description The twelve stages, in canonical forward order.
+         *
+         *     Mirrors the ``stage`` CHECK constraint on ``growth.loop_stage_run`` and the
+         *     stage ids in ``ai-matrx/features/growth-loop/map/loop-map.ts``. Those three
+         *     lists are ONE list — changing it is a coordinated change across all three.
+         * @enum {string}
+         */
+        LoopStage: "research" | "plan" | "brief" | "realize" | "fill" | "publish" | "serve" | "crawl" | "measure" | "analyze" | "suggest" | "writeback";
+        /**
+         * LoopStateView
+         * @description THE observable: one loop, its stage, its blocker, how to continue.
+         *
+         *     Reads ``growth.v_loop_state`` — the blocker is READ from the open stage run,
+         *     not duplicated onto the loop row.
+         */
+        LoopStateView: {
+            /** Loop Run Id */
+            loop_run_id: string;
+            /** Site Id */
+            site_id: string;
+            /** Site Name */
+            site_name: string | null;
+            /** Site Domain */
+            site_domain: string | null;
+            /** Label */
+            label: string | null;
+            status: components["schemas"]["LoopStatus"];
+            current_stage: components["schemas"]["LoopStage"];
+            /** Stage Position */
+            stage_position: number;
+            /** Stage Count */
+            stage_count: number;
+            /** Cycle */
+            cycle: number;
+            /** Is Blocked */
+            is_blocked: boolean;
+            blocker: components["schemas"]["Blocker"] | null;
+            open_stage: components["schemas"]["StageRunView"] | null;
+            /** Wf Run Id */
+            wf_run_id: string | null;
+            /** Wf Run Status */
+            wf_run_status: string | null;
+            /** Stages Completed This Cycle */
+            stages_completed_this_cycle: number;
+            /** Event Seq */
+            event_seq: number;
+            /** Error */
+            error: {
+                [key: string]: unknown;
+            } | null;
+            pipe_policy: components["schemas"]["PipePolicy-Output"];
+            /** Started At */
+            started_at: string | null;
+            /** Ended At */
+            ended_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /**
+         * LoopStatus
+         * @description The LOOP's lifecycle — deliberately coarser than any stage's status.
+         * @enum {string}
+         */
+        LoopStatus: "active" | "blocked" | "paused" | "completed" | "cancelled";
         /**
          * ManifestClientToolEntry
          * @description One declared CLIENT TOOL (``ui.ui_surface_client_tool``).
@@ -36316,6 +36801,53 @@ export interface components {
             /** Public Read */
             public_read?: boolean | null;
         };
+        /**
+         * Pipe
+         * @description The three pipes. A stage attempt is carried by exactly one of them.
+         * @enum {string}
+         */
+        Pipe: "code" | "human" | "ai";
+        /**
+         * PipePolicy
+         * @description Per-stage three-pipes configuration for one loop run.
+         *
+         *     An all-human loop and an all-AI loop differ by ONE value here — which is
+         *     exactly what makes the vision's "just a human, or just an AI, end to end"
+         *     testable rather than aspirational.
+         */
+        "PipePolicy-Input": {
+            default?: components["schemas"]["StagePipeConfig"];
+            /** Stages */
+            stages?: {
+                [key: string]: components["schemas"]["StagePipeConfig"];
+            };
+        };
+        /**
+         * PipePolicy
+         * @description Per-stage three-pipes configuration for one loop run.
+         *
+         *     An all-human loop and an all-AI loop differ by ONE value here — which is
+         *     exactly what makes the vision's "just a human, or just an AI, end to end"
+         *     testable rather than aspirational.
+         */
+        "PipePolicy-Output": {
+            default?: components["schemas"]["StagePipeConfig"];
+            /** Stages */
+            stages?: {
+                [key: string]: components["schemas"]["StagePipeConfig"];
+            };
+        };
+        /**
+         * PipeRequest
+         * @description What a loop's policy ASKS for at a stage.
+         *
+         *     ``HUMAN_THEN_AI`` is the vision's decision-point primitive: ask the human,
+         *     and if they do not answer within ``escalate_after_seconds``, ask the AI. This
+         *     module records the request and the escalation deadline; the ESCALATION SWEEP
+         *     itself is G-HUMAN-TIMEOUT and is deliberately not implemented here.
+         * @enum {string}
+         */
+        PipeRequest: "code" | "human" | "ai" | "human_then_ai" | "ai_then_human" | "any";
         /** PipelineProgress */
         PipelineProgress: {
             /**
@@ -43028,6 +43560,84 @@ export interface components {
             /** Sheets */
             sheets?: components["schemas"]["SheetSpec"][];
         };
+        /**
+         * StagePipeConfig
+         * @description How one stage should be carried.
+         */
+        StagePipeConfig: {
+            /** @default ai */
+            pipe?: components["schemas"]["PipeRequest"];
+            /**
+             * Escalate After Seconds
+             * @description For human_then_ai / ai_then_human: how long to wait before handing the decision to the other pipe. None = wait indefinitely.
+             */
+            escalate_after_seconds?: number | null;
+            /** Agent Id */
+            agent_id?: string | null;
+            /**
+             * Skippable
+             * @default true
+             */
+            skippable?: boolean;
+        };
+        /**
+         * StageRef
+         * @description A pointer to a stage's OWN run row. Never a copy of its state.
+         */
+        StageRef: {
+            kind: components["schemas"]["StageRefKind"];
+            /** Id */
+            id: string;
+        };
+        /**
+         * StageRefKind
+         * @description Registered per-stage run stores a stage attempt may POINT AT.
+         *
+         *     Mirrors ``growth.stage_ref_kind`` (the FK target). A stage attempt stores a
+         *     pointer and NOTHING ELSE about the stage's run — the referenced row stays the
+         *     detail and the authority.
+         * @enum {string}
+         */
+        StageRefKind: "workflow_run" | "runtime_execution" | "sch_run" | "chat_request" | "research_topic" | "cms_fill_job" | "crawl_session" | "analysis_result" | "finding" | "assist" | "agent_usage";
+        /**
+         * StageRunStatus
+         * @description Processing outcome of one stage attempt. One meaning per status column.
+         * @enum {string}
+         */
+        StageRunStatus: "pending" | "running" | "waiting" | "completed" | "failed" | "skipped" | "cancelled";
+        /**
+         * StageRunView
+         * @description One stage attempt, as read.
+         */
+        StageRunView: {
+            /** Id */
+            id: string;
+            /** Cycle */
+            cycle: number;
+            stage: components["schemas"]["LoopStage"];
+            /** Attempt */
+            attempt: number;
+            status: components["schemas"]["StageRunStatus"];
+            pipe_requested: components["schemas"]["PipeRequest"];
+            pipe: components["schemas"]["Pipe"] | null;
+            blocker: components["schemas"]["Blocker"] | null;
+            ref: components["schemas"]["StageRef"] | null;
+            /**
+             * Outcome
+             * @description Bounded summary (counts, ids touched). Never stage state.
+             */
+            outcome?: {
+                [key: string]: unknown;
+            } | null;
+            /** Error */
+            error?: {
+                [key: string]: unknown;
+            } | null;
+            /** Started At */
+            started_at: string | null;
+            /** Ended At */
+            ended_at: string | null;
+        };
         /** StageStatus */
         StageStatus: {
             /** Stage */
@@ -43075,6 +43685,32 @@ export interface components {
             cld_file_id: string | null;
             /** Stages */
             stages: components["schemas"]["StageStatus"][];
+        };
+        /** StartLoopRequest */
+        StartLoopRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Site Id */
+            site_id: string;
+            /** Label */
+            label?: string | null;
+            /** @description Defaults to human-with-AI-fallback — the one-click posture. */
+            pipe_policy?: components["schemas"]["PipePolicy-Input"] | null;
+            /** @default research */
+            start_stage?: components["schemas"]["LoopStage"];
         };
         /**
          * StartStepRunResponse
@@ -58876,6 +59512,437 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CmsFillStatusResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_growth_loop_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartLoopRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopStateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    state_growth_loop_runs__loop_run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loop_run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopStateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    site_runs_growth_loop_sites__site_id__runs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopStateView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_growth_loop_runs__loop_run_id__history_get: {
+        parameters: {
+            query?: {
+                /** @description Delta cursor. Never cursor on time. */
+                after_seq?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                loop_run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopHistoryView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_stage_growth_loop_runs__loop_run_id__stages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loop_run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnterStageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StageRunView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    point_at_stage_run_growth_loop_stages__stage_run_id__ref_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage_run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StageRef"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StageRunView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    block_growth_loop_stages_block_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockStageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopStateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unblock_growth_loop_stages__stage_run_id__unblock_post: {
+        parameters: {
+            query?: {
+                reason?: string | null;
+            };
+            header?: never;
+            path: {
+                stage_run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopStateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_growth_loop_stages_complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteStageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopStateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fail_growth_loop_stages_fail_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FailStageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopStateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    skip_growth_loop_stages__stage_run_id__skip_post: {
+        parameters: {
+            query: {
+                reason: string;
+            };
+            header?: never;
+            path: {
+                stage_run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopStateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    control_growth_loop_runs__loop_run_id__control_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loop_run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoopControlRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopStateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_growth_loop_runs__loop_run_id__reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loop_run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopStateView"];
                 };
             };
             /** @description Validation Error */

@@ -14168,6 +14168,639 @@
         }
       }
     },
+    "/growth-loop/runs": {
+      "post": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Start",
+        "description": "Start (or return) the loop for a site. Idempotent per live loop.",
+        "operationId": "start_growth_loop_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartLoopRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopStateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/runs/{loop_run_id}": {
+      "get": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "State",
+        "description": "THE observable: which stage, what is blocking it, how to continue.",
+        "operationId": "state_growth_loop_runs__loop_run_id__get",
+        "parameters": [
+          {
+            "name": "loop_run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopStateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/sites/{site_id}/runs": {
+      "get": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Site Runs",
+        "operationId": "site_runs_growth_loop_sites__site_id__runs_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoopStateView"
+                  },
+                  "title": "Response Site Runs Growth Loop Sites  Site Id  Runs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/runs/{loop_run_id}/history": {
+      "get": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "History",
+        "operationId": "history_growth_loop_runs__loop_run_id__history_get",
+        "parameters": [
+          {
+            "name": "loop_run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Run Id"
+            }
+          },
+          {
+            "name": "after_seq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Delta cursor. Never cursor on time.",
+              "default": 0,
+              "title": "After Seq"
+            },
+            "description": "Delta cursor. Never cursor on time."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopHistoryView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/runs/{loop_run_id}/stages": {
+      "post": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Open Stage",
+        "description": "Open a stage attempt; the pipe policy decides who carries it.",
+        "operationId": "open_stage_growth_loop_runs__loop_run_id__stages_post",
+        "parameters": [
+          {
+            "name": "loop_run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnterStageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StageRunView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/stages/{stage_run_id}/ref": {
+      "put": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Point At Stage Run",
+        "description": "Point the attempt at the stage's OWN run row. Never copy its state here.",
+        "operationId": "point_at_stage_run_growth_loop_stages__stage_run_id__ref_put",
+        "parameters": [
+          {
+            "name": "stage_run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stage Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StageRef"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StageRunView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/stages/block": {
+      "post": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Block",
+        "operationId": "block_growth_loop_stages_block_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockStageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopStateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/stages/{stage_run_id}/unblock": {
+      "post": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Unblock",
+        "operationId": "unblock_growth_loop_stages__stage_run_id__unblock_post",
+        "parameters": [
+          {
+            "name": "stage_run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stage Run Id"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reason"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopStateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/stages/complete": {
+      "post": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Complete",
+        "description": "Resolve a stage and move on. `next_stage` is how the loop cycles.",
+        "operationId": "complete_growth_loop_stages_complete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteStageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopStateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/stages/fail": {
+      "post": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Fail",
+        "operationId": "fail_growth_loop_stages_fail_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FailStageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopStateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/stages/{stage_run_id}/skip": {
+      "post": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Skip",
+        "operationId": "skip_growth_loop_stages__stage_run_id__skip_post",
+        "parameters": [
+          {
+            "name": "stage_run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stage Run Id"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Reason"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopStateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/runs/{loop_run_id}/control": {
+      "post": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Control",
+        "operationId": "control_growth_loop_runs__loop_run_id__control_post",
+        "parameters": [
+          {
+            "name": "loop_run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoopControlRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopStateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/growth-loop/runs/{loop_run_id}/reconcile": {
+      "post": {
+        "tags": [
+          "Growth Loop"
+        ],
+        "summary": "Reconcile",
+        "description": "Re-derive the loop's coarse status from its stage attempts (boot sweep).",
+        "operationId": "reconcile_growth_loop_runs__loop_run_id__reconcile_post",
+        "parameters": [
+          {
+            "name": "loop_run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Loop Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoopStateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/public/structured-data/validate": {
       "post": {
         "tags": [
@@ -55782,6 +56415,151 @@
         ],
         "title": "BingSiteBindingRequest"
       },
+      "BlockStageRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "stage_run_id": {
+            "type": "string",
+            "title": "Stage Run Id"
+          },
+          "blocker": {
+            "$ref": "#/components/schemas/Blocker"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage_run_id",
+          "blocker"
+        ],
+        "title": "BlockStageRequest"
+      },
+      "Blocker": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/BlockerKind"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          },
+          "assist_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assist Id"
+          },
+          "resume_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Hint"
+          },
+          "escalate_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Escalate At"
+          },
+          "escalate_to_pipe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Pipe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "detail"
+        ],
+        "title": "Blocker",
+        "description": "What is blocking a stage, and how to continue."
+      },
+      "BlockerKind": {
+        "type": "string",
+        "enum": [
+          "human_decision",
+          "approval",
+          "rate_limit",
+          "quota",
+          "external_data",
+          "schedule",
+          "upstream_failure",
+          "dependency",
+          "manual_hold"
+        ],
+        "title": "BlockerKind",
+        "description": "Why a stage attempt is sitting still.\n\nThis is the answer to \"what is blocking it\" — the question the loop object\nexists to make answerable. Mirrors the ``blocker_kind`` CHECK constraint."
+      },
       "Body_add_attachment_vault_items__item_id__attachments_post": {
         "properties": {
           "file": {
@@ -65953,6 +66731,78 @@
         "title": "CompileDeskRequest",
         "description": "Compile one Expertise Pack into a working desk (agents + workflow).\n\nThe ONE button a non-technical expert presses on /expertise/[id]. The\ncompiler reuses the generic Pack Auditor for every section, authors the\ndesk-specific agents (persona from the pack's source.author), and creates\na workflow stamped with the pack id + version it was compiled from."
       },
+      "CompleteStageRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "stage_run_id": {
+            "type": "string",
+            "title": "Stage Run Id"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "next_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LoopStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage_run_id"
+        ],
+        "title": "CompleteStageRequest"
+      },
       "ComponentRead": {
         "properties": {
           "id": {
@@ -74912,6 +75762,75 @@
         "type": "object",
         "title": "EnrollmentUpdateRequest"
       },
+      "EnterStageRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "stage": {
+            "$ref": "#/components/schemas/LoopStage"
+          },
+          "pipe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Pipe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ref": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StageRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage"
+        ],
+        "title": "EnterStageRequest"
+      },
       "EntitiesPage": {
         "properties": {
           "items": {
@@ -77333,6 +78252,62 @@
           "pages"
         ],
         "title": "ExtractedTextResponse"
+      },
+      "FailStageRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "stage_run_id": {
+            "type": "string",
+            "title": "Stage Run Id"
+          },
+          "error": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage_run_id",
+          "error"
+        ],
+        "title": "FailStageRequest"
       },
       "FailureAnalyticsResponse": {
         "properties": {
@@ -89071,6 +90046,419 @@
         ],
         "title": "LogPattern"
       },
+      "LoopControlRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "pause",
+              "resume",
+              "complete",
+              "cancel"
+            ],
+            "title": "Action"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "title": "LoopControlRequest"
+      },
+      "LoopEventType": {
+        "type": "string",
+        "enum": [
+          "loop_started",
+          "stage_entered",
+          "stage_blocked",
+          "stage_unblocked",
+          "stage_escalated",
+          "stage_completed",
+          "stage_failed",
+          "stage_skipped",
+          "cycle_advanced",
+          "loop_paused",
+          "loop_resumed",
+          "loop_completed",
+          "loop_cancelled",
+          "wf_run_attached",
+          "wf_run_detached"
+        ],
+        "title": "LoopEventType",
+        "description": "The loop's own narrative vocabulary — NOT a mirror of workflow events."
+      },
+      "LoopEventView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/LoopEventType"
+          },
+          "cycle": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cycle"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LoopStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stage_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Run Id"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "seq",
+          "event_type",
+          "cycle",
+          "stage",
+          "stage_run_id",
+          "payload",
+          "created_at"
+        ],
+        "title": "LoopEventView"
+      },
+      "LoopHistoryView": {
+        "properties": {
+          "loop_run_id": {
+            "type": "string",
+            "title": "Loop Run Id"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/LoopEventView"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "next_after_seq": {
+            "type": "integer",
+            "title": "Next After Seq"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "loop_run_id",
+          "events",
+          "next_after_seq"
+        ],
+        "title": "LoopHistoryView"
+      },
+      "LoopStage": {
+        "type": "string",
+        "enum": [
+          "research",
+          "plan",
+          "brief",
+          "realize",
+          "fill",
+          "publish",
+          "serve",
+          "crawl",
+          "measure",
+          "analyze",
+          "suggest",
+          "writeback"
+        ],
+        "title": "LoopStage",
+        "description": "The twelve stages, in canonical forward order.\n\nMirrors the ``stage`` CHECK constraint on ``growth.loop_stage_run`` and the\nstage ids in ``ai-matrx/features/growth-loop/map/loop-map.ts``. Those three\nlists are ONE list — changing it is a coordinated change across all three."
+      },
+      "LoopStateView": {
+        "properties": {
+          "loop_run_id": {
+            "type": "string",
+            "title": "Loop Run Id"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "site_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Name"
+          },
+          "site_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Domain"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LoopStatus"
+          },
+          "current_stage": {
+            "$ref": "#/components/schemas/LoopStage"
+          },
+          "stage_position": {
+            "type": "integer",
+            "title": "Stage Position"
+          },
+          "stage_count": {
+            "type": "integer",
+            "title": "Stage Count"
+          },
+          "cycle": {
+            "type": "integer",
+            "title": "Cycle"
+          },
+          "is_blocked": {
+            "type": "boolean",
+            "title": "Is Blocked"
+          },
+          "blocker": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Blocker"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "open_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StageRunView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wf_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wf Run Id"
+          },
+          "wf_run_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wf Run Status"
+          },
+          "stages_completed_this_cycle": {
+            "type": "integer",
+            "title": "Stages Completed This Cycle"
+          },
+          "event_seq": {
+            "type": "integer",
+            "title": "Event Seq"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "pipe_policy": {
+            "$ref": "#/components/schemas/PipePolicy-Output"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "loop_run_id",
+          "site_id",
+          "site_name",
+          "site_domain",
+          "label",
+          "status",
+          "current_stage",
+          "stage_position",
+          "stage_count",
+          "cycle",
+          "is_blocked",
+          "blocker",
+          "open_stage",
+          "wf_run_id",
+          "wf_run_status",
+          "stages_completed_this_cycle",
+          "event_seq",
+          "error",
+          "pipe_policy",
+          "started_at",
+          "ended_at",
+          "updated_at"
+        ],
+        "title": "LoopStateView",
+        "description": "THE observable: one loop, its stage, its blocker, how to continue.\n\nReads ``growth.v_loop_state`` — the blocker is READ from the open stage run,\nnot duplicated onto the loop row."
+      },
+      "LoopStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "blocked",
+          "paused",
+          "completed",
+          "cancelled"
+        ],
+        "title": "LoopStatus",
+        "description": "The LOOP's lifecycle — deliberately coarser than any stage's status."
+      },
       "ManifestClientToolEntry": {
         "properties": {
           "name": {
@@ -97031,6 +98419,71 @@
         },
         "type": "object",
         "title": "PicklistUpdate"
+      },
+      "Pipe": {
+        "type": "string",
+        "enum": [
+          "code",
+          "human",
+          "ai"
+        ],
+        "title": "Pipe",
+        "description": "The three pipes. A stage attempt is carried by exactly one of them."
+      },
+      "PipePolicy-Input": {
+        "properties": {
+          "default": {
+            "$ref": "#/components/schemas/StagePipeConfig"
+          },
+          "stages": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/StagePipeConfig"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/LoopStage"
+            },
+            "type": "object",
+            "title": "Stages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PipePolicy",
+        "description": "Per-stage three-pipes configuration for one loop run.\n\nAn all-human loop and an all-AI loop differ by ONE value here — which is\nexactly what makes the vision's \"just a human, or just an AI, end to end\"\ntestable rather than aspirational."
+      },
+      "PipePolicy-Output": {
+        "properties": {
+          "default": {
+            "$ref": "#/components/schemas/StagePipeConfig"
+          },
+          "stages": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/StagePipeConfig"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/LoopStage"
+            },
+            "type": "object",
+            "title": "Stages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PipePolicy",
+        "description": "Per-stage three-pipes configuration for one loop run.\n\nAn all-human loop and an all-AI loop differ by ONE value here — which is\nexactly what makes the vision's \"just a human, or just an AI, end to end\"\ntestable rather than aspirational."
+      },
+      "PipeRequest": {
+        "type": "string",
+        "enum": [
+          "code",
+          "human",
+          "ai",
+          "human_then_ai",
+          "ai_then_human",
+          "any"
+        ],
+        "title": "PipeRequest",
+        "description": "What a loop's policy ASKS for at a stage.\n\n``HUMAN_THEN_AI`` is the vision's decision-point primitive: ask the human,\nand if they do not answer within ``escalate_after_seconds``, ask the AI. This\nmodule records the request and the escalation deadline; the ESCALATION SWEEP\nitself is G-HUMAN-TIMEOUT and is deliberately not implemented here."
       },
       "PipelineProgress": {
         "properties": {
@@ -113843,6 +115296,219 @@
         "title": "SpreadsheetSpec",
         "description": "Canonical AI-authorable shape for an Excel workbook (.xlsx)."
       },
+      "StagePipeConfig": {
+        "properties": {
+          "pipe": {
+            "$ref": "#/components/schemas/PipeRequest",
+            "default": "ai"
+          },
+          "escalate_after_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Escalate After Seconds",
+            "description": "For human_then_ai / ai_then_human: how long to wait before handing the decision to the other pipe. None = wait indefinitely."
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "skippable": {
+            "type": "boolean",
+            "title": "Skippable",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "StagePipeConfig",
+        "description": "How one stage should be carried."
+      },
+      "StageRef": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/StageRefKind"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "id"
+        ],
+        "title": "StageRef",
+        "description": "A pointer to a stage's OWN run row. Never a copy of its state."
+      },
+      "StageRefKind": {
+        "type": "string",
+        "enum": [
+          "workflow_run",
+          "runtime_execution",
+          "sch_run",
+          "chat_request",
+          "research_topic",
+          "cms_fill_job",
+          "crawl_session",
+          "analysis_result",
+          "finding",
+          "assist",
+          "agent_usage"
+        ],
+        "title": "StageRefKind",
+        "description": "Registered per-stage run stores a stage attempt may POINT AT.\n\nMirrors ``growth.stage_ref_kind`` (the FK target). A stage attempt stores a\npointer and NOTHING ELSE about the stage's run — the referenced row stays the\ndetail and the authority."
+      },
+      "StageRunStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "running",
+          "waiting",
+          "completed",
+          "failed",
+          "skipped",
+          "cancelled"
+        ],
+        "title": "StageRunStatus",
+        "description": "Processing outcome of one stage attempt. One meaning per status column."
+      },
+      "StageRunView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "cycle": {
+            "type": "integer",
+            "title": "Cycle"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/LoopStage"
+          },
+          "attempt": {
+            "type": "integer",
+            "title": "Attempt"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StageRunStatus"
+          },
+          "pipe_requested": {
+            "$ref": "#/components/schemas/PipeRequest"
+          },
+          "pipe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Pipe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "blocker": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Blocker"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ref": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StageRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome",
+            "description": "Bounded summary (counts, ids touched). Never stage state."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "cycle",
+          "stage",
+          "attempt",
+          "status",
+          "pipe_requested",
+          "pipe",
+          "blocker",
+          "ref",
+          "started_at",
+          "ended_at"
+        ],
+        "title": "StageRunView",
+        "description": "One stage attempt, as read."
+      },
       "StageStatus": {
         "properties": {
           "stage": {
@@ -113953,6 +115619,82 @@
           "stages"
         ],
         "title": "StagesStatusResponse"
+      },
+      "StartLoopRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "pipe_policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PipePolicy-Input"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Defaults to human-with-AI-fallback — the one-click posture."
+          },
+          "start_stage": {
+            "$ref": "#/components/schemas/LoopStage",
+            "default": "research"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id"
+        ],
+        "title": "StartLoopRequest"
       },
       "StartStepRunResponse": {
         "properties": {

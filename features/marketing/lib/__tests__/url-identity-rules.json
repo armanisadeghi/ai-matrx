@@ -1,0 +1,61 @@
+{
+  "_comment": "CROSS-REPO IDENTITY GUARD. Language-neutral encoding of the ONE URL/route identity rule set. matrx_scraper/utils/url.py AND ai-matrx's TS twin (features/marketing/lib/page-url.ts) BOTH test against this exact file — it is byte-identical in both repos. The CANONICAL copy is this one; ai-matrx's features/marketing/lib/__tests__/url-identity-rules.json is a verbatim sync of it, and each suite pins its SHA-256 so a one-sided edit reddens the OTHER repo. Changing it is a FOUR-file change: edit here, copy there, update _FIXTURE_SHA256 in test_url_identity_rules.py, update FIXTURE_SHA256 in page-url.test.ts.",
+  "_comment_why": "web.page is unique on (site_id, url_hash) and url_hash is sha256(normalize_url(url)). Any repo that mints a page row, or compares a CMS route to a measured page, must produce byte-identical output or the arbiter stops deduplicating and a page silently loses its measurement history. Before 2026-08-10 the TS twin drifted in three ways at once (it dropped default ports, percent-normalized paths, and discarded the ';params' component) and four different route comparers existed, one of which lower-cased the path.",
+  "_comment_deliberate_quirks": "normalize_url deliberately does NOT remove default ports, strip tracking params, order query params, or normalize percent-encoding. Each of those would CHANGE 12.9M stored hashes, so completing the Identity Contract spec is a migration-coupled decision, never a silent edit. The cases below pin the quirks ON PURPOSE — do not 'fix' them here.",
+
+  "normalize_url_cases": [
+    { "name": "scheme_and_host_lowercased_path_preserved", "input": "https://Example.COM/About/", "expect": "https://example.com/About" },
+    { "name": "empty_path_becomes_root", "input": "https://example.com", "expect": "https://example.com/" },
+    { "name": "root_stays_root", "input": "https://example.com/", "expect": "https://example.com/" },
+    { "name": "trailing_slash_stripped", "input": "https://example.com/a/", "expect": "https://example.com/a" },
+    { "name": "fragment_stripped", "input": "https://example.com/a?b=2&a=1#frag", "expect": "https://example.com/a?b=2&a=1" },
+    { "name": "query_order_preserved_verbatim", "input": "https://example.com/a?z=1&a=2", "expect": "https://example.com/a?z=1&a=2" },
+    { "name": "empty_query_is_dropped", "input": "https://example.com/a/?", "expect": "https://example.com/a" },
+    { "name": "params_component_preserved", "input": "https://example.com/a;p?q=1", "expect": "https://example.com/a;p?q=1" },
+    { "name": "http_default_port_is_KEPT", "input": "http://example.com:80/a", "expect": "http://example.com:80/a" },
+    { "name": "https_default_port_is_KEPT", "input": "https://example.com:443/a", "expect": "https://example.com:443/a" },
+    { "name": "nondefault_port_kept", "input": "https://example.com:8443/a", "expect": "https://example.com:8443/a" },
+    { "name": "percent_encoding_untouched", "input": "https://example.com/a%20b", "expect": "https://example.com/a%20b" },
+    { "name": "raw_space_untouched", "input": "https://example.com/a b", "expect": "https://example.com/a b" },
+    { "name": "userinfo_preserved_lowercased_with_host", "input": "https://User:PW@Example.com/a", "expect": "https://user:pw@example.com/a" },
+    { "name": "scheme_relative_defaults_to_https", "input": "//example.com/a", "expect": "https://example.com/a" },
+    { "name": "http_stays_http", "input": "http://example.com/a", "expect": "http://example.com/a" },
+    { "name": "empty_segments_preserved_in_identity", "input": "https://example.com//a//b/", "expect": "https://example.com//a//b" },
+    { "name": "www_preserved", "input": "HTTPS://WWW.Example.com/Path/To/", "expect": "https://www.example.com/Path/To" },
+    { "name": "surrounding_whitespace_trimmed", "input": "  https://example.com/a  ", "expect": "https://example.com/a" },
+    { "name": "unicode_path_untouched", "input": "https://example.com/café/", "expect": "https://example.com/café" }
+  ],
+
+  "url_hash_cases": [
+    { "name": "root", "input": "https://example.com/", "expect": "0f115db062b7c0dd030b16878c99dea5c354b49dc37b38eb8846179c7783e9d7" },
+    { "name": "about", "input": "https://example.com/about", "expect": "746af0ced5836908db7e0ad21c3775e1da5db2552cdebe8054f718f600b24eee" },
+    { "name": "about_trailing_slash_hashes_the_same", "input": "https://example.com/about/", "expect": "746af0ced5836908db7e0ad21c3775e1da5db2552cdebe8054f718f600b24eee" },
+    { "name": "host_case_does_not_change_the_hash", "input": "HTTPS://EXAMPLE.com/about", "expect": "746af0ced5836908db7e0ad21c3775e1da5db2552cdebe8054f718f600b24eee" }
+  ],
+
+  "page_route_key_cases": [
+    { "name": "bare_path", "input": "/about", "expect": "/about" },
+    { "name": "bare_path_trailing_slash", "input": "/about/", "expect": "/about" },
+    { "name": "bare_path_no_leading_slash", "input": "about", "expect": "/about" },
+    { "name": "empty_is_root", "input": "", "expect": "/" },
+    { "name": "root", "input": "/", "expect": "/" },
+    { "name": "double_slash_is_root", "input": "//", "expect": "/" },
+    { "name": "case_is_PRESERVED", "input": "/About/Us", "expect": "/About/Us" },
+    { "name": "empty_segments_collapsed", "input": "/a//b/", "expect": "/a/b" },
+    { "name": "deep_route_no_ceiling", "input": "/a/b/c/d/e/f/g", "expect": "/a/b/c/d/e/f/g" },
+    { "name": "full_url_reduced_to_path", "input": "https://x.com/a/b/?q=1#f", "expect": "/a/b" },
+    { "name": "full_url_with_port", "input": "https://x.com:8443/a/b", "expect": "/a/b" },
+    { "name": "query_dropped_from_bare_path", "input": "/a/b?x=1", "expect": "/a/b" },
+    { "name": "surrounding_whitespace_trimmed", "input": "  /a/b  ", "expect": "/a/b" },
+    { "name": "site_root_url_is_root_route", "input": "https://example.com/", "expect": "/" },
+    { "name": "site_url_without_path_is_root_route", "input": "https://example.com", "expect": "/" },
+    { "name": "unicode_route", "input": "/menú/café/", "expect": "/menú/café" }
+  ],
+
+  "page_route_match_key_cases": [
+    { "name": "casefolds", "input": "/About/Us", "expect": "/about/us" },
+    { "name": "already_lower_unchanged", "input": "/about/us", "expect": "/about/us" },
+    { "name": "root", "input": "/", "expect": "/" },
+    { "name": "full_url", "input": "https://X.com/A/B/", "expect": "/a/b" }
+  ]
+}
