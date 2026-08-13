@@ -58,6 +58,18 @@ Arman's ruling, 2026-08-11. Two halves, both absolute:
 
 ## Change Log
 
+- 2026-08-13 — **`AgentRunHistoryWindow` becomes agent-readable.** The window
+  mounts `<SurfaceRuntimeProvider>` for `matrx-user/agent-run-history` and
+  emits 15 values through `agent-run-history-scope.ts` — the run roster with
+  its version grouping and load state, plus the selected run's row and
+  transcript. Nesting the provider inside the overlay is deliberate: providers
+  resolve by depth, so while the window is open its scope wins over the page
+  behind it. `RunHistorySidebar` owns the roster and publishes a scope FRAGMENT
+  into a ref the window holds rather than mounting a second provider, which
+  would out-depth the window's and replace its scope wholesale. Read-only by
+  design — see the manifest header for why the row menu's rename / favorite /
+  archive were declined as write targets.
+
 - 2026-08-12 — **Live-run viewers retain canonical request state.** Authority,
   Keyword Research, and every other floating run survive host/query remounts
   without going blank: owner cleanup defers while `LiveRunDisplay` is mounted,
