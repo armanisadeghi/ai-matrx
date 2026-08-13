@@ -643,7 +643,7 @@ export const EDGES: LoopEdge[] = [
         pipes: {
             code: {
                 state: "partial",
-                note: "THE SECOND BIG BREAK IS CLOSED (G-FINDING-ASSIST, 2026-08-13): web.finding rows now become platform.assists rows — a deterministic per-site sweep emits up to two page chips plus one cross-page rollup, mounted on the register, the priority queue, and the audit rollup. Still partial only because three suggestion systems remain forked (G-SUGGEST-FORK).",
+                note: "THE SECOND BIG BREAK IS CLOSED (G-FINDING-ASSIST, 2026-08-13): web.finding rows now become platform.assists rows — a deterministic per-site sweep emits up to two page chips plus one cross-page rollup, mounted on the register, the priority queue, and the audit rollup. Still partial only because the fork is absorbed but not collapsed: the offer layer is unified on platform.assists and the capability inventory is written, yet thirteen capabilities of kg-suggestions and of web.finding's own offer layer remain uncovered, so nothing may be retired (G-SUGGEST-FORK).",
                 ref: "features/marketing/findings-assists-producer.ts",
             },
             human: {
@@ -823,8 +823,9 @@ export const GAPS: LoopGap[] = [
         at: "suggest",
         breaks: ["code", "human", "ai"],
         detail:
-            "ABSORB STARTED, UNSHIPPED. migrations/platform_assists_absorb_capabilities.sql plus an assists manager surface (features/assists/manager/, app/(core)/assists/) and edits to assists types/service/runner are all untracked — the capability-absorption step the doctrine requires before any collapse. Nothing has been retired yet, which is correct order. Still missing: the written capability inventory in features/assists/FEATURE.md, whose docs are also stale (they claim three action kinds; the code has four).",
+            "ABSORB COMPLETE AND SHIPPED; RETIREMENT DELIBERATELY BLOCKED. The seven absorbed columns on platform.assists were DDL-only — no client read or wrote one — and are now live end to end: the evidence receipt on the card, first_seen_at + occurrences (a re-notice counts and never moves the first sighting), the resolved status with resolveAssistsByDedupeKeys() so a condition that went away closes itself, decision_note, is_starred and viewed_at with a flag column, unseen dot and filters in the /assists manager. THE CAPABILITY INVENTORY is written in features/assists/FEATURE.md — every capability of kg-suggestions and of web.finding's offer layer, each judged better / equal / not yet. NOTHING WAS RETIRED, and that is the method working: thirteen capabilities are still uncovered. The widest is that an assist is visibility='personal' addressed to one user_id, so a shared SEO register produces chips only the person who swept can see; then producer-level suppression (dismissal is per dedupe_key, so silencing a whole check means dismissing every chip one at a time), per-record chips (entity_type/entity_id are on the ledger with no selector), and an rpc action kind for kg-suggestions' accept semantics. Also settled here: web.finding's domain half is NOT a fork and is not being absorbed (the analyzer owns detection; only the offer layer moved), and extend.wbx_seo_audit is NOT dead — it is a registered canonical entity with zero consumers, i.e. unfinished work under policies/unfinished-work-alarm.md, so deleting it is forbidden.",
         lane: "L2",
+        evidence: "ai-matrx/features/assists/FEATURE.md",
     },
     {
         id: "G-TEMPLATE",
