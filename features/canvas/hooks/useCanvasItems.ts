@@ -175,37 +175,25 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
    * Share canvas item
    */
   const share = useCallback(async (id: string) => {
-    const { shareUrl, error: shareError } = await canvasItemsService.share(id);
+    // Canonical share-link lane (platform.share_links) — canvas_item is
+    // link-shareable in the registry; the old bespoke canvas_items.share_token
+    // mint was cut 2026-08-12 (it produced URLs that 404'd).
+    const { createShareLink } = await import('@/utils/permissions/shareLinks');
+    const result = await createShareLink({
+      resourceType: 'canvas_item',
+      resourceId: id,
+    });
 
-    if (shareError) {
-      setError(shareError);
+    if (!result.success || !result.url) {
+      setError(result.error ?? 'Failed to share canvas item');
       toast.error('Failed to share canvas item');
-    } else if (shareUrl) {
-      // Copy to clipboard
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success('Share link copied to clipboard!');
+      return { shareUrl: null, error: result.error ?? 'Failed to share' };
     }
 
-    return { shareUrl, error: shareError };
+    await navigator.clipboard.writeText(result.url);
+    toast.success('Share link copied to clipboard!');
+    return { shareUrl: result.url, error: null };
   }, []);
-
-  /**
-   * Unshare canvas item
-   */
-  const unshare = useCallback(async (id: string) => {
-    const { error: unshareError } = await canvasItemsService.unshare(id);
-
-    if (unshareError) {
-      setError(unshareError);
-      toast.error('Failed to unshare canvas item');
-    } else {
-      toast.success('Item is now private');
-      // Reload to reflect changes
-      load();
-    }
-
-    return { error: unshareError };
-  }, [load]);
 
   /**
    * Batch delete items
@@ -276,7 +264,6 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
     toggleFavorite,
     toggleArchive,
     share,
-    unshare,
     batchDelete,
     batchArchive,
     updateFilters,

@@ -86,7 +86,7 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
 
         {/* Hover Overlay */}
         <Link
-          href={`/canvas/shared/${canvas.share_token}`}
+          href={`/canvas/shared/${canvas.id}`}
           className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
         >
           <Button size="lg" className="gap-2">
@@ -106,7 +106,7 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
 
       <CardHeader className="flex-1">
         <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-          <Link href={`/canvas/shared/${canvas.share_token}`}>
+          <Link href={`/canvas/shared/${canvas.id}`}>
             {canvas.title}
           </Link>
         </h3>

@@ -66,8 +66,9 @@ export function DeleteTranscriptDialog({
                             Are you sure you want to delete <span className="font-semibold text-foreground">"{transcript.title}"</span>?
                         </p>
                         {hasAudioFile && (
-                            <p className="text-orange-600 dark:text-orange-400 font-medium">
-                                ⚠️ This will permanently delete both the transcript and the audio file from storage.
+                            <p className="flex items-start gap-1.5 font-medium text-orange-600 dark:text-orange-400">
+                                <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                                <span>This will permanently delete both the transcript and the audio file from storage.</span>
                             </p>
                         )}
                         <p className="text-xs text-muted-foreground">
@@ -96,4 +97,3 @@ export function DeleteTranscriptDialog({
         </AlertDialog>
     );
 }
-

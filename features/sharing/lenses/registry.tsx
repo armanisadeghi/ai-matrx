@@ -22,6 +22,7 @@ import type { ReactNode } from "react";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
 import {
   AiVisibilityRenderer,
+  CanvasRenderer,
   CodeRenderer,
   FileRenderer,
   FlashcardRenderer,
@@ -48,6 +49,8 @@ const SHARE_LENS_REGISTRY: Record<string, ShareLensRender> = {
   message_template: (p) => <MarkdownRenderer result={p.result} />,
   working_document: (p) => <MarkdownRenderer result={p.result} />,
   code_file: (p) => <CodeRenderer result={p.result} />,
+  canvas_item: (p) => <CanvasRenderer result={p.result} />,
+  shared_canvas_item: (p) => <CanvasRenderer result={p.result} />,
   fc_card: (p) => <FlashcardRenderer result={p.result} />,
   file: (p) => <FileRenderer result={p.result} token={p.token} />,
   folder: (p) => <FolderRenderer result={p.result} />,

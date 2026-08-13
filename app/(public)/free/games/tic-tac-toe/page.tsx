@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PartyPopper, Handshake } from 'lucide-react';
+import { Gamepad2, Handshake, PartyPopper, RotateCcw } from 'lucide-react';
 
 interface Particle {
   id: number;
@@ -334,20 +334,22 @@ const TicTacToe = () => {
             onClick={resetGame}
             className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-green-500/50"
           >
-            🎮 New Game
+            <Gamepad2 className="mr-2 inline size-5" aria-hidden="true" />
+            New Game
           </button>
           <button
             onClick={resetScores}
             className="px-8 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-red-500/50"
           >
-            🔄 Reset Scores
+            <RotateCcw className="mr-2 inline size-5" aria-hidden="true" />
+            Reset Scores
           </button>
         </div>
 
         {/* Footer */}
         <div className="mt-12 text-gray-400 text-sm">
           <p>Built with React & Tailwind CSS</p>
-          <p className="mt-1">✨ The future of TicTacToe ✨</p>
+          <p className="mt-1">The future of TicTacToe</p>
         </div>
       </div>
     </div>

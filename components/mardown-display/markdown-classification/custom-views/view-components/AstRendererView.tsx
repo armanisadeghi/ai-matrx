@@ -1,4 +1,5 @@
 import React from 'react';
+import { FileText } from 'lucide-react';
 import combinedProcessor, { OutputNode, AstNode } from '@/components/mardown-display/markdown-classification/processors/custom/combined-processor';
 
 interface AstRendererProps {
@@ -234,7 +235,7 @@ const AstRenderer: React.FC<AstRendererProps> = ({
     return (
       <div className={`flex items-center justify-center p-8 text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 ${className}`}>
         <div className="text-center">
-          <div className="text-2xl mb-2">📄</div>
+          <FileText className="mx-auto mb-2 size-6" aria-hidden="true" />
           <div>No content to display</div>
         </div>
       </div>

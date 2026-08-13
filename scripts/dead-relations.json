@@ -1068,64 +1068,64 @@
     {
       "relation": "cld_share_links",
       "old": "public.cld_share_links",
-      "newSchema": null,
-      "new": null,
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
       "since": "2026-08-12",
       "reason": "no successor; DROPPED (0 rows, no consumers)."
     },
     {
       "relation": "cld_file_permissions",
       "old": "public.cld_file_permissions",
-      "newSchema": null,
-      "new": null,
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
       "since": "2026-08-12",
       "reason": "no successor; DROPPED (0 rows; only consumer was the uncalled cld RPC family, also dropped)."
     },
     {
       "relation": "cld_user_groups",
       "old": "public.cld_user_groups",
-      "newSchema": null,
-      "new": null,
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
       "since": "2026-08-12",
       "reason": "no successor; DROPPED (0 rows)."
     },
     {
       "relation": "cld_user_group_members",
       "old": "public.cld_user_group_members",
-      "newSchema": null,
-      "new": null,
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
       "since": "2026-08-12",
       "reason": "no successor; DROPPED (0 rows)."
     },
     {
       "relation": "agenda_task",
       "old": "public.agenda_task",
-      "newSchema": null,
-      "new": null,
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
       "since": "2026-08-12",
       "reason": "superseded by matrx-extend sch_* tables; DROPPED (0 rows)."
     },
     {
       "relation": "agenda_run",
       "old": "public.agenda_run",
-      "newSchema": null,
-      "new": null,
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
       "since": "2026-08-12",
       "reason": "superseded by matrx-extend sch_* tables; DROPPED (0 rows)."
     },
     {
       "relation": "window_sessions",
       "old": "public.window_sessions",
-      "newSchema": null,
-      "new": null,
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
       "since": "2026-08-12",
       "reason": "FE window persistence moved to IndexedDB/localStorage; DROPPED (0 rows)."
     },
     {
       "relation": "forbidden_urls",
       "old": "public.forbidden_urls",
-      "newSchema": null,
-      "new": null,
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
       "since": "2026-08-12",
       "reason": "scraper-era leftover; DROPPED (0 rows)."
     },
@@ -1140,16 +1140,16 @@
     {
       "relation": "container_fields",
       "old": "public.container_fields",
-      "newSchema": null,
-      "new": null,
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
       "since": "2026-08-12",
       "reason": "applet-builder junction (FKs pointed into graveyard); DROPPED (0 rows)."
     },
     {
       "relation": "applet_containers",
       "old": "public.applet_containers",
-      "newSchema": null,
-      "new": null,
+      "newSchema": "(deleted)",
+      "new": "(deleted)",
       "since": "2026-08-12",
       "reason": "applet-builder junction; DROPPED (0 rows)."
     },

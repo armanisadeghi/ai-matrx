@@ -13,6 +13,11 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { invalidateClientSlotCache } from "@/features/agents/slots/service";
+import {
+  versionSnapshotRowToAgentDefinition,
+  type AgentVersionSnapshot,
+} from "@/features/agents/redux/agent-definition/converters";
+import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { callApi } from "@/lib/api/call-api";
@@ -186,6 +191,30 @@ export async function fetchAgentVersions(
     versionNumber: row.version_number,
     name: row.name,
   }));
+}
+
+/**
+ * Full saved-version snapshot as an `AgentDefinition` — for the drawer's
+ * inline "what changed between the pinned version and latest" comparison.
+ * Same RPC + converter the version-history pages use; returns null when the
+ * requested version number has no saved snapshot.
+ */
+export async function fetchVersionSnapshotDefinition(
+  agentId: string,
+  versionNumber: number,
+): Promise<AgentDefinition | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("agx_get_version_snapshot", {
+    p_agent_id: agentId,
+    p_version_number: versionNumber,
+  });
+  if (error) throw error;
+  const raw = Array.isArray(data) ? data[0] : data;
+  if (!raw) return null;
+  return versionSnapshotRowToAgentDefinition(
+    agentId,
+    raw as unknown as AgentVersionSnapshot,
+  );
 }
 
 // ── Out-of-scope pinned-agent identity (admin lookup) ────────────────────────

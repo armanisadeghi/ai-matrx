@@ -182,153 +182,153 @@ function BundlesAdminPageInner() {
       getWriteHandlers={getWriteHandlers}
       isEditable
     >
-    <div className="min-h-dvh flex flex-col">
-      <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3 bg-background">
-        <Package className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-sm font-medium">Tool Registry · Bundles</h1>
-        <Badge variant="outline" className="text-[10px]">
-          {bundles.length}
-        </Badge>
+      <div className="min-h-dvh flex flex-col">
+        <div className="flex-shrink-0 px-6 py-3 border-b border-border flex items-center gap-3 bg-background">
+          <Package className="h-4 w-4 text-muted-foreground" />
+          <h1 className="text-sm font-medium">Tool Registry · Bundles</h1>
+          <Badge variant="outline" className="text-[10px]">
+            {bundles.length}
+          </Badge>
           {loading && (
             <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
           )}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => void loadList()}
-          className="h-7 ml-auto gap-1.5 text-xs"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => setCreating(true)}
-          className="h-7 gap-1.5 text-xs"
-          title="Create a new bundle (auto-creates its lister tool)"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          New bundle
-        </Button>
-      </div>
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-[340px_1fr] gap-0 min-h-0">
-        {/* List sidebar */}
-        <aside className="border-r border-border bg-card flex flex-col">
-          <div className="p-3 space-y-2 border-b border-border">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search bundles…"
-                className="pl-7 h-8 text-xs"
-                style={{ fontSize: "16px" }}
-              />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => void loadList()}
+            className="h-7 ml-auto gap-1.5 text-xs"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setCreating(true)}
+            className="h-7 gap-1.5 text-xs"
+            title="Create a new bundle (auto-creates its lister tool)"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New bundle
+          </Button>
+        </div>
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-[340px_1fr] gap-0 min-h-0">
+          {/* List sidebar */}
+          <aside className="border-r border-border bg-card flex flex-col">
+            <div className="p-3 space-y-2 border-b border-border">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search bundles…"
+                  className="pl-7 h-8 text-xs"
+                  style={{ fontSize: "16px" }}
+                />
+              </div>
+              <div className="flex gap-1.5">
+                <Button
+                  size="sm"
+                  variant={filter === "active" ? "default" : "ghost"}
+                  onClick={() => setFilter("active")}
+                  className="h-7 text-xs flex-1"
+                >
+                  Active
+                </Button>
+                <Button
+                  size="sm"
+                  variant={filter === "all" ? "default" : "ghost"}
+                  onClick={() => setFilter("all")}
+                  className="h-7 text-xs flex-1"
+                >
+                  All
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-1.5">
-              <Button
-                size="sm"
-                variant={filter === "active" ? "default" : "ghost"}
-                onClick={() => setFilter("active")}
-                className="h-7 text-xs flex-1"
-              >
-                Active
-              </Button>
-              <Button
-                size="sm"
-                variant={filter === "all" ? "default" : "ghost"}
-                onClick={() => setFilter("all")}
-                className="h-7 text-xs flex-1"
-              >
-                All
-              </Button>
-            </div>
-          </div>
-          {error && (
-            <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
-              <AlertCircle className="h-3.5 w-3.5" />
-              {error}
-            </div>
-          )}
-          <div className="flex-1 overflow-auto">
-            {filtered.length === 0 && !loading && (
-              <div className="px-3 py-8 text-center text-xs text-muted-foreground">
-                No bundles match.
+            {error && (
+              <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {error}
               </div>
             )}
-            <ul>
-              {filtered.map((b) => {
-                const isSel = b.id === selected?.id;
-                return (
-                  <li key={b.id}>
-                    <button
-                      onClick={() => selectBundle(b.id)}
-                      className={`w-full text-left px-3 py-2 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""} ${b.is_active ? "" : "opacity-60"}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
+            <div className="flex-1 overflow-auto">
+              {filtered.length === 0 && !loading && (
+                <div className="px-3 py-8 text-center text-xs text-muted-foreground">
+                  No bundles match.
+                </div>
+              )}
+              <ul>
+                {filtered.map((b) => {
+                  const isSel = b.id === selected?.id;
+                  return (
+                    <li key={b.id}>
+                      <button
+                        onClick={() => selectBundle(b.id)}
+                        className={`w-full text-left px-3 py-2 border-b border-border/50 hover:bg-muted/40 transition-colors ${isSel ? "bg-muted" : ""} ${b.is_active ? "" : "opacity-60"}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
                           <span className="font-mono text-xs truncate">
                             {b.name}
                           </span>
-                        <Badge
-                          variant={b.is_system ? "default" : "secondary"}
-                          className="text-[10px] flex-shrink-0"
-                        >
-                          {b.is_system ? "system" : "personal"}
-                        </Badge>
-                      </div>
-                      {b.description && (
-                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                          {b.description}
-                        </p>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                          <Badge
+                            variant={b.is_system ? "default" : "secondary"}
+                            className="text-[10px] flex-shrink-0"
+                          >
+                            {b.is_system ? "system" : "personal"}
+                          </Badge>
+                        </div>
+                        {b.description && (
+                          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                            {b.description}
+                          </p>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </aside>
+          {/* Detail panel */}
+          <div className="overflow-auto">
+            {selected ? (
+              <BundleDetail
+                key={selected.id}
+                bundle={selected}
+                onChanged={() => void loadList()}
+              />
+            ) : deepLinkUnresolved ? (
+              <div className="h-full flex flex-col items-center justify-center gap-2 p-12 text-center">
+                <AlertCircle className="h-5 w-5 text-warning" />
+                <p className="text-xs text-muted-foreground">
+                  No bundle in this list matches{" "}
+                  <code className="font-mono">{deepLink}</code>
+                  {loading
+                    ? " yet — still loading."
+                    : filter === "active"
+                      ? " — it may be inactive. Switch to All."
+                      : "."}
+                </p>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs text-muted-foreground p-12">
+                {filtered.length === 0
+                  ? "No bundles to show."
+                  : "Pick a bundle from the list."}
+              </div>
+            )}
           </div>
-        </aside>
-        {/* Detail panel */}
-        <div className="overflow-auto">
-          {selected ? (
-            <BundleDetail
-              key={selected.id}
-              bundle={selected}
-              onChanged={() => void loadList()}
-            />
-          ) : deepLinkUnresolved ? (
-            <div className="h-full flex flex-col items-center justify-center gap-2 p-12 text-center">
-              <AlertCircle className="h-5 w-5 text-warning" />
-              <p className="text-xs text-muted-foreground">
-                No bundle in this list matches{" "}
-                <code className="font-mono">{deepLink}</code>
-                {loading
-                  ? " yet — still loading."
-                  : filter === "active"
-                    ? " — it may be inactive. Switch to All."
-                    : "."}
-              </p>
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center text-xs text-muted-foreground p-12">
-              {filtered.length === 0
-                ? "No bundles to show."
-                : "Pick a bundle from the list."}
-            </div>
-          )}
         </div>
+        {creating && (
+          <NewBundleDialog
+            existingNames={new Set(bundles.map((b) => b.name))}
+            onClose={() => setCreating(false)}
+            onCreated={(newId) => {
+              setCreating(false);
+              void loadList().then(() => selectBundle(newId));
+            }}
+          />
+        )}
       </div>
-      {creating && (
-        <NewBundleDialog
-          existingNames={new Set(bundles.map((b) => b.name))}
-          onClose={() => setCreating(false)}
-          onCreated={(newId) => {
-            setCreating(false);
-            void loadList().then(() => selectBundle(newId));
-          }}
-        />
-      )}
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

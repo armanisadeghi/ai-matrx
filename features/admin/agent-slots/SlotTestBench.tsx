@@ -52,6 +52,7 @@ import {
   AGENT_SLOTS_SURFACE_NAME,
   AGENT_SLOTS_WRITE_TARGETS,
 } from "@/features/surfaces/manifests/agent-slots.manifest";
+import { parseSlotContract } from "@/features/agents/slots/overrides";
 import {
   clearSlotBenchSnapshot,
   nextSlotBenchId,
@@ -91,23 +92,32 @@ interface CandidateDraft {
 }
 
 const SELECTION_LABEL: Record<CandidateSelection, string> = {
-  current: "Current agent",
-  slot_pinned: "Pinned slot version",
+  current: "Current setup (what users get now)",
+  slot_pinned: "Pinned version",
   latest: "Latest version",
   agent: "Different system agent",
-  version: "Arbitrary saved version",
+  version: "Specific saved version",
 };
+
+function latestCandidate(): CandidateDraft {
+  return {
+    draftId: crypto.randomUUID(),
+    label: "Latest version",
+    selection: "latest",
+    agentId: null,
+    versionId: null,
+    overridesText: "",
+  };
+}
 
 function newCandidate(index: number): CandidateDraft {
   return {
     draftId: crypto.randomUUID(),
-    label: index === 0 ? "Latest version" : `Candidate ${index + 1}`,
-    selection: index === 0 ? "latest" : "current",
+    label: `Candidate ${index + 1}`,
+    selection: "current",
     agentId: null,
     versionId: null,
-    // The second starter candidate deliberately proves the important empty
-    // object case: current agent with binding overrides removed.
-    overridesText: index === 0 ? "" : "{}",
+    overridesText: "",
   };
 }
 
@@ -176,7 +186,7 @@ function ResultCard({
     setPromoting(true);
     try {
       await promoteSlotTestResult(result.exemplar_id, result);
-      toast.success("This result is now the exemplar reference.");
+      toast.success("This result is now the test case's reference output.");
       onChanged();
     } catch (error: unknown) {
       toast.error(`Couldn't update the reference: ${describeError(error)}`);
@@ -286,7 +296,7 @@ function ResultCard({
             ) : (
               <Star className="h-3 w-3" />
             )}
-            Make reference
+            Set as reference
           </Button>
         </div>
       </div>
@@ -583,7 +593,7 @@ function ReferenceCard({ exemplar }: { exemplar: SlotExemplarRow }) {
   return (
     <div className="min-w-[260px] rounded-md border border-border p-2">
       <div className="mb-1 flex items-center gap-1 text-xs font-semibold">
-        <Star className="h-3.5 w-3.5" /> Owner reference
+        <Star className="h-3.5 w-3.5" /> Reference output
       </div>
       {exemplar.reference_output || exemplar.reference_artifact ? (
         <OutputPreview
@@ -592,22 +602,35 @@ function ReferenceCard({ exemplar }: { exemplar: SlotExemplarRow }) {
         />
       ) : (
         <div className="rounded bg-muted/40 p-2 text-[11px] text-muted-foreground">
-          No reference yet. Promote any successful result with “Make reference.”
+          No reference yet. Mark any good result with “Set as reference” and it
+          becomes the bar every later run is judged against.
         </div>
       )}
     </div>
   );
 }
 
-export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
+export function SlotTestBench({
+  slot,
+  baselineLabel = "Current — what users get now",
+  presetLatestCandidate = false,
+}: {
+  slot: SlotDefinitionRow;
+  /** Names the baseline column after the slot's actual pin state. */
+  baselineLabel?: string;
+  /** Version-drift slots start armed with a pinned-vs-latest comparison. */
+  presetLatestCandidate?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const [exemplars, setExemplars] = useState<SlotExemplarRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [defaultAgentId, setDefaultAgentId] = useState<string | null>(null);
-  const [candidates, setCandidates] = useState<CandidateDraft[]>(() => [
-    newCandidate(0),
-    newCandidate(1),
-  ]);
+  const [candidates, setCandidates] = useState<CandidateDraft[]>(() =>
+    presetLatestCandidate ? [latestCandidate()] : [],
+  );
+  // The slot's declared inputs — shown beside the composer so a test case can
+  // be written without guessing the variable names.
+  const contract = useMemo(() => parseSlotContract(slot.contract), [slot]);
   const [running, setRunning] = useState(false);
   const [batch, setBatch] = useState<SlotTestBatchResponse | null>(null);
   const [adding, setAdding] = useState(false);
@@ -624,7 +647,7 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
     return fetchSlotExemplars(slot.id)
       .then(setExemplars)
       .catch((error: unknown) =>
-        toast.error(`Failed to load exemplars: ${describeError(error)}`),
+        toast.error(`Failed to load test cases: ${describeError(error)}`),
       )
       .finally(() => setLoading(false));
   }
@@ -719,7 +742,7 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
       const response = await runSlotTests(dispatch, slot.slot_key, {
         baseline: {
           candidate_id: "baseline",
-          label: "Baseline — current binding",
+          label: baselineLabel,
           selection: "current",
         },
         candidates: parsedCandidates,
@@ -728,7 +751,7 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
       setBatch(response);
       await loadExemplars();
       toast.success(
-        `Compared ${response.columns.length} columns across ${response.exemplar_count} exemplar${response.exemplar_count === 1 ? "" : "s"}.`,
+        `Compared ${response.columns.length} column${response.columns.length === 1 ? "" : "s"} across ${response.exemplar_count} test case${response.exemplar_count === 1 ? "" : "s"}.`,
       );
     } catch (error: unknown) {
       toast.error(`Bench batch failed: ${describeError(error)}`);
@@ -750,7 +773,7 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
     try {
       await createSlotExemplar({
         slotId: slot.id,
-        label: newLabel.trim() || "Manual exemplar",
+        label: newLabel.trim() || "Manual test case",
         variables,
         userInput: newUserInput.trim() || null,
       });
@@ -759,9 +782,9 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
       setNewVariables("{}");
       setNewUserInput("");
       await loadExemplars();
-      toast.success("Exemplar saved.");
+      toast.success("Test case saved.");
     } catch (error: unknown) {
-      toast.error(`Failed to save exemplar: ${describeError(error)}`);
+      toast.error(`Failed to save test case: ${describeError(error)}`);
     }
   }
 
@@ -895,23 +918,21 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
     try {
       await deleteSlotExemplar(exemplarId);
       await loadExemplars();
-      toast.success("Exemplar removed.");
+      toast.success("Test case removed.");
     } catch (error: unknown) {
-      toast.error(`Failed to remove exemplar: ${describeError(error)}`);
+      toast.error(`Failed to remove test case: ${describeError(error)}`);
     }
   }
 
   return (
-    <div className="space-y-3 border-t border-border px-3 py-3">
+    <div className="space-y-3 px-3 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <FlaskConical className="h-4 w-4 text-muted-foreground" />
-        <div>
-          <div className="text-sm font-semibold">
-            Is the new version better?
-          </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">Compare runs side by side</div>
           <div className="text-[11px] text-muted-foreground">
-            One click runs the baseline and every candidate against every
-            exemplar. Results and owner verdicts persist with the exemplar.
+            Each saved test case runs through the current setup and every
+            comparison column. Results and your verdicts are kept.
           </div>
         </div>
         <Button
@@ -920,16 +941,47 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
           className="ml-auto h-8 gap-1 text-xs"
           onClick={() => setAdding((current) => !current)}
         >
-          <Plus className="h-3.5 w-3.5" /> Exemplar
+          <Plus className="h-3.5 w-3.5" /> Test case
         </Button>
       </div>
 
       {adding && (
         <div className="grid gap-2 rounded-md border border-border bg-muted/20 p-2">
+          {contract.requiredVariables.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+              <span>Variables this slot expects:</span>
+              {contract.requiredVariables.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] hover:bg-accent"
+                  title={`Add "${name}" to the variables JSON`}
+                  onClick={() =>
+                    setNewVariables((current) => {
+                      try {
+                        const parsed: unknown = JSON.parse(current || "{}");
+                        if (!isJsonObject(parsed) || name in parsed)
+                          return current;
+                        return JSON.stringify(
+                          { ...parsed, [name]: "" },
+                          null,
+                          2,
+                        );
+                      } catch {
+                        return current;
+                      }
+                    })
+                  }
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
           <Input
             value={newLabel}
             onChange={(event) => setNewLabel(event.target.value)}
-            placeholder="Exemplar label"
+            placeholder="Test case name — what does it exercise?"
             className="h-8 text-xs"
           />
           <Textarea
@@ -949,7 +1001,7 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
             className="h-7 w-fit text-xs"
             onClick={() => void addExemplar()}
           >
-            Save exemplar
+            Save test case
           </Button>
         </div>
       )}
@@ -961,7 +1013,7 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
             slot={slot}
             draft={candidate}
             defaultAgentId={defaultAgentId}
-            canRemove={candidates.length > 1}
+            canRemove
             onChange={(next) => updateCandidate(candidate.draftId, next)}
             onRemove={() =>
               setCandidates((current) =>
@@ -1023,6 +1075,11 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
         size="sm"
         className="h-9 gap-1.5"
         disabled={running || exemplars.length === 0}
+        title={
+          exemplars.length === 0
+            ? "Add a test case first — there is nothing to run yet."
+            : undefined
+        }
         onClick={() => void runAll()}
       >
         {running ? (
@@ -1030,17 +1087,17 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
         ) : (
           <FlaskConical className="h-4 w-4" />
         )}
-        Run all exemplars
+        Run all test cases
       </Button>
 
       {loading ? (
         <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading exemplars…
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading test cases…
         </div>
       ) : exemplars.length === 0 ? (
         <div className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
-          No exemplars yet. Add one manually now; production runs also capture
-          them automatically.
+          No test cases yet — add one with “+ Test case” above. Production runs
+          also save real examples automatically over time.
         </div>
       ) : (
         exemplars.map((exemplar) => {
@@ -1092,7 +1149,7 @@ export function SlotTestBench({ slot }: { slot: SlotDefinitionRow }) {
               {history.length > 0 && (
                 <details>
                   <summary className="flex cursor-pointer items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                    <History className="h-3.5 w-3.5" /> Persisted history (
+                    <History className="h-3.5 w-3.5" /> Past runs (
                     {history.length})
                   </summary>
                   <div className="mt-2 overflow-x-auto pb-1">

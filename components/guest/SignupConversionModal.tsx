@@ -10,7 +10,8 @@ import {
     Zap, 
     Shield,
     Infinity,
-    TrendingUp
+    TrendingUp,
+    PartyPopper
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -49,8 +50,9 @@ export function SignupConversionModal({
                             <MousePointerClick className="w-8 h-8 text-white" />
                         </div>
                     </div>
-                    <DialogTitle className="text-2xl text-center">
-                        You've Experienced the Power of AI Matrx! 🎉
+                    <DialogTitle className="flex items-center justify-center gap-2 text-center text-2xl">
+                        You've Experienced the Power of AI Matrx!
+                        <PartyPopper className="size-6" aria-hidden="true" />
                     </DialogTitle>
                 </DialogHeader>
 
@@ -177,4 +179,3 @@ export function SignupConversionModal({
         </Dialog>
     );
 }
-

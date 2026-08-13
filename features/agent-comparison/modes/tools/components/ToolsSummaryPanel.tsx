@@ -173,9 +173,9 @@ function SectionList({
             className="flex items-baseline gap-1.5 px-1.5 py-0.5 rounded text-[11px] bg-muted/40"
           >
             {item.labelNode ?? (
-            <span className="font-medium text-foreground truncate flex-1 min-w-0">
-              {item.label}
-            </span>
+              <span className="font-medium text-foreground truncate flex-1 min-w-0">
+                {item.label}
+              </span>
             )}
             {item.sub && (
               <span className="text-[9px] text-muted-foreground/70 shrink-0">

@@ -30,11 +30,11 @@ function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
             name={oldName}
             showId
             showIcon={false}
-              className={cn(
-                node.changeType !== "unchanged"
-                  ? "text-red-700 dark:text-red-300"
-                  : "text-foreground/80",
-              )}
+            className={cn(
+              node.changeType !== "unchanged"
+                ? "text-red-700 dark:text-red-300"
+                : "text-foreground/80",
+            )}
           />
         ) : (
           <span className="text-muted-foreground">Default</span>
@@ -54,11 +54,11 @@ function ModelDiffRenderer({ node, enrichment }: FieldDiffProps) {
             name={newName}
             showId
             showIcon={false}
-              className={cn(
-                node.changeType !== "unchanged"
-                  ? "text-green-700 dark:text-green-300"
-                  : "text-foreground/80",
-              )}
+            className={cn(
+              node.changeType !== "unchanged"
+                ? "text-green-700 dark:text-green-300"
+                : "text-foreground/80",
+            )}
           />
         ) : (
           <span className="text-muted-foreground">Default</span>

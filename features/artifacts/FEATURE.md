@@ -107,9 +107,18 @@ Data-touching types are **never auto-bound** to a real record (vision R7) — ag
 
 ### Flow 5 — Social canvas
 
-1. Owner marks a canvas public / shares via `features/sharing/`.
-2. Discovery surface lists it. Leaderboard ranks by reactions / views.
-3. Public canvas URL renders with minimal bundle, no Redux auth.
+1. Publishing (`useCanvasShare`) inserts the `canvas.shared_canvas_items` snapshot, then mints the
+   link through the ONE canonical lane: `create_share_link('shared_canvas_item', id)` →
+   `platform.share_links`. There is NO bespoke canvas token — both `share_token` columns were
+   dropped 2026-08-12 (`migrations/canvas_share_convergence_onto_share_links.sql`; the 24
+   pre-existing tokens were migrated verbatim so old URLs still resolve).
+2. Discovery surface lists public snapshots and links them **by row id** (`/canvas/shared/{id}`,
+   the public-visibility lane — no secret needed). Leaderboard ranks by reactions / views.
+3. `/canvas/shared/[token]` accepts a canonical token OR a row UUID, resolved ONLY through
+   `features/canvas/shared/resolveSharedCanvas.ts` (`resolve_share_token` RPC with its
+   `public_columns` projection, or pub_read by id). Revoke/list/expiry ride the standard
+   ShareModal machinery; `/s/[token]` renders canvases via the `shared_canvas_item` /
+   `canvas_item` share lenses.
 
 ---
 
@@ -196,6 +205,7 @@ Rules:
 
 ## Change log
 
+- `2026-08-12` — claude: **Canvas share tokens converged onto `platform.share_links`** (the same disease as the killed files fork, access-architecture §7-G3). DB: `shared_canvas_item` registered link-shareable with a `public_columns` projection; 24 live tokens migrated verbatim; `share_token` dropped from BOTH canvas tables; broken `cx_canvas_publish` dropped. FE: `resolveSharedCanvas.ts` is the one resolver (token → `resolve_share_token`, UUID → pub_read), `useCanvasShare` mints via `create_share_link`, lane-B `canvasItemsService.share/unshare/getShared` (mints that 404'd) deleted — canvas-item share now `createShareLink('canvas_item')` → `/s/{token}`, discovery links by id, canvas lenses registered for `/s/[token]`. Old URLs verified resolving; revoke verified.
 - `2026-08-11` — codex: **Message content is generated-contract-only.** Removed the live `_matrxState` writer; quiz progress stays in `quiz_sessions`, generic artifact state stays in `canvas_item_state`, and a loud boundary recovers already-stored legacy interactive blocks before strict `MessagePart` parsing.
 - `2026-08-10` — claude: **Mermaid Workbench is agent-writable** — `matrx-user/mermaid-editor` now declares 2 `applyPolicy:"ask"` / `mode:"entity"` write targets (`diagram_source` replace-whole DSL, `diagram_title` via the source's YAML frontmatter), and `MermaidWorkbench` mounts the `SurfaceRuntimeProvider` it never had (reusing the existing `buildScope` as `getScope`) plus `getWriteHandlers`. Both handlers dispatch the SAME `APPLY_EXTERNAL_SOURCE` action the "Edit with AI" rail's Apply and the version-restore menu use, so an agent edit is one undo step and rides the existing `useMermaidArtifactSave` session-versioning — no parallel write path. Complementary to the rail, not a replacement: the rail is a modal one-shot the user opens and types into; these targets are for the multi-turn agent in the header Agents popover, which could already READ this surface but had no way to land anything. `mode:"entity"` because the workbench has no Save button — its autosave persists off the same source change a person's typing produces, so the draft prose "nothing is saved until you save" would be false here. New `setMermaidTitle` in `components/mermaid/diagram-type.ts` (write-twin of `extractMermaidTitle`; preserves every other frontmatter key, throws on titles YAML could not read back) and `DETECTABLE_DIAGRAM_TYPES` derived from the detector's own header table, so the vocabulary agents are told cannot drift from what the workbench accepts. `AgentEditRail` gained `onBusyChange` so a write is refused mid-rail-run instead of racing its proposal. **Entry-point note for anyone testing this:** the workbench only renders through `MermaidArtifact` in canvas mode, and on `/chat/[id]` the route surface `matrx-user/chat` outranks the mounted runtime in the Agents popover — open a mermaid-backed `/artifacts/[id]` instead (no route→surface mapping) to get the workbench's own surface. Live-verified with a real Badass Agent run; full evidence in `features/surfaces/FEATURE.md` (2026-08-10).
 - 2026-07-28 — D73 fixed: CmsArtifactList navigatingId resets on pathname change + 6s fallback; html_page editor open unified through handleNavigate.

@@ -159,9 +159,13 @@ const DraggableField: React.FC<DraggableFieldProps> = ({
         >
             {!isDropped && !hasIssue && <GripVertical className="h-4 w-4 mr-2 flex-shrink-0 text-gray-400" />}
             {isDropped && !hasIssue && (
-                <div className="h-4 w-4 mr-2 flex-shrink-0 text-green-500 dark:text-green-400 text-xs font-bold">
-                    ✓
-                </div>
+                <>
+                    <CheckCircle2
+                        className="h-4 w-4 mr-2 flex-shrink-0 text-green-500 dark:text-green-400"
+                        aria-hidden="true"
+                    />
+                    <span className="sr-only">Dropped</span>
+                </>
             )}
             {hasIssue && (
                 <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0 text-amber-500 dark:text-amber-400" />
@@ -247,4 +251,4 @@ const DraggableField: React.FC<DraggableFieldProps> = ({
     );
 };
 
-export default DraggableField; 
+export default DraggableField;

@@ -19,6 +19,7 @@ import {
   ExternalLink,
   FileIcon,
   FolderClosed,
+  Loader2,
   ScanSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -312,5 +313,55 @@ export function AiVisibilityRenderer({
   }
   return (
     <AiVisibilityReport result={report} shareUrl={`/s/${token}`} acquisition />
+  );
+}
+
+// PublicCanvasRenderer pulls the whole artifact-renderer engine — keep it out
+// of the /s route chunk until a canvas share actually renders (React.lazy is
+// the in-gate boundary form; this file already sits behind the route's client
+// edge).
+const PublicCanvasRenderer = React.lazy(() =>
+  import("@/features/canvas/shared/PublicCanvasRenderer").then((m) => ({
+    default: m.PublicCanvasRenderer,
+  })),
+);
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Canvas lens — a published canvas snapshot (`shared_canvas_item`) or a saved
+ * canvas item (`canvas_item`, whose `content` is `{type, data, metadata}`).
+ */
+export function CanvasRenderer({ result }: { result: ResolvedShareToken }) {
+  const r = result.resource ?? {};
+  const rawContent = r["content"];
+  const content =
+    result.resourceType === "shared_canvas_item"
+      ? {
+          type: str(r, "canvas_type") || "html",
+          data: r["canvas_data"],
+          metadata: {
+            title: str(r, "title"),
+            description: str(r, "description"),
+          },
+        }
+      : isRecord(rawContent)
+        ? rawContent
+        : { type: "html", data: rawContent };
+
+  return (
+    <div className="h-[70vh] min-h-[420px] w-full overflow-hidden rounded-xl border border-border bg-card">
+      <React.Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        }
+      >
+        <PublicCanvasRenderer content={content} />
+      </React.Suspense>
+    </div>
   );
 }

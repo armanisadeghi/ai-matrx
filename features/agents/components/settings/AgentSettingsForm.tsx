@@ -470,7 +470,7 @@ export function AgentSettingsForm({
                     ) : (
                       <span className="text-xs text-muted-foreground">
                         Default Selection
-                    </span>
+                      </span>
                     )}
                   </div>
 

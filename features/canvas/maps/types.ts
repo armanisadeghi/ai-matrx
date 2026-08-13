@@ -30,7 +30,6 @@ export interface MapListRow {
   is_favorited: boolean;
   is_archived: boolean;
   is_public: boolean;
-  share_token: string | null;
   tags: string[];
   updated_at: string;
   created_at: string;

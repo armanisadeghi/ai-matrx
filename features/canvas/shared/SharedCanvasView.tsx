@@ -92,7 +92,7 @@ export function SharedCanvasView({ shareToken, className = "h-[calc(100dvh-3.5re
                     {/* Social Actions */}
                     <CanvasSocialActions
                         canvasId={canvas.id}
-                        shareToken={canvas.share_token}
+                        shareToken={shareToken}
                         likeCount={canvas.like_count}
                         commentCount={canvas.comment_count}
                         viewCount={canvas.view_count}

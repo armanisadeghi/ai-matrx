@@ -45,7 +45,6 @@ function mapDbRowToCanvasItemRow(row: CanvasItemDbRow): CanvasItemRow {
     source_message_id: row.source_message_id,
     task_id: row.task_id,
     is_public: row.is_public ?? false,
-    share_token: row.share_token,
     content_hash: row.content_hash,
     created_at: row.created_at ?? "",
     updated_at: row.updated_at ?? "",
@@ -67,7 +66,6 @@ export interface CanvasItemRow {
   source_message_id: string | null;
   task_id: string | null;
   is_public: boolean;
-  share_token: string | null;
   content_hash: string | null;
   created_at: string;
   updated_at: string;
@@ -403,81 +401,9 @@ export const canvasItemsService = {
     return this.update(id, { is_archived: isArchived });
   },
 
-  /**
-   * Generate share token and make item public
-   */
-  async share(id: string): Promise<{ shareUrl: string | null; error: any }> {
-    try {
-      const userId = requireUserId();
-      // Generate unique share token
-      const shareToken = `share-${crypto.randomUUID().split("-")[0]}-${Date.now().toString(36)}`;
-
-      const { data, error } = await supabase
-        .schema("canvas").from("canvas_items")
-        .update({
-          is_public: true,
-          share_token: shareToken,
-        })
-        .eq("id", id)
-        .eq("user_id", userId)
-        .select()
-        .single();
-
-      if (error) {
-        return { shareUrl: null, error };
-      }
-
-      const shareUrl = `${window.location.origin}/canvas/shared/${shareToken}`;
-      return { shareUrl, error: null };
-    } catch (error) {
-      return { shareUrl: null, error };
-    }
-  },
-
-  /**
-   * Unshare item (make private)
-   */
-  async unshare(id: string): Promise<{ error: any }> {
-    try {
-      const userId = requireUserId();
-      const { error } = await supabase
-        .schema("canvas").from("canvas_items")
-        .update({
-          is_public: false,
-          share_token: null,
-        })
-        .eq("id", id)
-        .eq("user_id", userId);
-
-      return { error };
-    } catch (error) {
-      return { error };
-    }
-  },
-
-  /**
-   * Get shared canvas item (public access)
-   */
-  async getShared(
-    shareToken: string,
-  ): Promise<{ data: CanvasItemRow | null; error: any }> {
-    try {
-      const { data, error } = await supabase
-        .schema("canvas").from("canvas_items")
-        .select("*")
-        .is("deleted_at", null)
-        .eq("share_token", shareToken)
-        .eq("is_public", true)
-        .single();
-
-      return {
-        data: data ? mapDbRowToCanvasItemRow(data) : null,
-        error,
-      };
-    } catch (error) {
-      return { data: null, error };
-    }
-  },
+  // Sharing lives on the canonical platform.share_links lane
+  // (createShareLink('canvas_item', id) → /s/{token}); the bespoke
+  // canvas_items.share_token mint was cut 2026-08-12.
 
   /**
    * Batch delete multiple items

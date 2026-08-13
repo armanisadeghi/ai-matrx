@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { createClient } from '@/utils/supabase/server';
 import { getCanvasBlockMeta } from '@/features/canvas/canvas-block-meta';
+import { resolveSharedCanvas } from '@/features/canvas/shared/resolveSharedCanvas';
 
 export const runtime = 'nodejs';
 export const size = { width: 32, height: 32 };
@@ -14,12 +15,7 @@ export default async function Icon({ params }: Props) {
     const { token } = await params;
     const supabase = await createClient();
 
-    const { data: canvas } = await supabase
-        .schema('canvas').from('shared_canvas_items')
-        .select('canvas_type')
-        .is('deleted_at', null)
-        .eq('share_token', token)
-        .single();
+    const canvas = await resolveSharedCanvas(token, supabase);
 
     const type = canvas?.canvas_type ?? 'canvas';
     const meta = getCanvasBlockMeta(type);

@@ -1,66 +1,58 @@
 # P6 — No emojis in UI
 
 - Run date: 2026-08-12
-- Run kind: first run; required full-repository pass
-- Authority: Tier R only because the P6 fix skill is absent
+- Run kind: first/full pass plus human-approved remediation follow-up
+- Authority: Tier M under Arman's explicit approval; `no-emojis-in-ui` is now the approved fix skill
 - Prior-month loop health: no prior P6 report, Git-history report, or automation memory existed
 
 ## Scope scanned
 
 - Full repository scan across all 7,026 tracked `.tsx` files.
 - Registry expression: PCRE2 unicode-range grep `[\x{1F000}-\x{1FAFF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]`.
-- Raw signature baseline: 279 matched lines in 130 files.
+- Initial raw signature baseline: 279 matched lines in 130 files.
 - The prior PlanTree sighting was verified directly: `features/matrx-envelope/directives/planTree/PlanTreePreview.tsx:123` renders the literal key beside a primary keyword in the user-visible patch preview.
 - This first run is the required periodic full pass. Dependencies, ignored build output, and non-TSX source types were excluded; no generated file was touched.
 
 ## Detection and triage baseline
 
-- Verified P6 findings: 226 user-visible lines in 94 files.
-- Rank 1 — production/shared surfaces: 87 lines in 53 files.
+- Initial verified P6 findings: 226 user-visible lines in 94 files.
+- Fixed locally but not shipped: 23 user-visible lines in 19 files across two separately approved batches (14 files + 5 files).
+- Remaining: 203 user-visible lines in 75 files. These stay unresolved pending per-surface safety review; none was silently excluded or proposed as an exception.
+- Rank 1 — production/shared surfaces: 64 remaining lines in 34 files.
 - Rank 2 — admin, demo, debug, and rendered sample surfaces: 139 lines in 41 files. These remain findings because people can see them; the false-positive rule does not exempt a rendered demo or sample.
 - False positives: 53 lines. Thirty-six files were false-positive-only: 37 documentation/comment lines in 30 files, 10 browser-console diagnostic lines in 5 files, and 1 non-UI parser constant. Five additional documentation/comment lines were excluded from four otherwise-live finding files.
 - Fixtures/sample data: no rendered fixture or sample was cleared as a false positive. The only exclusions were non-rendered documentation, console-only diagnostics, and parser behavior.
 - Approved exceptions: none. Proposed exceptions: none.
-- Fixes: 0. The readiness guard forbids replacing or deleting any glyph until a P6 skill defines the approved transformation.
-- Certifier verdict: **NOT APPLICABLE** — this was a report-only Tier R run with no fix batch.
-- Main-agent checks: `pnpm type-check` PASS; `git diff --check` PASS; `pnpm check:migrations` completed with one unrelated non-blocking drift warning for `web_audit_rollup_gone_pages.sql`.
+- Approval routes: 19 files manually approved and fixed locally; 75 files unresolved pending per-surface review; 0 proposed exceptions.
+- Certifier verdicts: **REJECTED** for Batch A (14 files) and Batch B (5 files). The certifier found three accessible-state regressions; all three were repaired with screen-reader text. Fleet Health verified Tic-Tac-Toe at desktop and 375×812 mobile widths in both light and dark themes. The mobile DOM confirms `New Game`, `Reset Scores`, and the future-of-TicTacToe copy contain no emoji; screenshots were captured. The observed mobile horizontal overflow predates and is unrelated to P6. Neither batch is certified or shipped because the mandatory full type gate is red.
+- Main-agent checks: P6 skill validation PASS; touched-file detector PASS except the two documented comment-only false positives in Batch B; scoped `git diff --check` PASS; doctrine/UI/doc-claim gates PASS. Targeted lint surfaced pre-existing same-file debt plus one banned `Sparkles` proposal; `Sparkles` was removed and the text preserved. Full `pnpm type-check` fails only outside the 19 P6 files: four API-route `organization_id` boundary errors and `types/feedback-row-mapper.ts` missing `image_file_ids`.
 
-## Rank 1 — production and shared surfaces (53 files)
+## Approved fixes awaiting certification
 
-- `app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx:690,691`
-- `app/(core)/cms/[siteId]/settings/page.tsx:218`
-- `app/(public)/free/games/tic-tac-toe/page.tsx:337,343,350`
-- `app/(public)/free/zip-code-heatmap/components/SaveHeatmapModal.tsx:257,262`
+- **Batch A — 14 files:** replaced product-authored status, warning, visibility, keyword, document, truncation, game, reset, and celebration glyphs with semantic Lucide icons; deleted decorative sparkles and the redundant high-score trophy. Text, handlers, semantic colors, ARIA meaning, and interaction behavior remain unchanged.
+- **Batch B — 5 files:** removed emoji prefixes from structured feedback headers; replaced feature/status/recommended/dropped-state glyphs with `Check`, `Star`, and `CheckCircle2`. The two surviving detector hits are non-rendered comments already covered by the false-positive baseline.
+- The new `no-emojis-in-ui` skill defines exact detection, false-positive triage, approval routing, safe transformation gates, and adversarial certification. All ten active pattern-patrol automations now carry both `ROUTE APPROVAL` and `ROUTED REPORT` contracts.
+
+## Rank 1 — remaining production and shared surfaces (34 files)
+
 - `app/(public)/pricing/compare/page.tsx:80`
 - `app/(transitional)/local/page.tsx:36,37,38,39`
 - `app/auth/desktop-handoff/page.tsx:39,40,42,43,218,260,308,337,352`
-- `components/guest/SignupConversionModal.tsx:53`
 - `components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay.tsx:519`
-- `components/mardown-display/blocks/presentations/PresentationPublishModal.tsx:112`
 - `components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx:383,392,428,700,806,1712`
 - `components/mardown-display/chat-markdown/analyzer/analyzer-options/JsonComparator.tsx:277,282`
 - `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx:154,165`
-- `components/mardown-display/markdown-classification/custom-views/view-components/AstRendererView.tsx:237`
 - `components/markdown-studio/AnalysisView.tsx:534,535`
-- `components/matrx/FeatureCard.tsx:36`
-- `components/official-candidate/json-truncator/JsonTruncator.tsx:429`
 - `components/official/ImageAssetUploader.tsx:1282`
-- `components/official/processor-extractor/ParseExtractorOptions.tsx:104`
 - `components/ui/loaders/select.tsx:156`
-- `components/user-generated-table-data/CreateTableModal.tsx:240`
 - `features/administration/database-admin/workbench/MergePanel.tsx:433`
-- `features/agent-comparison/components/SubmitAllPreflightDialog.tsx:125`
-- `features/agent-settings/components/ModelSwitchConflictDialog.tsx:324`
 - `features/agents/agent-creators/chatbot-customizer/AIOptionComponents.tsx:207`
 - `features/ai-models/audit/CapabilitiesAuditTab.tsx:64`
-- `features/applet/builder/modules/field-builder/DraggableField.tsx:163`
 - `features/applet/builder/modules/smart-parts/fields/EnhancedMultiFieldSelector.tsx:260`
 - `features/applet/contepts/BrokerDebugger.tsx:74`
-- `features/audio/components/VoiceDiagnosticsDisplay.tsx:253`
 - `features/canvas/core/CanvasRenderer.tsx:524`
 - `features/canvas/leaderboard/CanvasLeaderboard.tsx:50,51,52`
 - `features/canvas/social/CanvasShareSheet.tsx:640`
-- `features/canvas/social/ScoreSubmissionDialog.tsx:209`
 - `features/code/terminal/SimpleTerminal.tsx:290,325`
 - `features/code/terminal/TerminalTab.tsx:93,645`
 - `features/code/views/explorer/EditHistorySection.tsx:252,258`
@@ -71,14 +63,11 @@
 - `features/marketing/change-tracking/SeoChangeTrackingWorkspace.tsx:1768`
 - `features/marketing/search-console/components/insights/ClassInsights.tsx:362`
 - `features/marketing/search-console/intake/SiteIntakeWizard.tsx:633`
-- `features/matrx-envelope/directives/planTree/PlanTreePreview.tsx:123`
 - `features/pdf-extractor/components/ManipulationPanel.tsx:148`
 - `features/pdf-extractor/studio/PdfStudioChunksPane.tsx:444`
 - `features/pdf-extractor/studio/PdfStudioReader.tsx:800,978`
 - `features/rag/components/search/RagSearchExperience.tsx:764`
 - `features/research/components/init/ResearchInitForm.tsx:993`
-- `features/settings/pages/ExtensionSettingsPage.tsx:156`
-- `features/transcripts/components/DeleteTranscriptDialog.tsx:70`
 - `lib/email/templates/WelcomeEmail.tsx:21,22,23,24`
 
 ## Rank 2 — admin, demo, debug, and rendered sample surfaces (41 files)
@@ -136,7 +125,7 @@
 
 - Scan-start commit: `cd0b4796953a8ec5a30ebdc459c10ed15f08f765`.
 - Route-tree baseline: 1,054 tracked `page.tsx` / `page.dev.tsx` leaves; sorted path-list SHA-256 `0c229ebcc777e7564fd6e920c00a63807044c4092549c9796e1fb4e986e34b68`.
-- P6 signature-file baseline: 130 files; sorted path-list SHA-256 `6f9ad58d61a2ebe07834767a393e3829948979ff195cbd46d0dc8d60407ea1b3`.
+- Current P6 raw signature baseline: 256 lines in 113 files; sorted path-list SHA-256 `06baa5de38891edf57909b15dcf4c6c71a6710b504564560d57007d7725c212a`.
 - Feature-directory reference: 122 top-level directories; sorted path-list SHA-256 `edda1d66263b6d74c36ab96a4fdf184b5fd1c2a0005da1ce6de100f299d0e2e0`.
 - Next non-full run: compare structural route/signature/feature sets against this baseline, re-verify the open report-linked P6 ledger entry, and triage new matches. Never scope by aggregate changed-line churn.
 - Next periodic full run: repeat the full repository pass regardless of structural deltas.
@@ -144,5 +133,5 @@
 ## Cadence health and candidates
 
 - This is the first P6 run, so there is no preceding month of clean runs and no cadence-lengthening proposal.
-- No Tier M batch exists and no rejected-batch pattern exists; no mutation pause is needed.
+- Two Tier M batches remain rejected and unshipped. The complete desktop/mobile × light/dark matrix now passes; mutation is paused solely on the unrelated red full type gate. This is not yet a repeated-rejection pattern.
 - No recurring unregistered class was observed, so no Candidate-bench nomination was added.

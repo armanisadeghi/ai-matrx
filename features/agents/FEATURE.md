@@ -57,10 +57,10 @@ The system runs in three stages with three consumer surfaces:
 
 ### Two invocation payloads — the key distinction
 
-| Surface                            | Endpoint on first turn | Payload includes                                                             | Why                                                                                             |
+| Surface                            | Endpoint on first turn | Payload includes                                                                                                  | Why                                                                                             |
 | ---------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | **Builder**                        | `POST /ai/manual`      | **Live agent definition** flattened into the manual request (priming messages, model, settings, tools, variables) | Cache-independent raw test — builder must see exactly what the server will run, no hidden state |
-| **Runner / Chat / Shortcut / App** | `POST /ai/agents/{id}` | **Agent ID + form values** (variables, context, user input)                  | Server owns the agent definition; client sends only what changes per call                       |
+| **Runner / Chat / Shortcut / App** | `POST /ai/agents/{id}` | **Agent ID + form values** (variables, context, user input)                                                       | Server owns the agent definition; client sends only what changes per call                       |
 
 After the first turn, saved-agent surfaces collapse to `POST /ai/conversations/{conversationId}` (or `POST /ai/chat` for ephemeral). Builder tests remain on `POST /ai/manual`: the client carries their accumulated history and the server mints a fresh durable wire conversation for each stored request while Redux keeps one stable local test-panel key. See **AGENT_INVOCATION_LIFECYCLE.md**.
 

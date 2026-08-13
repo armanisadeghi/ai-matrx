@@ -3215,7 +3215,6 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           user_agent: string | null
-          user_id: string | null
           variables_provided: Json | null
           variables_used: Json | null
           version: number
@@ -3242,7 +3241,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           user_agent?: string | null
-          user_id?: string | null
           variables_provided?: Json | null
           variables_used?: Json | null
           version?: number
@@ -3269,7 +3267,6 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           user_agent?: string | null
-          user_id?: string | null
           variables_provided?: Json | null
           variables_used?: Json | null
           version?: number
@@ -3303,7 +3300,6 @@ export type Database = {
           organization_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
           window_start_at: string
         }
@@ -3325,7 +3321,6 @@ export type Database = {
           organization_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           window_start_at?: string
         }
@@ -3347,7 +3342,6 @@ export type Database = {
           organization_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           window_start_at?: string
         }
@@ -4778,7 +4772,6 @@ export type Database = {
           parent_canvas_id: string | null
           project_id: string | null
           session_id: string | null
-          share_token: string | null
           source_id: string | null
           source_message_id: string | null
           source_system: string | null
@@ -4814,7 +4807,6 @@ export type Database = {
           parent_canvas_id?: string | null
           project_id?: string | null
           session_id?: string | null
-          share_token?: string | null
           source_id?: string | null
           source_message_id?: string | null
           source_system?: string | null
@@ -4850,7 +4842,6 @@ export type Database = {
           parent_canvas_id?: string | null
           project_id?: string | null
           session_id?: string | null
-          share_token?: string | null
           source_id?: string | null
           source_message_id?: string | null
           source_system?: string | null
@@ -5102,7 +5093,6 @@ export type Database = {
           require_attribution: boolean | null
           search_vector: unknown
           share_count: number | null
-          share_token: string
           tags: string[] | null
           thumbnail_url: string | null
           title: string
@@ -5146,7 +5136,6 @@ export type Database = {
           require_attribution?: boolean | null
           search_vector?: unknown
           share_count?: number | null
-          share_token: string
           tags?: string[] | null
           thumbnail_url?: string | null
           title: string
@@ -5190,7 +5179,6 @@ export type Database = {
           require_attribution?: boolean | null
           search_vector?: unknown
           share_count?: number | null
-          share_token?: string
           tags?: string[] | null
           thumbnail_url?: string | null
           title?: string
@@ -5447,44 +5435,59 @@ export type Database = {
         Row: {
           cost: number | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           error: Json | null
           finished_at: string | null
           id: string
           metadata: Json
+          organization_id: string
           output: Json | null
           run_id: string
           stage_key: string
           started_at: string
           status: string
           updated_at: string
+          updated_by: string | null
+          version: number
         }
         Insert: {
           cost?: number | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           finished_at?: string | null
           id?: string
           metadata?: Json
+          organization_id: string
           output?: Json | null
           run_id: string
           stage_key: string
           started_at?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Update: {
           cost?: number | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           error?: Json | null
           finished_at?: string | null
           id?: string
           metadata?: Json
+          organization_id?: string
           output?: Json | null
           run_id?: string
           stage_key?: string
           started_at?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -5504,12 +5507,15 @@ export type Database = {
           id: string
           metadata: Json
           note: string | null
+          organization_id: string
           plan_id: string | null
           position: number
           status: Database["public"]["Enums"]["cx_agent_task_status"]
           title: string
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           conversation_id: string
@@ -5518,12 +5524,15 @@ export type Database = {
           id?: string
           metadata?: Json
           note?: string | null
+          organization_id: string
           plan_id?: string | null
           position?: number
           status?: Database["public"]["Enums"]["cx_agent_task_status"]
           title: string
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           conversation_id?: string
@@ -5532,12 +5541,15 @@ export type Database = {
           id?: string
           metadata?: Json
           note?: string | null
+          organization_id?: string
           plan_id?: string | null
           position?: number
           status?: Database["public"]["Enums"]["cx_agent_task_status"]
           title?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -5678,10 +5690,12 @@ export type Database = {
           block_index: number
           conversation_id: string
           created_at: string
+          created_by: string | null
           id: string
           message_file_id: string
           message_id: string
           metadata: Json
+          organization_id: string
           reject_reason: string | null
           rejected_at: string | null
           replace_text: string
@@ -5689,17 +5703,21 @@ export type Database = {
           search_text: string
           status: Database["public"]["Enums"]["code_edit_status"]
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           applied_at?: string | null
           block_index: number
           conversation_id: string
           created_at?: string
+          created_by?: string | null
           id?: string
           message_file_id: string
           message_id: string
           metadata?: Json
+          organization_id: string
           reject_reason?: string | null
           rejected_at?: string | null
           replace_text: string
@@ -5707,17 +5725,21 @@ export type Database = {
           search_text: string
           status: Database["public"]["Enums"]["code_edit_status"]
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           applied_at?: string | null
           block_index?: number
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
           id?: string
           message_file_id?: string
           message_id?: string
           metadata?: Json
+          organization_id?: string
           reject_reason?: string | null
           rejected_at?: string | null
           replace_text?: string
@@ -5725,7 +5747,9 @@ export type Database = {
           search_text?: string
           status?: Database["public"]["Enums"]["code_edit_status"]
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -5764,6 +5788,7 @@ export type Database = {
           before_content: string
           conversation_id: string
           created_at: string
+          created_by: string | null
           edits_applied_count: number
           edits_pending_count: number
           edits_rejected_count: number
@@ -5779,13 +5804,16 @@ export type Database = {
           reverted_at: string | null
           status: Database["public"]["Enums"]["code_message_file_status"]
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           after_content: string
           before_content: string
           conversation_id: string
           created_at?: string
+          created_by?: string | null
           edits_applied_count?: number
           edits_pending_count?: number
           edits_rejected_count?: number
@@ -5801,13 +5829,16 @@ export type Database = {
           reverted_at?: string | null
           status?: Database["public"]["Enums"]["code_message_file_status"]
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           after_content?: string
           before_content?: string
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
           edits_applied_count?: number
           edits_pending_count?: number
           edits_rejected_count?: number
@@ -5823,7 +5854,9 @@ export type Database = {
           reverted_at?: string | null
           status?: Database["public"]["Enums"]["code_message_file_status"]
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -6286,6 +6319,7 @@ export type Database = {
         Row: {
           conversation_id: string
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           file_size_bytes: number | null
           file_uri: string | null
@@ -6293,13 +6327,17 @@ export type Database = {
           kind: string
           metadata: Json
           mime_type: string | null
+          organization_id: string
           updated_at: string
+          updated_by: string | null
           url: string
           user_id: string
+          version: number
         }
         Insert: {
           conversation_id: string
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           file_size_bytes?: number | null
           file_uri?: string | null
@@ -6307,13 +6345,17 @@ export type Database = {
           kind: string
           metadata?: Json
           mime_type?: string | null
+          organization_id: string
           updated_at?: string
+          updated_by?: string | null
           url: string
           user_id: string
+          version?: number
         }
         Update: {
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           file_size_bytes?: number | null
           file_uri?: string | null
@@ -6321,9 +6363,12 @@ export type Database = {
           kind?: string
           metadata?: Json
           mime_type?: string | null
+          organization_id?: string
           updated_at?: string
+          updated_by?: string | null
           url?: string
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -6564,6 +6609,7 @@ export type Database = {
           conversation_id: string
           cost: number
           created_at: string
+          created_by: string | null
           duration_ms: number | null
           error: string | null
           event_type: string
@@ -6572,19 +6618,23 @@ export type Database = {
           memory_record_id: string | null
           metadata: Json
           model: string | null
+          organization_id: string
           output_tokens: number
           success: boolean
           trigger_reason: string | null
           triggered_at: string
           updated_at: string
+          updated_by: string | null
           user_id: string
           user_request_id: string | null
+          version: number
         }
         Insert: {
           completed_at?: string | null
           conversation_id: string
           cost?: number
           created_at?: string
+          created_by?: string | null
           duration_ms?: number | null
           error?: string | null
           event_type: string
@@ -6593,19 +6643,23 @@ export type Database = {
           memory_record_id?: string | null
           metadata?: Json
           model?: string | null
+          organization_id: string
           output_tokens?: number
           success?: boolean
           trigger_reason?: string | null
           triggered_at?: string
           updated_at?: string
+          updated_by?: string | null
           user_id: string
           user_request_id?: string | null
+          version?: number
         }
         Update: {
           completed_at?: string | null
           conversation_id?: string
           cost?: number
           created_at?: string
+          created_by?: string | null
           duration_ms?: number | null
           error?: string | null
           event_type?: string
@@ -6614,13 +6668,16 @@ export type Database = {
           memory_record_id?: string | null
           metadata?: Json
           model?: string | null
+          organization_id?: string
           output_tokens?: number
           success?: boolean
           trigger_reason?: string | null
           triggered_at?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
           user_request_id?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -6668,6 +6725,7 @@ export type Database = {
           content: Json
           conversation_id: string
           created_at: string
+          created_by: string | null
           delivery: string
           enqueued_seq: number
           id: string
@@ -6675,10 +6733,13 @@ export type Database = {
           is_visible_to_user: boolean
           kind: string
           metadata: Json
+          organization_id: string
           source: string
           status: string
           updated_at: string
+          updated_by: string | null
           user_id: string
+          version: number
         }
         Insert: {
           consumed_at?: string | null
@@ -6687,6 +6748,7 @@ export type Database = {
           content?: Json
           conversation_id: string
           created_at?: string
+          created_by?: string | null
           delivery?: string
           enqueued_seq?: never
           id?: string
@@ -6694,10 +6756,13 @@ export type Database = {
           is_visible_to_user?: boolean
           kind: string
           metadata?: Json
+          organization_id: string
           source?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           consumed_at?: string | null
@@ -6706,6 +6771,7 @@ export type Database = {
           content?: Json
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
           delivery?: string
           enqueued_seq?: never
           id?: string
@@ -6713,10 +6779,13 @@ export type Database = {
           is_visible_to_user?: boolean
           kind?: string
           metadata?: Json
+          organization_id?: string
           source?: string
           status?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -6743,6 +6812,7 @@ export type Database = {
           conversation_id: string
           cost: number | null
           created_at: string
+          created_by: string | null
           deleted_at: string | null
           error: Json | null
           execution_id: string | null
@@ -6752,6 +6822,7 @@ export type Database = {
           input_tokens: number | null
           iteration: number
           metadata: Json
+          organization_id: string
           output_tokens: number | null
           provider: string | null
           raw_usage: Json | null
@@ -6764,7 +6835,9 @@ export type Database = {
           total_tokens: number | null
           trim_summary: Json | null
           updated_at: string
+          updated_by: string | null
           user_request_id: string
+          version: number
         }
         Insert: {
           ai_model_id: string
@@ -6773,6 +6846,7 @@ export type Database = {
           conversation_id: string
           cost?: number | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           error?: Json | null
           execution_id?: string | null
@@ -6782,6 +6856,7 @@ export type Database = {
           input_tokens?: number | null
           iteration?: number
           metadata?: Json
+          organization_id: string
           output_tokens?: number | null
           provider?: string | null
           raw_usage?: Json | null
@@ -6794,7 +6869,9 @@ export type Database = {
           total_tokens?: number | null
           trim_summary?: Json | null
           updated_at?: string
+          updated_by?: string | null
           user_request_id: string
+          version?: number
         }
         Update: {
           ai_model_id?: string
@@ -6803,6 +6880,7 @@ export type Database = {
           conversation_id?: string
           cost?: number | null
           created_at?: string
+          created_by?: string | null
           deleted_at?: string | null
           error?: Json | null
           execution_id?: string | null
@@ -6812,6 +6890,7 @@ export type Database = {
           input_tokens?: number | null
           iteration?: number
           metadata?: Json
+          organization_id?: string
           output_tokens?: number | null
           provider?: string | null
           raw_usage?: Json | null
@@ -6824,7 +6903,9 @@ export type Database = {
           total_tokens?: number | null
           trim_summary?: Json | null
           updated_at?: string
+          updated_by?: string | null
           user_request_id?: string
+          version?: number
         }
         Relationships: [
           {
@@ -6861,11 +6942,13 @@ export type Database = {
         Row: {
           conversation_id: string
           created_at: string
+          created_by: string | null
           cx_request_id: string | null
           id: string
           iteration: number
           metadata: Json
           model: string | null
+          organization_id: string
           provider: string
           request_payload: Json
           response_message_id: string | null
@@ -6873,16 +6956,20 @@ export type Database = {
           trigger_message_id: string | null
           unified_payload: Json | null
           updated_at: string
+          updated_by: string | null
           user_request_id: string | null
+          version: number
         }
         Insert: {
           conversation_id: string
           created_at?: string
+          created_by?: string | null
           cx_request_id?: string | null
           id?: string
           iteration?: number
           metadata?: Json
           model?: string | null
+          organization_id: string
           provider: string
           request_payload: Json
           response_message_id?: string | null
@@ -6890,16 +6977,20 @@ export type Database = {
           trigger_message_id?: string | null
           unified_payload?: Json | null
           updated_at?: string
+          updated_by?: string | null
           user_request_id?: string | null
+          version?: number
         }
         Update: {
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
           cx_request_id?: string | null
           id?: string
           iteration?: number
           metadata?: Json
           model?: string | null
+          organization_id?: string
           provider?: string
           request_payload?: Json
           response_message_id?: string | null
@@ -6907,7 +6998,9 @@ export type Database = {
           trigger_message_id?: string | null
           unified_payload?: Json | null
           updated_at?: string
+          updated_by?: string | null
           user_request_id?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -7154,6 +7247,7 @@ export type Database = {
           call_id: string | null
           conversation_id: string
           created_at: string
+          created_by: string | null
           duration_ms: number | null
           err_msg: string | null
           err_type: string | null
@@ -7162,19 +7256,23 @@ export type Database = {
           id: string
           kind: string | null
           metadata: Json
+          organization_id: string
           process_pid: number | null
           process_started_at: string | null
           result_preview: string | null
           tool_name: string
           ts: string
           updated_at: string
+          updated_by: string | null
           user_id: string | null
+          version: number
         }
         Insert: {
           args?: Json | null
           call_id?: string | null
           conversation_id: string
           created_at?: string
+          created_by?: string | null
           duration_ms?: number | null
           err_msg?: string | null
           err_type?: string | null
@@ -7183,19 +7281,23 @@ export type Database = {
           id?: string
           kind?: string | null
           metadata?: Json
+          organization_id: string
           process_pid?: number | null
           process_started_at?: string | null
           result_preview?: string | null
           tool_name: string
           ts?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Update: {
           args?: Json | null
           call_id?: string | null
           conversation_id?: string
           created_at?: string
+          created_by?: string | null
           duration_ms?: number | null
           err_msg?: string | null
           err_type?: string | null
@@ -7204,13 +7306,16 @@ export type Database = {
           id?: string
           kind?: string | null
           metadata?: Json
+          organization_id?: string
           process_pid?: number | null
           process_started_at?: string | null
           result_preview?: string | null
           tool_name?: string
           ts?: string
           updated_at?: string
+          updated_by?: string | null
           user_id?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -35390,16 +35495,6 @@ export type Database = {
           to: "canvas_items"
           isOneToOne: false
           isSetofReturn: true
-        }
-      }
-      cx_canvas_publish: {
-        Args: { p_canvas_id: string; p_visibility?: string }
-        Returns: Database["canvas"]["Tables"]["shared_canvas_items"]["Row"]
-        SetofOptions: {
-          from: "*"
-          to: "shared_canvas_items"
-          isOneToOne: true
-          isSetofReturn: false
         }
       }
       cx_canvas_save_user_version: {

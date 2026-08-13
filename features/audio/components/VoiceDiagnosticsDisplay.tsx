@@ -249,8 +249,9 @@ export function VoiceDiagnosticsDisplay({
         </Button>
 
         {testResult === 'success' && (
-          <p className="text-xs text-center text-green-600 dark:text-green-400">
-            ✓ Microphone is working! You're ready to use voice input.
+          <p className="flex items-center justify-center gap-1 text-center text-xs text-green-600 dark:text-green-400">
+            <CheckCircle className="size-3.5" aria-hidden="true" />
+            Microphone is working! You're ready to use voice input.
           </p>
         )}
       </div>
@@ -308,4 +309,3 @@ function StatusCard({
     </div>
   );
 }
-

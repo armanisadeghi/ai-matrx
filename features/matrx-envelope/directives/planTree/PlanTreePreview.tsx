@@ -22,6 +22,7 @@ import {
   Copy,
   ListTree,
   Check,
+  KeyRound,
 } from "lucide-react";
 
 import { ApplyDirectiveButton } from "@/features/matrx-envelope/ApplyDirectiveButton";
@@ -120,7 +121,10 @@ function NodeRow({
           {node.primary_keyword_phrase || node.page_type ? (
             <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
               {node.primary_keyword_phrase ? (
-                <span>🔑 {node.primary_keyword_phrase}</span>
+                <span className="flex items-center gap-1">
+                  <KeyRound className="size-3" aria-hidden="true" />
+                  {node.primary_keyword_phrase}
+                </span>
               ) : null}
               {node.page_type ? <span>· {node.page_type}</span> : null}
             </div>

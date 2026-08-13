@@ -116,10 +116,10 @@ export function ModelColumnHeader({
     if (column.label.startsWith("Model ")) {
       const friendly = options.find((o) => o.value === modelId)?.label;
       if (friendly) {
-      dispatch(
-        renameModelColumn({ columnId: column.columnId, label: friendly }),
-      );
-    }
+        dispatch(
+          renameModelColumn({ columnId: column.columnId, label: friendly }),
+        );
+      }
     }
   };
 

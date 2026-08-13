@@ -320,7 +320,7 @@ export interface StylingConfig {
 export interface AgentAppExecution {
   id: string;
   app_id: string;
-  user_id?: string;
+  created_by?: string;
 
   fingerprint?: string;
   ip_address?: string;

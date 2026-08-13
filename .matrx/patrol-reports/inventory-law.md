@@ -1,18 +1,27 @@
 # Pattern Patrol P2 — Inventory Law
 
-**Run:** 2026-08-11 (America/Los_Angeles)  
-**Authority:** Tier C/R — catalogue, rank, and write conversion prompts; fix nothing  
+**Run:** 2026-08-11 first/full pass; 2026-08-12 human-approval follow-up (America/Los_Angeles)
+**Authority:** Tier C/R baseline plus one manually approved Tier M repair attempt
 **Baseline:** first run (no prior `inventory-law.md`)  
-**Certification:** not applicable — no Tier M batch and no product-code mutation
+**Certification:** **REJECTED** — all attempted product changes were fully reverted and nothing shipped
 
 ## Outcome
 
 - **35 findings**: 5 detector-confirmed doorless surfaces plus 30 manual conversion task units.
-- **0 fixed.** P2 is C/R; every item below is report-only.
+- **0 fixed.** One proven repair was attempted after manual approval, rejected at certification, and fully reverted.
 - `pnpm check:dead-ends --rule=no-doors-in-file`: 6,868 files scanned, 11 file-level alerts.
 - Triage: 5 true positives, 6 verified false positives.
 - `pnpm check:reuse-index`: clean; all 115 indexed paths exist.
 - Ledger: no open P2 sightings existed, so there were no P2 checkboxes to change.
+
+## Human-approval follow-up — 2026-08-12
+
+Arman approved a narrow repair attempt based on two concrete examples rather than approving the full catalogue.
+
+1. **Master Input agent labels:** verified as a real dead end. The attempted repair used the canonical `EntityRef` with a new-tab route, preserved inert unconfigured columns, and deliberately disabled Quick Look after the shared preview action failed inside the floating window. Focused ESLint, `git diff --check`, `pnpm type-check`, and the dead-end detector passed in the primary run; the detector removed this file from its findings.
+2. **Skill resource filenames:** excluded before shipping. A live read of `platform.associations` found zero `code_file` → `skill` resource rows, so there was no populated user surface on which to prove the change was useful and behavior-preserving. The experimental change was fully reverted.
+
+The first adversarial review rejected the original two-file attempt after Quick Look failed and the required viewport/theme matrix could not be completed. The narrowed Master Input-only attempt was sent through certification again. Its static checks passed, but the approved in-app browser was unavailable, so the second reviewer could not prove desktop/mobile and light/dark behavior. Under the Non-Breaking Constitution, the batch was rejected and fully reverted. No code was committed, pushed, or deployed.
 
 ## Scope scanned
 
@@ -154,7 +163,7 @@ war-room, whatsapp-clone, window-panels, workflow-emit
 ## Loop health and candidates
 
 - No prior P2 reports exist in the preceding month. A longer cadence cannot be proposed from one run; retain the current weekly cadence until a month of clean runs exists.
-- No repeated rejected batches exist; mutation is not paused.
+- P2 mutation is paused after two certification rejections in this follow-up. Continue report-only until the approved browser can complete the required desktop/mobile and light/dark matrix; do not weaken certification to get a batch through.
 - No new patrol candidate was nominated. The recurring classes found here are already P2 Inventory Law classes, and the hydration-mount-gate candidate was already nominated in the ledger on 2026-08-09.
 
 ## Verification
@@ -163,5 +172,6 @@ war-room, whatsapp-clone, window-panels, workflow-emit
 - Each alert was inspected in source; 5 confirmed and 6 excluded with reasons above.
 - `pnpm check:reuse-index` — passed, 115 indexed paths resolve.
 - `pnpm type-check` — **red with 13 existing/unrelated error lines**: 1 in the concurrently modified `active-requests.selectors.ts`, 11 across broker RPC/type files, and 1 missing `vitest` type in `packages/matrx-agents`. This patrol changed markdown only and did not suppress or repair them.
-- Product fixes: none.
-- Certifier verdict: **N/A (report-only Tier C/R).**
+- Human-approved follow-up: primary `pnpm type-check` passed; the certifier's later rerun was red only in unrelated concurrently edited API routes. Focused ESLint and `git diff --check` passed, and the detector removed `MasterInputWindow.tsx` while the repair was present.
+- Product fixes: none; the rejected batch was fully reverted.
+- Certifier verdict: **REJECTED** twice. First: broken Quick Look plus incomplete browser matrix. Second: required browser matrix unavailable. Mutation paused; nothing shipped.

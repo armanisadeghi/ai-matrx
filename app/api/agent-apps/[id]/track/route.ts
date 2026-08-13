@@ -22,7 +22,7 @@ import type { TablesUpdate } from "@/types/database.types";
  * sub-route can track runs against draft/private apps. The legacy
  * `aga_executions_insert_anon` RLS policy required `status='published'`,
  * which would block tracking from the management shell. Auth is still
- * captured: if the request carries a session cookie we record `user_id`,
+ * captured: if the request carries a session cookie we record `created_by`,
  * otherwise we fall back to the `X-Fingerprint-ID` header.
  *
  * Constraints:
@@ -93,7 +93,7 @@ export async function POST(
       );
     }
 
-    // Resolve identity: session cookie → user_id; otherwise fingerprint
+    // Resolve identity: session cookie → created_by; otherwise fingerprint
     // header. Both branches end up using the admin client to write so RLS
     // policies don't gate tracking against draft apps.
     const supabaseSsr = await createClient();
@@ -159,11 +159,22 @@ export async function POST(
         ? body.taskId
         : crypto.randomUUID();
 
+    const { data: appRow, error: appErr } = await admin
+      .schema("app")
+      .from("definition")
+      .select("organization_id")
+      .eq("id", appId)
+      .single();
+    if (appErr || !appRow) {
+      return NextResponse.json({ error: "App not found" }, { status: 404 });
+    }
+
     const insertPayload = {
       app_id: appId,
+      organization_id: appRow.organization_id,
       kind: body.event === "visit" ? "visit" : "run",
       task_id: taskId,
-      user_id: user?.id ?? null,
+      created_by: user?.id ?? null,
       fingerprint: user ? null : fingerprint,
       ip_address: ip ?? null,
       user_agent: userAgent,

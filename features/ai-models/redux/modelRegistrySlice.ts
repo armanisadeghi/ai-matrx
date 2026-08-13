@@ -182,14 +182,14 @@ export const fetchModelOptions = createAsyncThunk(
             typeof r.id === "string" && typeof r.name === "string",
         )
         .map((r): ModelOptionRow => ({
-            id: r.id,
-            name: r.name,
-            common_name: r.common_name,
-            maker: r.maker,
-            cost_rating: r.cost_rating,
-            speed_rating: r.speed_rating,
-            is_primary: r.is_primary,
-            capabilities: r.capabilities,
+          id: r.id,
+          name: r.name,
+          common_name: r.common_name,
+          maker: r.maker,
+          cost_rating: r.cost_rating,
+          speed_rating: r.speed_rating,
+          is_primary: r.is_primary,
+          capabilities: r.capabilities,
         }));
     } catch (err: unknown) {
       return rejectWithValue(

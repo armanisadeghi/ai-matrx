@@ -55,13 +55,13 @@ export function useCanvasLike(canvasId: string) {
             const previousLiked = queryClient.getQueryData(['canvas-like', canvasId]);
 
             // Find the shared-canvas cache entry (keyed by shareToken) and snapshot it
-            const sharedCanvasQueries = queryClient.getQueriesData<{ like_count: number; share_token: string }>({ queryKey: ['shared-canvas'] });
+            const sharedCanvasQueries = queryClient.getQueriesData<{ like_count: number; id: string }>({ queryKey: ['shared-canvas'] });
             const previousCanvasEntries = sharedCanvasQueries;
 
             // Optimistically update
             queryClient.setQueryData(['canvas-like', canvasId], true);
             sharedCanvasQueries.forEach(([queryKey, data]) => {
-                if (data?.share_token) {
+                if (data?.id) {
                     queryClient.setQueryData(queryKey, { ...data, like_count: (data.like_count || 0) + 1 });
                 }
             });
@@ -107,12 +107,12 @@ export function useCanvasLike(canvasId: string) {
 
             const previousLiked = queryClient.getQueryData(['canvas-like', canvasId]);
 
-            const sharedCanvasQueries = queryClient.getQueriesData<{ like_count: number; share_token: string }>({ queryKey: ['shared-canvas'] });
+            const sharedCanvasQueries = queryClient.getQueriesData<{ like_count: number; id: string }>({ queryKey: ['shared-canvas'] });
             const previousCanvasEntries = sharedCanvasQueries;
 
             queryClient.setQueryData(['canvas-like', canvasId], false);
             sharedCanvasQueries.forEach(([queryKey, data]) => {
-                if (data?.share_token) {
+                if (data?.id) {
                     queryClient.setQueryData(queryKey, { ...data, like_count: Math.max((data.like_count || 0) - 1, 0) });
                 }
             });

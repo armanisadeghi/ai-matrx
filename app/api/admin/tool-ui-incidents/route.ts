@@ -88,8 +88,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let organizationId = "39c38960-d30c-4840-b0c1-c9960de95582";
+    if (body.component_id) {
+      const { data: uiRow } = await supabase
+        .schema("tool")
+        .from("ui")
+        .select("organization_id")
+        .eq("id", body.component_id)
+        .single();
+      if (uiRow) organizationId = uiRow.organization_id;
+    }
+
     const incidentData = {
       tool_name: body.tool_name,
+      organization_id: organizationId,
       component_id: body.component_id || null,
       component_type: body.component_type,
       error_type: body.error_type,

@@ -7,6 +7,7 @@ import {
   Lightbulb,
   ArrowRight,
   RefreshCw,
+  Star,
 } from "lucide-react";
 import {
   Dialog,
@@ -320,9 +321,13 @@ export function ModelSwitchConflictDialog({
                         >
                           {m.label}
                           {m.recommended && pendingSwitch.mode !== m.id && (
-                            <span className="ml-1 text-[8px] text-primary font-bold">
-                              ★
-                            </span>
+                            <>
+                              <Star
+                                className="ml-1 inline size-2.5 fill-current text-primary"
+                                aria-hidden="true"
+                              />
+                              <span className="sr-only">Recommended</span>
+                            </>
                           )}
                         </button>
                       ))}

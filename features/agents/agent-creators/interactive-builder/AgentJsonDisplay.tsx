@@ -678,9 +678,9 @@ function SettingsGrid({
               className="text-xs text-gray-900 dark:text-gray-100"
             />
           ) : (
-          <span className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
-            {renderValuePreview(value)}
-          </span>
+            <span className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+              {renderValuePreview(value)}
+            </span>
           )}
         </div>
       ))}

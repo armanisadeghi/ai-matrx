@@ -539,6 +539,17 @@
     "is_active": true
   },
   {
+    "resource_type": "shared_canvas_item",
+    "table_name": "shared_canvas_items",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Shared Canvas",
+    "url_path_template": "/canvas/shared/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "skill",
     "table_name": "definition",
     "id_column": "id",

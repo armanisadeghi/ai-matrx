@@ -614,15 +614,15 @@ const TABLE_TO_TOKEN: Record<string, EntityTypeToken> = (() => {
 
 const UNIQUE_TABLE_NAME_TO_TOKEN: Record<string, EntityTypeToken | null> =
   (() => {
-  const index: Record<string, EntityTypeToken | null> = {};
+    const index: Record<string, EntityTypeToken | null> = {};
     for (const token of Object.keys(
       ENTITY_TYPE_METADATA,
     ) as EntityTypeToken[]) {
-    const table = ENTITY_TYPE_METADATA[token].table;
-    index[table] = table in index ? null : token;
-  }
-  return index;
-})();
+      const table = ENTITY_TYPE_METADATA[token].table;
+      index[table] = table in index ? null : token;
+    }
+    return index;
+  })();
 
 /**
  * Resolve an entity descriptor from a live `(schema, table)` pair, or null when
@@ -663,12 +663,12 @@ export function tryGetEntityInfoByUniqueTableName(
 export function curatedTokens(): EntityTypeToken[] {
   return (Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]).filter(
     (t) => {
-    const meta = ENTITY_TYPE_METADATA[t];
-    const o = ENTITY_OVERLAY[t];
-    return (
-      isContentRole(meta.contentRole) &&
-      (meta.titleColumn != null || o?.listCandidates !== undefined)
-    );
+      const meta = ENTITY_TYPE_METADATA[t];
+      const o = ENTITY_OVERLAY[t];
+      return (
+        isContentRole(meta.contentRole) &&
+        (meta.titleColumn != null || o?.listCandidates !== undefined)
+      );
     },
   );
 }

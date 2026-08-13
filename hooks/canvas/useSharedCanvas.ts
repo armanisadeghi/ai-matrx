@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
 import { getUserId } from '@/utils/auth/getUserId';
+import { resolveSharedCanvas } from '@/features/canvas/shared/resolveSharedCanvas';
 import type { SharedCanvasItem } from '@/types/canvas-social';
 
 export function useSharedCanvas(shareToken: string | null) {
@@ -11,30 +12,27 @@ export function useSharedCanvas(shareToken: string | null) {
         queryFn: async () => {
             if (!shareToken) throw new Error('No share token provided');
 
-            const { data, error } = await supabase
-                .schema('canvas').from('shared_canvas_items')
-                .select('*')
-                .is('deleted_at', null)
-                .eq('share_token', shareToken)
-                .single();
-
-            if (error) throw error;
+            const canvas = await resolveSharedCanvas(shareToken, supabase);
+            if (!canvas) throw new Error('Canvas not found');
 
             // Increment view count (don't wait for it)
-            trackView(shareToken);
+            trackView(canvas.id, canvas.organization_id ?? null);
 
-            return data as SharedCanvasItem;
+            return canvas;
         },
         enabled: !!shareToken,
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 }
 
-async function trackView(shareToken: string) {
+async function trackView(canvasId: string, organizationId: string | null) {
     try {
+        // canvas_views.organization_id is NOT NULL (the canvas's org, so anon
+        // viewers work) — without it there is nothing valid to insert.
+        if (!organizationId) return;
         const supabase = createClient();
         const userId = getUserId();
-        
+
         // Get or create session ID
         let sessionId = sessionStorage.getItem('canvas_session_id');
         if (!sessionId) {
@@ -42,24 +40,14 @@ async function trackView(shareToken: string) {
             sessionStorage.setItem('canvas_session_id', sessionId);
         }
 
-        // Get canvas id + org first
-        const { data: canvas } = await supabase
-            .schema('canvas').from('shared_canvas_items')
-            .select('id, organization_id')
-            .is('deleted_at', null)
-            .eq('share_token', shareToken)
-            .single();
-
-        if (!canvas) return;
-
         // Insert view. The view belongs to the canvas's org (not the viewer's) —
         // this works for anonymous public-share viewers who have no session/org.
         await supabase
             .schema('canvas').from('canvas_views')
             .insert({
-                canvas_id: canvas.id,
+                canvas_id: canvasId,
                 user_id: userId,
-                organization_id: canvas.organization_id,
+                organization_id: organizationId,
                 session_id: sessionId,
                 referrer: typeof document !== 'undefined' ? document.referrer : null,
                 viewed_at: new Date().toISOString()
@@ -68,4 +56,3 @@ async function trackView(shareToken: string) {
         console.error('Error tracking view:', err);
     }
 }
-
